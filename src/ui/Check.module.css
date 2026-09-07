@@ -1,0 +1,102 @@
+.check {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-6);
+  /* The label IS the target: it is clicked from the text, not only from the box.
+     At 22 px tall it fell short for a finger. */
+  min-height: 26px;
+  padding: var(--s-2) 0;
+  font-size: var(--t-4);
+  cursor: pointer;
+}
+
+/* The box aligns with the label's first line, not with its box. */
+.check input { margin-top: var(--s-1); }
+.check input:disabled { cursor: default; }
+.text { min-width: 0; }
+
+.help {
+  composes: withCode from './text.module.css';
+  font-size: var(--t-3);
+  color: var(--mute);
+  line-height: 1.55;
+  margin-top: var(--s-3);
+  margin-left: calc(var(--ctrl) + var(--s-6));
+  /*
+  720 px, and **it is a local exception with its figure**, not a missing token.
+
+  Decided 2026-09-03, which is decision 21 of the phase 2 reconciliation. Measured
+  first: **it really bites** —at 1920, with the control column at 1022 px, the nine
+  checkbox helps of `Settings › General` come out at exactly 720— so it is not dead
+  code that can be deleted.
+
+  And it does not go up to `tokens.css` for the same reason the Dashboard hero did
+  not: **only this uses it**. A global token is declared when two places share a
+  decision; declaring one for a single use is inventing vocabulary nobody speaks.
+
+  What the cap is and why it is not `--help-col`: this is **the only help pilot 3
+  did NOT move** to the third column. A checkbox's stays under its control
+  —because the checkbox IS its label and separating them would break that unit— so
+  it inherits the control column's width, which on wide screens goes well past
+  what reads comfortably. 720 is the readable line cap for THIS case.
+
+  If some day a second help stays out of the third column, then there are two and
+  a token is due; today there are nine from the same place.
+  */
+  max-width: 720px;
+}
+
+/*
+The switch. It is the same `input[type=checkbox]`, redrawn: the track is the
+input's own box and the knob is its offset inset shadow, so neither an extra
+element nor a pseudo-element the browser paints its own way is needed.
+*/
+.toggle input {
+  width: var(--ctrl-track-w);
+  height: var(--ctrl-track-h);
+  border-radius: var(--r-full);
+  background: var(--field);
+  background-image: none;
+  box-shadow:
+    var(--sunken),
+    inset calc(var(--ctrl-track-w) - var(--ctrl-track-h)) 0 0 -1px transparent;
+  position: relative;
+  transition:
+    background-color var(--t-fast),
+    border-color var(--t-fast);
+}
+
+/* The knob: a circle that travels from one end of the track to the other. */
+.toggle input::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: calc(var(--ctrl-track-h) - 6px);
+  height: calc(var(--ctrl-track-h) - 6px);
+  border-radius: var(--r-full);
+  background: var(--mute);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  transition: transform var(--t-medio), background var(--t-fast);
+}
+
+.toggle input:checked {
+  background-color: var(--acc);
+  background-image: none;
+  border-color: var(--acc);
+  box-shadow: var(--edge-fuerte);
+}
+
+.toggle input:checked::after {
+  background: var(--on-acc);
+  transform: translateX(calc(var(--ctrl-track-w) - var(--ctrl-track-h)));
+}
+
+.toggle input:active:not(:disabled) { transform: none; }
+
+.toggle .help { margin-left: calc(var(--ctrl-track-w) + var(--s-6)); }
+
+@media (prefers-reduced-motion: reduce) {
+  .toggle input,
+  .toggle input::after { transition: none; }
+}

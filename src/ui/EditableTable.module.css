@@ -1,0 +1,34 @@
+/*
+The table of a list edited in place: the TSIG keys, the forwarders, a scope's
+static routes, the SSO group maps.
+
+It is not the data table of `ui/Table.module.css` and must not look like it: that
+one is a screen's main object —with its panel, its border and its shadow— and this
+one lives INSIDE a panel, tight against its fields. That is why it goes without a
+box, without a header background and with a narrower cell.
+
+What they do share is the label: the column header is the same small caps as any
+other table's (`--text-*` in tokens). It was not before —it ran at 0.07em— and on
+top of that this table was written THREE times, in Settings, in DHCP and in
+Administration, with the same values copied by hand.
+*/
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th {
+  text-align: left;
+  font-size: var(--text-size);
+  font-weight: var(--text-weight);
+  letter-spacing: var(--text-tracking);
+  text-transform: uppercase;
+  color: var(--mute);
+  padding: 0 var(--s-5) var(--s-4) 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.table td {
+  padding: var(--s-3) var(--s-5) var(--s-3) 0;
+  vertical-align: middle;
+}

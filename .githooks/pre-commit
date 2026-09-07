@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Guarda cada commit contra fugas de secretos.
+#
+# Copiado del de ORBITLAB (heredado a su vez de ORRERY, 2026-07-10) y puesto AQUÍ
+# a propósito: `technitium-console` es su propio repositorio con su propio remoto,
+# así que apuntar `core.hooksPath` al `.githooks` del repo vecino habría dejado la
+# guarda rota en cuanto alguien clonase este solo.
+#
+# Por máquina:  git config core.hooksPath .githooks
+set -euo pipefail
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "pre-commit: gitleaks no está instalado — commit abortado por seguridad" >&2
+  exit 1
+fi
+# gitleaks v8.19+: `protect` fue sustituido por `git --staged` (modo pre-commit).
+gitleaks git --staged --redact -v

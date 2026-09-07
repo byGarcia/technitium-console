@@ -1,0 +1,161 @@
+/* Logs. Two very different sub-screens: a two-column file viewer and a table with
+   fifteen filters. The table classes are the same as in Cache, Allowed and
+   Blocked. */
+
+.wrap { composes: screen from '../../ui/SectionHeader.module.css'; }
+
+.acts { display: flex; gap: var(--s-4); flex-wrap: wrap; justify-content: flex-end; align-items: center; }
+
+/* ---- View Logs ---- */
+
+/*
+Master and detail, both at once — and at 390 too.
+
+At 1440 it is `250px` for the list and the rest for the viewer. On narrowing it
+**does not turn into navigation**: they stack and both stay present. And it is a
+decision, not a convenience — a paginated collection would be worth turning into
+list→detail, but here there are **three files**, so sending the user to another
+screen to see one and back to see another costs more than it saves.
+
+Each panel answers for itself: the list can fail without the viewer hearing about
+it, and the other way round. That is why there is no "screen" state, there are
+two.
+
+The breakpoint is 720, the same one `SectionHeader`, `Segmented` and `PanelForm`
+already use: below that, 250 px of list leave the viewer with less than half the
+screen and a log line stops fitting anywhere.
+*/
+.dos { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: var(--s-10); align-items: start; }
+
+@media (max-width: 720px) {
+  .dos { grid-template-columns: minmax(0, 1fr); }
+}
+
+.pbList { padding: var(--s-5); }
+
+.logfiles { display: flex; flex-direction: column; gap: var(--s-1); }
+.logfile { composes: row from '../../ui/list.module.css'; justify-content: space-between; }
+.logfile .name { font-family: var(--font-mono); }
+.sz { composes: annotationQuiet from '../../ui/text.module.css'; }
+/* ---- Query Logs ---- */
+
+.fs { composes: panel from '../../ui/Panel.module.css'; margin-bottom: var(--s-9); }
+.fsTitle {
+  display: block; width: 100%; padding: var(--s-8) var(--s-10); margin: 0;
+  border-bottom: 1px solid var(--line); font-size: var(--t-1); font-weight: 600;
+  letter-spacing: 0.09em; text-transform: uppercase; color: var(--mute);
+}
+.fsIn { padding: var(--s-3) var(--s-10) var(--s-9); }
+.frow { display: grid; grid-template-columns: 110px 1fr; gap: var(--s-10); padding: var(--s-8) 0; border-bottom: 1px solid var(--line2); align-items: start; }
+.frow:last-child { border-bottom: 0; }
+.frowLabel { font-size: var(--t-4); color: var(--ink); font-weight: 600; padding-top: var(--s-4); }
+.frowCtl { display: flex; align-items: flex-end; gap: var(--s-8); flex-wrap: wrap; }
+.field { display: flex; flex-direction: column; gap: var(--s-3); }
+.field label { font-size: var(--t-2); color: var(--mute); font-weight: 550; }
+.field input, .field select { width: 100%; }
+
+/* The count is `ui/count.module.css`'s: see there for why. */
+.count { composes: bar above from '../../ui/count.module.css'; }
+.mono { composes: mono from '../../ui/text.module.css'; }
+.nowrap { white-space: nowrap; }
+.breakUp { word-break: break-all; }
+.rtt { font-size: var(--t-2); color: var(--faint); }
+
+/* Upstream's five row backgrounds (logs.js:452-508), as they are. */
+/*
+The row colour code comes from the SERIES TOKENS, not from seven hand-written
+values.
+
+They used to be seven `rgba()` written here, off the scale, with no relation to
+the colours the same word has on the Dashboard: `Blocked` was orange in the table
+and violet in the chart. Now it is the same colour for the same word across the
+whole console.
+
+**At 30 % and not at 13 %**, and the measurement decided it: at 13 % five pairs
+out of twenty-one were below the project's collision threshold; at 30 % one is
+left. It cannot go higher — past 50 % the cell text falls below 4.5:1 and drops
+out of AA. Checked with `dev/row-colours.mjs`.
+
+Bringing these tokens here uncovered two palette defects that were NOT this
+screen's —`--ch-refuse` collided with `--ch-auth` under deuteranopia and
+`--ch-block` with `--ch-total` at ΔE00 1.2— and both were fixed in `tokens.css`.
+
+**A background and not an edge**: the edge belongs to the amber, and it means
+something else —"this is yours to change". Using it here would say two things with
+one mark.
+
+One pair is left unresolved, `Server Failure`/`Cached` at 8.5, and **it cannot be
+claimed that all seven are distinguishable**. That is why the colour is
+reinforcement and never the only channel: `RCODE` and `Response Type` are written
+in their cell, and the legend names the seven conditions. See `tokens.css` for why
+that pair is not fixed with a token.
+*/
+.rServerFailure { background: color-mix(in srgb, var(--ch-fail) 30%, transparent); }
+.rBlocked { background: color-mix(in srgb, var(--ch-block) 30%, transparent); }
+.rNxDomain { background: color-mix(in srgb, var(--ch-nx) 30%, transparent); }
+.rRefused { background: color-mix(in srgb, var(--ch-refuse) 30%, transparent); }
+.rAuthoritative { background: color-mix(in srgb, var(--ch-auth) 30%, transparent); }
+.rRecursive { background: color-mix(in srgb, var(--ch-rec) 30%, transparent); }
+.rCached { background: color-mix(in srgb, var(--ch-cache) 30%, transparent); }
+
+/*
+The legend of the seven, and it is ALWAYS complete.
+
+The phase 1 rule is explicit: every label that comes from the server carries its
+legend entry. Here there were seven colours and none: the user saw coloured rows
+and nothing explaining them.
+
+Complete, and not "the ones on this page": a legend that changes with the data
+shows six colours on one page and four on the next, and stops being a vocabulary
+to become a summary of what is in front of you.
+*/
+.legend {
+  display: flex; flex-wrap: wrap; align-items: center;
+  gap: var(--s-5) var(--s-9);
+  padding: var(--s-7) var(--s-9);
+  margin-bottom: var(--s-7);
+  border: 1px solid var(--line); border-radius: var(--r-3); background: var(--pan);
+}
+.legendTitle {
+  font-size: var(--t-1); font-weight: 600; letter-spacing: 0.09em;
+  text-transform: uppercase; color: var(--mute);
+}
+.legendItem { display: inline-flex; align-items: center; gap: var(--s-5); font-size: var(--t-2); }
+/* The swatch carries its own border: at 30 % over the panel, a square with no
+   border is lost against the background in exactly the darkest tones. */
+.testigo { width: 12px; height: 12px; border-radius: 3px; border: 1px solid var(--line); flex: none; }
+.legendName { color: var(--ink); font-weight: 550; }
+.legendWhen { color: var(--faint); }
+
+/* Centred on purpose: it is a bar filter, not a settings row. But the minimum
+   height is the same as `ui/Check.module.css`'s. */
+/* `.check` went in phase 2: it was a hand copy of `ui/Check` with eight px of gap
+   instead of nine, and `uniformity.js` counted it as a separate signature of the
+   same checkbox. Query Logs uses the primitive now. */
+
+
+@media (max-width: 720px) {
+  .frow { grid-template-columns: minmax(0, 1fr); gap: var(--s-4); }
+  .frowLabel { padding-top: 0; }
+}
+
+/*
+The group a MODE switches off — the edge, once for all four.
+
+It is the same master-switch signal as `Settings` with the polarity inverted:
+there the control is off because its master is OFF and the pill says `Needs …`;
+here it is off because `Live Update` is ON and it says `While …`. The mechanics do
+not change because what matters is the same: **the user can undo it themselves**,
+and that is what the amber means.
+
+It composes from `Form.module.css` so that it is THE SAME edge and not another one
+like it: an inner shadow and not a border, because a border eats two pixels of the
+box and shifts the content — measured in `Settings`, where it gave away a third
+grid signature that existed only on that screen.
+
+It goes on the GROUP and not on each field because all four switch off together:
+four pills saying the same thing are noise, and the `Settings` rule was already
+one pill per group.
+*/
+.byMode { composes: dependiente from '../../ui/Form.module.css'; padding-left: var(--s-8); }
+.frowLabel { display: flex; align-items: center; gap: var(--s-6); flex-wrap: wrap; }

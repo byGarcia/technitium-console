@@ -1,0 +1,188 @@
+/*
+The permissions matrix. See `Matrix.tsx` for why it exists at all; here is what is
+decided about how it looks.
+
+Two densities share this sheet because they are the same object read at two
+distances: the concession map —eleven sections across, one row per subject— and
+the eleven sections themselves, three verbs across. Splitting them into two
+modules is how this console once ended up with seven containers.
+*/
+
+/* The hidden name is `ui/text`'s: the update dialog is its second user, and the
+   rule the two share moved there when the second one appeared. */
+.sr { composes: sr from './text.module.css'; }
+
+.wrap { min-width: 0; position: relative; }
+
+/* The table's name, drawn: it is the small-caps label the two columns of a
+   section already carried above them. */
+.caption {
+  composes: smallCaps from './label.module.css';
+  text-align: left;
+  padding-bottom: var(--s-4);
+}
+
+/* Only the map scrolls sideways: eleven sections do not fit at 390 and the
+   subject column stays put so a row never loses whose it is. */
+.scrolls { overflow-x: auto; }
+
+.table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.table th,
+.table td {
+  border-bottom: 1px solid var(--line2);
+  padding: var(--s-3) var(--s-5);
+  vertical-align: middle;
+}
+
+.table tr:last-child th,
+.table tr:last-child td { border-bottom: 0; }
+
+/*
+The header row carries a background, and it is `--pan` and not `Table`'s `--pan2`:
+this is a nested, read-only table inside a panel, not the console's data table,
+so it does not sit on the raised step.
+
+It goes on the WHOLE row and not only on the sticky corner. Measured with
+`dev/uniformity.js` on 2026-09-04: with it only on the corner, the map and the
+eleven sections came out as TWO `tabla` signatures —`rgb(25, 28, 31)` against
+`rgba(0, 0, 0, 0)`— for what is one object at its two densities. Inside a panel
+the colour is the one already behind it, so nothing changes to the eye; what
+changes is that the sticky corner stops being a special case.
+*/
+.table thead th { background: var(--pan); }
+
+/* The header of a column: the console's one small-caps label. */
+.verb,
+.who {
+  composes: smallCaps from './label.module.css';
+  white-space: nowrap;
+  height: var(--row-header);
+}
+
+.verb { text-align: center; width: 46px; }
+.who { text-align: left; }
+
+/* The subject: the row's entity, so it weighs more than the marks beside it. */
+.subject {
+  text-align: left;
+  font-family: var(--font-mono);
+  font-size: var(--t-4);
+  font-weight: 400;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+/*
+In the map the subject does NOT wrap: it is a sticky column and a name broken
+across two lines —"DHCP Administrator / s"— stops being a name. The table already
+scrolls sideways, so the column is as wide as the longest name and the sections
+move past it.
+*/
+.dense .subject { white-space: nowrap; overflow-wrap: normal; }
+
+/*
+The population header of the map. It spans the whole width because it labels the
+rows under it, not a column.
+*/
+.group {
+  composes: smallCaps from './label.module.css';
+  text-align: left;
+  background: var(--pan2);
+  padding-top: var(--s-4);
+  padding-bottom: var(--s-4);
+}
+
+/*
+The column that stays while the rest scrolls. It carries its own background:
+without one, the eleven sections would slide underneath it and show through.
+*/
+.stick {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--pan);
+}
+
+.group.stick { background: var(--pan2); }
+
+.cell { text-align: center; width: 46px; }
+
+/*
+The mark: `--ok`, not amber.
+
+Amber is this console's word for "you can press this", and nothing in this list
+can be pressed — it is edited in `Edit Permissions`. Painting 84 read-only states
+in the colour of action was the loudest thing on the screen and it was saying the
+wrong word.
+*/
+.mark { margin: 0 auto; display: block; }
+
+/*
+`base.css` draws the console's checkbox by hand —it is not the browser's, so
+`accent-color` does nothing to it— and paints it `--acc` when ticked. Only the
+colour is overridden here, not the shape: the box, the sunken shadow and the drawn
+tick stay the shared ones, so this is still the same checkbox and not a second
+idea of what one looks like. The tick's stroke goes to `--ok-bg` for the same
+reason the amber one is `--on-acc`: it is the ink of its own fill.
+*/
+/* The selector carries the type and the attribute because `base.css`'s does:
+   `input[type='checkbox']:checked` outweighs a bare class, so overriding it from
+   a module means matching its shape and adding the class. */
+input[type='checkbox'].mark:checked {
+  background-color: var(--ok);
+  border-color: var(--ok);
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23052e26' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m20 6-11 11-5-5'/%3E%3C/svg%3E"),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0) 60%);
+}
+
+/*
+And it is NOT dimmed, although it is disabled.
+
+`base.css` takes a disabled control to 0.45 because a control you cannot use has
+to say so. These are not controls you cannot use: they are the datum this screen
+exists to show, and a permission at 45 % reads as "not applicable" when it means
+"granted".
+*/
+input[type='checkbox'].mark:disabled { cursor: default; opacity: 1; box-shadow: var(--sunken); }
+
+input[type='checkbox'].mark:disabled:checked { box-shadow: var(--edge-fuerte); }
+
+/*
+The map's cell: three marks, one per verb, in View · Modify · Delete order.
+
+Its padding is NOT trimmed to squeeze eleven sections in: `dev/uniformity.js`
+signs a table by its header and its cell density, so a second density here would
+make `Matrix` two table objects instead of one — and the map is the same primitive
+at its second density, not another table. The map scrolls sideways anyway.
+*/
+.marks { text-align: center; }
+
+.pips { display: inline-flex; gap: var(--s-2); }
+
+/*
+A granted verb is filled; a denied one is an empty box and NOT a gap. The absence
+has to be visible: an empty cell and a cell of three empty boxes say different
+things, and only one of them is "this subject is in this section".
+*/
+.pip {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  border: 1px solid var(--line);
+  background: transparent;
+}
+
+.pip[data-on='true'] { background: var(--ok); border-color: var(--ok); }
+
+/* Upstream's "No user permissions" / "No group permissions". */
+.none {
+  text-align: center;
+  color: var(--faint);
+  font-size: var(--t-4);
+  padding: var(--s-7) var(--s-5);
+}

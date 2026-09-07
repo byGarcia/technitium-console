@@ -1,0 +1,23 @@
+/*
+The small-caps label, ONCE.
+
+It is the small tag that says "this thing here is X": a column header, a panel
+title, the name of a group of fields. It was written in fourteen places with three
+sizes (`--t-1`, `--t-2`, `--t-3`) and four letter-spacings (.04, .05, .07 and
+.09 em), so two neighbouring panels did not look alike and table headers did not
+look like block titles —being the same thing: the label of a box—.
+
+The values are the ones the tokens file already stated: `--t-1` is defined as
+"small-caps label, table header, pill", and that was exactly what the table header
+was NOT using. The letter-spacing is the one that repeated most (.05em, in seven
+of the fourteen).
+
+It is applied with `composes:`, not by copying it.
+*/
+.smallCaps {
+  font-size: var(--text-size);
+  font-weight: var(--text-weight);
+  letter-spacing: var(--text-tracking);
+  text-transform: uppercase;
+  color: var(--mute);
+}

@@ -1,0 +1,113 @@
+/*
+The console's text primitives.
+
+They are not components: they are treatments that appear inside the prose of many
+screens —a muted suffix, an intro paragraph, an inline `<code>`— and which
+therefore have no element of their own to live in. Each screen used to rewrite
+them, and the copying showed: the monospacing in "My Profile" had lost its tabular
+figures and was one step smaller than everywhere else, and the "Forgot Password"
+paragraph ran at 1.65 line-height against 1.6 in the other four. Nobody decided
+either of those; they came out of typing the same thing six times.
+*/
+
+/* Figures and text read character by character: IPs, domains, counters.
+   `tabular-nums` is what stops a column of numbers from dancing. */
+.mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The paragraph that opens a screen or a block and says what it is about. */
+.paragraph {
+  margin: 0 0 var(--s-7);
+  font-size: var(--t-4);
+  color: var(--mute);
+  line-height: 1.6;
+}
+
+.paragraph b { color: var(--ink); }
+
+/* The suffix that follows a control: "seconds", "MB", "(0 to disable)". */
+.trailer {
+  font-size: var(--t-3);
+  color: var(--mute);
+}
+
+/*
+The inline `<code>`. It goes as a `composes` on the block of text containing it,
+not on the `<code>`, because what writes it is the prose: `{'…'} <code>x</code>`.
+*/
+.withCode code,
+.paragraph code,
+.helpPanel code {
+  font-family: var(--font-mono);
+  font-size: var(--t-2);
+  background: var(--field);
+  border: 1px solid var(--line);
+  border-radius: var(--r-1);
+  padding: 0 var(--s-2);
+}
+
+/* The help paragraph inside a panel: smaller and carrying the body inset, so it
+   does not compete with the setting it accompanies. */
+.helpPanel {
+  font-size: var(--t-3);
+  color: var(--mute);
+  line-height: 1.55;
+  max-width: 860px;
+}
+
+/*
+The muted monospace annotation. There are two sizes and the difference is real,
+so both get named instead of being merged: `.annotation` is content you have to be
+able to read —the server domain, an app class path, a session's user agent—;
+`.annotationQuiet` accompanies something else and must not compete with it —a
+tile's unit, a file's size—.
+
+They were written across six modules, with the two sizes handed out at random.
+*/
+.annotation {
+  font-family: var(--font-mono);
+  font-size: var(--t-3);
+  color: var(--faint);
+}
+
+.annotationQuiet {
+  font-family: var(--font-mono);
+  font-size: var(--t-2);
+  color: var(--faint);
+}
+
+/* A line that does not fit and is cut with an ellipsis. */
+.truncated {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/*
+The name that is only for whoever cannot see the screen.
+
+It was born in `Matrix.module.css` for the permission cells, with a note saying
+«it goes here because this is its only user; the day a second one appears it
+moves». That day is this one: the update dialog needs it to say which of its two
+version numbers is which.
+
+`position: absolute` and `clip-path`, and the caveat that cost a measured defect:
+**`clip-path` clips the PAINTING, not the layout**. With no positioned ancestor
+the containing block is the page, so whoever uses it inside something that scrolls
+has to give that container `position: relative` — or the hidden text pushes the
+page sideways. Measured at 390 on `/admin/permissions/`: 948 px of horizontal
+scroll with every visible element inside 390.
+*/
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}

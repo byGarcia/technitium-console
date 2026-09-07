@@ -1,0 +1,43 @@
+/*
+Upstream's five links that hang off the `body`. See `app/pie.ts` for which ones
+they are and why.
+
+The markup and the link treatment were written twice —in the sidebar and on the
+login screen— and out of that came two different targets for the same link:
+`padding: var(--s-2) var(--s-1)` in one and `var(--s-1) 0` in the other. Here they
+go once.
+
+What each place does decide is the SIZE and the alignment: in the sidebar it sits
+tight against the edge and on login it is centred under the card. That comes from
+the caller's `className`.
+*/
+
+.footer { color: var(--faint); }
+
+/* The name does not break —"DNS Client" was falling onto two lines— but a break
+   is still possible: the separator sits loose between the anchors, with its
+   spaces, exactly as upstream has it. Putting `nowrap` on the wrapper instead of
+   on the link left the list without a single break opportunity and the sidebar
+   overflowed by 47 px horizontally. */
+.footer a {
+  color: var(--faint);
+  text-decoration: none;
+  white-space: nowrap;
+  padding: var(--s-2) var(--s-1);
+}
+
+.footer a:hover { color: var(--ink); text-decoration: underline; }
+
+.sep { color: var(--line); }
+
+/*
+The theme credit: its own line below the links. It deliberately does not share a
+row with them —see `app/pie.ts`— and the link is treated like the ones above, so
+as not to invent a third kind of link inside the same six-line block.
+
+The hierarchy comes from the SEPARATE LINE, not from colour: the first attempt
+dropped the "Theme by" to `--line`, which is a border colour, and it measured
+1.62:1 against the background —the minimum for text is 4.5—. It inherits the
+footer's `--faint`, which gives 5.61:1.
+*/
+.credit { margin-top: var(--s-3); }

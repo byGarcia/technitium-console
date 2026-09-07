@@ -1,0 +1,35 @@
+/*
+The raw output box. See `Raw.tsx` for the why of each decision.
+
+The border and the radius go on the BOX and the scrolling on the `<pre>` inside:
+if the border belonged to the element that scrolls, it would go with it when
+horizontal.
+*/
+.box {
+  border: 1px solid var(--line);
+  border-radius: var(--r-3);
+  background: var(--field);
+  overflow: hidden;
+}
+
+/* The frame for a server error: solid and in `--dan`. See `Raw.tsx`. */
+.error { border-color: var(--dan); }
+
+.text {
+  margin: 0;
+  padding: var(--s-7) var(--s-8);
+  font: var(--t-3)/1.55 var(--font-mono);
+  color: var(--ink);
+/* It does NOT wrap: one line of the file is one line on screen. */
+  white-space: pre;
+  tab-size: 2;
+  overflow: auto;
+  overscroll-behavior: contain;
+  max-height: var(--raw-height, 440px);
+}
+
+/* The focus shows on the whole box and not on the text, which is what */
+.text:focus-visible {
+  outline: 2px solid var(--acc);
+  outline-offset: -2px;
+}

@@ -1,0 +1,62 @@
+import { describe, expect, it, vi, afterEach } from 'vitest'
+import { getDashboardStats, getTop, deleteAllStats, RANGES, RANGE_LABEL } from './dashboard'
+import * as client from './client'
+
+afterEach(() => vi.restoreAllMocks())
+
+const response = (r: unknown) => ({ kind: 'ok' as const, data: { status: 'ok', response: r } })
+
+describe('dashboard', () => {
+  it('the six ranges are the upstream ones, with their literal labels', () => {
+    expect(RANGES).toEqual(['LastHour','LastDay','LastWeek','LastMonth','LastYear','Custom'])
+    expect(RANGE_LABEL.LastHour).toBe('Last Hour')
+    expect(RANGE_LABEL.LastMonth).toBe('Last Month')
+  })
+
+  it('it asks for the range and unwraps response', async () => {
+    const spy = vi.spyOn(client, 'apiRequest').mockResolvedValue(response({ stats: { totalQueries: 7 } }))
+    const r = await getDashboardStats('t', 'LastDay')
+    expect(spy.mock.calls[0][0]).toBe('dashboard/stats/get')
+    expect(spy.mock.calls[0][1]?.body).toEqual({ type: 'LastDay' })
+    expect(r.kind === 'ok' && r.data.stats.totalQueries).toBe(7)
+  })
+
+  it('it only sends start and end when the range is Custom', async () => {
+    const spy = vi.spyOn(client, 'apiRequest').mockResolvedValue(response({}))
+    await getDashboardStats('t', 'LastHour', { start: 'a', end: 'b' })
+    expect(spy.mock.calls[0][1]?.body).toEqual({ type: 'LastHour' })
+    spy.mockClear()
+    await getDashboardStats('t', 'Custom', { start: 'a', end: 'b' })
+    expect(spy.mock.calls[0][1]?.body).toEqual({ type: 'Custom', start: 'a', end: 'b' })
+  })
+
+  /*
+  This test used to ask for `null` "so the screen does not blow up". Not blowing
+  up was the problem: with `null` the Dashboard could not tell a failure apart
+  from a server with no traffic, and drew eleven zeros.
+  */
+  it('it raises the server failure, so the Dashboard can state it', async () => {
+    vi.spyOn(client, 'apiRequest').mockResolvedValue({ kind: 'error', message: 'boom' })
+    expect(await getDashboardStats('t')).toEqual({ kind: 'error', message: 'boom' })
+  })
+
+  it('getTop asks for the list type and the limit', async () => {
+    const spy = vi.spyOn(client, 'apiRequest').mockResolvedValue(
+      response({ topClients: [{ name: '10.0.1.42', hits: 12 }] }),
+    )
+    const r = await getTop('t', 'LastHour', 'TopClients')
+    expect(spy.mock.calls[0][1]?.body).toEqual({ type: 'LastHour', statsType: 'TopClients', limit: '1000' })
+    expect(r[0].name).toBe('10.0.1.42')
+  })
+
+  it('getTop returns an empty list on failure', async () => {
+    vi.spyOn(client, 'apiRequest').mockResolvedValue({ kind: 'error', message: 'x' })
+    expect(await getTop('t', 'LastHour', 'TopDomains')).toEqual([])
+  })
+
+  it('deleteAllStats calls the right endpoint', async () => {
+    const spy = vi.spyOn(client, 'apiRequest').mockResolvedValue({ kind: 'ok', data: {} })
+    await deleteAllStats('t')
+    expect(spy.mock.calls[0][0]).toBe('dashboard/stats/deleteAll')
+  })
+})

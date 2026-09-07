@@ -1,0 +1,47 @@
+# Builds the console and attaches it to the release, because that tarball is
+# what install.sh downloads. Without this there is nothing to install.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - run: npm ci
+
+      # The console goes in front of a DNS server, so a release that fails its
+      # own checks must not exist.
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+
+      - run: npm run build
+
+      # Flat archive: install.sh unpacks it straight into the web root, so the
+      # files have to be at the root of the tarball and not inside dist/.
+      - name: Pack
+        run: |
+          tar -czf technitium-console.tar.gz -C dist .
+          sha256sum technitium-console.tar.gz > technitium-console.tar.gz.sha256
+          echo "Routes emitted: $(find dist -name index.html | wc -l)"
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            technitium-console.tar.gz
+            technitium-console.tar.gz.sha256
+          generate_release_notes: true

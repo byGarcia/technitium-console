@@ -1,0 +1,49 @@
+/* DHCP. Two sub-screens: a table of leases and one of scopes with its editing
+   form, which is the console's second largest form after Settings. The table
+   classes are the same ones Cache, Allowed and Blocked use; the form ones, the
+   same as Settings. */
+
+/*
+The gap under a section title is `--hueco-bloque` throughout the console. Here it
+was taking 38 px instead of 24 because this container is `flex` with `gap`, and
+in flex the gap is ADDED to the child's margin: the header contributed its 24 and
+the container another 14.
+
+It is subtracted, and the subtraction is written once: the container's gap lives
+in `--hueco` and both rules read it from there, so changing it does not throw the
+title out again.
+*/
+.wrap { composes: screen from '../../ui/SectionHeader.module.css'; }
+
+.mono { composes: mono from '../../ui/text.module.css'; }
+.name { font-weight: 550; color: var(--ink); white-space: nowrap; }
+.date { white-space: nowrap; font-family: var(--font-mono); font-size: var(--t-3); }
+/* The count is `ui/count.module.css`'s: see there for why. */
+.total { composes: count2 below from '../../ui/count.module.css'; }
+.kv { composes: kv from '../../ui/kv.module.css'; }
+
+.paragraph { composes: paragraph from '../../ui/text.module.css'; }
+.list { margin: 0 0 var(--s-7); padding-left: var(--s-10); font-size: var(--t-4); color: var(--mute); line-height: 1.6; }
+
+/* ---- Scope form ----
+
+   The block, the row, the area, the alerts and the editable list are
+   `ui/PanelForm.module.css`'s, shared with Settings. */
+
+.bar { composes: bar from '../../ui/PanelForm.module.css'; }
+
+/*
+Three classes the scope form ASKED FOR that were not here, so `styles.ctlLine`,
+`styles.suffix` and `styles.area` were `undefined` and the browser applied
+nothing. Neither typecheck nor the tests could see it —a class that does not
+exist is not a type error, it is an empty string— and it turned up by measuring
+in the browser: the "Days / Hours / Minutes" suffixes of the lease time came out
+at 13 px in the main ink colour instead of at 11.5 and muted.
+
+They are the same three Administration and Zones already declare, composed from
+the same sources: it is exactly the defect this project chases —the same thing
+written in several places— except that here one of the copies was missing.
+*/
+.ctlLine { composes: inline from '../../ui/PanelForm.module.css'; }
+.suffix { composes: trailer from '../../ui/text.module.css'; }
+.area { composes: area from '../../ui/PanelForm.module.css'; }

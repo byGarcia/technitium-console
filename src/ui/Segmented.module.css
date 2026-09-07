@@ -1,0 +1,58 @@
+/*
+The segmented control: pick ONE of a handful of values, with all of them in view.
+
+It lived only on the Dashboard, for the period. The tabs in a zone's options
+dialog did the same thing —pick one of five— but borrowed the PAGINATION BUTTON's
+class, so a tab and a page number looked identical: two meanings with one
+appearance, and any change to the pagination took the tabs down with it.
+*/
+.secs {
+  display: inline-flex;
+  padding: var(--s-1);
+  gap: var(--s-1);
+  background: var(--pan2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-3);
+}
+
+/* Longhands and not the `font:` shorthand: `inherit` is not valid as a component
+   of a shorthand, and with it the whole declaration was dropped. */
+.option {
+  font-family: inherit;
+  font-size: var(--t-4);
+  font-weight: 500;
+  line-height: 1;
+  padding: var(--s-4) var(--s-8);
+  border: 0;
+  border-radius: var(--r-2);
+  background: transparent;
+  color: var(--mute);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.option:hover { color: var(--ink); }
+
+.option[aria-pressed='true'],
+.option[aria-selected='true'] {
+  background: var(--acc);
+  color: var(--on-acc);
+  font-weight: 550;
+}
+
+/*
+It wraps when narrow.
+
+This rule was written —the commit "the console is usable at 390 px" added it— but
+in `screens/dashboard/Dashboard.module.css`, pointing at a class that belongs to
+THIS module. With CSS Modules each one has its own hash, so it never applied: the
+period picker still measured 495 px inside a 390 px window and pushed the
+Dashboard 115 px off to the right. The dead-class detector uncovered it once it
+resolved which module each `styles` belongs to.
+
+It goes here, which is where the class lives and where it serves both places that
+use the control: the Dashboard period and the options dialog's tabs.
+*/
+@media (max-width: 720px) {
+  .secs { flex-wrap: wrap; }
+}

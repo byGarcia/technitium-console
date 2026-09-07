@@ -1,0 +1,107 @@
+/*
+The alert is FILLED, not just tinted at the border. Two treatments coexisted:
+this one, which only painted the border and the text, and Zones' local copy
+(`.nota` + `.notaAviso`), with a background. The result was that the "Note!" in
+"Delete Cluster" weighed less than the same alert inside a zone modal. The filled
+one wins, which is what was drawn and what is seen on the first pass.
+*/
+
+.alert {
+  padding: var(--s-7) var(--s-8);
+  border-radius: var(--r-3);
+  font-size: var(--t-4);
+  line-height: 1.6;
+  border: 1px solid var(--line);
+  background: var(--pan2);
+  color: var(--ink);
+}
+
+.alert b { display: inline; }
+
+/* It measured 22×17: below the 24 target minimum. */
+.close {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 26px; min-height: 26px;
+  float: right;
+  background: none;
+  border: 0;
+  color: inherit;
+  opacity: 0.6;
+  font-size: var(--t-6);
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 0 0 var(--s-5);
+}
+
+.close:hover { opacity: 1; }
+
+/* The tones come from `ui/tones.module.css`, shared with the pill. */
+.success { composes: ok from './tones.module.css'; }
+.info    { composes: info from './tones.module.css'; }
+.warning { composes: warn from './tones.module.css'; }
+.danger  { composes: dan from './tones.module.css'; }
+
+/*
+The `Note!` goes OUTLINED and the rest filled, and that is the only difference in
+treatment phase 2 introduces here.
+
+This file's header says a notice is filled, and that is still true for the three
+that ask for attention. That decision solved something else: that the SAME notice
+weighed differently on two screens. This one separates two DIFFERENT notices on
+one screen, which is the one pilot 3 asked for and the one that does not exist
+today — measured: `notice-info` and `notice-warning` gave the same signature,
+`filled | no-icon | 8px | 15px from the panel`.
+
+Only the `info` steps back, because it is the only one that explains rather than
+warns. The `warning` stays **filled and in `--warn`**: reassigning it to `--dan`
+would have made red mean two things, and `--dan` is reserved for the error, the
+validation and the destructive.
+
+The tone still comes from `tones.module.css`: only the background is removed here,
+so the border and the text are still the shared pair's and no second blue is born.
+*/
+.alert.info { background: transparent; }
+
+/*
+Two classes and not one, and the reason matters more than the rule.
+
+The first version wrote `.info { background: transparent }` and **did nothing**.
+`composes` does not copy declarations: it adds the tone's class to the element, so
+there are two rules of ONE class each —this one and `tones.module.css`'s— with the
+same specificity, and the one the bundle emits later wins. It emitted the tone's:
+
+    ._info_7n07s_40{background:0 0}
+    ._info_n8r8o_11{background:var(--info-bg); …}
+
+With `.alert.info` it is two classes against one and the order stops deciding.
+
+And what really has to be remembered: **the sweep caught this, not the review**.
+It was seen because the `notice-<type>` family now takes the fill in; with the
+previous signature —`borderRadius | inset`— this change would have come out green
+while being a no-op.
+*/
+
+/*
+The icon, aligned with the first line of the text and not with the box: a
+six-hundred-character notice takes five lines, and an icon centred on that box
+floats in the middle of the paragraph.
+*/
+.icon {
+  float: left;
+  margin: 3px var(--s-3) 0 0;
+}
+
+/*
+The air an alert leaves beneath it. It was written across eleven modules under
+three names —`.notice`, `.avisoHueco` and `.alertSlot`— and produced four
+distances: 24 px in Zones and its modals, the lists screens, Administration, the
+Dashboard, DNS Client and Apps; 14 in DHCP, in Logs and on login; and 12 in the
+four account modals, where the alert sat loose and kept the container's `gap`.
+
+The subtraction is the same one the section header does: in a `flex` container
+with `gap`, the child's margin ADDS to the gap, so 24 of margin inside a `gap` of
+14 gives 38. `--hueco` is declared by `.screen` in `SectionHeader.module.css`
+and inherits; outside it does not exist and the fallback is 0, which is exactly
+what is needed.
+*/
+.gap { margin-bottom: calc(var(--gap-block) - var(--gap, 0px)); }

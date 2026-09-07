@@ -1,0 +1,95 @@
+/* Section header */
+.tags { composes: tags from '../../ui/SectionHeader.module.css'; }
+.acts { display:flex; gap: var(--s-4); flex-wrap:wrap; justify-content:flex-end; }
+
+/* Breadcrumbs: back to the list from a zone */
+
+/* Filter bar */
+.flt { display:flex; gap: var(--s-7); align-items:flex-end; flex-wrap:wrap; margin-bottom: var(--gap-block); }
+.filterWide { flex:1; min-width:220px; }
+.filtMedio { width:190px; }
+.fltShort { width:120px; }
+
+/* Count and pagination */
+/* The count is `ui/count.module.css`'s: see there for why. */
+.count { composes: bar above from '../../ui/count.module.css'; }
+.countFoot { margin-top: var(--gap-group); margin-bottom: 0; }
+.mono { composes: mono from '../../ui/text.module.css'; }
+
+/* Tabla */
+.num2 { color:var(--faint); font-family:var(--font-mono); font-variant-numeric:tabular-nums; }
+
+/* A zone's name is a domain: that part does belong here, and it goes on the cell
+   so the button inherits it. */
+.zoneCell { font-family: var(--font-mono); }
+.zoneLink { composes: entityLink from '../../ui/Table.module.css'; }
+
+.ttl { composes: ttl from '../../ui/record.module.css'; }
+
+.kv { composes: kv from '../../ui/kv.module.css'; }
+.val { font:var(--t-4)/1.45 var(--font-mono); color:var(--ink); word-break:break-word; }
+.key { composes: key from '../../ui/record.module.css'; }
+.showIt { composes: showIt from '../../ui/record.module.css'; }
+.meta { composes: meta from '../../ui/record.module.css'; }
+
+/* Dropdown menu for row and header actions */
+
+.paragraph { composes: paragraph from '../../ui/text.module.css'; }
+.output { margin: 0; padding: var(--s-8) var(--s-8); background:var(--field); border:1px solid var(--line); border-radius: var(--r-3); font:var(--t-3)/1.7 var(--font-mono); color:var(--mute); white-space:pre-wrap; word-break:break-all; max-height:320px; overflow:auto; }
+
+/* Modal forms */
+.fields { display:flex; flex-direction:column; gap: var(--s-8); }
+.inline { composes: inline from '../../ui/PanelForm.module.css'; }
+.suffix { composes: trailer from '../../ui/text.module.css'; }
+/* The same row as `ui/Check.module.css`, which is where the minimum height
+   lives: without it, the radios of "Add Zone", "Import" and "Convert" were 19 px. */
+.chk { composes: check from '../../ui/Check.module.css'; }
+/* The same role as the `.help` of Settings, DHCP and Administration: same colour
+   and same line height. With `--faint` it read at 4.64:1 and the others at 5.90:1. */
+.help { font-size: var(--t-3); color:var(--mute); line-height:1.55; }
+.group { border:1px solid var(--line); border-radius: var(--r-3); padding: var(--s-8); display:flex; flex-direction:column; gap: var(--s-7); }
+.groupTitle { font-size: var(--t-2); text-transform:uppercase; letter-spacing:.05em; color:var(--faint); font-weight: 600; }
+.short { width:110px; }
+.medio { width:190px; }
+.area { min-height:110px; resize:vertical; }
+.areaAlta { min-height:180px; resize:vertical; }
+
+/* The permissions matrix's checkbox is 18 px tall. `.golpe` enlarges the target
+   without moving the drawing, just as in Administration's matrix. */
+.chkPerm { composes: golpe from '../../ui/interaction.module.css'; margin: 0 auto; display: block; }
+
+/*
+Stale data: the list is still there, and **you can see it is no longer current**.
+
+It is decision 6 of pilot 2 and rule 3 of phase 1 —"old data must not look like
+new data". The three pieces go together and none is spare:
+
+  · `--dim` over the rows: they are there, they read, and they are not current. It
+    is the same token the Dashboard dims a switched-off series with.
+  · a `--dan` border: the refresh also FAILED, which is different from being old.
+  · and selection disabled, done on the `input` itself: acting in bulk on a list
+    that no longer reflects the server is how the wrong zone gets deleted.
+
+The header is NOT dimmed: the labels and the order are still true.
+stale es el datum, no la tabla.
+*/
+.stale { border-color: var(--dan); }
+.stale tbody { opacity: var(--dim); }
+
+/*
+The selection bar: the count on the left, the verb that acts on it on the right.
+
+It is the count bar's geometry —the same padding and the same muted type— with the
+button at the other end. It is not a `Panel`: a bar with a border and a background
+would read as a region of the screen, and this is a strip between the filter and
+the table.
+*/
+.selection {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-8);
+  padding: var(--s-5) 0;
+  font-size: var(--t-4);
+  color: var(--mute);
+}

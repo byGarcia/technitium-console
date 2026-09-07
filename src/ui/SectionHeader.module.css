@@ -1,0 +1,103 @@
+/*
+Replaces the fourteen copies of `.hrow` / `.zt` / `.tags` / `.acts` that each
+section module had made for itself. Every value comes from `theme/tokens.css`:
+not a single loose px is written here.
+*/
+
+.hrow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--s-11);
+  margin-bottom: var(--gap-block);
+}
+
+.left { min-width: 0; }
+
+/*
+The path. In normal case and at body size: in tight small caps it would read as a
+magazine kicker, which is decoration, and this is navigation.
+*/
+.trail {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  margin-bottom: var(--s-2);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--t-7);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  color: var(--ink);
+  word-break: break-word;
+}
+
+/* When the screen is a detail view, the crumb is also the way back. */
+.ctx {
+  font-family: inherit;
+  font-size: var(--t-4);
+  color: var(--mute);
+  background: none;
+  border: 0;
+  padding: 0;
+}
+
+button.ctx { cursor: pointer; }
+button.ctx:hover { color: var(--acc); }
+
+.sep { color: var(--faint); flex: none; }
+
+.tags {
+  display: flex;
+  gap: var(--s-3);
+  margin-top: var(--s-5);
+  flex-wrap: wrap;
+}
+
+.acts {
+  display: flex;
+  gap: var(--s-4);
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  /* It aligns with the title, not with the kicker: otherwise the action bar of a
+     section with sub-tabs sits higher than that of one without. */
+  padding-top: var(--s-1);
+}
+
+/* When narrow the title and the action bar stack: otherwise the title column
+   narrows until it breaks the section name letter by letter. */
+@media (max-width: 720px) {
+  .hrow {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--s-8);
+  }
+
+  .acts {
+    justify-content: flex-start;
+    padding-top: 0;
+  }
+}
+
+/*
+The column of a screen whose header sits inside a `flex` container with `gap`. It
+lives here and not in the screens because what it corrects is this header.
+
+The gap under the title is `--hueco-bloque` across the whole console. On these
+screens it came to 38 px instead of 24 because in flex the gap ADDS to the child's
+margin: the header contributed its 24 and the container another 14. It is
+subtracted, and the subtraction is written ONCE: the container's gap lives in
+`--hueco` and both rules read it from there, so changing it does not knock the
+title out of line again.
+*/
+.screen {
+  --gap: var(--s-9);
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+
+/* The section header, which is always the first child. */
+.screen > :first-child { margin-bottom: calc(var(--gap-block) - var(--gap)); }

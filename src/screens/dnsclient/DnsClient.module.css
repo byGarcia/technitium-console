@@ -1,0 +1,39 @@
+/*
+The query bar. `align-items: flex-end` is what lines the buttons up with the
+bottom edge of the fields; before it was achieved with a `marginBottom: 1` put by
+hand on each button, which is the symptom of a row that does not align.
+*/
+.flt {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--s-8);
+  padding: var(--s-9);
+  background: var(--pan);
+  border: 1px solid var(--line);
+  border-radius: var(--r-4);
+  box-shadow: var(--e-1), var(--edge);
+  margin-bottom: var(--gap-block);
+  flex-wrap: wrap;
+}
+
+
+.width { flex: 1 1 240px; min-width: 240px; }
+.medio { flex: 1 1 200px; min-width: 200px; }
+.short { width: 120px; }
+.ecs { width: 176px; }
+
+/* The checkbox lines up with the fields' BASELINE, not with their label: hence
+   it carries the field's height and not an invented margin. */
+/* `.chk` went in phase 2: a third name for the settings checkbox, and the only
+   place in the console where it measured 34 px high. It uses `ui/Check`. */
+.panel { margin-bottom: var(--s-9); }
+
+.meta { composes: annotationQuiet from '../../ui/text.module.css'; }
+/*
+"Raw Responses (N)": the second panel of upstream's accordion, collapsed. Each
+browser draws its own `<details>` triangle, so it is replaced with the icon set's
+chevron —the same treatment as in Apps.
+*/
+.raw { margin-top: var(--s-8); border-top: 1px solid var(--line); padding-top: var(--s-8); }
+.raw > * + * { margin-top: var(--s-7); }
+

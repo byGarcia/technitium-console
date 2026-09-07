@@ -1,0 +1,35 @@
+/*
+The sub-navigation bar. An underline and not a filled pill, and the difference is
+the same one `SectionIndex` makes: `Segmented` fills with amber because there you
+have chosen a value and the others have stopped applying. Here the others are
+still there — they are other screens of the same section — so the active one is
+marked with an edge and the rest read as ordinary links.
+*/
+.bar {
+  display: flex;
+  gap: var(--s-8);
+  align-items: stretch;
+  border-bottom: 1px solid var(--line2);
+  margin-bottom: var(--gap-block);
+  /* The strip scrolls rather than wrapping: nine panes on two lines turn a bar
+     into a block, and the second line reads as a different thing. */
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+
+.tab {
+  flex: 0 0 auto;
+  padding: var(--s-6) var(--s-2) var(--s-6);
+  color: var(--mute);
+  text-decoration: none;
+  font-size: var(--t-4);
+  /* The edge is ALWAYS there, transparent when it does not apply: painting it
+     only on the active one moves every tab 2 px each time it changes. */
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  white-space: nowrap;
+}
+
+.tab:hover { color: var(--ink); }
+.tab:focus-visible { outline: none; box-shadow: var(--halo-foco); border-radius: var(--r-2); }
+.tab[aria-current='page'] { color: var(--acc); border-bottom-color: var(--acc); font-weight: 600; }

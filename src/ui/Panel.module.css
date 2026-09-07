@@ -1,0 +1,66 @@
+/*
+The panel: the bordered box where a piece of screen lives.
+
+It was defined SEVEN times —`.panel` in Dashboard, DNS Client, Logs and About;
+`.block` in Settings, DHCP and Administration— and no two were alike:
+
+  · shadow yes in Dashboard, About and Settings; no in Logs, DNS Client, DHCP and Admin
+  · header background yes in Dashboard and Settings; no in the other five
+  · and TWO title typographies for the same object: 12.5 px in sentence case for
+    some, 10.5 px in small caps for others
+
+The values are not chosen from scratch: they are the table's
+(`ui/Table.module.css`), which is the most-seen surface in this console. That way
+a panel and a table are the same object —same border, same shadow, same header on
+the raised step— instead of two similar things.
+*/
+.panel {
+  border: 1px solid var(--line);
+  border-radius: var(--r-4);
+  background: var(--pan);
+  box-shadow: var(--e-1), var(--edge);
+  overflow: hidden;
+  min-width: 0;
+}
+
+/*
+The header sits on the raised step, just like the table's `thead`: it separates
+the label from the content without spending another rule line.
+
+It is `flex` because many of them carry an action on the right —"More",
+"Blocking"— and the ones that do not never notice.
+*/
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-7);
+  padding: var(--s-6) var(--s-9);
+  border-bottom: 1px solid var(--line);
+  background: var(--pan2);
+}
+
+.title {
+  composes: smallCaps from './label.module.css';
+  margin: 0;
+}
+
+/*
+And by descendant, for the screens whose `.ph` COMPOSES this header instead of
+using the component: their `h2` carries no class, so there is nowhere to compose
+onto. The values are the same tokens, which is what stops them drifting apart.
+*/
+.header h2,
+.header h3 {
+  margin: 0;
+  font-size: var(--text-size);
+  font-weight: var(--text-weight);
+  letter-spacing: var(--text-tracking);
+  text-transform: uppercase;
+  color: var(--mute);
+}
+
+.body { padding: var(--s-9); }
+
+/* A panel with no header needs to recover the air the header used to give it. */
+.noHeader { padding-top: var(--s-9); }

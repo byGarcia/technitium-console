@@ -1,0 +1,117 @@
+/* The veil and the content go on the same layer and order themselves by DOM
+   order. Without this declaration the sticky header painted over them. */
+.overlay { position: fixed; inset: 0; z-index: var(--layer-dialog); background: rgba(5, 7, 10, 0.72); }
+/*
+The BODY scrolls, not the whole dialog.
+
+`overflow: auto` used to be here, on the whole box, and that had two consequences
+you only see with a tall dialog and a short window —measured with "Restore
+Settings", 880 px of content in a 700 px window—:
+
+  · the footer sat at `y=858`, i.e. **off screen**: you had to discover you could
+    scroll in order to find the action buttons;
+  · and on scrolling, the title went to `y=-196`, so you stopped knowing which
+    dialog you were in exactly when you had gone furthest from its start.
+
+With the body as the only scrolling area, the title and the actions never move.
+The `min-height: 0` is not decoration: without it a flex child refuses to shrink
+below its content and the scrollbar never appears.
+*/
+/*
+It is centred with `inset: 0` and `margin: auto`, and NOT with `transform`.
+
+A `transform` creates a containing block for its `position: fixed` descendants,
+so `ui/Select`'s list and `ui/Menu`'s —which position themselves fixed, measuring
+their trigger against the viewport— appeared shifted by exactly the centring
+offset. Measured in "User Details": the trigger ended at `x=489 y=594` and the
+list came out at `x=770 y=308`, i.e. **281 px to the right and 287 above**. And
+since the pointer never reached it, moving the mouse closed it: it looked like it
+"disappeared on hover".
+
+Centring with auto margins gives the same result without creating that block.
+*/
+.content {
+  position: fixed; z-index: var(--layer-dialog);
+  inset: 0; margin: auto; height: fit-content;
+  display: flex; flex-direction: column;
+  max-height: calc(100vh - 64px); overflow: hidden;
+  background: var(--pan); border: 1px solid var(--line); border-radius: var(--r-4);
+  box-shadow: var(--e-3), var(--edge);
+}
+/*
+The ones with a table inside. The comp gave 760 px, but none of its modals had
+the DNSSEC keys table —seven columns— or the permissions one: at 760 px both go
+back to horizontal scrolling, which is exactly what this width avoids. It stays
+at 880 and is NOT used for text: a prose dialog at 880 px gives 130-character
+lines.
+*/
+/*
+Four sizes, and the content decides —not taste, not convenience.
+
+They all measured 560 px. And it turns out **upstream does not have one size: it
+has five**, declared by hand modal by modal (`index.html`, `style="width: …"`):
+
+    940 px (4)   My Profile · View DS Info · DNSSEC Properties · User Details
+    800 px (1)   DNS App Store
+    780 px (13)  Add Zone · Add-Edit Record · Zone Options · Sign Zone ·
+                 App Config · Edit Permissions · Create API Token · 4 from Cluster…
+    750 px (1)   Configure 2FA
+    600 px (21)  the rest
+
+So by flattening it to two widths we lost a decision upstream had actually made,
+and it showed: "User Details" has a sessions table whose columns ask for **1395
+px** —measured by setting them to `max-content`— and it lived in 560.
+
+The figures are not upstream's because our typography and our spacing are tighter
+—hence the table width being 880 and not 940; see above— but the steps are theirs.
+`compact` is the only one upstream does not have, and for a reason: its
+confirmations are the browser's `confirm()`.
+*/
+.compact { width: min(440px, calc(100vw - 32px)); }
+.form { width: min(560px, calc(100vw - 32px)); }
+.medium { width: min(720px, calc(100vw - 32px)); }
+.wide { width: min(880px, calc(100vw - 32px)); }
+.head {
+  flex: none;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: var(--s-9) var(--s-10); border-bottom: 1px solid var(--line);
+  background: var(--pan2);
+}
+.title { margin: 0; font-size: var(--t-5); font-weight: 550; color: var(--ink); }
+/* The ✕ measured 28×22 and the minimum target is 24. It is the one on all 48 dialogs. */
+.close {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 28px; min-height: 28px;
+  background: none; border: 0; color: var(--faint); font-size: var(--t-6); cursor: pointer;
+}
+.body {
+  /* The body's gap, declared under a name so that whoever brings their own
+     bottom margin —the alert— can subtract it: in flex the child's margin ADDS
+     to the `gap`, and without the subtraction the alert sat 36 px from the form
+     inside a dialog and 24 on a page. Same mechanism as in
+     `SectionHeader.module.css`. */
+  --gap: var(--s-8);
+  padding: var(--s-3) var(--s-10) var(--s-9);
+  display: flex; flex-direction: column; gap: var(--gap);
+  overflow-y: auto; min-height: 0;
+}
+
+/*
+And its children do NOT shrink.
+
+Once the scroll moved to the body, it stopped growing with its content and started
+dividing a fixed height among its children. A child with its own `overflow` —a
+table wrapper— has `min-height: 0` by rule, so the division can take all of it:
+the "User Details" sessions table measured 814×298 and its container **831×2**.
+You could see the "Active Sessions" label, one line and "Total Sessions: 3", and
+not a single row.
+
+In a scrolling column, each child is worth what it measures. That is the price of
+having moved the scroll, and it goes here so the next person does not pay it.
+*/
+.body > * { flex-shrink: 0; }
+.foot {
+  flex: none;
+  display: flex; justify-content: flex-end; gap: var(--s-5);
+  padding: var(--s-8) var(--s-10); border-top: 1px solid var(--line); background: var(--pan2);
+}

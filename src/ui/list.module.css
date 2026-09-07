@@ -1,0 +1,37 @@
+/*
+The row of a selectable side list: the zones and lists tree, and the Logs files.
+It is clickable, it highlights on hover, and one of them is the one being viewed.
+
+It was written twice. The STATES matched byte for byte —the same `--hover-fuerte`
+on hover, the same `--pan2` and `--acc` on the current one— so they were just two
+places to touch the same thing. The density did NOT match, and that one is a real
+decision: the tree is a hierarchy of many nodes and reads better tight; the file
+list is four entries. It splits into `.row` and `.compact`, which is naming the
+difference instead of leaving it hidden in two paddings.
+*/
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--s-5);
+  width: 100%;
+  padding: var(--s-5) var(--s-7);
+  border: 0;
+  border-radius: var(--r-2);
+  background: transparent;
+  color: var(--mute);
+  line-height: 1.3;
+  font-size: var(--t-4);
+  cursor: pointer;
+  text-align: left;
+}
+
+/* The tree: same row, less air, because there are many and they nest. */
+.compact {
+  composes: row;
+  gap: var(--s-4);
+  padding: var(--s-3) var(--s-4);
+}
+
+.row:hover { background: var(--hover-fuerte); color: var(--ink); }
+.row[aria-current='true'] { background: var(--pan2); color: var(--acc); font-weight: 550; }

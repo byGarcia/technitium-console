@@ -1,0 +1,36 @@
+/*
+The consequence block: the `Force …` box of the four Cluster dialogs.
+
+It is not a form row, and that distinction is the whole point. A `Field` row says
+"this parameter of the action"; these four boxes do not parameterise the action,
+they change what it MEANS. Without the box, `Remove Node` asks the other node to
+leave and waits for it; with it, the node is deleted whether it answers or not.
+Drawn as one more row, the two are indistinguishable at a glance, and this is the
+only screen in the console where an action can leave the system split in two.
+
+So it goes at the end of the body, in a box of its own, and when the box is ticked
+the box ARMS: a `--dan` rule down its side and the fill that goes with it. The
+verb in the footer does not change, because upstream does not change it and a
+design cannot invent a second verb.
+
+There is no second sentence either. Upstream writes only the half that describes
+ticking the box —"Enabling this option will cause…"— and says nothing about not
+ticking it. Writing that half would be inventing product copy, so the contrast
+between forcing and not forcing lives in the round's prose, not on the screen.
+What DOES stay on screen is upstream's own `Note!`, which already says what is
+left to do by hand; it sits after the block, where this console puts every `Note!`.
+*/
+.force {
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--line);
+  border-radius: var(--r-3);
+  padding: var(--s-6) var(--s-8);
+  background: var(--pan2);
+  transition: border-color var(--t-fast), background var(--t-fast);
+}
+
+.force[data-armed='true'] {
+  border-color: var(--dan);
+  border-left-color: var(--dan);
+  background: var(--dan-fill);
+}
