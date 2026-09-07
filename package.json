@@ -1,7 +1,7 @@
 {
   "name": "technitium-console",
   "private": true,
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "An alternative administration console for Technitium DNS Server",
   "license": "GPL-3.0-or-later",
   "type": "module",

@@ -4,7 +4,14 @@ Notable changes, newest first. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html) once there is more than one.
 
-## Unreleased
+## 1.0.0 — 2026-09-07
+
+First public release. Feature-complete against Technitium DNS Server v15.4 and verified against it:
+twelve sections, thirty-two real URLs, forty-three dialogs checked one by one, every endpoint the
+stock console calls, and 1,121 tests. `install.sh` puts it in place and takes it out again against
+a twenty-one-clause contract.
+
+What follows is what changed in the run-up to it, for whoever wants to know what was still moving.
 
 ### Added
 
