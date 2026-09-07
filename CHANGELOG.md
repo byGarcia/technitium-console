@@ -4,7 +4,7 @@ Notable changes, newest first. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html) once there is more than one.
 
-## 1.0.0 — 2026-09-07
+## [1.0.0](https://github.com/byGarcia/technitium-console/releases/tag/v1.0.0) — 2026-09-07
 
 First public release. Feature-complete against Technitium DNS Server v15.4 and verified against it:
 twelve sections, thirty-two real URLs, forty-three dialogs checked one by one, every endpoint the
