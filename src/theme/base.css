@@ -1,0 +1,284 @@
+/*
+The console's typography.
+
+It was the operating system's, and that is the underlying reason it read as
+correct but anonymous: the same letterforms as anything else, different on every
+machine. The server's CSP is `default-src 'self'` with no `font-src`
+(DnsWebService.cs:1969-1974), so a CDN is ruled out and the font has to travel
+inside `www/`. They go in `public/fonts/`, with their licence beside them.
+
+**Archivo** for the text and **IBM Plex Mono** for the data, 65 KB across the
+three files. Inter and Geist were ruled out on purpose: both are excellent and both
+are everywhere —Inter is NetBird's, Geist is Vercel's— so they would have been
+swapping one borrowed typeface for another.
+
+The monospace is not decoration: domains, addresses, serials and TTLs are half of
+what this console shows, and there what matters is that the figures are not
+confused with one another. Plex Mono gives a slashed zero, a one with a base and an
+unmistakable lowercase L.
+*/
+@font-face {
+  font-family: 'Archivo';
+  src: url('../fonts/archivo-latin.woff2') format('woff2-variations');
+  font-weight: 300 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Plex Mono';
+  src: url('../fonts/plex-mono-400-latin.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Plex Mono';
+  src: url('../fonts/plex-mono-600-latin.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --font-ui: 'Archivo', ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: 'Plex Mono', ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root { height: 100%; }
+
+/*
+A `<p>` with no reset keeps the browser's `margin: 1em 0`, which at 11.5 px of text
+is 11.5 px: a gap that is not on the spacing scale and that showed up in all four
+body paragraphs. The gap is set by whoever composes, not by the browser.
+*/
+p { margin: 0; }
+/* Two consecutive paragraphs do need separating —there are some in Blocking and
+   in About— but with the scale, not with the browser's em. */
+p + p { margin-top: var(--s-7); }
+
+/*
+The body runs at 400 with slightly open tracking. It used to run at weights of 650
+and 700 almost everywhere, and that —more than anything else— is what made the
+console read as dense and utilitarian instead of calm. Hierarchy comes from size
+and colour, which is what is read out of the corner of the eye; weight is reserved
+for whatever really rules its own line.
+*/
+body {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  line-height: 1.55;
+  letter-spacing: 0.005em;
+  background: var(--bg);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+button, input, select, textarea { font-family: inherit; }
+
+/*
+The surfaces nobody draws. Text selection, the caret, the scrollbar and the focus
+ring come with the browser's values, which belong to no design system: they are
+what gives away that an interface was assembled and not built.
+*/
+
+::selection { background: rgba(245, 165, 36, 0.28); color: var(--ink); }
+
+:root {
+  accent-color: var(--acc);
+  caret-color: var(--acc);
+  color-scheme: dark;
+  scrollbar-color: var(--line) transparent;
+  scrollbar-width: thin;
+}
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+
+::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  border-radius: var(--r-full);
+}
+
+::-webkit-scrollbar-thumb:hover { background: #2f3846; background-clip: padding-box; }
+::-webkit-scrollbar-corner { background: transparent; }
+
+/*
+`select` and the `input[type=file]` button were painted by the system: white boxes
+in a dark console, and in the "Add Zone" modal three controls with three different
+looks lived side by side. They are given the same look as `ui/Field` here, because
+they are native elements and go through no component.
+
+This is a COPY of `ui/Field.module.css`, and it cannot be avoided: `composes` only
+works between module classes and here the selector is an element one. What can be
+done is stopping it drifting apart, and it already had: `input[type=file]` was
+missing the hover rule, so it was the only field in the console that did not
+respond to the pointer, and its disabled opacity was 0.5 against the 0.45 of every
+other one. If `ui/Field`'s box is touched, this one has to be touched too.
+*/
+select,
+input[type='file'] {
+  min-height: var(--field-height);
+  font-size: var(--t-4);
+  padding: var(--s-5) var(--s-7);
+  border: 1px solid var(--line);
+  border-radius: var(--r-3);
+  background-color: var(--field);
+  color: var(--ink);
+  box-shadow: var(--sunken);
+  min-width: 0;
+  transition: border-color var(--t-fast), box-shadow var(--t-fast);
+}
+
+select:focus-visible,
+input[type='file']:focus-visible {
+  outline: none;
+  border-color: var(--acc);
+  box-shadow: var(--sunken), var(--halo-foco);
+}
+
+/*
+The dropdown carried the operating system's arrow, which belongs to another design
+system. Ours is drawn instead: the same chevron as the rest of the console, as an
+inline SVG background because the CSP does not allow bringing anything in.
+*/
+select {
+  appearance: none;
+  padding-right: var(--s-11);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238b95a7' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--s-6) center;
+  cursor: pointer;
+}
+
+select:hover:not(:disabled),
+input[type='file']:hover:not(:disabled) { border-color: #3a465b; }
+
+select:disabled,
+input[type='file']:disabled { opacity: 0.45; cursor: default; }
+
+input[type='file']::file-selector-button {
+  font: inherit;
+  margin-right: var(--s-6);
+  padding: var(--s-2) var(--s-6);
+  border: 1px solid var(--line);
+  border-radius: var(--r-1);
+  background: var(--pan2);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+input[type='file']::file-selector-button:hover { border-color: var(--acc); }
+
+/*
+The checkbox and the radio, drawn here and not by the operating system. They were
+the browser's with `accent-color`, meaning the console changed appearance depending
+on which machine you opened it on. There are 51 of them: they are done in one
+place, on the native element, so they remain real checkboxes for the keyboard and
+for whoever reads the page with a screen reader.
+*/
+
+input[type='checkbox'],
+input[type='radio'] {
+  appearance: none;
+  flex: none;
+  width: var(--ctrl);
+  height: var(--ctrl);
+  margin: 0;
+  border: 1px solid #3a465b;
+  background-color: var(--field);
+  box-shadow: var(--sunken);
+  cursor: pointer;
+  transition:
+    background-color var(--t-fast),
+    border-color var(--t-fast),
+    box-shadow var(--t-fast),
+    transform var(--t-fast);
+}
+
+/* On press, the control sinks a hair. It is the only movement it makes, and it is
+   what says the click registered before the data arrives. */
+input[type='checkbox']:active:not(:disabled),
+input[type='radio']:active:not(:disabled) { transform: scale(0.92); }
+
+input[type='checkbox'] { border-radius: var(--r-1); }
+input[type='radio'] { border-radius: var(--r-full); }
+
+input[type='checkbox']:hover:not(:disabled),
+input[type='radio']:hover:not(:disabled) {
+  border-color: var(--acc);
+  box-shadow: var(--sunken), 0 0 0 3px rgba(245, 165, 36, 0.12);
+}
+
+input[type='checkbox']:checked,
+input[type='radio']:checked {
+  background-color: var(--acc);
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0) 60%);
+  border-color: var(--acc);
+  box-shadow: var(--edge-fuerte);
+}
+
+/* The tick is drawn, not written with a character. */
+input[type='checkbox']:checked {
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231a1205' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m20 6-11 11-5-5'/%3E%3C/svg%3E"),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0) 60%);
+  background-size: 13px 13px, 100% 100%;
+  background-position: center, center;
+  background-repeat: no-repeat, no-repeat;
+}
+
+input[type='radio']:checked {
+  background-image:
+    radial-gradient(circle at center, var(--on-acc) 0 3.5px, transparent 4px),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0) 60%);
+}
+
+input[type='checkbox']:indeterminate {
+  background-color: var(--acc);
+  border-color: var(--acc);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231a1205' stroke-width='3.5' stroke-linecap='round'%3E%3Cpath d='M6 12h12'/%3E%3C/svg%3E");
+  background-size: 12px 12px;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+input[type='checkbox']:disabled,
+input[type='radio']:disabled { opacity: 0.45; cursor: default; box-shadow: none; }
+
+/*
+The fields that do not go through `ui/Field` —the Settings textareas above all—
+get the same hole and the same lift on focus. Otherwise two ideas of what a field
+is would live side by side on the same screen.
+*/
+input[type='text'],
+input[type='password'],
+input[type='number'],
+input[type='email'],
+input[type='search'],
+textarea {
+  box-shadow: var(--sunken);
+  transition: border-color var(--t-fast), box-shadow var(--t-fast);
+}
+
+input[type='text']:focus,
+input[type='password']:focus,
+input[type='number']:focus,
+input[type='email']:focus,
+input[type='search']:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--acc);
+  box-shadow: var(--sunken), var(--halo-foco);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  input[type='checkbox'],
+  input[type='radio'] { transition: none; }
+}

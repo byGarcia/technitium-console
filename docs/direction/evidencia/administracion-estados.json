@@ -1,0 +1,896 @@
+{
+  "_": "La matriz del paso 6 del bucle: seis sub-pantallas x cuatro anchos x cuatro estados = 96 celdas. No es un vistazo: cada celda registra si la pagina se desborda en horizontal, que alto tiene `main`, si el indicador de carga esta puesto y si hay un aviso de fallo.",
+  "cuando": "2026-09-04",
+  "bundle": "index-ddKTTGsL.css / index-Dctpo8kj.js, el build en disco",
+  "anchos": [
+    1440,
+    1024,
+    768,
+    390
+  ],
+  "estados": [
+    "populated",
+    "empty",
+    "error",
+    "loading"
+  ],
+  "como_se_forzo_cada_estado": {
+    "populated": "El arnes tal cual, con el cluster de dos nodos levantado.",
+    "empty": "`page.route` sobre los seis endpoints de lista, devolviendo la respuesta vacia de cada uno.",
+    "error": "Los mismos seis, con `status: error` en el sobre.",
+    "loading": "Los mismos seis, retenidos nueve segundos; se mide a los 700 ms."
+  },
+  "UN_BARRIDO_SALIO_VOID_Y_SE_DICE": "El primer intento de `error` y `loading` intercepto **todo** `/api/**`, incluida la comprobacion de sesion, asi que la aplicacion se fue al login y las 48 celdas midieron la pantalla de acceso. Salio en el dato —`text` decia «Technitium DNS Server Username Password Login»— y no en una impresion. Se repitio acotando la intercepcion a los seis endpoints de lista. Las 48 celdas de este fichero para `error` y `loading` son las del segundo barrido.",
+  "resultado": {
+    "celdas": 96,
+    "con_desbordamiento_horizontal": [],
+    "loading_sin_indicador": [],
+    "error_sin_aviso": []
+  },
+  "celdas": {
+    "sessions|populated|1440": {
+      "docW": 1440,
+      "win": 1440,
+      "overflow": false,
+      "h": 823,
+      "loading": false,
+      "danger": false,
+      "text": "AdministrationSessionsCreate Tokendev.cluster.test (primary)UsernameSessionLast SeenRemote AddressUser Agentadmin[1a826f02fbdc35f7](current)"
+    },
+    "sessions|empty|1440": {
+      "docW": 1440,
+      "win": 1440,
+      "overflow": false,
+      "h": 823,
+      "loading": false,
+      "danger": false,
+      "text": "AdministrationSessionsCreate TokenUsernameSessionLast SeenRemote AddressUser AgentNo Session FoundTotal Sessions: 0"
+    },
+    "users|populated|1440": {
+      "docW": 1440,
+      "win": 1440,
+      "overflow": false,
+      "h": 823,
+      "loading": false,
+      "danger": false,
+      "text": "AdministrationUsersAdd UserUsernameDisplay NameType2FA StatusStatusRecent LoginPrevious LoginadminAdministratorLocalDisabledEnabled2026-09-0"
+    },
+    "users|empty|1440": {
+      "docW": 1440,
+      "win": 1440,
+      "overflow": false,
+      "h": 823,
+      "loading": false,
+      "danger": false,
+      "text": "AdministrationUsersAdd UserUsernameDisplay NameType2FA StatusStatusRecent LoginPrevious LoginNo User FoundTotal Users: 0"
+    },
+    "groups|populated|1440": {
+      "docW": 1440,
+      "win": 1440,
+      "overflow": false,
+      "h": 823,
+      "loading": false,
+      "danger": false,
+      "text": "AdministrationGroupsAdd GroupNameDescriptionAdministratorsSuper administratorsDHCP AdministratorsDHCP service administratorsDNS Administrato"
+    },
+    "groups|empty|1440": {
+      "docW": 1440,
+      "win": 1440,
+      "overflow": false,
+      "h": 823,
+      "loading": false,
+      "danger": false,
+      "text": "AdministrationGroupsAdd GroupNameDescriptionNo Group FoundTotal Groups: 0"
+    },
+    "permissions|populated|1440": {
+      "docW": 1430,
+      "win": 1440,
+      "overflow": false,
+      "h": 2787,
+      "loading": false,
+      "danger": false,
+      "text": "AdministrationPermissionsPermissionsDashboardZonesCacheAllowedBlockedAppsDnsClientSettingsDhcpServerAdministrationLogsGroup PermissionsAdmin"
+    },
+    "permissions|empty|1440": {
+      "docW": 1440,
+      "win": 1440,
+      "overflow": false,
+      "h": 823,
+      "loading": false,
+      "danger": false,
+      "text": "AdministrationPermissionsTotal Sections: 0"
+    },
+    "sso|populated|1440": {
+      "docW": 1430,
+      "win": 1440,
+      "overflow": false,
+      "h": 2270,
+      "loading": false,
+      "danger": false,
+      "text": "AdministrationSingle Sign-On (SSO)Single Sign-On (SSO)5Warning! All URLs configured above must use https URL scheme for production environme"
+    },
+    "sso|empty|1440": {
+      "docW": 1430,
+      "win": 1440,
+      "overflow": false,
+      "h": 2132,
+      "loading": false,
+      "danger": false,
+      "text": "AdministrationSingle Sign-On (SSO)Single Sign-On (SSO)5Warning! All URLs configured above must use https URL scheme for production environme"
+    },
+    "cluster|populated|1440": {
+      "docW": 1440,
+      "win": 1440,
+      "overflow": false,
+      "h": 823,
+      "loading": false,
+      "danger": false,
+      "text": "AdministrationClusterPrimaryOptionsDelete Clusterdev.cluster.test (primary)Node NameIP AddressURLTypeStateUp SinceLast SeenLast Synceddev.cl"
+    },
+    "cluster|empty|1440": {
+      "docW": 1440,
+      "win": 1440,
+      "overflow": false,
+      "h": 823,
+      "loading": false,
+      "danger": false,
+      "text": "AdministrationClusterCluster Not InitializedThis server is not part of a cluster. Create one, or join an existing cluster.New ClusterJoin Cl"
+    },
+    "sessions|populated|1024": {
+      "docW": 1024,
+      "win": 1024,
+      "overflow": false,
+      "h": 823,
+      "loading": false,
+      "danger": false,
+      "text": "AdministrationSessionsCreate Tokendev.cluster.test (primary)UsernameSessionLast SeenRemote AddressUser Agentadmin[1a826f02fbdc35f7](current)"
+    },
+    "sessions|empty|1024": {
+      "docW": 1024,
+      "win": 1024,
+      "overflow": false,
+      "h": 823,
+      "loading": false,
+      "danger": false,
+      "text": "AdministrationSessionsCreate TokenUsernameSessionLast SeenRemote AddressUser AgentNo Session FoundTotal Sessions: 0"
+    },
+    "users|populated|1024": {
+      "docW": 1024,
+      "win": 1024,
+      "overflow": false,
+      "h": 823,
+      "loading": false,
+      "danger": false,
+      "text": "AdministrationUsersAdd UserUsernameDisplay NameType2FA StatusStatusRecent LoginPrevious LoginadminAdministratorLocalDisabledEnabled2026-09-0"
+    },
+    "users|empty|1024": {
+      "docW": 1024,
+      "win": 1024,
+      "overflow": false,
+      "h": 823,
+      "loading": false,
+      "danger": false,
+      "text": "AdministrationUsersAdd UserUsernameDisplay NameType2FA StatusStatusRecent LoginPrevious LoginNo User FoundTotal Users: 0"
+    },
+    "groups|populated|1024": {
+      "docW": 1024,
+      "win": 1024,
+      "overflow": false,
+      "h": 823,
+      "loading": false,
+      "danger": false,
+      "text": "AdministrationGroupsAdd GroupNameDescriptionAdministratorsSuper administratorsDHCP AdministratorsDHCP service administratorsDNS Administrato"
+    },
+    "groups|empty|1024": {
+      "docW": 1024,
+      "win": 1024,
+      "overflow": false,
+      "h": 823,
+      "loading": false,
+      "danger": false,
+      "text": "AdministrationGroupsAdd GroupNameDescriptionNo Group FoundTotal Groups: 0"
+    },
+    "permissions|populated|1024": {
+      "docW": 1014,
+      "win": 1024,
+      "overflow": false,
+      "h": 3310,
+      "loading": false,
+      "danger": false,
+      "text": "AdministrationPermissionsPermissionsDashboardZonesCacheAllowedBlockedAppsDnsClientSettingsDhcpServerAdministrationLogsGroup PermissionsAdmin"
+    },
+    "permissions|empty|1024": {
+      "docW": 1024,
+      "win": 1024,
+      "overflow": false,
+      "h": 823,
+      "loading": false,
+      "danger": false,
+      "text": "AdministrationPermissionsTotal Sections: 0"
+    },
+    "sso|populated|1024": {
+      "docW": 1014,
+      "win": 1024,
+      "overflow": false,
+      "h": 2779,
+      "loading": false,
+      "danger": false,
+      "text": "AdministrationSingle Sign-On (SSO)Single Sign-On (SSO)5Warning! All URLs configured above must use https URL scheme for production environme"
+    },
+    "sso|empty|1024": {
+      "docW": 1014,
+      "win": 1024,
+      "overflow": false,
+      "h": 2641,
+      "loading": false,
+      "danger": false,
+      "text": "AdministrationSingle Sign-On (SSO)Single Sign-On (SSO)5Warning! All URLs configured above must use https URL scheme for production environme"
+    },
+    "cluster|populated|1024": {
+      "docW": 1024,
+      "win": 1024,
+      "overflow": false,
+      "h": 823,
+      "loading": false,
+      "danger": false,
+      "text": "AdministrationClusterPrimaryOptionsDelete Clusterdev.cluster.test (primary)Node NameIP AddressURLTypeStateUp SinceLast SeenLast Synceddev.cl"
+    },
+    "cluster|empty|1024": {
+      "docW": 1024,
+      "win": 1024,
+      "overflow": false,
+      "h": 823,
+      "loading": false,
+      "danger": false,
+      "text": "AdministrationClusterCluster Not InitializedThis server is not part of a cluster. Create one, or join an existing cluster.New ClusterJoin Cl"
+    },
+    "sessions|populated|768": {
+      "docW": 768,
+      "win": 768,
+      "overflow": false,
+      "h": 771,
+      "loading": false,
+      "danger": false,
+      "text": "AdministrationSessionsCreate Tokendev.cluster.test (primary)UsernameSessionLast SeenRemote AddressUser Agentadmin[1a826f02fbdc35f7](current)"
+    },
+    "sessions|empty|768": {
+      "docW": 768,
+      "win": 768,
+      "overflow": false,
+      "h": 771,
+      "loading": false,
+      "danger": false,
+      "text": "AdministrationSessionsCreate TokenUsernameSessionLast SeenRemote AddressUser AgentNo Session FoundTotal Sessions: 0"
+    },
+    "users|populated|768": {
+      "docW": 768,
+      "win": 768,
+      "overflow": false,
+      "h": 771,
+      "loading": false,
+      "danger": false,
+      "text": "AdministrationUsersAdd UserUsernameDisplay NameType2FA StatusStatusRecent LoginPrevious LoginadminAdministratorLocalDisabledEnabled2026-09-0"
+    },
+    "users|empty|768": {
+      "docW": 768,
+      "win": 768,
+      "overflow": false,
+      "h": 771,
+      "loading": false,
+      "danger": false,
+      "text": "AdministrationUsersAdd UserUsernameDisplay NameType2FA StatusStatusRecent LoginPrevious LoginNo User FoundTotal Users: 0"
+    },
+    "groups|populated|768": {
+      "docW": 768,
+      "win": 768,
+      "overflow": false,
+      "h": 771,
+      "loading": false,
+      "danger": false,
+      "text": "AdministrationGroupsAdd GroupNameDescriptionAdministratorsSuper administratorsDHCP AdministratorsDHCP service administratorsDNS Administrato"
+    },
+    "groups|empty|768": {
+      "docW": 768,
+      "win": 768,
+      "overflow": false,
+      "h": 771,
+      "loading": false,
+      "danger": false,
+      "text": "AdministrationGroupsAdd GroupNameDescriptionNo Group FoundTotal Groups: 0"
+    },
+    "permissions|populated|768": {
+      "docW": 758,
+      "win": 768,
+      "overflow": false,
+      "h": 4050,
+      "loading": false,
+      "danger": false,
+      "text": "AdministrationPermissionsPermissionsDashboardZonesCacheAllowedBlockedAppsDnsClientSettingsDhcpServerAdministrationLogsGroup PermissionsAdmin"
+    },
+    "permissions|empty|768": {
+      "docW": 768,
+      "win": 768,
+      "overflow": false,
+      "h": 771,
+      "loading": false,
+      "danger": false,
+      "text": "AdministrationPermissionsTotal Sections: 0"
+    },
+    "sso|populated|768": {
+      "docW": 758,
+      "win": 768,
+      "overflow": false,
+      "h": 2527,
+      "loading": false,
+      "danger": false,
+      "text": "AdministrationSingle Sign-On (SSO)Single Sign-On (SSO)5Warning! All URLs configured above must use https URL scheme for production environme"
+    },
+    "sso|empty|768": {
+      "docW": 758,
+      "win": 768,
+      "overflow": false,
+      "h": 2389,
+      "loading": false,
+      "danger": false,
+      "text": "AdministrationSingle Sign-On (SSO)Single Sign-On (SSO)5Warning! All URLs configured above must use https URL scheme for production environme"
+    },
+    "cluster|populated|768": {
+      "docW": 768,
+      "win": 768,
+      "overflow": false,
+      "h": 771,
+      "loading": false,
+      "danger": false,
+      "text": "AdministrationClusterPrimaryOptionsDelete Clusterdev.cluster.test (primary)Node NameIP AddressURLTypeStateUp SinceLast SeenLast Synceddev.cl"
+    },
+    "cluster|empty|768": {
+      "docW": 768,
+      "win": 768,
+      "overflow": false,
+      "h": 771,
+      "loading": false,
+      "danger": false,
+      "text": "AdministrationClusterCluster Not InitializedThis server is not part of a cluster. Create one, or join an existing cluster.New ClusterJoin Cl"
+    },
+    "sessions|populated|390": {
+      "docW": 390,
+      "win": 390,
+      "overflow": false,
+      "h": 771,
+      "loading": false,
+      "danger": false,
+      "text": "AdministrationSessionsCreate Tokendev.cluster.test (primary)UsernameSessionLast SeenRemote AddressUser Agentadmin[1a826f02fbdc35f7](current)"
+    },
+    "sessions|empty|390": {
+      "docW": 390,
+      "win": 390,
+      "overflow": false,
+      "h": 771,
+      "loading": false,
+      "danger": false,
+      "text": "AdministrationSessionsCreate TokenUsernameSessionLast SeenRemote AddressUser AgentNo Session FoundTotal Sessions: 0"
+    },
+    "users|populated|390": {
+      "docW": 390,
+      "win": 390,
+      "overflow": false,
+      "h": 771,
+      "loading": false,
+      "danger": false,
+      "text": "AdministrationUsersAdd UserUsernameDisplay NameType2FA StatusStatusRecent LoginPrevious LoginadminAdministratorLocalDisabledEnabled2026-09-0"
+    },
+    "users|empty|390": {
+      "docW": 390,
+      "win": 390,
+      "overflow": false,
+      "h": 771,
+      "loading": false,
+      "danger": false,
+      "text": "AdministrationUsersAdd UserUsernameDisplay NameType2FA StatusStatusRecent LoginPrevious LoginNo User FoundTotal Users: 0"
+    },
+    "groups|populated|390": {
+      "docW": 390,
+      "win": 390,
+      "overflow": false,
+      "h": 771,
+      "loading": false,
+      "danger": false,
+      "text": "AdministrationGroupsAdd GroupNameDescriptionAdministratorsSuper administratorsDHCP AdministratorsDHCP service administratorsDNS Administrato"
+    },
+    "groups|empty|390": {
+      "docW": 390,
+      "win": 390,
+      "overflow": false,
+      "h": 771,
+      "loading": false,
+      "danger": false,
+      "text": "AdministrationGroupsAdd GroupNameDescriptionNo Group FoundTotal Groups: 0"
+    },
+    "permissions|populated|390": {
+      "docW": 380,
+      "win": 390,
+      "overflow": false,
+      "h": 4069,
+      "loading": false,
+      "danger": false,
+      "text": "AdministrationPermissionsPermissionsDashboardZonesCacheAllowedBlockedAppsDnsClientSettingsDhcpServerAdministrationLogsGroup PermissionsAdmin"
+    },
+    "permissions|empty|390": {
+      "docW": 390,
+      "win": 390,
+      "overflow": false,
+      "h": 771,
+      "loading": false,
+      "danger": false,
+      "text": "AdministrationPermissionsTotal Sections: 0"
+    },
+    "sso|populated|390": {
+      "docW": 380,
+      "win": 390,
+      "overflow": false,
+      "h": 3525,
+      "loading": false,
+      "danger": false,
+      "text": "AdministrationSingle Sign-On (SSO)Single Sign-On (SSO)5Warning! All URLs configured above must use https URL scheme for production environme"
+    },
+    "sso|empty|390": {
+      "docW": 380,
+      "win": 390,
+      "overflow": false,
+      "h": 3387,
+      "loading": false,
+      "danger": false,
+      "text": "AdministrationSingle Sign-On (SSO)Single Sign-On (SSO)5Warning! All URLs configured above must use https URL scheme for production environme"
+    },
+    "cluster|populated|390": {
+      "docW": 390,
+      "win": 390,
+      "overflow": false,
+      "h": 771,
+      "loading": false,
+      "danger": false,
+      "text": "AdministrationClusterPrimaryOptionsDelete Clusterdev.cluster.test (primary)Node NameIP AddressURLTypeStateUp SinceLast SeenLast Synceddev.cl"
+    },
+    "cluster|empty|390": {
+      "docW": 390,
+      "win": 390,
+      "overflow": false,
+      "h": 771,
+      "loading": false,
+      "danger": false,
+      "text": "AdministrationClusterCluster Not InitializedThis server is not part of a cluster. Create one, or join an existing cluster.New ClusterJoin Cl"
+    },
+    "sessions|error|1440": {
+      "docW": 1440,
+      "win": 1440,
+      "overflow": false,
+      "h": 823,
+      "loading": false,
+      "danger": true,
+      "text": "Error! forced by the state sweepAdministrationSessionsCreate TokenUsernameSessionLast SeenRemote AddressUser AgentNo Session FoundTotal Sessions: 0"
+    },
+    "sessions|loading|1440": {
+      "docW": 1440,
+      "win": 1440,
+      "overflow": false,
+      "h": 823,
+      "loading": true,
+      "danger": false,
+      "text": "AdministrationSessionsCreate TokenLoading…"
+    },
+    "users|error|1440": {
+      "docW": 1440,
+      "win": 1440,
+      "overflow": false,
+      "h": 823,
+      "loading": false,
+      "danger": true,
+      "text": "Error! forced by the state sweepAdministrationUsersAdd UserUsernameDisplay NameType2FA StatusStatusRecent LoginPrevious LoginNo User FoundTotal Users:"
+    },
+    "users|loading|1440": {
+      "docW": 1440,
+      "win": 1440,
+      "overflow": false,
+      "h": 823,
+      "loading": true,
+      "danger": false,
+      "text": "AdministrationUsersAdd UserLoading…"
+    },
+    "groups|error|1440": {
+      "docW": 1440,
+      "win": 1440,
+      "overflow": false,
+      "h": 823,
+      "loading": false,
+      "danger": true,
+      "text": "Error! forced by the state sweepAdministrationGroupsAdd GroupNameDescriptionNo Group FoundTotal Groups: 0"
+    },
+    "groups|loading|1440": {
+      "docW": 1440,
+      "win": 1440,
+      "overflow": false,
+      "h": 823,
+      "loading": true,
+      "danger": false,
+      "text": "AdministrationGroupsAdd GroupLoading…"
+    },
+    "permissions|error|1440": {
+      "docW": 1440,
+      "win": 1440,
+      "overflow": false,
+      "h": 823,
+      "loading": false,
+      "danger": true,
+      "text": "Error! forced by the state sweepAdministrationPermissionsTotal Sections: 0"
+    },
+    "permissions|loading|1440": {
+      "docW": 1440,
+      "win": 1440,
+      "overflow": false,
+      "h": 823,
+      "loading": true,
+      "danger": false,
+      "text": "AdministrationPermissionsLoading…"
+    },
+    "sso|error|1440": {
+      "docW": 1430,
+      "win": 1440,
+      "overflow": false,
+      "h": 2198,
+      "loading": false,
+      "danger": true,
+      "text": "Error! forced by the state sweepAdministrationSingle Sign-On (SSO)Single Sign-On (SSO)5Warning! All URLs configured above must use https URL scheme fo"
+    },
+    "sso|loading|1440": {
+      "docW": 1440,
+      "win": 1440,
+      "overflow": false,
+      "h": 823,
+      "loading": true,
+      "danger": false,
+      "text": "Loading…"
+    },
+    "cluster|error|1440": {
+      "docW": 1440,
+      "win": 1440,
+      "overflow": false,
+      "h": 823,
+      "loading": false,
+      "danger": true,
+      "text": "Error! forced by the state sweepAdministrationClusterCluster Not InitializedThis server is not part of a cluster. Create one, or join an existing clus"
+    },
+    "cluster|loading|1440": {
+      "docW": 1440,
+      "win": 1440,
+      "overflow": false,
+      "h": 823,
+      "loading": true,
+      "danger": false,
+      "text": "AdministrationClusterLoading…"
+    },
+    "sessions|error|1024": {
+      "docW": 1024,
+      "win": 1024,
+      "overflow": false,
+      "h": 823,
+      "loading": false,
+      "danger": true,
+      "text": "Error! forced by the state sweepAdministrationSessionsCreate TokenUsernameSessionLast SeenRemote AddressUser AgentNo Session FoundTotal Sessions: 0"
+    },
+    "sessions|loading|1024": {
+      "docW": 1024,
+      "win": 1024,
+      "overflow": false,
+      "h": 823,
+      "loading": true,
+      "danger": false,
+      "text": "AdministrationSessionsCreate TokenLoading…"
+    },
+    "users|error|1024": {
+      "docW": 1024,
+      "win": 1024,
+      "overflow": false,
+      "h": 823,
+      "loading": false,
+      "danger": true,
+      "text": "Error! forced by the state sweepAdministrationUsersAdd UserUsernameDisplay NameType2FA StatusStatusRecent LoginPrevious LoginNo User FoundTotal Users:"
+    },
+    "users|loading|1024": {
+      "docW": 1024,
+      "win": 1024,
+      "overflow": false,
+      "h": 823,
+      "loading": true,
+      "danger": false,
+      "text": "AdministrationUsersAdd UserLoading…"
+    },
+    "groups|error|1024": {
+      "docW": 1024,
+      "win": 1024,
+      "overflow": false,
+      "h": 823,
+      "loading": false,
+      "danger": true,
+      "text": "Error! forced by the state sweepAdministrationGroupsAdd GroupNameDescriptionNo Group FoundTotal Groups: 0"
+    },
+    "groups|loading|1024": {
+      "docW": 1024,
+      "win": 1024,
+      "overflow": false,
+      "h": 823,
+      "loading": true,
+      "danger": false,
+      "text": "AdministrationGroupsAdd GroupLoading…"
+    },
+    "permissions|error|1024": {
+      "docW": 1024,
+      "win": 1024,
+      "overflow": false,
+      "h": 823,
+      "loading": false,
+      "danger": true,
+      "text": "Error! forced by the state sweepAdministrationPermissionsTotal Sections: 0"
+    },
+    "permissions|loading|1024": {
+      "docW": 1024,
+      "win": 1024,
+      "overflow": false,
+      "h": 823,
+      "loading": true,
+      "danger": false,
+      "text": "AdministrationPermissionsLoading…"
+    },
+    "sso|error|1024": {
+      "docW": 1014,
+      "win": 1024,
+      "overflow": false,
+      "h": 2707,
+      "loading": false,
+      "danger": true,
+      "text": "Error! forced by the state sweepAdministrationSingle Sign-On (SSO)Single Sign-On (SSO)5Warning! All URLs configured above must use https URL scheme fo"
+    },
+    "sso|loading|1024": {
+      "docW": 1024,
+      "win": 1024,
+      "overflow": false,
+      "h": 823,
+      "loading": true,
+      "danger": false,
+      "text": "Loading…"
+    },
+    "cluster|error|1024": {
+      "docW": 1024,
+      "win": 1024,
+      "overflow": false,
+      "h": 823,
+      "loading": false,
+      "danger": true,
+      "text": "Error! forced by the state sweepAdministrationClusterCluster Not InitializedThis server is not part of a cluster. Create one, or join an existing clus"
+    },
+    "cluster|loading|1024": {
+      "docW": 1024,
+      "win": 1024,
+      "overflow": false,
+      "h": 823,
+      "loading": true,
+      "danger": false,
+      "text": "AdministrationClusterLoading…"
+    },
+    "sessions|error|768": {
+      "docW": 768,
+      "win": 768,
+      "overflow": false,
+      "h": 771,
+      "loading": false,
+      "danger": true,
+      "text": "Error! forced by the state sweepAdministrationSessionsCreate TokenUsernameSessionLast SeenRemote AddressUser AgentNo Session FoundTotal Sessions: 0"
+    },
+    "sessions|loading|768": {
+      "docW": 768,
+      "win": 768,
+      "overflow": false,
+      "h": 771,
+      "loading": true,
+      "danger": false,
+      "text": "AdministrationSessionsCreate TokenLoading…"
+    },
+    "users|error|768": {
+      "docW": 768,
+      "win": 768,
+      "overflow": false,
+      "h": 771,
+      "loading": false,
+      "danger": true,
+      "text": "Error! forced by the state sweepAdministrationUsersAdd UserUsernameDisplay NameType2FA StatusStatusRecent LoginPrevious LoginNo User FoundTotal Users:"
+    },
+    "users|loading|768": {
+      "docW": 768,
+      "win": 768,
+      "overflow": false,
+      "h": 771,
+      "loading": true,
+      "danger": false,
+      "text": "AdministrationUsersAdd UserLoading…"
+    },
+    "groups|error|768": {
+      "docW": 768,
+      "win": 768,
+      "overflow": false,
+      "h": 771,
+      "loading": false,
+      "danger": true,
+      "text": "Error! forced by the state sweepAdministrationGroupsAdd GroupNameDescriptionNo Group FoundTotal Groups: 0"
+    },
+    "groups|loading|768": {
+      "docW": 768,
+      "win": 768,
+      "overflow": false,
+      "h": 771,
+      "loading": true,
+      "danger": false,
+      "text": "AdministrationGroupsAdd GroupLoading…"
+    },
+    "permissions|error|768": {
+      "docW": 768,
+      "win": 768,
+      "overflow": false,
+      "h": 771,
+      "loading": false,
+      "danger": true,
+      "text": "Error! forced by the state sweepAdministrationPermissionsTotal Sections: 0"
+    },
+    "permissions|loading|768": {
+      "docW": 768,
+      "win": 768,
+      "overflow": false,
+      "h": 771,
+      "loading": true,
+      "danger": false,
+      "text": "AdministrationPermissionsLoading…"
+    },
+    "sso|error|768": {
+      "docW": 758,
+      "win": 768,
+      "overflow": false,
+      "h": 2455,
+      "loading": false,
+      "danger": true,
+      "text": "Error! forced by the state sweepAdministrationSingle Sign-On (SSO)Single Sign-On (SSO)5Warning! All URLs configured above must use https URL scheme fo"
+    },
+    "sso|loading|768": {
+      "docW": 768,
+      "win": 768,
+      "overflow": false,
+      "h": 771,
+      "loading": true,
+      "danger": false,
+      "text": "Loading…"
+    },
+    "cluster|error|768": {
+      "docW": 768,
+      "win": 768,
+      "overflow": false,
+      "h": 771,
+      "loading": false,
+      "danger": true,
+      "text": "Error! forced by the state sweepAdministrationClusterCluster Not InitializedThis server is not part of a cluster. Create one, or join an existing clus"
+    },
+    "cluster|loading|768": {
+      "docW": 768,
+      "win": 768,
+      "overflow": false,
+      "h": 771,
+      "loading": true,
+      "danger": false,
+      "text": "AdministrationClusterLoading…"
+    },
+    "sessions|error|390": {
+      "docW": 390,
+      "win": 390,
+      "overflow": false,
+      "h": 771,
+      "loading": false,
+      "danger": true,
+      "text": "Error! forced by the state sweepAdministrationSessionsCreate TokenUsernameSessionLast SeenRemote AddressUser AgentNo Session FoundTotal Sessions: 0"
+    },
+    "sessions|loading|390": {
+      "docW": 390,
+      "win": 390,
+      "overflow": false,
+      "h": 771,
+      "loading": true,
+      "danger": false,
+      "text": "AdministrationSessionsCreate TokenLoading…"
+    },
+    "users|error|390": {
+      "docW": 390,
+      "win": 390,
+      "overflow": false,
+      "h": 771,
+      "loading": false,
+      "danger": true,
+      "text": "Error! forced by the state sweepAdministrationUsersAdd UserUsernameDisplay NameType2FA StatusStatusRecent LoginPrevious LoginNo User FoundTotal Users:"
+    },
+    "users|loading|390": {
+      "docW": 390,
+      "win": 390,
+      "overflow": false,
+      "h": 771,
+      "loading": true,
+      "danger": false,
+      "text": "AdministrationUsersAdd UserLoading…"
+    },
+    "groups|error|390": {
+      "docW": 390,
+      "win": 390,
+      "overflow": false,
+      "h": 771,
+      "loading": false,
+      "danger": true,
+      "text": "Error! forced by the state sweepAdministrationGroupsAdd GroupNameDescriptionNo Group FoundTotal Groups: 0"
+    },
+    "groups|loading|390": {
+      "docW": 390,
+      "win": 390,
+      "overflow": false,
+      "h": 771,
+      "loading": true,
+      "danger": false,
+      "text": "AdministrationGroupsAdd GroupLoading…"
+    },
+    "permissions|error|390": {
+      "docW": 390,
+      "win": 390,
+      "overflow": false,
+      "h": 771,
+      "loading": false,
+      "danger": true,
+      "text": "Error! forced by the state sweepAdministrationPermissionsTotal Sections: 0"
+    },
+    "permissions|loading|390": {
+      "docW": 390,
+      "win": 390,
+      "overflow": false,
+      "h": 771,
+      "loading": true,
+      "danger": false,
+      "text": "AdministrationPermissionsLoading…"
+    },
+    "sso|error|390": {
+      "docW": 380,
+      "win": 390,
+      "overflow": false,
+      "h": 3453,
+      "loading": false,
+      "danger": true,
+      "text": "Error! forced by the state sweepAdministrationSingle Sign-On (SSO)Single Sign-On (SSO)5Warning! All URLs configured above must use https URL scheme fo"
+    },
+    "sso|loading|390": {
+      "docW": 390,
+      "win": 390,
+      "overflow": false,
+      "h": 771,
+      "loading": true,
+      "danger": false,
+      "text": "Loading…"
+    },
+    "cluster|error|390": {
+      "docW": 390,
+      "win": 390,
+      "overflow": false,
+      "h": 771,
+      "loading": false,
+      "danger": true,
+      "text": "Error! forced by the state sweepAdministrationClusterCluster Not InitializedThis server is not part of a cluster. Create one, or join an existing clus"
+    },
+    "cluster|loading|390": {
+      "docW": 390,
+      "win": 390,
+      "overflow": false,
+      "h": 771,
+      "loading": true,
+      "danger": false,
+      "text": "AdministrationClusterLoading…"
+    }
+  }
+}

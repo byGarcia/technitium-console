@@ -1,0 +1,23 @@
+/*
+The five semantic tones: background, border and text for each.
+
+Two components apply them —the alert (`ui/Alert`) and the pill (`ui/Tag`)— and they
+were written in both, with different names for the same thing
+(`success/warning/danger` against `ok/warn/dan`). Twelve declarations for four
+decisions, and adding a fifth tone meant remembering both files.
+
+The fifth WITH A CLASS —`acc`— arrived on 2026-09-03 with the pill that names the
+master switch. Fifth here and sixth in `Tag`, which is no contradiction: `neutral`
+is a tone of the component and has no class in this file.
+
+Only `Tag` uses it: a notice in accent amber would be a `Warning!` that warns of
+nothing. And against `warn` it is not distinguishable —ΔE00 8.8 on the text and
+0.0 on the fill, below the project's own collision threshold—: the separation is
+one of MEANING, not of colour, and `tokens.css` has it measured and reasoned.
+*/
+
+.ok   { background: var(--ok-bg);   border-color: var(--ok-bd);   color: var(--ok); }
+.info { background: var(--info-bg); border-color: var(--info-bd); color: var(--info); }
+.warn { background: var(--warn-bg); border-color: var(--warn-bd); color: var(--warn); }
+.dan  { background: var(--dan-bg);  border-color: var(--dan-bd);  color: var(--dan); }
+.acc  { background: var(--acc-bg);  border-color: var(--acc-bd);  color: var(--acc); }

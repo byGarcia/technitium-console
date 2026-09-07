@@ -1,0 +1,154 @@
+{
+  "_": "contract() sobre las seis sub-pantallas ANTES y DESPUÉS de construir. La comparación es por INVENTARIO —rótulo, tipo, ayuda, opciones, columna, verbo, prosa, enlace— y no por recuento, que es lo que en Zones dejó pasar dos columnas.",
+  "antes": {
+    "fichero": "administracion-contrato-antes.json",
+    "bundle": "index-ddKTTGsL.css / index-Dctpo8kj.js",
+    "cuando": "2026-09-04, antes de tocar nada"
+  },
+  "despues": {
+    "fichero": "administracion-contrato-despues.json",
+    "bundle": "index-CgvYMBls.css",
+    "cuando": "2026-09-04, con la ronda cerrada"
+  },
+  "dos_normalizaciones_declaradas": {
+    "las_84_casillas": "Se comparan con el nombre normalizado, porque se han RENOMBRADO a propósito: de `Sección Sujeto Verbo` a `Sección · Sujeto · Verbo`, que es la decisión 2 de la ronda. Las 84 están, una a una.",
+    "los_menús_de_fila_de_Sessions": "`Actions for <token>` lleva dentro el token de una sesión, y las sesiones van y vienen: entre los dos volcados el arnés pasó de 5 a 2. Se separan como volátiles en vez de contarse como pérdida. Que el menú siga en cada fila lo comprueban las pruebas."
+  },
+  "resultado": {
+    "sessions": {
+      "perdido": 2,
+      "volatil": 6,
+      "nuevo": 4
+    },
+    "users": {
+      "perdido": 0,
+      "volatil": 0,
+      "nuevo": 0
+    },
+    "groups": {
+      "perdido": 0,
+      "volatil": 0,
+      "nuevo": 0
+    },
+    "permissions": {
+      "perdido": 0,
+      "volatil": 0,
+      "nuevo": 39
+    },
+    "sso": {
+      "perdido": 0,
+      "volatil": 0,
+      "nuevo": 4
+    },
+    "cluster": {
+      "perdido": 2,
+      "volatil": 0,
+      "nuevo": 2
+    }
+  },
+  "detalle": {
+    "sessions": {
+      "perdido": [
+        "button:—",
+        "screenAction:—"
+      ],
+      "volatil_no_es_perdida": [
+        "button:Actions for 2996b0c4848db541",
+        "button:Actions for 9fecd0e8765e19e6",
+        "button:Actions for b2d07ccb9e65f723",
+        "rowAction:Actions for 2996b0c4848db541",
+        "rowAction:Actions for 9fecd0e8765e19e6",
+        "rowAction:Actions for b2d07ccb9e65f723"
+      ],
+      "nuevo": [
+        "button:Actions for d94c34e4b293289c",
+        "button:dev.cluster.test (primary)",
+        "rowAction:Actions for d94c34e4b293289c",
+        "screenAction:dev.cluster.test (primary)"
+      ]
+    },
+    "users": {
+      "perdido": [],
+      "volatil_no_es_perdida": [],
+      "nuevo": []
+    },
+    "groups": {
+      "perdido": [],
+      "volatil_no_es_perdida": [],
+      "nuevo": []
+    },
+    "permissions": {
+      "perdido": [],
+      "volatil_no_es_perdida": [],
+      "nuevo": [
+        "column:(acciones)",
+        "column:Administration",
+        "column:Allowed",
+        "column:Apps",
+        "column:Blocked",
+        "column:Cache",
+        "column:Dashboard",
+        "column:Delete",
+        "column:DhcpServer",
+        "column:DnsClient",
+        "column:Group",
+        "column:Logs",
+        "column:Modify",
+        "column:Settings",
+        "column:Username",
+        "column:View",
+        "column:Zones",
+        "link:Administration",
+        "link:Allowed",
+        "link:Apps",
+        "link:Blocked",
+        "link:Cache",
+        "link:Dashboard",
+        "link:DhcpServer",
+        "link:DnsClient",
+        "link:Logs",
+        "link:Settings",
+        "link:Zones",
+        "prose:Administration",
+        "prose:Allowed",
+        "prose:Apps",
+        "prose:Blocked",
+        "prose:Cache",
+        "prose:Dashboard",
+        "prose:DhcpServer",
+        "prose:DnsClient",
+        "prose:Logs",
+        "prose:Settings",
+        "prose:Zones"
+      ]
+    },
+    "sso": {
+      "perdido": [],
+      "volatil_no_es_perdida": [],
+      "nuevo": [
+        "field:Group Map (Optional)|div",
+        "field:SSO User Sign Up|div",
+        "field:Scopes|div",
+        "field:Single Sign-On (SSO)|div"
+      ]
+    },
+    "cluster": {
+      "perdido": [
+        "button:—",
+        "screenAction:—"
+      ],
+      "volatil_no_es_perdida": [],
+      "nuevo": [
+        "button:dev.cluster.test (primary)",
+        "screenAction:dev.cluster.test (primary)"
+      ]
+    }
+  },
+  "LO_UNICO_QUE_SALE_COMO_PERDIDO_Y_NO_LO_ES": "Cuatro entradas, y las cuatro son el mismo hecho: `button:—` y `screenAction:—` en `Sessions` y en `Cluster`. Era el marcador de posición del selector de nodo, que salía sin ningún nodo elegido mientras la tabla de debajo listaba dos. Ahora dice `dev.cluster.test (primary)`, que es lo que hace upstream (`cluster.js:1026`). Se pierde un guión y se gana un nombre.",
+  "lo_nuevo_por_pantalla": {
+    "permissions": "39 entradas: las once columnas del mapa de concesiones más `Username`, `Group` y los tres verbos como columnas de tabla —antes no había ninguna tabla— y las once entradas del índice.",
+    "sso": "4: los cuatro bloques, que `contract()` cuenta como `role=group` porque ahora están nombrados. No son controles nuevos; son los cuatro grupos que upstream ya tenía, con su rótulo convertido en título.",
+    "sessions": "4: el nombre del nodo en el selector, en sus dos sitios.",
+    "cluster": "2: lo mismo."
+  }
+}

@@ -1,0 +1,191 @@
+/*
+The label + control row, a single one. There were four grids —210 px on pages,
+180 px in the Zones modals, 170 px in the Administration ones, 110 px in the Logs
+filter— and two different labels: 600 and `--ink` on pages, 400 and `--mute` in
+the Zones modals. With the muted one, in "Add Zone" the label receded behind the
+value; with the strong one, in "Add User" it competed with it.
+
+The strong one wins: in a long form the label is what you look for when scanning,
+not what you read afterwards.
+*/
+
+/*
+THREE columns: label, control and help.
+
+It is pilot 3's decision, and the one that holds the archetype up: in a dense form
+**the surface is the text**. `General` has 41 paragraphs of help against 39
+controls, and under each field they made a page twice as long in which the text
+weighed more than the fields.
+
+The third column is `--help-col` and **only `.row` carries it**. `.mrow` —the
+dialog— stays at two: there are 560 px of width there, and the pilot measured a
+panel, not a modal.
+*/
+.row {
+  display: grid;
+  grid-template-columns: 210px minmax(0, 1fr) var(--help-col);
+  gap: var(--s-8);
+  padding: var(--s-7) var(--s-9);
+  align-items: start;
+  border-bottom: 1px solid var(--line);
+}
+
+/* The help as the control's sibling and not inside it: that is what moves it into
+   its own column. In the modal it stays nested, and that is why it still falls
+   underneath. */
+.rowHelp {
+  grid-column: 3;
+}
+
+.row:last-child { border-bottom: 0; }
+
+/* Inside a modal there is less room and fewer rows: no separator, no 210 px. */
+.mrow {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: var(--s-8);
+  padding: var(--s-3) 0;
+  align-items: start;
+}
+
+.rowLabel,
+.mrowLabel {
+  font-size: var(--t-4);
+  color: var(--ink);
+  font-weight: 600;
+  padding-top: var(--s-5);
+  line-height: 1.35;
+}
+
+.rowCtl,
+.mrowCtl {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+/*
+A one-line field gains nothing from being 640 px wide.
+
+The control column is `1fr`, so it eats everything left over — and that did not
+show while every dialog was 560 wide. Once "User Details" got the 880 its sessions
+table asks for, the box for typing "admin" grew to 640 px. The cap is 420, which
+is what the page forms were already using in practice: measured across the
+console's 46 fields, the median is 174 px and the maximum 420.
+
+The cap also reaches a table that is a row's control: "Member Of" in My Profile is
+ONE column and measured 831 px for an 82 px group name. Upstream does not stretch
+it either: it puts it in a `col-sm-7`. What stays outside is the `textarea` —IP
+lists, which do use the width— and tables that are NOT a row's control, like the
+sessions one, which needs everything it can get.
+*/
+.mrow input:not([type='checkbox']):not([type='radio']),
+.mrow select,
+.mrow table {
+  max-width: 420px;
+}
+
+/*
+The breakpoints, and why the panel and the modal no longer share one.
+
+This breakpoint was a SINGLE one at 720 for both rows. What motivated it is still
+true and is written down: at 390 the 210 px grid left 20 px for the field and made
+seventeen Settings fields invisible. **But that proves 390 had to be protected,
+not that 720 was the right threshold.**
+
+So they part company:
+
+  · `.row` follows the breakpoints pilot 3 measured — 1180 and 560.
+  · `.mrow` **keeps its 720 and its geometry**: the pilot measured a dense form,
+    not a dialog, and does not authorise touching the modal. That 720 stands as
+    **modal** debt, with its figure, and not mixed in with the dense form.
+
+1180 — the help leaves the third column and drops to a second line of its own row.
+It stays visible and stays complete: **no width hides it**.
+*/
+@media (max-width: 1180px) {
+  .row {
+    grid-template-columns: 210px minmax(0, 1fr);
+  }
+
+  /* Second line, aligned with the control and not with the label. */
+  .rowHelp {
+    grid-column: 2;
+  }
+}
+
+/* 560 — it stacks completely: label, control and help, in that order. */
+@media (max-width: 560px) {
+  .row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--s-4);
+    padding: var(--s-7) var(--s-8);
+  }
+
+  .rowLabel { padding-top: 0; }
+  .rowHelp { grid-column: 1; }
+}
+
+/* 720 — the MODAL's, which stays where it was. */
+@media (max-width: 720px) {
+  .mrow {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--s-4);
+  }
+
+  .mrowLabel { padding-top: 0; }
+}
+
+/*
+The help under a field, and the group of checkboxes in a row.
+
+Both were defined three times —in Settings, in DHCP and in Administration— with
+the same values copied by hand. It is the same story as the table and the panel:
+what gets repeated ends up drifting apart.
+*/
+.help {
+  composes: withCode from './text.module.css';
+  font-size: var(--t-3);
+  color: var(--mute);
+  line-height: 1.55;
+  max-width: 720px;
+}
+
+.help a { color: var(--acc); }
+
+
+/* Several checkboxes or radios inside a single row. */
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-6);
+}
+
+/*
+The row switched off by its master switch.
+
+An amber edge on the side, and nothing else here: the opacity already comes with
+the control's own `disabled`, and the pill that NAMES it is drawn by `Row` next to
+the label. The three pieces together are the signal pilot 3 closed, and none is
+spare —the edge is seen without reading, the pill says which switch it is, and the
+opacity says it is not active.
+
+Amber and not red, and amber and not a padlock: *amber = you can*. The user can
+switch this on themselves. If the permission were missing as well, **the padlock
+wins** and this edge is not drawn: what you cannot touch does not need two
+explanations of why it is off.
+
+The edge is an INNER SHADOW and not a `border-left`, and the measurement decided
+that, not taste. With `border-left: 2px` the grid of those five rows became
+`210px 540px 360px` against the `210px 542px 360px` of the other 34: the border
+eats two pixels of the box and **shifts the control**. In a dense form that is a
+column that stops being aligned, and `dev/uniformity.js` caught it as a third
+`reticula-panel` signature that existed only in `/settings/general/`.
+
+A state signal cannot move the content it points at. The inner shadow paints
+exactly the same edge and takes up no grid: the family is back to two signatures
+and the 39 rows stay aligned.
+*/
+.dependiente { box-shadow: inset 2px 0 0 0 var(--acc); }
+.withPill { display: flex; align-items: center; gap: var(--s-4); flex-wrap: wrap; }

@@ -1,0 +1,981 @@
+{
+ "dashboard": {
+  "tool": "ffc29e4fa84c7d0b8b36705a5ec66a26acb1e3a3319fa21f95d260031321bde8",
+  "bundle": {
+   "css": [
+    "index-dn52RGiB.css"
+   ],
+   "js": [
+    "index-CXLFU48j.js"
+   ]
+  },
+  "route": "/dashboard/",
+  "title": "Dashboard",
+  "screenActions": [
+   "Last Hour",
+   "Last Day",
+   "Last Week",
+   "Last Month",
+   "Last Year",
+   "Custom"
+  ],
+  "blocks": [],
+  "looseFields": [
+   {
+    "label": "Period",
+    "kind": "div",
+    "options": null,
+    "state": [],
+    "help": null,
+    "actions": [
+     "Last Hour",
+     "Last Day",
+     "Last Week",
+     "Last Month",
+     "Last Year",
+     "Custom"
+    ]
+   }
+  ],
+  "links": [],
+  "groupNotes": [],
+  "prose": [
+   "304 Total Queries6621.71%No Error4414.47%Server Failure19463.82%NX Domain00.00%Refused26085.53%Authoritative92.96%Recursive3511.51%Cached00.00%Blocked00.00%Dropped3 Clients",
+   "QueriesTop DomainsMorefirmada.test33catalogo.test33Top Blocked DomainsBlockingMoreNo data for this period.Server6Zones6Cache1Allowed3Blocked0Allow List0Block ListQuery Response TypesQuery TypesProtocol TypesTop ClientsMore127.0.0.1localhost103172.23.0.2.101172.23.0.3.100",
+   "firmada.test33",
+   "catalogo.test33",
+   "No data for this period.",
+   "6Zones6Cache1Allowed3Blocked0Allow List0Block List",
+   "127.0.0.1localhost103",
+   "172.23.0.2.101",
+   "172.23.0.3.100"
+  ],
+  "strays": [
+   "Dashboard",
+   "No data for this period."
+  ],
+  "footer": [],
+  "state": "mixed",
+  "regions": [
+   {
+    "name": "Queries",
+    "state": "populated"
+   },
+   {
+    "name": "Top Domains",
+    "state": "populated"
+   },
+   {
+    "name": "Top Blocked Domains",
+    "state": "empty"
+   },
+   {
+    "name": "Server",
+    "state": "populated"
+   },
+   {
+    "name": "Query Response Types",
+    "state": "populated"
+   },
+   {
+    "name": "Query Types",
+    "state": "populated"
+   },
+   {
+    "name": "Protocol Types",
+    "state": "populated"
+   },
+   {
+    "name": "Top Clients",
+    "state": "populated"
+   }
+  ],
+  "overview": {
+   "cards": [
+    {
+     "label": "Total Queries",
+     "value": "304",
+     "pct": null,
+     "series": "var(--ch-total)",
+     "volatile": [
+      "value",
+      "pct"
+     ]
+    },
+    {
+     "label": "No Error",
+     "value": "66",
+     "pct": "21.71%",
+     "series": "var(--ch-ok)",
+     "volatile": [
+      "value",
+      "pct"
+     ]
+    },
+    {
+     "label": "Server Failure",
+     "value": "44",
+     "pct": "14.47%",
+     "series": "var(--ch-fail)",
+     "volatile": [
+      "value",
+      "pct"
+     ]
+    },
+    {
+     "label": "NX Domain",
+     "value": "194",
+     "pct": "63.82%",
+     "series": "var(--ch-nx)",
+     "volatile": [
+      "value",
+      "pct"
+     ]
+    },
+    {
+     "label": "Refused",
+     "value": "0",
+     "pct": "0.00%",
+     "series": "var(--ch-refuse)",
+     "volatile": [
+      "value",
+      "pct"
+     ]
+    },
+    {
+     "label": "Authoritative",
+     "value": "260",
+     "pct": "85.53%",
+     "series": "var(--ch-auth)",
+     "volatile": [
+      "value",
+      "pct"
+     ]
+    },
+    {
+     "label": "Recursive",
+     "value": "9",
+     "pct": "2.96%",
+     "series": "var(--ch-rec)",
+     "volatile": [
+      "value",
+      "pct"
+     ]
+    },
+    {
+     "label": "Cached",
+     "value": "35",
+     "pct": "11.51%",
+     "series": "var(--ch-cache)",
+     "volatile": [
+      "value",
+      "pct"
+     ]
+    },
+    {
+     "label": "Blocked",
+     "value": "0",
+     "pct": "0.00%",
+     "series": "var(--ch-block)",
+     "volatile": [
+      "value",
+      "pct"
+     ]
+    },
+    {
+     "label": "Dropped",
+     "value": "0",
+     "pct": "0.00%",
+     "series": "var(--ch-drop)",
+     "volatile": [
+      "value",
+      "pct"
+     ]
+    },
+    {
+     "label": "Clients",
+     "value": "3",
+     "pct": null,
+     "series": "var(--ch-clients)",
+     "volatile": [
+      "value",
+      "pct"
+     ]
+    }
+   ],
+   "counters": [
+    {
+     "label": "Zones",
+     "value": "6",
+     "volatile": [
+      "value"
+     ]
+    },
+    {
+     "label": "Cache",
+     "value": "6",
+     "volatile": [
+      "value"
+     ]
+    },
+    {
+     "label": "Allowed",
+     "value": "1",
+     "volatile": [
+      "value"
+     ]
+    },
+    {
+     "label": "Blocked",
+     "value": "3",
+     "volatile": [
+      "value"
+     ]
+    },
+    {
+     "label": "Allow List",
+     "value": "0",
+     "volatile": [
+      "value"
+     ]
+    },
+    {
+     "label": "Block List",
+     "value": "0",
+     "volatile": [
+      "value"
+     ]
+    }
+   ],
+   "charts": [
+    {
+     "title": "Queries",
+     "aria": "Queries over time",
+     "state": "populated",
+     "seriesInDom": false,
+     "seriesFrom": "chartSeries()  ·  api: dashboard/stats/get  +  source: Chart.tsx"
+    },
+    {
+     "title": "Query Response Types",
+     "aria": "Query Response Types",
+     "state": "populated",
+     "seriesInDom": false,
+     "seriesFrom": "chartSeries()  ·  api: dashboard/stats/get  +  source: Chart.tsx"
+    },
+    {
+     "title": "Query Types",
+     "aria": "Query Types",
+     "state": "populated",
+     "seriesInDom": false,
+     "seriesFrom": "chartSeries()  ·  api: dashboard/stats/get  +  source: Chart.tsx"
+    },
+    {
+     "title": "Protocol Types",
+     "aria": "Protocol Types",
+     "state": "populated",
+     "seriesInDom": false,
+     "seriesFrom": "chartSeries()  ·  api: dashboard/stats/get  +  source: Chart.tsx"
+    }
+   ],
+   "topN": [
+    {
+     "title": "Top Domains",
+     "state": "populated",
+     "summary": [
+      {
+       "name": "firmada.test",
+       "count": "33",
+       "detail": null,
+       "rateLimited": false
+      },
+      {
+       "name": "catalogo.test",
+       "count": "33",
+       "detail": null,
+       "rateLimited": false
+      }
+     ],
+     "more": "More",
+     "volatile": [
+      "summary"
+     ]
+    },
+    {
+     "title": "Top Blocked Domains",
+     "state": "empty",
+     "summary": [],
+     "more": "More",
+     "volatile": [
+      "summary"
+     ]
+    },
+    {
+     "title": "Top Clients",
+     "state": "populated",
+     "summary": [
+      {
+       "name": "127.0.0.1",
+       "count": "103",
+       "detail": "localhost",
+       "rateLimited": false
+      },
+      {
+       "name": "172.23.0.2",
+       "count": "101",
+       "detail": ".",
+       "rateLimited": false
+      },
+      {
+       "name": "172.23.0.3",
+       "count": "100",
+       "detail": ".",
+       "rateLimited": false
+      }
+     ],
+     "more": "More",
+     "volatile": [
+      "summary"
+     ]
+    }
+   ]
+  },
+  "tables": [],
+  "counts": {
+   "fields": 1,
+   "buttons": 10,
+   "height": 1645
+  }
+ },
+ "chrome": {
+  "nav": [
+   {
+    "label": "Sections",
+    "entries": [
+     {
+      "text": "Dashboard",
+      "href": "/dashboard/",
+      "current": "page"
+     },
+     {
+      "text": "Zones",
+      "href": "/zones/",
+      "current": null
+     },
+     {
+      "text": "Cache",
+      "href": "/cache/",
+      "current": null
+     },
+     {
+      "text": "Allowed",
+      "href": "/allowed/",
+      "current": null
+     },
+     {
+      "text": "Blocked",
+      "href": "/blocked/",
+      "current": null
+     },
+     {
+      "text": "Apps",
+      "href": "/apps/",
+      "current": null
+     },
+     {
+      "text": "DNS Client",
+      "href": "/dnsclient/",
+      "current": null
+     },
+     {
+      "text": "Settings",
+      "href": "/settings/general/",
+      "current": null
+     },
+     {
+      "text": "DHCP",
+      "href": "/dhcp/leases/",
+      "current": null
+     },
+     {
+      "text": "Administration",
+      "href": "/admin/sessions/",
+      "current": null
+     },
+     {
+      "text": "Logs",
+      "href": "/logs/view-logs/",
+      "current": null
+     },
+     {
+      "text": "About",
+      "href": "/about/",
+      "current": null
+     }
+    ]
+   }
+  ],
+  "links": [
+   {
+    "text": "Dashboard",
+    "href": "/dashboard/",
+    "current": "page",
+    "external": false
+   },
+   {
+    "text": "Zones",
+    "href": "/zones/",
+    "current": null,
+    "external": false
+   },
+   {
+    "text": "Cache",
+    "href": "/cache/",
+    "current": null,
+    "external": false
+   },
+   {
+    "text": "Allowed",
+    "href": "/allowed/",
+    "current": null,
+    "external": false
+   },
+   {
+    "text": "Blocked",
+    "href": "/blocked/",
+    "current": null,
+    "external": false
+   },
+   {
+    "text": "Apps",
+    "href": "/apps/",
+    "current": null,
+    "external": false
+   },
+   {
+    "text": "DNS Client",
+    "href": "/dnsclient/",
+    "current": null,
+    "external": false
+   },
+   {
+    "text": "Settings",
+    "href": "/settings/general/",
+    "current": null,
+    "external": false
+   },
+   {
+    "text": "DHCP",
+    "href": "/dhcp/leases/",
+    "current": null,
+    "external": false
+   },
+   {
+    "text": "Administration",
+    "href": "/admin/sessions/",
+    "current": null,
+    "external": false
+   },
+   {
+    "text": "Logs",
+    "href": "/logs/view-logs/",
+    "current": null,
+    "external": false
+   },
+   {
+    "text": "About",
+    "href": "/about/",
+    "current": null,
+    "external": false
+   },
+   {
+    "text": "Technitium",
+    "href": "https://technitium.com/",
+    "current": null,
+    "external": true
+   },
+   {
+    "text": "Blog",
+    "href": "https://blog.technitium.com/",
+    "current": null,
+    "external": true
+   },
+   {
+    "text": "Donate",
+    "href": "https://go.technitium.com/?id=35",
+    "current": null,
+    "external": true
+   },
+   {
+    "text": "DNS Client",
+    "href": "https://dnsclient.net/",
+    "current": null,
+    "external": true
+   },
+   {
+    "text": "GitHub",
+    "href": "https://github.com/TechnitiumSoftware/DnsServer",
+    "current": null,
+    "external": true
+   },
+   {
+    "text": "byGarcia",
+    "href": "https://github.com/byGarcia",
+    "current": null,
+    "external": true
+   }
+  ],
+  "buttons": [
+   "Administrator",
+   "Menu"
+  ],
+  "prose": [
+   "dev.technitium-ui.test",
+   "DNS Server",
+   "15.4",
+   "Web Console",
+   "0.1.0",
+   "Technitium",
+   "Blog",
+   "Donate",
+   "DNS Client",
+   "GitHub",
+   "byGarcia"
+  ],
+  "landmarks": [
+   {
+    "tag": "aside",
+    "label": null
+   },
+   {
+    "tag": "nav",
+    "label": "Sections"
+   },
+   {
+    "tag": "header",
+    "label": null
+   },
+   {
+    "tag": "main",
+    "label": null
+   },
+   {
+    "tag": "footer",
+    "label": null
+   }
+  ]
+ },
+ "series": {
+  "source": "api",
+  "endpoint": "dashboard/stats/get",
+  "context": {
+   "type": "LastHour"
+  },
+  "charts": [
+   {
+    "title": "Queries",
+    "type": "line",
+    "legend": [
+     "Total",
+     "No Error",
+     "Server Failure",
+     "NX Domain",
+     "Refused",
+     "Authoritative",
+     "Recursive",
+     "Cached",
+     "Blocked",
+     "Dropped",
+     "Clients"
+    ],
+    "legendFrom": "datasets",
+    "datasets": [
+     "Total",
+     "No Error",
+     "Server Failure",
+     "NX Domain",
+     "Refused",
+     "Authoritative",
+     "Recursive",
+     "Cached",
+     "Blocked",
+     "Dropped",
+     "Clients"
+    ],
+    "labels": [
+     "07:15",
+     "07:16",
+     "07:17",
+     "07:18",
+     "07:19",
+     "07:20",
+     "07:21",
+     "07:22",
+     "07:23",
+     "07:24",
+     "07:25",
+     "07:26",
+     "07:27",
+     "07:28",
+     "07:29",
+     "07:30",
+     "07:31",
+     "07:32",
+     "07:33",
+     "07:34",
+     "07:35",
+     "07:36",
+     "07:37",
+     "07:38",
+     "07:39",
+     "07:40",
+     "07:41",
+     "07:42",
+     "07:43",
+     "07:44",
+     "07:45",
+     "07:46",
+     "07:47",
+     "07:48",
+     "07:49",
+     "07:50",
+     "07:51",
+     "07:52",
+     "07:53",
+     "07:54",
+     "07:55",
+     "07:56",
+     "07:57",
+     "07:58",
+     "07:59",
+     "08:00",
+     "08:01",
+     "08:02",
+     "08:03",
+     "08:04",
+     "08:05",
+     "08:06",
+     "08:07",
+     "08:08",
+     "08:09",
+     "08:10",
+     "08:11",
+     "08:12",
+     "08:13",
+     "08:14"
+    ],
+    "volatile": [
+     "labels"
+    ],
+    "invariant": "Las once series del servidor se dibujan y se rotulan; son las once tarjetas."
+   },
+   {
+    "title": "Query Response Types",
+    "type": "doughnut",
+    "legend": [
+     "Authoritative",
+     "Recursive",
+     "Cached",
+     "Blocked",
+     "Dropped"
+    ],
+    "legendFrom": "labels",
+    "datasets": [
+     null
+    ],
+    "labels": [
+     "Authoritative",
+     "Recursive",
+     "Cached",
+     "Blocked",
+     "Dropped"
+    ],
+    "volatile": [
+     "labels"
+    ],
+    "invariant": "Toda etiqueta que manda el servidor sale rotulada en la leyenda, sean las que sean."
+   },
+   {
+    "title": "Query Types",
+    "type": "doughnut",
+    "legend": [
+     "A",
+     "SOA",
+     "NS"
+    ],
+    "legendFrom": "labels",
+    "datasets": [
+     null
+    ],
+    "labels": [
+     "A",
+     "SOA",
+     "NS"
+    ],
+    "volatile": [
+     "labels"
+    ],
+    "invariant": "Toda etiqueta que manda el servidor sale rotulada en la leyenda, sean las que sean."
+   },
+   {
+    "title": "Protocol Types",
+    "type": "doughnut",
+    "legend": [
+     "Udp"
+    ],
+    "legendFrom": "labels",
+    "datasets": [
+     null
+    ],
+    "labels": [
+     "Udp"
+    ],
+    "volatile": [
+     "labels"
+    ],
+    "invariant": "Toda etiqueta que manda el servidor sale rotulada en la leyenda, sean las que sean."
+   }
+  ],
+  "legend": {
+   "source": "source",
+   "file": "src/screens/dashboard/Chart.tsx",
+   "behaviour": "Pulsar una serie en la leyenda la oculta. Es una interacción que existe hoy y que no puede perderse."
+  }
+ },
+ "login": {
+  "login": {
+   "tool": "ffc29e4fa84c7d0b8b36705a5ec66a26acb1e3a3319fa21f95d260031321bde8",
+   "bundle": {
+    "css": [
+     "index-dn52RGiB.css"
+    ],
+    "js": [
+     "index-CXLFU48j.js"
+    ]
+   },
+   "route": "/dashboard/",
+   "title": null,
+   "screenActions": [
+    "Login",
+    "Forgot Password?"
+   ],
+   "blocks": [],
+   "looseFields": [
+    {
+     "label": "Username",
+     "kind": "text",
+     "options": null,
+     "state": [],
+     "help": null,
+     "actions": []
+    },
+    {
+     "label": "Password",
+     "kind": "password",
+     "options": null,
+     "state": [],
+     "help": null,
+     "actions": []
+    }
+   ],
+   "links": [
+    {
+     "text": "Technitium",
+     "href": "https://technitium.com/"
+    },
+    {
+     "text": "Blog",
+     "href": "https://blog.technitium.com/"
+    },
+    {
+     "text": "Donate",
+     "href": "https://go.technitium.com/?id=35"
+    },
+    {
+     "text": "DNS Client",
+     "href": "https://dnsclient.net/"
+    },
+    {
+     "text": "GitHub",
+     "href": "https://github.com/TechnitiumSoftware/DnsServer"
+    },
+    {
+     "text": "byGarcia",
+     "href": "https://github.com/byGarcia"
+    }
+   ],
+   "groupNotes": [],
+   "prose": [],
+   "strays": [
+    "Technitium DNS Server",
+    "Theme:"
+   ],
+   "footer": [],
+   "state": "populated",
+   "regions": [
+    {
+     "name": null,
+     "state": "populated"
+    }
+   ],
+   "overview": {
+    "cards": [],
+    "counters": [],
+    "charts": [],
+    "topN": []
+   },
+   "tables": [],
+   "counts": {
+    "fields": 2,
+    "buttons": 2,
+    "height": 1000
+   }
+  },
+  "chrome": {
+   "nav": [],
+   "links": [
+    {
+     "text": "Technitium",
+     "href": "https://technitium.com/",
+     "current": null,
+     "external": true
+    },
+    {
+     "text": "Blog",
+     "href": "https://blog.technitium.com/",
+     "current": null,
+     "external": true
+    },
+    {
+     "text": "Donate",
+     "href": "https://go.technitium.com/?id=35",
+     "current": null,
+     "external": true
+    },
+    {
+     "text": "DNS Client",
+     "href": "https://dnsclient.net/",
+     "current": null,
+     "external": true
+    },
+    {
+     "text": "GitHub",
+     "href": "https://github.com/TechnitiumSoftware/DnsServer",
+     "current": null,
+     "external": true
+    },
+    {
+     "text": "byGarcia",
+     "href": "https://github.com/byGarcia",
+     "current": null,
+     "external": true
+    }
+   ],
+   "buttons": [
+    "Login",
+    "Forgot Password?"
+   ],
+   "prose": [],
+   "landmarks": []
+  },
+  "sinSesion": true
+ },
+ "menu_administrator": {
+  "_": "Medido el 2026-09-03 abriendo el menú y cada uno de sus cuatro diálogos, con contract() enraizado en el diálogo.",
+  "entradas": [
+   "My Profile",
+   "Change Password",
+   "Configure 2FA",
+   "Create API Token",
+   "Logout"
+  ],
+  "variante_sso": "Con un usuario SSO desaparecen `Change Password` y `Configure 2FA` (Shell.tsx:276,283 — «main.js:71-78, these two are hidden for an SSO user»). NO OBSERVADO: no hay usuario SSO en el harness.",
+  "dialogos": {
+   "My Profile": {
+    "campos": [
+     "Username",
+     "User Type",
+     "2FA Status",
+     "Display Name",
+     "Session Timeout"
+    ],
+    "pie": [
+     "Save",
+     "Close"
+    ],
+    "ademas": "DOS tablas dentro: `Member Of` (columna `Group`, pie `Total Groups: N`) y `Active Sessions` (columnas `Session`, `Last Seen`, `Remote Address`, `User Agent`, pie `Total Sessions: N`), con la sesión actual marcada `(current)`."
+   },
+   "Change Password": {
+    "campos": [
+     "Current Password",
+     "New Password",
+     "Confirm Password"
+    ],
+    "pie": [
+     "Save",
+     "Close"
+    ]
+   },
+   "Configure 2FA": {
+    "titulo": "Configure Two-factor Authentication (2FA)",
+    "campos": [
+     "Secret",
+     "OTP"
+    ],
+    "pie": [
+     "Enable 2FA",
+     "Close"
+    ]
+   },
+   "Create API Token": {
+    "campos": [
+     "Username",
+     "Token Name"
+    ],
+    "pie": [
+     "Create",
+     "Close"
+    ]
+   }
+  },
+  "_rama_medida": "DOM cubre SOLO la rama que salio: usuario LOCAL, 2FA APAGADO y nada creado todavia. Lo demas se completo desde FUENTE y va marcado en el contrato. Es el mismo defecto que ya costo el piloto 3 -medir una sola rama y darla por la pantalla-, repetido un nivel mas abajo.",
+  "ramas_desde_fuente": {
+   "My Profile": [
+    "Menu de acciones por fila de sesion (`Actions for <token parcial>`) con `Delete Session`",
+    "Confirm: titulo `Delete Session`, texto `Are you sure you want to delete the session [<token parcial>] ?`, verbo `Delete Session`; exito `Session Deleted!`",
+    "`Display Name` DESHABILITADO para usuario SSO, y entonces displayName no se envia (auth.js:756-761)",
+    "`User Type`: `Local` o `Remote/SSO`",
+    "`2FA Status`: TRES valores - `Enabled`, `Disabled`, `SSO Managed` (auth.js:667-674)"
+   ],
+   "Change Password": [
+    "Cuarto campo condicional `OTP`, numerico de 6 digitos, solo con 2FA activo",
+    "Validacion: `Please enter the 6-digit OTP that you see in your authenticator app.`",
+    "Otras cuatro validaciones con titulo `Missing!`, salvo `Mismatch!` para `Passwords do not match. Please try again.`"
+   ],
+   "Configure 2FA": [
+    "Rama APAGADA: imagen QR 200x200, alt `QR code for the authenticator app`, PNG base64 como data: URI",
+    "Rama ACTIVA: Pie [Disable 2FA] [Close]; sin QR, Secret ni OTP. La accion es una y destructiva; el Close lo pone Dialog, que compone [acciones] [descarte] en los cuarenta."
+   ],
+   "Create API Token": [
+    "Tercer campo `Token`, monoespaciado y de solo lectura, que aparece DESPUES de crear. Unica vez que ese valor se ve",
+    "Exito: `Token Created!` / `API token was created successfully.`"
+   ]
+  }
+ },
+ "blocking_options": {
+  "_": "Medido abriendo el menú: nueve entradas, porque el bloqueo estaba activo.",
+  "rotulo_visible": "Blocking",
+  "etiqueta_accesible": "Blocking options",
+  "condicional": "Sale `Enable Blocking` O `Disable Blocking`, nunca las dos, y mientras no se sabe el estado, ninguna. El estado se pide AL ABRIR el menú, no al dibujar la pantalla.",
+  "observado": [
+   "Disable Blocking",
+   "Disable Blocking For 1 Minute",
+   "Disable Blocking For 2 Minutes",
+   "Disable Blocking For 5 Minutes",
+   "Disable Blocking For 10 Minutes",
+   "Disable Blocking For 15 Minutes",
+   "Disable Blocking For 30 Minutes",
+   "Disable Blocking For 1 Hour",
+   "Disable Blocking For 3 Hours"
+  ]
+ }
+}

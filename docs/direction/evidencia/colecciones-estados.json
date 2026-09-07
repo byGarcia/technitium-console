@@ -1,0 +1,786 @@
+{
+  "fecha": "2026-09-07",
+  "que": "Paso 6 del plan, aplicado a las cinco colecciones que se construyeron sin ronda de diseno ni validacion (commit 92e8f94), mas los dos paneles de DHCP.",
+  "como": "Contra el arnes en 127.0.0.1:5380, interceptando el endpoint de lista de cada superficie: vacio = misma respuesta con los arrays vaciados, carga = peticion que no resuelve, fallo = JSON de error de la API.",
+  "antes": {
+    "celdas": 96,
+    "desbordes": 0,
+    "errores_con_role_alert": 24,
+    "detalle": [
+      {
+        "surface": "cache",
+        "state": "populated",
+        "width": 1440,
+        "overflow": false,
+        "alerts": 0,
+        "note": null
+      },
+      {
+        "surface": "cache",
+        "state": "populated",
+        "width": 1024,
+        "overflow": false,
+        "alerts": 0,
+        "note": null
+      },
+      {
+        "surface": "cache",
+        "state": "populated",
+        "width": 768,
+        "overflow": false,
+        "alerts": 0,
+        "note": null
+      },
+      {
+        "surface": "cache",
+        "state": "populated",
+        "width": 390,
+        "overflow": false,
+        "alerts": 0,
+        "note": null
+      },
+      {
+        "surface": "cache",
+        "state": "empty",
+        "width": 1440,
+        "overflow": false,
+        "alerts": 0,
+        "note": null
+      },
+      {
+        "surface": "cache",
+        "state": "empty",
+        "width": 1024,
+        "overflow": false,
+        "alerts": 0,
+        "note": null
+      },
+      {
+        "surface": "cache",
+        "state": "empty",
+        "width": 768,
+        "overflow": false,
+        "alerts": 0,
+        "note": null
+      },
+      {
+        "surface": "cache",
+        "state": "empty",
+        "width": 390,
+        "overflow": false,
+        "alerts": 0,
+        "note": null
+      },
+      {
+        "surface": "cache",
+        "state": "loading",
+        "width": 1440,
+        "overflow": false,
+        "alerts": 0,
+        "note": "SIN INDICADOR: «0 zones»"
+      },
+      {
+        "surface": "cache",
+        "state": "loading",
+        "width": 1024,
+        "overflow": false,
+        "alerts": 0,
+        "note": "SIN INDICADOR"
+      },
+      {
+        "surface": "cache",
+        "state": "loading",
+        "width": 768,
+        "overflow": false,
+        "alerts": 0,
+        "note": "SIN INDICADOR"
+      },
+      {
+        "surface": "cache",
+        "state": "loading",
+        "width": 390,
+        "overflow": false,
+        "alerts": 0,
+        "note": "SIN INDICADOR"
+      },
+      {
+        "surface": "cache",
+        "state": "error",
+        "width": 1440,
+        "overflow": false,
+        "alerts": 1,
+        "note": null
+      },
+      {
+        "surface": "cache",
+        "state": "error",
+        "width": 1024,
+        "overflow": false,
+        "alerts": 1,
+        "note": null
+      },
+      {
+        "surface": "cache",
+        "state": "error",
+        "width": 768,
+        "overflow": false,
+        "alerts": 1,
+        "note": null
+      },
+      {
+        "surface": "cache",
+        "state": "error",
+        "width": 390,
+        "overflow": false,
+        "alerts": 1,
+        "note": null
+      },
+      {
+        "surface": "allowed",
+        "state": "populated",
+        "width": 1440,
+        "overflow": false,
+        "alerts": 0,
+        "note": null
+      },
+      {
+        "surface": "allowed",
+        "state": "populated",
+        "width": 1024,
+        "overflow": false,
+        "alerts": 0,
+        "note": null
+      },
+      {
+        "surface": "allowed",
+        "state": "populated",
+        "width": 768,
+        "overflow": false,
+        "alerts": 0,
+        "note": null
+      },
+      {
+        "surface": "allowed",
+        "state": "populated",
+        "width": 390,
+        "overflow": false,
+        "alerts": 0,
+        "note": null
+      },
+      {
+        "surface": "allowed",
+        "state": "empty",
+        "width": 1440,
+        "overflow": false,
+        "alerts": 0,
+        "note": null
+      },
+      {
+        "surface": "allowed",
+        "state": "empty",
+        "width": 1024,
+        "overflow": false,
+        "alerts": 0,
+        "note": null
+      },
+      {
+        "surface": "allowed",
+        "state": "empty",
+        "width": 768,
+        "overflow": false,
+        "alerts": 0,
+        "note": null
+      },
+      {
+        "surface": "allowed",
+        "state": "empty",
+        "width": 390,
+        "overflow": false,
+        "alerts": 0,
+        "note": null
+      },
+      {
+        "surface": "allowed",
+        "state": "loading",
+        "width": 1440,
+        "overflow": false,
+        "alerts": 0,
+        "note": "SIN INDICADOR"
+      },
+      {
+        "surface": "allowed",
+        "state": "loading",
+        "width": 1024,
+        "overflow": false,
+        "alerts": 0,
+        "note": "SIN INDICADOR"
+      },
+      {
+        "surface": "allowed",
+        "state": "loading",
+        "width": 768,
+        "overflow": false,
+        "alerts": 0,
+        "note": "SIN INDICADOR"
+      },
+      {
+        "surface": "allowed",
+        "state": "loading",
+        "width": 390,
+        "overflow": false,
+        "alerts": 0,
+        "note": "SIN INDICADOR"
+      },
+      {
+        "surface": "allowed",
+        "state": "error",
+        "width": 1440,
+        "overflow": false,
+        "alerts": 1,
+        "note": null
+      },
+      {
+        "surface": "allowed",
+        "state": "error",
+        "width": 1024,
+        "overflow": false,
+        "alerts": 1,
+        "note": null
+      },
+      {
+        "surface": "allowed",
+        "state": "error",
+        "width": 768,
+        "overflow": false,
+        "alerts": 1,
+        "note": null
+      },
+      {
+        "surface": "allowed",
+        "state": "error",
+        "width": 390,
+        "overflow": false,
+        "alerts": 1,
+        "note": null
+      },
+      {
+        "surface": "blocked",
+        "state": "populated",
+        "width": 1440,
+        "overflow": false,
+        "alerts": 0,
+        "note": null
+      },
+      {
+        "surface": "blocked",
+        "state": "populated",
+        "width": 1024,
+        "overflow": false,
+        "alerts": 0,
+        "note": null
+      },
+      {
+        "surface": "blocked",
+        "state": "populated",
+        "width": 768,
+        "overflow": false,
+        "alerts": 0,
+        "note": null
+      },
+      {
+        "surface": "blocked",
+        "state": "populated",
+        "width": 390,
+        "overflow": false,
+        "alerts": 0,
+        "note": null
+      },
+      {
+        "surface": "blocked",
+        "state": "empty",
+        "width": 1440,
+        "overflow": false,
+        "alerts": 0,
+        "note": null
+      },
+      {
+        "surface": "blocked",
+        "state": "empty",
+        "width": 1024,
+        "overflow": false,
+        "alerts": 0,
+        "note": null
+      },
+      {
+        "surface": "blocked",
+        "state": "empty",
+        "width": 768,
+        "overflow": false,
+        "alerts": 0,
+        "note": null
+      },
+      {
+        "surface": "blocked",
+        "state": "empty",
+        "width": 390,
+        "overflow": false,
+        "alerts": 0,
+        "note": null
+      },
+      {
+        "surface": "blocked",
+        "state": "loading",
+        "width": 1440,
+        "overflow": false,
+        "alerts": 0,
+        "note": "SIN INDICADOR"
+      },
+      {
+        "surface": "blocked",
+        "state": "loading",
+        "width": 1024,
+        "overflow": false,
+        "alerts": 0,
+        "note": "SIN INDICADOR"
+      },
+      {
+        "surface": "blocked",
+        "state": "loading",
+        "width": 768,
+        "overflow": false,
+        "alerts": 0,
+        "note": "SIN INDICADOR"
+      },
+      {
+        "surface": "blocked",
+        "state": "loading",
+        "width": 390,
+        "overflow": false,
+        "alerts": 0,
+        "note": "SIN INDICADOR"
+      },
+      {
+        "surface": "blocked",
+        "state": "error",
+        "width": 1440,
+        "overflow": false,
+        "alerts": 1,
+        "note": null
+      },
+      {
+        "surface": "blocked",
+        "state": "error",
+        "width": 1024,
+        "overflow": false,
+        "alerts": 1,
+        "note": null
+      },
+      {
+        "surface": "blocked",
+        "state": "error",
+        "width": 768,
+        "overflow": false,
+        "alerts": 1,
+        "note": null
+      },
+      {
+        "surface": "blocked",
+        "state": "error",
+        "width": 390,
+        "overflow": false,
+        "alerts": 1,
+        "note": null
+      },
+      {
+        "surface": "apps",
+        "state": "populated",
+        "width": 1440,
+        "overflow": false,
+        "alerts": 0,
+        "note": null
+      },
+      {
+        "surface": "apps",
+        "state": "populated",
+        "width": 1024,
+        "overflow": false,
+        "alerts": 0,
+        "note": null
+      },
+      {
+        "surface": "apps",
+        "state": "populated",
+        "width": 768,
+        "overflow": false,
+        "alerts": 0,
+        "note": null
+      },
+      {
+        "surface": "apps",
+        "state": "populated",
+        "width": 390,
+        "overflow": false,
+        "alerts": 0,
+        "note": null
+      },
+      {
+        "surface": "apps",
+        "state": "empty",
+        "width": 1440,
+        "overflow": false,
+        "alerts": 0,
+        "note": null
+      },
+      {
+        "surface": "apps",
+        "state": "empty",
+        "width": 1024,
+        "overflow": false,
+        "alerts": 0,
+        "note": null
+      },
+      {
+        "surface": "apps",
+        "state": "empty",
+        "width": 768,
+        "overflow": false,
+        "alerts": 0,
+        "note": null
+      },
+      {
+        "surface": "apps",
+        "state": "empty",
+        "width": 390,
+        "overflow": false,
+        "alerts": 0,
+        "note": null
+      },
+      {
+        "surface": "apps",
+        "state": "loading",
+        "width": 1440,
+        "overflow": false,
+        "alerts": 0,
+        "note": "Loading… sin anunciar"
+      },
+      {
+        "surface": "apps",
+        "state": "loading",
+        "width": 1024,
+        "overflow": false,
+        "alerts": 0,
+        "note": "Loading… sin anunciar"
+      },
+      {
+        "surface": "apps",
+        "state": "loading",
+        "width": 768,
+        "overflow": false,
+        "alerts": 0,
+        "note": "Loading… sin anunciar"
+      },
+      {
+        "surface": "apps",
+        "state": "loading",
+        "width": 390,
+        "overflow": false,
+        "alerts": 0,
+        "note": "Loading… sin anunciar"
+      },
+      {
+        "surface": "apps",
+        "state": "error",
+        "width": 1440,
+        "overflow": false,
+        "alerts": 1,
+        "note": null
+      },
+      {
+        "surface": "apps",
+        "state": "error",
+        "width": 1024,
+        "overflow": false,
+        "alerts": 1,
+        "note": null
+      },
+      {
+        "surface": "apps",
+        "state": "error",
+        "width": 768,
+        "overflow": false,
+        "alerts": 1,
+        "note": null
+      },
+      {
+        "surface": "apps",
+        "state": "error",
+        "width": 390,
+        "overflow": false,
+        "alerts": 1,
+        "note": null
+      },
+      {
+        "surface": "leases",
+        "state": "populated",
+        "width": 1440,
+        "overflow": false,
+        "alerts": 0,
+        "note": null
+      },
+      {
+        "surface": "leases",
+        "state": "populated",
+        "width": 1024,
+        "overflow": false,
+        "alerts": 0,
+        "note": null
+      },
+      {
+        "surface": "leases",
+        "state": "populated",
+        "width": 768,
+        "overflow": false,
+        "alerts": 0,
+        "note": null
+      },
+      {
+        "surface": "leases",
+        "state": "populated",
+        "width": 390,
+        "overflow": false,
+        "alerts": 0,
+        "note": null
+      },
+      {
+        "surface": "leases",
+        "state": "empty",
+        "width": 1440,
+        "overflow": false,
+        "alerts": 0,
+        "note": null
+      },
+      {
+        "surface": "leases",
+        "state": "empty",
+        "width": 1024,
+        "overflow": false,
+        "alerts": 0,
+        "note": null
+      },
+      {
+        "surface": "leases",
+        "state": "empty",
+        "width": 768,
+        "overflow": false,
+        "alerts": 0,
+        "note": null
+      },
+      {
+        "surface": "leases",
+        "state": "empty",
+        "width": 390,
+        "overflow": false,
+        "alerts": 0,
+        "note": null
+      },
+      {
+        "surface": "leases",
+        "state": "loading",
+        "width": 1440,
+        "overflow": false,
+        "alerts": 0,
+        "note": "Loading… sin anunciar"
+      },
+      {
+        "surface": "leases",
+        "state": "loading",
+        "width": 1024,
+        "overflow": false,
+        "alerts": 0,
+        "note": "Loading… sin anunciar"
+      },
+      {
+        "surface": "leases",
+        "state": "loading",
+        "width": 768,
+        "overflow": false,
+        "alerts": 0,
+        "note": "Loading… sin anunciar"
+      },
+      {
+        "surface": "leases",
+        "state": "loading",
+        "width": 390,
+        "overflow": false,
+        "alerts": 0,
+        "note": "Loading… sin anunciar"
+      },
+      {
+        "surface": "leases",
+        "state": "error",
+        "width": 1440,
+        "overflow": false,
+        "alerts": 1,
+        "note": null
+      },
+      {
+        "surface": "leases",
+        "state": "error",
+        "width": 1024,
+        "overflow": false,
+        "alerts": 1,
+        "note": null
+      },
+      {
+        "surface": "leases",
+        "state": "error",
+        "width": 768,
+        "overflow": false,
+        "alerts": 1,
+        "note": null
+      },
+      {
+        "surface": "leases",
+        "state": "error",
+        "width": 390,
+        "overflow": false,
+        "alerts": 1,
+        "note": null
+      },
+      {
+        "surface": "scopes",
+        "state": "populated",
+        "width": 1440,
+        "overflow": false,
+        "alerts": 0,
+        "note": null
+      },
+      {
+        "surface": "scopes",
+        "state": "populated",
+        "width": 1024,
+        "overflow": false,
+        "alerts": 0,
+        "note": null
+      },
+      {
+        "surface": "scopes",
+        "state": "populated",
+        "width": 768,
+        "overflow": false,
+        "alerts": 0,
+        "note": null
+      },
+      {
+        "surface": "scopes",
+        "state": "populated",
+        "width": 390,
+        "overflow": false,
+        "alerts": 0,
+        "note": null
+      },
+      {
+        "surface": "scopes",
+        "state": "empty",
+        "width": 1440,
+        "overflow": false,
+        "alerts": 0,
+        "note": null
+      },
+      {
+        "surface": "scopes",
+        "state": "empty",
+        "width": 1024,
+        "overflow": false,
+        "alerts": 0,
+        "note": null
+      },
+      {
+        "surface": "scopes",
+        "state": "empty",
+        "width": 768,
+        "overflow": false,
+        "alerts": 0,
+        "note": null
+      },
+      {
+        "surface": "scopes",
+        "state": "empty",
+        "width": 390,
+        "overflow": false,
+        "alerts": 0,
+        "note": null
+      },
+      {
+        "surface": "scopes",
+        "state": "loading",
+        "width": 1440,
+        "overflow": false,
+        "alerts": 0,
+        "note": "Loading… sin anunciar"
+      },
+      {
+        "surface": "scopes",
+        "state": "loading",
+        "width": 1024,
+        "overflow": false,
+        "alerts": 0,
+        "note": "Loading… sin anunciar"
+      },
+      {
+        "surface": "scopes",
+        "state": "loading",
+        "width": 768,
+        "overflow": false,
+        "alerts": 0,
+        "note": "Loading… sin anunciar"
+      },
+      {
+        "surface": "scopes",
+        "state": "loading",
+        "width": 390,
+        "overflow": false,
+        "alerts": 0,
+        "note": "Loading… sin anunciar"
+      },
+      {
+        "surface": "scopes",
+        "state": "error",
+        "width": 1440,
+        "overflow": false,
+        "alerts": 1,
+        "note": null
+      },
+      {
+        "surface": "scopes",
+        "state": "error",
+        "width": 1024,
+        "overflow": false,
+        "alerts": 1,
+        "note": null
+      },
+      {
+        "surface": "scopes",
+        "state": "error",
+        "width": 768,
+        "overflow": false,
+        "alerts": 1,
+        "note": null
+      },
+      {
+        "surface": "scopes",
+        "state": "error",
+        "width": 390,
+        "overflow": false,
+        "alerts": 1,
+        "note": null
+      }
+    ]
+  },
+  "hallazgos": [
+    "Cache, Allowed y Blocked no tenian estado de carga: con la peticion en vuelo dibujaban «0 zones» y un arbol vacio, indistinguible de una lista vacia de verdad.",
+    "Zones tampoco, y es donde se definio el arquetipo: «1-0 (0) of 0 zones» con la tabla vacia.",
+    "La primitiva Loading no se anunciaba: ningun role=status ni aria-busy en los 29 sitios de llamada."
+  ],
+  "despues": "cache/allowed/blocked/zones × 1440,1024,768,390 → todas `ok`, `role=status` presente con «Loading…»"
+}

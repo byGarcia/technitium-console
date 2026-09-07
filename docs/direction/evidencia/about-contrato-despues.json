@@ -1,0 +1,143 @@
+{
+  "tool": "25ba2b3ed242",
+  "bundle": {
+    "css": [
+      "index-BhRxoeIK.css"
+    ],
+    "js": [
+      "index-C3DyyIit.js"
+    ]
+  },
+  "route": "/about/",
+  "title": "About",
+  "screenActions": [],
+  "buttons": [],
+  "blocks": [],
+  "looseFields": [],
+  "links": [
+    {
+      "text": "GNU General Public License v3.0",
+      "href": "https://go.technitium.com/?id=24"
+    },
+    {
+      "text": "GitHub",
+      "href": "https://github.com/TechnitiumSoftware/DnsServer"
+    },
+    {
+      "text": "What's New?",
+      "href": "https://go.technitium.com/?id=23"
+    },
+    {
+      "text": "change log",
+      "href": "https://go.technitium.com/?id=23"
+    },
+    {
+      "text": "API Documentation",
+      "href": "https://github.com/TechnitiumSoftware/DnsServer/blob/master/APIDOCS.md"
+    },
+    {
+      "text": "HTTP API documentation",
+      "href": "https://github.com/TechnitiumSoftware/DnsServer/blob/master/APIDOCS.md"
+    },
+    {
+      "text": "Help Topics",
+      "href": "https://go.technitium.com/?id=25"
+    },
+    {
+      "text": "online help topics",
+      "href": "https://go.technitium.com/?id=25"
+    },
+    {
+      "text": "support@technitium.com",
+      "href": "mailto:support@technitium.com"
+    },
+    {
+      "text": "@technitium@mastodon.social",
+      "href": "https://mastodon.social/@technitium"
+    },
+    {
+      "text": "Technitium Blog",
+      "href": "https://blog.technitium.com/"
+    },
+    {
+      "text": "/r/technitium",
+      "href": "https://www.reddit.com/r/technitium/"
+    },
+    {
+      "text": "Donate",
+      "href": "https://go.technitium.com/?id=35"
+    },
+    {
+      "text": "Donate Now!",
+      "href": "https://go.technitium.com/?id=35"
+    }
+  ],
+  "groupNotes": [],
+  "prose": [
+    "About",
+    "Technitium DNS ServerVersion 15.4Copyright (C) 2026 Shreyas Zare (shreyas@technitium.com)This program comes with ABSOLUTELY NO WARRANTY. This is free software, and you are welcome to redistribute it under certain conditions.Source code available under GNU General Public License v3.0 on GitHubWhat's New?Read the change log to know what's new in this release.API DocumentationThe DNS Server HTTP API allows any 3rd party app or script to configure the DNS Server. The HTTP API is used by this web console and thus all the actions that this web console does can be performed via the API. Read the HTTP API documentation for complete details.Help TopicsRead the latest online help topics which contains the DNS Server user manual and covers frequently asked questions.SupportFor support, send an email to support@technitium.com.Follow @technitium@mastodon.social on Mastodon.Checkout Technitium Blog.Join /r/technitium on Reddit.DonateMake a contribution to Technitium and help making new software, updates, and features possible.Donate Now!ServerVersion15.4DomaindevUp since2026-09-04 07:53:22Uptime6 hours ago",
+    "Technitium DNS ServerVersion 15.4",
+    "Copyright (C) 2026 Shreyas Zare (shreyas@technitium.com)This program comes with ABSOLUTELY NO WARRANTY. This is free software, and you are welcome to redistribute it under certain conditions.Source code available under GNU General Public License v3.0 on GitHubWhat's New?Read the change log to know what's new in this release.API DocumentationThe DNS Server HTTP API allows any 3rd party app or script to configure the DNS Server. The HTTP API is used by this web console and thus all the actions that this web console does can be performed via the API. Read the HTTP API documentation for complete details.Help TopicsRead the latest online help topics which contains the DNS Server user manual and covers frequently asked questions.SupportFor support, send an email to support@technitium.com.Follow @technitium@mastodon.social on Mastodon.Checkout Technitium Blog.Join /r/technitium on Reddit.DonateMake a contribution to Technitium and help making new software, updates, and features possible.Donate Now!",
+    "Copyright (C) 2026 Shreyas Zare (shreyas@technitium.com)",
+    "This program comes with ABSOLUTELY NO WARRANTY. This is free software, and you are welcome to redistribute it under certain conditions.",
+    "Source code available under GNU General Public License v3.0 on GitHub",
+    "Read the change log to know what's new in this release.",
+    "The DNS Server HTTP API allows any 3rd party app or script to configure the DNS Server. The HTTP API is used by this web console and thus all the actions that this web console does can be performed via the API. Read the HTTP API documentation for complete details.",
+    "Read the latest online help topics which contains the DNS Server user manual and covers frequently asked questions.",
+    "For support, send an email to support@technitium.com.",
+    "Follow @technitium@mastodon.social on Mastodon.Checkout Technitium Blog.",
+    "Join /r/technitium on Reddit.",
+    "Make a contribution to Technitium and help making new software, updates, and features possible.",
+    "Donate Now!",
+    "Version",
+    "15.4",
+    "Domain",
+    "dev",
+    "Up since",
+    "2026-09-04 07:53:22",
+    "Uptime",
+    "6 hours ago"
+  ],
+  "strays": [
+    "About",
+    "Source code available under",
+    "on",
+    "Read the",
+    "to know what's new in this release.",
+    "The DNS Server HTTP API allows any 3rd party app or script to configure the DNS Server. The HTTP API is used by this web console and thus all the actions that this web console does can be performed via the API. Read the",
+    "for complete details.",
+    "Read the latest",
+    "which contains the DNS Server user manual and covers frequently asked questions.",
+    "Support",
+    "For support, send an email to",
+    "Follow",
+    "on Mastodon.",
+    "Checkout",
+    "Join",
+    "on Reddit."
+  ],
+  "footer": [],
+  "state": "populated",
+  "regions": [
+    {
+      "name": "Technitium DNS Server",
+      "state": "populated"
+    },
+    {
+      "name": "Server",
+      "state": "populated"
+    }
+  ],
+  "overview": {
+    "cards": [],
+    "counters": [],
+    "charts": [],
+    "topN": []
+  },
+  "tables": [],
+  "counts": {
+    "fields": 0,
+    "buttons": 0,
+    "height": 875
+  }
+}

@@ -1,0 +1,39 @@
+/*
+The count that accompanies a table: "Total Users: 3", "2 zones", "1-6 (6) of 6
+zones (page 1 of 1)".
+
+The TEXT is not touched —all three are upstream literals, from `auth.js`,
+`dhcp.js`, `apps.js` and `zone.js:923`—; what was loose was how it is painted.
+Eight modules defined it for themselves and four treatments came out: `Total
+Scopes` in bold, `Total Users` in normal, "My Profile"'s `Total Groups` one step
+smaller, and Apps' halfway there at weight 550.
+
+WHICH of the two positions each screen uses is still its own —in Zones it goes
+with the pagination and there is one above and one below— but the DISTANCE is not:
+the count above sat at `--hueco-pegado` on the three screens that have it, and the
+one below at four different distances (`--s-8`, `--s-5`, `--hueco-grupo` and a
+`padding-top` of `--s-7`) on the four that have it. `--hueco-grupo` is the token
+that names that distance; its own definition says "between things read together:
+the foot of a table".
+*/
+.count2 {
+  font-size: var(--t-4);
+  font-weight: 400;
+  color: var(--mute);
+}
+
+/* When it shares a line with controls —the pagination, a couple of buttons—. */
+.bar {
+  composes: count2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-7);
+  flex-wrap: wrap;
+}
+
+/* Above the table: tight against it, which is what it refers to. */
+.above { margin-bottom: var(--gap-pegado); }
+
+/* Below: the table's foot, read together with the last row. */
+.below { margin-top: var(--gap-group); }

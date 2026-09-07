@@ -1,0 +1,35 @@
+/*
+The key/value list: "Range / 10.0.1.10 - 10.0.1.200", "Key Tag / 42".
+
+It was written five times —About, Zones, DHCP, the lists screens and the DS modal—
+and out of the five came four different objects: two column templates (`auto 1fr`
+and `auto minmax(0,1fr)`, which are not the same thing as soon as the value is
+long), two row gaps, and three treatments of the value. Only one of the five broke
+long strings, so the same list overflowed its cell in DHCP and in the lists screens
+and not in Zones.
+
+`minmax(0,1fr)` and not `1fr`: a `1fr` grid track has a minimum of `auto`, so it
+does not go below the width of its content and a value with no spaces —a DNSSEC
+key, a hex string— pushes the column out of the table.
+*/
+
+.kv {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--s-1) var(--s-8);
+  margin: 0;
+}
+
+.kv dt {
+  font-size: var(--t-3);
+  color: var(--mute);
+  white-space: nowrap;
+}
+
+.kv dd {
+  margin: 0;
+  min-width: 0;
+  font: var(--t-4) / 1.45 var(--font-mono);
+  color: var(--ink);
+  word-break: break-word;
+}

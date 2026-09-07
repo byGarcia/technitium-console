@@ -1,0 +1,23 @@
+/*
+Enlarge the target without enlarging the drawing.
+
+In a dense table, a 70×20 px link is visually right and wrong for a finger: the
+recommendation is 44 px and there are six controls here between 14 and 20 px tall
+—a zone name, the sortable header, a user's link—. Actually enlarging them would
+break the table, which is what this console does best.
+
+`.golpe` extends the HIT AREA with an invisible pseudo-element, without moving a
+single pixel of what is seen. The control still measures 20 px and is clicked as
+if it measured 36.
+*/
+.golpe {
+  position: relative;
+}
+
+.golpe::after {
+  content: '';
+  position: absolute;
+  inset: -8px -6px;
+  /* It only widens the target: it must not cover whatever sits beside it. */
+  z-index: var(--layer-golpe);
+}

@@ -1,0 +1,24 @@
+{
+  "_": "Barrido de uniformidad al cerrar la cola de seis puntos del 2026-09-07. Es el portón de la 2.3: NINGUNA familia puede subir su número de firmas.",
+  "cuando": "2026-09-07",
+  "anclaje": "docs/direction/evidencia/uniformity-about.json, el último barrido registrado (cierre de la fase 3).",
+  "bundle_comprobado": "El build en disco, servido por el arnés en 127.0.0.1:5380. La herramienta se sirvió como /__uniformity.js desde el propio dist y se importó como módulo: la CSP es default-src 'self', así que un script del mismo origen entra y uno de fuera no.",
+  "recorrido": "31 rutas a 1440x1000, todas alcanzadas, ninguna fallida.",
+  "que_habia_cambiado_desde_el_anclaje": [
+    "ui/Menu: patrón ARIA completo (role=menuitem por DOM, tabindex itinerante, flechas, Home/End, Tab).",
+    "Todo src/ traducido al inglés, incluidos NOMBRES DE CLASE CSS: .caja→.box, .pantalla→.screen, .ayudaPanel→.helpPanel, .conPastilla→.withPill, .countPie→.countFoot, .filtAncho→.filterWide, .lgApagada→.lgOff, .pieLateral→.footSide, .pieMain→.footMain, y el token --gap-bloque→--gap-block.",
+    "ui/Empty: Loading gana role=status.",
+    "Lists y ZoneList: estado de carga propio."
+  ],
+  "resultado": {
+    "familias": "panel 1 · titulo 1 · gap-under-the-title 1 · tabla 5 · recuento 1 · campo-text 1 · row-checkbox 2 · settings-checkbox 1 · campo-area 1 · reticula-panel 2 · campo-num-ancho 4 · campo-area-alto 3 · radio 1 · aviso-info 1 · aviso-warning 1",
+    "contra_el_anclaje": "LAS QUINCE IDÉNTICAS, cadena a cadena y en el mismo número."
+  },
+  "lo_que_este_barrido_NO_cubre": "Un solo ancho (1440) y ningún diálogo. Los diálogos se barrieron en su ronda; aquí lo que se comprueba es que un cambio transversal no ha movido nada.",
+  "EL_PRIMER_BARRIDO_SALIO_MAL_Y_ASI_SE_VIO": {
+    "que_paso": "El primer barrido se midió sobre un build en el que cuatro `composes` habían quedado apuntando a `text.module.css`, que no declara `smallCaps`. El bundler ignora en silencio un `composes` que no resuelve: build, lint, typecheck y 1.103 pruebas seguían en verde y las cabeceras de `Matrix` habían perdido sus versalitas.",
+    "por_que_casi_se_cuela": "Porque comparé el NÚMERO de firmas por familia y no las firmas. Los quince números coincidían con el anclaje. La familia `tabla` seguía teniendo cinco firmas, pero una de ellas decía `th 13px/700/0.065px` donde el anclaje decía `th 10.5px/600/0.525px`.",
+    "la_regla": "El contrato de la 2.3 dice «IDÉNTICAS cadena a cadena», y lo dice por esto. Contar no es comparar.",
+    "lo_que_queda_hecho": "`dev/css-dead.mjs` comprueba ahora que todo `composes` resuelva, y sale con código distinto de cero si no. Probado rompiendo uno a propósito."
+  }
+}

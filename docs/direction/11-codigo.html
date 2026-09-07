@@ -1,0 +1,74 @@
+<helmet data-dc-atomics><meta name="design_doc_mode" content="canvas" /><link rel="stylesheet" href="consola.css" /><style>
+  .aud { width:100%; border-collapse:collapse; font-size:12.5px; max-width:1180px; margin-bottom:4px; }
+  .aud th { text-align:left; font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--faint); font-weight:700; padding:0 10px 7px; border-bottom:1px solid var(--line); }
+  .aud td { padding:8px 10px; border-bottom:1px solid var(--line2); color:#c3cad6; vertical-align:top; line-height:1.5; }
+  .aud td.w { color:var(--mute); font-size:11.5px; }
+  .aud tr:last-child td { border-bottom:0; }
+  .aud b { color:var(--ink); font-weight:650; }
+  .aud .mono { font-family:var(--font-mono); font-variant-numeric:tabular-nums; }
+  .sw { display:inline-block; width:11px; height:11px; border-radius:3px; border:1px solid rgba(255,255,255,.18); vertical-align:-1px; margin-right:5px; }
+  .st { font-size:10px; font-weight:700; letter-spacing:.04em; padding:2px 7px; border-radius:999px; border:1px solid var(--line); background:var(--pan2); color:var(--mute); text-transform:uppercase; white-space:nowrap; }
+  .st.f { color:var(--ok); border-color:#065f46; background:#052e26; }
+  .st.p { color:var(--warn); border-color:#4a3609; background:#2a1e05; }
+  .h { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--mute); margin:26px 0 9px; }
+  .h:first-of-type { margin-top:4px; }
+  .lede { max-width:900px; font:13px/1.65 var(--font-ui); color:#c3cad6; margin:0 0 20px; }
+  .lede b { color:var(--ink); }
+</style></helmet>
+
+<section class="dv-turn" id="cod-a">
+  <div class="dv-thd"><a class="dv-tid" href="#cod-a">A</a><span class="dv-tname">Lo que el código ha decidido y este proyecto no sabe</span></div>
+  <p class="lede">Cuatro cambios hechos en la implementación el <b>2026-09-01</b>, posteriores a la auditoría. No son propuestas: están construidos, con pruebas y verificados contra una instancia real. Se traen aquí porque <b>este proyecto decide el diseño</b>, y una dirección que no sabe lo que ya se construyó produce dibujos que nacen viejos.</p>
+
+  <div class="h">1 · El choque del ámbar, resuelto — y en el sentido que pide la regla escrita</div>
+  <table class="aud">
+    <thead><tr><th style="width:300px">Serie</th><th style="width:200px">Antes</th><th style="width:200px">Ahora</th><th>Por qué</th></tr></thead>
+    <tbody>
+      <tr><td><b>Blocked</b></td><td class="w"><span class="sw" style="background:#f5a524"></span><span class="mono">#f5a524</span> — el acento</td><td class="w"><span class="sw" style="background:#c084fc"></span><span class="mono">#c084fc</span></td><td>La regla del proyecto dice que el ámbar es interfaz y no estado. El dashboard lo usaba como dato. Cede el dato.</td></tr>
+      <tr><td><b>Clients</b></td><td class="w"><span class="sw" style="background:#e6e9ef"></span> blanco</td><td class="w"><span class="sw" style="background:#f5a524"></span><span class="mono">#f5a524</span></td><td>Es la única serie medida en otra unidad —clientes, no consultas—. El acento marca esa diferencia, que sigue siendo interfaz.</td></tr>
+      <tr><td><b>Authoritative</b> y <b>Cached</b></td><td class="w">oliva y violeta, contiguos</td><td class="w"><span class="sw" style="background:#38bdf8"></span> celeste · <span class="sw" style="background:#f472b6"></span> rosa</td><td>Son las dos porciones dominantes del donut y eran hues vecinos. Separados al máximo.</td></tr>
+    </tbody>
+  </table>
+  <p class="lede" style="margin-top:10px">Y un defecto que la auditoría no podía ver, porque sólo existe en el código: <b>cada tarjeta de estadística llevaba su propio hex a mano y contradecía a la gráfica de debajo</b> — «Authoritative» era oliva arriba y celeste abajo, en la misma pantalla. Ahora tarjetas y gráficas leen el mismo mapa, indexado por etiqueta y no por posición.</p>
+
+  <div class="h">2 · El selector de nodo de cluster ya existe</div>
+  <p class="lede">La lista B lo señala como <b>cromo permanente que cambia el significado de todas las pantallas y no está dibujado</b>. En el código ya está, en las <b>ocho</b> superficies donde upstream lo tiene (diez selectores suyos: Zones comparte estado con su vista de registros, y Administration entre sus sub-pestañas).</p>
+  <table class="aud">
+    <thead><tr><th style="width:420px">Regla</th><th>Detalle</th></tr></thead>
+    <tbody>
+      <tr><td>No se dibuja nada si el servidor no reporta <span class="mono">clusterInitialized</span></td><td class="w">Por eso es invisible en cualquier instalación de un servidor, y por eso llevaba perdido sin que nadie lo notara</td></tr>
+      <tr><td>Sólo <b>Dashboard y Settings</b> ofrecen el agregado «Cluster», y es su valor por defecto</td><td class="w">Las otras seis arrancan en este servidor. Es el reparto de upstream, no una simplificación</td></tr>
+      <tr><td>Sólo esas dos <b>recuerdan</b> la elección</td><td class="w">En las claves de <span class="mono">localStorage</span> de upstream</td></tr>
+      <tr><td>Cada nodo se lista como <span class="mono">nombre (tipo)</span>, el tipo en minúscula</td><td class="w">—</td></tr>
+    </tbody>
+  </table>
+  <p class="lede" style="margin-top:10px"><b>Falta el dibujo</b>: hoy va como un campo etiquetado más, junto al control de periodo en Dashboard y en la cabecera de las demás. Es cromo permanente y merece su propia decisión.</p>
+
+  <div class="h">3 · Tres controles que faltaban, restaurados</div>
+  <table class="aud">
+    <thead><tr><th style="width:260px">Pantalla</th><th style="width:200px">Control</th><th>Qué pasaba</th></tr></thead>
+    <tbody>
+      <tr><td><b>Settings › Blocking</b></td><td>Quick Add de listas conocidas</td><td>El texto de ayuda que lo describe sobrevivió; el control no. El fichero que lo alimenta viajaba sin que nadie lo leyera.</td></tr>
+      <tr><td><b>Settings › Proxy &amp; Forwarders</b></td><td>Quick Select de forwarders</td><td>Se perdió entero, ni la mención. Al elegir uno fija además el protocolo y el proxy.</td></tr>
+      <tr><td><b>DNS Client</b></td><td>La lista de servidores conocidos</td><td>Quedó el campo de texto y se perdió su desplegable. Vuelve como <span class="mono">datalist</span>: se puede seguir escribiendo una dirección que no esté en la lista.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="h">4 · La escala de neutros no coincide, y hay que decidir cuál manda</div>
+  <p class="lede">Los <b>ocho colores semánticos coinciden exactos</b> entre <span class="mono">consola.css</span> y el <span class="mono">tokens.css</span> del código: acento, ok, warn, dan, info, viol, cyan y on-acc. Diseño e implementación dicen lo mismo sobre qué <i>significa</i> el color.<br><br><b>Los nueve neutros difieren todos</b>, y no por deriva: los de este proyecto llevan canal azul y los del código son gris neutro, de forma consistente en toda la escala.</p>
+  <table class="aud">
+    <thead><tr><th style="width:150px">Token</th><th style="width:220px">Este proyecto</th><th style="width:220px">El código</th><th>Nota</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">--bg</td><td class="w"><span class="sw" style="background:#0e1116"></span><span class="mono">#0e1116</span></td><td class="w"><span class="sw" style="background:#111315"></span><span class="mono">#111315</span></td><td></td></tr>
+      <tr><td class="mono">--pan</td><td class="w"><span class="sw" style="background:#141923"></span><span class="mono">#141923</span></td><td class="w"><span class="sw" style="background:#191c1f"></span><span class="mono">#191c1f</span></td><td></td></tr>
+      <tr><td class="mono">--pan2</td><td class="w"><span class="sw" style="background:#11151d"></span><span class="mono">#11151d</span></td><td class="w"><span class="sw" style="background:#212529"></span><span class="mono">#212529</span></td><td>En el código sube, no se hunde</td></tr>
+      <tr><td class="mono">--line</td><td class="w"><span class="sw" style="background:#232a36"></span><span class="mono">#232a36</span></td><td class="w"><span class="sw" style="background:#333a41"></span><span class="mono">#333a41</span></td><td><b>La diferencia mayor</b></td></tr>
+      <tr><td class="mono">--line2</td><td class="w"><span class="sw" style="background:#1a202b"></span><span class="mono">#1a202b</span></td><td class="w"><span class="sw" style="background:#24282d"></span><span class="mono">#24282d</span></td><td></td></tr>
+      <tr><td class="mono">--mute</td><td class="w"><span class="sw" style="background:#8b95a7"></span><span class="mono">#8b95a7</span></td><td class="w"><span class="sw" style="background:#9aa1a8"></span><span class="mono">#9aa1a8</span></td><td></td></tr>
+      <tr><td class="mono">--faint</td><td class="w"><span class="sw" style="background:#5d6779"></span><span class="mono">#5d6779</span></td><td class="w"><span class="sw" style="background:#868e96"></span><span class="mono">#868e96</span></td><td>Bastante más legible en el código</td></tr>
+      <tr><td class="mono">--field</td><td class="w"><span class="sw" style="background:#0a0d12"></span><span class="mono">#0a0d12</span></td><td class="w"><span class="sw" style="background:#0d0f11"></span><span class="mono">#0d0f11</span></td><td></td></tr>
+      <tr><td class="mono">--hover</td><td class="w"><span class="sw" style="background:#161c27"></span><span class="mono">#161c27</span></td><td class="w">no existe</td><td>El código no lo declara</td></tr>
+    </tbody>
+  </table>
+  <p class="lede" style="margin-top:10px"><b>Recomendación: la escala del código.</b> No son equivalentes: su <span class="mono">--line</span> es notablemente más claro y su <span class="mono">--faint</span> también, y eso no parece gusto sino un arreglo de contraste hecho contra pantallas reales — tablas de diez columnas donde una línea demasiado tenue deja de separar, y texto tenue que a <span class="mono">#5d6779</span> baja del mínimo legible sobre panel.<br><br>Va en contra de que este proyecto decida el diseño, y por eso se trae como decisión y no aplicado en silencio. Pero la Fase 1 <i>evoluciona</i> la dirección, no la obedece, y aquí el código trae información que este proyecto no tenía: cómo se comporta esa escala con datos de verdad.</p>
+</section>

@@ -1,0 +1,318 @@
+{
+ "_": "FOTO BASE DE UNIFORMIDAD, fase 2. Tomada el 2026-09-02 ANTES de tocar ninguna primitiva, que es la única forma de que la 2.3 —«dev/uniformity.js no puede empeorar»— tenga contra qué comparar. Producida por dev/uniformity.js servido TAL CUAL desde el build montado (dist/__uniformity.js), sin reescribirlo a mano: transcribir la herramienta habría falseado la foto.",
+ "anclaje": {
+  "commit": "3d47e8a",
+  "arbol_limpio": false,
+  "_por_que_no_basta_un_numero": "La primera version decia '21 ficheros modificados'. Un numero no permite reconstruir que habia, y ademas caduco solo: al escribir esta misma evidencia el arbol paso a 23. Lo que ancla una foto es la huella y la lista, no el recuento.",
+  "diff_sha256": "f4f67e4673c63ff549450eb9717bdff6c3061105cf56b35a17a5eda48e899ef2",
+  "diff_bytes": 37188,
+  "_diff_alcance": "`git diff HEAD` cubre solo lo MODIFICADO con seguimiento. Los ficheros sin seguimiento no entran en un diff y por eso van listados aparte.",
+  "modificados": [
+   "dev/static-contract.mjs",
+   "dev/static-contract.test.mjs",
+   "dev/uniformity.js",
+   "docs/2026-09-01-visual-redesign-plan.md",
+   "docs/direction/piloto-2-contrato-zones.md",
+   "docs/direction/piloto-2-dialogos.md",
+   "src/theme/tokens.css"
+  ],
+  "sin_seguimiento": [
+   "DESIGN.md",
+   "dev/assemble-piloto-3-prompt.mjs",
+   "dev/pane-contract-doc.mjs",
+   "dev/verify-evidencia.mjs",
+   "docs/direction/evidencia/general-dom.json",
+   "docs/direction/evidencia/uniformity-base-fase2.json",
+   "docs/direction/fase2-1-auditoria-primitivas.md",
+   "docs/direction/piloto-2-reconciliacion-recorrido.md",
+   "docs/direction/piloto-3-barra-aceptacion.md",
+   "docs/direction/piloto-3-contrato-general.md",
+   "docs/direction/piloto-3-reconciliacion.md",
+   "docs/direction/piloto-3-relevo.md",
+   "docs/prompts/piloto-2-correccion-2.md",
+   "docs/prompts/piloto-2-correccion.md",
+   "docs/prompts/piloto-3-general-ready.md",
+   "docs/prompts/piloto-3-general.md"
+  ],
+  "LO_QUE_DE_VERDAD_ANCLA": {
+   "unico_fichero_de_src_tocado": "src/theme/tokens.css",
+   "lineas_borradas_en_ese_diff": 0,
+   "tokens_nuevos_consumidos_por_algun_modulo": 0,
+   "conclusion": "El diff de src/ es PURAMENTE ADITIVO —doce declaraciones nuevas— y NINGUN modulo las usa todavia. Por tanto la consola que se fotografio se pinta exactamente igual que en el commit 3d47e8a, y esta foto vale como base de ese commit aunque el arbol estuviera sucio. Todo lo demas modificado es documentacion y herramientas de dev/, que no se sirven.",
+   "comprobado_con": "git diff --name-only HEAD | grep ^src/ ; grep -rn 'var(--<token>)' src/ para los doce"
+  },
+  "consola": "DNS Server 15.4, imagen oficial, instancia dev del harness"
+ },
+ "recorrido": {
+  "ancho": 1440,
+  "alto": 1000,
+  "_ancho_nota": "Un solo ancho, y a proposito. uniformity.js compara si el MISMO objeto se pinta igual entre pantallas, y sus once familias son independientes del ancho salvo donde hay media query; la unica del cromo es max-width:900px. Barrer 27x4 anchos son 108 evaluaciones para una senal que no cambia. SI UN CAMBIO POSTERIOR ES CONDICIONAL AL ANCHO, la base hay que retomarla a ese ancho.",
+  "navegacion": "SPA: se pulsan los enlaces reales, sin recarga, asi que la herramienta se inyecta una vez y acumula. Las 27 llegaron a su ruta, comprobado una a una.",
+  "espera_por_ruta_ms": 700,
+  "rutas": [
+   "/dashboard/",
+   "/zones/",
+   "/cache/",
+   "/allowed/",
+   "/blocked/",
+   "/apps/",
+   "/dnsclient/",
+   "/about/",
+   "/settings/general/",
+   "/settings/web-service/",
+   "/settings/optional-protocols/",
+   "/settings/tsig/",
+   "/settings/recursion/",
+   "/settings/cache/",
+   "/settings/blocking/",
+   "/settings/proxy-forwarders/",
+   "/settings/logging/",
+   "/dhcp/leases/",
+   "/dhcp/scopes/",
+   "/admin/sessions/",
+   "/admin/users/",
+   "/admin/groups/",
+   "/admin/permissions/",
+   "/admin/sso/",
+   "/admin/cluster/",
+   "/logs/view-logs/",
+   "/logs/query-logs/"
+  ],
+  "total_rutas": 27
+ },
+ "defecto_de_la_herramienta_arreglado_antes_de_capturar": {
+  "que": "uniformity.js:73 saltaba la celda de la fila vacia buscando la clase `_sinFilas_`.",
+  "por_que_fallaba": "La traduccion del repo a ingles de agosto renombro esa clase a `noRows` y el filtro no se actualizo con ella. Cualquier tabla VACIA entregaba su celda de 'No Lease Found' como muestra de densidad.",
+  "efecto": "/dhcp/leases/ producia una CUARTA firma de tabla inexistente, `td 24px 10px`, que es el relleno propio de la fila vacia.",
+  "arreglado": "El filtro busca ahora `_noRows_`, y el barrido se rehizo ENTERO con la herramienta corregida. Esta foto es la del barrido bueno.",
+  "queda_pendiente": "src/ui/Table.module.css:121 aun menciona `td.sinFilas` en un comentario. Es el mismo resto de la traduccion; no se toca aqui porque es una primitiva y la base va antes.",
+  "regresion": "dev/uniformity.test.mjs, 5 pruebas. Cuatro sobre el comportamiento —una tabla vacia no aporta densidad, una con filas si, y con las dos gana la de datos— y una que cruza el filtro contra la clase que Table.tsx usa HOY, para que un renombrado se caiga ahi y no en una foto base tomada seis semanas despues. Probadas EN NEGATIVO: con el filtro anterior (`_sinFilas_`) fallan 3 de 5. La primera version de la prueba cruzada pasaba con el filtro roto porque encontraba el nombre bueno en un COMENTARIO; se acoto a la linea del filtro. Una prueba que se satisface con un comentario no prueba nada, y eso solo se vio por probarla en negativo."
+ },
+ "lectura": {
+  "familias_en_una_sola_firma": 8,
+  "familias_con_varias": 3,
+  "de_esas_con_varias_reales": 1,
+  "_como_se_lee": "`cuantas` no es un veredicto. Dos firmas pueden ser dos objetos distintos a proposito, y una sola puede ser fea. Lo que no puede pasar es que haya cinco sin que nadie lo haya decidido."
+ },
+ "crudo": {
+  "panel": [
+   "shadow | 10px | no-header | -  →  /dashboard/, /cache/, /allowed/, /blocked/, /apps/, /about/, /settings/general/, /settings/web-service/, /settings/optional-protocols/, /settings/tsig/, /settings/recursion/, /settings/cache/, /settings/blocking/, /settings/proxy-forwarders/, /settings/logging/, /admin/permissions/, /admin/sso/, /logs/view-logs/, /logs/query-logs/"
+  ],
+  "titulo": [
+   "22px/600/-0.55px  →  las 27"
+  ],
+  "gap-under-the-title": [
+   "24px  →  las 27"
+  ],
+  "recuento": [
+   "12.5px/400/rgb(154, 161, 168)  →  /zones/, /cache/, /allowed/, /blocked/, /dhcp/leases/, /dhcp/scopes/, /admin/sessions/, /admin/users/, /admin/groups/, /admin/permissions/"
+  ],
+  "campo-text": [
+   "8px | 8px 10px | 12.5px | 1px | inset  →  /zones/, /cache/, /allowed/, /blocked/, /dnsclient/, /settings/general/, /settings/web-service/, /settings/optional-protocols/, /settings/recursion/, /settings/cache/, /settings/blocking/, /settings/proxy-forwarders/, /settings/logging/, /admin/sso/, /logs/query-logs/"
+  ],
+  "campo-area": [
+   "8px | 8px 10px | 12.5px | 1px | inset  →  /settings/general/, /settings/web-service/, /settings/optional-protocols/, /settings/recursion/, /settings/blocking/, /settings/proxy-forwarders/"
+  ],
+  "aviso": [
+   "8px | 15px from the panel  →  /about/, /settings/general/, /settings/web-service/, /settings/optional-protocols/, /settings/tsig/, /settings/recursion/, /settings/cache/, /settings/blocking/, /settings/proxy-forwarders/, /settings/logging/, /admin/sso/"
+  ],
+  "radio": [
+   "26px | 9px | 12.5px | rgb(232, 234, 236)  →  /settings/general/, /settings/recursion/, /settings/blocking/, /settings/proxy-forwarders/, /settings/logging/"
+  ],
+  "tabla": [
+   "th 10.5px/600/0.525px/rgb(33, 37, 41) · td 9px 10px  →  /zones/, /cache/, /allowed/, /dhcp/scopes/, /admin/sessions/, /admin/users/, /admin/groups/",
+   "th 10.5px/600/0.525px/rgba(0, 0, 0, 0) · td 6px 8px 6px 0px  →  /settings/general/, /admin/sso/",
+   "th 10.5px/600/0.525px/rgba(0, 0, 0, 0) · td —  →  /settings/tsig/, /admin/sso/",
+   "th 10.5px/600/0.525px/rgb(33, 37, 41) · td —  →  /dhcp/leases/"
+  ],
+  "_tabla_nota": "CUATRO firmas, DOS objetos. Son la tabla de datos y la editable, cada una con y sin muestra de celda: una tabla vacia no tiene de donde sacarla y aparece como su propia firma. Documentado en la cabecera de la herramienta. NO es deriva.",
+  "row-checkbox": [
+   "0px | normal | 10.5px | rgb(154, 161, 168)  →  /zones/",
+   "40px | normal | 13px | rgb(232, 234, 236)  →  /zones/"
+  ],
+  "_row-checkbox_nota": "Las dos excepciones deliberadas de la casilla de tabla, documentadas en ui/Table.module.css: 40px en la celda de datos como destino tactil, 0 en la de cabecera. NO es deriva.",
+  "settings-checkbox": [
+   "26px | 9px | 12.5px | rgb(232, 234, 236)  →  /settings/general/, /settings/web-service/, /settings/optional-protocols/, /settings/recursion/, /settings/cache/, /settings/blocking/, /settings/proxy-forwarders/, /settings/logging/, /admin/sso/",
+   "34px | 8px | 12.5px | rgb(232, 234, 236)  →  /dnsclient/",
+   "26px | 8px | 12.5px | rgb(232, 234, 236)  →  /logs/query-logs/"
+  ],
+  "_settings-checkbox_nota": "LA UNICA DERIVA REAL DE LA FOTO. Dominante 26/9 en nueve rutas; /dnsclient/ se va a 34 de alto y 8 de hueco, y /logs/query-logs/ a 8 de hueco. La misma casilla de ajuste pintada de tres maneras. Es lo que la fase 2 tiene que dejar en una."
+ },
+ "contrato_para_la_2_3": "Al terminar la fase 2 se repite este barrido, con esta herramienta, a este ancho y por estas 27 rutas. NINGUNA familia puede subir su numero de firmas. `settings-checkbox` debe BAJAR de 3 a 1: es la unica deriva que esta foto encuentra, y arreglarla es parte del trabajo, no un extra.",
+ "mediciones": [
+  {
+   "cuando": "2026-09-03",
+   "por_que": "Primer cambio de la fase 2 que toca una familia medida: la unificacion de la casilla de ajuste. Se barre para atribuirlo EN AISLAMIENTO, antes de seguir con PanelForm.",
+   "que_cambio_en_el_codigo": "logs/QueryLogs y dnsclient/DnsClient pasan a ui/Check; se retiran las dos definiciones locales (.check en Logs.module.css, .chk en DnsClient.module.css).",
+   "mismo_recorrido": "1440x1000, las mismas 27 rutas, navegando por SPA. Las 27 llegaron a su destino.",
+   "diff_sha256_del_arbol": "efab1f09e78f012c16fa4bbc13d6855ad6970a7b4dd104034bf5931d7389a6a6",
+   "resultado": {
+    "settings-checkbox": "3 → 1. Las tres firmas colapsan en la dominante 26/9, que ahora cubre 11 rutas: las nueve de Settings, /admin/sso/ y ademas /dnsclient/ y /logs/query-logs/.",
+    "las_otras_diez": "IDENTICAS firma a firma, no solo iguales en numero. Comparadas cadena a cadena contra el crudo de la foto base.",
+    "veredicto": "Ninguna familia sube. La unica que se mueve es la que se queria mover, y en la direccion que el contrato de la 2.3 exige."
+   }
+  },
+  {
+   "cuando": "2026-09-03",
+   "por_que": "Cierre del bloque de avisos: `Note!` a contorno y icono por tipo, aplicado en Alert -no en PanelForm- porque los avisos se pintan por dos vias.",
+   "bundle_comprobado": "index-Dz5MMhoa.css, el mismo que el build en disco. Comprobado ANTES de medir, despues de que un barrido anterior saliera invalido por medir con el bundle viejo.",
+   "recorrido": "27 rutas + los dos modales (Backup Settings y Restore Settings), 29 medidas, todas llegaron. Los modales son la via de <Alert> DIRECTO; los paneles, la de PanelForm.",
+   "resultado": {
+    "aviso-info": "contorno | con-icono — DOS firmas, que es lo correcto: una por contexto. `15px from the panel` en los diez paneles Y en el modal de Backup, y `loose on the page` para el aviso propio del modal.",
+    "aviso-warning": "relleno | con-icono — dos firmas por el mismo motivo.",
+    "las_dos_vias_coinciden": "El `Note!` de PanelForm y el de <Alert> directo dan la MISMA cadena salvo el inset. Era lo que habia que demostrar: tratarlo solo en el kit habria hecho que el mismo aviso pesara distinto en un panel y en un modal.",
+    "las_otras_diez_familias": "IDENTICAS cadena a cadena.",
+    "veredicto": "Los seis puntos de cierre pasan."
+   },
+   "LO_QUE_CAZO_EL_BARRIDO": "El primer intento escribio `.info { background: transparent }` y NO HIZO NADA: `composes` anade la clase del tono, asi que quedaban dos reglas de una clase con la misma especificidad y ganaba la que el bundle emitia despues -la del tono-. Se arreglo con `.alert.info`. Y lo importante: esto se vio porque la familia `aviso-<tipo>` incorpora ahora el RELLENO. Con la firma anterior -borderRadius | inset- el cambio habria salido en verde siendo un no-op.",
+   "diff_sha256_del_arbol": "dc2d3d0919a5b7158435f2e984db253d9994adcf96926c80950d4250c317d303"
+  },
+  {
+   "cuando": "2026-09-03",
+   "por_que": "`--notice-max` en `.notices`. La firma se amplio ANTES, para poder medir la decision.",
+   "bundle_comprobado": "index-DSLnf6oc.css = build en disco, comprobado antes de medir.",
+   "la_firma_se_corrigio_a_mitad": "La primera version media el `max-width` DECLARADO del aviso, y no habria visto nada: el tope va en el CONTENEDOR (.notices), asi que el aviso sigue diciendo `max-width: none`. Se cambio a medir el ANCHO PINTADO. Es el mismo error que ya se cometio con el relleno -mirar la declaracion en vez del resultado- y van dos.",
+   "antes": {
+    "paneles": "1136px",
+    "About": "270px"
+   },
+   "despues": {
+    "paneles": "880px",
+    "dialogos": "526px",
+    "About": "270px"
+   },
+   "resultado": {
+    "el_cambio_entra": "1136 -> 880 en los diez paneles. Los dialogos miden 526 y ya estaban por debajo del tope, asi que no se tocan.",
+    "aviso-info_sube_de_2_a_3": "INVESTIGADO ANTES DE ACEPTARLO, y no es deriva. La tercera firma es /about/ a 270px: su aviso vive en la columna de 300 de un grid `860px 300px`, y ademas su titulo literal es `Note:` CON DOS PUNTOS -el mensaje de estado de actualizacion-, no el `Note!` de upstream. Ya medía 270 ANTES del cambio: no lo causa este trabajo, lo hace visible la firma nueva.",
+    "criterio": "Una firma por tipo y por CONTEXTO se mantiene: panel 880, dialogo 526, columna estrecha de About 270.",
+    "las_otras_diez_familias": "IDENTICAS cadena a cadena."
+   },
+   "diff_sha256_del_arbol": "cca2d17ed65550a4f79b193162996e0ae8aa05582ae875f5dbf4e50751dea708"
+  },
+  {
+   "cuando": "2026-09-03",
+   "por_que": "Anchos de control: `--ctrl-num` gobierna el ancho numerico por defecto y `--area-min` pone suelo a la altura del area de texto.",
+   "la_firma_se_amplio_ANTES": "Dos familias NUEVAS -`campo-num-ancho` y `campo-area-alto`- en vez de tocar `campo-text`/`campo-area`. `box()` excluye el ancho a proposito, porque el ancho de un campo es suyo; meterlo ahi habria convertido cada campo en su firma. Se mide lo RENDERIZADO, no lo declarado.",
+   "medido_en_dos_anchos": "1440 y 390, como se pidio.",
+   "antes_1440": {
+    "campo-num-ancho": "4 firmas: 100 (defecto, 6 paneles) · 272 (celdas QPM) · 125 (cache) · 110 (query-logs)",
+    "campo-area-alto": "3 firmas: 66 · 98 · 130, todas por `rows`"
+   },
+   "despues_1440": {
+    "campo-num-ancho": "4 firmas: 104 (defecto, 6 paneles) · 272 · 125 · 110",
+    "campo-area-alto": "3 firmas: 66 · 98 · 130, SIN CAMBIO"
+   },
+   "despues_390": "5 firmas: 104 (defecto) · 81 y 73 (celdas QPM, que se encogen con la tabla) · 125 · 110.",
+   "hallazgo": "Al mover el defecto de 100 a 104 aparecio una firma nueva de 100px en /settings/blocking/: era un `<Input>` EN CRUDO con `style={{width:100}}`, es decir una COPIA del antiguo valor por defecto y no una decision de ese campo. Invisible mientras el defecto valia 100. Alineado al token; la familia vuelve a su recuento.",
+   "sobre_area_min": "NO cambia ningun render por defecto: las alturas las pone `rows` y todas -66, 98, 130- estan muy por encima de 54. Su funcion es el suelo cuando el usuario arrastra, porque el area es `resize: vertical`. Se dice en vez de apuntarse una mejora que no se ve.",
+   "overrides_conservados": "80, 125, 200, 38, 28 siguen mandando sobre el token, como se pidio. Las celdas de las listas QPM tampoco las gobierna: son `Input` dentro de una tabla y las dimensiona la celda.",
+   "otras_familias": "Sin movimiento. `aviso-info` y `aviso-warning` siguen en 880 con su tratamiento.",
+   "diff_sha256_del_arbol": "65d505e459a358405c5d2cc6c036d415219d6ba0e74e7c037c94267a6c23a8de"
+  },
+  {
+   "cuando": "2026-09-03",
+   "por_que": "La ayuda en tercera columna: `--help-col` en `.row`, con el corte 560 del piloto 3. `.mrow` conserva su 720 y su geometria modal.",
+   "bundle_comprobado": "index-dn52RGiB.css. Comprobado ANTES de medir: el navegador tenia cargado index-Dnx3hkIi.css, el bundle viejo, y un barrido en ese estado habria salido en falso.",
+   "la_firma_se_acoto_ANTES_Y_DURANTE": "`reticula-panel`/`reticula-modal` se anadieron antes del cambio. Durante el barrido se vio que `[class*=\"_row_\"]` atrapaba tambien el `.row` propio de Cache, Allowed, Blocked y View Logs -que no son reticulas- y la familia daba una tercera firma `none`. Se acoto a la fila de `Form` por su rotulo hijo (`_rowLabel_`/`_mrowLabel_`), con regresion y prueba negativa: sin la guarda, la prueba nueva falla.",
+   "cambio_estructural": "La ayuda deja de estar anidada en la celda del control y pasa a ser hermana suya, SOLO en la rama no modal. Es lo que permite que ocupe columna propia: mientras estuvo dentro de la celda, ninguna regla de reticula podia sacarla. `Row` y `GroupRow` reciben el mismo trato porque pintan sobre la MISMA reticula `.row` y veinte sitios pasan ayuda a `GroupRow`.",
+   "ocho_anchos_en_settings_general": {
+    "1440": "210px 542px 360px · ayuda en columna 3 · 41 ayudas visibles · 19 sufijos · min control 104 · 0 recortes · sin desborde",
+    "1181": "210px 283px 360px · columna 3 · 41 · 19 · 104 · 0 · sin desborde",
+    "1180": "210px 654px · columna 2 · 41 · 19 · 104 · 0 · sin desborde",
+    "721": "210px 431px · columna 2 · 41 · 19 · 104 · 0 · sin desborde",
+    "720": "210px 430px · columna 2 · 41 · 19 · 104 · 0 · sin desborde",
+    "561": "210px 271px · columna 2 · 41 · 19 · 104 · 0 · sin desborde",
+    "560": "496px (apilado) · columna 1 · 41 · 19 · 104 · 0 · sin desborde",
+    "390": "326px (apilado) · columna 1 · 41 · 19 · 104 · 0 · sin desborde"
+   },
+   "el_720_ya_no_es_del_formulario": "721 y 720 dan la misma reticula de dos columnas -431 y 430, la diferencia es el pixel de viewport-. El panel ya no escalona ahi. El 720 queda como DEUDA MODAL y solo eso.",
+   "dhcp": "`Add Scope` a 1440: misma reticula `210px 542px 360px` en sus 29 filas, 29 ayudas visibles, 22 en tercera columna, min control 80 -el override explicito, conservado-, 0 recortes. A 390: `326px`, 29 ayudas visibles, min 80, 0 recortes.",
+   "el_modal_intacto": "`Add Zone`: `reticula-modal` = `180px 494px`, una sola firma, 4 filas. Identica a la base. Cero `_rowHelp_` dentro del dialogo: su ayuda sigue anidada bajo el control.",
+   "hallazgo_1_regresion_real_y_corregida": "A 1181, quitar 360 px a la columna del control dejo las celdas de las dos listas QPM en 59 px y CINCO de ellas -6000, 1200- ya no mostraban su propio valor. No es un aprieto estetico. Arreglado donde se declara: `--ctrl-num` como SUELO de la celda numerica de una lista -el mismo token que gobierna la fila- y la tabla se desplaza dentro de su celda en vez de recortar. Comprobado: 0 recortes en los ocho anchos.",
+   "hallazgo_2_ayuda_en_dos_sitios": "`EditableList` pintaba su ayuda dentro del grupo, asi que las 2 ayudas de las listas quedaban bajo la tabla mientras las otras 39 estaban al lado. El piloto pide las 41 en la tercera columna. Pasa a darsela a `GroupRow`: en tercera columna se ve el salto de 30 a 32.",
+   "familias_barrido_1440_27_rutas": {
+    "sin_movimiento": "panel 1 · titulo 1 · gap-under-the-title 1 · tabla 4 · recuento 1 · campo-text 1 · row-checkbox 2 · settings-checkbox 1 · aviso-info 2 · aviso-warning 1 · campo-area 1 · radio 1 · campo-area-alto 3",
+    "campo-num-ancho": "4, las mismas cuatro: 104 (defecto, 8 paneles) · 148 (celdas QPM, antes 272: la columna del control cede 360 px a la ayuda) · 125 (cache) · 110 (query-logs)",
+    "reticula-panel": "2: `210px 542px 360px` en nueve paneles y `210px 552px 360px` en `/settings/tsig/`",
+    "ninguna_regresion_sin_explicar": "Y se dice ASI y no `ninguna familia subio`, porque UNA subio. `aviso` era una sola familia indiferenciada de 1 firma; separada por tipo y ensenada a medir relleno, icono y ancho pintado, `aviso-info` acabo en 3 -panel 880, dialogo 526 y /about/ a 270-. La tercera se investigo ANTES de aceptarla y no es deriva: ese aviso vive en la columna de 300 de un grid `860px 300px`, su titulo literal es `Note:` con dos puntos, y YA MEDIA 270 antes del cambio. Una firma por tipo y por CONTEXTO es el criterio. Queda registrado en la medicion 3 de esta misma lista.",
+    "ojo_con_este_barrido": "Estas 27 rutas NO abren ningun dialogo, asi que `aviso-info` sale aqui en 2 y no en 3: la firma de dialogo -526- solo existe con un modal abierto. La medicion 3 si los abrio. Dos recuentos distintos de la misma familia no son una contradiccion si se dice que miden recorridos distintos, y sin decirlo si lo son."
+   },
+   "el_552_de_tsig_no_es_deriva": "Es la unica ruta de Settings lo bastante corta para NO tener barra de desplazamiento vertical, asi que su viewport mide 10 px mas y la columna elastica se los queda. Comprobado con el dato, no supuesto: se registro `scrollHeight > innerHeight` por ruta y solo tsig sale en false.",
+   "un_barrido_salio_corto_y_no_se_conto": "El primero midio `campo-num-ancho` en 3 y no en 4: `/logs/query-logs/` carga su dato de forma asincrona y a los 700 ms su campo de pagina aun no existia. Una familia que BAJA por una espera corta no es una mejora. Se repitio a 1600 ms y vuelve a dar 4.",
+   "diff_sha256_del_arbol": "4727627abbc34afc2478d48a09793dd54aaf0ad199ca8a629097760f897d78ab"
+  },
+  {
+   "cuando": "2026-09-03",
+   "por_que": "Cierre del bloque de Settings: senal del interruptor maestro, avisos reordenados, botones con candado, recuento por seccion y cabecera pegajosa. Se barre para atribuir el bloque ENTERO antes de commitear.",
+   "bundle_comprobado": "index-Rly3niO_.css, el mismo que el build en disco. Se repitio el barrido ENTERO sobre este bundle tras quitar un <span> redundante de `BotonConPermiso`: ese <span> solo se pintaba sin permiso, asi que con sesion de administrador no cambiaba ninguna de las 27 rutas, pero razonarlo no es medirlo. Antes se habia medido igual sobre index-wpzWBPd7.css, con el mismo resultado.",
+   "anclaje": {
+    "commit": "af9d71e",
+    "diff_sha256_del_arbol": "b56806d6c7e30ba7f7efd85fc57b530cbb95c72028f2f0ec550f5cc1678d42a6"
+   },
+   "recorrido": "1440x1000, las mismas 27 rutas, navegando por SPA. Las 27 llegaron. `/logs/query-logs/` con 1600 ms, por la nota de la medicion 4: a 700 ms su campo aun no existe y `campo-num-ancho` sale en 3 sin que nada haya mejorado.",
+   "resultado": {
+    "identicas_a_la_medicion_4": "panel 1 - titulo 1 - gap-under-the-title 1 - tabla 4 - recuento 1 - campo-text 1 - row-checkbox 2 - settings-checkbox 1 - aviso-info 2 - aviso-warning 1 - campo-area 1 - radio 1 - campo-area-alto 3 - campo-num-ancho 4 - reticula-panel 2. Comparadas cadena a cadena, no solo en numero.",
+    "veredicto": "Ninguna familia sube. Pero el barrido no salio limpio a la primera, y eso es lo que valia el barrido."
+   },
+   "LO_QUE_CAZO_EL_BARRIDO": {
+    "sintoma": "`reticula-panel` daba 3 en vez de 2, con una tercera firma `210px 540px 360px` que solo existia en `/settings/general/`: dos pixeles menos que el `210px 542px 360px` de los otros nueve paneles.",
+    "causa": "El filete ambar del interruptor maestro se pinto como `border-left: 2px solid var(--acc)`. El borde se come dos pixeles de la caja de la fila, asi que la columna del control de las CINCO filas dependientes arrancaba dos pixeles a la derecha de las otras 34. En un formulario denso eso es una columna que deja de estar alineada.",
+    "por_que_importa": "Una senal de estado no puede mover el contenido que senala. Y no se ve mirando la pantalla: dos pixeles en una fila suelta no se notan, y la herramienta existe precisamente para lo que una revision pantalla a pantalla no ve.",
+    "arreglo": "`box-shadow: inset 2px 0 0 0 var(--acc)`. Pinta el mismo filete y no ocupa reticula. Medido despues: las 39 celdas de control arrancan en x=477, dependientes y no dependientes, y la familia vuelve a sus dos firmas de siempre.",
+    "guarda": "`src/screens/settings/maestro.test.tsx` lee `ui/Form.module.css` y exige `box-shadow: inset` y ningun `border` ni `padding` en `.dependiente`. jsdom no aplica modulos CSS, asi que ninguna prueba de render podia ver esto. Probada en negativo: devolviendo el `border-left`, la prueba falla."
+   },
+   "OTRO_DEFECTO_DEL_INSTRUMENTO": "El recuento por seccion contaba las 15 celdas de las dos listas QPM: `Rate Limiting` decia 18 y las diez cifras sumaban 54 en vez de los 39 del piloto. Una celda de fila es dato del servidor, asi que contarla convierte el recuento en una cifra volatil en lugar de una propiedad de la pantalla. Excluidas las celdas dentro de `table`, la suma da 39 y vuelve a comprobarse a si misma.",
+   "lo_que_este_barrido_NO_cubre": "Las 27 rutas no abren ningun dialogo, asi que `aviso-info` sale en 2 y no en 3; es el mismo recorrido de la medicion 4 y por eso son comparables. La rama del candado tampoco la ve `uniformity.js`: se comprobo aparte, en el navegador, con un usuario `revisor` creado en el arnes con `Settings|true|false|false`. Los cuatro botones salieron presentes, apagados, con candado, con su nombre accesible intacto y con `Requires Settings: Modify` y `Requires Cache: Delete` en el tooltip al pasar el raton. El arnes quedo como estaba: usuario borrado y los permisos de `DNS Administrators` sobre `Settings` restituidos a true|true|false."
+  },
+  {
+   "cuando": "2026-09-04",
+   "por_que": "Construccion del arquetipo herramienta: la primitiva `ui/Crudo`, el reagrupado del filtro de Query Logs alrededor del modo, los siete colores de fila sobre los tokens y su leyenda, y los tres verbos con candado de View Logs.",
+   "bundle_comprobado": "index-ddKTTGsL.css, el mismo que el build en disco.",
+   "recorrido": "1440x1000, las mismas 27 rutas por SPA. Las 27 llegaron. `/logs/query-logs/` con 1800 ms.",
+   "resultado": "Las quince familias identicas a la base, cadena a cadena. `settings-checkbox` sigue en UNA firma y ahora cubre once rutas: se le suma `/logs/query-logs/`, porque `Live Update` dejo de estar escrita en la barra de acciones y pasa a ser la misma casilla que las demas.",
+   "LO_QUE_CAZO_EL_BARRIDO": "El primer intento metio `Live Update` dentro de un `.field` del formulario, y `.field label` le cambio el rotulo a 11 px y gris: `settings-checkbox` paso de UNA firma a DOS, y la segunda existia solo en esa ruta. Una casilla ES su propio rotulo; `.field` es para un control con rotulo aparte encima. No se ve mirando la pantalla —el cambio es de un punto y medio de tamano— y es justo lo que esta herramienta existe para ver."
+  }
+ ],
+ "base_modal": {
+  "_": "Base MODAL previa, 2026-09-03, antes de tocar el tratamiento de los avisos. Tomada con uniformity.js ya ampliado a portales y con la familia `aviso` partida por tipo. En /settings/general/ a 1440.",
+  "por_que_hacia_falta": "Dialog monta por RadixDialog.Portal, fuera de <main>, y la herramienta arrancaba en <main>: durante toda la fase 1 no vio NI UN contenido de dialogo. Sin esta base, cambiar el aviso globalmente no se podia atribuir en la mitad de los sitios donde vive.",
+  "ejemplos": {
+   "panel": "Los nueve paneles de Settings, via PanelForm (42 avisos).",
+   "Backup Settings": "Dos <Alert type=info title='Note!'> por Alert DIRECTO (la via de los 36).",
+   "Restore Settings": "Un <Alert type=warning title='Warning!'> por Alert directo."
+  },
+  "medido": {
+   "solo_panel": {
+    "aviso-info": [
+     "relleno | sin-icono | 8px | 15px from the panel"
+    ],
+    "aviso-warning": [
+     "relleno | sin-icono | 8px | 15px from the panel"
+    ]
+   },
+   "con_Backup_abierto": {
+    "aviso-info": [
+     "relleno | sin-icono | 8px | 15px from the panel",
+     "relleno | sin-icono | 8px | loose on the page"
+    ],
+    "aviso-warning": [
+     "relleno | sin-icono | 8px | 15px from the panel"
+    ]
+   },
+   "con_Restore_abierto": {
+    "aviso-info": [
+     "relleno | sin-icono | 8px | 15px from the panel"
+    ],
+    "aviso-warning": [
+     "relleno | sin-icono | 8px | 15px from the panel",
+     "relleno | sin-icono | 8px | loose on the page"
+    ]
+   }
+  },
+  "LO_QUE_DICE_ESTA_BASE": {
+   "1_la_diferencia_no_existe_hoy": "`aviso-info` y `aviso-warning` dan la MISMA cadena: `relleno | sin-icono | 8px | 15px from the panel`. Los dos avisos se distinguen hoy SOLO por el tono, que la firma no mira. Es la medida de lo que el piloto 3 dijo con palabras: la diferencia entre los dos no se ve.",
+   "2_el_dialogo_ya_se_mide": "Abrir Backup o Restore anade una firma con `loose on the page`: es el aviso del modal, que no tiene panel del que estar sangrado. La ampliacion a portales funciona contra la app real y no solo en jsdom."
+  },
+  "CRITERIO_DE_ACEPTACION_CORREGIDO": "«Una firma por tipo» hay que precisarlo, y esta base lo demuestra: el `inset` es CONTEXTO, no tratamiento. Un aviso de panel esta sangrado 15px y uno de dialogo va suelto, y eso es correcto en los dos. El criterio es UNA FIRMA POR TIPO Y POR CONTEXTO: que todos los avisos de panel coincidan entre si y todos los de dialogo entre si. Exigir una sola firma conjunta marcaria como deriva una diferencia legitima -y quitar el inset de la firma perderia justamente lo que esta familia se invento para cazar."
+ }
+}

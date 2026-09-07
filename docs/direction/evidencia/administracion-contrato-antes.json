@@ -1,0 +1,2145 @@
+{
+  "sessions": {
+    "tool": "25ba2b3ed242",
+    "bundle": {
+      "css": [
+        "index-ddKTTGsL.css"
+      ],
+      "js": [
+        "index-Dctpo8kj.js"
+      ]
+    },
+    "route": "/admin/sessions/",
+    "title": "Sessions",
+    "screenActions": [
+      "Create Token",
+      "—"
+    ],
+    "buttons": [
+      {
+        "name": "Create Token",
+        "where": "header",
+        "disabled": false
+      },
+      {
+        "name": "—",
+        "where": "header",
+        "disabled": false
+      },
+      {
+        "name": "Username",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "Session",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "Last Seen",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "Remote Address",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "User Agent",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "admin",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "View Details",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "Actions for 1a826f02fbdc35f7",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "admin",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "View Details",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "Actions for 4ae539e96569e23b",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "admin",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "View Details",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "Actions for 9fecd0e8765e19e6",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "admin",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "View Details",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "Actions for 2996b0c4848db541",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "admin",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "View Details",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "Actions for b2d07ccb9e65f723",
+        "where": "row",
+        "disabled": false
+      }
+    ],
+    "blocks": [],
+    "looseFields": [
+      {
+        "label": "Cluster Node",
+        "kind": "combobox",
+        "options": [
+          "dev.cluster.test (primary)",
+          "nodo2.cluster.test (secondary)"
+        ],
+        "state": [],
+        "help": null,
+        "actions": [
+          "Create Token",
+          "—"
+        ]
+      }
+    ],
+    "links": [],
+    "groupNotes": [],
+    "prose": [],
+    "strays": [
+      "Administration",
+      "Sessions",
+      "[1a826f02fbdc35f7]",
+      "(current)",
+      "Standard",
+      "2026-09-04 12:34:10",
+      "(a few seconds ago)",
+      "172.23.0.1",
+      "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36",
+      "cluster.test",
+      "[4ae539e96569e23b]",
+      "Cluster API Token",
+      "2026-09-04 12:34:08",
+      "172.23.0.3",
+      "Technitium DNS Server HTTP API Client",
+      "[9fecd0e8765e19e6]",
+      "2026-09-04 12:32:21",
+      "(2 minutes ago)",
+      "curl/8.18.0",
+      "[2996b0c4848db541]",
+      "[b2d07ccb9e65f723]",
+      "2026-09-04 12:08:11",
+      "(26 minutes ago)",
+      "Total Sessions: 5"
+    ],
+    "footer": [],
+    "state": "populated",
+    "regions": [],
+    "overview": {
+      "cards": [],
+      "counters": [],
+      "charts": [],
+      "topN": []
+    },
+    "tables": [
+      {
+        "columns": [
+          {
+            "label": "Username"
+          },
+          {
+            "label": "Session"
+          },
+          {
+            "label": "Last Seen"
+          },
+          {
+            "label": "Remote Address"
+          },
+          {
+            "label": "User Agent"
+          },
+          {
+            "label": "(acciones)",
+            "sinRotulo": true
+          }
+        ],
+        "rowActions": [
+          "admin",
+          "View Details",
+          "Actions for 1a826f02fbdc35f7",
+          "Actions for 4ae539e96569e23b",
+          "Actions for 9fecd0e8765e19e6",
+          "Actions for 2996b0c4848db541",
+          "Actions for b2d07ccb9e65f723"
+        ]
+      }
+    ],
+    "counts": {
+      "fields": 1,
+      "buttons": 22,
+      "height": 923
+    }
+  },
+  "users": {
+    "tool": "25ba2b3ed242",
+    "bundle": {
+      "css": [
+        "index-ddKTTGsL.css"
+      ],
+      "js": [
+        "index-Dctpo8kj.js"
+      ]
+    },
+    "route": "/admin/users/",
+    "title": "Users",
+    "screenActions": [
+      "Add User"
+    ],
+    "buttons": [
+      {
+        "name": "Add User",
+        "where": "header",
+        "disabled": false
+      },
+      {
+        "name": "Username",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "Display Name",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "Type",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "2FA Status",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "Status",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "Recent Login",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "Previous Login",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "admin",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "View Details",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "Disable User",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "Actions for admin",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "ana",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "View Details",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "Disable User",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "Actions for ana",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "luis",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "View Details",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "Disable User",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "Actions for luis",
+        "where": "row",
+        "disabled": false
+      }
+    ],
+    "blocks": [],
+    "looseFields": [],
+    "links": [],
+    "groupNotes": [],
+    "prose": [
+      "AdministrationUsersAdd UserUsernameDisplay NameType2FA StatusStatusRecent LoginPrevious LoginadminAdministratorLocalDisabledEnabled2026-09-04 12:32:21 from 172.23.0.12026-09-04 12:32:21 from 172.23.0.1anaAna RuizLocalDisabledEnabledNeverNeverluisLuis PenaLocalDisabledEnabledNeverNeverTotal Users: 3"
+    ],
+    "strays": [
+      "Administration",
+      "Users",
+      "Administrator",
+      "Local",
+      "Disabled",
+      "Enabled",
+      "2026-09-04 12:32:21 from 172.23.0.1",
+      "Ana Ruiz",
+      "Never",
+      "Luis Pena",
+      "Total Users: 3"
+    ],
+    "footer": [],
+    "state": "populated",
+    "regions": [],
+    "overview": {
+      "cards": [],
+      "counters": [],
+      "charts": [],
+      "topN": []
+    },
+    "tables": [
+      {
+        "columns": [
+          {
+            "label": "Username"
+          },
+          {
+            "label": "Display Name"
+          },
+          {
+            "label": "Type"
+          },
+          {
+            "label": "2FA Status"
+          },
+          {
+            "label": "Status"
+          },
+          {
+            "label": "Recent Login"
+          },
+          {
+            "label": "Previous Login"
+          },
+          {
+            "label": "(acciones)",
+            "sinRotulo": true
+          }
+        ],
+        "rowActions": [
+          "admin",
+          "View Details",
+          "Disable User",
+          "Actions for admin",
+          "ana",
+          "Actions for ana",
+          "luis",
+          "Actions for luis"
+        ]
+      }
+    ],
+    "counts": {
+      "fields": 0,
+      "buttons": 20,
+      "height": 923
+    }
+  },
+  "groups": {
+    "tool": "25ba2b3ed242",
+    "bundle": {
+      "css": [
+        "index-ddKTTGsL.css"
+      ],
+      "js": [
+        "index-Dctpo8kj.js"
+      ]
+    },
+    "route": "/admin/groups/",
+    "title": "Groups",
+    "screenActions": [
+      "Add Group"
+    ],
+    "buttons": [
+      {
+        "name": "Add Group",
+        "where": "header",
+        "disabled": false
+      },
+      {
+        "name": "Name",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "Description",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "Administrators",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "View Details",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "Actions for Administrators",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "DHCP Administrators",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "View Details",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "Actions for DHCP Administrators",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "DNS Administrators",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "View Details",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "Actions for DNS Administrators",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "Operadores",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "View Details",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "Actions for Operadores",
+        "where": "row",
+        "disabled": false
+      }
+    ],
+    "blocks": [],
+    "looseFields": [],
+    "links": [],
+    "groupNotes": [],
+    "prose": [
+      "AdministrationGroupsAdd GroupNameDescriptionAdministratorsSuper administratorsDHCP AdministratorsDHCP service administratorsDNS AdministratorsDNS service administratorsOperadoresSolo lectura del DNSTotal Groups: 4"
+    ],
+    "strays": [
+      "Administration",
+      "Groups",
+      "Super administrators",
+      "DHCP service administrators",
+      "DNS service administrators",
+      "Solo lectura del DNS",
+      "Total Groups: 4"
+    ],
+    "footer": [],
+    "state": "populated",
+    "regions": [],
+    "overview": {
+      "cards": [],
+      "counters": [],
+      "charts": [],
+      "topN": []
+    },
+    "tables": [
+      {
+        "columns": [
+          {
+            "label": "Name"
+          },
+          {
+            "label": "Description"
+          },
+          {
+            "label": "(acciones)",
+            "sinRotulo": true
+          }
+        ],
+        "rowActions": [
+          "Administrators",
+          "View Details",
+          "Actions for Administrators",
+          "DHCP Administrators",
+          "Actions for DHCP Administrators",
+          "DNS Administrators",
+          "Actions for DNS Administrators",
+          "Operadores",
+          "Actions for Operadores"
+        ]
+      }
+    ],
+    "counts": {
+      "fields": 0,
+      "buttons": 15,
+      "height": 923
+    }
+  },
+  "permissions": {
+    "tool": "25ba2b3ed242",
+    "bundle": {
+      "css": [
+        "index-ddKTTGsL.css"
+      ],
+      "js": [
+        "index-Dctpo8kj.js"
+      ]
+    },
+    "route": "/admin/permissions/",
+    "title": "Permissions",
+    "screenActions": [],
+    "buttons": [
+      {
+        "name": "Edit Permissions",
+        "where": "panel",
+        "disabled": false
+      },
+      {
+        "name": "Edit Permissions",
+        "where": "panel",
+        "disabled": false
+      },
+      {
+        "name": "Edit Permissions",
+        "where": "panel",
+        "disabled": false
+      },
+      {
+        "name": "Edit Permissions",
+        "where": "panel",
+        "disabled": false
+      },
+      {
+        "name": "Edit Permissions",
+        "where": "panel",
+        "disabled": false
+      },
+      {
+        "name": "Edit Permissions",
+        "where": "panel",
+        "disabled": false
+      },
+      {
+        "name": "Edit Permissions",
+        "where": "panel",
+        "disabled": false
+      },
+      {
+        "name": "Edit Permissions",
+        "where": "panel",
+        "disabled": false
+      },
+      {
+        "name": "Edit Permissions",
+        "where": "panel",
+        "disabled": false
+      },
+      {
+        "name": "Edit Permissions",
+        "where": "panel",
+        "disabled": false
+      },
+      {
+        "name": "Edit Permissions",
+        "where": "panel",
+        "disabled": false
+      }
+    ],
+    "blocks": [],
+    "looseFields": [
+      {
+        "label": "Dashboard Administrators View",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Dashboard Administrators Modify",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Dashboard Administrators Delete",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Dashboard Everyone View",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Dashboard Everyone Modify",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Dashboard Everyone Delete",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Zones Administrators View",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Zones Administrators Modify",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Zones Administrators Delete",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Zones DNS Administrators View",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Zones DNS Administrators Modify",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Zones DNS Administrators Delete",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Zones Everyone View",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Zones Everyone Modify",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Zones Everyone Delete",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Cache Administrators View",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Cache Administrators Modify",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Cache Administrators Delete",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Cache DNS Administrators View",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Cache DNS Administrators Modify",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Cache DNS Administrators Delete",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Cache Everyone View",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Cache Everyone Modify",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Cache Everyone Delete",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Allowed Administrators View",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Allowed Administrators Modify",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Allowed Administrators Delete",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Allowed DNS Administrators View",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Allowed DNS Administrators Modify",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Allowed DNS Administrators Delete",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Allowed Everyone View",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Allowed Everyone Modify",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Allowed Everyone Delete",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Blocked Administrators View",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Blocked Administrators Modify",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Blocked Administrators Delete",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Blocked DNS Administrators View",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Blocked DNS Administrators Modify",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Blocked DNS Administrators Delete",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Blocked Everyone View",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Blocked Everyone Modify",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Blocked Everyone Delete",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Apps Administrators View",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Apps Administrators Modify",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Apps Administrators Delete",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Apps DNS Administrators View",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Apps DNS Administrators Modify",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Apps DNS Administrators Delete",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Apps Everyone View",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Apps Everyone Modify",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Apps Everyone Delete",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "DnsClient Administrators View",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "DnsClient Administrators Modify",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "DnsClient Administrators Delete",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "DnsClient DNS Administrators View",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "DnsClient DNS Administrators Modify",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "DnsClient DNS Administrators Delete",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "DnsClient Everyone View",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "DnsClient Everyone Modify",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "DnsClient Everyone Delete",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Settings Administrators View",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Settings Administrators Modify",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Settings Administrators Delete",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Settings DNS Administrators View",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Settings DNS Administrators Modify",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Settings DNS Administrators Delete",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "DhcpServer Administrators View",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "DhcpServer Administrators Modify",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "DhcpServer Administrators Delete",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "DhcpServer DHCP Administrators View",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "DhcpServer DHCP Administrators Modify",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "DhcpServer DHCP Administrators Delete",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "DhcpServer Everyone View",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "DhcpServer Everyone Modify",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "DhcpServer Everyone Delete",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Administration Administrators View",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Administration Administrators Modify",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Administration Administrators Delete",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Logs Administrators View",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Logs Administrators Modify",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Logs Administrators Delete",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Logs Everyone View",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Logs Everyone Modify",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      },
+      {
+        "label": "Logs Everyone Delete",
+        "kind": "checkbox",
+        "options": null,
+        "state": [
+          "disabled",
+          "readonly"
+        ],
+        "help": null,
+        "actions": []
+      }
+    ],
+    "links": [],
+    "groupNotes": [],
+    "prose": [],
+    "strays": [
+      "Permissions",
+      "User Permissions",
+      "Username",
+      "View",
+      "Modify",
+      "Delete",
+      "No user permissions",
+      "Group Permissions",
+      "Group",
+      "Administrators",
+      "Everyone",
+      "DNS Administrators",
+      "DHCP Administrators",
+      "Total Sections: 11"
+    ],
+    "footer": [],
+    "state": "populated",
+    "regions": [
+      {
+        "name": "Dashboard",
+        "state": "populated"
+      },
+      {
+        "name": "Zones",
+        "state": "populated"
+      },
+      {
+        "name": "Cache",
+        "state": "populated"
+      },
+      {
+        "name": "Allowed",
+        "state": "populated"
+      },
+      {
+        "name": "Blocked",
+        "state": "populated"
+      },
+      {
+        "name": "Apps",
+        "state": "populated"
+      },
+      {
+        "name": "DnsClient",
+        "state": "populated"
+      },
+      {
+        "name": "Settings",
+        "state": "populated"
+      },
+      {
+        "name": "DhcpServer",
+        "state": "populated"
+      },
+      {
+        "name": "Administration",
+        "state": "populated"
+      },
+      {
+        "name": "Logs",
+        "state": "populated"
+      }
+    ],
+    "overview": {
+      "cards": [],
+      "counters": [],
+      "charts": [],
+      "topN": []
+    },
+    "tables": [],
+    "counts": {
+      "fields": 84,
+      "buttons": 11,
+      "height": 2491
+    }
+  },
+  "sso": {
+    "tool": "25ba2b3ed242",
+    "bundle": {
+      "css": [
+        "index-ddKTTGsL.css"
+      ],
+      "js": [
+        "index-Dctpo8kj.js"
+      ]
+    },
+    "route": "/admin/sso/",
+    "title": "Single Sign-On (SSO)",
+    "screenActions": [],
+    "buttons": [
+      {
+        "name": "Delete",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "Delete",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "Delete",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "Add",
+        "where": "field",
+        "disabled": false
+      },
+      {
+        "name": "Add",
+        "where": "field",
+        "disabled": false
+      },
+      {
+        "name": "Save Config",
+        "where": "bar",
+        "disabled": false
+      }
+    ],
+    "blocks": [
+      {
+        "heading": null,
+        "fields": [
+          {
+            "label": "Allow New User Sign Up",
+            "kind": "checkbox",
+            "options": null,
+            "state": [],
+            "help": null,
+            "actions": [],
+            "governedBy": []
+          },
+          {
+            "label": "Allow Sign Up Only For Mapped Users",
+            "kind": "checkbox",
+            "options": null,
+            "state": [],
+            "help": null,
+            "actions": [],
+            "governedBy": []
+          },
+          {
+            "label": "Authority (Issuer)",
+            "kind": "text",
+            "options": null,
+            "state": [],
+            "help": null,
+            "actions": [],
+            "governedBy": []
+          },
+          {
+            "label": "Client ID",
+            "kind": "text",
+            "options": null,
+            "state": [],
+            "help": null,
+            "actions": [],
+            "governedBy": []
+          },
+          {
+            "label": "Client Secret",
+            "kind": "password",
+            "options": null,
+            "state": [],
+            "help": null,
+            "actions": [],
+            "governedBy": []
+          },
+          {
+            "label": "Enable Single Sign-On (SSO)",
+            "kind": "checkbox",
+            "options": null,
+            "state": [],
+            "help": "Enable to allow Single Sign-On (SSO) with OpenID Connect (OIDC).",
+            "actions": [],
+            "governedBy": []
+          },
+          {
+            "label": "Metadata Address (Optional)",
+            "kind": "text",
+            "options": null,
+            "state": [],
+            "help": null,
+            "actions": [],
+            "governedBy": []
+          },
+          {
+            "label": "Scope Name 1",
+            "kind": "text",
+            "options": null,
+            "state": [],
+            "help": null,
+            "actions": [
+              "Delete",
+              "Delete",
+              "Delete",
+              "Add"
+            ],
+            "governedBy": []
+          },
+          {
+            "label": "Scope Name 2",
+            "kind": "text",
+            "options": null,
+            "state": [],
+            "help": null,
+            "actions": [
+              "Delete",
+              "Delete",
+              "Delete",
+              "Add"
+            ],
+            "governedBy": []
+          },
+          {
+            "label": "Scope Name 3",
+            "kind": "text",
+            "options": null,
+            "state": [],
+            "help": null,
+            "actions": [
+              "Delete",
+              "Delete",
+              "Delete",
+              "Add"
+            ],
+            "governedBy": []
+          }
+        ],
+        "buttons": [
+          "Delete",
+          "Delete",
+          "Delete",
+          "Add",
+          "Add"
+        ],
+        "notes": [
+          "Note! The Single Sign-On (SSO) uses /sso/callback as the callback path. Thus, your SSO Redirect URI for this DNS Server should be http://127.0.0.1:5380/admin/sso/sso/callback which needs to be configure with the SSO provider.Note! Single Sign-On (SSO) will be enabled only when all of the required parameters are configured correctly. If SSO does not work for any reason, check the Logs section on the panel and search for related error logs.Note! When a Single Sign-On (SSO) user signs up with the DNS Server, an account for the user is created which uses the email address as the username. If email address is not available, the preferred username is used instead. If you do not wish to use email address as the username, you can remove the email scope from the Scopes option above.Note! The Single Sign-On (SSO) user's Display Name and Username are managed via the SSO provider and they are automatically synced each time a user logs in.Note! When Group Map is configured, the Single Sign-On (SSO) user's group membership cannot be managed locally and any group membership changes must be configured at the SSO provider itself. SSO users need to relogin so that any group membership changes made at SSO provider are applied to their user accounts. The Group Map thus allows managing user access centrally via the SSO provider. Keep the Group Map empty if group membership management for SSO users is required to be managed via the DNS Server itself.Note! The Web Service will be automatically restarted to apply these changes thus there is no need to restart the DNS Server manually.Note! When using a reverse proxy with the Web Service, you need to add X-Forwarded-Proto and X-Forwarded-Host headers to proxy request to allow the Web Service to correctly form the SSO Redirect URI. If the reverse proxy is setup to use a path prefix then make sure to add the X-Forwarded-Prefix header to proxy request too. These headers will be read only if the reverse proxy IP address is configured to be allowed in the Reverse Proxy Addresses option in Settings > Web Service section. For example, if you are using nginx as the reverse proxy with a path prefix of /dns, then you should add the following headers: proxy_set_header X-Forwarded-Proto $scheme;, proxy_set_header X-Forwarded-Host $host;, proxy_set_header X-Forwarded-Prefix /dns;, and proxy_redirect / /dns/;Note! Domain names in all of the URLs configured above will be resolved by the DNS Server internally only. Thus, make sure that the DNS Server is able to resolve the domain name in the URL. Adding hosts file entries in the host OS will not work.Warning! All URLs configured above must use https URL scheme for production environments. Using http URL scheme is not secure and should be used only for testing purposes.Warning! Any DNS related failure may cause Single Sign-On (SSO) to fail to work making it impossible for SSO users to log in to fix the DNS issue due to circular dependency. Thus, it is recommended to maintain a local administrator user account for such scenarios.",
+          "Note! The Single Sign-On (SSO) uses /sso/callback as the callback path. Thus, your SSO Redirect URI for this DNS Server should be http://127.0.0.1:5380/admin/sso/sso/callback which needs to be configure with the SSO provider.",
+          "Note! Single Sign-On (SSO) will be enabled only when all of the required parameters are configured correctly. If SSO does not work for any reason, check the Logs section on the panel and search for related error logs.",
+          "Note! When a Single Sign-On (SSO) user signs up with the DNS Server, an account for the user is created which uses the email address as the username. If email address is not available, the preferred username is used instead. If you do not wish to use email address as the username, you can remove the email scope from the Scopes option above.",
+          "Note! The Single Sign-On (SSO) user's Display Name and Username are managed via the SSO provider and they are automatically synced each time a user logs in.",
+          "Note! When Group Map is configured, the Single Sign-On (SSO) user's group membership cannot be managed locally and any group membership changes must be configured at the SSO provider itself. SSO users need to relogin so that any group membership changes made at SSO provider are applied to their user accounts. The Group Map thus allows managing user access centrally via the SSO provider. Keep the Group Map empty if group membership management for SSO users is required to be managed via the DNS Server itself.",
+          "Note! The Web Service will be automatically restarted to apply these changes thus there is no need to restart the DNS Server manually.",
+          "Note! When using a reverse proxy with the Web Service, you need to add X-Forwarded-Proto and X-Forwarded-Host headers to proxy request to allow the Web Service to correctly form the SSO Redirect URI. If the reverse proxy is setup to use a path prefix then make sure to add the X-Forwarded-Prefix header to proxy request too. These headers will be read only if the reverse proxy IP address is configured to be allowed in the Reverse Proxy Addresses option in Settings > Web Service section. For example, if you are using nginx as the reverse proxy with a path prefix of /dns, then you should add the following headers: proxy_set_header X-Forwarded-Proto $scheme;, proxy_set_header X-Forwarded-Host $host;, proxy_set_header X-Forwarded-Prefix /dns;, and proxy_redirect / /dns/;",
+          "Note! Domain names in all of the URLs configured above will be resolved by the DNS Server internally only. Thus, make sure that the DNS Server is able to resolve the domain name in the URL. Adding hosts file entries in the host OS will not work.",
+          "Warning! All URLs configured above must use https URL scheme for production environments. Using http URL scheme is not secure and should be used only for testing purposes.",
+          "Warning! Any DNS related failure may cause Single Sign-On (SSO) to fail to work making it impossible for SSO users to log in to fix the DNS issue due to circular dependency. Thus, it is recommended to maintain a local administrator user account for such scenarios."
+        ]
+      }
+    ],
+    "looseFields": [],
+    "links": [],
+    "groupNotes": [
+      "The OpenID Connect (OIDC) Authority URL.",
+      "The OpenID Connect (OIDC) Client ID.",
+      "The OpenID Connect (OIDC) Client Secret.",
+      "The OpenID Connect (OIDC) metadata discovery URL to be used instead of the default one. Configure this option only if the Single Sign-On (SSO) provider uses a different discovery URL.",
+      "Enter the scopes to be sent to the Single Sign-On (SSO) provider. The scopes openid and profile are mandatory and will be automatically added if missing. Add the scope email if you want to use email address as the username for all SSO users that sign up for an account.",
+      "Enable to allow automatically provisioning of user accounts for new users signing in via Single Sign-On (SSO). Keep this option disabled if you do not expect new SSO users to sign up.",
+      "Enable to allow a new user to sign up via Single Sign-On (SSO) only when the user is a member of at least one Remote Group that is mapped to a Local Group in the Group Map option below. This option allows SSO administrators to restrict SSO users to control who can sign up and get access based on their group memberships.",
+      "Map Remote Groups at Single Sign-On (SSO) provider to Local Groups for both new and existing users signed up via Single Sign-On (SSO). A SSO user's group membership will be automatically synced to the mapped Local Groups each time they log in. If your SSO provider does not include group membership claim by default then you will have to add groups or roles scope in the Scopes option above as required by the SSO provider."
+    ],
+    "prose": [
+      "openid",
+      "profile",
+      "email",
+      "groups",
+      "roles",
+      "Note! The Single Sign-On (SSO) uses /sso/callback as the callback path. Thus, your SSO Redirect URI for this DNS Server should be http://127.0.0.1:5380/admin/sso/sso/callback which needs to be configure with the SSO provider.Note! Single Sign-On (SSO) will be enabled only when all of the required parameters are configured correctly. If SSO does not work for any reason, check the Logs section on the panel and search for related error logs.Note! When a Single Sign-On (SSO) user signs up with the DNS Server, an account for the user is created which uses the email address as the username. If email address is not available, the preferred username is used instead. If you do not wish to use email address as the username, you can remove the email scope from the Scopes option above.Note! The Single Sign-On (SSO) user's Display Name and Username are managed via the SSO provider and they are automatically synced each time a user logs in.Note! When Group Map is configured, the Single Sign-On (SSO) user's group membership cannot be managed locally and any group membership changes must be configured at the SSO provider itself. SSO users need to relogin so that any group membership changes made at SSO provider are applied to their user accounts. The Group Map thus allows managing user access centrally via the SSO provider. Keep the Group Map empty if group membership management for SSO users is required to be managed via the DNS Server itself.Note! The Web Service will be automatically restarted to apply these changes thus there is no need to restart the DNS Server manually.Note! When using a reverse proxy with the Web Service, you need to add X-Forwarded-Proto and X-Forwarded-Host headers to proxy request to allow the Web Service to correctly form the SSO Redirect URI. If the reverse proxy is setup to use a path prefix then make sure to add the X-Forwarded-Prefix header to proxy request too. These headers will be read only if the reverse proxy IP address is configured to be allowed in the Reverse Proxy Addresses option in Settings > Web Service section. For example, if you are using nginx as the reverse proxy with a path prefix of /dns, then you should add the following headers: proxy_set_header X-Forwarded-Proto $scheme;, proxy_set_header X-Forwarded-Host $host;, proxy_set_header X-Forwarded-Prefix /dns;, and proxy_redirect / /dns/;Note! Domain names in all of the URLs configured above will be resolved by the DNS Server internally only. Thus, make sure that the DNS Server is able to resolve the domain name in the URL. Adding hosts file entries in the host OS will not work.Warning! All URLs configured above must use https URL scheme for production environments. Using http URL scheme is not secure and should be used only for testing purposes.Warning! Any DNS related failure may cause Single Sign-On (SSO) to fail to work making it impossible for SSO users to log in to fix the DNS issue due to circular dependency. Thus, it is recommended to maintain a local administrator user account for such scenarios.",
+      "Note! The Single Sign-On (SSO) uses /sso/callback as the callback path. Thus, your SSO Redirect URI for this DNS Server should be http://127.0.0.1:5380/admin/sso/sso/callback which needs to be configure with the SSO provider.",
+      "/sso/callback",
+      "http://127.0.0.1:5380/admin/sso/sso/callback",
+      "Note! Single Sign-On (SSO) will be enabled only when all of the required parameters are configured correctly. If SSO does not work for any reason, check the Logs section on the panel and search for related error logs.",
+      "Note! When a Single Sign-On (SSO) user signs up with the DNS Server, an account for the user is created which uses the email address as the username. If email address is not available, the preferred username is used instead. If you do not wish to use email address as the username, you can remove the email scope from the Scopes option above.",
+      "Note! The Single Sign-On (SSO) user's Display Name and Username are managed via the SSO provider and they are automatically synced each time a user logs in.",
+      "Note! When Group Map is configured, the Single Sign-On (SSO) user's group membership cannot be managed locally and any group membership changes must be configured at the SSO provider itself. SSO users need to relogin so that any group membership changes made at SSO provider are applied to their user accounts. The Group Map thus allows managing user access centrally via the SSO provider. Keep the Group Map empty if group membership management for SSO users is required to be managed via the DNS Server itself.",
+      "Note! The Web Service will be automatically restarted to apply these changes thus there is no need to restart the DNS Server manually.",
+      "Note! When using a reverse proxy with the Web Service, you need to add X-Forwarded-Proto and X-Forwarded-Host headers to proxy request to allow the Web Service to correctly form the SSO Redirect URI. If the reverse proxy is setup to use a path prefix then make sure to add the X-Forwarded-Prefix header to proxy request too. These headers will be read only if the reverse proxy IP address is configured to be allowed in the Reverse Proxy Addresses option in Settings > Web Service section. For example, if you are using nginx as the reverse proxy with a path prefix of /dns, then you should add the following headers: proxy_set_header X-Forwarded-Proto $scheme;, proxy_set_header X-Forwarded-Host $host;, proxy_set_header X-Forwarded-Prefix /dns;, and proxy_redirect / /dns/;",
+      "X-Forwarded-Proto",
+      "X-Forwarded-Host",
+      "X-Forwarded-Prefix",
+      "/dns",
+      "proxy_set_header X-Forwarded-Proto $scheme;",
+      "proxy_set_header X-Forwarded-Host $host;",
+      "proxy_set_header X-Forwarded-Prefix /dns;",
+      "proxy_redirect / /dns/;",
+      "Note! Domain names in all of the URLs configured above will be resolved by the DNS Server internally only. Thus, make sure that the DNS Server is able to resolve the domain name in the URL. Adding hosts file entries in the host OS will not work.",
+      "hosts",
+      "Warning! All URLs configured above must use https URL scheme for production environments. Using http URL scheme is not secure and should be used only for testing purposes.",
+      "https",
+      "http",
+      "Warning! Any DNS related failure may cause Single Sign-On (SSO) to fail to work making it impossible for SSO users to log in to fix the DNS issue due to circular dependency. Thus, it is recommended to maintain a local administrator user account for such scenarios."
+    ],
+    "strays": [
+      "Administration",
+      "Single Sign-On (SSO)",
+      "Enable to allow Single Sign-On (SSO) with OpenID Connect (OIDC).",
+      "The OpenID Connect (OIDC) Authority URL.",
+      "The OpenID Connect (OIDC) Client ID.",
+      "The OpenID Connect (OIDC) Client Secret.",
+      "The OpenID Connect (OIDC) metadata discovery URL to be used instead of the default one. Configure this option only if the Single Sign-On (SSO) provider uses a different discovery URL.",
+      "Scopes",
+      "Scope Name",
+      "Enter the scopes to be sent to the Single Sign-On (SSO) provider. The scopes",
+      "and",
+      "are mandatory and will be automatically added if missing. Add the scope",
+      "if you want to use email address as the username for all SSO users that sign up for an account.",
+      "SSO User Sign Up",
+      "Enable to allow automatically provisioning of user accounts for new users signing in via Single Sign-On (SSO). Keep this option disabled if you do not expect new SSO users to sign up.",
+      "Enable to allow a new user to sign up via Single Sign-On (SSO) only when the user is a member of at least one Remote Group that is mapped to a Local Group in the",
+      "Group Map",
+      "option below. This option allows SSO administrators to restrict SSO users to control who can sign up and get access based on their group memberships.",
+      "Group Map (Optional)",
+      "Remote Group",
+      "Local Group",
+      "Map Remote Groups at Single Sign-On (SSO) provider to Local Groups for both new and existing users signed up via Single Sign-On (SSO). A SSO user's group membership will be automatically synced to the mapped Local Groups each time they log in. If your SSO provider does not include group membership claim by default then you will have to add",
+      "or",
+      "scope in the",
+      "option above as required by the SSO provider.",
+      "Note!",
+      "The Single Sign-On (SSO) uses",
+      "as the callback path. Thus, your SSO Redirect URI for this DNS Server should be",
+      "which needs to be configure with the SSO provider.",
+      "Single Sign-On (SSO) will be enabled only when all of the required parameters are configured correctly. If SSO does not work for any reason, check the Logs section on the panel and search for related error logs.",
+      "When a Single Sign-On (SSO) user signs up with the DNS Server, an account for the user is created which uses the email address as the username. If email address is not available, the preferred username is used instead. If you do not wish to use email address as the username, you can remove the",
+      "scope from the",
+      "option above.",
+      "The Single Sign-On (SSO) user's Display Name and Username are managed via the SSO provider and they are automatically synced each time a user logs in.",
+      "When Group Map is configured, the Single Sign-On (SSO) user's group membership cannot be managed locally and any group membership changes must be configured at the SSO provider itself. SSO users need to relogin so that any group membership changes made at SSO provider are applied to their user accounts. The Group Map thus allows managing user access centrally via the SSO provider. Keep the Group Map empty if group membership management for SSO users is required to be managed via the DNS Server itself.",
+      "The Web Service will be automatically restarted to apply these changes thus there is no need to restart the DNS Server manually.",
+      "When using a reverse proxy with the Web Service, you need to add",
+      "headers to proxy request to allow the Web Service to correctly form the SSO Redirect URI. If the reverse proxy is setup to use a path prefix then make sure to add the",
+      "header to proxy request too. These headers will be read only if the reverse proxy IP address is configured to be allowed in the",
+      "Reverse Proxy Addresses",
+      "option in Settings > Web Service section. For example, if you are using nginx as the reverse proxy with a path prefix of",
+      ", then you should add the following headers:",
+      ", and",
+      "Domain names in all of the URLs configured above will be resolved by the DNS Server internally only. Thus, make sure that the DNS Server is able to resolve the domain name in the URL. Adding",
+      "file entries in the host OS will not work.",
+      "Warning!",
+      "All URLs configured above must use",
+      "URL scheme for production environments. Using",
+      "URL scheme is not secure and should be used only for testing purposes.",
+      "Any DNS related failure may cause Single Sign-On (SSO) to fail to work making it impossible for SSO users to log in to fix the DNS issue due to circular dependency. Thus, it is recommended to maintain a local administrator user account for such scenarios."
+    ],
+    "footer": [],
+    "state": "populated",
+    "regions": [
+      {
+        "name": null,
+        "state": "populated"
+      }
+    ],
+    "overview": {
+      "cards": [],
+      "counters": [],
+      "charts": [],
+      "topN": []
+    },
+    "tables": [
+      {
+        "columns": [
+          {
+            "label": "Scope Name"
+          },
+          {
+            "label": "(acciones)",
+            "sinRotulo": true
+          }
+        ],
+        "rowActions": [
+          "Delete"
+        ]
+      },
+      {
+        "columns": [
+          {
+            "label": "Remote Group"
+          },
+          {
+            "label": "Local Group"
+          },
+          {
+            "label": "(acciones)",
+            "sinRotulo": true
+          }
+        ],
+        "rowActions": []
+      }
+    ],
+    "counts": {
+      "fields": 10,
+      "buttons": 6,
+      "height": 2029
+    }
+  },
+  "cluster": {
+    "tool": "25ba2b3ed242",
+    "bundle": {
+      "css": [
+        "index-ddKTTGsL.css"
+      ],
+      "js": [
+        "index-Dctpo8kj.js"
+      ]
+    },
+    "route": "/admin/cluster/",
+    "title": "Cluster",
+    "screenActions": [
+      "Options",
+      "Delete Cluster",
+      "—"
+    ],
+    "buttons": [
+      {
+        "name": "Options",
+        "where": "header",
+        "disabled": false
+      },
+      {
+        "name": "Delete Cluster",
+        "where": "header",
+        "disabled": false
+      },
+      {
+        "name": "—",
+        "where": "header",
+        "disabled": false
+      },
+      {
+        "name": "Node Name",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "IP Address",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "URL",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "Type",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "State",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "Up Since",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "Last Seen",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "Last Synced",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "Edit Node",
+        "where": "row",
+        "disabled": false
+      },
+      {
+        "name": "Actions for nodo2.cluster.test",
+        "where": "row",
+        "disabled": false
+      }
+    ],
+    "blocks": [],
+    "looseFields": [
+      {
+        "label": "Cluster Node",
+        "kind": "combobox",
+        "options": [
+          "dev.cluster.test (primary)",
+          "nodo2.cluster.test (secondary)"
+        ],
+        "state": [],
+        "help": null,
+        "actions": [
+          "Options",
+          "Delete Cluster",
+          "—"
+        ]
+      }
+    ],
+    "links": [],
+    "groupNotes": [],
+    "prose": [],
+    "strays": [
+      "Administration",
+      "Cluster",
+      "dev.cluster.test",
+      "172.23.0.4",
+      "https://dev.cluster.test:53443/",
+      "Primary",
+      "Self",
+      "2026-09-04 07:53",
+      "(5 hours ago)",
+      "nodo2.cluster.test",
+      "172.23.0.3",
+      "https://nodo2.cluster.test:53443/",
+      "Secondary",
+      "Connected",
+      "2026-09-04 12:34",
+      "(a few seconds ago)",
+      "Total Nodes: 2"
+    ],
+    "footer": [],
+    "state": "populated",
+    "regions": [],
+    "overview": {
+      "cards": [],
+      "counters": [],
+      "charts": [],
+      "topN": []
+    },
+    "tables": [
+      {
+        "columns": [
+          {
+            "label": "Node Name"
+          },
+          {
+            "label": "IP Address"
+          },
+          {
+            "label": "URL"
+          },
+          {
+            "label": "Type"
+          },
+          {
+            "label": "State"
+          },
+          {
+            "label": "Up Since"
+          },
+          {
+            "label": "Last Seen"
+          },
+          {
+            "label": "Last Synced"
+          },
+          {
+            "label": "(acciones)",
+            "sinRotulo": true
+          }
+        ],
+        "rowActions": [
+          "Edit Node",
+          "Actions for nodo2.cluster.test"
+        ]
+      }
+    ],
+    "counts": {
+      "fields": 1,
+      "buttons": 13,
+      "height": 923
+    }
+  }
+}

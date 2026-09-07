@@ -1,0 +1,54 @@
+/*
+The bubble, and the wrapper that measures it.
+
+The wrapper adds NOTHING of its own —no padding, no margin, no size— because it
+has to be the trigger's own box: `getBoundingClientRect()` is taken from it, and a
+wrapper with room of its own would hang the bubble away from what it describes.
+*/
+.wrap {
+  display: inline-flex;
+}
+
+/*
+Fixed, and not absolute inside the wrapper. Two ancestors on the way clip it: the
+row's actions group, which carries `overflow: hidden` for its corners, and the
+table wrapper, which scrolls horizontally. It is the same reason `ui/Menu` and
+`ui/Select` take their lists out fixed.
+
+The layer is the floating one: it shares it with the menu and the dropdown, and it
+is deliberately BELOW the dialog's — a tooltip inside a modal must not paint over
+the modal's own chrome.
+*/
+.bubble {
+  position: fixed;
+  z-index: var(--layer-flotante);
+  max-width: 240px;
+  padding: var(--s-3) var(--s-7);
+  border: 1px solid var(--line);
+  border-radius: var(--r-2);
+  background: var(--pan2);
+  color: var(--ink);
+  font-size: var(--t-3);
+  line-height: 1.45;
+  box-shadow: var(--e-2);
+  /* It never takes the pointer: if it did, entering the bubble would fire the
+     trigger's `mouseleave` and the two would fight over who is open. */
+  pointer-events: none;
+  white-space: normal;
+}
+
+/*
+There is no `transform`, and its absence is the correction.
+
+The position used to be decided in halves: the arithmetic in the component and a
+`translate()` here. That made it impossible to check where the bubble ended up
+—half of it lived in a stylesheet— and that is why it went off screen at 390 and
+next to any edge with nothing catching it.
+
+Now `top` and `left` are worked out by `tooltip-place.ts`, which flips and then
+clamps against the viewport, and it is tested with numbers. The CSS draws what it
+is given.
+
+`data-placement` stays: it says where the bubble REALLY ended up —it may have
+flipped— and it is the hook for an arrow, if it ever gets one.
+*/

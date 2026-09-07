@@ -1,0 +1,333 @@
+{
+ "_": "VOLCADO DE ADMINISTRACION — las seis sub-pantallas. Tomado el 2026-09-04 con dev/screen-contract.mjs servido tal cual desde el build montado. Lo medido en el navegador va en `pantallas`; lo leido del codigo, en `fuente`. Separados a proposito: no valen lo mismo.",
+ "sello": {
+  "instrument": "25508b9bd0ec8c549977945e19cd175d2553bfc371679170458b6f86f820ffa7",
+  "bundle": {
+   "css": [
+    "index-ddKTTGsL.css"
+   ],
+   "js": [
+    "index-Dctpo8kj.js"
+   ]
+  }
+ },
+ "tomado": "2026-09-04",
+ "anclaje": {
+  "commit": "4644ac0"
+ },
+ "el_arnes_se_modifico": "Para poder contratar `Cluster` —1.629 lineas, la pantalla mas grande— hubo que INICIALIZAR UN CLUSTER de verdad: `dev` primario y `nodo2` secundario, dominio `cluster.test`. Sin eso el arnes solo enseñaba «Cluster Not Initialized» y contratar eso habria sido contratar el estado vacio. Los dos contenedores montan el mismo build, asi que la pantalla se vio DESDE LOS DOS LADOS. Queda levantado. SE QUEDA LEVANTADO hasta que Administracion este construida, recapturada y con el porton en verde: construir y validar las ramas primaria y secundaria lo necesita. Como se creo, en dev/README.md.",
+ "volatil": "Del arnes y no del producto: `Total Sessions: 7`, `Total Users: 3`, `Total Groups: 4`, `Total Nodes: 2`, los nombres `dev.cluster.test`/`nodo2.cluster.test`, las IP 172.23.0.x, y **las 84 casillas de la matriz** — salen de cuantos usuarios y grupos tienen entrada en cada seccion. Las ONCE secciones si son estructura.",
+ "pantallas": {
+  "/admin/sessions/": {
+   "arquetipo": "coleccion",
+   "columnas": [
+    "Username",
+    "Session",
+    "Last Seen",
+    "Remote Address",
+    "User Agent",
+    "(acciones)"
+   ],
+   "verbosCabecera": [
+    "Create Token"
+   ],
+   "verbosFila": [
+    "View Details"
+   ],
+   "menuFila": [
+    "Delete Session"
+   ],
+   "pie": "Total Sessions: N",
+   "clusterNode": true,
+   "alto": 923
+  },
+  "/admin/users/": {
+   "arquetipo": "coleccion + detalle",
+   "columnas": [
+    "Username",
+    "Display Name",
+    "Type",
+    "2FA Status",
+    "Status",
+    "Recent Login",
+    "Previous Login",
+    "(acciones)"
+   ],
+   "verbosCabecera": [
+    "Add User"
+   ],
+   "verbosFila": [
+    "View Details",
+    "Disable User"
+   ],
+   "menuFila": [
+    "Reset Password",
+    "Disable 2FA",
+    "Delete User"
+   ],
+   "pie": "Total Users: N",
+   "alto": 923
+  },
+  "/admin/groups/": {
+   "arquetipo": "coleccion + detalle",
+   "columnas": [
+    "Name",
+    "Description",
+    "(acciones)"
+   ],
+   "verbosCabecera": [
+    "Add Group"
+   ],
+   "verbosFila": [
+    "View Details"
+   ],
+   "menuFila": [
+    "Delete Group"
+   ],
+   "pie": "Total Groups: N",
+   "alto": 923
+  },
+  "/admin/permissions/": {
+   "arquetipo": "MATRIZ",
+   "secciones": 11,
+   "casillas_volatil": 84,
+   "verbosPorSeccion": [
+    "Edit Permissions"
+   ],
+   "pie": "Total Sections: 11",
+   "esTabla": false,
+   "casillasConNombreAccesible": 0,
+   "columnas_de_verbo": [
+    "View",
+    "Modify",
+    "Delete"
+   ],
+   "alto_volatil": 2491,
+   "_altura": "La altura se mueve con el dato: 84 casillas -> 2491 px; 85 -> 2553. Unos 62 px por fila. NO es una cifra estructural y no se puede fijar en una guarda: la primera vez que alguien anada o quite un permiso de grupo, el documento deja de cuadrar. Lo estructural son las ONCE secciones."
+  },
+  "/admin/sso/": {
+   "arquetipo": "formulario denso + dos listas",
+   "controles": 7,
+   "listaControles": [
+    "Enable Single Sign-On (SSO)",
+    "Authority (Issuer)",
+    "Client ID",
+    "Client Secret",
+    "Metadata Address (Optional)",
+    "Allow New User Sign Up",
+    "Allow Sign Up Only For Mapped Users"
+   ],
+   "tablas": [
+    [
+     "Scope Name",
+     "(acciones)"
+    ],
+    [
+     "Remote Group",
+     "Local Group",
+     "(acciones)"
+    ]
+   ],
+   "verbos": [
+    "Save Config"
+   ],
+   "menuFila": [
+    "Delete"
+   ],
+   "clusterNode": false,
+   "alto_volatil": 2029,
+   "_altura": "Volatil como la de la matriz: se mueve con las filas de Scopes y del mapa de grupos, que son dato. Medida 2029 px con cuatro scopes y tres asignaciones."
+  },
+  "/admin/cluster/": {
+   "arquetipo": "referencia + tres ramas por papel",
+   "columnas": [
+    "Node Name",
+    "IP Address",
+    "URL",
+    "Type",
+    "State",
+    "Up Since",
+    "Last Seen",
+    "Last Synced",
+    "(acciones)"
+   ],
+   "sinCluster": {
+    "texto": "Cluster Not Initialized",
+    "verbos": [
+     "New Cluster",
+     "Join Cluster"
+    ]
+   },
+   "desdePrimario": {
+    "verbosCabecera": [
+     "Options",
+     "Delete Cluster"
+    ]
+   },
+   "desdeSecundario": {
+    "verbosCabecera": [
+     "Resync",
+     "Options",
+     "Leave Cluster"
+    ]
+   },
+   "menuFila": [
+    "Promote To Primary",
+    "Remove Node"
+   ],
+   "estados": [
+    "Primary",
+    "Secondary",
+    "Self",
+    "Connected"
+   ],
+   "pie": "Total Nodes: N",
+   "clusterNode": true,
+   "alto": 923
+  }
+ },
+ "fuente": {
+  "permisos": "Upstream NO oculta ni deshabilita nada dentro de Administracion: solo `Administration.canView` para la seccion entera (main.js:165 y 240). El boton con candado NO se dibuja en ninguna de las seis.",
+  "regla_edit_node": "Cluster.tsx:266 — `esPrimario ? state==='Self' : state==='Self' || type==='Primary'`. Desde el primario solo la fila propia; desde un secundario, la propia Y la del primario.",
+  "permissions_set": "Viaja con el nodo PRIMARIO del cluster, no con el que se mira, y pide `Administration.canDelete`, no `canModify` (WebServiceAuthApi.cs:1533).",
+  "lista_de_grupos_del_modal": "INCLUYE `Everyone`; la de `groups/list` no. Dos listas distintas del servidor.",
+  "dialogos": {
+   "Cluster": [
+    "Resync Cluster",
+    "Initialize New Cluster",
+    "Join Cluster",
+    "Cluster Options",
+    "Edit Node - {nodo}",
+    "Edit Node - {nodo}",
+    "Remove Node - {nodo}",
+    "Promote To Primary Node - {nodo}",
+    "Leave Cluster",
+    "Delete Cluster"
+   ],
+   "Groups": [
+    "Delete Group",
+    "Add Group",
+    "Group Details"
+   ],
+   "Permissions": [
+    "Edit Permissions - {nodo}"
+   ],
+   "Sessions": [
+    "Delete Session",
+    "Create API Token"
+   ],
+   "Sso": [
+    "Save Config",
+    "Save Config"
+   ],
+   "UserDetails": [
+    "User Details",
+    "Delete Session"
+   ],
+   "Users": [
+    "Disable User",
+    "Disable 2FA",
+    "Delete User",
+    "Add User",
+    "Reset Password"
+   ]
+  },
+  "casillas_force": [
+   "Force Delete Cluster",
+   "Force Leave Cluster",
+   "Force Remove Node",
+   "Force Delete Current Primary Node"
+  ],
+  "campo_condicional": "`Primary Node OTP` en `Join Cluster` solo aparece si el servidor responde `2fa-required`.",
+  "token_de_una_vez": "`Create API Token` enseña un tercer campo `Token` DESPUES de crear, con un valor que solo se ve una vez.",
+  "no_observado": [
+   "User Details",
+   "Group Details",
+   "las cuatro casillas Force",
+   "Primary Node OTP",
+   "el campo Token tras crear",
+   "los diez dialogos de Cluster",
+   "Cluster Options",
+   "los DOS Edit Node",
+   "las dos confirmaciones Save Config de SSO"
+  ],
+  "dos_dialogos_mismo_titulo": "`Edit Node - {nodo}` son DOS dialogos distintos con el mismo titulo (Cluster.tsx:1229 y 1312): uno edita `Node IP Addresses` + `Quick Add` —las direcciones del propio nodo— y el otro `Primary Node URL` + `Primary Node IP Addresses (Optional)` —como este secundario alcanza al primario—. Nueve TITULOS, diez DIALOGOS.",
+  "dialogos_repetidos": [
+   {
+    "titulo": "Edit Node - {nodo}",
+    "donde": [
+     "Cluster.tsx:1226",
+     "Cluster.tsx:1309"
+    ],
+    "veredicto": "DOS dialogos distintos con el mismo titulo"
+   },
+   {
+    "titulo": "Delete Session",
+    "donde": [
+     "Sessions.tsx:201",
+     "UserDetails.tsx:346"
+    ],
+    "veredicto": "MISMO dialogo en dos sitios"
+   },
+   {
+    "titulo": "Save Config",
+    "donde": [
+     "Sso.tsx:456",
+     "Sso.tsx:468"
+    ],
+    "veredicto": "DOS dialogos distintos con el mismo titulo"
+   }
+  ],
+  "_censo": "Las tres cifras las produce dev/censo-dialogos.mjs leyendo el fuente. La lista a mano falló tres veces: primero faltaban Remove Node y Promote To Primary Node, después las dos confirmaciones de SSO, y cada corrección movía un total que había que recalcular.",
+  "_censo_columnas": "dev/censo-tablas.mjs. El 31 anterior no contaba nada coherente: sumaba las cuatro colecciones mas las dos tablas anidadas de SSO, y dejaba fuera Permissions y UserDetails. Lo destapo la entrega de diseno al intentar reproducirlo.",
+  "_censo_ayudas": "dev/censo-ayudas.mjs. 27 ayudas (20 Cluster + 7 SSO), 5 sufijos y 10 literales que no son ayuda. El primer censo dijo 25 mirando solo help=\"…\": contaba dos help={help} de reenvio, no veia las cuatro que viajan en un array, y la que lleva marcado solo la CONTABA en vez de validarla. El quinto sufijo esta escrito como texto JSX y no como cadena."
+ },
+ "_nota_recuento": "Las columnas `View`/`Modify`/`Delete` de la matriz son ENCABEZADOS, no acciones: van en `columnas_de_verbo` y no cuentan como verbos. Mezclarlas daba 23 donde hay **21**.",
+ "cifras": {
+  "columnas_de_tabla": 41,
+  "verbos_distintos": 21,
+  "verbos": [
+   "Add Group",
+   "Add User",
+   "Create Token",
+   "Delete",
+   "Delete Cluster",
+   "Delete Group",
+   "Delete Session",
+   "Delete User",
+   "Disable 2FA",
+   "Disable User",
+   "Edit Permissions",
+   "Join Cluster",
+   "Leave Cluster",
+   "New Cluster",
+   "Options",
+   "Promote To Primary",
+   "Remove Node",
+   "Reset Password",
+   "Resync",
+   "Save Config",
+   "View Details"
+  ],
+  "secciones_de_la_matriz": 11,
+  "controles_sso": 7,
+  "casillas_force": 4,
+  "ramas_de_cluster": 3,
+  "dialogos_titulos": 22,
+  "dialogos_superficies": 24,
+  "dialogos_instancias_jsx": 25,
+  "columnas_por_fichero": {
+   "Cluster.tsx": 9,
+   "Groups.tsx": 3,
+   "Permissions.tsx": 5,
+   "Sessions.tsx": 6,
+   "Sso.tsx": 5,
+   "UserDetails.tsx": 5,
+   "Users.tsx": 8
+  },
+  "ayudas": 27,
+  "sufijos": 5,
+  "otras_literales": 10
+ },
+ "recapturado": "Volcado REHECHO el 2026-09-04 contra el build de Adrián que corrige el selector compartido entre Sessions y Cluster. El anterior se tomo con el build viejo y contaba OCHO controles en SSO porque `Cluster Node` seguia montado alli; ahora son SIETE. Es el motivo por el que un volcado lleva el hash del bundle: sin el, esta diferencia no se ve."
+}

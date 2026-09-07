@@ -1,0 +1,319 @@
+/*
+The console's table, a single one. It was copied across five modules: the same
+rule five times, with two cell densities (12 px in four sections, 9 px in Logs
+and Dashboard) and no row hover in Query Logs of all places, which is the widest
+table of them all and the one that needs it most to not lose your place.
+*/
+
+/*
+The table is ONE object, not a pile of loose rows on the background. In a DNS
+console the table is the product: it is where 90 % of the time is spent, so it
+is given a body —panel, border and corners— instead of being left floating.
+*/
+.wrap {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--r-4);
+  background: var(--pan);
+  box-shadow: var(--e-1), var(--edge);
+}
+
+.table { border-collapse: collapse; width: 100%; }
+
+/* The header sits on the raised step: it separates the labels from the data
+   without needing another rule line. */
+.table thead th {
+  background: var(--pan2);
+  text-align: left;
+  /* The same label as a panel title: see `--text-*` in tokens. The table
+     header was at `--t-2` when the `--t-1` token itself has said, ever since it
+     was written, "small-caps label, table header, pill". */
+  font-size: var(--text-size);
+  text-transform: uppercase;
+  letter-spacing: var(--text-tracking);
+  color: var(--mute);
+  font-weight: var(--text-weight);
+  padding: var(--s-5) var(--s-7);
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+  /* A single height for every header; see `--row-cabecera`. */
+  height: var(--row-header);
+}
+
+.table td {
+  padding: var(--s-6) var(--s-7);
+  border-bottom: 1px solid var(--line2);
+  vertical-align: middle;
+  color: var(--ink);
+}
+
+/*
+The row that is THIS one: my own session in `Administration > Sessions`, this
+node in `Cluster`.
+
+Two tables need it and neither invents it: it is a wash in `--acc-bg`, and it is
+never the only channel — the session says `(current)` in its own cell and the node
+says `Self` in its `State` column. The colour is what lets you find the row
+without reading; the word is what says which row it is.
+
+Hover still wins over it, because `.tabla tbody tr:hover` is the more specific
+selector and losing the hover on precisely the row you are on would be worse than
+the tint.
+*/
+.rowSelf { background: var(--acc-bg); }
+
+/* The last row carries no line: the panel border closes it. */
+.table tbody tr:last-child td { border-bottom: 0; }
+
+.table tbody tr { transition: background var(--t-fast); }
+.table tbody tr:hover { background: var(--hover); }
+
+/*
+Columns have rules, and until now they did not: all ten were left-aligned,
+`Serial` included, which is a number. A left-aligned number cannot be compared
+against the one on the row below, which is exactly what it is in a column for.
+*/
+
+/* The row's ENTITY: the name of the zone, the scope, the user. It is what you
+   look for when scanning, so it weighs more than the rest of the line. */
+.entity {
+  font-size: var(--t-5);
+  font-weight: 550;
+  color: var(--ink);
+}
+
+/*
+The row's own name when it also opens its detail view.
+
+It was written twice and with opposite treatments: in Zones the name is the name
+—ink and bold— and turns `--acc` on hover; in the three Administration tables it
+was `--acc` ALREADY at rest. With two hundred and forty rows that is a whole
+column of amber, and the colour stops meaning "this is clickable" exactly where
+it had to mean it. Zones wins, which is also what `.entidad` above describes.
+
+The monospace family does NOT come along: it belongs to Zones because the value
+is a domain, not because it is an entity. And that is why LONGHANDS go here and
+not the `font` shorthand: `font: inherit` also resets the family, and since this
+class is composed from another module, its rule is emitted later and was wiping
+out Zones' monospacing. It is the same trap already noted in `Menu.module.css`.
+*/
+.entityLink {
+  composes: golpe from './interaction.module.css';
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  font-weight: 600;
+  color: var(--ink);
+  cursor: pointer;
+  text-align: left;
+  word-break: break-word;
+}
+
+.entityLink:hover { color: var(--acc); }
+
+/* Numbers: right-aligned and with fixed-width digits, so the units line up one
+   above the other. */
+.number {
+  text-align: right;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Metadata: the date, the "N ago", the counter. They accompany, they do not compete. */
+.meta { composes: trailer from './text.module.css'; }
+
+/* A cell with several lines inside aligns to the top; the rest, to the middle. */
+.stacked { vertical-align: top; }
+
+/*
+The "there is nothing here" row. It was written with
+`style={{textAlign:'center'}}` in four places and with two more class names for
+the same rule.
+
+It goes as `td.sinFilas` and not as plain `.sinFilas` because `.tabla td` —one
+class and one type— beat it on specificity, so neither the colour nor the padding
+ever applied: the row came out with the data colour and the height of a normal
+cell. Only the centring showed, which is the one of the three rules that clashes
+with nothing.
+*/
+.table td.noRows {
+  text-align: center;
+  color: var(--faint);
+  padding: var(--s-11) var(--s-7);
+}
+
+/* A sortable header is a button, not a `th` with `onclick`: that way it is
+   reachable with the tab key and announced for what it is. */
+.sort {
+  composes: golpe from '../ui/interaction.module.css';
+  display: inline-flex;
+  /*
+  Aligned to the MIDDLE of the text and not to its baseline.
+
+  An `inline-flex` sits on the baseline, and when there is only an icon inside
+  —the "Type" header in DHCP Leases, whose label is for screen readers only— the
+  line box grows underneath to make room for a descender that is not there. That
+  header measured 33.77 px when the other six tables measured 33: the gap came
+  from a character that is never written.
+  */
+  vertical-align: middle;
+  align-items: center;
+  gap: var(--s-2);
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+  cursor: pointer;
+}
+
+.sort:hover { color: var(--ink); }
+
+/*
+The sort arrow is only visible when it is needed: on the active column, on hover
+and when reached with the keyboard. With all nine headers carrying their little
+arrow at once, the label row was a line of symbols competing with the data and
+saying nothing, because "this is sortable" is the same on all of them.
+*/
+.arrow {
+  display: inline-flex;
+  color: var(--faint);
+  opacity: 0;
+  transition: opacity var(--t-fast);
+}
+
+.sort:hover .arrow,
+.sort:focus-visible .arrow,
+[aria-sort='ascending'] .arrow,
+[aria-sort='descending'] .arrow { opacity: 1; }
+
+/* Ascending and descending are the SAME chevron rotated, not two different
+   characters: that way the arrow turns on click instead of jumping. */
+.arrow svg { transition: transform var(--t-fast), color var(--t-fast); }
+.arrow svg[data-desc='true'] { transform: rotate(180deg); }
+
+.sort:hover .arrow,
+[aria-sort='ascending'] .arrow,
+[aria-sort='descending'] .arrow { color: var(--acc); }
+
+/*
+The actions column: hard against the end and as wide as what it carries.
+
+Without this rule the cell inherited `text-align: left` and the column kept all
+the width the table had left over, so the buttons floated in the middle of the
+gap: measured before fixing it, between the last control and the table edge there
+were 51 px in Cache, 80 in Zones, 126 in Users, 196 in Scopes and 306 in Groups.
+Five tables and five different places for the same thing.
+
+`width: 1%` with `table-layout: auto` is how you say "this column, the minimum":
+the browser hands what is left over to the others.
+*/
+.actionsCell {
+  width: 1%;
+  white-space: nowrap;
+  text-align: right;
+}
+
+/*
+A row's actions, as ONE group and not as four loose chips.
+
+Loose they did not read: their background sat at 1.25:1 against the row and their
+border at 1.57:1, meaning the control did not separate from the row containing
+it, and the `⋮` ended up a narrow strip next to "Delete" that looked like a
+layout bug.
+
+Grouped into a segmented control with a single border and dividers inside, the
+row has ONE place where you act, and that place is visible. It also takes less
+space and copes with one row having three actions and the next one five.
+*/
+.actions {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid var(--line);
+  border-radius: var(--r-2);
+  overflow: hidden;
+  background: var(--pan2);
+  box-shadow: var(--edge);
+}
+
+/*
+`> *` is a DIRECT child, and the `⋮` menu trigger is not one: `ui/Menu` wraps it
+in a `div`. So the flattening passed it by and it kept the border, the 6 px
+radius, the solid background and the inset shadow of a loose button — one little
+rounded box per row, glued to a flat group. Measured in the same cell: "Zone
+Options" and "Disable Zone" with radius 0 and transparent background, and the
+`⋮` with radius 6 and `rgb(33,37,41)`.
+*/
+.actions > *,
+.actions > * > button {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  min-height: 30px;
+  color: var(--ink);
+  font-weight: 500;
+  font-size: var(--t-4);
+}
+
+.actions > * + * { border-left: 1px solid var(--line) !important; }
+
+.actions > *:hover:not(:disabled),
+.actions > * > button:hover:not(:disabled) { background: var(--hover-fuerte) !important; }
+.actions > *:disabled,
+.actions > * > button:disabled { color: var(--faint); }
+
+/* Delete keeps its colour, but inside the group: it is not filled with red,
+   because a row with a red block turns the table into an alarm. */
+.actions > [data-variant='danger'] { color: var(--dan); font-weight: 500; }
+.actions > [data-variant='danger']:hover:not(:disabled) {
+  background: var(--dan-fill) !important;
+  color: var(--on-dan);
+}
+
+/*
+Row buttons carry an ICON and not a label, and the reason is a measurement: the
+actions column was 239 px —the widest in the table, ahead of the zone name, which
+is 163— and its content was the same text repeated on every row. "Options",
+"Disable", "Delete", two hundred and forty times. That is not information: it is
+something you have to filter out in order to read the data.
+
+With an icon the column drops to ~100 px and the 140 left over go to the table.
+No action loses its name: it goes in `aria-label` —so the keyboard and the screen
+reader announce it just the same— and in `title`, which is the tooltip on hover.
+And the `⋮` menu carries EVERY action with its text, delete included, so no name
+lives only inside a drawing.
+*/
+.actions > [data-icon='true'],
+.actions > * > [data-icon='true'] { padding-left: var(--s-6); padding-right: var(--s-6); }
+
+/* The row-selection checkbox is 18 px: it is clicked from anywhere in its cell. */
+.checkCell {
+  padding: 0;
+}
+
+.checkCell label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 var(--s-7);
+  cursor: pointer;
+}
+
+/*
+In the HEADER the checkbox stands alone and must not dictate the row height.
+
+The 40 px above are for a data row, where the touch target fills the cell and
+matches the row height. Applied to the header too, Zones' measured 57 px while
+the other six tables in the console measured 33: the same header, nearly twice as
+tall, and without any label taking two lines. Here the target is still the whole
+cell, only the cell is as tall as the header is.
+*/
+thead th.checkCell { padding: 0; }
+thead .checkCell label { min-height: 0; }

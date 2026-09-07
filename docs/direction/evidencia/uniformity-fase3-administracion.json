@@ -1,0 +1,147 @@
+{
+  "_": "Barrido de uniformidad tras construir Administracion. Se compara contra `uniformity-base-fase2.json`, misma herramienta, mismas 27 rutas, mismo ancho.",
+  "cuando": "2026-09-04",
+  "anclaje": {
+    "commit": "920aba0",
+    "diff_sha256": "5f2d86395206612773490ff250e9f3faffb5222231ea1351784ce5b23fe14816",
+    "diff_bytes": 14736
+  },
+  "bundle_comprobado": "index-CgvYMBls.css, el mismo que el build en disco. Comprobado ANTES de medir: un barrido anterior de esta misma ronda midio el bundle viejo y habria salido en falso.",
+  "recorrido": "1440x1000, las mismas 27 rutas por SPA. Las 27 llegaron a su ruta, comprobado una a una. `/logs/query-logs/` con 1800 ms, por la nota de la medicion 4 de la base.",
+  "resultado": {
+    "familias": "panel 1 · titulo 1 · gap-under-the-title 1 · tabla 5 · recuento 1 · campo-text 1 · row-checkbox 2 · settings-checkbox 1 · aviso-info 2 · campo-area 1 · reticula-panel 2 · campo-num-ancho 4 · campo-area-alto 3 · radio 1 · aviso-warning 1",
+    "contra_la_base": "Catorce de las quince, IDENTICAS cadena a cadena. La unica que sube es `tabla`, de 4 a 5.",
+    "la_que_sube": {
+      "familia": "tabla",
+      "de": 4,
+      "a": 5,
+      "la_firma_nueva": "th 10.5px/600/0.525px/rgb(25, 28, 31) · td 6px 8px  ->  /admin/permissions/",
+      "por_que_es_correcta": "Es `ui/Matrix`, la primitiva nueva de la ronda, y es UNA firma para sus dos densidades: el mapa de concesiones y las once secciones. Un objeto de tabla nuevo suma una firma por definicion; la base ya dice que dos firmas pueden ser dos objetos a proposito —la tabla de datos y la editable son eso mismo—. Lo que no podia pasar es que fueran dos sin que nadie lo decidiera."
+    }
+  },
+  "LO_QUE_CAZO_EL_BARRIDO": {
+    "1_la_matriz_salia_como_DOS_tablas": "El fondo pegajoso de la columna de sujeto estaba solo en la esquina, y `uniformity.js` toma el PRIMER `thead th`: el mapa daba `rgb(25, 28, 31)` y las once secciones `rgba(0, 0, 0, 0)`, dos firmas para un objeto. Arreglado poniendo el fondo en la fila de cabecera entera; dentro de un panel es el color que ya estaba detras, asi que no cambia nada a la vista.",
+    "2_el_indice_partia_el_formulario_denso": "Con `ui/SectionIndex` en columna, `reticula-panel` daba TRES firmas: `210px 354px 360px` en `/admin/sso/` contra `210px 542px 360px` en las ocho de Settings. Los 188 px son la columna del indice y su hueco. Settings es el mismo arquetipo, ya esta construido y no lleva indice, asi que ponerlo en uno de los dos deja la misma fila con dos geometrias. **El indice queda aplazado**, con su condicion escrita: va en Settings y en SSO a la vez, o en ninguno. `Permissions` si lo conserva y no cuesta nada medido: no tiene ni una fila `Row`.",
+    "3_los_avisos_sueltos": "Los ocho `Note!` de SSO fuera de todo panel daban una tercera firma de `aviso-info` —«loose on the page» contra «15px from the panel»— para el mismo aviso. Metidos en un `Block` sin titulo, la familia vuelve a 2."
+  },
+  "lo_que_este_barrido_NO_cubre": "Las 27 rutas no abren ningun dialogo, asi que no ve ni el bloque de consecuencia de los cuatro `Force` ni el modal `Edit Permissions`. Los cuatro `Force` se comprobaron aparte, en el navegador y con el cluster real; el modal, en las pruebas.",
+  "merged": [
+    {
+      "familia": "panel",
+      "cuantas": 1,
+      "firmas": [
+        "shadow | 10px | no-header | -  →  /dashboard/, /cache/, /allowed/, /blocked/, /apps/, /about/, /settings/general/, /settings/web-service/, /settings/optional-protocols/, /settings/tsig/, /settings/recursion/, /settings/cache/, /settings/blocking/, /settings/proxy-forwarders/, /settings/logging/, /admin/permissions/, /admin/sso/, /logs/view-logs/, /logs/query-logs/"
+      ]
+    },
+    {
+      "familia": "titulo",
+      "cuantas": 1,
+      "firmas": [
+        "22px/600/-0.55px  →  /dashboard/, /zones/, /cache/, /allowed/, /blocked/, /apps/, /dnsclient/, /about/, /settings/general/, /settings/web-service/, /settings/optional-protocols/, /settings/tsig/, /settings/recursion/, /settings/cache/, /settings/blocking/, /settings/proxy-forwarders/, /settings/logging/, /dhcp/leases/, /dhcp/scopes/, /admin/sessions/, /admin/users/, /admin/groups/, /admin/permissions/, /admin/sso/, /admin/cluster/, /logs/view-logs/, /logs/query-logs/"
+      ]
+    },
+    {
+      "familia": "gap-under-the-title",
+      "cuantas": 1,
+      "firmas": [
+        "24px  →  /dashboard/, /zones/, /cache/, /allowed/, /blocked/, /apps/, /dnsclient/, /about/, /settings/general/, /settings/web-service/, /settings/optional-protocols/, /settings/tsig/, /settings/recursion/, /settings/cache/, /settings/blocking/, /settings/proxy-forwarders/, /settings/logging/, /dhcp/leases/, /dhcp/scopes/, /admin/sessions/, /admin/users/, /admin/groups/, /admin/permissions/, /admin/sso/, /admin/cluster/, /logs/view-logs/, /logs/query-logs/"
+      ]
+    },
+    {
+      "familia": "tabla",
+      "cuantas": 5,
+      "firmas": [
+        "th 10.5px/600/0.525px/rgb(33, 37, 41) · td 9px 10px  →  /zones/, /cache/, /allowed/, /dhcp/scopes/, /admin/sessions/, /admin/users/, /admin/groups/, /admin/cluster/",
+        "th 10.5px/600/0.525px/rgba(0, 0, 0, 0) · td 6px 8px 6px 0px  →  /settings/general/, /settings/tsig/, /admin/sso/",
+        "th 10.5px/600/0.525px/rgb(33, 37, 41) · td —  →  /dhcp/leases/",
+        "th 10.5px/600/0.525px/rgb(25, 28, 31) · td 6px 8px  →  /admin/permissions/",
+        "th 10.5px/600/0.525px/rgba(0, 0, 0, 0) · td —  →  /admin/sso/"
+      ]
+    },
+    {
+      "familia": "recuento",
+      "cuantas": 1,
+      "firmas": [
+        "12.5px/400/rgb(154, 161, 168)  →  /zones/, /cache/, /allowed/, /blocked/, /dhcp/leases/, /dhcp/scopes/, /admin/sessions/, /admin/users/, /admin/groups/, /admin/permissions/, /admin/cluster/"
+      ]
+    },
+    {
+      "familia": "campo-text",
+      "cuantas": 1,
+      "firmas": [
+        "8px | 8px 10px | 12.5px | 1px | inset  →  /zones/, /cache/, /allowed/, /blocked/, /dnsclient/, /settings/general/, /settings/web-service/, /settings/optional-protocols/, /settings/tsig/, /settings/recursion/, /settings/cache/, /settings/blocking/, /settings/proxy-forwarders/, /settings/logging/, /admin/sso/, /logs/query-logs/"
+      ]
+    },
+    {
+      "familia": "row-checkbox",
+      "cuantas": 2,
+      "firmas": [
+        "0px | normal | 10.5px | rgb(154, 161, 168)  →  /zones/",
+        "40px | normal | 13px | rgb(232, 234, 236)  →  /zones/"
+      ]
+    },
+    {
+      "familia": "settings-checkbox",
+      "cuantas": 1,
+      "firmas": [
+        "26px | 9px | 12.5px | rgb(232, 234, 236)  →  /dnsclient/, /settings/general/, /settings/web-service/, /settings/optional-protocols/, /settings/recursion/, /settings/cache/, /settings/blocking/, /settings/proxy-forwarders/, /settings/logging/, /admin/sso/, /logs/query-logs/"
+      ]
+    },
+    {
+      "familia": "aviso-info",
+      "cuantas": 2,
+      "firmas": [
+        "contorno | con-icono | ancho 270px | 8px | 15px from the panel  →  /about/",
+        "contorno | con-icono | ancho 880px | 8px | 15px from the panel  →  /settings/general/, /settings/web-service/, /settings/optional-protocols/, /settings/tsig/, /settings/recursion/, /settings/cache/, /settings/blocking/, /settings/proxy-forwarders/, /admin/sso/"
+      ]
+    },
+    {
+      "familia": "campo-area",
+      "cuantas": 1,
+      "firmas": [
+        "8px | 8px 10px | 12.5px | 1px | inset  →  /settings/general/, /settings/web-service/, /settings/optional-protocols/, /settings/recursion/, /settings/blocking/, /settings/proxy-forwarders/"
+      ]
+    },
+    {
+      "familia": "reticula-panel",
+      "cuantas": 2,
+      "firmas": [
+        "210px 542px 360px  →  /settings/general/, /settings/web-service/, /settings/optional-protocols/, /settings/recursion/, /settings/cache/, /settings/blocking/, /settings/proxy-forwarders/, /settings/logging/, /admin/sso/",
+        "210px 552px 360px  →  /settings/tsig/"
+      ]
+    },
+    {
+      "familia": "campo-num-ancho",
+      "cuantas": 4,
+      "firmas": [
+        "104px  →  /settings/general/, /settings/web-service/, /settings/optional-protocols/, /settings/recursion/, /settings/cache/, /settings/blocking/, /settings/proxy-forwarders/, /settings/logging/",
+        "148px  →  /settings/general/",
+        "125px  →  /settings/cache/",
+        "110px  →  /logs/query-logs/"
+      ]
+    },
+    {
+      "familia": "campo-area-alto",
+      "cuantas": 3,
+      "firmas": [
+        "66px  →  /settings/general/, /settings/web-service/, /settings/blocking/, /settings/proxy-forwarders/",
+        "98px  →  /settings/general/, /settings/web-service/, /settings/optional-protocols/, /settings/recursion/, /settings/proxy-forwarders/",
+        "130px  →  /settings/blocking/"
+      ]
+    },
+    {
+      "familia": "radio",
+      "cuantas": 1,
+      "firmas": [
+        "26px | 9px | 12.5px | rgb(232, 234, 236)  →  /settings/general/, /settings/recursion/, /settings/blocking/, /settings/proxy-forwarders/, /settings/logging/"
+      ]
+    },
+    {
+      "familia": "aviso-warning",
+      "cuantas": 1,
+      "firmas": [
+        "relleno | con-icono | ancho 880px | 8px | 15px from the panel  →  /settings/general/, /settings/recursion/, /settings/blocking/, /settings/logging/, /admin/sso/"
+      ]
+    }
+  ]
+}

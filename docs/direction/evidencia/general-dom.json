@@ -1,0 +1,411 @@
+{
+  "_": "Settings > General, leído del DOM vivo del harness (dev, 127.0.0.1:5380) el 2026-09-02. La atadura ayuda→control sale de aquí y no del AST: el AST censa, el DOM dice a qué cuelga cada cosa.",
+  "_verificacion": "Re-comprobable con dev/verify-evidencia.mjs, que compara contra la página, elemento a elemento y con el SHA-256 ENTERO de cada cadena (no un prefijo), SIETE cosas: 39 nombres, 41 ayudas (39 de control + 2 de las listas QPM), 12 avisos, 19 sufijos, las 10 secciones, las 2 listas con sus columnas y la barra. Va en dos mitades porque playwright no resuelve en este repo: `node dev/verify-evidencia.mjs --snippet` da la funcion que se ejecuta en la consola del panel, y `node dev/verify-evidencia.mjs captura.json` compara lo que devuelve. Pasado el 2026-09-02 con exit 0.",
+  "_cuidado": "Ni una suma de caracteres ni un prefijo de hash llamado SHA-256. La suma colisiona con cualquier transposicion -la primera verificacion acerto por casualidad-, y truncar a 16 caracteres hex son 64 bits, que es una huella util y no es lo que dice el nombre.",
+  "cromo": {
+    "titulo": "General",
+    "migas": "Settings",
+    "subpestanas": [
+      "General",
+      "Web Service",
+      "Optional Protocols",
+      "TSIG",
+      "Recursion",
+      "Cache",
+      "Blocking",
+      "Proxy & Forwarders",
+      "Logging"
+    ],
+    "subpestana_activa": {
+      "etiqueta": "General",
+      "href": "/settings/general/",
+      "marca": "aria-current=page"
+    },
+    "barra": {
+      "posicion": "sticky",
+      "botones": [
+        "Save Settings",
+        "Flush Cache",
+        "Backup Settings",
+        "Restore Settings"
+      ]
+    }
+  },
+  "dependencias": [
+    {
+      "maestro": "Enable UDP Socket Pool",
+      "apaga": [
+        "UDP Socket Pool Excluded Ports"
+      ]
+    },
+    {
+      "maestro": "Enable EDNS Client Subnet",
+      "apaga": [
+        "ECS IPv4 Prefix Length",
+        "ECS IPv6 Prefix Length",
+        "ECS IPv4 Override",
+        "ECS IPv6 Override"
+      ]
+    }
+  ],
+  "secciones": [
+    {
+      "s": "Local Parameters",
+      "ctl": [
+        {
+          "n": "DNS Server Domain",
+          "t": "text",
+          "h": "The primary fully qualified domain name used by this DNS Server to identify itself."
+        },
+        {
+          "n": "DNS Server Local End Points",
+          "t": "textarea",
+          "h": "Local End Points are the network interface IP addresses and ports you want the DNS Server to listen for requests. To explicitly bind the UDP sockets to interface device on Linux, specify the interface name as shown in these examples: 192.168.1.10%eth0:53 or [2001:db8::1%eth1]:53. For VRF, the interface name can be the VRF name."
+        },
+        {
+          "n": "DNS Server IPv4 Source Addresses",
+          "t": "textarea",
+          "h": "The IPv4 source addresses that the DNS Server must use for making all outbound DNS requests when the server is connected to two or more networks. Network addresses are also accepted."
+        },
+        {
+          "n": "DNS Server IPv6 Source Addresses",
+          "t": "textarea",
+          "h": "The IPv6 source addresses that the DNS Server must use for making all outbound DNS requests when the server is connected to two or more networks. Network addresses are also accepted. Note that this option will be used only when Prefer IPv6 option is enabled."
+        }
+      ],
+      "listas": [],
+      "av": [
+        "Note! The DNS Server local end point changes will be automatically applied and so you do not need to manually restart the main service.",
+        "Note! The source adddresses configured above must be the IP addresses that are configured on the local system's network interface. When using source addresses option, its also necessary to ensure that the system has a default route or a specific route for the source address to be able to reach the destination network. When source addresses are not configured, the IP address of the interface with a default route will be used as the source address."
+      ]
+    },
+    {
+      "s": "Default Parameters",
+      "ctl": [
+        {
+          "n": "Default Record TTL",
+          "t": "text",
+          "suf": "seconds (default 3600/1h)",
+          "h": "The default TTL value to use if not specified when adding or updating records in a Zone."
+        },
+        {
+          "n": "Default NS Record TTL",
+          "t": "text",
+          "suf": "seconds (default 14400/4h)",
+          "h": "The default TTL value to use if not specified when adding or updating NS records in a Primary Zone."
+        },
+        {
+          "n": "Default SOA Record TTL",
+          "t": "text",
+          "suf": "seconds (default 900/15m)",
+          "h": "The default TTL value to use if not specified when adding or updating SOA records in a Primary Zone."
+        },
+        {
+          "n": "Default Responsible Person",
+          "t": "text",
+          "h": "The default SOA Responsible Person email address to use when adding a Primary Zone."
+        },
+        {
+          "n": "Use SOA Serial Date Scheme",
+          "t": "checkbox",
+          "h": "The default SOA Serial option to use if not specified when adding a Primary Zone."
+        },
+        {
+          "n": "Minimum SOA Refresh",
+          "t": "text",
+          "suf": "seconds (default 300/5m)",
+          "h": "The minimum Refresh interval to be used by Secondary, Stub, Secondary Forwarder, and Secondary Catalog zones. This minimum value will be used if a zone's SOA Refresh value is less than it."
+        },
+        {
+          "n": "Minimum SOA Retry",
+          "t": "text",
+          "suf": "seconds (default 300/5m)",
+          "h": "The minimum Retry interval to be used by Secondary, Stub, Secondary Forwarder, and Secondary Catalog zones zones. This minimum value will be used if a zone's SOA Retry value is less than it."
+        },
+        {
+          "n": "Zone Transfer Allowed Networks",
+          "t": "textarea",
+          "h": "Enter IP addresses or network addresses one below another that are allowed to perform zone transfer for all zones without any TSIG authentication."
+        },
+        {
+          "n": "Notify Allowed Networks",
+          "t": "textarea",
+          "h": "Enter IP addresses or network addresses one below another that are allowed to Notify all Secondary Zones."
+        }
+      ],
+      "listas": [],
+      "av": [],
+      "grupos": [
+        "Zone Defaults"
+      ]
+    },
+    {
+      "s": "Software Update",
+      "ctl": [
+        {
+          "n": "Enable Check For Update",
+          "t": "checkbox",
+          "h": "Enables the DNS Server to check if an update is available when the Check For Update API is called which usually occurs after a user logs into the Web Console."
+        },
+        {
+          "n": "Enable Automatic Update",
+          "t": "checkbox",
+          "h": "The DNS Server will check for DNS Apps update once every day and will automatically download and install the updates."
+        }
+      ],
+      "listas": [],
+      "av": [],
+      "grupos": [
+        "Software Update"
+      ]
+    },
+    {
+      "s": "IPv6",
+      "ctl": [
+        {
+          "n": "Disable IPv6",
+          "t": "radio",
+          "h": "Disables IPv6 support such that the DNS Server uses only IPv4 for all outbound DNS and HTTP(s) requests."
+        },
+        {
+          "n": "Enable IPv6",
+          "t": "radio",
+          "h": "Enables IPv6 support such that the DNS Server uses both IPv6 (whenever possible) and IPv4 with equal weightage for all outbound DNS and HTTP(s) requests."
+        },
+        {
+          "n": "Prefer IPv6",
+          "t": "radio",
+          "h": "Enables IPv6 support such that the DNS Server prefers using IPv6 (whenever possible) for all outbound DNS and HTTP(s) requests and will use IPv4 only after exhausting all IPv6 attempts."
+        }
+      ],
+      "listas": [],
+      "av": [
+        "Warning! Enable IPv6 support only if this DNS Server has native IPv6 Internet access otherwise it will affect performance. There are many name servers on the Internet that do not respond over IPv6 and thus using Prefer IPv6 option when you are running DNS Server in recursive resolver mode (i.e. without any forwarders) may cause frequent operational issues with resolution that may result increase in Server Failure responses."
+      ],
+      "grupos": [
+        "IPv6 Support"
+      ]
+    },
+    {
+      "s": "UDP Socket Pool",
+      "ctl": [
+        {
+          "n": "Enable UDP Socket Pool",
+          "t": "checkbox",
+          "h": "The DNS Server will use UDP socket pool for all outbound DNS-over-UDP requests when enabled."
+        },
+        {
+          "n": "UDP Socket Pool Excluded Ports",
+          "t": "textarea",
+          "off": true,
+          "h": "Enter port numbers one below other to be excluded from being used by the UDP socket pool."
+        }
+      ],
+      "listas": [],
+      "av": [
+        "Note! Enabling UDP socket pool provides port randomization for all outbound DNS-over-UDP requests to mitigate spoofing attacks. It is recommended to enable UDP socket pool on Windows platform. On Linux, ports are fairly random and thus socket pool may be enabled if more randomization is desired. The DNS Server can detect DNS spoofing attack attempts based on ID mismatch and switch to TCP protocol automatically."
+      ],
+      "grupos": [
+        "UDP Socket Pool"
+      ]
+    },
+    {
+      "s": "EDNS",
+      "ctl": [
+        {
+          "n": "EDNS UDP Payload Size",
+          "t": "number",
+          "suf": "bytes (valid range 512-4096; default 1232)",
+          "h": "The maximum UDP payload size that can be used to avoid IP fragmentation."
+        }
+      ],
+      "listas": [],
+      "av": []
+    },
+    {
+      "s": "DNSSEC",
+      "ctl": [
+        {
+          "n": "Enable DNSSEC Validation",
+          "t": "checkbox",
+          "h": "The DNS Server will validate all responses from name servers or forwarders when this option is enabled."
+        }
+      ],
+      "listas": [],
+      "av": [
+        "Warning! Devices that do not have a real-time clock and rely on NTP when booting (e.g. Raspberry Pi), enabling DNSSEC validation will cause failure to resolve the NTP server domain name thus causing the DNS Server to fail to validate all other domain names too due to invalid system date/time. To fix this issue, just create a Conditional Forwarder zone for the NTP server domain name (e.g. ntp.org) with forwarder set to this-server and Enable DNSSEC Validation option unchecked. This conditional forwarder zone will disable DNSSEC validation for the NTP server domain name and allow the device to update its system data/time on boot.",
+        "Warning! When forwarders are configured, DNSSEC validation will work only if the forwarders are security aware i.e. can respond to DNSSEC requests correctly.",
+        "Note! Enabling DNSSEC may increase delays in resolving domain names when the cache is initially empty. As the cache fills up, the performance will be normal as expected."
+      ],
+      "grupos": [
+        "DNSSEC"
+      ]
+    },
+    {
+      "s": "EDNS Client Subnet",
+      "ctl": [
+        {
+          "n": "Enable EDNS Client Subnet",
+          "t": "checkbox",
+          "h": "The DNS Server will use the public IP address of the request with a prefix length, or the existing Client Subnet option from the request."
+        },
+        {
+          "n": "ECS IPv4 Prefix Length",
+          "t": "number",
+          "off": true,
+          "suf": "(valid range 0-32; default 24)",
+          "h": "The IPv4 prefix length to define the client subnet."
+        },
+        {
+          "n": "ECS IPv6 Prefix Length",
+          "t": "number",
+          "off": true,
+          "suf": "(valid range 0-64; default 56)",
+          "h": "The IPv6 prefix length to define the client subnet."
+        },
+        {
+          "n": "ECS IPv4 Override",
+          "t": "text",
+          "off": true,
+          "h": "The IPv4 network address that must be used as ECS for all outbound requests overriding client's actual subnet."
+        },
+        {
+          "n": "ECS IPv6 Override",
+          "t": "text",
+          "off": true,
+          "h": "The IPv6 network address that must be used as ECS for all outbound requests overriding client's actual subnet."
+        }
+      ],
+      "listas": [],
+      "av": [
+        "Warning! EDNS Client Subnet (ECS) option when enabled will compromises user's privacy since the DNS Server will send the user's public IP network subnet to name servers or forwarders when resolving requests. When not using encrypted DNS protocols, this information can also be read passively by anyone on the network.",
+        "Note! EDNS Client Subnet (ECS) option allows passing the user's client subnet information to name servers or forwarders so that the response may contain IP addresses of servers closer to the user's geographic region. EDNS Client Subnet (ECS) option thus is only useful when the DNS Server is hosted in a geographically different region compared to the users that are configured to use it.",
+        "Note! Enabling EDNS Client Subnet (ECS) option will significantly increase the DNS Server's memory usage since the server will have to cache data for each client subnet separately. It will also increase cache misses since DNS Server will have to resolve requests and cache them for each client subnet separately."
+      ],
+      "grupos": [
+        "EDNS Client Subnet (ECS)"
+      ]
+    },
+    {
+      "s": "Rate Limiting",
+      "ctl": [
+        {
+          "n": "QPM Sample Size",
+          "t": "number",
+          "suf": "minutes (valid range 1-60; default 5)",
+          "h": "The sample size in minutes to sample latest data from Last Hour stats for limiting queries per client."
+        },
+        {
+          "n": "QPM Limit UDP Truncation",
+          "t": "number",
+          "suf": "% (valid range 0-100; default 50)",
+          "h": "The percentage of requests that are responded with a truncation (TC) response when QPM limit exceeds for DNS-over-UDP protocol service while the rest of the requests are dropped. A TC response will cause a real client to retry to DNS-over-TCP protocol service."
+        },
+        {
+          "n": "QPM Limit Bypass List",
+          "t": "textarea",
+          "h": "Enter IP addresses or network addresses one below another that are allowed to bypass the QPM limit."
+        }
+      ],
+      "listas": [
+        {
+          "n": "Queries Per Minute (QPM) Limits (IPv4)",
+          "cols": [
+            "IPv4 Prefix",
+            "UDP Limit",
+            "TCP Limit",
+            ""
+          ],
+          "filas_en_el_harness": 2,
+          "h": "The maximum queries an IPv4 client subnet can make to DNS-over-UDP and DNS-over-TCP protocol services per minute on average based on the sample size. Set limit value to 0 to allow unlimited queries for a specific protocol in an entry or delete the entry altogether to remove rate limiting for the prefix.",
+          "vacia": "No entries.",
+          "boton_quitar_fila": "Delete",
+          "boton_anadir": "Add"
+        },
+        {
+          "n": "Queries Per Minute (QPM) Limits (IPv6)",
+          "cols": [
+            "IPv6 Prefix",
+            "UDP Limit",
+            "TCP Limit",
+            ""
+          ],
+          "filas_en_el_harness": 3,
+          "h": "The maximum queries an IPv6 client subnet can make to DNS-over-UDP and DNS-over-TCP protocol services per minute on average based on the sample size. Set limit value to 0 to allow unlimited queries for a specific protocol in an entry or delete the entry altogether to remove rate limiting for the prefix.",
+          "vacia": "No entries.",
+          "boton_quitar_fila": "Delete",
+          "boton_anadir": "Add"
+        }
+      ],
+      "av": [
+        "Note! Queries Per Minute (QPM) feature will limit requests from a client subnet based on its IP address and the specified subnet prefix lengths except for loopback IP addresses. The QPM limit configured will be compared with the average count from the sample size which means a client may exceed the QPM limit for a given minute but won't exceed for the given sample size in minutes. Rate limited clients will be listed in orange color on the dashboard top clients table.",
+        "Note! The configured TCP limits apply to the DNS-over-TCP protocol service as well as to the DNS-over-TLS, DNS-over-HTTPS and DNS-over-QUIC optional protocol services."
+      ]
+    },
+    {
+      "s": "Advanced Options",
+      "ctl": [
+        {
+          "n": "Client Timeout",
+          "t": "number",
+          "suf": "milliseconds (valid range 1000-10000; default 2000)",
+          "h": "The amount of time the DNS Server must wait before responding with a ServerFailure response to a client request when no answer is available."
+        },
+        {
+          "n": "TCP Send Timeout",
+          "t": "number",
+          "suf": "milliseconds (valid range 1000-90000; default 10000)",
+          "h": "The maximum amount of time the DNS Server will wait for the response to be sent. This option will apply for DNS requests being received by the DNS Server over TCP, TLS, TcpProxy, or HTTPS transports."
+        },
+        {
+          "n": "TCP Receive Timeout",
+          "t": "number",
+          "suf": "milliseconds (valid range 1000-90000; default 10000)",
+          "h": "The maximum amount of time the DNS Server will wait for receiving data. This option will apply for DNS requests being received by the DNS Server over TCP, TLS, TcpProxy, or HTTPS transports."
+        },
+        {
+          "n": "QUIC Idle Timeout",
+          "t": "number",
+          "suf": "milliseconds (valid range 1000-90000; default 60000)",
+          "h": "The time interval after which an idle QUIC connection will be closed. This option applies only to QUIC transport protocol."
+        },
+        {
+          "n": "QUIC Max Inbound Streams",
+          "t": "number",
+          "suf": "(valid range 1-1000; default 100)",
+          "h": "The max number of inbound bidirectional streams that can be accepted per QUIC connection. This option applies only to QUIC transport protocol."
+        },
+        {
+          "n": "Listen Backlog",
+          "t": "number",
+          "suf": "(default 100)",
+          "h": "The maximum number of pending inbound connections. This option applies to TCP, TLS, TcpProxy, and QUIC transport protocols."
+        },
+        {
+          "n": "UDP Send Buffer Size",
+          "t": "number",
+          "suf": "KB (valid range 8-65536; default 2048)",
+          "h": "The UDP listener socket send buffer size. This option applies to UDP and UdpProxy transport protocols."
+        },
+        {
+          "n": "UDP Receive Buffer Size",
+          "t": "number",
+          "suf": "KB (valid range 8-65536; default 2048)",
+          "h": "The UDP listener socket receive buffer size. This option applies to UDP and UdpProxy transport protocols."
+        },
+        {
+          "n": "Max Concurrent Resolutions",
+          "t": "number",
+          "suf": "per CPU core (default 100)",
+          "h": "The maximum number of concurrent async outbound resolutions that should be done per CPU core."
+        }
+      ],
+      "listas": [],
+      "av": []
+    }
+  ],
+  "_no_verifica": "Lo que este fichero contiene y el verificador NO vuelve a comprobar, dicho para que no se lea como si saliera todo de una orden: las nueve subpestanas (no estan dentro de <main>; las monta el panel lateral del Shell y llegan por prop, Settings.tsx:38) y la relacion de los dos interruptores maestros con sus cinco dependientes (exigiria pulsar la pagina, y un verificador que altera lo que comprueba es peor que uno que declara un limite). Las dos se verificaron una vez, a mano y contra el fuente.",
+  "_grupos": "Los SEIS rotulos de GroupRow, colocados por orden de fuente (General.tsx:116,156,175,211,252,284). La primera version de esta evidencia solo llevaba dos y el contrato afirmaba seis: una cifra sin su inventario, el mismo error que ya se corrigio con los sufijos. Lo encontro el piloto 3, que se nego a inventarse los cuatro que no podia nombrar. CINCO DE LOS SEIS REPITEN EL TITULO DE SU SECCION -Software Update, UDP Socket Pool, DNSSEC, IPv6 Support sobre IPv6, EDNS Client Subnet (ECS) sobre EDNS Client Subnet-; solo Zone Defaults dice algo que su seccion no dice. Si esa repeticion se dibuja dos veces o una es decision de diseno, no de este fichero.",
+  "_editablelist": "La rama VACIA y los botones de fila, anadidos el 2026-09-02 tras leer ui/PanelForm.tsx. No estaban en la primera version de esta evidencia porque se tomo del DOM con las listas POBLADAS: sin filas no se ve la frase de vacio, y el boton de quitar fila no se leyo porque el extractor recorria controles y no botones. Es la misma familia que el selector de cluster invisible en una instancia suelta. UN CONTRATO TOMADO DEL DOM CON DATOS PIERDE LAS RAMAS SIN DATOS.",
+  "_paridad_remove_delete": "COMPROBADO CONTRA UPSTREAM el 2026-09-02, instancia ref del harness (:5381). El reparto de palabras NO es deriva nuestra: es de upstream y lo replicamos. En main.js el boton que quita fila de las listas editables dice `Delete` en las tres -tableQpmPrefixLimitsIPv4Row, tableQpmPrefixLimitsIPv6Row, tableTsigKeyRow-, que son exactamente las de EditableList. En zone.js dice `Remove` en las filas repetibles de los dialogos -trDynamicUpdateSecurityPolicyRow de ZoneOptions y tableAddEditRecordDataSvcbParamsRow de AddEditRecord-. UNIFICARLAS HABRIA SIDO PERDER PARIDAD PARA GANAR COHERENCIA. No localizado: la fila de ZonePermissions en upstream; la nuestra dice `Remove`, coherente con los otros dos dialogos."
+}

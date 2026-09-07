@@ -1,0 +1,86 @@
+/*
+The two "there is nothing here" states and the "it has not arrived yet" one. There
+used to be five treatments of empty (dotted box, loose muted text, two different
+paddings, a `<b>` that was sometimes there) and three of loading.
+*/
+
+/* Region empty state: it replaces a whole table, list or grid. */
+.box {
+  border: 1px dashed var(--line);
+  border-radius: var(--r-4);
+  padding: var(--s-12);
+  text-align: center;
+  color: var(--mute);
+  font-size: var(--t-4);
+  line-height: 1.6;
+}
+
+.title {
+  display: block;
+  color: var(--ink);
+  font-size: var(--t-5);
+  font-weight: 550;
+  margin-bottom: var(--s-3);
+}
+
+.actions {
+  margin-top: var(--s-9);
+  display: flex;
+  gap: var(--s-5);
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* Empty state inside a panel: one line, no box, not competing with it. */
+.line {
+  color: var(--faint);
+  font-size: var(--t-4);
+  padding: var(--s-7) 0;
+}
+
+/* Loading: same place and same weight as the empty state it will replace. */
+.loading {
+  padding: var(--s-12);
+  text-align: center;
+  color: var(--faint);
+  font-size: var(--t-4);
+}
+
+/*
+Failure. It used to reuse `.loading` exactly, so **the data never arrived and the
+data is on its way looked identical** — same muted centred line, no border. On a
+screen you have just opened that is the difference between waiting and retrying.
+
+Phase 1 settles it in one line: **dashed = empty, continuous = error, and they are
+never swapped**. So this is the only one of the three with a solid border, and it
+is `--dan`; the empty box keeps the dashed one and loading keeps none.
+
+`--dim` deliberately does NOT appear here. It means "this is here, readable, and
+not current" — the previous data while a refresh is in flight. A failure slot has
+no previous data in it: dimming it would say something that is not true.
+
+The background and the text are COMPOSED from the shared tone and not written
+again: the error already has its pair of colours in `tones.module.css`, which is
+where the notice and the pill take theirs from. Writing it again is how two reds
+are born.
+
+The one deviation, and it is declared: **the border is not `--dan-bd`, it is
+`--dan`**. The tone uses it dimmed because there the border only bounds a notice
+that is already saying it with its background; here it has to read **against the
+viewer's dashed box**, which is a `--line` away, and `--dan-bd` does not reach
+that far.
+*/
+.failure {
+  composes: dan from './tones.module.css';
+  border: 1px solid var(--dan);
+  border-radius: var(--r-4);
+  padding: var(--s-12);
+  text-align: center;
+  font-size: var(--t-4);
+  line-height: 1.6;
+}
+
+.loading.line {
+  padding: var(--s-7) 0;
+  text-align: left;
+}

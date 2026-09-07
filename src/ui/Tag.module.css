@@ -1,0 +1,41 @@
+/*
+The state pill. There were six identical copies of `.tag` and four different sets
+of modifiers, with `.tagInfo` blue in Zones and amber in Apps: the same pill meant
+one thing on one screen and another on the next.
+*/
+
+.tag {
+  display: inline-block;
+  font-size: var(--t-1);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  padding: var(--s-1) var(--s-5);
+  border-radius: var(--r-full);
+  border: 1px solid var(--line);
+  background: var(--pan2);
+  color: var(--mute);
+  white-space: nowrap;
+}
+
+/* The tones come from `ui/tones.module.css`, shared with the alert. */
+.ok   { composes: ok from './tones.module.css'; }
+.warn { composes: warn from './tones.module.css'; }
+.dan  { composes: dan from './tones.module.css'; }
+.info { composes: info from './tones.module.css'; }
+.acc  { composes: acc  from './tones.module.css'; }
+
+/*
+The code chip: a record type (`A`, `SOA`), an app's class. It is not a state pill
+—it judges nothing— so it is neither round nor coloured.
+*/
+.chip {
+  display: inline-block;
+  font-size: var(--t-1);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  padding: var(--s-1) var(--s-4);
+  border-radius: var(--r-1);
+  background: var(--chip-bg);
+  color: var(--chip-fg);
+  white-space: nowrap;
+}

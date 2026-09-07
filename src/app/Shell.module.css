@@ -1,0 +1,165 @@
+/* Side panel with nested sub-items. Decided by measuring (see design document
+   09-navegacion): 72 px of chrome against 163 with tabs on top, and the second
+   row of stacked tabs disappears. */
+.shell { min-height:100vh; background:var(--bg); color:var(--ink); display:grid; grid-template-columns:216px 1fr; align-items:start; }
+.side { background:var(--pan); border-right:1px solid var(--line); align-self:stretch; position:sticky; top:0; height:100vh; overflow:auto; display:flex; flex-direction:column; }
+.sbrand { display:flex; align-items:center; gap: var(--s-6); padding: 0 var(--s-10); height:52px; border-bottom:1px solid var(--line); font-weight: 600; letter-spacing:-.01em; color:var(--ink); }
+/*
+Technitium's logo, not a "T" in an amber square.
+
+The initial was our own invention: the logo exists, it travels in
+`public/img/logo.png` since the scaffolding and upstream uses it. Replacing
+someone else's product's mark with a letter of our own is exactly what a fork
+must not do.
+*/
+.mark { width:22px; height:22px; flex:none; }
+/*
+The items sat 1 px from each other with 7 px of vertical padding: the list read
+as a block of text, not as twelve destinations. And there was no separation
+between groups at all, so "About" weighed the same as "Zones".
+
+Now there are three groups, separated by space and not by a line: what gets
+operated daily (Dashboard … DNS Client), what gets configured (Settings, DHCP,
+Administration) and what gets consulted (Logs, About).
+*/
+.slist { padding: var(--s-9) var(--s-6); display:flex; flex-direction:column; gap: var(--s-1); }
+.group { display:flex; flex-direction:column; gap: var(--s-1); }
+.group + .group { margin-top: var(--s-9); }
+.s { display:flex; text-decoration:none; align-items:center; gap: var(--s-7); padding: var(--s-6) var(--s-7); border-radius: var(--r-2); font:400 var(--t-4)/1.3 var(--font-ui); color:var(--mute); background:none; border:0; cursor:pointer; text-align:left; white-space:nowrap; width:100%; transition: background var(--t-fast), color var(--t-fast); }
+.s:hover { background:var(--hover); color:var(--ink); }
+.s[data-active='true'] { background:var(--acc); color:var(--on-acc); font-weight: 550; box-shadow: var(--edge-fuerte); }
+.s[data-active='true'] .ico { opacity:1; }
+.ico { display:inline-flex; flex:none; opacity:.85; }
+.sub { display:flex; flex-direction:column; gap: var(--s-1); margin: var(--s-3) 0 var(--s-5) var(--s-11); padding-left: var(--s-7); border-left:1px solid var(--line); }
+.s2 { display:block; text-decoration:none; padding: var(--s-4) var(--s-7); border-radius: var(--r-2); font:400 var(--t-4)/1.3 var(--font-ui); color:var(--mute); background:none; border:0; cursor:pointer; text-align:left; white-space:nowrap; transition: background var(--t-fast), color var(--t-fast); }
+.s2:hover { color:var(--ink); }
+.s2[aria-current='page'] { color:var(--acc); font-weight: 550; background:var(--pan2); box-shadow: var(--edge); }
+.main { min-width:0; display:flex; flex-direction:column; min-height:100vh; }
+/*
+The header ONLY exists on a narrow screen.
+
+It carried the server's domain and the account menu, both stuck to the right
+edge: 1224×52 with 78 % of the width empty —952 px out of 1224— and pushing every
+section's title down to `y=76`. Its two tenants now live at the foot of the side
+panel, which had 377 px free (42 % of its height). On narrow screens it is
+needed, because the side panel is a closed drawer and its trigger has to be
+outside it.
+*/
+.rtop { display:none; }
+/* At the foot of the side panel, hence `margin-top:auto`: that is what pushes it
+   down however short the list of sections is. */
+.footSide { margin-top:auto; padding: var(--s-8) var(--s-9); border-top:1px solid var(--line); display:flex; flex-direction:column; gap: var(--s-4); }
+/* It opens upwards: it sits at the foot of the window, not under a header. */
+.body { padding: var(--s-11) var(--s-11) var(--s-11); min-width:0; flex:1; }
+
+/* The page's foot: it drops to the bottom when the section is short and comes
+   after the content when it is long, which is where upstream's `div#footer` is. */
+.footMain {
+  flex: none;
+  padding: var(--s-9) var(--s-11);
+  border-top: 1px solid var(--line2);
+  text-align: center;
+  font-size: var(--t-2);
+  line-height: 1.9;
+}
+
+/*
+Below 900 px the side panel stops taking a column and becomes a drawer.
+
+This is NOT parity with upstream: upstream does not declare a `viewport`, so on a
+phone it draws at ~980 virtual px and is dealt with by zooming. We do declare it,
+which means we promise to adapt; without this the promise was false and the
+twelve sections overflowed. And the most frequent use case for a home DNS is
+looking at it from a phone when something has stopped resolving.
+*/
+
+/* The drawer's trigger and the header's mark only exist on a narrow screen; on a
+   wide one the side panel is already in sight. */
+.hamburger,
+.marcaTop {
+  display: none;
+}
+
+/* The padding goes here and not inside the media query: without declaring it,
+   the browser puts in its own —1px 6px— and that is a value we did not choose. */
+.hamburger { padding: 0; }
+
+@media (max-width: 900px) {
+  .shell { grid-template-columns: 1fr; }
+
+  .rtop {
+    display: flex; align-items: center; gap: var(--s-6);
+    padding: 0 var(--s-9); height: 52px;
+    border-bottom: 1px solid var(--line); background: var(--pan);
+    box-shadow: var(--edge); font-size: var(--t-4); color: var(--mute);
+    position: sticky; top: 0; z-index: var(--layer-sticky);
+  }
+
+  .side {
+    position: fixed;
+    z-index: var(--layer-drawer);
+    top: 0;
+    left: 0;
+    width: 264px;
+    max-width: 84vw;
+    transform: translateX(-100%);
+    transition: transform 0.18s ease;
+    box-shadow: var(--shadow-modal);
+  }
+
+  .side[data-open='true'] { transform: none; }
+
+  .veil {
+    position: fixed;
+    inset: 0;
+    z-index: var(--layer-veil);
+    background: rgba(5, 7, 10, 0.6);
+    border: 0;
+  }
+
+  .hamburger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    margin-right: auto;
+    padding: 0;
+    background: none;
+    border: 1px solid var(--line);
+    border-radius: var(--r-2);
+    color: var(--ink);
+    font-size: var(--t-5);
+    cursor: pointer;
+  }
+
+  .marcaTop {
+    display: flex;
+    align-items: center;
+    gap: var(--s-5);
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  .rtop { padding: 0 var(--s-9); gap: var(--s-7); }
+  .body { padding: var(--s-9); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .side { transition: none; }
+}
+
+/*
+The chrome slot: where a screen can put a control that reframes everything below
+it — today only the Dashboard's node selector.
+
+It goes above the content and on the left, which is the position the phase 3
+design gives it relative to what is below. NOT in a top bar: this console has no
+top bar when wide, and removing it was a measured decision (see above). Reviving
+it to hang a control off would be undoing that in order to follow a drawing.
+
+`:empty` is what keeps it from taking up room when nobody uses it: without it,
+seven of eight screens would gain a blank gap.
+*/
+.chromeSlot { display: flex; align-items: center; gap: var(--s-6); margin-bottom: var(--s-8); }
+.chromeSlot:empty { display: none; }

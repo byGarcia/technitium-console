@@ -1,0 +1,95 @@
+/*
+The versions block, at the foot of the side panel.
+
+It is the same idea NetBird uses at the bottom-left of its dashboard: the
+components that make up what you are looking at, each with the version it is
+running, in a quiet framed block that is out of the way but never off screen.
+Here there are two, and they are genuinely two different things that update
+separately: the DNS server, which Technitium ships, and this console, which does
+not come with it.
+
+Upstream keeps the server's domain in the panel title next to "DNS Server". Same
+pairing here: the domain heads the block that talks about that server.
+*/
+.block {
+  border: 1px solid var(--line);
+  border-radius: var(--r-3);
+  background: var(--pan2);
+  padding: var(--s-5) var(--s-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.host {
+  font-family: var(--font-mono);
+  font-size: var(--t-1);
+  color: var(--faint);
+  word-break: break-all;
+  padding-bottom: var(--s-3);
+  border-bottom: 1px solid var(--line2);
+  margin-bottom: var(--s-2);
+}
+
+/* Label left, version right: the eye reads down the versions in one column. */
+.row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-5);
+  font-size: var(--t-2);
+}
+
+.name { color: var(--mute); }
+
+.ver {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-4);
+}
+
+.num { font-family: var(--font-mono); color: var(--ink); }
+
+/*
+The mark rides on the version it is about, which is the whole point of putting
+it here: an update to the DNS server and an update to this console are not the
+same news, and a notice floating on its own could not say which one it meant.
+
+Amber and not the red upstream uses: in this console red is what destroys
+—Delete Zones, Flush Cache— and an available update destroys nothing.
+*/
+.marca {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px var(--s-4) 1px var(--s-3);
+  border: 1px solid var(--acc);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--acc);
+  font: inherit;
+  font-size: var(--t-1);
+  
+  line-height: 1.6;
+  cursor: pointer;
+}
+
+.marca:hover,
+.marca:focus-visible { background: color-mix(in srgb, var(--acc) 14%, transparent); }
+
+.punto { width: 5px; height: 5px; border-radius: 50%; background: var(--acc); }
+
+/* Inside the dialog. */
+.jump {
+  display: flex; align-items: baseline; gap: var(--s-5);
+  margin-bottom: var(--s-7); font-family: var(--font-mono);
+}
+.de { color: var(--mute); }
+.flecha { color: var(--faint); }
+.a { color: var(--acc); font-weight: 600; }
+.mensaje { margin-bottom: var(--s-7); }
+.enlaces { display: flex; flex-wrap: wrap; gap: var(--s-7); }
+
+/* Upstream's two `Note!`, after the links: they explain, they do not change the
+   decision. Same rule as every other `Note!` in the console. */
+.notes { display: grid; gap: var(--s-5); margin-top: var(--s-9); }

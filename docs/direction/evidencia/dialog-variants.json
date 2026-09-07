@@ -1,0 +1,94 @@
+{
+  "schema": "Controls are accessible names observed in one clean dialog state. `common` is present in every listed state; `variants` contains the state-specific remainder. Repeated labels remain separate by variant or radio group.",
+  "captured": "2026-09-02",
+  "origin": "http://127.0.0.1:5380 harness, dev instance",
+  "AddZone": {
+    "selector": "Zone Type",
+    "common": [
+      "Zone",
+      "Primary Zone (default)",
+      "Secondary Zone",
+      "Stub Zone",
+      "Conditional Forwarder Zone",
+      "Secondary Conditional Forwarder Zone",
+      "Catalog Zone",
+      "Secondary Catalog Zone",
+      "Secondary ROOT Zone (RFC 8806)"
+    ],
+    "variants": {
+      "Primary": ["Catalog Zone", "Import Zone File (Optional)", "Use SOA Serial Date Scheme"],
+      "Secondary": ["Catalog Zone", "Primary Name Server Addresses (Optional)", "XFR-over-TCP (default)", "XFR-over-TLS", "XFR-over-QUIC", "TSIG Key Name (Optional)", "Use ZONEMD to Validate Zone"],
+      "Stub": ["Catalog Zone", "Primary Name Server Addresses (Optional)"],
+      "Forwarder / initialize": ["Catalog Zone", "Initialize Forwarder (FWD) Record", "DNS-over-UDP (default)", "DNS-over-TCP", "DNS-over-TLS", "DNS-over-HTTPS", "DNS-over-QUIC", "Forwarder", "Use \"This Server\"", "Enable DNSSEC Validation", "No Proxy", "Default Proxy (default)", "HTTP Proxy", "SOCKS5 Proxy", "Proxy Server Address [disabled with Default Proxy]", "Proxy Server Port [disabled with Default Proxy]", "Proxy Server Username [disabled with Default Proxy]", "Proxy Server Password [disabled with Default Proxy]"],
+      "Forwarder / do not initialize": ["Catalog Zone", "Initialize Forwarder (FWD) Record", "Import Zone File (Optional)"],
+      "SecondaryForwarder": ["Primary Name Server Addresses", "XFR-over-TCP (default)", "XFR-over-TLS", "XFR-over-QUIC", "TSIG Key Name (Optional)"],
+      "Catalog": [],
+      "SecondaryCatalog": ["Primary Name Server Addresses", "XFR-over-TCP (default)", "XFR-over-TLS", "XFR-over-QUIC", "TSIG Key Name (Optional)"],
+      "SecondaryRoot": ["Zone [disabled and fixed to .]", "Catalog Zone"]
+    }
+  },
+  "AddEditRecord": {
+    "selector": "Type",
+    "addCommon": ["Name", "Type", "TTL", "Overwrite existing records", "Comments", "Expiry TTL"],
+    "editCommon": ["Name", "Type [disabled]", "TTL", "Comments", "Expiry TTL"],
+    "variants": {
+      "A": ["IPv4 Address", "Add reverse (PTR) record", "Create reverse zone if it does not exists"],
+      "NS": ["Name Server", "Glue Addresses"],
+      "CNAME": ["Canonical Name"],
+      "PTR": ["Domain Name"],
+      "MX": ["Preference", "Exchange"],
+      "TXT": ["Text Data", "Split text into multiple character strings"],
+      "RP": ["Mailbox", "TXT Domain"],
+      "AAAA": ["IPv6 Address", "Add reverse (PTR) record", "Create reverse zone if it does not exists"],
+      "SRV": ["Priority", "Weight", "Port", "Target"],
+      "NAPTR": ["Order", "Preference", "Flags", "Services", "Regular Expression", "Replacement"],
+      "DNAME": ["Delegation Name"],
+      "SVCB": ["Priority", "Target Name", "Use Automatic IPv4 Hint", "Use Automatic IPv6 Hint"],
+      "SVCB / one parameter row": ["Priority", "Target Name", "Param key 1", "Param value 1", "Use Automatic IPv4 Hint", "Use Automatic IPv6 Hint"],
+      "HTTPS": ["Priority", "Target Name", "Use Automatic IPv4 Hint", "Use Automatic IPv6 Hint"],
+      "URI": ["Priority", "Weight", "URI"],
+      "CAA": ["Flags", "Tag", "Authority"],
+      "ANAME": ["ANAME"],
+      "DS [signed Primary]": ["Key Tag", "DNSSEC Algorithm", "Digest Type", "Digest"],
+      "SSHFP [signed Primary]": ["Algorithm", "Fingerprint Type", "Fingerprint"],
+      "TLSA [signed Primary]": ["Certificate Usage", "Selector", "Matching Type", "Certificate Association Data"],
+      "FWD [Forwarder zone]": ["DNS-over-UDP (default)", "DNS-over-TCP", "DNS-over-TLS", "DNS-over-HTTPS", "DNS-over-QUIC", "Forwarder", "Forwarder Priority", "Enable DNSSEC Validation", "No Proxy", "Default Proxy (default)", "HTTP Proxy", "SOCKS5 Proxy", "Proxy Server Address", "Proxy Server Port", "Proxy Server Username", "Proxy Server Password"],
+      "APP": ["App Name", "Class Path", "Record Data (if any)"],
+      "Unknown": ["RR Type", "Value"],
+      "SOA [Edit Record]": ["Primary Name Server", "Responsible Person", "Serial", "Refresh", "Retry", "Expire", "Minimum", "Use Serial Date Scheme"]
+    },
+    "note": "The Add dialog exposes 18 types on an unsigned Primary, 19 on a signed Primary and 19 on a Forwarder. Their union plus the edit-only SOA covers the 23 source variants."
+  },
+  "ZoneOptions": {
+    "selector": "tab",
+    "variants": {
+      "General": ["Catalog Zone", "Override Query Access Option [disabled]", "Override Zone Transfer Option [disabled]", "Override Notify Option [disabled]"],
+      "Query Access": ["Deny", "Allow (default)", "Allow Only Private Networks", "Allow Only Name Servers In Zone", "Use Specified Network Access Control List (ACL)", "Allow Zone Name Servers And Use Specified Network Access Control List (ACL)", "Network Access Control List (ACL) [disabled for current choice]"],
+      "Zone Transfer": ["Deny", "Allow", "Allow Only Name Servers In Zone", "Use Specified Network Access Control List (ACL)", "Allow Zone Name Servers And Use Specified Network Access Control List (ACL)", "Network Access Control List (ACL) [disabled for current choice]", "Zone Transfer TSIG Key Names", "Quick Add"],
+      "Notify": ["None", "Name Servers In Zone", "Specified Name Servers", "Both Zone Name Servers And Specified Name Servers", "Specified Name Servers [disabled for current choice]"],
+      "Dynamic Updates (RFC 2136)": ["Deny (default)", "Allow", "Allow Only Name Servers In Zone", "Use Specified Network Access Control List (ACL)", "Allow Zone Name Servers And Use Specified Network Access Control List (ACL)", "Network Access Control List (ACL) [disabled for current choice]"],
+      "Dynamic Updates / one policy row": ["Deny (default)", "Allow", "Allow Only Name Servers In Zone", "Use Specified Network Access Control List (ACL)", "Allow Zone Name Servers And Use Specified Network Access Control List (ACL)", "Network Access Control List (ACL) [disabled for current choice]", "TSIG key name 1", "Domain 1", "Allowed types 1"]
+    }
+  },
+  "SignZone": {
+    "common": ["RSA", "ECDSA (recommended)", "EdDSA", "Automatic Private Key Generation (default) [KSK]", "Use Specified Private Key [KSK]", "Automatic Private Key Generation (default) [ZSK]", "Use Specified Private Key [ZSK]", "Next Secure (NSEC) (recommended)", "Next Secure 3 (NSEC3)", "DNSKEY TTL", "ZSK Automatic Rollover"],
+    "variants": {
+      "RSA / automatic": ["Hash Algorithm", "KSK Size", "ZSK Size"],
+      "ECDSA / automatic": ["ECDSA Curve"],
+      "EdDSA / automatic": ["EdDSA Curve"],
+      "ECDSA / KSK specified": ["ECDSA Curve", "KSK Private Key"],
+      "ECDSA / ZSK specified": ["ECDSA Curve", "ZSK Private Key"],
+      "ECDSA / NSEC3": ["ECDSA Curve", "NSEC3 Iterations", "NSEC3 Salt Length"]
+    }
+  },
+  "DnssecProperties": {
+    "common": ["Rollover days for 16958", "Next Secure (NSEC) (recommended)", "Next Secure 3 (NSEC3)", "NSEC3 Iterations", "NSEC3 Salt Length", "DNSKEY TTL"],
+    "variants": {
+      "key form closed": [],
+      "RSA / automatic": ["Key Type", "Algorithm", "Hash Algorithm", "Automatic Private Key Generation (default)", "Use Specified Private Key", "Automatic Key Rollover"],
+      "ECDSA / automatic": ["Key Type", "Algorithm", "ECDSA Curve", "Automatic Private Key Generation (default)", "Use Specified Private Key", "Automatic Key Rollover"],
+      "EdDSA / automatic": ["Key Type", "Algorithm", "EdDSA Curve", "Automatic Private Key Generation (default)", "Use Specified Private Key", "Automatic Key Rollover"],
+      "ECDSA / specified": ["Key Type", "Algorithm", "ECDSA Curve", "Automatic Private Key Generation (default)", "Use Specified Private Key", "Private Key", "Automatic Key Rollover"]
+    }
+  }
+}

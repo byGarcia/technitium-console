@@ -1,0 +1,28 @@
+/* Settings. The console's biggest screen: in upstream, the General sub-tab is
+   5,452 px tall.
+
+   Almost everything this screen draws lives in `ui/PanelForm.module.css`: the
+   block, the row, the area, the alerts, the editable list and the save bar. It
+   shares them with DHCP, which is the other big form. What is left here is only
+   what belongs to Settings and to nobody else. */
+
+.wrap { composes: screen from '../../ui/SectionHeader.module.css'; }
+.group { composes: group from '../../ui/Form.module.css'; }
+
+/* The block-lists summary: "N allowed, M blocked", with the figures in monospace
+   so they do not dance about on reload. */
+.stack { composes: group from '../../ui/Form.module.css'; }
+.inline { display: flex; align-items: center; gap: var(--s-7); flex-wrap: wrap; }
+.val { composes: mono from '../../ui/text.module.css'; font-size: var(--t-4); color: var(--ink); }
+
+/* Two consecutive alerts inside a modal: they group closer together than the
+   rest of the body, because they say the same thing about the same thing. */
+.notes { display: flex; flex-direction: column; gap: var(--s-5); }
+
+/*
+The textarea of a pane. `Recursion` named `settings.area` and this module
+declared no such class, so the ACL box rendered with no class at all: no width,
+no minimum height. `Admin.module.css` composes the same one from `ui/PanelForm`
+and that is where it belongs — the pane's form is that form.
+*/
+.area { composes: area from '../../ui/PanelForm.module.css'; }

@@ -1,0 +1,106 @@
+/*
+Two sizes and three variants, and nothing else. Row actions used to use `.ib`
+—defined three times, with three different disabled opacities— on nine screens
+and the normal `Button` in DHCP, so the same action looked two different ways
+depending on the table.
+*/
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-3);
+  font-size: var(--t-4);
+  padding: var(--s-4) var(--s-8);
+  border-radius: var(--r-2);
+  border: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0) 60%), var(--pan2);
+  color: var(--ink);
+  cursor: pointer;
+  font-weight: 500;
+  font-family: inherit;
+  white-space: nowrap;
+  box-shadow: var(--edge);
+  transition: border-color var(--t-fast), background var(--t-fast);
+}
+
+.btn:hover:not(:disabled) { border-color: #2f3846; }
+.btn:active:not(:disabled) { box-shadow: var(--sunken); }
+
+.btn:disabled { opacity: 0.5; cursor: default; }
+.btn:focus-visible { outline: var(--focus); outline-offset: var(--focus-offset); }
+
+/* The one in a table row: it does not compete with the row's data. */
+.sm {
+  font-size: var(--t-3);
+  font-weight: 400;
+  padding: var(--s-3) var(--s-6);
+  color: var(--mute);
+}
+
+/*
+Only for the small one WITHOUT a variant. `.sm:hover` is a class plus a
+pseudo-class, so it beat `.primary` —a class alone— and a small primary got
+lighter on hover: `--ink` text over the amber, 1.69:1. It was not seen until the
+console had its first `size="sm" variant="primary"`, on the "Show" of the
+Dashboard's custom range.
+*/
+.sm:not(.primary):not(.danger):hover:not(:disabled) { color: var(--ink); }
+
+/* A button that stays pressed —the "Glue" and "RRSIG" filters— says so with the
+   accent colour, not only with `aria-pressed`. */
+.btn[aria-pressed='true'] { color: var(--acc); border-color: var(--acc); }
+
+/* The primary carries its own edge, stronger because amber takes more light. The
+   text is dark and not white for a measured reason: white over `#f5a524` gives
+   2.04:1 and does not even reach the large-text minimum; dark gives 9.09:1. */
+.primary {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0) 65%), var(--acc);
+  border-color: var(--acc);
+  color: var(--on-acc);
+  font-weight: 550;
+  box-shadow: var(--edge-fuerte);
+}
+
+/*
+The primary's hover LIGHTENED by 6 %, and over `--acc` that gives 1.108:1 —below
+the 1.20 this console settled on when fixing `--hover`, and the same order of
+magnitude as that defect—. Lightening further does not fit: the red channel of
+`#f5a524` is already at 245 and saturates before reaching the threshold. It
+darkens instead, which is the only thing that gets there. And the
+`border-color: var(--acc)` goes, since that was what the button was already worth
+at rest: it did nothing.
+*/
+.primary:hover:not(:disabled) { filter: brightness(0.90); }  /* 1.240:1 */
+
+/*
+The destructive one is FILLED. It only tinted the border, so the "Delete" in
+"Delete Cluster" weighed the same as the "Close" beside it, while the "Add" of a
+harmless modal was a solid amber block: the most consequential button on the
+screen was the quietest, and this console has no undo anywhere.
+*/
+.danger {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0) 65%), var(--dan-fill);
+  border-color: var(--dan);
+  color: var(--on-dan);
+  font-weight: 550;
+}
+
+/*
+Not in a table ROW: there "Delete" repeats once per row and a red block per row
+turns the table into an alarm. It stays as red text, and the fill appears on hover
+and on keyboard focus.
+*/
+.sm.danger {
+  background: var(--pan2);
+  border-color: var(--line);
+  color: var(--dan);
+  font-weight: 400;
+}
+
+.sm.danger:hover:not(:disabled),
+.sm.danger:focus-visible {
+  background: var(--dan-fill);
+  border-color: var(--dan);
+  color: var(--on-dan);
+}

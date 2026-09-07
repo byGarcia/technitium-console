@@ -1,0 +1,589 @@
+{
+ "_": "VOLCADO DEL ARQUETIPO HERRAMIENTA — DNS Client, View Logs y Query Logs. Tomado el 2026-09-03 con dev/screen-contract.mjs servido tal cual desde el build montado, sin reescribirlo a mano. Lo medido en el navegador va en `pantallas`; lo leido del codigo va en `fuente`, separado a proposito: no valen lo mismo y mezclarlos convierte una lectura en una suposicion.",
+ "sello": {
+  "instrument": "25508b9bd0ec8c549977945e19cd175d2553bfc371679170458b6f86f820ffa7",
+  "bundle": {
+   "css": [
+    "index-Rly3niO_.css"
+   ],
+   "js": [
+    "index-B76MCc8F.js"
+   ]
+  }
+ },
+ "tomado": "2026-09-03",
+ "anclaje": {
+  "commit": "ff89f32",
+  "arbol_limpio": true
+ },
+ "volatil": "Del arnes y NO del producto: las 2828 consultas, los tres ficheros de log y sus tamanos, el 1.073.928 del visor, y que la app instalada se llame `Query Logs (Sqlite)` con clase `QueryLogsSqlite.App`. Son magnitudes reales para dimensionar el dibujo, no literales.",
+ "pantallas": {
+  "dnsclient": {
+   "reposo": {
+    "route": "/dnsclient/",
+    "title": "DNS Client",
+    "state": "empty",
+    "campos": [
+     {
+      "label": "Server",
+      "kind": "text",
+      "help": null,
+      "options": null
+     },
+     {
+      "label": "Domain",
+      "kind": "text",
+      "help": null,
+      "options": null
+     },
+     {
+      "label": "Type",
+      "kind": "combobox",
+      "help": null,
+      "options": [
+       "A",
+       "NS",
+       "CNAME",
+       "SOA",
+       "PTR",
+       "MX",
+       "TXT",
+       "RP",
+       "AAAA",
+       "SRV",
+       "NAPTR",
+       "DNAME",
+       "DS",
+       "SSHFP",
+       "RRSIG",
+       "NSEC",
+       "DNSKEY",
+       "NSEC3",
+       "NSEC3PARAM",
+       "TLSA",
+       "ZONEMD",
+       "SVCB",
+       "HTTPS",
+       "URI",
+       "CAA",
+       "ANY",
+       "AXFR",
+       "ANAME"
+      ]
+     },
+     {
+      "label": "DNS-over-",
+      "kind": "combobox",
+      "help": null,
+      "options": [
+       "UDP",
+       "TCP",
+       "TLS",
+       "HTTPS",
+       "QUIC"
+      ]
+     },
+     {
+      "label": "EDNS Client Subnet",
+      "kind": "text",
+      "help": null,
+      "options": null
+     },
+     {
+      "label": "Enable DNSSEC Validation",
+      "kind": "checkbox",
+      "help": null,
+      "options": null
+     }
+    ],
+    "buttons": [
+     {
+      "name": "A",
+      "where": "field",
+      "disabled": false
+     },
+     {
+      "name": "UDP",
+      "where": "field",
+      "disabled": false
+     },
+     {
+      "name": "Resolve",
+      "where": "bar",
+      "disabled": false
+     },
+     {
+      "name": "Import",
+      "where": "bar",
+      "disabled": false
+     }
+    ],
+    "counts": {
+     "fields": 6,
+     "buttons": 4,
+     "height": 923
+    },
+    "prose": [
+     "DNS Client",
+     "Run a query to see the response."
+    ]
+   },
+   "opciones": {
+    "Type": [
+     "A",
+     "NS",
+     "CNAME",
+     "SOA",
+     "PTR",
+     "MX",
+     "TXT",
+     "RP",
+     "AAAA",
+     "SRV",
+     "NAPTR",
+     "DNAME",
+     "DS",
+     "SSHFP",
+     "RRSIG",
+     "NSEC",
+     "DNSKEY",
+     "NSEC3",
+     "NSEC3PARAM",
+     "TLSA",
+     "ZONEMD",
+     "SVCB",
+     "HTTPS",
+     "URI",
+     "CAA",
+     "ANY",
+     "AXFR",
+     "ANAME"
+    ],
+    "DNS-over-": [
+     "UDP",
+     "TCP",
+     "TLS",
+     "HTTPS",
+     "QUIC"
+    ]
+   },
+   "respuesta": {
+    "state": "populated",
+    "buttons": [
+     {
+      "name": "Close",
+      "where": "bar",
+      "disabled": false
+     },
+     {
+      "name": "A",
+      "where": "field",
+      "disabled": false
+     },
+     {
+      "name": "UDP",
+      "where": "field",
+      "disabled": false
+     },
+     {
+      "name": "Resolve",
+      "where": "bar",
+      "disabled": false
+     },
+     {
+      "name": "Import",
+      "where": "bar",
+      "disabled": false
+     }
+    ],
+    "counts": {
+     "fields": 6,
+     "buttons": 5,
+     "height": 923
+    },
+    "panelTitulo": "ResponseUDP · A",
+    "tienePre": true,
+    "largoRespuesta": 2189,
+    "avisos": [
+     "Warning! Attack detected! Failed to resolve the request 'test. DS IN'. Received a response with RCODE: ServerFailure fro"
+    ],
+    "plegableCrudas": []
+   }
+  },
+  "viewlogs": {
+   "reposo": {
+    "route": "/logs/view-logs/",
+    "title": "View Logs",
+    "state": "populated",
+    "buttons": [
+     {
+      "name": "Delete All Logs",
+      "where": "header",
+      "disabled": false
+     },
+     {
+      "name": "Delete All Stats",
+      "where": "header",
+      "disabled": false
+     },
+     {
+      "name": "2026-09-03[1.02 MB]",
+      "where": "field",
+      "disabled": false
+     },
+     {
+      "name": "2026-09-02[1.11 MB]",
+      "where": "field",
+      "disabled": false
+     },
+     {
+      "name": "2026-09-01[773.62 KB]",
+      "where": "field",
+      "disabled": false
+     }
+    ],
+    "counts": {
+     "fields": 0,
+     "buttons": 5,
+     "height": 923
+    },
+    "ficheros": [
+     "2026-09-03[1.02 MB]",
+     "2026-09-02[1.11 MB]",
+     "2026-09-01[773.62 KB]"
+    ]
+   },
+   "abierto": {
+    "buttons": [
+     {
+      "name": "Delete All Logs",
+      "where": "header",
+      "disabled": false
+     },
+     {
+      "name": "Delete All Stats",
+      "where": "header",
+      "disabled": false
+     },
+     {
+      "name": "2026-09-03[1.02 MB]",
+      "where": "field",
+      "disabled": false
+     },
+     {
+      "name": "2026-09-02[1.11 MB]",
+      "where": "field",
+      "disabled": false
+     },
+     {
+      "name": "2026-09-01[773.62 KB]",
+      "where": "field",
+      "disabled": false
+     },
+     {
+      "name": "Download",
+      "where": "panel",
+      "disabled": false
+     },
+     {
+      "name": "Delete",
+      "where": "panel",
+      "disabled": false
+     }
+    ],
+    "counts": {
+     "fields": 0,
+     "buttons": 7,
+     "height": 923
+    },
+    "paneles": [
+     "Log Files",
+     "2026-09-03DownloadDelete"
+    ],
+    "largoVisor": 1073928,
+    "disposicion": "250px 910px",
+    "activo": [
+     "2026-09-03[1.02 MB]"
+    ]
+   }
+  },
+  "querylogs": {
+   "reposo": {
+    "route": "/logs/query-logs/",
+    "title": "Query Logs",
+    "state": "populated",
+    "rotulos": [
+     "Live Update",
+     "App Name",
+     "Class Path",
+     "From",
+     "To",
+     "Order",
+     "Domain",
+     "Type",
+     "Class",
+     "Client IP Address",
+     "Protocol",
+     "Response Type",
+     "RCODE",
+     "Page Number",
+     "Logs Per Page"
+    ],
+    "nRotulos": 15,
+    "buttons": [
+     {
+      "name": "Query",
+      "where": "header",
+      "disabled": false
+     },
+     {
+      "name": "Export",
+      "where": "header",
+      "disabled": false
+     },
+     {
+      "name": "Reset",
+      "where": "header",
+      "disabled": false
+     },
+     {
+      "name": "Query Logs (Sqlite)",
+      "where": "field",
+      "disabled": false
+     },
+     {
+      "name": "QueryLogsSqlite.App",
+      "where": "field",
+      "disabled": false
+     },
+     {
+      "name": "Descending",
+      "where": "field",
+      "disabled": false
+     },
+     {
+      "name": "—",
+      "where": "field",
+      "disabled": false
+     },
+     {
+      "name": "—",
+      "where": "field",
+      "disabled": false
+     },
+     {
+      "name": "—",
+      "where": "field",
+      "disabled": false
+     },
+     {
+      "name": "—",
+      "where": "field",
+      "disabled": false
+     },
+     {
+      "name": "10",
+      "where": "field",
+      "disabled": false
+     }
+    ],
+    "counts": {
+     "fields": 15,
+     "buttons": 11,
+     "height": 923
+    },
+    "hayTabla": false,
+    "placeholders": [
+     {
+      "rotulo": "Domain",
+      "ph": "example.com or *.com"
+     },
+     {
+      "rotulo": "Type",
+      "ph": "A, AAAA, etc."
+     }
+    ]
+   },
+   "resultado": {
+    "columnas": [
+     "#",
+     "Timestamp",
+     "Client IP Address",
+     "Protocol",
+     "Response Type",
+     "RCODE",
+     "Domain",
+     "Type",
+     "Class",
+     "Answer"
+    ],
+    "filas": 10,
+    "estado": [
+     "2828-2819 (10) of 2828 logs (page 1 of 283)12345678910",
+     "2828-2819 (10) of 2828 logs (page 1 of 283)"
+    ],
+    "clasesDeFila": [
+     "rServerFailure",
+     "rNxDomain",
+     "rCached",
+     "rAuthoritative"
+    ]
+   }
+  }
+ },
+ "fuente": {
+  "_": "Hechos que el arnes no puede ensenar. Cada uno con el fichero donde vive.",
+  "dnsclient_ramas_no_observadas": [
+   {
+    "rama": "Raw Responses (N)",
+    "que": "Plegable, cerrado, solo si hay respuestas crudas",
+    "donde": "DnsClient.tsx:200-208"
+   },
+   {
+    "rama": "Records Imported!",
+    "que": "Resource records resolved by this DNS client query were successfully imported into this server.",
+    "donde": "DnsClient.tsx:113-119"
+   },
+   {
+    "rama": "Missing! (servidor)",
+    "que": "Please enter a valid Name Server.",
+    "donde": "DnsClient.tsx:79"
+   },
+   {
+    "rama": "Missing! (dominio)",
+    "que": "Please enter a domain name to query.",
+    "donde": "DnsClient.tsx:83"
+   },
+   {
+    "rama": "fallo",
+    "que": "El aviso del fallo; la respuesta anterior se BORRA",
+    "donde": "DnsClient.tsx:100-105"
+   },
+   {
+    "rama": "Cluster Node",
+    "que": "Desplegable sin agregado y sin persistencia; no se pinta sin cluster",
+    "donde": "DnsClient.tsx:128-134"
+   }
+  ],
+  "dnsclient_orden_de_validacion": [
+   "servidor",
+   "dominio"
+  ],
+  "viewlogs_ramas_no_observadas": [
+   {
+    "rama": "sin ficheros",
+    "que": "No Log File Was Found",
+    "donde": "ViewLogs.tsx:191-193"
+   },
+   {
+    "rama": "fallo al listar",
+    "que": "Unable to load the log files. — texto DISTINTO del vacio, mismo sitio",
+    "donde": "ViewLogs.tsx:190"
+   },
+   {
+    "rama": "error en el visor",
+    "que": "El error del servidor se pinta DENTRO del visor como JSON, no como aviso",
+    "donde": "logs.js:170-172"
+   },
+   {
+    "rama": "cargando",
+    "que": "Loading, y otro dentro del panel del visor",
+    "donde": "ViewLogs.tsx:144,229"
+   }
+  ],
+  "viewlogs_verbos_que_hoy_desaparecen": [
+   {
+    "verbo": "Delete All Logs",
+    "permiso": "Logs.canDelete",
+    "ademas": "solo si hay ficheros (logs.js:121)"
+   },
+   {
+    "verbo": "Delete All Stats",
+    "permiso": "Dashboard.canDelete",
+    "ademas": "siempre ofrecido (logs.js:117)"
+   },
+   {
+    "verbo": "Delete (del visor)",
+    "permiso": "Logs.canDelete",
+    "ademas": "con un fichero abierto"
+   }
+  ],
+  "viewlogs_confirmaciones": [
+   {
+    "titulo": "Delete Log",
+    "texto": "Are you sure you want to permanently delete the log file '{nombre}'?",
+    "boton": "Delete"
+   },
+   {
+    "titulo": "Delete All Logs",
+    "texto": "Are you sure you want to permanently delete all log files?",
+    "boton": "Delete All Logs"
+   },
+   {
+    "titulo": "Delete All Stats",
+    "texto": "Are you sure you want to permanently delete all stats files?",
+    "boton": "Delete All Stats"
+   }
+  ],
+  "viewlogs_exitos": [
+   "Log Deleted!",
+   "Logs Deleted!",
+   "Stats Deleted!"
+  ],
+  "querylogs_reglas_de_upstream": [
+   "Los dos avisos de «falta la app» NO dicen lo mismo: el de Query termina en «…from the Apps section.» y el de Export no (logs.js:391 vs 614).",
+   "Orden de validacion de Query: app, clase, From, To. Export solo valida los dos primeros: no mira las fechas.",
+   "Live Update es un MODO: fija pagina 1 y orden descendente, VACIA From y To, apaga esos cuatro controles y el boton Query, y consulta cada 2 s. Al desmarcarlo REINICIA el formulario entero.",
+   "Logs Per Page se recuerda en localStorage bajo optQueryLogsEntriesPerPage y se relee en cada reset. El valor por defecto del formulario es 10, no el 25 del servidor.",
+   "La ultima pagina se pide con pageNumber=-1 y la resuelve el servidor."
+  ],
+  "querylogs_colores_de_fila": [
+   {
+    "clase": "rServerFailure",
+    "cuando": "RCODE ServerFailure",
+    "color": "rgba(217, 83, 79, 0.1)",
+    "observado": true
+   },
+   {
+    "clase": "rBlocked",
+    "cuando": "NXDOMAIN y tipo bloqueado",
+    "color": "rgba(255, 165, 0, 0.1)",
+    "observado": false
+   },
+   {
+    "clase": "rNxDomain",
+    "cuando": "NXDOMAIN sin bloqueo",
+    "color": "rgba(120, 120, 120, 0.1)",
+    "observado": true
+   },
+   {
+    "clase": "rRefused",
+    "cuando": "RCODE Refused",
+    "color": "rgba(91, 192, 222, 0.1)",
+    "observado": false
+   },
+   {
+    "clase": "rAuthoritative",
+    "cuando": "tipo autoritativo",
+    "color": "rgba(150, 150, 0, 0.1)",
+    "observado": true
+   },
+   {
+    "clase": "rRecursive",
+    "cuando": "tipo recursivo",
+    "color": "rgba(23, 162, 184, 0.1)",
+    "observado": false
+   },
+   {
+    "clase": "rCached",
+    "cuando": "tipo cacheado",
+    "color": "rgba(111, 84, 153, 0.1)",
+    "observado": true
+   }
+  ],
+  "querylogs_sin_leyenda": "Ninguno de los siete colores tiene leyenda en pantalla, y los siete valores estan escritos a mano fuera de la escala de tokens (Logs.module.css:50-56).",
+  "querylogs_fuera_de_alcance": "El menu de cada fila de upstream —Query DNS Server, Allow Domain / Block Domain (logs.js:539-552)— NO existe en esta consola. Sus tres acciones viven en otras pantallas. Hueco de integracion anotado, no medio resuelto: dibujarlo seria inventar funcionalidad."
+ },
+ "cautela_del_instrumento": "`dependencies()` PULSA las casillas para descubrir que apaga que. En Query Logs eso marca `Live Update`, que lanza una consulta y arranca el ciclo de 2 s: un volcado tomado sin saberlo trae 23 botones —diez de paginacion— donde en reposo hay 11. Por eso el volcado de esa pantalla se tomo SIN `dependencies()`.",
+ "una_medicion_que_salio_mal_y_no_se_conto": "El primer volcado de Query Logs se tomo a 1200 ms y salio con `state: loading`, cero rotulos y cero botones. Una pantalla que aparece VACIA por una espera corta no es una pantalla vacia. Se repitio a 3000 ms."
+}

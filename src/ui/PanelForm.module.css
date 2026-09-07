@@ -1,0 +1,190 @@
+/*
+The panel-form kit: blocks with a title, label/control rows, editable lists and
+the sticky save bar. Settings and DHCP use it, the two big forms in the console.
+
+It was written twice. DHCP's file explained why: "phase 6 belongs to another
+agent, and coupling two screens through their presentation components turns any
+tweak in Settings into a change in DHCP". That solved a coordination problem while
+it was being built, and its bill was paid on screen: Settings' action bar floated
+with a shadow and DHCP's did not; the "Note!" alert was indented in DHCP and flush
+in Settings; the `<code>` in the help broke long words in one and not in the
+other. None of the three was decided.
+
+It lives in `ui/` and not in one of the two screens, which is what stops touching
+it again from meaning one screen rules over the other.
+*/
+
+/* Only what belongs to the block: the box is painted by `ui/Panel`. */
+.block {
+  margin: 0 0 var(--s-9) 0;
+  padding-bottom: var(--s-9);
+}
+
+/* Control and suffix on the same line: "3600  seconds". */
+.inline {
+  display: flex;
+  align-items: center;
+  gap: var(--s-6);
+  flex-wrap: wrap;
+}
+
+/*
+Only what belongs to the text area: the box comes from `ui/Field`.
+
+`--area-min` is a FLOOR, not the height: the height is still set by `rows` at each
+call site —today they come out 66, 98 and 130 px, all well above— and the
+`max-width: 560px` stays as it was.
+
+What it buys, then: this area is `resize: vertical`, so it can be dragged down to
+nothing. The floor is for that. **It changes no default render**, and that is
+worth saying rather than claiming an improvement nobody can see.
+*/
+.area {
+  width: 100%;
+  max-width: 560px;
+  min-height: var(--area-min);
+  resize: vertical;
+}
+
+/*
+The panel body's indent, for whatever sits loose between rows — and the notice's
+width cap.
+
+`--notice-max` comes from phase 1: **a notice belongs to no control**, so it takes
+up its section and not the help column; but the longest one in `General` is six
+hundred characters, and at 1440 with no cap that is a line nobody reads.
+
+It goes here and not in `ui/Alert` on purpose. The rule says "at SECTION width",
+and the screen notice —the `Notifier`'s, above the title— is not in a section:
+capping it the same way would apply the rule where it was not decided. Dialog
+notices do not need it either, because the dialog itself is 880 at most.
+*/
+.notices {
+  margin: var(--s-3) var(--s-9) 0 var(--s-9);
+  max-width: var(--notice-max);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+
+.plain {
+  composes: helpPanel from './text.module.css';
+  padding: 0 var(--s-9);
+}
+
+.link { font-size: var(--t-3); padding: var(--s-5) var(--s-9) 0 var(--s-9); }
+.link a { color: var(--acc); }
+
+.pre {
+  margin: 0 var(--s-9);
+  padding: var(--s-7) var(--s-8);
+  background: var(--field);
+  border: 1px solid var(--line);
+  border-radius: var(--r-2);
+  font-family: var(--font-mono);
+  font-size: var(--t-2);
+  color: var(--ink);
+  overflow-x: auto;
+}
+
+.editable { composes: table from './EditableTable.module.css'; }
+
+/*
+A list's numeric cell has the SAME floor as a row's.
+
+Without the floor, the table columns share out whatever is left of the control
+cell, and when the third help column opened that left the cells of the two QPM
+lists at 59 px: measured at 1181, five of them —`6000`, `1200`— no longer fitted
+in their own box. A field that does not show its value is not an aesthetic
+squeeze.
+
+`--ctrl-num` is the same token that governs a row's default numeric width, and
+here it is a FLOOR and not a width: the column still grows with the room there is.
+*/
+.editable input {
+  width: 100%;
+  min-width: var(--ctrl-num);
+}
+
+/*
+And when even that does not fit, the table scrolls INSIDE its cell instead of
+clipping. That is what lets the floor above be a real floor: without this, a table
+wider than its cell would overflow the whole page.
+*/
+.listScroll {
+  overflow-x: auto;
+}
+
+.tdel { width: 74px; }
+
+/* The save bar, stuck to the bottom of the content area. It floats over the
+   form, so it carries elevation: without it the content slides underneath with
+   nothing saying there are two planes. */
+.bar {
+  display: flex;
+  align-items: center;
+  gap: var(--s-5);
+  flex-wrap: wrap;
+  padding: var(--s-8) var(--s-9);
+  border: 1px solid var(--line);
+  border-radius: var(--r-4);
+  background: var(--pan);
+  position: sticky;
+  bottom: 0;
+  box-shadow: var(--e-2), var(--edge);
+}
+
+.spacer { flex: 1; }
+
+/* When narrow the bar stacks and the elastic spacer stops making sense: with it,
+   "Backup Settings" fell off the screen. */
+@media (max-width: 720px) {
+  .spacer { display: none; }
+  .bar { padding: var(--s-7) var(--s-8); }
+}
+
+/*
+The section count, in its label.
+
+It is the same count pill any table in the console carries
+(`ui/count.module.css`), placed here in the block's header. It is dimmed on
+purpose: it goes with the label, it does not compete with it.
+*/
+.recuento {
+  font: 400 var(--t-2)/1 var(--font-mono);
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+The section label stays at the top while scrolling — in the dense form only.
+
+It is decision 23 of pilot 3, and it goes here and not in `ui/Panel` on purpose:
+only `Settings` has ten sections in a row inside one screen. On the Dashboard a
+whole panel fits in the window's height, so pinning its label buys nothing and
+does add a layer that something else can cover.
+
+What it buys here: `General` has 41 paragraphs of help, and scrolling inside a
+section you lost track of which one you were in — with ten sections whose controls
+have similar names.
+
+The background is compulsory: without it, the content shows through under the
+label.
+*/
+.block > [class*='_header_'] {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--pan);
+}
+
+/*
+`Block`'s warning slot, with a class of its OWN besides `notices`.
+
+It changes nothing visually —`composes` gives it the same geometry—; it exists
+because without it the slot and the `Notices` below share a name and **the
+measurement cannot tell them apart**: on the "Warning! above, Note! below" check
+the probe read the block's first `notices` and answered about a different element.
+A decision the instrument cannot see cannot be held.
+*/
+.notices { composes: notices; }

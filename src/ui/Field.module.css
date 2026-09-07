@@ -1,0 +1,57 @@
+/*
+The text field.
+
+It was 28 px tall, the same background as the page and a 1 px border: it did not
+read as a place to type, it read as a rectangle. Now it is a HOLE in the surface
+—darker than the panel containing it, with an inset shadow— and on focus it LIFTS:
+the border turns amber and a halo appears that detaches it from the form. It is the
+only place in the console where anything glows, and that is deliberate: it is where
+the cursor is.
+*/
+
+.field { display: flex; flex-direction: column; gap: var(--s-4); }
+
+.label {
+  font-size: var(--t-2);
+  color: var(--mute);
+  font-weight: 550;
+  letter-spacing: 0.01em;
+}
+
+.input {
+  min-height: var(--field-height);
+  font-size: var(--t-4);
+  padding: var(--s-5) var(--s-7);
+  border: 1px solid var(--line);
+  border-radius: var(--r-3);
+  /* `background-color` and not `background`: the shorthand would wipe out the
+     chevron `theme/base.css` puts on the dropdown. */
+  background-color: var(--field);
+  color: var(--ink);
+  font-family: inherit;
+  min-width: 0;
+  box-shadow: var(--sunken);
+  transition:
+    border-color var(--t-fast),
+    box-shadow var(--t-fast),
+    background-color var(--t-fast);
+}
+
+.input::placeholder { color: var(--faint); }
+
+.input:hover:not(:disabled):not(:focus) { border-color: #3a465b; }
+
+.input:focus {
+  outline: none;
+  border-color: var(--acc);
+  background-color: #0e131b;
+  box-shadow: var(--sunken), var(--halo-foco);
+}
+
+.input:disabled { opacity: 0.45; cursor: default; }
+
+.mono { composes: mono from './text.module.css'; }
+
+@media (prefers-reduced-motion: reduce) {
+  .input { transition: none; }
+}

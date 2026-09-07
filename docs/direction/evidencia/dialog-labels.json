@@ -1,0 +1,87 @@
+{
+ "AddZone": [
+  "Zone",
+  "Primary Zone (default)",
+  "Secondary Zone",
+  "Stub Zone",
+  "Conditional Forwarder Zone",
+  "Secondary Conditional Forwarder Zone",
+  "Catalog Zone",
+  "Secondary Catalog Zone",
+  "Secondary ROOT Zone (RFC 8806)",
+  "Catalog Zone",
+  "Import Zone File (Optional)",
+  "Use SOA Serial Date Scheme"
+ ],
+ "ZoneOptions": [
+  "Catalog Zone",
+  "Override Query Access Option",
+  "Override Zone Transfer Option",
+  "Override Notify Option"
+ ],
+ "ImportZone": [
+  "Overwrite Existing Records",
+  "Overwrite Zone",
+  "Overwrite SOA Serial",
+  "Zone File",
+  "Text Editor",
+  "Zone File"
+ ],
+ "ConvertZone": [
+  "Primary Zone",
+  "Conditional Forwarder Zone",
+  "Catalog Zone"
+ ],
+ "CloneZone": [
+  "Source Zone",
+  "New Zone"
+ ],
+ "ZonePermissions": [
+  "canView for admin",
+  "canModify for admin",
+  "canDelete for admin",
+  "Add User",
+  "canView for Administrators",
+  "canModify for Administrators",
+  "canDelete for Administrators",
+  "canView for DNS Administrators",
+  "canModify for DNS Administrators",
+  "canDelete for DNS Administrators",
+  "Add Group"
+ ],
+ "AddEditRecord": [
+  "Name",
+  "Type",
+  "TTL",
+  "IPv4 Address",
+  "Add reverse (PTR) record",
+  "Create reverse zone if it does not exists",
+  "Overwrite existing records",
+  "Comments",
+  "Expiry TTL"
+ ],
+ "UnsignZone": [],
+ "ViewDs": [],
+ "DnssecProperties": [
+  "Rollover days for 16958",
+  "Next Secure (NSEC) (recommended)",
+  "Next Secure 3 (NSEC3)",
+  "NSEC3 Iterations",
+  "NSEC3 Salt Length",
+  "DNSKEY TTL"
+ ],
+ "SignZone": [
+  "RSA",
+  "ECDSA (recommended)",
+  "EdDSA",
+  "ECDSA Curve",
+  "Automatic Private Key Generation (default)",
+  "Use Specified Private Key",
+  "Automatic Private Key Generation (default)",
+  "Use Specified Private Key",
+  "Next Secure (NSEC) (recommended)",
+  "Next Secure 3 (NSEC3)",
+  "DNSKEY TTL",
+  "ZSK Automatic Rollover"
+ ]
+}

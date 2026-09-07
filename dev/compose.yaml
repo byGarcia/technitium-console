@@ -1,0 +1,56 @@
+# technitium-ui development harness. This is NOT upstream's production compose
+# (that one is ../docker-compose.yml and is left alone).
+#
+#   dev  -> official image + our www/ mounted on top   -> 127.0.0.1:5380
+#   ref  -> official image untouched (upstream console) -> 127.0.0.1:5381
+#
+# No port 53 (systemd-resolved holds it on WSL) and no DHCP: only the web
+# console is exercised here.
+services:
+  dev:
+    container_name: technitium-ui-dev
+    image: docker.io/technitium/dns-server:latest
+    ports:
+      - "127.0.0.1:5380:5380/tcp"
+    environment:
+      - DNS_SERVER_DOMAIN=dev.technitium-ui.test
+      - DNS_SERVER_ADMIN_PASSWORD=technitium-ui-dev
+    volumes:
+      - ../dist:/opt/technitium/dns/www:ro
+      - dev-config:/etc/dns
+    restart: unless-stopped
+
+  ref:
+    container_name: technitium-ui-ref
+    image: docker.io/technitium/dns-server:latest
+    ports:
+      - "127.0.0.1:5381:5380/tcp"
+    environment:
+      - DNS_SERVER_DOMAIN=ref.technitium-ui.test
+      - DNS_SERVER_ADMIN_PASSWORD=technitium-ui-dev
+    volumes:
+      - ref-config:/etc/dns
+    restart: unless-stopped
+
+  # Only for reviewing the 9 Cluster dialogs, which without a second node cannot
+  # even be opened. `ref` is NOT used for this: joining it to a cluster syncs its
+  # config with the primary and destroys its value as the upstream reference.
+  nodo2:
+    container_name: technitium-ui-nodo2
+    image: docker.io/technitium/dns-server:latest
+    ports:
+      - "127.0.0.1:5382:5380/tcp"
+    environment:
+      - DNS_SERVER_DOMAIN=nodo2.technitium-ui.test
+      - DNS_SERVER_ADMIN_PASSWORD=technitium-ui-dev
+    volumes:
+      # With the new console too: the "Promote To Primary" and "Edit Node"
+      # dialogs of the primary ONLY exist from a secondary's console.
+      - ../dist:/opt/technitium/dns/www:ro
+      - nodo2-config:/etc/dns
+    restart: unless-stopped
+
+volumes:
+  dev-config:
+  ref-config:
+  nodo2-config:

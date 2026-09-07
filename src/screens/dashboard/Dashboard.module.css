@@ -1,0 +1,306 @@
+/*
+The panel is drawn by `ui/Panel`. What is left here is only this screen's own
+adjustments, if any: replicating its markup with `composes:` was what there was,
+and that is how a header ended up 21 px shorter than its card.
+*/
+/*
+The eleven, in TWO boxes: the two totals, and the nine in three rows of three.
+
+It was a flat `auto-fill` grid and the width decided the split, which is as good
+as not deciding it: at 1440 it came out five and six, and `Clients` ended up
+between `Dropped` and `No Error` with nothing to justify it. The reason for the
+split is in `Dashboard.tsx`, next to the groups.
+*/
+.tiles { display:grid; grid-template-columns:300px minmax(0,1fr); gap: var(--s-8); margin-bottom: var(--gap-block); }
+.tot { display:grid; grid-template-rows:1fr auto; gap: var(--s-7); min-width:0; }
+.nine { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap: var(--s-7); }
+
+/*
+A metric's colour is the colour of ITS SERIES in the chart below, and that
+relation is what makes the card useful.
+
+It used to be said with the same square swatch a legend uses, and this comment
+argued that the 3 px edge "is the trademark of a generated interface and looks
+like nothing in the chart". **Phase 3 revisited it and decided the opposite**,
+with an argument the first one did not have in front of it: the `Queries` legend
+uses the square swatch, so giving the card the same piece makes two different
+objects —the series and its total— announce themselves the same way. The edge
+separates them without taking the colour from either.
+
+It is written down rather than deleted: a comment that contradicts the code is
+worse than no comment.
+*/
+.tile {
+  composes: panel from '../../ui/Panel.module.css';
+  padding: var(--s-8);
+  min-width: 0;
+}
+
+/*
+The edge goes on `.tiles .tile` and not on `.tile`, and this is not fussiness.
+
+Measured: written on `.tile` it came out **1 px and grey**. `composes` ADDS
+`ui/Panel`'s class, it does not copy its declarations, so the element carries both
+and the two rules have the same specificity (0,1,0) — the last one emitted wins,
+which is `Panel`'s `border`, and its shorthand resets the left side too.
+
+With the parent in front they are (0,2,0) against (0,1,0) and it stops depending
+on the order.
+
+This is the THIRD time this trap has bitten in this work: before it was a
+`background` in `ui/Alert` and a `font-size` twelve lines below, in this very
+file. All three were seen by measuring and none by reading.
+*/
+.tiles .tile { border-left: 3px solid var(--tc, var(--acc)); }
+
+.tile .v { font:600 var(--t-7)/1.1 var(--font-mono); letter-spacing:-.02em; color:var(--ink); }
+
+/*
+`Total Queries` is the figure that gets read first, and that is why it takes up
+its whole box.
+
+Its size **is not from the scale, and it is a deliberate local exception**: 34 px,
+and only here. It is not debt —there is nothing left to unify— because **nothing
+else uses it**: it is the size of ONE figure on ONE screen, the one read first on
+the Dashboard. A global token is declared when two places share it; declaring one
+for a single use is inventing vocabulary nobody speaks.
+
+Let it be on record how this was reached: the first version asked for a `--t-9`
+that **does not exist** —the phase 1 scale ends at `--t-7`, 22 px, the section
+title— so the declaration was dropped whole and in silence and the hero came out
+the size of the other ten. The browser discards the property without a word.
+
+If some day a second screen needs this size, **then** it is a token and whoever
+owns `tokens.css` decides it, which is phase 1's.
+
+And it goes AFTER `.tile .v` on purpose. The two rules have the same specificity
+—(0,2,0)— so the last one emitted wins; placed before, `.tile .v` cancelled it and
+the hero did not grow. It is the same failure that already cost a `background` in
+`ui/Alert`.
+*/
+.hero { display:flex; flex-direction:column; justify-content:center; }
+.hero .v { font-size: 34px; line-height:1.05; }
+
+/* With no data the figure is a dash, and dimmed: it is not a value. */
+.noData { color: var(--faint); }
+.p { composes: annotationQuiet from '../../ui/text.module.css'; }
+.tile .k { display:flex; align-items:center; gap: var(--s-4); font-size: var(--t-1); color:var(--mute); margin-top: var(--s-3); text-transform:uppercase; letter-spacing:.05em; font-weight: 550; }
+/*
+The round swatch on the label is withdrawn: the edge on the left says the same
+thing and carrying both would be saying it twice on one card.
+
+What does NOT change is why only the eleven carried it: the six `Server` counters
+share the label's style but **are not a series of anything**, so they carry no
+edge either. A colour mark that points at no line is decoration.
+*/
+/*
+The lower half, in three rows, which is what the accepted drawing has: `Queries`
+with `Server` beside it, then the three doughnuts, then the three top-N lists.
+
+It was a 310 px right rail with everything stacked inside it. Nothing recorded the
+change and the contract does not fix the layout, so it was drift and not a
+decision — and it cost the composition: a doughnut in 310 px is a huge centred
+ring with its legend underneath, `Server` could only fit two columns, `Top
+Clients` sat away from the two lists it belongs with, and half the canvas below
+was empty at 1440.
+*/
+.grid { display:grid; grid-template-columns:minmax(0,1fr) 310px; gap: var(--s-9); align-items:start; margin-bottom: var(--gap-block); }
+.trio { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap: var(--s-9); align-items:start; margin-bottom: var(--gap-block); }
+.trio:last-child { margin-bottom:0; }
+.panel {}
+
+/* Three columns, six counters, two rows — the drawing's shape. It used to be
+   `auto-fill minmax(92px,1fr)`, which inside the 310 px rail could only ever
+   resolve to two. */
+.counters { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap: var(--s-6); }
+
+/*
+A doughnut and its legend side by side, not one under the other.
+
+The ring is drawn at a fixed size and the legend takes the rest: with the legend
+underneath, the panel grew tall and the ring grew with the column, which is what
+turned three small charts into three big ones.
+*/
+/*
+Flex with wrap and NOT a grid with a breakpoint: the ring and its legend sit side
+by side while both fit, and the legend drops underneath when they do not. Measured
+at 1024 the grid version clipped five entries —`Author…`, `Recurs…`— because a
+column of `minmax(0,1fr)` is allowed to be narrower than its content. Here nothing
+is allowed to: the legend keeps its width, the ring gives way down to 110 px, and
+past that the row wraps. No width has to be guessed in advance.
+*/
+.split { display:flex; flex-wrap:wrap; gap: var(--s-8); align-items:center; justify-content:center; }
+.split > :first-child { flex:1 1 110px; min-width:110px; }
+/*
+The legend is a column here and a wrapping row everywhere else, and it must not
+truncate: an entry that reads `Author…` has lost the word the colour is for. The
+ring is what gives way —it is drawn smaller— because the legend's width is set by
+its longest label plus its percentage, and that is not negotiable.
+*/
+.split .legend { margin-bottom:0; flex-direction:column; flex-wrap:nowrap; align-items:flex-start; gap: var(--s-3); flex:0 1 auto; }
+.split .lg { white-space:nowrap; }
+.cnt { padding: var(--s-8); background:var(--pan2); border:1px solid var(--line2); border-radius: var(--r-3); }
+.cnt .v { font:600 var(--t-6)/1 var(--font-mono); color:var(--ink); }
+.cnt .k { font-size: var(--t-1); color:var(--mute); margin-top: var(--s-3); text-transform:uppercase; letter-spacing:.05em; }
+.toprow { display:flex; align-items:center; justify-content:space-between; gap: var(--s-8); padding: var(--s-4) 0; border-bottom:1px solid var(--line2); font-size: var(--t-4); }
+.toprow:last-child { border-bottom:0; }
+.toprow .n { color:var(--ink); font-family:var(--font-mono); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.toprow .c { color:var(--mute); font-family:var(--font-mono); flex:none; }
+/* "Top Stats" modal: the long list behind the "More" buttons. */
+.topTableWrap { overflow-x: auto; max-height: 460px; overflow-y: auto; }
+/*
+The "More" dialog's table is the console's table, with one difference that does
+have a reason: the header stays stuck to the top because the list can have three
+hundred rows inside a dialog that scrolls.
+
+It used to be a table apart —header at `--t-2` and over `--pan` instead of
+`--pan2`— and that is why the same datum looked different in the Dashboard's
+panel and in the dialog that expands it.
+*/
+.topTable { composes: table from '../../ui/Table.module.css'; }
+.topTable thead th { position: sticky; top: 0; }
+.topTable td { vertical-align: top; }
+/*
+The footer's "Total Domains: N" is the same count any other table in the console
+carries (`ui/count.module.css`), even though here it travels in a `tfoot`
+instead of in a `div`: it was at 11.5 px and weight 550 when on the other nine
+screens it is at 12.5 and normal weight.
+*/
+.topTable tfoot th {
+  padding: var(--s-6) var(--s-7);
+  text-align: left;
+  font-size: var(--t-4);
+  font-weight: 400;
+  color: var(--mute);
+  text-transform: none;
+  letter-spacing: normal;
+  background: transparent;
+}
+/* Upstream draws the whole row in orange when the client is rate limited. */
+.limited td { color: var(--warn); }
+.topName { display: block; font-family: var(--font-mono); word-break: break-all; }
+.topDomain { display: block; margin-top: var(--s-1); font: var(--t-2) var(--font-mono); color: var(--faint); word-break: break-all; }
+.topConteo { composes: mono from '../../ui/text.module.css'; }
+
+/*
+The responsive steps of the lower half, measured at the four widths.
+
+1080 — `Server` stops fitting beside `Queries`: the chart was down to 425 px and
+at 390 it was pushed off the screen. Both go full width, `Server` keeping its
+three columns because six counters in three columns is what it is.
+
+980 — the three doughnuts and the three top-N lists stop being three: a
+doughnut's ring plus its legend needs about 300 px, and three of those plus the
+gaps do not fit. They go to one column rather than two, because two would leave an
+orphan on a second row and the panels are tall enough that a single column reads
+better than a 2+1.
+
+560 — the doughnut's legend, once wrapped under the ring, goes back to being a
+row: a column of five entries under a ring doubles the panel's height for nothing.
+*/
+@media (max-width: 1080px) {
+  .grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 980px) {
+  .trio { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Wrapped —narrow panel— the legend goes back to being a row: a column of five
+   entries under a ring makes the panel twice as tall for no reason. */
+@media (max-width: 560px) {
+  .split .legend { flex-direction:row; flex-wrap:wrap; justify-content:center; }
+}
+
+/*
+The card breakpoints, which the first version did NOT have.
+
+The matrix found them, not a reading: at 1440, 1024, 768 and 390 the split
+measured exactly the same —two columns and the nine in three— because the rules
+were written without a single media query. At 390 the nine sat in three columns of
+about a hundred pixels each. It did not overflow, so by eye it passed.
+
+900 — the column of the two totals stops being a column: it no longer fits beside
+the nine, so the two totals go side by side and the nine drop below.
+*/
+@media (max-width: 900px) {
+  .tiles { grid-template-columns: minmax(0, 1fr); }
+  .tot { grid-template-rows: none; grid-template-columns: 1fr 1fr; }
+}
+
+/*
+560 — the nine **stay in three columns**, and that is deliberate: they are three
+families of three, and breaking them into two columns mixes rows that answer
+different questions. What gives is the size of the figure, not the grid.
+*/
+@media (max-width: 560px) {
+  .tile .v { font-size: var(--t-6); }
+  .hero .v { font-size: var(--t-7); }
+  .tile .k { font-size: var(--t-1); letter-spacing: .03em; }
+  .counters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* A chart's legend already brings its own space on top. */
+/* The period bar, under the title and to the left. `SectionHeader` already leaves
+   the gap under the title, so this only carries its own space below. */
+.periodBar { display:flex; margin-bottom: var(--gap-block); }
+
+.pbAdjusted { padding-top: var(--s-2); }
+
+/* The alert for the screen's own actions —today, the blocking menu. */
+/* A panel's header can carry more than one control. */
+.accionesPanel { display: flex; align-items: center; gap: var(--s-4); }
+
+/* The custom range: two dates and the button, on one line. */
+.ownRange { display:flex; align-items:flex-end; gap: var(--s-7); flex-wrap:wrap; margin-bottom: var(--s-9); }
+.ownRange label { display:flex; flex-direction:column; gap: var(--s-3); font-size: var(--t-3); color:var(--mute); }
+.ownRange input {
+  padding: var(--s-4) var(--s-6);
+  background: var(--pan2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-2);
+  color: var(--ink);
+  font: 400 var(--t-4)/1.2 var(--font-mono);
+  color-scheme: dark;
+}
+
+/*
+The `Queries` legend, in HTML.
+
+Each entry is a BUTTON and not a `span`: pressing it switches its series off, so
+it has to be reachable by keyboard and announced. Inside the canvas it was
+neither.
+*/
+.legend { display:flex; flex-wrap:wrap; gap: var(--s-4) var(--s-8); margin-bottom: var(--s-7); }
+
+.lg {
+  display:flex; align-items:center; gap: var(--s-4);
+  font: 400 var(--t-2)/1.2 var(--font-ui);
+  color: var(--mute);
+  background: transparent;
+  border: 0;
+  padding: var(--s-2) var(--s-3);
+  border-radius: var(--r-2);
+  cursor: pointer;
+}
+.lg i { width:9px; height:9px; border-radius: var(--r-1); flex:none; }
+.lg b { color: var(--ink); font: 600 var(--t-2)/1.2 var(--font-mono); font-variant-numeric: tabular-nums; }
+.lg:hover { background: var(--hover); color: var(--ink); }
+.lg:focus-visible { outline:none; box-shadow: var(--halo-foco); }
+
+/*
+A series that is off is DIMMED, it does not disappear: it is still one of the
+eleven and it has to be possible to switch it back on. `--dim` is the phase 1
+token for exactly this — something that is there, is legible, and is not current.
+*/
+.lgOff { opacity: var(--dim); }
+.lgOff b { color: var(--mute); }
+
+/*
+The range message, under its field.
+
+It goes here and not in the notice at the top because phase 1 decided it: the
+validation error goes next to its field, and never in two places at once.
+*/
+.badRange { color: var(--dan); font-size: var(--t-2); }
+.ownRange input[aria-invalid] { border-color: var(--dan); }

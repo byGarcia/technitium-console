@@ -1,0 +1,146 @@
+<helmet data-dc-atomics><meta name="design_doc_mode" content="canvas" /><link rel="stylesheet" href="consola.css" /><style>
+  .aud { width:100%; border-collapse:collapse; font-size:12.5px; max-width:1180px; margin-bottom:4px; }
+  .aud th { text-align:left; font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--faint); font-weight:700; padding:0 10px 7px; border-bottom:1px solid var(--line); }
+  .aud td { padding:8px 10px; border-bottom:1px solid var(--line2); color:#c3cad6; vertical-align:top; line-height:1.5; }
+  .aud td.w { color:var(--mute); font-size:11.5px; }
+  .aud tr:last-child td { border-bottom:0; }
+  .aud b { color:var(--ink); font-weight:650; }
+  .aud .mono { font-family:var(--font-mono); font-variant-numeric:tabular-nums; }
+  .sw { display:inline-block; width:11px; height:11px; border-radius:3px; border:1px solid rgba(255,255,255,.18); vertical-align:-1px; margin-right:5px; }
+  .st { font-size:10px; font-weight:700; letter-spacing:.04em; padding:2px 7px; border-radius:999px; border:1px solid var(--line); background:var(--pan2); color:var(--mute); text-transform:uppercase; white-space:nowrap; }
+  .st.f { color:var(--ok); border-color:#065f46; background:#052e26; }
+  .st.p { color:var(--warn); border-color:#4a3609; background:#2a1e05; }
+  .st.d { color:var(--dan); border-color:#7f1d1d; background:#2a1113; }
+  .h { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--mute); margin:26px 0 9px; }
+  .h:first-of-type { margin-top:4px; }
+  .lede { max-width:900px; font:13px/1.65 var(--font-ui); color:#c3cad6; margin:0 0 20px; }
+  .lede b { color:var(--ink); }
+  .lede code, .aud code { font:11.5px var(--font-mono); background:rgba(255,255,255,.08); padding:1px 4px; border-radius:3px; color:var(--acc); }
+
+  .ico-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(122px,1fr)); gap:10px; max-width:1180px; margin-bottom:6px; }
+  .ico-cell { background:var(--pan); border:1px solid var(--line); border-radius:9px; padding:12px 10px; display:grid; justify-items:center; gap:8px; }
+  .ico-cell svg { color:var(--ink); }
+  .ico-cell .n { font-size:10.5px; color:var(--mute); text-align:center; line-height:1.3; }
+  .ico-cell .old { font-size:15px; color:var(--faint); }
+  .ico-rail { display:inline-grid; width:60px; background:var(--pan); border:1px solid var(--line); border-radius:10px; padding:6px 0; }
+  .ico-rail a { display:grid; place-items:center; padding:9px 0; color:var(--mute); }
+  .ico-rail a.on { color:var(--on-acc); background:var(--acc); }
+</style></helmet>
+
+<section class="dv-turn" id="ic-a">
+  <div class="dv-thd"><a class="dv-tid" href="#ic-a">A</a><span class="dv-tname">Los iconos ya están dibujados — y no son los doce glifos</span></div>
+
+  <p class="lede">La lista B los marca como <b>sin decidir</b>: «doce glifos Unicode de bloques distintos, dibujados por la fuente que tenga el sistema operativo». El piloto <code>12-piloto-dashboard</code> los conserva, y además <b>construye encima</b>: la regla del raíl dice que al pasar el puntero aparece un tooltip que repite la etiqueta del icono — una regla que sólo se sostiene si el icono se entiende.<br><br><b>En el código ya no existen esos glifos.</b> Se sustituyeron por un set propio de <b>27 SVG en línea</b>, dibujados a mano, y están montados: el lateral los usa hoy. Se traen aquí porque este proyecto decide el diseño, y porque el raíl de 60 px que el piloto propone descansa entero sobre ellos.</p>
+
+  <div class="h">Por qué SVG en línea y no una librería</div>
+  <table class="aud">
+    <thead><tr><th style="width:260px">Restricción</th><th>Consecuencia</th></tr></thead>
+    <tbody>
+      <tr><td><b>La CSP del servidor</b> es <code>default-src 'self'</code> <b>sin <code>font-src</code></b><br><span class="w mono">DnsWebService.cs:1969-1975</span></td><td>Ni CDN ni fuente de iconos: una tipografía de iconos no llega a cargarse. Queda el SVG servido del mismo origen.</td></tr>
+      <tr><td><b>Una carpeta real por ruta</b></td><td>Un sprite externo es un fichero más que colocar y versionar. En línea no hay petición, no hay fallo de carga y no hay estado intermedio.</td></tr>
+      <tr><td><b>Heredan <code>currentColor</code></b></td><td>El icono del raíl se pone <code>--on-acc</code> sobre relleno ámbar sin una sola regla extra. Un glifo de fuente también, pero con la métrica del sistema.</td></tr>
+    </tbody>
+  </table>
+  <p class="lede" style="margin-top:10px">Rejilla de <b>24</b>, trazo <b>1,75</b>, extremos redondos, <b>los veintisiete iguales</b>. Nada de relleno salvo los tres puntos del menú de fila.</p>
+
+  <div class="h">Las doce secciones — antes y ahora</div>
+  <div class="ico-grid">
+    <div class="ico-cell"><span class="old">▣</span><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7.5" height="8.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="5" rx="1.5"/><rect x="3" y="15" width="7.5" height="6" rx="1.5"/><rect x="13.5" y="11" width="7.5" height="10" rx="1.5"/></svg><span class="n">Dashboard</span></div>
+    <div class="ico-cell"><span class="old">◆</span><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v5"/><path d="M6 21v-3a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v3"/><path d="M12 12v4"/><circle cx="12" cy="4.5" r="1.5"/><circle cx="6" cy="19.5" r="1.5"/><circle cx="18" cy="19.5" r="1.5"/><circle cx="12" cy="10.5" r="1.5"/></svg><span class="n">Zones<br><i style="color:var(--faint)">el árbol de dominio</i></span></div>
+    <div class="ico-cell"><span class="old">○</span><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5.5" rx="8" ry="2.75"/><path d="M4 5.5v6c0 1.5 3.6 2.75 8 2.75s8-1.25 8-2.75v-6"/><path d="M4 11.5v6c0 1.5 3.6 2.75 8 2.75s8-1.25 8-2.75v-6"/></svg><span class="n">Cache</span></div>
+    <div class="ico-cell"><span class="old">✓</span><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 5 6v5.5c0 4.2 2.9 8 7 9.5 4.1-1.5 7-5.3 7-9.5V6z"/><path d="m9 12 2.2 2.2L15.5 10"/></svg><span class="n">Allowed</span></div>
+    <div class="ico-cell"><span class="old">⊘</span><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 5 6v5.5c0 4.2 2.9 8 7 9.5 4.1-1.5 7-5.3 7-9.5V6z"/><path d="m9.5 9.5 5 5m0-5-5 5"/></svg><span class="n">Blocked<br><i style="color:var(--faint)">mismo escudo</i></span></div>
+    <div class="ico-cell"><span class="old">⊞</span><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M9 8V5.5a2.5 2.5 0 0 1 5 0V8"/><path d="M9.5 14h5"/></svg><span class="n">Apps</span></div>
+    <div class="ico-cell"><span class="old">⌕</span><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h11"/><path d="m11.5 5.5 3.5 3.5-3.5 3.5"/><path d="M20 15H9"/><path d="m12.5 11.5-3.5 3.5 3.5 3.5"/></svg><span class="n">DNS Client<br><i style="color:var(--faint)">pregunta y respuesta</i></span></div>
+    <div class="ico-cell"><span class="old">⚙</span><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h9"/><path d="M18 7h1"/><path d="M5 17h4"/><path d="M13 17h6"/><circle cx="16" cy="7" r="2"/><circle cx="11" cy="17" r="2"/></svg><span class="n">Settings</span></div>
+    <div class="ico-cell"><span class="old">▤</span><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="9" rx="2"/><path d="M7.5 8.5h4"/><path d="M12 17v3"/><path d="M8 20h8"/><path d="M12 13v4"/></svg><span class="n">DHCP</span></div>
+    <div class="ico-cell"><span class="old">☺</span><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="12" r="4"/><path d="M11.8 11h8.2"/><path d="M17 11v3.5"/><path d="M20 11v2.5"/></svg><span class="n">Administration<br><i style="color:var(--dan)">era una cara sonriente</i></span></div>
+    <div class="ico-cell"><span class="old">≡</span><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 6.5h15"/><path d="M4.5 10.5h15"/><path d="M4.5 14.5h15"/><path d="M4.5 18.5h8"/></svg><span class="n">Logs<br><i style="color:var(--faint)">la última, a medio escribir</i></span></div>
+    <div class="ico-cell"><span class="old">ⓘ</span><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5"/><path d="M12 7.75v.5"/></svg><span class="n">About</span></div>
+  </div>
+  <p class="lede" style="margin-top:12px">Tres decisiones que el set toma y conviene no deshacer: <b>Administration es una llave</b> —el glifo anterior era literalmente <code>☺</code>—; <b>Allowed y Blocked comparten escudo</b> y sólo cambia lo de dentro, porque son la misma idea con signo opuesto; y <b>Zones es el árbol de dominio</b>, no un rombo, que es lo único que un icono de zona puede decir.</p>
+
+  <div class="h">Los quince restantes</div>
+  <p class="lede">Controles: <code>chevronDown</code> · <code>chevronRight</code> · <code>chevronLeft</code> · <code>first</code> · <code>last</code> · <code>close</code> · <code>check</code> · <code>menu</code>. Acciones de fila: <code>edit</code> · <code>power</code> · <code>card</code> · <code>convert</code> · <code>sort</code> · <code>back</code>, y los tres puntos del menú de fila, que es el único relleno del set.</p>
+
+  <div class="h">El raíl, con los iconos de verdad</div>
+  <div class="ico-rail">
+    <a class="on" href="#ic-a"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7.5" height="8.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="5" rx="1.5"/><rect x="3" y="15" width="7.5" height="6" rx="1.5"/><rect x="13.5" y="11" width="7.5" height="10" rx="1.5"/></svg></a>
+    <a href="#ic-a"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v5"/><path d="M6 21v-3a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v3"/><path d="M12 12v4"/><circle cx="12" cy="4.5" r="1.5"/><circle cx="6" cy="19.5" r="1.5"/><circle cx="18" cy="19.5" r="1.5"/><circle cx="12" cy="10.5" r="1.5"/></svg></a>
+    <a href="#ic-a"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5.5" rx="8" ry="2.75"/><path d="M4 5.5v6c0 1.5 3.6 2.75 8 2.75s8-1.25 8-2.75v-6"/><path d="M4 11.5v6c0 1.5 3.6 2.75 8 2.75s8-1.25 8-2.75v-6"/></svg></a>
+    <a href="#ic-a"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 5 6v5.5c0 4.2 2.9 8 7 9.5 4.1-1.5 7-5.3 7-9.5V6z"/><path d="m9 12 2.2 2.2L15.5 10"/></svg></a>
+    <a href="#ic-a"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 5 6v5.5c0 4.2 2.9 8 7 9.5 4.1-1.5 7-5.3 7-9.5V6z"/><path d="m9.5 9.5 5 5m0-5-5 5"/></svg></a>
+  </div>
+  <p class="lede" style="margin-top:12px"><b>Lo que sigue siendo del proyecto:</b> el tamaño en el lateral completo, el del raíl, y si el tooltip del raíl se queda tal como lo describe el piloto. El set no decide eso; sólo deja de depender de la fuente que tenga cada máquina.</p>
+</section>
+
+<section class="dv-turn" id="ic-b">
+  <div class="dv-thd"><a class="dv-tid" href="#ic-b">B</a><span class="dv-tname">Los colores de serie, medidos</span></div>
+
+  <p class="lede">El piloto y el código discrepan en <b>cinco</b> de las once series. La discrepancia no se resuelve por antigüedad ni por gusto: en el punto en que dos series caen en el mismo donut, o el ojo las separa o no las separa. Medido con <b>CIEDE2000</b>, sólo entre pares que <i>comparten gráfica</i> —los que nunca aparecen juntos no compiten—, y repetido a través de protanopia y deuteranopia. El script vive en el repo, <code>dev/palette-distance.mjs</code>, para que las cifras se puedan volver a sacar.<br><br>Umbrales, dichos para que se puedan discutir: <b>ΔE00 &lt; 10</b> es choque —las dos se leen como el mismo color a tamaño de línea y de pastilla— y <b>&lt; 15</b> es riesgo: separables una al lado de otra, no separables a lo ancho de una gráfica.</p>
+
+  <div class="h">1 · Donut de Query Response Types — aquí gana el piloto, y no por poco</div>
+  <table class="aud">
+    <thead><tr><th style="width:230px">Paleta</th><th style="width:150px">Peor par</th><th>Cuál</th></tr></thead>
+    <tbody>
+      <tr><td><b>El código</b></td><td><span class="st d">ΔE00 5,5</span></td><td><span class="sw" style="background:#a78bfa"></span>Recursive <span class="mono">#a78bfa</span> contra <span class="sw" style="background:#c084fc"></span>Blocked <span class="mono">#c084fc</span>. Violeta y púrpura, en el mismo anillo de cinco porciones.</td></tr>
+      <tr><td><b>El piloto</b></td><td><span class="st f">ΔE00 16,7</span></td><td>Ningún par por debajo de 15. Al llevar Recursive a naranja, el anillo queda celeste · naranja · rosa · púrpura · gris.</td></tr>
+    </tbody>
+  </table>
+  <p class="lede" style="margin-top:10px">Esto invierte lo que se había anotado al reconciliar el piloto: el fichero se reescribió el <b>2026-09-02 a las 08:56</b>, seis minutos después, y en esa versión <code>--c-nx</code> ya no es gris y <code>--c-rec</code> ya no es turquesa. <b>El choque de hues contiguos en ese donut lo tiene hoy el código, no el piloto.</b></p>
+
+  <div class="h">2 · Gráfica de línea, once series a la vez</div>
+  <table class="aud">
+    <thead><tr><th style="width:230px">Paleta</th><th style="width:150px">Choques</th><th style="width:150px">En riesgo</th><th>Peor par</th></tr></thead>
+    <tbody>
+      <tr><td><b>El código</b></td><td><span class="st d">1</span></td><td><span class="st p">4</span></td><td class="w">Recursive / Blocked — <span class="mono">ΔE00 5,5</span></td></tr>
+      <tr><td><b>El piloto</b></td><td><span class="st f">0</span></td><td><span class="st p">3</span></td><td class="w">Recursive / Clients — <span class="mono">ΔE00 10,5</span></td></tr>
+    </tbody>
+  </table>
+
+  <div class="h">3 · Una serie del color de la interfaz — y aquí gana el código</div>
+  <p class="lede">Es el defecto que la reconciliación señaló para NX Domain. Se corrigió allí, y en la versión de hoy <b>reaparece dos veces, exacto a la cifra</b>:</p>
+  <table class="aud">
+    <thead><tr><th style="width:230px">Serie</th><th style="width:150px">Distancia</th><th>Contra qué</th></tr></thead>
+    <tbody>
+      <tr><td><b>Dropped</b> <span class="mono">#868e96</span> <span class="w">(piloto)</span></td><td><span class="st d">ΔE00 0,0</span></td><td><b>Es <code>--faint</code></b>, el mismo hex. La serie se dibujaría del color del texto tenue que la rotula.</td></tr>
+      <tr><td><b>Quinto del ciclo</b> <span class="mono">#9aa1a8</span> <span class="w">(piloto, donut de Query Types)</span></td><td><span class="st d">ΔE00 0,0</span></td><td><b>Es <code>--mute</code></b>, el color de todas las etiquetas de la consola.</td></tr>
+      <tr><td><b>Total</b> <span class="mono">#cbd5e1</span> <span class="w">(código)</span></td><td><span class="st p">ΔE00 7,0</span></td><td>Contra <code>--ink</code>. La línea del total se lee como si fuera el eje.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="h">4 · Daltonismo: no lo salva ninguna de las dos, y eso decide otra cosa</div>
+  <p class="lede">Bajo deuteranopia la gráfica de línea da <b>ocho</b> pares en choque con la paleta del código y <b>diez</b> con la del piloto. No es que una esté mal ajustada: <b>once series no caben en una rueda de tonos</b>, y ninguna paleta de once colores se salva. La conclusión no es seguir persiguiendo hues, es que <b>lo que hace legible esa gráfica es la regla que el piloto ya inventó</b> —la guía vertical y la leyenda escribiendo el valor de cada serie—, porque leer un número no depende de distinguir dos azules. Esa regla pasa de ser un acierto de composición a ser la accesibilidad de la pantalla, y por eso no debería caerse al implementar.</p>
+
+  <div class="h">Recomendación — las cinco discrepancias, una a una</div>
+  <table class="aud">
+    <thead><tr><th style="width:150px">Serie</th><th style="width:130px">Código</th><th style="width:130px">Piloto</th><th style="width:110px">Gana</th><th>Por qué</th></tr></thead>
+    <tbody>
+      <tr><td><b>Total</b></td><td class="w"><span class="sw" style="background:#cbd5e1"></span><span class="mono">#cbd5e1</span></td><td class="w"><span class="sw" style="background:#60a5fa"></span><span class="mono">#60a5fa</span></td><td><span class="st f">Piloto</span></td><td>El neutro está a <span class="mono">7,0</span> de <code>--ink</code>. Nota: <span class="mono">#60a5fa</span> es exacto <code>--info</code>; no es texto, pero conviene saberlo.</td></tr>
+      <tr><td><b>NX Domain</b></td><td class="w"><span class="sw" style="background:#fb923c"></span><span class="mono">#fb923c</span></td><td class="w"><span class="sw" style="background:#a3e635"></span><span class="mono">#a3e635</span></td><td><span class="st f">Piloto</span></td><td>El naranja del código está a <span class="mono">10,5</span> del ámbar de Clients. La lima no compite con nada.</td></tr>
+      <tr><td><b>Refused</b></td><td class="w"><span class="sw" style="background:#facc15"></span><span class="mono">#facc15</span></td><td class="w"><span class="sw" style="background:#22d3ee"></span><span class="mono">#22d3ee</span></td><td><span class="st f">Piloto</span></td><td>El amarillo está a <span class="mono">13,8</span> del ámbar. El cian queda a <span class="mono">11,6</span> del celeste: no es holgado, pero es mejor.</td></tr>
+      <tr><td><b>Recursive</b></td><td class="w"><span class="sw" style="background:#a78bfa"></span><span class="mono">#a78bfa</span></td><td class="w"><span class="sw" style="background:#fb923c"></span><span class="mono">#fb923c</span></td><td><span class="st f">Piloto</span></td><td><b>La discrepancia que más pesa.</b> Es la que arregla el donut: <span class="mono">5,5 → 16,7</span>.</td></tr>
+      <tr><td><b>Dropped</b></td><td class="w"><span class="sw" style="background:#94a3b8"></span><span class="mono">#94a3b8</span></td><td class="w"><span class="sw" style="background:#868e96"></span><span class="mono">#868e96</span></td><td><span class="st p">Código</span></td><td>El del piloto <b>es</b> <code>--faint</code>. El del código lleva canal azul y no es ninguno de los tres grises de texto.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="h">Y el ciclo abierto, que el piloto no llega a cubrir</div>
+  <p class="lede">El piloto dibuja <b>cinco</b> colores de ciclo entre sus dos donuts. El servidor <b>no acota</b> los tipos de registro —<code>StatsManager.cs:2544</code> no trunca la lista—, así que el ciclo se agota antes que el donut y a partir de ahí repite color. El código declara ocho, que es lo correcto, con un defecto propio: <span class="sw" style="background:#a78bfa"></span><span class="mono">#a78bfa</span> y <span class="sw" style="background:#818cf8"></span><span class="mono">#818cf8</span> están a <span class="mono">ΔE00 7,9</span>, violeta contra índigo.<br><br><b>Propuesta:</b> los ocho del código, con el séptimo a <span class="sw" style="background:#f87171"></span><span class="mono">#f87171</span>. Medido, el ciclo se queda sin ningún choque y con un único par en riesgo, verde contra turquesa a <span class="mono">10,1</span>. Y fuera el <span class="mono">#9aa1a8</span> del piloto, que es <code>--mute</code>.</p>
+</section>
+
+<section class="dv-turn" id="ic-c">
+  <div class="dv-thd"><a class="dv-tid" href="#ic-c">C</a><span class="dv-tname">La leyenda va corta: son once series, no diez</span></div>
+
+  <p class="lede">El piloto escribe la regla como «<b>Leyenda de diez series</b>» y dibuja diez, en los cuatro anchos y en el detalle del puntero. <b>El servidor manda once.</b> El dataset que falta es <b>Clients</b> — <code>WebServiceDashboardApi.cs:523</code>, y el <code>StatCounter</code> lo emite siempre, no es opcional.<br><br>No es sólo una serie menos: la leyenda de Chart.js <b>es</b> el control que oculta y muestra cada serie, así que con ella se pierde también el interruptor de Clients. Y, con la regla nueva del piloto —la leyenda escribe el valor de cada serie bajo el puntero—, se pierde además la única forma de leer cuántos clientes distintos había a las 14:56.</p>
+
+  <p class="lede">El mismo recuento afecta al donut de Query Response Types: el servidor manda <b>cinco</b> etiquetas —Authoritative, Recursive, Cached, Blocked y <b>Dropped</b>— y el piloto dibuja cuatro. Ahí el motivo parece ser que Dropped vale cero en el ejemplo, pero <b>eso lo contesta el propio piloto</b> en otra de sus reglas: «cero es un dato verdadero, se dibuja <code>0</code>». Si el cero se dibuja en la tarjeta, se rotula en la leyenda.</p>
+
+  <table class="aud">
+    <thead><tr><th style="width:260px">Dónde</th><th style="width:120px">Piloto</th><th style="width:120px">Servidor</th><th>Falta</th></tr></thead>
+    <tbody>
+      <tr><td><b>Leyenda de la gráfica de línea</b></td><td><span class="st d">10</span></td><td><span class="st f">11</span></td><td><b>Clients</b>, y con ella su interruptor</td></tr>
+      <tr><td><b>Donut Query Response Types</b></td><td><span class="st d">4</span></td><td><span class="st f">5</span></td><td><b>Dropped</b>, que en el ejemplo vale cero</td></tr>
+    </tbody>
+  </table>
+  <p class="lede" style="margin-top:12px">Se señala aquí y no se parchea en el código porque <b>un diseño al que le falta un control no es un punto de partida</b>, y la regla de reparto de la leyenda —fila envuelta por encima de 1180, dos columnas por debajo— hay que volver a mirarla con once entradas y no con diez.</p>
+</section>
