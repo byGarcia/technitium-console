@@ -188,6 +188,31 @@ because he is not a frontend developer and could not maintain the stack through
 future releases, and suggested shipping it as an installable alternative console
 instead. This repository is that.
 
+## Contributing
+
+[CONTRIBUTING.md](CONTRIBUTING.md) has how to run the two-instance harness and what a good change
+looks like here. A vulnerability is not a bug report: [SECURITY.md](SECURITY.md) has its own private
+route, and it also says which parts belong upstream instead. Everybody taking part is held to the
+[Code of Conduct](CODE_OF_CONDUCT.md). Releases are listed in [CHANGELOG.md](CHANGELOG.md).
+
+---
+
+## ❤️ Support
+
+This console is free and stays free, and it will never ask your DNS server for anything it does not
+already answer. If it made the machine your whole network resolves through nicer to look at, there
+is [GitHub Sponsors](https://github.com/sponsors/byGarcia),
+[Ko-fi](https://ko-fi.com/bygarcia),
+[Liberapay](https://liberapay.com/bygarcia) and
+[PayPal](https://www.paypal.com/paypalme/adriangmolina). A star or a good bug report is worth just
+as much.
+
+And if you have not already: **[Technitium DNS Server](https://github.com/TechnitiumSoftware/DnsServer)
+is the thing doing the actual work here**, written and maintained by one person. It takes donations
+too, and that is the more useful place to start.
+
+---
+
 ## Licence
 
 GPL-3.0-or-later, the same licence as Technitium DNS Server, whose console this
