@@ -20,6 +20,29 @@ service.
 
 ---
 
+## v1.1.3 — 2026-09-30
+
+**Cache, Allowed and Blocked stop hammering the server.** Please update: these three screens had a
+bug since 1.0.0 that kept asking the server for the root of the tree, hundreds of times a second,
+for as long as the screen was open.
+
+### 🛠 Fixes
+
+- **Cache, Allowed and Blocked load once.** The screen re-ran its own first load after every
+  answer, so it flooded the server's API while open and jumped back to the root whenever you
+  opened a node in the tree. Opening a node now stays on it.
+
+### 🧪 Under the hood
+
+- The tests for those screens now answer by domain, as the server does. The old ones answered the
+  same thing to every request, which is why the loop was invisible to them.
+- Every section was opened against a server with real data and its requests counted: none asks
+  for anything more than twice.
+- A new check, `dev/check-endpoints.mjs`, confirms that every API endpoint the stock console of
+  15.5.1 uses is covered here too: 132 of 132.
+
+---
+
 ## v1.1.2 — 2026-09-30
 
 **Sign in with SSO works from any page.** A one-line fix found on the first real install, the

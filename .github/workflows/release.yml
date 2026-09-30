@@ -43,6 +43,7 @@ jobs:
       # section of CHANGELOG.md. A tag with no section there fails here instead of
       # publishing a release that says nothing.
       - name: Release notes
+        id: notes
         run: |
           tag="${GITHUB_REF_NAME}"
           awk -v head="## ${tag} " 'index($0, head) == 1 { on = 1; next } on && /^## v/ { exit } on' CHANGELOG.md \
@@ -62,6 +63,9 @@ jobs:
           PY
           [ -s notes.md ] || { echo "CHANGELOG.md has no section for ${tag}"; exit 1; }
           printf '\n**Install or update:** run the one-line installer from the [README](https://github.com/byGarcia/technitium-console#installing) again. Which console goes with which server: [CHANGELOG](https://github.com/byGarcia/technitium-console/blob/main/CHANGELOG.md#which-version-for-which-server).\n' >> notes.md
+          # The title is the tag and the section's opening bold sentence.
+          lead="$(grep -m1 -o '^\*\*[^*]*\*\*' notes.md | sed 's/^\*\*//; s/\*\*$//; s/\.$//')"
+          echo "title=${tag}${lead:+ — ${lead}}" >> "$GITHUB_OUTPUT"
           cat notes.md
 
       - uses: softprops/action-gh-release@v2
@@ -69,5 +73,6 @@ jobs:
           files: |
             technitium-console.tar.gz
             technitium-console.tar.gz.sha256
+          name: ${{ steps.notes.outputs.title }}
           body_path: notes.md
           generate_release_notes: true

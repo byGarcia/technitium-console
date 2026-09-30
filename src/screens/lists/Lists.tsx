@@ -198,6 +198,15 @@ export function Lists({
   but it has to be said that it is no longer current.
   */
   const [lastGood, setLastGood] = useState<string | null>(null)
+  /*
+  `load` reads whether there was earlier data, and it is also what sets it. Read
+  as state, `lastGood` had to be one of `load`'s dependencies: every successful
+  load made a new `load`, the mount effect ran it again from the root, and the
+  screen asked `cache/list` for the root hundreds of times a second — and snapped
+  back to the root whenever a node was opened. It is read through a ref instead,
+  so `load` only changes with the list and the token (found 2026-09-30).
+  */
+  const hadData = useRef(false)
   const [stale, setStale] = useState(false)
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null)
   const [importOpen, setImportOpen] = useState(false)
@@ -214,6 +223,7 @@ export function Lists({
         setNode(outcome.data)
         setStale(false)
         setLastGood(new Date().toISOString())
+        hadData.current = true
         return
       }
       /*
@@ -227,10 +237,10 @@ export function Lists({
       there is nothing to go stale —marking it would promise an earlier tree that
       does not exist— so the notice speaks, carrying the server's message.
       */
-      if (lastGood == null) setNotice(noticeFromFailure(outcome))
+      if (!hadData.current) setNotice(noticeFromFailure(outcome))
       else setStale(true)
     },
-    [list, token, lastGood],
+    [list, token],
   )
 
   useEffect(() => {

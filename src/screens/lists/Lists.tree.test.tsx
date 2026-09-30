@@ -170,3 +170,37 @@ describe('what the round was not allowed to break', () => {
     expect(within(tree).getByText('<ROOT>')).toBeInTheDocument()
   })
 })
+
+describe('loading the tree', () => {
+  /*
+  Every successful load used to re-create `load`, and the mount effect ran it
+  again from the root: hundreds of `cache/list?domain=` a second, and a tree that
+  snapped back to the root whenever a node was opened. The mocks above answer the
+  last node to every call, which is why no test saw it; this one answers by
+  domain, as the server does.
+  */
+  function byDomain() {
+    return vi.spyOn(api, 'listNode').mockImplementation(async (_list, _token, domain) => ({
+      kind: 'ok' as const,
+      data: domain === 'com' ? node({ domain: 'com', zones: ['example'] }) : node({ zones: ['com', 'net'] }),
+    }))
+  }
+
+  it('asks for the root once on opening, and not again', async () => {
+    const spy = byDomain()
+    render(<Cache token="t" />)
+    await screen.findByRole('button', { name: 'com' })
+    await new Promise((r) => setTimeout(r, 200))
+    expect(spy.mock.calls.filter((c) => c[2] === '')).toHaveLength(1)
+  })
+
+  it('opening a node stays on that node', async () => {
+    const spy = byDomain()
+    render(<Cache token="t" />)
+    ;(await screen.findByRole('button', { name: 'com' })).click()
+    await screen.findByRole('button', { name: 'example' })
+    await new Promise((r) => setTimeout(r, 200))
+    expect(screen.getByText('Node').parentElement).toHaveTextContent('com')
+    expect(spy.mock.calls.filter((c) => c[2] === '')).toHaveLength(1)
+  })
+})

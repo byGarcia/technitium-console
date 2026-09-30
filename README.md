@@ -15,7 +15,7 @@ Same API, same behaviour, same texts — the interface rebuilt from scratch.
 
 ![The dashboard](docs/screenshots/dashboard.png)
 
-**Latest: [v1.1.2](https://github.com/byGarcia/technitium-console/releases/latest) for Technitium DNS
+**Latest: [v1.1.3](https://github.com/byGarcia/technitium-console/releases/latest) for Technitium DNS
 Server 15.5.x** — LDAP, the zone file editor and everything else 15.5 brought.
 [What's new](CHANGELOG.md) · [Which console for which server](CHANGELOG.md#which-version-for-which-server)
 
@@ -67,12 +67,16 @@ fixed one by one.
 
 | | |
 |---|---|
+| Checked against | Technitium DNS Server 15.5.1 |
 | Sections | 12 |
-| Routes, each a real URL | 32 |
-| API endpoints the stock console calls, and this one calls too | 114 of 114 |
+| Routes, each a real URL | 33 |
+| API endpoints the stock console calls, and this one calls too | 132 of 132 |
 | Sortable columns kept | 64 of 66, and the two missing are declared |
-| Dialogs, checked one by one | 43 |
-| Tests | 1,121 |
+| Dialogs, checked one by one | 44 |
+| Tests | 1,262 |
+
+Every figure in that table comes from a script in `dev/` —`check-endpoints.mjs`,
+`check-parity-sort.mjs`, `dialog-inventory.sh`— and not from this paragraph.
 
 Parity is not asserted, it is measured. `dev/` brings up **two instances of the
 official Technitium image side by side** — one serving this console, one
@@ -213,7 +217,7 @@ server.
 npm install
 npm run build        # emits into dist/
 npm run dev          # Vite development server
-npm test             # 1,260 tests
+npm test             # 1,262 tests
 npm run typecheck
 npm run lint
 ```
