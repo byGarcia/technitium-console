@@ -35,9 +35,20 @@ export const KEY_TYPES = [
   { value: 'ZoneSigningKey', label: 'Zone Signing Key (ZSK)' },
 ]
 
+/* Each with the explanation upstream prints under its radio, literally —comma
+   after "NSEC3" included— in both Sign Zone and DNSSEC Properties
+   (index.html:5874, 5883, 6208 and 6217 in v15.5.1). */
 export const NX_PROOFS = [
-  { value: 'NSEC', label: 'Next Secure (NSEC) (recommended)' },
-  { value: 'NSEC3', label: 'Next Secure 3 (NSEC3)' },
+  {
+    value: 'NSEC',
+    label: 'Next Secure (NSEC) (recommended)',
+    help: 'With NSEC, all the records in your zone can be discovered by anyone using "zone walking" technique. NSEC is recommended if your zone does not contain any private/internal records.',
+  },
+  {
+    value: 'NSEC3',
+    label: 'Next Secure 3 (NSEC3)',
+    help: 'NSEC3, makes it difficult to perform "zone walking" since it uses hashing with a random salt. NSEC3 should be used if your zone contains any private/internal records that you do not wish to be enumerable.',
+  },
 ]
 
 export const GENERATIONS = [

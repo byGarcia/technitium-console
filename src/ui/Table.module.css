@@ -98,7 +98,7 @@ class is composed from another module, its rule is emitted later and was wiping
 out Zones' monospacing. It is the same trap already noted in `Menu.module.css`.
 */
 .entityLink {
-  composes: golpe from './interaction.module.css';
+  composes: hitArea from './interaction.module.css';
   border: 0;
   background: transparent;
   padding: 0;
@@ -148,7 +148,7 @@ with nothing.
 /* A sortable header is a button, not a `th` with `onclick`: that way it is
    reachable with the tab key and announced for what it is. */
 .sort {
-  composes: golpe from '../ui/interaction.module.css';
+  composes: hitArea from '../ui/interaction.module.css';
   display: inline-flex;
   /*
   Aligned to the MIDDLE of the text and not to its baseline.
@@ -264,7 +264,7 @@ Options" and "Disable Zone" with radius 0 and transparent background, and the
 .actions > * + * { border-left: 1px solid var(--line) !important; }
 
 .actions > *:hover:not(:disabled),
-.actions > * > button:hover:not(:disabled) { background: var(--hover-fuerte) !important; }
+.actions > * > button:hover:not(:disabled) { background: var(--hover-strong) !important; }
 .actions > *:disabled,
 .actions > * > button:disabled { color: var(--faint); }
 

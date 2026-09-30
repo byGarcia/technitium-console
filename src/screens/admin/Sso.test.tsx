@@ -5,6 +5,7 @@ import { Sso } from './Sso'
 import * as client from '../../api/client'
 import { SSO } from './admin.fixture'
 import { optionsOf } from '../../test/dropdown'
+import { forgetRoot } from '../../app/base'
 
 afterEach(() => vi.restoreAllMocks())
 
@@ -28,7 +29,28 @@ const props = { token: 'tok', onNotice: vi.fn() }
 const body = (spy: ReturnType<typeof server>) =>
   spy.mock.calls.find((c) => c[0] === 'admin/sso/set')?.[1]?.body as Record<string, string>
 
-describe('SSO — carga', () => {
+describe('SSO — load', () => {
+  it('the Redirect URI hangs from the console root, not from the route of this screen', async () => {
+    // Served at /dns/admin/sso/ behind a proxy prefix: upstream's one-page
+    // console would be at /dns/, and that is what the provider must call back.
+    const meta = document.createElement('meta')
+    meta.setAttribute('name', 'route')
+    meta.setAttribute('content', 'admin/sso')
+    document.head.appendChild(meta)
+    window.history.replaceState(null, '', '/dns/admin/sso/')
+    forgetRoot()
+    try {
+      server()
+      render(<Sso {...props} />)
+      await screen.findByLabelText('Scope Name 1')
+      expect(screen.getByText(`${window.location.origin}/dns/sso/callback`)).toBeInTheDocument()
+    } finally {
+      meta.remove()
+      window.history.replaceState(null, '', '/')
+      forgetRoot()
+    }
+  })
+
   it('it draws the scopes the server brings and the two sign-up checkboxes', async () => {
     server()
     render(<Sso {...props} />)
@@ -55,7 +77,46 @@ describe('SSO — carga', () => {
   })
 })
 
-describe('SSO — validaciones', () => {
+describe('SSO — "Allow Sign Up Only For Mapped Users" follows sign-up (v15.5.1)', () => {
+  it('on load it is disabled when sign-up is off (auth.js:2253)', async () => {
+    server({ ssoAllowSignup: false, ssoAllowSignupOnlyForMappedUsers: true })
+    render(<Sso {...props} />)
+    const onlyMapped = await screen.findByLabelText('Allow Sign Up Only For Mapped Users')
+    expect(onlyMapped).toBeDisabled()
+    // Disabled, not unchecked: the server's value is still drawn.
+    expect(onlyMapped).toBeChecked()
+  })
+
+  it('on load it is enabled when sign-up is on', async () => {
+    server({ ssoAllowSignup: true })
+    render(<Sso {...props} />)
+    expect(await screen.findByLabelText('Allow Sign Up Only For Mapped Users')).toBeEnabled()
+  })
+
+  it('clicking sign-up toggles it (auth.js:206-210)', async () => {
+    server({ ssoAllowSignup: false })
+    const user = userEvent.setup()
+    render(<Sso {...props} />)
+    const signup = await screen.findByLabelText('Allow New User Sign Up')
+    const onlyMapped = screen.getByLabelText('Allow Sign Up Only For Mapped Users')
+    await user.click(signup)
+    expect(onlyMapped).toBeEnabled()
+    await user.click(signup)
+    expect(onlyMapped).toBeDisabled()
+  })
+
+  it('disabled, its value still travels', async () => {
+    const spy = server({ ssoAllowSignup: false, ssoAllowSignupOnlyForMappedUsers: true })
+    const user = userEvent.setup()
+    render(<Sso {...props} />)
+    await screen.findByLabelText('Allow Sign Up Only For Mapped Users')
+    await user.click(screen.getByRole('button', { name: 'Save Config' }))
+    expect(body(spy).ssoAllowSignup).toBe('false')
+    expect(body(spy).ssoAllowSignupOnlyForMappedUsers).toBe('true')
+  })
+})
+
+describe('SSO — validation', () => {
   it('with SSO off everything can be saved empty', async () => {
     const spy = server()
     const user = userEvent.setup()
@@ -209,7 +270,10 @@ describe('SSO — the two `http:` confirmations', () => {
 
     expect(
       screen.getByText(
-        "WARNING! The SSO Authority must use a 'https' URL scheme for production environment. Are you sure you want to proceed with using a 'http' URL scheme?",
+        "WARNING! The SSO Authority must use a 'https' URL scheme for production environment. \n\nAre you sure you want to proceed with using a 'http' URL scheme?",
+        // The literal, line breaks included: the default normaliser would
+        // collapse them and let the v15.4 text pass too.
+        { normalizer: (t) => t },
       ),
     ).toBeInTheDocument()
     expect(spy.mock.calls.find((c) => c[0] === 'admin/sso/set')).toBeUndefined()
@@ -240,7 +304,10 @@ describe('SSO — the two `http:` confirmations', () => {
 
     expect(
       screen.getByText(
-        "WARNING! The Metadata Address must use a 'https' URL scheme for production environment. Are you sure you want to proceed with using a 'http' URL scheme?",
+        "WARNING! The Metadata Address must use a 'https' URL scheme for production environment. \n\nAre you sure you want to proceed with using a 'http' URL scheme?",
+        // The literal, line breaks included: the default normaliser would
+        // collapse them and let the v15.4 text pass too.
+        { normalizer: (t) => t },
       ),
     ).toBeInTheDocument()
 

@@ -21,7 +21,7 @@ the modal's own chrome.
 */
 .bubble {
   position: fixed;
-  z-index: var(--layer-flotante);
+  z-index: var(--layer-float);
   max-width: 240px;
   padding: var(--s-3) var(--s-7);
   border: 1px solid var(--line);

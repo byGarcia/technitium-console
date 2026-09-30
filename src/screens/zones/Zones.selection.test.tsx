@@ -33,7 +33,7 @@ const zones = {
 const props = {
   token: 't', canModify: true, canDelete: true,
   onNotice: () => {}, onConfirm: () => {}, onAdd: () => {}, onOpen: () => {},
-  onImport: () => {}, onConvert: () => {}, onClone: () => {}, onPermissions: () => {},
+  onEditZoneFile: () => {}, onImport: () => {}, onConvert: () => {}, onClone: () => {}, onPermissions: () => {},
   onOptions: () => {}, refresh: 0,
 } as Parameters<typeof ZoneList>[0]
 

@@ -38,16 +38,26 @@ it: the Users tab (with a row to update) and the Sessions tab (without one).
 Upstream tells the two cases apart by whether the link carried a `data-id`, and
 in the second it refreshes the sessions list on save instead of redrawing the row.
 
-Two interface rules that come from the user themselves and not from permissions:
+Two interface rules that come from the user themselves and not from permissions,
+both switched on `type` since v15.5 (auth.js:1318-1352), not on the obsolete
+`isSsoUser`:
 
-  · An SSO user has the name and the display name locked, because the provider
-    governs them (WebServiceAuthApi.cs:1085 and 1093 reject them).
-  · Their group membership is locked ONLY if `ssoManagedGroups` is also on (line
-    1119). They are two different conditions and cannot be merged.
+  · A `RemoteSSO` or `RemoteLDAP` user has the name and the display name locked,
+    because the provider or the directory governs them.
+  · Their group membership is locked ONLY if the server says
+    `remotelyManagedGroups` (auth.js:1351-1352). It replaced `ssoManagedGroups`,
+    which v15.5.1 only still writes for SSO users; a `Local` user always gets
+    `false` (WebServiceAuthApi.cs:158-172). They are two different conditions
+    and cannot be merged.
+
+The labels follow `getAdminUsersRowHtml`'s switch: "Remote/SSO" with "SSO
+Managed", "Remote/LDAP" with its own 2FA status, and for `Local` or anything else
+the `default:` writes `type` as it arrives.
 
 And an important consequence: the locked fields are NOT sent. Upstream composes
-the query by looking at each field's `disabled`, so an SSO user saves only
-`disabled` and `sessionTimeoutSeconds`.
+the query by looking at each field's `disabled`, so a remote user saves only
+`disabled`, `sessionTimeoutSeconds` and, if the groups are not locked,
+`memberOfGroups`.
 */
 
 interface Props {
@@ -116,8 +126,16 @@ export function UserDetails({ open, username, token, cluster, onClose, onSaved, 
     if (open) void load()
   }, [open, load])
 
-  const profileLocked = detail?.isSsoUser === true
-  const groupsLocked = detail?.isSsoUser === true && detail.ssoManagedGroups === true
+  const profileLocked = detail?.type === 'RemoteSSO' || detail?.type === 'RemoteLDAP'
+  const groupsLocked = detail?.remotelyManagedGroups === true
+  const typeLabel =
+    detail?.type === 'RemoteSSO'
+      ? 'Remote/SSO'
+      : detail?.type === 'RemoteLDAP'
+        ? 'Remote/LDAP'
+        : (detail?.type ?? '')
+  const totpLabel =
+    detail?.type === 'RemoteSSO' ? 'SSO Managed' : detail?.totpEnabled ? 'Enabled' : 'Disabled'
 
   async function save() {
     if (detail == null || username == null) return
@@ -218,11 +236,8 @@ export function UserDetails({ open, username, token, cluster, onClose, onSaved, 
               )}
             </MRow>
 
-            <MValue label="Type" value={detail.isSsoUser ? 'Remote/SSO' : 'Local'} />
-            <MValue
-              label="2FA Status"
-              value={detail.isSsoUser ? 'SSO Managed' : detail.totpEnabled ? 'Enabled' : 'Disabled'}
-            />
+            <MValue label="Type" value={typeLabel} />
+            <MValue label="2FA Status" value={totpLabel} />
 
             <div className={frm.mrow}>
               <div />

@@ -24,6 +24,7 @@ describe('a zone list that has not answered yet', () => {
     onConfirm: noop,
     onAdd: noop,
     onOpen: noop,
+    onEditZoneFile: noop,
     onImport: noop,
     onConvert: noop,
     onClone: noop,

@@ -10,12 +10,17 @@ import {
   setZonePermissions,
   listCatalogs,
   convertZone,
+  exportZoneText,
+  saveZoneFile,
   ZONE_TYPES,
 } from './zones'
 import * as client from './client'
 import * as user from './user'
 
-afterEach(() => vi.restoreAllMocks())
+afterEach(() => {
+  vi.restoreAllMocks()
+  vi.unstubAllGlobals()
+})
 const env = (r: unknown) => ({ kind: 'ok' as const, data: { status: 'ok', response: r } })
 
 describe('zones', () => {
@@ -51,7 +56,7 @@ describe('zones', () => {
 
   The difference is not a whim: the zone list is the first thing drawn on
   entering the screen, so its failure is the one the user sees and it has to be
-  told with its reason —it used to say "Unable to reach the DNS server." even
+  told with its reason —it used to say "Unable to connect to the server. Please try again." even
   when the server had answered. The other three feed dialogs that already warn on
   their own.
   */
@@ -146,5 +151,69 @@ describe('zones', () => {
     const spy = vi.spyOn(client, 'apiRequest').mockResolvedValue({ kind: 'ok', data: {} })
     await convertZone('t', 'casa.test', 'Secondary')
     expect(spy.mock.calls[0][1]?.body).toHaveProperty('node', '')
+  })
+})
+
+describe('Edit Zone File (v15.5)', () => {
+  it('reads the zone as TEXT from zones/export, with zone and an empty node', async () => {
+    const file = '$ORIGIN casa.test.\n@ 900 IN SOA ns hostadmin 3 900 300 604800 900\n'
+    const fetchSpy = vi.fn().mockResolvedValue({ text: () => Promise.resolve(file) })
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const text = await exportZoneText('tok', 'casa.test')
+
+    // zone.js:1256 in v15.5.1: `api/zones/export?zone=…&node=…`.
+    const [url, init] = fetchSpy.mock.calls[0]
+    expect(url).toBe('/api/zones/export?zone=casa.test&node=')
+    expect(init.headers).toEqual({ Authorization: 'Bearer tok' })
+    expect(text).toBe(file)
+  })
+
+  it('an answer that carries status goes into the editor FORMATTED, not as an alert', async () => {
+    // What v15.5.1 answers for a zone that does not exist, checked live.
+    const body = JSON.stringify({
+      server: 'ref.technitium-ui.test',
+      status: 'error',
+      errorMessage: 'No such zone was found: nope.test',
+    })
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ text: () => Promise.resolve(body) }))
+
+    const text = await exportZoneText('tok', 'nope.test')
+
+    expect(text).toBe(JSON.stringify(JSON.parse(body), null, 2))
+    expect(text).toContain('"status": "error"')
+  })
+
+  it('CRLF from a Windows server arrives as LF, as the browser textarea leaves it', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ text: () => Promise.resolve('a\r\nb\r\n') }))
+    expect(await exportZoneText('tok', 'casa.test')).toBe('a\nb\n')
+  })
+
+  it('returns null if the request does not even go out', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')))
+    expect(await exportZoneText('tok', 'casa.test')).toBeNull()
+  })
+
+  it('saving is a POST to zones/import with overwriteZone=true and NO overwrite, raw text/plain body', async () => {
+    const fetchSpy = vi.fn().mockResolvedValue({ json: () => Promise.resolve({ status: 'ok', response: {} }) })
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const r = await saveZoneFile('tok', 'casa.test', 'www 3600 IN A 10.0.0.9', true, 'node-2')
+
+    expect(r.kind).toBe('ok')
+    const [url, init] = fetchSpy.mock.calls[0]
+    // zone.js:1293 in v15.5.1, parameter for parameter and in the same order.
+    expect(url).toBe('/api/zones/import?zone=casa.test&overwriteZone=true&overwriteSoaSerial=true&node=node-2')
+    expect(url).not.toContain('overwrite=')
+    expect(init.method).toBe('POST')
+    expect(init.headers['Content-Type']).toBe('text/plain')
+    expect(init.body).toBe('www 3600 IN A 10.0.0.9')
+  })
+
+  it('overwriteSoaSerial travels as false when unchecked', async () => {
+    const spy = vi.spyOn(client, 'apiRequest').mockResolvedValue({ kind: 'ok', data: {} })
+    await saveZoneFile('t', 'casa.test', '', false)
+    expect(spy.mock.calls[0][0]).toBe('zones/import?zone=casa.test&overwriteZone=true&overwriteSoaSerial=false&node=')
+    expect(spy.mock.calls[0][1]).toMatchObject({ method: 'POST', text: '' })
   })
 })

@@ -140,7 +140,7 @@ select:focus-visible,
 input[type='file']:focus-visible {
   outline: none;
   border-color: var(--acc);
-  box-shadow: var(--sunken), var(--halo-foco);
+  box-shadow: var(--sunken), var(--halo-focus);
 }
 
 /*
@@ -221,7 +221,7 @@ input[type='radio']:checked {
   background-color: var(--acc);
   background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0) 60%);
   border-color: var(--acc);
-  box-shadow: var(--edge-fuerte);
+  box-shadow: var(--edge-strong);
 }
 
 /* The tick is drawn, not written with a character. */
@@ -275,7 +275,7 @@ input[type='search']:focus,
 textarea:focus {
   outline: none;
   border-color: var(--acc);
-  box-shadow: var(--sunken), var(--halo-foco);
+  box-shadow: var(--sunken), var(--halo-focus);
 }
 
 @media (prefers-reduced-motion: reduce) {

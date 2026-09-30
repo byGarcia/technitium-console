@@ -31,7 +31,7 @@ export const SECTIONS: Section[] = [
     subs: ['General','Web Service','Optional Protocols','TSIG','Recursion','Cache','Blocking','Proxy & Forwarders','Logging'] },
   { id: 'dhcp', label: 'DHCP', permission: 'DhcpServer', phase: 'fase 8', subs: ['Leases','Scopes'] },
   { id: 'admin', label: 'Administration', permission: 'Administration', phase: 'fase 9',
-    subs: ['Sessions','Users','Groups','Permissions','SSO','Cluster'] },
+    subs: ['Sessions','Users','Groups','Permissions','SSO','LDAP','Cluster'] },
   { id: 'logs', label: 'Logs', permission: 'Logs', phase: 'fase 8', subs: ['View Logs','Query Logs'] },
   { id: 'about', label: 'About', permission: null, phase: 'fase 3' },
 ]

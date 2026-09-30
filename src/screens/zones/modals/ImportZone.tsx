@@ -13,10 +13,14 @@ import { Notifier } from '../../../ui/Notifier'
 import { Input } from '../../../ui/Field'
 
 /*
-`modalImportZone` (zone.js:1227 and 1251). Two ways of handing over the file
+`modalImportZone` (zone.js:1318 and 1342 in v15.5.1). v15.5 renamed its title
+from "Import - " to "Import Zone - " and stopped the text editor from wrapping
+(index.html:5127 and 5186). Two ways of handing over the file
 —uploading it or pasting it— and **the "file is missing" alert only exists in the
 first**: if the text editor is empty, upstream sends the request all the same and
-lets the server fail. It is replicated.
+lets the server answer. It is replicated. (It does not fail: v15.5.1 answers `ok`
+to an empty body and imports nothing — unless "Overwrite Zone" is checked, and
+then it empties the zone down to its SOA.)
 */
 
 type Mode = 'File' | 'Text'
@@ -90,7 +94,7 @@ export function ImportZone({
       open={open}
       onOpenChange={(o) => !o && onClose()}
       size="medium"
-      title={`Import - ${zone}`}
+      title={`Import Zone - ${zone}`}
       actions={
         <>
           <Button variant="primary" disabled={busy} onClick={() => void runImport()}>
@@ -167,7 +171,7 @@ export function ImportZone({
             <LabeledTextarea
               label="Text Editor"
               mono
-              className={styles.areaAlta}
+              className={`${styles.areaTall} ${styles.noWrap}`}
               spellCheck={false}
               value={text}
               onChange={(e) => setText(e.target.value)}

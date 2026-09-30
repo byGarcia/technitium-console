@@ -1,5 +1,6 @@
 import { apiRequest, type ApiOutcome } from './client'
 import { openDownload } from './user'
+import { urlApi } from '../app/base'
 
 /*
 The `zones` family, the zone-management part: 15 endpoints. The 4 of
@@ -429,4 +430,84 @@ export function exportZone(
 ): Promise<{ ok: boolean }> {
   // No `ts`: upstream does not add it on this download (zone.js:1322).
   return openDownload(token, 'zones/export', { zone, node })
+}
+
+/* ── Edit Zone File (v15.5) ───────────────────────────────────────────── */
+
+/**
+ * `zones/export` for the "Edit Zone File" dialog (`showEditZoneFileModal`,
+ * zone.js:1238-1278 in v15.5.1). Not the download above: here the file is read
+ * into a textarea, so it is a plain `fetch` and not a single-use token.
+ *
+ * It cannot go through `apiRequest` for the same reason as `logs/download`: on
+ * success the server answers `text/plain` with the zone file
+ * (WebServiceZonesApi.cs:2011), and on failure `application/json` with the
+ * usual envelope. Upstream asks with `isTextResponse: true`, so jQuery parses
+ * the JSON one and `if (response.status != null)` puts it FORMATTED into the
+ * textarea (zone.js:1262-1263): a missing zone, a denied permission and even an
+ * `invalid-token` read as if they were the file's content, with no alert. That
+ * is replicated.
+ *
+ * Line breaks are normalised to `\n`: upstream does `.val(response)` and the
+ * browser normalises the textarea's value on the way in, so what it later
+ * sends back never carries `\r` (see CONVENTIONS.md on `\r\n`).
+ *
+ * `null` = the request never arrived. Upstream's `error` branch then leaves the
+ * editor hidden and shows the alert in the dialog.
+ */
+export async function exportZoneText(
+  token: string | null,
+  zone: string,
+  node = '',
+): Promise<string | null> {
+  // zone.js:1256: `api/zones/export?zone=…&node=…`, `&node=` even when empty.
+  const query = new URLSearchParams({ zone, node })
+  const headers: Record<string, string> = {}
+  if (token) headers.Authorization = `Bearer ${token}`
+
+  let text: string
+  try {
+    const res = await fetch(urlApi(`api/zones/export?${query.toString()}`), { headers })
+    text = await res.text()
+  } catch {
+    return null
+  }
+
+  try {
+    const parsed: unknown = JSON.parse(text)
+    if (parsed !== null && typeof parsed === 'object' && 'status' in parsed) {
+      return JSON.stringify(parsed, null, 2)
+    }
+  } catch {
+    /* It was not JSON: it is the zone file. */
+  }
+  return text.replace(/\r\n?/g, '\n')
+}
+
+/**
+ * Saving the "Edit Zone File" dialog (`saveEditZoneFile`, zone.js:1280-1316 in
+ * v15.5.1). The same endpoint as importing by pasting —raw `text/plain`
+ * body— with a different query: `overwriteZone=true` fixed, the dialog's
+ * `overwriteSoaSerial`, and **no `overwrite`** at all (zone.js:1293). The
+ * server defaults that one to `true` (WebServiceZonesApi.cs:1930); it is left
+ * out because upstream leaves it out.
+ *
+ * `overwriteZone=true` deletes every record in the zone before importing,
+ * NS included: an empty body leaves the zone with its SOA alone. Checked
+ * against v15.5.1.
+ */
+export function saveZoneFile(
+  token: string | null,
+  zone: string,
+  text: string,
+  overwriteSoaSerial: boolean,
+  node = '',
+): Promise<ApiOutcome> {
+  const query = new URLSearchParams({
+    zone,
+    overwriteZone: 'true',
+    overwriteSoaSerial: String(overwriteSoaSerial),
+    node,
+  })
+  return apiRequest(`zones/import?${query.toString()}`, { token, method: 'POST', text })
 }

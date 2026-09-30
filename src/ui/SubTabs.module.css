@@ -31,5 +31,5 @@ marked with an edge and the rest read as ordinary links.
 }
 
 .tab:hover { color: var(--ink); }
-.tab:focus-visible { outline: none; box-shadow: var(--halo-foco); border-radius: var(--r-2); }
+.tab:focus-visible { outline: none; box-shadow: var(--halo-focus); border-radius: var(--r-2); }
 .tab[aria-current='page'] { color: var(--acc); border-bottom-color: var(--acc); font-weight: 600; }

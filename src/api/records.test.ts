@@ -6,8 +6,8 @@ import {
   recordIdentity,
   aplanarSvcParams,
   aplanarGlue,
-  cuerpoBorrado,
-  cuerpoCambioDeEstado,
+  deletionBody,
+  stateChangeBody,
   fullDomain,
   zoneHasSvcbAutoHint,
   type ResourceRecord,
@@ -148,7 +148,7 @@ describe('identity of a record', () => {
 describe('cuerpos completos', () => {
   it('the delete sends zone, domain and type, and the root goes as a dot', () => {
     const r = rec('MX', { preference: 10, exchange: 'mail.casa.test' }, { name: '' })
-    expect(cuerpoBorrado('casa.test', r)).toEqual({
+    expect(deletionBody('casa.test', r)).toEqual({
       zone: 'casa.test',
       domain: '.',
       type: 'MX',
@@ -159,7 +159,7 @@ describe('cuerpos completos', () => {
 
   it('disabling resends the whole record with disable=true', () => {
     const r = rec('MX', { preference: 10, exchange: 'mail.casa.test' }, { comments: 'nota', expiryTtl: 60 })
-    expect(cuerpoCambioDeEstado('casa.test', r, true, false)).toEqual({
+    expect(stateChangeBody('casa.test', r, true, false)).toEqual({
       zone: 'casa.test',
       domain: 'www',
       type: 'MX',

@@ -184,8 +184,6 @@ export interface DnsSettings {
   cacheFailureRecordTtl: number
   cachePrefetchEligibility: number
   cachePrefetchTrigger: number
-  cachePrefetchSampleIntervalInMinutes: number
-  cachePrefetchSampleEligibilityHitsPerHour: number
 
   // Blocking
   enableBlocking: boolean
@@ -234,6 +232,18 @@ export async function getSettings(
   return outcome.kind === 'ok' ? outcome.data.response : null
 }
 
+/*
+The envelope of `settings/set` and `settings/restore`. `server` is the domain of
+the server that ANSWERED —the chosen node's when the request was proxied— and it
+sits next to `status`, outside `response` (DnsWebService.cs:2478). Upstream
+compares it with the session's domain before following the web console to a new
+address (main.js:2216, 3187).
+*/
+export interface SettingsEnvelope {
+  response: DnsSettings
+  server: string
+}
+
 /** `settings/set`. Goes by POST with the body urlencoded, just like upstream,
  *  and returns the settings already sanitised by the server so the form can be
  *  redrawn. The whole `ApiOutcome` is returned because the screen needs the
@@ -241,8 +251,8 @@ export async function getSettings(
 export async function setSettings(
   token: string | null,
   body: Record<string, string>,
-): Promise<ApiOutcome<{ response: DnsSettings }>> {
-  return apiRequest<{ response: DnsSettings }>('settings/set', {
+): Promise<ApiOutcome<SettingsEnvelope>> {
+  return apiRequest<SettingsEnvelope>('settings/set', {
     token,
     method: 'POST',
     body,
@@ -315,11 +325,11 @@ export async function restoreSettings(
   selection: Record<string, boolean>,
   deleteExistingFiles: boolean,
   node = '',
-): Promise<ApiOutcome<{ response: DnsSettings }>> {
+): Promise<ApiOutcome<SettingsEnvelope>> {
   const query = new URLSearchParams(backupParams(selection, node))
   query.set('deleteExistingFiles', String(deleteExistingFiles))
 
-  return apiRequest<{ response: DnsSettings }>(`settings/restore?${query.toString()}`, {
+  return apiRequest<SettingsEnvelope>(`settings/restore?${query.toString()}`, {
     token,
     method: 'POST',
     file: { field: 'fileBackupZip', archivo: file },

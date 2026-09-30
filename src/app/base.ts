@@ -14,7 +14,14 @@ comes from subtracting those segments from the `pathname`.
 
 function compute(): string {
   const route = document.querySelector('meta[name="route"]')?.getAttribute('content')
-  const trail = window.location.pathname
+  /*
+  Repeated slashes are collapsed. The server serves the front page for `//`
+  too, and a root of `//` would turn every API call into `//api/…` — a
+  protocol-relative URL, i.e. the host `api`, with the session token in
+  `Authorization`. Upstream never has this problem because it asks for `api/…`
+  relative to the document (security audit 2026-09-30).
+  */
+  const trail = window.location.pathname.replace(/\/{2,}/g, '/')
   if (route == null || route === '') return trail.endsWith('/') ? trail : trail + '/'
 
   const spare = route.split('/').length

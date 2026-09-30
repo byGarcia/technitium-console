@@ -56,10 +56,10 @@ export function BlockingMenu({
   onNotice: (a: { type: AlertType; title: string; text: string }) => void
 }) {
   const [active, setActive] = useState<boolean | null>(null)
-  const [pending, setPendiente] = useState<Pending | null>(null)
+  const [pending, setPending] = useState<Pending | null>(null)
   const [busy, setBusy] = useState(false)
 
-  async function mirarEstado() {
+  async function loadState() {
     setActive(null)
     const s = await getSettings(token)
     if (s != null) setActive(s.enableBlocking)
@@ -110,10 +110,10 @@ export function BlockingMenu({
     setBusy(true)
     try {
       await pending.perform()
-      setPendiente(null)
+      setPending(null)
     } catch (e) {
       onNotice({ type: 'danger', title: 'Error!', text: (e as Error).message })
-      setPendiente(null)
+      setPending(null)
     } finally {
       setBusy(false)
     }
@@ -121,16 +121,16 @@ export function BlockingMenu({
 
   return (
     <>
-      <Menu label="Blocking options" text="Blocking" onOpen={() => void mirarEstado()}>
+      <Menu label="Blocking options" text="Blocking" onOpen={() => void loadState()}>
         {(close) => (
           <>
             {active === false && (
-              <button role="menuitem" onClick={() => { close(); setPendiente(flip(true)) }}>
+              <button role="menuitem" onClick={() => { close(); setPending(flip(true)) }}>
                 Enable Blocking
               </button>
             )}
             {active === true && (
-              <button role="menuitem" onClick={() => { close(); setPendiente(flip(false)) }}>
+              <button role="menuitem" onClick={() => { close(); setPending(flip(false)) }}>
                 Disable Blocking
               </button>
             )}
@@ -138,7 +138,7 @@ export function BlockingMenu({
               <button
                 key={p.minutes}
                 role="menuitem"
-                onClick={() => { close(); setPendiente(forAWhile(p.minutes)) }}
+                onClick={() => { close(); setPending(forAWhile(p.minutes)) }}
               >
                 {p.text}
               </button>
@@ -154,7 +154,7 @@ export function BlockingMenu({
         label={pending?.label ?? ''}
         variant={pending?.variant}
         busy={busy}
-        onClose={() => setPendiente(null)}
+        onClose={() => setPending(null)}
         onConfirm={() => void confirm()}
       />
     </>

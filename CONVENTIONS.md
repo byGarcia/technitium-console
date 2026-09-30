@@ -300,6 +300,75 @@ Write down here whatever you find. What is already known:
   `ED25519` travels in UPPERCASE.
 - **In the DNSSEC properties, `isRetiring` switches off every action** of a key,
   and the automatic rollover only exists for ZSKs.
+- **Since v15.5 a user has a `type`, and a remote user LOSES a field.** `user/login`,
+  `user/session/get`, `user/profile/get` and every `admin/users/*` bring `type`
+  (`Local`, `RemoteSSO`, `RemoteLDAP`) next to the obsolete `isSsoUser`, and
+  **`totpEnabled` is omitted for a `RemoteSSO` user**, not sent as `false`
+  (WebServiceAuthApi.cs:77-82 and 140-146). In the details, `ssoManagedGroups` is
+  now written ONLY for SSO users and `remotelyManagedGroups` for every type —
+  `false` for `Local` (lines 158-172). A screen still reading `ssoManagedGroups`
+  unlocks the groups of every LDAP user. Checked live against v15.5.1.
+- **`admin/ldap/get` on a fresh install is half `null`**: `ldapServer`,
+  `ldapBindUsername`, `ldapBindPassword`, `ldapSearchBase`, `ldapUserSearchFilter`
+  and `ldapGroupAttribute` arrive as `null`, `ldapPort` as `389`, and
+  `ldapAllowSignupOnlyForMappedUsers` is **`true` while `ldapAllowSignup` is
+  `false`** — the box comes up checked and disabled. `ldap/set` repeats SSO's
+  lesson and drops `localGroups` (line 2136). Checked live against v15.5.1.
+- **"Test Connection" is not a dry run of "Save".** It validates server and port
+  even with LDAP disabled, ignores the group map and never asks the "Ignore SSL"
+  confirmation (auth.js:2526-2541). The server fills any missing parameter from
+  the STORED config and swaps the masked password for the stored one
+  (WebServiceAuthApi.cs:2146-2160). Its error answers with no `response` key at
+  all: `{"server", "status": "error", "errorMessage"}`.
+- **`zones/export` answers an error with HTTP 200 and JSON**, the file with
+  `text/plain`: a missing zone gives `{"status":"error","errorMessage":"No such
+  zone was found: …"}` and a bad token `invalid-token`, both 200. The v15.5 "Edit
+  Zone File" dialog reads it as text and, like `logs/download`, puts any answer
+  carrying `status` FORMATTED into its textarea (zone.js:1262-1263 in v15.5.1): no
+  alert, not even for `invalid-token`. Checked against v15.5.1.
+- **`zones/import?overwriteZone=true` replaces the WHOLE zone, NS included.** A
+  file with only SOA+NS+one A leaves exactly that; an EMPTY `text/plain` body
+  answers `ok` and leaves the SOA alone. An unparsable file fails before
+  touching anything, with `errorMessage` ("The zone file parser failed to parse
+  'rdata' field on line # 1.") AND `innerErrorMessage` ("An invalid IP address was
+  specified."); upstream shows only the first. With `overwriteSoaSerial=false`
+  the serial is not kept either: the server bumps it. Checked against v15.5.1.
+- **"Edit Zone File" never sends `overwrite`** (zone.js:1293): the server
+  defaults it to `true` (WebServiceZonesApi.cs:1930). And its textarea is never
+  cleared on opening, only overwritten when the read succeeds — after a read that
+  never arrives, "Save" (always enabled) would send what the previous opening
+  left, possibly another zone's file. Replicated; clearing it instead would send
+  an empty file, which with `overwriteZone=true` empties the zone.
+- **Saving a zone file reloads the zone, never the list** (zone.js:1302-1303):
+  from the list's row menu nothing is refreshed afterwards.
+- **What "Save Settings" sends depends on the node selector** (main.js:1639-1644).
+  `node=""` sends every block, `node=cluster` only the cluster-wide ones (default
+  values, EDNS/QPM/advanced, TSIG, Recursion, Blocking, Proxy & Forwarders) and a
+  node name only that node's own (local parameters, IPv6/socket pool, Web Service,
+  Optional Protocols, Cache, Logging). A skipped block skips its VALIDATIONS too.
+  On a standalone server the selector is hidden and holds an empty `<option>`
+  (cluster.js:1047-1049), so the stock console loads `settings/get?node=` and
+  saves `node=&…` — never `cluster`, which there would drop every node
+  parameter. Checked on the stock v15.5.1 of the harness. Flush, backup and
+  restore take the same selector's node.
+- **The envelope's `server` is the domain of the server that ANSWERED**, written
+  after the handler runs (DnsWebService.cs:2478): after a rename it already
+  carries the new name, and on a proxied request it is the chosen node's. Upstream
+  follows the web console to its new address only when it equals the session's
+  domain, which `updateDnsSettingsDataAndGui` has just rewritten for `node=""` or
+  the own node (main.js:2208-2217, 3177-3188).
+- **After a save or a restore the console may navigate on its own**: 2.5 s later
+  it opens the new HTTP/HTTPS address in the same tab (`checkForWebConsoleRedirection`,
+  main.js:2293), unless the LAST LOAD decided a reverse proxy is in front
+  because the page's port is not the web service's (`checkForReverseProxy`,
+  main.js:2275). In the harness `ref` is published on 5381 while its web service
+  listens on 5380, so there the proxy is always "detected" and nothing redirects;
+  `dev` is 5380 on both sides and does follow a port change.
+- **Some notes quote the LOADED settings, not the fields.** The DoH/DoT/DoQ/DoH(S)
+  addresses and both real-IP header notes are written by `loadDnsSettings`
+  (main.js:1303-1304, 1356-1357, 1369-1372): typing a new port or header does not
+  change them until the next load or save. Their initial HTML text
+  (`localhost:8053`, `tls-certificate-domain:853`) is a placeholder, not contract.
 
 ## How the code is written
 
@@ -375,7 +444,7 @@ fails in production.
   reverse proxy with a prefix. `dev/check-prefix.sh` checks it.
 - **Real routes, one folder per route.** The server's only `MapFallback` is
   `/api/{*path}`, so a deep route with no file on disk would 404. The build emits
-  one folder with its own `index.html` for each of the console's 32 routes, so the
+  one folder with its own `index.html` for each of the console's 33 routes, so the
   URL is real —no `#/`— and F5 brings you back where you were, without touching a
   line of C#. See `vite.config.ts`.
 - **Content-Security-Policy**: `default-src 'self'; script-src 'self'

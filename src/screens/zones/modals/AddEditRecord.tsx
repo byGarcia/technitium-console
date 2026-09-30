@@ -195,7 +195,7 @@ export function AddEditRecord(p: AddEditRecordProps) {
           {(id) => (
             <Select
               id={id}
-              className={styles.medio}
+              className={styles.medium}
               disabled={editing}
               value={f.type}
               onChange={(e) => set('type', e.target.value)}
@@ -495,6 +495,12 @@ MII...
               />
             )}
           </Field>
+          {/* index.html:4783 in v15.5.1. */}
+          <div className={styles.help}>
+            Enter either a hash value that you have independently generated, OR enter the certificate in
+            PEM format to automatically generate the association data based on the Selector and Matching
+            Type values.
+          </div>
         </>
       )
 

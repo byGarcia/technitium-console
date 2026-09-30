@@ -3,7 +3,7 @@ import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Users } from './Users'
 import * as client from '../../api/client'
-import { USER_DETAIL, ADMIN_USER, NEW_USER, SSO_USER } from './admin.fixture'
+import { USER_DETAIL, ADMIN_USER, NEW_USER, SSO_USER, LDAP_USER } from './admin.fixture'
 import { choose } from '../../test/dropdown'
 
 afterEach(() => vi.restoreAllMocks())
@@ -59,6 +59,38 @@ describe('Users — the table', () => {
     expect(screen.queryByRole('button', { name: 'Reset Password' })).not.toBeInTheDocument()
     await userEvent.click((await screen.findAllByRole('button', { name: /^Actions for / }))[0])
     expect(screen.queryByRole('button', { name: 'Disable 2FA' })).not.toBeInTheDocument()
+  })
+
+  it('an LDAP user comes out as Remote/LDAP with its own 2FA status (auth.js:1154-1163)', async () => {
+    server([{ ...LDAP_USER, totpEnabled: true }])
+    render(<Users {...props} />)
+    expect(await screen.findByText('Remote/LDAP')).toBeInTheDocument()
+    expect(screen.getByText('Enabled', { selector: 'td:nth-child(4) *' })).toBeInTheDocument()
+  })
+
+  it('an LDAP user is offered clearing the 2FA but NOT a password reset (auth.js:1195-1205)', async () => {
+    server([{ ...LDAP_USER, totpEnabled: true }])
+    render(<Users {...props} />)
+    await userEvent.click((await screen.findAllByRole('button', { name: /^Actions for / }))[0])
+    expect(await screen.findByRole('menuitem', { name: 'Disable 2FA' })).toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: 'Reset Password' })).not.toBeInTheDocument()
+  })
+
+  it('a local user is offered the password reset', async () => {
+    server([NEW_USER])
+    render(<Users {...props} />)
+    await userEvent.click((await screen.findAllByRole('button', { name: /^Actions for / }))[0])
+    expect(await screen.findByRole('menuitem', { name: 'Reset Password' })).toBeInTheDocument()
+  })
+
+  it('an unknown type falls to the default: its label is the type itself, and no reset', async () => {
+    // auth.js:1164-1166 writes `user.type` raw; the reset is only for `Local`.
+    server([{ ...NEW_USER, type: 'Future', totpEnabled: true }])
+    render(<Users {...props} />)
+    expect(await screen.findByText('Future')).toBeInTheDocument()
+    await userEvent.click((await screen.findAllByRole('button', { name: /^Actions for / }))[0])
+    expect(screen.queryByRole('menuitem', { name: 'Reset Password' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: 'Disable 2FA' })).not.toBeInTheDocument()
   })
 
   it('\"Disable 2FA\" only appears if the user has it on', async () => {
@@ -309,7 +341,7 @@ describe('Users — the details modal', () => {
     const spy = server([SSO_USER], {
       ...USER_DETAIL,
       ...SSO_USER,
-      ssoManagedGroups: false,
+      remotelyManagedGroups: false,
     })
     const user = userEvent.setup()
     render(<Users {...props} />)
@@ -317,7 +349,7 @@ describe('Users — the details modal', () => {
     await user.click(await screen.findByRole('button', { name: 'View Details' }))
     expect(await screen.findByLabelText('Display Name')).toBeDisabled()
     expect(screen.getByLabelText('Username')).toBeDisabled()
-    // With `ssoManagedGroups` false the groups CAN be touched: they are two
+    // With `remotelyManagedGroups` false the groups CAN be touched: they are two
     // different conditions, not one.
     expect(screen.getByLabelText('Member Of')).not.toBeDisabled()
 
@@ -328,11 +360,11 @@ describe('Users — the details modal', () => {
     expect(body.memberOfGroups).toBe('')
   })
 
-  it('with `ssoManagedGroups` the groups are locked too and left out of the send', async () => {
+  it('with `remotelyManagedGroups` the groups are locked too and left out of the send', async () => {
     const spy = server([SSO_USER], {
       ...USER_DETAIL,
       ...SSO_USER,
-      ssoManagedGroups: true,
+      remotelyManagedGroups: true,
     })
     const user = userEvent.setup()
     render(<Users {...props} />)
@@ -343,6 +375,81 @@ describe('Users — the details modal', () => {
     await user.click(screen.getByRole('button', { name: 'Save' }))
     const body = spy.mock.calls.find((c) => c[0] === 'admin/users/set')?.[1]?.body as Record<string, string>
     expect(body.memberOfGroups).toBeUndefined()
+  })
+
+  it('the details modal labels an SSO user Remote/SSO and its 2FA SSO Managed', async () => {
+    server([SSO_USER], { ...USER_DETAIL, ...SSO_USER, remotelyManagedGroups: false })
+    const user = userEvent.setup()
+    render(<Users {...props} />)
+    await user.click(await screen.findByRole('button', { name: 'View Details' }))
+    const dialog = await screen.findByRole('dialog')
+    expect(within(dialog).getByText('Remote/SSO')).toBeInTheDocument()
+    expect(within(dialog).getByText('SSO Managed')).toBeInTheDocument()
+  })
+
+  it('an LDAP user has name and display name locked, with its own 2FA status (auth.js:1326-1331)', async () => {
+    const spy = server([LDAP_USER], {
+      ...USER_DETAIL,
+      ...LDAP_USER,
+      totpEnabled: true,
+      remotelyManagedGroups: false,
+    })
+    const user = userEvent.setup()
+    render(<Users {...props} />)
+
+    await user.click(await screen.findByRole('button', { name: 'View Details' }))
+    const dialog = await screen.findByRole('dialog')
+    expect(await within(dialog).findByLabelText('Display Name')).toBeDisabled()
+    expect(within(dialog).getByLabelText('Username')).toBeDisabled()
+    expect(within(dialog).getByText('Remote/LDAP')).toBeInTheDocument()
+    expect(within(dialog).getByText('Enabled')).toBeInTheDocument()
+    expect(within(dialog).getByLabelText('Member Of')).not.toBeDisabled()
+
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+    const body = spy.mock.calls.find((c) => c[0] === 'admin/users/set')?.[1]?.body as Record<string, string>
+    expect(body.displayName).toBeUndefined()
+    expect(body.newUser).toBeUndefined()
+    expect(body.memberOfGroups).toBe('')
+  })
+
+  it('an LDAP user with `remotelyManagedGroups` has the groups locked and not sent', async () => {
+    const spy = server([LDAP_USER], {
+      ...USER_DETAIL,
+      ...LDAP_USER,
+      remotelyManagedGroups: true,
+    })
+    const user = userEvent.setup()
+    render(<Users {...props} />)
+
+    await user.click(await screen.findByRole('button', { name: 'View Details' }))
+    expect(await screen.findByLabelText('Member Of')).toBeDisabled()
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+    const body = spy.mock.calls.find((c) => c[0] === 'admin/users/set')?.[1]?.body as Record<string, string>
+    expect(body.memberOfGroups).toBeUndefined()
+  })
+
+  it('the obsolete `ssoManagedGroups` no longer locks anything: only `remotelyManagedGroups` does', async () => {
+    server([SSO_USER], {
+      ...USER_DETAIL,
+      ...SSO_USER,
+      ssoManagedGroups: true,
+      remotelyManagedGroups: false,
+    })
+    const user = userEvent.setup()
+    render(<Users {...props} />)
+    await user.click(await screen.findByRole('button', { name: 'View Details' }))
+    expect(await screen.findByLabelText('Member Of')).not.toBeDisabled()
+  })
+
+  it('a local user shows its type as it arrives and can edit name and display name', async () => {
+    server([NEW_USER])
+    const user = userEvent.setup()
+    render(<Users {...props} />)
+    await user.click(await screen.findByRole('button', { name: 'View Details' }))
+    const dialog = await screen.findByRole('dialog')
+    expect(await within(dialog).findByLabelText('Display Name')).toBeEnabled()
+    expect(within(dialog).getByLabelText('Username')).toBeEnabled()
+    expect(within(dialog).getByText('Local')).toBeInTheDocument()
   })
 
   it('`newUser` only travels when the name changes', async () => {

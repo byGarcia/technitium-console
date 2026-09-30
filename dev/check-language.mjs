@@ -92,7 +92,9 @@ const PIECES = new Set(
     'fecha fechas hora horas dia dias mes meses tiempo valor valores clave claves llave lista listas ' +
     'listar buscar busca filtro filtros filtrar crear editar mostrar ocultar enviar recibir contar ' +
     'cuenta cuentas ancho anchos alto largo corto nuevo nueva viejo antiguo activo activa apagado ' +
-    'encendido cerrar abrir volver seguir contiene devuelve llama espera'
+    'encendido cerrar abrir volver seguir contiene devuelve llama espera ' +
+    'carga cargas bloques cero dos tres cuatro cinco seis siete ocho nueve diez digito digitos ' +
+    'usuario usuarios conserva pegado golpe flotante foco hueco fuerte medio cajon curso ajustes enlaces seccion contenido iteraciones mirar estado'
   ).split(' '),
 )
 
@@ -175,7 +177,15 @@ for (const file of walk(SRC)) {
 
   for (const [n, line] of comments) {
     const clean = stripQuoted(line)
-    if (ACCENTS.test(clean) || WORDS.test(clean)) findings.push(`${rel}:${n}  Spanish in a comment: ${line.trim().slice(0, 70)}`)
+    /*
+    The comments were checked against WORDS only, and prose without an accent or
+    one of those connectives walked through: «Cuatro bloques.», «Tabla»,
+    «/* Fechas *\/», «cerrar no avisa» (2026-09-30, the fourth hole). The whole-
+    word PIECES lookup is applied here too; on the day it was added it flagged
+    nothing that was not Spanish.
+    */
+    const spanishWord = (clean.toLowerCase().match(/[a-z]+/g) ?? []).find((w) => PIECES.has(w))
+    if (ACCENTS.test(clean) || WORDS.test(clean) || spanishWord != null) findings.push(`${rel}:${n}  Spanish in a comment: ${line.trim().slice(0, 70)}`)
   }
   for (const [n, line] of code) {
     const clean = stripQuoted(line).replace(/'[^'\n]*'/g, ' ')

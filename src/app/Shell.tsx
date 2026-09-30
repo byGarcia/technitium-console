@@ -20,7 +20,7 @@ import styles from './Shell.module.css'
 import { Icon, type IconName } from '../ui/Icon'
 import { publicUrl } from './base'
 import { Menu } from '../ui/Menu'
-import { PieDeEnlaces } from '../ui/FooterLinks'
+import { FooterLinks } from '../ui/FooterLinks'
 import { Versions } from './Versions'
 import { Confirm } from '../ui/Confirm'
 import { Notifier } from '../ui/Notifier'
@@ -58,7 +58,12 @@ export interface ShellSession {
   token: string
   displayName: string
   username: string
+  /** `Local`, `RemoteSSO` or `RemoteLDAP` since v15.5 (flat in `user/session/get`
+   *  and `user/login`, WebServiceAuthApi.cs:74). */
+  type?: string
+  /** Obsolete since v15.5 (line 75): still sent, no longer read. */
   isSsoUser?: boolean
+  /** Omitted for a `RemoteSSO` user (lines 77-82). */
   totpEnabled?: boolean
   info?: {
     version: string
@@ -79,7 +84,16 @@ function plainClick(e: React.MouseEvent): boolean {
   return e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey
 }
 
-export function Shell({ session, onLogout }: { session: ShellSession; onLogout: () => void }) {
+export function Shell({
+  session,
+  onLogout,
+  forcePasswordChange = false,
+}: {
+  session: ShellSession
+  onLogout: () => void
+  /** A factory-credentials login: Change Password opens at once with `admin` filled in (auth.js:283-284). */
+  forcePasswordChange?: boolean
+}) {
   const permissions = session.info?.permissions
   // Memoised: if it is recreated on every render, the `hashchange` resubscribes on each.
   const sections = useMemo(() => visibleSections(permissions), [permissions])
@@ -87,8 +101,13 @@ export function Shell({ session, onLogout }: { session: ShellSession; onLogout: 
      if not, from the first visible one. See `app/route.ts` for the reasoning. */
   const initialRoute = readRoute(sections)
   const [active, setActive] = useState(() => initialRoute?.section ?? sections[0]?.id ?? 'about')
-  const [drawer, setCajon] = useState(false)
-  const [modal, setModal] = useState<ModalId | null>(null)
+  const [drawer, setDrawer] = useState(false)
+  const [modal, setModal] = useState<ModalId | null>(forcePasswordChange ? 'password' : null)
+  /* The factory password travels only with the opening the login caused; from the
+     user menu `showChangePasswordModal()` is called with nothing (main.js). */
+  const [forcedCurrentPassword, setForcedCurrentPassword] = useState<string | undefined>(
+    forcePasswordChange ? 'admin' : undefined,
+  )
   const [sub, setSub] = useState<string | null>(initialRoute?.sub ?? null)
   const [displayName, setDisplayName] = useState(session.displayName)
   const [totpEnabled, setTotpEnabled] = useState(session.totpEnabled ?? false)
@@ -220,7 +239,7 @@ export function Shell({ session, onLogout }: { session: ShellSession; onLogout: 
           type="button"
           className={styles.veil}
           aria-label="Close menu"
-          onClick={() => setCajon(false)}
+          onClick={() => setDrawer(false)}
         />
       )}
 
@@ -265,7 +284,7 @@ export function Shell({ session, onLogout }: { session: ShellSession; onLogout: 
                         e.preventDefault()
                         setActive(sec.id)
                         setSub(first)
-                        setCajon(false)
+                        setDrawer(false)
                       }}
                     >
                       <span className={styles.ico}>
@@ -320,13 +339,16 @@ export function Shell({ session, onLogout }: { session: ShellSession; onLogout: 
                 <button type="button" onClick={() => { close(); open('profile') }}>
                   My Profile
                 </button>
-                {/* main.js:71-78 — these two are hidden for an SSO user. */}
-                {!session.isSsoUser && (
+                {/* main.js:71-87 (v15.5.1) switches on `sessionData.type`:
+                    `RemoteSSO` hides both, `RemoteLDAP` hides only the password
+                    —the directory owns it, the 2FA is still this server's— and
+                    `Local` or anything else shows both. */}
+                {session.type !== 'RemoteSSO' && session.type !== 'RemoteLDAP' && (
                   <button type="button" onClick={() => { close(); open('password') }}>
                     Change Password
                   </button>
                 )}
-                {!session.isSsoUser && (
+                {session.type !== 'RemoteSSO' && (
                   <button type="button" onClick={() => { close(); open('twofa') }}>
                     Configure 2FA
                   </button>
@@ -374,7 +396,7 @@ export function Shell({ session, onLogout }: { session: ShellSession; onLogout: 
             className={styles.hamburger}
             aria-label="Menu"
             aria-expanded={drawer}
-            onClick={() => setCajon((v) => !v)}
+            onClick={() => setDrawer((v) => !v)}
           >
             <Icon name="menu" size={18} />
           </button>
@@ -385,15 +407,14 @@ export function Shell({ session, onLogout }: { session: ShellSession; onLogout: 
 
         {/* Neither `tabpanel` nor `aria-labelledby`: ever since each section has its
             own URL this is not a panel being switched, it is the page. */}
-        <main className={styles.body} id="panel-seccion">
+        <main className={styles.body} id="panel-section">
         {/*
       The chrome slot: the chrome provides the PLACE, the screen provides the
       control. See `ChromeSlot.tsx` — the node selector belongs to each screen,
       with its memory and its options, and none of them hears about the others.
 
       It stays empty while nobody uses it, and then it takes up nothing: it is a
-      `div` with no
-        contenido.
+      `div` with no content.
         */}
         <div ref={slot} className={styles.chromeSlot} />
         {/* The chrome's own alert slot. Upstream's `showAlert` with no
@@ -465,6 +486,7 @@ export function Shell({ session, onLogout }: { session: ShellSession; onLogout: 
             canModify={permissions?.Settings?.canModify !== false}
             canFlushCache={permissions?.Cache?.canDelete !== false}
             canBackup={permissions?.Settings?.canDelete !== false}
+            serverDomain={session.info?.dnsServerDomain}
           />
         ) : null}
         </main>
@@ -479,7 +501,7 @@ export function Shell({ session, onLogout }: { session: ShellSession; onLogout: 
         they were.
         */}
         <footer className={styles.footMain}>
-          <PieDeEnlaces />
+          <FooterLinks />
         </footer>
       </div>
 
@@ -488,18 +510,27 @@ export function Shell({ session, onLogout }: { session: ShellSession; onLogout: 
         onOpenChange={(o) => setModal(o ? 'profile' : null)}
         token={session.token}
         onSaved={setDisplayName}
+        onNotice={setChromeNotice}
       />
       <ChangePassword
         open={modal === 'password'}
-        onOpenChange={(o) => setModal(o ? 'password' : null)}
+        onOpenChange={(o) => {
+          setModal(o ? 'password' : null)
+          if (!o) setForcedCurrentPassword(undefined)
+        }}
         totpEnabled={totpEnabled}
         token={session.token}
+        username={session.username}
+        currentPassword={forcedCurrentPassword}
+        onNotice={setChromeNotice}
       />
       <Configure2FA
         open={modal === 'twofa'}
         onOpenChange={(o) => setModal(o ? 'twofa' : null)}
         token={session.token}
+        username={session.username}
         onChanged={setTotpEnabled}
+        onNotice={setChromeNotice}
       />
       <CreateApiToken
         open={modal === 'token'}

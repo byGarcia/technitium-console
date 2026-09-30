@@ -126,12 +126,24 @@ export async function apiRequest<T = unknown>(
     }
   }
 
+  /*
+  common.js:182-196. A request that never gets an answer is jQuery's
+  `textStatus === "error"` with an empty `errorThrown`, and upstream says so with
+  its own sentence; any other failure —an answer that is not JSON— is shown as
+  jQuery's `textStatus - errorThrown`. The sentence had been replaced with one of
+  this console's own until 2026-09-30.
+  */
+  let res: Response
+  try {
+    res = await fetch(url, init)
+  } catch {
+    return { kind: 'error', message: 'Unable to connect to the server. Please try again.' }
+  }
   let payload: Envelope
   try {
-    const res = await fetch(url, init)
     payload = (await res.json()) as Envelope
-  } catch {
-    return { kind: 'error', message: 'Unable to reach the DNS server.' }
+  } catch (e) {
+    return { kind: 'error', message: `parsererror - ${String(e)}` }
   }
 
   switch (payload.status) {

@@ -25,10 +25,10 @@ The breakpoint is 720, the same one `SectionHeader`, `Segmented` and `PanelForm`
 already use: below that, 250 px of list leave the viewer with less than half the
 screen and a log line stops fitting anywhere.
 */
-.dos { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: var(--s-10); align-items: start; }
+.split { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: var(--s-10); align-items: start; }
 
 @media (max-width: 720px) {
-  .dos { grid-template-columns: minmax(0, 1fr); }
+  .split { grid-template-columns: minmax(0, 1fr); }
 }
 
 .pbList { padding: var(--s-5); }

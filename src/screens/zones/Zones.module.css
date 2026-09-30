@@ -7,7 +7,7 @@
 /* Filter bar */
 .flt { display:flex; gap: var(--s-7); align-items:flex-end; flex-wrap:wrap; margin-bottom: var(--gap-block); }
 .filterWide { flex:1; min-width:220px; }
-.filtMedio { width:190px; }
+.filterMedium { width:190px; }
 .fltShort { width:120px; }
 
 /* Count and pagination */
@@ -16,7 +16,7 @@
 .countFoot { margin-top: var(--gap-group); margin-bottom: 0; }
 .mono { composes: mono from '../../ui/text.module.css'; }
 
-/* Tabla */
+/* Table */
 .num2 { color:var(--faint); font-family:var(--font-mono); font-variant-numeric:tabular-nums; }
 
 /* A zone's name is a domain: that part does belong here, and it goes on the cell
@@ -50,13 +50,19 @@
 .group { border:1px solid var(--line); border-radius: var(--r-3); padding: var(--s-8); display:flex; flex-direction:column; gap: var(--s-7); }
 .groupTitle { font-size: var(--t-2); text-transform:uppercase; letter-spacing:.05em; color:var(--faint); font-weight: 600; }
 .short { width:110px; }
-.medio { width:190px; }
+.medium { width:190px; }
 .area { min-height:110px; resize:vertical; }
-.areaAlta { min-height:180px; resize:vertical; }
+.areaTall { min-height:180px; resize:vertical; }
+/* The two zone-file editors do not wrap (`white-space: nowrap` on
+   `txtEditZoneFileText` and `txtImportZoneText`, index.html:5098 and 5186 in
+   v15.5.1): a zone file is read by columns. Measured in Chromium, a textarea
+   keeps its spaces with `nowrap` —same scroll width as `pre`— so it is copied
+   as is. */
+.noWrap { white-space: nowrap; }
 
-/* The permissions matrix's checkbox is 18 px tall. `.golpe` enlarges the target
+/* The permissions matrix's checkbox is 18 px tall. `.hitArea` enlarges the target
    without moving the drawing, just as in Administration's matrix. */
-.chkPerm { composes: golpe from '../../ui/interaction.module.css'; margin: 0 auto; display: block; }
+.chkPerm { composes: hitArea from '../../ui/interaction.module.css'; margin: 0 auto; display: block; }
 
 /*
 Stale data: the list is still there, and **you can see it is no longer current**.
@@ -71,7 +77,7 @@ new data". The three pieces go together and none is spare:
     that no longer reflects the server is how the wrong zone gets deleted.
 
 The header is NOT dimmed: the labels and the order are still true.
-stale es el datum, no la tabla.
+What is stale is the data, not the table.
 */
 .stale { border-color: var(--dan); }
 .stale tbody { opacity: var(--dim); }

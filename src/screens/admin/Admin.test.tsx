@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Admin, SUB_TABS } from './Admin'
 import * as client from '../../api/client'
-import { CLUSTER_PRIMARY, CLUSTER_NOT_INITIALISED, GROUPS, PERMISSIONS, ADMIN_SESSION, SSO, ADMIN_USER } from './admin.fixture'
+import { CLUSTER_PRIMARY, CLUSTER_NOT_INITIALISED, GROUPS, PERMISSIONS, ADMIN_SESSION, SSO, LDAP, ADMIN_USER } from './admin.fixture'
 import { choose, valueShown } from '../../test/dropdown'
 
 afterEach(() => vi.restoreAllMocks())
@@ -23,6 +23,8 @@ function server(cluster = CLUSTER_NOT_INITIALISED) {
         return ok({ response: { permissions: PERMISSIONS }, server: 'x' })
       case 'admin/sso/get':
         return ok({ response: SSO, server: 'x' })
+      case 'admin/ldap/get':
+        return ok({ response: LDAP, server: 'x' })
       case 'admin/cluster/state':
         return ok({ response: cluster, server: 'x' })
       default:
@@ -51,13 +53,14 @@ describe('Admin — the sub-navigation is a bar under the title', () => {
     expect(screen.getByRole('link', { name: 'Sessions' })).toHaveAttribute('aria-current', 'page')
   })
 
-  it('the six sub-tabs draw without breaking and only one at a time', async () => {
+  it('the seven sub-tabs draw without breaking and only one at a time', async () => {
     const marks: Record<string, string> = {
       Sessions: 'Total Sessions: 1',
       Users: 'Total Users: 1',
       Groups: 'Total Groups: 3',
       Permissions: 'Total Sections: 2',
       SSO: 'Single Sign-On (SSO)',
+      LDAP: 'Enable LDAP Authentication',
       Cluster: 'Cluster Not Initialized',
     }
     for (const sub of SUB_TABS) {
@@ -67,6 +70,16 @@ describe('Admin — the sub-navigation is a bar under the title', () => {
       unmount()
       vi.restoreAllMocks()
     }
+  })
+
+  it('LDAP sits between SSO and Cluster, as in upstream (index.html:2926-2928)', async () => {
+    server()
+    render(<Admin token="tok" sub="LDAP" />)
+    await screen.findByLabelText('Enable LDAP Authentication')
+    const names = screen.getAllByRole('link').map((a) => a.textContent)
+    expect(names).toEqual(['Sessions', 'Users', 'Groups', 'Permissions', 'SSO', 'LDAP', 'Cluster'])
+    expect(screen.getByRole('link', { name: 'LDAP' })).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByRole('link', { name: 'LDAP' }).getAttribute('href')).toMatch(/\/admin\/ldap\/$/)
   })
 
   it('the cluster state is asked for ONCE and the sub-tabs share it', async () => {

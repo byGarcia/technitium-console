@@ -7,7 +7,7 @@ destination repeated by hand is a destination that gets half updated — which i
 exactly how the About panel's were lost.
 */
 export const RFC_ZONEMD = 'https://datatracker.ietf.org/doc/rfc8976/'
-export const RFC_NSEC3_ITERACIONES = 'https://www.rfc-editor.org/rfc/rfc9276.html#name-iterations'
-export const RFC_NSEC3_SAL = 'https://www.rfc-editor.org/rfc/rfc9276.html#name-salt'
+export const RFC_NSEC3_ITERATIONS = 'https://www.rfc-editor.org/rfc/rfc9276.html#name-iterations'
+export const RFC_NSEC3_SALT = 'https://www.rfc-editor.org/rfc/rfc9276.html#name-salt'
 export const DNSSEC_HELP =
   'https://blog.technitium.com/2022/07/how-to-secure-your-domain-name-with-.html'

@@ -1,8 +1,8 @@
 import { apiRequest, type ApiOutcome } from './client'
 
 /*
-The `admin` family without the cluster: sessions, users, groups, permissions and
-SSO. Eighteen endpoints, all of them in `auth.js`. The cluster —twelve more—
+The `admin` family without the cluster: sessions, users, groups, permissions,
+SSO and LDAP. Twenty-one endpoints, all of them in `auth.js`. The cluster —twelve more—
 lives in `admin-cluster.ts` because it is another screen and another upstream
 file.
 
@@ -57,11 +57,23 @@ export interface AdminSession {
   lastSeenUserAgent: string
 }
 
+/*
+`Local`, `RemoteSSO` or `RemoteLDAP` since v15.5 (`user.Type.ToString()`,
+WebServiceAuthApi.cs:137). Typed as `string` on purpose: upstream's `default:`
+branch writes whatever arrives as the label (auth.js:1164-1166), so an unknown
+value is drawn, not rejected.
+*/
+export type UserType = 'Local' | 'RemoteSSO' | 'RemoteLDAP' | (string & {})
+
 export interface AdminUser {
   displayName: string
   username: string
+  type: UserType
+  /** Obsolete since v15.5 (WebServiceAuthApi.cs:138): still sent, no longer read. */
   isSsoUser: boolean
-  totpEnabled: boolean
+  /** OMITTED for `RemoteSSO` users: the server only writes it for `Local` and
+   *  `RemoteLDAP` (WebServiceAuthApi.cs:140-146). */
+  totpEnabled?: boolean
   disabled: boolean
   previousSessionLoggedOn: string
   previousSessionRemoteAddress: string
@@ -71,7 +83,11 @@ export interface AdminUser {
 
 export interface AdminUserDetails extends AdminUser {
   sessionTimeoutSeconds: number
-  ssoManagedGroups: boolean
+  /** v15.5: written for every user type (WebServiceAuthApi.cs:158-172); `false`
+   *  for `Local`. It replaces `ssoManagedGroups`. */
+  remotelyManagedGroups: boolean
+  /** Obsolete, and since v15.5 only written for `RemoteSSO` users (line 161). */
+  ssoManagedGroups?: boolean
   memberOfGroups: string[]
   sessions: AdminSession[]
   /** Only with `includeGroups=true`: EVERY group on the server. */
@@ -136,6 +152,27 @@ export interface SsoConfig {
   localGroups?: string[]
 }
 
+export interface LdapConfig {
+  ldapEnabled: boolean
+  /** `null` on a fresh install, like the four other strings below. */
+  ldapServer: string | null
+  ldapPort: number
+  /** `None`, `StartTLS` or `LDAPS` (`LdapAuthSslOption.ToString()`). */
+  ldapSslOption: string
+  ldapIgnoreSslErrors: boolean
+  ldapBindUsername: string | null
+  /** `"************"` when one is stored; `null` when not (WebServiceAuthApi.cs:471-474). */
+  ldapBindPassword: string | null
+  ldapSearchBase: string | null
+  ldapUserSearchFilter: string | null
+  ldapGroupAttribute: string | null
+  ldapAllowSignup: boolean
+  ldapAllowSignupOnlyForMappedUsers: boolean
+  ldapGroupMap: SsoGroupMapEntry[]
+  /** Only in `ldap/get?includeGroups=true`. Excludes `Everyone` (line 509). */
+  localGroups?: string[]
+}
+
 export interface CreatedApiToken {
   username: string
   tokenName: string
@@ -144,7 +181,7 @@ export interface CreatedApiToken {
 
 type Env<T> = { response: T; server: string }
 
-/* --------------------------------------------------------------- sesiones */
+/* --------------------------------------------------------------- sessions */
 
 /** `refreshAdminSessions` (auth.js:856). The `server` of the envelope is needed:
  *  the "Create Token" button only shows if this server is the primary node. */
@@ -182,7 +219,7 @@ export function deleteAdminSession(
   return apiRequest('admin/sessions/delete', { token, body })
 }
 
-/* --------------------------------------------------------------- usuarios */
+/* ------------------------------------------------------------------ users */
 
 export function listUsers(
   token: string | null,
@@ -243,7 +280,7 @@ export function deleteUser(token: string | null, user: string): Promise<ApiOutco
   return apiRequest('admin/users/delete', { token, body: { user } })
 }
 
-/* ----------------------------------------------------------------- grupos */
+/* ----------------------------------------------------------------- groups */
 
 export function listGroups(
   token: string | null,
@@ -289,7 +326,7 @@ export function deleteGroup(token: string | null, group: string): Promise<ApiOut
   return apiRequest('admin/groups/delete', { token, body: { group } })
 }
 
-/* --------------------------------------------------------------- permisos */
+/* ------------------------------------------------------------ permissions */
 
 export function listPermissions(
   token: string | null,
@@ -339,4 +376,42 @@ export function setSsoConfig(
   body: Record<string, string>,
 ): Promise<ApiOutcome<Env<SsoConfig>>> {
   return apiRequest('admin/sso/set', { token, method: 'POST', body })
+}
+
+/* ------------------------------------------------------------------- LDAP */
+
+/*
+The three LDAP endpoints, new in v15.5 (WebServiceAuthApi.cs:2059-2164). The same
+two server facts as SSO govern them:
+
+  · `ldap/set` does NOT return `localGroups`: it calls `WriteLdapConfig` with
+    `includeGroups: false` (line 2136). Checked live against v15.5.1.
+  · The bind password travels masked as `"************"` and `SetLdapConfig`
+    ignores that exact value (line 2101); `ldap/test` swaps it for the stored one
+    (line 2159).
+
+Permissions, asymmetric like SSO's: `get` and `test` ask for
+`Administration.canView`, `set` asks for `Administration.canDelete` (lines 2063,
+2143 and 2076). The screen gates none of them: Administration filters nothing.
+*/
+
+/** `refreshAdminLdapConfig` (auth.js:2379-2402). */
+export function getLdapConfig(token: string | null): Promise<ApiOutcome<Env<LdapConfig>>> {
+  return apiRequest('admin/ldap/get', { token, body: { includeGroups: 'true' } })
+}
+
+/** `saveAdminLdapConfig` (auth.js:2460-2524). By POST: it carries the bind password. */
+export function setLdapConfig(
+  token: string | null,
+  body: Record<string, string>,
+): Promise<ApiOutcome<Env<LdapConfig>>> {
+  return apiRequest('admin/ldap/set', { token, method: 'POST', body })
+}
+
+/** `testAdminLdapConnection` (auth.js:2526-2570). By POST as well. */
+export function testLdapConnection(
+  token: string | null,
+  body: Record<string, string>,
+): Promise<ApiOutcome> {
+  return apiRequest('admin/ldap/test', { token, method: 'POST', body })
 }

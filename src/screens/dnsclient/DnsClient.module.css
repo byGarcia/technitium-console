@@ -18,7 +18,7 @@ hand on each button, which is the symptom of a row that does not align.
 
 
 .width { flex: 1 1 240px; min-width: 240px; }
-.medio { flex: 1 1 200px; min-width: 200px; }
+.medium { flex: 1 1 200px; min-width: 200px; }
 .short { width: 120px; }
 .ecs { width: 176px; }
 

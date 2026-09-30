@@ -47,6 +47,8 @@ Two things from the original that look odd here and are deliberate:
 */
 
 /** The types that offer each action, exactly as zone.js:760-880 enumerates them. */
+/** "Edit Zone" + "Edit Zone File" for these; "View Zone" for the rest (zone.js:829-839 in v15.5.1). */
+const EDITABLE = ['Primary', 'Forwarder']
 const RESYNC = ['Secondary', 'SecondaryForwarder', 'SecondaryCatalog', 'Stub']
 const IMPORT = ['Primary', 'Forwarder']
 const EXPORT = ['Primary', 'Forwarder', 'Secondary', 'SecondaryForwarder', 'SecondaryCatalog', 'Catalog']
@@ -57,6 +59,7 @@ const WITH_OPTIONS = [...ZONE_TYPES] as string[]
 
 export interface ZoneActions {
   onOpen: (zone: string) => void
+  onEditZoneFile: (zone: string) => void
   onImport: (zone: string) => void
   onConvert: (zone: string, type: string) => void
   onClone: (zone: string) => void
@@ -85,6 +88,7 @@ export function ZoneList({
   onConfirm,
   onAdd,
   onOpen,
+  onEditZoneFile,
   onImport,
   onConvert,
   onClone,
@@ -372,7 +376,7 @@ export function ZoneList({
             )}
           </Field>
         </div>
-        <div className={styles.filtMedio}>
+        <div className={styles.filterMedium}>
           <Field label="Type">
             {(id) => (
               <Select id={id} value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
@@ -529,6 +533,7 @@ export function ZoneList({
                 setChecked((m) => (v ? [...m, z.name] : m.filter((n) => n !== z.name)))
               }
               onOpen={onOpen}
+              onEditZoneFile={onEditZoneFile}
               onEnable={enable}
               onDisable={disable}
               onDelete={remove}
@@ -565,6 +570,7 @@ interface RowProps {
   canDelete: boolean
   onCheck: (v: boolean) => void
   onOpen: (zone: string) => void
+  onEditZoneFile: (zone: string) => void
   onEnable: (z: Zone) => void
   onDisable: (z: Zone) => void
   onDelete: (z: Zone) => void
@@ -603,7 +609,7 @@ function ZoneRow(p: RowProps) {
   const state = zoneState(z)
   const signed = z.dnssecStatus === 'SignedWithNSEC' || z.dnssecStatus === 'SignedWithNSEC3'
 
-  const tonoEstado: TagTone =
+  const stateTone: TagTone =
     state === 'Enabled'
       ? 'ok'
       : state === 'Expired' || state === 'Validation Failed'
@@ -683,7 +689,7 @@ function ZoneRow(p: RowProps) {
         )}
       </td>
       <td>
-        <Tag tone={tonoEstado}>{state}</Tag>
+        <Tag tone={stateTone}>{state}</Tag>
       </td>
       <td className={styles.mono}>{z.soaSerial ?? ' '}</td>
       <td className={styles.mono}>{date(z.expiry)}</td>
@@ -707,9 +713,24 @@ function ZoneRow(p: RowProps) {
           <Menu label={`Actions for ${name}`}>
             {(close) => (
               <>
-                <button type="button" onClick={() => { close(); p.onOpen(name) }}>
-                  Edit Zone
-                </button>
+                {/* v15.5 splits the first entry by type (zone.js:829-839 in
+                    v15.5.1): a zone whose records you can edit gets "Edit
+                    Zone" and "Edit Zone File"; any other gets "View Zone",
+                    which opens the same screen. */}
+                {EDITABLE.includes(z.type) ? (
+                  <>
+                    <button type="button" onClick={() => { close(); p.onOpen(name) }}>
+                      Edit Zone
+                    </button>
+                    <button type="button" onClick={() => { close(); p.onEditZoneFile(name) }}>
+                      Edit Zone File
+                    </button>
+                  </>
+                ) : (
+                  <button type="button" onClick={() => { close(); p.onOpen(name) }}>
+                    View Zone
+                  </button>
+                )}
                 {RESYNC.includes(z.type) && (
                   <button type="button" disabled={!p.canModify} onClick={() => { close(); p.onResync(z) }}>
                     Resync

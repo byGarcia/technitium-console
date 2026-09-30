@@ -20,7 +20,7 @@ threshold is 44 and the `s` one is 45, so everything under 45 s falls into "a fe
 seconds".
 */
 
-function dosDigitos(n: number): string {
+function pad2(n: number): string {
   return n < 10 ? `0${n}` : String(n)
 }
 
@@ -30,7 +30,7 @@ The year goes to FOUR digits. It is not cosmetic: `0001-01-01T00:00:00` is
 been used. Without padding it comes out as "1-01-01", which is neither what
 moment writes nor anything like a date.
 */
-function cuatroDigitos(n: number): string {
+function pad4(n: number): string {
   return String(n).padStart(4, '0')
 }
 
@@ -39,14 +39,14 @@ function parts(iso: string): Date | null {
   return Number.isNaN(d.getTime()) ? null : d
 }
 
-/** `format("YYYY-MM-DD HH:mm:ss")` en hora local. */
+/** `format("YYYY-MM-DD HH:mm:ss")` in local time. */
 export function dateTime(iso: string | null | undefined): string {
   if (iso == null) return ''
   const d = parts(iso)
   if (d == null) return ''
   return (
-    `${cuatroDigitos(d.getFullYear())}-${dosDigitos(d.getMonth() + 1)}-${dosDigitos(d.getDate())} ` +
-    `${dosDigitos(d.getHours())}:${dosDigitos(d.getMinutes())}:${dosDigitos(d.getSeconds())}`
+    `${pad4(d.getFullYear())}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ` +
+    `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`
   )
 }
 
@@ -56,8 +56,8 @@ export function minuteStamp(iso: string | null | undefined): string {
   const d = parts(iso)
   if (d == null) return ''
   return (
-    `${cuatroDigitos(d.getFullYear())}-${dosDigitos(d.getMonth() + 1)}-${dosDigitos(d.getDate())} ` +
-    `${dosDigitos(d.getHours())}:${dosDigitos(d.getMinutes())}`
+    `${pad4(d.getFullYear())}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ` +
+    `${pad2(d.getHours())}:${pad2(d.getMinutes())}`
   )
 }
 

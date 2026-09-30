@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, afterEach } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Settings } from './Settings'
 import { SETTINGS } from './settings.fixture'
@@ -26,7 +26,7 @@ async function mount(props: Record<string, unknown> = {}) {
   return r
 }
 
-describe('Settings — carga', () => {
+describe('Settings — loading', () => {
   it('it draws General by default with the real values from the server', async () => {
     server()
     await mount()
@@ -85,6 +85,10 @@ describe('Settings — saving', () => {
     expect(body.dnsServerDomain).toBe('ref.technitium-ui.test')
     expect(body.loggingType).toBe('File')
     expect(body.recursion).toBe('AllowOnlyForPrivateNetworks')
+    // v15.5 removed Auto Prefetch: a v15.5 `settings/get` does not bring its two
+    // values, the save must go through anyway and must not send them.
+    expect(body).not.toHaveProperty('cachePrefetchSampleIntervalInMinutes')
+    expect(body).not.toHaveProperty('cachePrefetchSampleEligibilityHitsPerHour')
   })
 
   it('on a successful save, the alert is the upstream literal', async () => {
@@ -154,6 +158,33 @@ describe('Settings — Blocking', () => {
     server()
     await mount({ sub: 'Blocking' })
     expect(screen.getByRole('button', { name: 'Update Now' })).toBeDisabled()
+  })
+
+  it('\"Update Now\" follows the LOADED lists, not the checkbox nor the typed ones (v15.5)', async () => {
+    server({ blockListUrls: ['https://example.com/list.txt'] })
+    await mount({ sub: 'Blocking' })
+    const update = screen.getByRole('button', { name: 'Update Now' })
+    expect(update).toBeEnabled()
+    await userEvent.clear(screen.getByLabelText('Allow / Block List URLs'))
+    expect(update).toBeEnabled()
+    await userEvent.click(screen.getByLabelText('Enable Blocking'))
+    expect(update).toBeEnabled()
+  })
+
+  it('\"Update Now\" stays off while typing lists that were not saved (v15.5)', async () => {
+    server()
+    await mount({ sub: 'Blocking' })
+    await userEvent.type(screen.getByLabelText('Allow / Block List URLs'), 'https://example.com/l.txt')
+    expect(screen.getByRole('button', { name: 'Update Now' })).toBeDisabled()
+  })
+
+  it('with blocking off, Blocking Answer TTL goes off and the update interval does not (v15.5)', async () => {
+    server()
+    await mount({ sub: 'Blocking' })
+    expect(screen.getByLabelText('Blocking Answer TTL')).toBeEnabled()
+    await userEvent.click(screen.getByLabelText('Enable Blocking'))
+    expect(screen.getByLabelText('Blocking Answer TTL')).toBeDisabled()
+    expect(screen.getByLabelText('Block List Update Interval')).toBeEnabled()
   })
 
   it('switching off \"Enable Blocking\" switches off the rest of the sub-tab', async () => {
@@ -373,5 +404,267 @@ describe('Settings — enablement rules of the remaining sub-tabs', () => {
     expect(screen.getByLabelText('Queries Per Minute (QPM) Limits (IPv4) 1 IPv4 Prefix')).toHaveValue(32)
     expect(screen.getByLabelText('Queries Per Minute (QPM) Limits (IPv4) 2 UDP Limit')).toHaveValue(6000)
     expect(screen.getByLabelText('Queries Per Minute (QPM) Limits (IPv6) 3 IPv6 Prefix')).toHaveValue(56)
+  })
+})
+
+/*
+Which node the screen talks to. Upstream's selector (cluster.js:1021-1050) is
+HIDDEN on a standalone server and holds the empty `<option>`, so there the load is
+`settings/get?node=` and the save starts `node=&…` with every block — checked on
+the stock v15.5.1 console of the harness. `cluster` only exists once the cluster
+is initialised, and it is the default there.
+*/
+describe('Settings — node scope', () => {
+  const NODES = [
+    { name: 'node1.cluster.test', type: 'Primary' },
+    { name: 'node2.cluster.test', type: 'Secondary' },
+  ]
+
+  afterEach(() => localStorage.clear())
+
+  async function saveAndGetBody(spy: ReturnType<typeof server>) {
+    await userEvent.click(screen.getByRole('button', { name: 'Save Settings' }))
+    const call = await waitFor(() => {
+      const c = spy.mock.calls.find((c) => c[0] === 'settings/set')
+      expect(c).toBeDefined()
+      return c!
+    })
+    return call[1]!.body as Record<string, string>
+  }
+
+  it('a standalone server loads and saves with node empty, never "cluster"', async () => {
+    const spy = server()
+    await mount()
+    const get = spy.mock.calls.find((c) => c[0] === 'settings/get')!
+    expect(get[1]?.body).toEqual({ node: '' })
+
+    const body = await saveAndGetBody(spy)
+    expect(body.node).toBe('')
+    expect(body.dnsServerDomain).toBe('ref.technitium-ui.test')
+    expect(body.recursion).toBe('AllowOnlyForPrivateNetworks')
+    expect(localStorage.getItem('settingsClusterNode')).toBe('')
+  })
+
+  it('a standalone server ignores a node remembered from a cluster', async () => {
+    localStorage.setItem('settingsClusterNode', 'node2.cluster.test')
+    const spy = server()
+    await mount()
+    expect(spy.mock.calls.find((c) => c[0] === 'settings/get')![1]?.body).toEqual({ node: '' })
+    expect((await saveAndGetBody(spy)).node).toBe('')
+  })
+
+  it('with a cluster the default is the aggregate, and it saves only cluster parameters', async () => {
+    const spy = server()
+    await mount({ clusterInitialised: true, nodes: NODES })
+    expect(spy.mock.calls.find((c) => c[0] === 'settings/get')![1]?.body).toEqual({ node: 'cluster' })
+
+    const body = await saveAndGetBody(spy)
+    expect(body.node).toBe('cluster')
+    expect(body.recursion).toBe('AllowOnlyForPrivateNetworks')
+    expect(body).not.toHaveProperty('dnsServerDomain')
+    expect(body).not.toHaveProperty('loggingType')
+  })
+
+  it('with a node chosen, it saves only that node parameters', async () => {
+    localStorage.setItem('settingsClusterNode', 'node2.cluster.test')
+    const spy = server()
+    await mount({ clusterInitialised: true, nodes: NODES })
+    expect(spy.mock.calls.find((c) => c[0] === 'settings/get')![1]?.body).toEqual({
+      node: 'node2.cluster.test',
+    })
+
+    const body = await saveAndGetBody(spy)
+    expect(body.node).toBe('node2.cluster.test')
+    expect(body.loggingType).toBe('File')
+    expect(body).not.toHaveProperty('recursion')
+  })
+
+  it('a remembered node that is no longer in the cluster falls to the first node', async () => {
+    localStorage.setItem('settingsClusterNode', 'gone.cluster.test')
+    const spy = server()
+    await mount({ clusterInitialised: true, nodes: NODES })
+    expect(spy.mock.calls.find((c) => c[0] === 'settings/get')![1]?.body).toEqual({
+      node: 'node1.cluster.test',
+    })
+  })
+
+  it('flush and restore carry the chosen node too (other-zones.js:28, main.js:3170)', async () => {
+    localStorage.setItem('settingsClusterNode', 'node2.cluster.test')
+    const spy = server()
+    await mount({ clusterInitialised: true, nodes: NODES })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Flush Cache' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Flush' }))
+    await waitFor(() => expect(spy.mock.calls.find((c) => c[0] === 'cache/flush')).toBeDefined())
+    expect(spy.mock.calls.find((c) => c[0] === 'cache/flush')![1]?.body).toEqual({
+      node: 'node2.cluster.test',
+    })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Restore Settings' }))
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement
+    await userEvent.upload(input, new File(['zip'], 'backup.zip'))
+    await userEvent.click(screen.getByRole('button', { name: 'Restore' }))
+    await waitFor(() =>
+      expect(spy.mock.calls.find((c) => String(c[0]).startsWith('settings/restore'))).toBeDefined(),
+    )
+    const restore = String(spy.mock.calls.find((c) => String(c[0]).startsWith('settings/restore'))![0])
+    expect(new URLSearchParams(restore.split('?')[1]).get('node')).toBe('node2.cluster.test')
+  })
+})
+
+/*
+After a save or a restore answered by the session's own server, upstream opens the
+web console's new address 2.5 s later (main.js:2217, 3188, 2293-2334) unless the
+last load detected a reverse proxy (main.js:918, 2275). jsdom serves the tests at
+http://localhost:3000/.
+*/
+describe('Settings — web console redirection', () => {
+  function serverWith(
+    load: Record<string, unknown>,
+    saved: Record<string, unknown>,
+    serverName = 'ref.technitium-ui.test',
+  ) {
+    return vi.spyOn(client, 'apiRequest').mockImplementation(async (path: string) => {
+      if (path === 'settings/get') return ok({ response: { ...SETTINGS, ...load }, server: serverName })
+      if (path === 'settings/set' || path.startsWith('settings/restore')) {
+        return ok({ response: { ...SETTINGS, ...saved }, server: serverName })
+      }
+      return ok({ response: {} })
+    })
+  }
+
+  afterEach(() => vi.useRealTimers())
+
+  it('a new HTTP port on the own server opens it in the same tab after 2500 ms', async () => {
+    const open = vi.spyOn(window, 'open').mockImplementation(() => null)
+    serverWith({ webServiceHttpPort: 3000 }, { webServiceHttpPort: 9000 })
+    render(<Settings token="tok" serverDomain="ref.technitium-ui.test" />)
+    const save = await screen.findByRole('button', { name: 'Save Settings' })
+
+    // Frozen clock from here on, so the 2500 ms can be counted exactly.
+    vi.useFakeTimers()
+    fireEvent.click(save)
+    for (let i = 0; i < 10; i++) await act(async () => {})
+    expect(screen.getByText('Settings Saved!')).toBeInTheDocument()
+
+    vi.advanceTimersByTime(2499)
+    expect(open).not.toHaveBeenCalled()
+    vi.advanceTimersByTime(1)
+    expect(open).toHaveBeenCalledWith('http://localhost:9000', '_self')
+  })
+
+  it('an answer from another server does not redirect', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const open = vi.spyOn(window, 'open').mockImplementation(() => null)
+    serverWith({ webServiceHttpPort: 3000 }, { webServiceHttpPort: 9000 }, 'node2.cluster.test')
+    const user = userEvent.setup({ delay: null, advanceTimers: vi.advanceTimersByTime })
+    render(<Settings token="tok" serverDomain="ref.technitium-ui.test" />)
+    await screen.findByRole('button', { name: 'Save Settings' })
+
+    await user.click(screen.getByRole('button', { name: 'Save Settings' }))
+    await screen.findByText('Settings Saved!')
+    vi.advanceTimersByTime(5000)
+    expect(open).not.toHaveBeenCalled()
+  })
+
+  it('a reverse proxy detected on load does not redirect', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const open = vi.spyOn(window, 'open').mockImplementation(() => null)
+    // Served at :3000 while the web service listens on :5380 — a proxy in between.
+    serverWith({ webServiceHttpPort: 5380 }, { webServiceHttpPort: 9000 })
+    const user = userEvent.setup({ delay: null, advanceTimers: vi.advanceTimersByTime })
+    render(<Settings token="tok" serverDomain="ref.technitium-ui.test" />)
+    await screen.findByRole('button', { name: 'Save Settings' })
+
+    await user.click(screen.getByRole('button', { name: 'Save Settings' }))
+    await screen.findByText('Settings Saved!')
+    vi.advanceTimersByTime(5000)
+    expect(open).not.toHaveBeenCalled()
+  })
+
+  it('renaming the server on a standalone install still redirects (the session domain follows)', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const open = vi.spyOn(window, 'open').mockImplementation(() => null)
+    serverWith(
+      { webServiceHttpPort: 3000 },
+      { webServiceHttpPort: 9000, dnsServerDomain: 'renamed.test' },
+      'renamed.test',
+    )
+    const user = userEvent.setup({ delay: null, advanceTimers: vi.advanceTimersByTime })
+    render(<Settings token="tok" serverDomain="ref.technitium-ui.test" />)
+    await screen.findByRole('button', { name: 'Save Settings' })
+
+    await user.click(screen.getByRole('button', { name: 'Save Settings' }))
+    await screen.findByText('Settings Saved!')
+    vi.advanceTimersByTime(2500)
+    expect(open).toHaveBeenCalledWith('http://localhost:9000', '_self')
+  })
+
+  it('a successful restore redirects the same way', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const open = vi.spyOn(window, 'open').mockImplementation(() => null)
+    serverWith({ webServiceHttpPort: 3000 }, { webServiceHttpPort: 9000 })
+    const user = userEvent.setup({ delay: null, advanceTimers: vi.advanceTimersByTime })
+    render(<Settings token="tok" serverDomain="ref.technitium-ui.test" />)
+    await screen.findByRole('button', { name: 'Save Settings' })
+
+    await user.click(screen.getByRole('button', { name: 'Restore Settings' }))
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement
+    await user.upload(input, new File(['zip'], 'backup.zip'))
+    await user.click(screen.getByRole('button', { name: 'Restore' }))
+    await screen.findByText('Restored!')
+    vi.advanceTimersByTime(2500)
+    expect(open).toHaveBeenCalledWith('http://localhost:9000', '_self')
+  })
+})
+
+/*
+Optional Protocols' note names the addresses to give DNS clients, and upstream
+fills them from the LOADED settings (main.js:1369-1372): typing a new port does
+not change them until the next load. Same for the real-IP header of both notes
+(main.js:1303-1304 and 1356-1357).
+*/
+describe('Settings — addresses in the notes come from the loaded settings', () => {
+  it('DoH, DoT, DoQ and DoH(S) follow the loaded ports', async () => {
+    server({ dnsOverHttpPort: 8053, dnsOverTlsPort: 8853, dnsOverQuicPort: 9853, dnsOverHttpsPort: 8443 })
+    await mount({ sub: 'Optional Protocols' })
+    expect(screen.getByText('http://localhost:8053/dns-query')).toBeInTheDocument()
+    expect(screen.getByText('tls-certificate-domain:8853')).toBeInTheDocument()
+    expect(screen.getByText('tls-certificate-domain:9853')).toBeInTheDocument()
+    expect(screen.getByText('https://tls-certificate-domain:8443/dns-query')).toBeInTheDocument()
+  })
+
+  it('port 80 and port 443 are left out of the DoH and DoH(S) addresses', async () => {
+    server({ dnsOverHttpPort: 80, dnsOverHttpsPort: 443 })
+    await mount({ sub: 'Optional Protocols' })
+    expect(screen.getByText('http://localhost/dns-query')).toBeInTheDocument()
+    expect(screen.getByText('https://tls-certificate-domain/dns-query')).toBeInTheDocument()
+  })
+
+  it('typing a port does not change the note until the settings are loaded again', async () => {
+    server({ enableDnsOverTls: true, dnsOverTlsPort: 8853, dnsOverQuicPort: 9853 })
+    await mount({ sub: 'Optional Protocols' })
+    const port = screen.getByLabelText('DNS-over-TLS Port')
+    await userEvent.clear(port)
+    await userEvent.type(port, '999')
+    expect(screen.getByText('tls-certificate-domain:8853')).toBeInTheDocument()
+  })
+
+  it('the real-IP header of both notes is the loaded one, not the typed one', async () => {
+    server({
+      enableDnsOverHttp: true,
+      dnsOverHttpRealIpHeader: 'X-Forwarded-For',
+      webServiceRealIpHeader: 'X-Client-IP',
+    })
+    const { unmount } = await mount({ sub: 'Optional Protocols' })
+    await userEvent.clear(screen.getByLabelText('Real IP Header'))
+    expect(screen.getByText('X-Forwarded-For')).toBeInTheDocument()
+    expect(screen.getByText('proxy_set_header X-Forwarded-For $remote_addr;')).toBeInTheDocument()
+    unmount()
+
+    await mount({ sub: 'Web Service' })
+    await userEvent.clear(screen.getByLabelText('Real IP Header'))
+    expect(screen.getByText('X-Client-IP')).toBeInTheDocument()
+    expect(screen.getByText('proxy_set_header X-Client-IP $remote_addr;')).toBeInTheDocument()
   })
 })

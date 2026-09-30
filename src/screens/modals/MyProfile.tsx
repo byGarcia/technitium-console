@@ -10,7 +10,7 @@ import styles from './MyProfile.module.css'
 import tbl from '../../ui/Table.module.css'
 import { Th, useSort, type Keys, Table } from '../../ui/Table'
 import { fromNow, dateTime } from '../../lib/dates'
-import { noticeFromFailure } from '../../lib/notice'
+import { noticeFromFailure, type Notice } from '../../lib/notice'
 import { Notifier } from '../../ui/Notifier'
 import { Confirm } from '../../ui/Confirm'
 import { Menu } from '../../ui/Menu'
@@ -18,15 +18,28 @@ import { Menu } from '../../ui/Menu'
 /*
 A replica of `showMyProfileModal` / `saveMyProfile` (auth.js:642-794).
 
-Two details of the contract: the display name is DISABLED for SSO users, and that
-is why `displayName` is only sent if the field is not disabled (auth.js:756-761).
-The user type is shown as "Remote/SSO" or "Local".
+Two details of the contract: the display name is DISABLED for remote users, and
+that is why `displayName` is only sent if the field is not disabled
+(auth.js:794-797).
+
+Since v15.5 everything hangs off `type` (auth.js:684-703), not off the obsolete
+`isSsoUser`:
+
+  · `RemoteSSO`: name locked, "Remote/SSO", 2FA "SSO Managed".
+  · `RemoteLDAP`: name locked, "Remote/LDAP", 2FA Enabled/Disabled — the
+    directory checks the password, this server still checks the 2FA.
+  · `Local` and anything else: name editable, and the label is `type` AS IT
+    ARRIVES. Upstream's `default:` writes the raw value, so for a local user it
+    reads "Local" because that is what the server sends, not because it is
+    written anywhere.
 */
 interface Profile {
   displayName: string
   username: string
+  type?: string
   isSsoUser: boolean
-  totpEnabled: boolean
+  /** Omitted for a `RemoteSSO` user (WebServiceAuthApi.cs:140-146). */
+  totpEnabled?: boolean
   /** The groups the user is a member of (auth.js:678-687). */
   memberOfGroups: string[]
   sessionTimeoutSeconds: number
@@ -49,11 +62,14 @@ export function MyProfile({
   onOpenChange,
   token,
   onSaved,
+  onNotice,
 }: {
   open: boolean
   onOpenChange: (o: boolean) => void
   token: string | null
   onSaved?: (displayName: string) => void
+  /** The PAGE alert: where upstream puts "Profile Saved!" once the modal closes. */
+  onNotice?: (notice: Notice) => void
 }) {
   const [profile, setProfile] = useState<Profile | null>(null)
   const { rows: visibleSessions, sort, toggle } = useSort(KEYS, profile?.sessions ?? [])
@@ -105,22 +121,52 @@ export function MyProfile({
     setAlert(noticeFromFailure(outcome))
   }
 
+  const remote = profile?.type === 'RemoteSSO' || profile?.type === 'RemoteLDAP'
+  const userType =
+    profile == null
+      ? ''
+      : profile.type === 'RemoteSSO'
+        ? 'Remote/SSO'
+        : profile.type === 'RemoteLDAP'
+          ? 'Remote/LDAP'
+          : (profile.type ?? '')
+  const totpStatus =
+    profile == null
+      ? ''
+      : profile.type === 'RemoteSSO'
+        ? 'SSO Managed'
+        : profile.totpEnabled
+          ? 'Enabled'
+          : 'Disabled'
+
   async function save() {
     if (!profile) return
-    const body: Record<string, string> = { sessionTimeoutSeconds: timeout }
-    if (!profile.isSsoUser) body.displayName = displayName
+    // auth.js:787-789 — an empty timeout travels as 1800, as in User Details.
+    const body: Record<string, string> = { sessionTimeoutSeconds: timeout === '' ? '1800' : timeout }
+    if (!remote) body.displayName = displayName
 
     setBusy(true)
-    const outcome = await apiRequest('user/profile/set', { token, body })
+    const outcome = await apiRequest<{ response: { displayName: string } }>('user/profile/set', {
+      token,
+      body,
+    })
     setBusy(false)
 
+    /*
+    auth.js:803-811 — on success upstream HIDES the modal and then calls
+    `showAlert` with no placeholder, so the alert lands on the page, not in the
+    dialog. A failure keeps the dialog open with the alert inside it
+    (`objAlertPlaceholder: divMyProfileAlert`, line 820).
+    */
     if (outcome.kind === 'ok') {
-      setAlert({
+      // auth.js:804 — the menu takes the name the SERVER returns, not the field's.
+      onSaved?.(outcome.data.response?.displayName ?? displayName)
+      onOpenChange(false)
+      onNotice?.({
         type: 'success',
         title: 'Profile Saved!',
         text: 'User profile was saved successfully.',
       })
-      onSaved?.(displayName)
       return
     }
     setAlert(noticeFromFailure(outcome))
@@ -142,26 +188,14 @@ export function MyProfile({
     >
       <Notifier notice={alert} onClose={() => setAlert(null)} />
       <LabeledInput label="Username" value={profile?.username ?? ''} readOnly />
-      <LabeledInput label="User Type" value={profile?.isSsoUser ? 'Remote/SSO' : 'Local'} readOnly />
-      {/* auth.js:667-674 — on an SSO user the 2FA is not this console's business. */}
-      <LabeledInput
-        label="2FA Status"
-        value={
-          profile == null
-            ? ''
-            : profile.isSsoUser
-              ? 'SSO Managed'
-              : profile.totpEnabled
-                ? 'Enabled'
-                : 'Disabled'
-        }
-        readOnly
-      />
+      <LabeledInput label="User Type" value={userType} readOnly />
+      {/* auth.js:684-703 — on an SSO user the 2FA is not this console's business. */}
+      <LabeledInput label="2FA Status" value={totpStatus} readOnly />
       <LabeledInput
         label="Display Name"
         placeholder="display name"
         value={displayName}
-        disabled={profile?.isSsoUser ?? false}
+        disabled={remote}
         onChange={(e) => setDisplayName(e.target.value)}
       />
       <LabeledInput

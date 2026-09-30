@@ -59,7 +59,7 @@ Dashboard's custom range.
   border-color: var(--acc);
   color: var(--on-acc);
   font-weight: 550;
-  box-shadow: var(--edge-fuerte);
+  box-shadow: var(--edge-strong);
 }
 
 /*

@@ -16,7 +16,7 @@ import {
 import type { Notice } from '../types'
 import styles from '../Zones.module.css'
 import { HelpText, External } from '../../../ui/External'
-import { DNSSEC_HELP, RFC_NSEC3_ITERACIONES, RFC_NSEC3_SAL } from '../references'
+import { DNSSEC_HELP, RFC_NSEC3_ITERATIONS, RFC_NSEC3_SALT } from '../references'
 import { GroupRow } from '../../../ui/Form'
 import { noticeFromFailure } from '../../../lib/notice'
 import { Notifier } from '../../../ui/Notifier'
@@ -223,20 +223,19 @@ export function SignZone({
 
         <GroupRow modal label="Proof of Non-Existence">
           {NX_PROOFS.map((n) => (
-            <label key={n.value} className={styles.chk}>
-              <input
-                type="radio"
-                name="signNxProof"
-                checked={f.nxProof === n.value}
-                onChange={() => set('nxProof', n.value as NxProof)}
-              />
-              {n.label}
-            </label>
+            <div key={n.value}>
+              <label className={styles.chk}>
+                <input
+                  type="radio"
+                  name="signNxProof"
+                  checked={f.nxProof === n.value}
+                  onChange={() => set('nxProof', n.value as NxProof)}
+                />
+                {n.label}
+              </label>
+              <div className={styles.help}>{n.help}</div>
+            </div>
           ))}
-          <div className={styles.help}>
-            With NSEC, all the records in your zone can be discovered by anyone using &quot;zone
-            walking&quot; technique. NSEC3 makes it difficult since it uses hashing with a random salt.
-          </div>
         </GroupRow>
 
         {f.nxProof === 'NSEC3' && (
@@ -260,7 +259,7 @@ export function SignZone({
               The number of iterations used by NSEC3 for hashing the domain names. It is recommended
               to use 0 iterations since more iterations will increase computational costs for both
               the DNS Server and resolver while not providing much value against &quot;zone
-              walking&quot; [<External href={RFC_NSEC3_ITERACIONES}>RFC 9276</External>].
+              walking&quot; [<External href={RFC_NSEC3_ITERATIONS}>RFC 9276</External>].
             </div>
             <Field label="NSEC3 Salt Length">
               {(id) => (
@@ -280,7 +279,7 @@ export function SignZone({
             <div className={styles.help}>
               The number of bytes of random salt to generate to be used with the NSEC3 hash
               computation. It is recommended to not use salt by setting the length to 0
-              [<External href={RFC_NSEC3_SAL}>RFC 9276</External>].
+              [<External href={RFC_NSEC3_SALT}>RFC 9276</External>].
             </div>
           </>
         )}

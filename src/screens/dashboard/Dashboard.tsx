@@ -207,7 +207,7 @@ function Top({
       title={title}
       className={styles.panel}
       actions={
-        <div className={styles.accionesPanel}>
+        <div className={styles.panelActions}>
           {beforeMore}
           {/* It was a bare `<button>`, with no class: the browser drew it with
               its default style, in the middle of a console with a system of its

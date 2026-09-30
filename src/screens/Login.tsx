@@ -7,7 +7,7 @@ import { LabeledInput } from '../ui/Field'
 import { ForgotPassword } from './modals/ForgotPassword'
 import styles from './Login.module.css'
 import { publicUrl } from '../app/base'
-import { PieDeEnlaces } from '../ui/FooterLinks'
+import { FooterLinks } from '../ui/FooterLinks'
 import { Notifier } from '../ui/Notifier'
 
 /*
@@ -158,10 +158,11 @@ export function Login({
     if (outcome.kind === 'ok') {
       clearOtpTimer()
       const session = outcome.data as Session
-      // auth.js:263 — logging in with the factory credentials and no 2FA forces a
-      // password change before going on.
+      // auth.js:283-284 — logging in with the factory credentials and no 2FA opens
+      // Change Password with the current one filled in. The comparison is
+      // case-sensitive upstream: `ADMIN` does not trigger it.
       const forcePasswordChange =
-        !session.totpEnabled && enteredUser.toLowerCase() === 'admin' && enteredPass === 'admin'
+        !session.totpEnabled && enteredUser === 'admin' && enteredPass === 'admin'
       onSuccess(session, { forcePasswordChange })
       return
     }
@@ -276,7 +277,7 @@ export function Login({
 
       {/* Upstream's footer shows on its login screen too, because it hangs off
           the `body` and not the panel. See `app/pie.ts`. */}
-      <PieDeEnlaces className={styles.footer} />
+      <FooterLinks className={styles.footer} />
 
       <ForgotPassword open={forgotten} onOpenChange={setOlvido} />
     </main>

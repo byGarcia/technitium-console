@@ -150,7 +150,7 @@ exists to show, and a permission at 45 % reads as "not applicable" when it means
 */
 input[type='checkbox'].mark:disabled { cursor: default; opacity: 1; box-shadow: var(--sunken); }
 
-input[type='checkbox'].mark:disabled:checked { box-shadow: var(--edge-fuerte); }
+input[type='checkbox'].mark:disabled:checked { box-shadow: var(--edge-strong); }
 
 /*
 The map's cell: three marks, one per verb, in View · Modify · Delete order.

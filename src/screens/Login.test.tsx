@@ -141,6 +141,22 @@ describe('Login', () => {
       expect.objectContaining({ forcePasswordChange: true }),
     )
   })
+
+  it('the factory-credentials check is case-sensitive, as upstream (auth.js:283)', async () => {
+    vi.spyOn(client, 'apiRequest').mockResolvedValue({
+      kind: 'ok',
+      data: { status: 'ok', token: 't', displayName: 'Administrator', username: 'admin', totpEnabled: false },
+    })
+    const onSuccess = vi.fn()
+    render(<Login onSuccess={onSuccess} />)
+    await userEvent.type(screen.getByLabelText('Username'), 'ADMIN')
+    await userEvent.type(screen.getByLabelText('Password'), 'admin')
+    await userEvent.click(screen.getByRole('button', { name: 'Login' }))
+    expect(onSuccess).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ forcePasswordChange: false }),
+    )
+  })
 })
 
 describe('Forgot Password?', () => {

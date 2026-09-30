@@ -17,8 +17,8 @@ function Sample({ asRow = false }: { asRow?: boolean } = {}) {
     <Menu label="Options" text="Options" asRow={asRow}>
       {(close) => (
         <>
-          <button onClick={close}>Uno</button>
-          <button onClick={close}>Dos</button>
+          <button onClick={close}>One</button>
+          <button onClick={close}>Two</button>
         </>
       )}
     </Menu>
@@ -39,12 +39,12 @@ describe('Menu', () => {
     const openOnes: number[] = []
     render(
       <Menu label="Options" text="Options" onOpen={() => openOnes.push(1)}>
-        {() => <button role="menuitem">Uno</button>}
+        {() => <button role="menuitem">One</button>}
       </Menu>,
     )
     const b = screen.getByRole('button', { name: 'Options' })
     await userEvent.click(b)
-    await userEvent.click(b) // cerrar no avisa
+    await userEvent.click(b) // closing does not report
     await userEvent.click(b)
     expect(openOnes).toHaveLength(2)
   })

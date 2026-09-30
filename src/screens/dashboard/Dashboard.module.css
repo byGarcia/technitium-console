@@ -249,7 +249,7 @@ different questions. What gives is the size of the figure, not the grid.
 
 /* The alert for the screen's own actions —today, the blocking menu. */
 /* A panel's header can carry more than one control. */
-.accionesPanel { display: flex; align-items: center; gap: var(--s-4); }
+.panelActions { display: flex; align-items: center; gap: var(--s-4); }
 
 /* The custom range: two dates and the button, on one line. */
 .ownRange { display:flex; align-items:flex-end; gap: var(--s-7); flex-wrap:wrap; margin-bottom: var(--s-9); }
@@ -286,7 +286,7 @@ neither.
 .lg i { width:9px; height:9px; border-radius: var(--r-1); flex:none; }
 .lg b { color: var(--ink); font: 600 var(--t-2)/1.2 var(--font-mono); font-variant-numeric: tabular-nums; }
 .lg:hover { background: var(--hover); color: var(--ink); }
-.lg:focus-visible { outline:none; box-shadow: var(--halo-foco); }
+.lg:focus-visible { outline:none; box-shadow: var(--halo-focus); }
 
 /*
 A series that is off is DIMMED, it does not disappear: it is still one of the

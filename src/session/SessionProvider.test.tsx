@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { SessionProvider } from './SessionProvider'
 import { ThemeProvider } from '../theme/ThemeProvider'
@@ -29,6 +29,7 @@ function session(extra: Record<string, unknown> = {}, permOverrides = {}) {
       token: 'tok',
       displayName: 'Administrator',
       username: 'admin',
+      type: 'Local',
       isSsoUser: false,
       totpEnabled: false,
       info: {
@@ -72,6 +73,31 @@ describe('SessionProvider', () => {
     vi.spyOn(client, 'apiRequest').mockResolvedValue({ kind: 'invalid-token' })
     mount()
     expect(await screen.findByRole('button', { name: 'Login' })).toBeInTheDocument()
+  })
+
+  it('when the stored token fails for any reason, it is removed as upstream does', async () => {
+    // auth.js:65-67 falls to showPageLogin, which removes the token (main.js:28),
+    // whatever the failure was — not only an invalid token.
+    localStorage.setItem('token', 'stale')
+    vi.spyOn(client, 'apiRequest').mockResolvedValue({ kind: 'error', message: 'boom' })
+    mount()
+    expect(await screen.findByRole('button', { name: 'Login' })).toBeInTheDocument()
+    expect(localStorage.getItem('token')).toBeNull()
+  })
+
+  it('a factory-credentials login opens Change Password with admin filled in and locked (auth.js:283-284)', async () => {
+    vi.spyOn(client, 'apiRequest').mockImplementation(async (path: string) =>
+      path === 'status' ? { kind: 'ok' as const, data: { status: 'ok', ssoEnabled: false, hasDefaultCredentials: false } } : session(),
+    )
+    mount()
+    await userEvent.type(await screen.findByLabelText('Username'), 'admin')
+    await userEvent.type(screen.getByLabelText('Password'), 'admin')
+    await userEvent.click(screen.getByRole('button', { name: 'Login' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Change Password' })
+    const current = within(dialog).getByLabelText('Current Password')
+    expect(current).toHaveValue('admin')
+    expect(current).toBeDisabled()
+    expect(within(dialog).getByLabelText('Username')).toHaveValue('admin')
   })
 
   it('with an SSO #error, it shows the login and the alert with that text', async () => {
@@ -249,13 +275,38 @@ describe('SessionProvider', () => {
 
   it('for an SSO user it hides changing the password and configuring 2FA', async () => {
     localStorage.setItem('token', 'tok')
-    vi.spyOn(client, 'apiRequest').mockResolvedValue(session({ isSsoUser: true }))
+    // v15.5 omits `totpEnabled` for this type (WebServiceAuthApi.cs:77-82).
+    vi.spyOn(client, 'apiRequest').mockResolvedValue(
+      session({ type: 'RemoteSSO', isSsoUser: true, totpEnabled: undefined }),
+    )
     mount()
     await screen.findByRole('navigation')
     await userEvent.click(screen.getByRole('button', { name: /Administrator/ }))
     expect(screen.queryByText('Change Password')).not.toBeInTheDocument()
     expect(screen.queryByText('Configure 2FA')).not.toBeInTheDocument()
     expect(screen.getByText('Logout')).toBeInTheDocument()
+  })
+
+  it('for an LDAP user it hides only changing the password (main.js:77-80)', async () => {
+    localStorage.setItem('token', 'tok')
+    vi.spyOn(client, 'apiRequest').mockResolvedValue(session({ type: 'RemoteLDAP' }))
+    mount()
+    await screen.findByRole('navigation')
+    await userEvent.click(screen.getByRole('button', { name: /Administrator/ }))
+    expect(screen.queryByText('Change Password')).not.toBeInTheDocument()
+    expect(screen.getByText('Configure 2FA')).toBeInTheDocument()
+  })
+
+  it('the type decides, not the obsolete `isSsoUser`', async () => {
+    // A `Local` type with the obsolete flag on still shows both: upstream no
+    // longer reads `isSsoUser` (main.js:71).
+    localStorage.setItem('token', 'tok')
+    vi.spyOn(client, 'apiRequest').mockResolvedValue(session({ isSsoUser: true }))
+    mount()
+    await screen.findByRole('navigation')
+    await userEvent.click(screen.getByRole('button', { name: /Administrator/ }))
+    expect(screen.getByText('Change Password')).toBeInTheDocument()
+    expect(screen.getByText('Configure 2FA')).toBeInTheDocument()
   })
 
   it('for an ordinary user it shows them', async () => {

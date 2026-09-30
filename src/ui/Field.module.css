@@ -45,7 +45,7 @@ the cursor is.
   outline: none;
   border-color: var(--acc);
   background-color: #0e131b;
-  box-shadow: var(--sunken), var(--halo-foco);
+  box-shadow: var(--sunken), var(--halo-focus);
 }
 
 .input:disabled { opacity: 0.45; cursor: default; }

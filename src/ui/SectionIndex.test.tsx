@@ -5,7 +5,7 @@ import { SectionIndex } from './SectionIndex'
 
 afterEach(cleanup)
 
-const SECCIONES = [
+const SECTIONS = [
   { id: 'local-parameters', label: 'Local Parameters' },
   { id: 'zone-defaults', label: 'Zone Defaults' },
   { id: 'rate-limiting', label: 'Rate Limiting' },
@@ -13,15 +13,15 @@ const SECCIONES = [
 
 describe('SectionIndex', () => {
   it('it draws one link per section, in order and pointing at its anchor', () => {
-    render(<SectionIndex sections={SECCIONES} />)
+    render(<SectionIndex sections={SECTIONS} />)
 
-    const enlaces = screen.getAllByRole('link')
-    expect(enlaces.map((a) => a.textContent)).toEqual([
+    const links = screen.getAllByRole('link')
+    expect(links.map((a) => a.textContent)).toEqual([
       'Local Parameters',
       'Zone Defaults',
       'Rate Limiting',
     ])
-    expect(enlaces.map((a) => a.getAttribute('href'))).toEqual([
+    expect(links.map((a) => a.getAttribute('href'))).toEqual([
       '#local-parameters',
       '#zone-defaults',
       '#rate-limiting',
@@ -34,7 +34,7 @@ describe('SectionIndex', () => {
  sections are all still on the page.
   */
   it('it marks the active section with aria-current="location"', () => {
-    render(<SectionIndex sections={SECCIONES} active="zone-defaults" />)
+    render(<SectionIndex sections={SECTIONS} active="zone-defaults" />)
 
     expect(screen.getByRole('link', { name: 'Zone Defaults' })).toHaveAttribute(
       'aria-current',
@@ -43,7 +43,7 @@ describe('SectionIndex', () => {
   })
 
   it('it marks no other one, not even with "false"', () => {
-    render(<SectionIndex sections={SECCIONES} active="zone-defaults" />)
+    render(<SectionIndex sections={SECTIONS} active="zone-defaults" />)
 
     const otras = screen
       .getAllByRole('link')
@@ -53,7 +53,7 @@ describe('SectionIndex', () => {
   })
 
   it('with no active section it marks none', () => {
-    render(<SectionIndex sections={SECCIONES} />)
+    render(<SectionIndex sections={SECTIONS} />)
 
     for (const a of screen.getAllByRole('link')) {
       expect(a.hasAttribute('aria-current')).toBe(false)
@@ -66,7 +66,7 @@ describe('SectionIndex', () => {
  exactly what pilot 3 warned against.
   */
   it('it announces no selection of any kind', () => {
-    const { container } = render(<SectionIndex sections={SECCIONES} active="rate-limiting" />)
+    const { container } = render(<SectionIndex sections={SECTIONS} active="rate-limiting" />)
 
     expect(container.querySelector('[aria-selected]')).toBeNull()
     expect(container.querySelector('[aria-pressed]')).toBeNull()
@@ -75,21 +75,21 @@ describe('SectionIndex', () => {
     expect(screen.queryAllByRole('button')).toHaveLength(0)
   })
 
-  /* Ni oculta. No recibe hijos y no posee contenido: mueve la rueda. */
+  /* Nor does it hide. It takes no children and owns no content: it moves the wheel. */
   it('it hides nothing', () => {
-    const { container } = render(<SectionIndex sections={SECCIONES} active="rate-limiting" />)
+    const { container } = render(<SectionIndex sections={SECTIONS} active="rate-limiting" />)
 
     expect(container.querySelector('[hidden]')).toBeNull()
     expect(container.querySelector('[aria-hidden]')).toBeNull()
   })
 
   it('the index carries a name for whoever cannot see the screen', () => {
-    render(<SectionIndex sections={SECCIONES} />)
+    render(<SectionIndex sections={SECTIONS} />)
     expect(screen.getByRole('navigation', { name: 'On this page' })).toBeInTheDocument()
   })
 
   it('the name can be changed', () => {
-    render(<SectionIndex sections={SECCIONES} label="Settings sections" />)
+    render(<SectionIndex sections={SECTIONS} label="Settings sections" />)
     expect(screen.getByRole('navigation', { name: 'Settings sections' })).toBeInTheDocument()
   })
 
@@ -100,27 +100,27 @@ describe('SectionIndex', () => {
   */
   it('the tab key walks them in order, with no tabIndex of their own', async () => {
     const user = userEvent.setup()
-    render(<SectionIndex sections={SECCIONES} />)
+    render(<SectionIndex sections={SECTIONS} />)
 
-    const enlaces = screen.getAllByRole('link')
-    for (const a of enlaces) expect(a.hasAttribute('tabindex')).toBe(false)
+    const links = screen.getAllByRole('link')
+    for (const a of links) expect(a.hasAttribute('tabindex')).toBe(false)
 
     await user.tab()
-    expect(enlaces[0]).toHaveFocus()
+    expect(links[0]).toHaveFocus()
     await user.tab()
-    expect(enlaces[1]).toHaveFocus()
+    expect(links[1]).toHaveFocus()
     await user.tab()
-    expect(enlaces[2]).toHaveFocus()
+    expect(links[2]).toHaveFocus()
   })
 
   it('the mark follows the active section when it changes', () => {
-    const { rerender } = render(<SectionIndex sections={SECCIONES} active="local-parameters" />)
+    const { rerender } = render(<SectionIndex sections={SECTIONS} active="local-parameters" />)
     expect(screen.getByRole('link', { name: 'Local Parameters' })).toHaveAttribute(
       'aria-current',
       'location',
     )
 
-    rerender(<SectionIndex sections={SECCIONES} active="rate-limiting" />)
+    rerender(<SectionIndex sections={SECTIONS} active="rate-limiting" />)
     expect(screen.getByRole('link', { name: 'Local Parameters' }).hasAttribute('aria-current')).toBe(
       false,
     )
@@ -143,7 +143,7 @@ describe('SectionIndex', () => {
     const observador = vi.fn()
     vi.stubGlobal('IntersectionObserver', observador)
 
-    render(<SectionIndex sections={SECCIONES} active="zone-defaults" />)
+    render(<SectionIndex sections={SECTIONS} active="zone-defaults" />)
 
     const eventos = [...enWindow.mock.calls, ...enDocument.mock.calls].map(([e]) => e)
     expect(eventos).not.toContain('scroll')

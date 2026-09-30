@@ -27,48 +27,103 @@ export const TABS: { id: OptionsTab; label: string }[] = [
   { id: 'Dynamic Updates', label: 'Dynamic Updates (RFC 2136)' },
 ]
 
-export const QUERY_ACCESS = [
-  { value: 'Deny', label: 'Deny' },
-  { value: 'Allow', label: 'Allow (default)' },
-  { value: 'AllowOnlyPrivateNetworks', label: 'Allow Only Private Networks' },
-  { value: 'AllowOnlyZoneNameServers', label: 'Allow Only Name Servers In Zone' },
-  { value: 'UseSpecifiedNetworkACL', label: 'Use Specified Network Access Control List (ACL)' },
+/*
+Each criterion carries the explanation upstream prints under its radio
+(`<div style="padding-top: 5px; padding-left: 20px;">`, index.html:5419-5649 in
+v15.5.1). They were missing here since v15.4; the texts are copied literally.
+*/
+export interface CriterionOption {
+  value: string
+  label: string
+  help: string
+}
+
+export const QUERY_ACCESS: CriterionOption[] = [
+  { value: 'Deny', label: 'Deny', help: 'Denies everyone from querying the zone by refusing the request.' },
+  { value: 'Allow', label: 'Allow (default)', help: 'Allows everyone to query the zone.' },
+  {
+    value: 'AllowOnlyPrivateNetworks',
+    label: 'Allow Only Private Networks',
+    help: 'Allows only private networks to query the zone. Any request from a public network will be refused.',
+  },
+  {
+    value: 'AllowOnlyZoneNameServers',
+    label: 'Allow Only Name Servers In Zone',
+    help: 'Allows only the name servers with an NS record in the zone to query the zone.',
+  },
+  {
+    value: 'UseSpecifiedNetworkACL',
+    label: 'Use Specified Network Access Control List (ACL)',
+    help: 'Uses the specified network access control list to allow/deny to query the zone.',
+  },
   {
     value: 'AllowZoneNameServersAndUseSpecifiedNetworkACL',
     label: 'Allow Zone Name Servers And Use Specified Network Access Control List (ACL)',
+    help: "Allows zone's name servers and uses specified network access control list to allow/deny to query the zone.",
   },
 ]
 
-export const TRANSFERS = [
-  { value: 'Deny', label: 'Deny' },
-  { value: 'Allow', label: 'Allow' },
-  { value: 'AllowOnlyZoneNameServers', label: 'Allow Only Name Servers In Zone' },
-  { value: 'UseSpecifiedNetworkACL', label: 'Use Specified Network Access Control List (ACL)' },
+export const TRANSFERS: CriterionOption[] = [
+  { value: 'Deny', label: 'Deny', help: 'Denies everyone from performing a zone transfer.' },
+  { value: 'Allow', label: 'Allow', help: 'Allows everyone to perform a zone transfer.' },
+  {
+    value: 'AllowOnlyZoneNameServers',
+    label: 'Allow Only Name Servers In Zone',
+    help: 'Allows only the name servers with an NS record in the zone to perform a zone transfer.',
+  },
+  {
+    value: 'UseSpecifiedNetworkACL',
+    label: 'Use Specified Network Access Control List (ACL)',
+    help: 'Uses the specified network access control list to allow/deny to perform a zone transfer.',
+  },
   {
     value: 'AllowZoneNameServersAndUseSpecifiedNetworkACL',
     label: 'Allow Zone Name Servers And Use Specified Network Access Control List (ACL)',
+    help: "Allows zone's name servers and uses specified network access control list to allow/deny to perform a zone transfer.",
   },
 ]
 
-export const NOTIFICATIONS = [
-  { value: 'None', label: 'None' },
-  { value: 'ZoneNameServers', label: 'Name Servers In Zone' },
-  { value: 'SpecifiedNameServers', label: 'Specified Name Servers' },
-  { value: 'BothZoneAndSpecifiedNameServers', label: 'Both Zone Name Servers And Specified Name Servers' },
+export const NOTIFICATIONS: CriterionOption[] = [
+  { value: 'None', label: 'None', help: 'Does not notify any name server when the zone is updated.' },
+  {
+    value: 'ZoneNameServers',
+    label: 'Name Servers In Zone',
+    help: 'Notifies only the name servers with an NS record in the zone when the zone is updated.',
+  },
+  {
+    value: 'SpecifiedNameServers',
+    label: 'Specified Name Servers',
+    help: 'Notifies only the specified name servers when the zone is updated.',
+  },
+  {
+    value: 'BothZoneAndSpecifiedNameServers',
+    label: 'Both Zone Name Servers And Specified Name Servers',
+    help: "Notifies both the zone's name servers and the specified name servers when the zone is updated.",
+  },
   {
     value: 'SeparateNameServersForCatalogAndMemberZones',
     label: 'Separate Name Servers For Catalog And Member Zones',
+    help: 'Notifies specified name servers for member zone updates and secondary catalog name servers for catalog zone updates.',
   },
 ]
 
-export const UPDATES = [
-  { value: 'Deny', label: 'Deny (default)' },
-  { value: 'Allow', label: 'Allow' },
-  { value: 'AllowOnlyZoneNameServers', label: 'Allow Only Name Servers In Zone' },
-  { value: 'UseSpecifiedNetworkACL', label: 'Use Specified Network Access Control List (ACL)' },
+export const UPDATES: CriterionOption[] = [
+  { value: 'Deny', label: 'Deny (default)', help: 'Denies everyone from performing dynamic updates.' },
+  { value: 'Allow', label: 'Allow', help: 'Allows everyone to perform dynamic updates.' },
+  {
+    value: 'AllowOnlyZoneNameServers',
+    label: 'Allow Only Name Servers In Zone',
+    help: 'Allows only the name servers with an NS record in the zone to perform dynamic updates.',
+  },
+  {
+    value: 'UseSpecifiedNetworkACL',
+    label: 'Use Specified Network Access Control List (ACL)',
+    help: 'Uses the specified network access control list to allow/deny to perform dynamic updates.',
+  },
   {
     value: 'AllowZoneNameServersAndUseSpecifiedNetworkACL',
     label: 'Allow Zone Name Servers And Use Specified Network Access Control List (ACL)',
+    help: "Allows zone's name servers and uses specified network access control list to allow/deny to perform dynamic updates.",
   },
 ]
 

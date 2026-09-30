@@ -480,7 +480,7 @@ export function hideDnssec(records: ResourceRecord[]): ResourceRecord[] {
   return records.filter((r) => !DNSSEC_TYPES.includes(r.type.toUpperCase()))
 }
 
-/* ── Fechas ───────────────────────────────────────────────────────────── */
+/* ── Dates ────────────────────────────────────────────────────────────── */
 
 /*
 The dates were unified into `src/lib/fechas.ts` when integrating phases 4, 8 and

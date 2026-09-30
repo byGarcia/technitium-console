@@ -68,6 +68,16 @@ describe('appRoot', () => {
     servedAt('/casa/dns/zones/', 'zones')
     expect(appRoot()).toBe('/casa/dns/')
   })
+
+  it('a doubled slash on the front page stays on this origin', () => {
+    // The server serves the front page for `//`. Taken as it stands, the root
+    // would be `//` and every API call `//api/…`: a request to the host `api`
+    // with the session token in `Authorization`.
+    servedAt(window.location.origin + '//')
+    expect(appRoot()).toBe('/')
+    servedAt(window.location.origin + '//dns//')
+    expect(appRoot()).toBe('/dns/')
+  })
 })
 
 describe('readRoute', () => {
@@ -139,7 +149,7 @@ describe('writeRoute', () => {
     expect(window.history.length).toBe(before2)
   })
 
-  it('what gets written reads back the same, across all 31 routes', () => {
+  it('what gets written reads back the same, across all 32 routes', () => {
     servedAt('/')
     for (const s of SECTIONS) {
       for (const sub of s.subs ?? [null]) {

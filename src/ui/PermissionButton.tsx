@@ -41,22 +41,22 @@ removing it gave it away. A wrapper that can be removed without breaking anythin
 was holding nothing up.
 */
 export function PermissionButton({
-  permiso,
+  permission,
   children,
   ...rest
 }: {
   /** The server's `Section.action`, or `undefined` when the permission is granted. */
-  permiso?: string
+  permission?: string
   children: ReactNode
 } & Omit<ComponentProps<typeof Button>, 'children'>) {
-  if (permiso == null) {
+  if (permission == null) {
     return <Button {...rest}>{children}</Button>
   }
 
-  const [seccion, accion] = permiso.split('.')
-  const verbo = (accion ?? '').replace(/^can/, '')
+  const [section, action] = permission.split('.')
+  const verb = (action ?? '').replace(/^can/, '')
   return (
-    <Tooltip text={`Requires ${seccion}: ${verbo}`}>
+    <Tooltip text={`Requires ${section}: ${verb}`}>
       <Button {...rest} disabled>
         <Icon name="lock" size={13} />
         {children}

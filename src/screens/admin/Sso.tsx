@@ -6,6 +6,7 @@ import { Input, Select } from '../../ui/Field'
 import { SectionHeader } from '../../ui/SectionHeader'
 import { Loading } from '../../ui/Empty'
 import { getSsoConfig, setSsoConfig, type SsoConfig } from '../../api/admin'
+import { appRoot } from '../../app/base'
 import { serializeTable, type Cell } from './table'
 import {
   noticeFromFailure,
@@ -20,7 +21,7 @@ import frm from '../../ui/Form.module.css'
 
 /*
 `refreshAdminSsoConfig`, `loadAdminSsoConfig` and `saveAdminSsoConfig`
-(auth.js:2152-2313). This is the screen that CONFIGURES SSO; signing in through
+(auth.js:2215-2377 in v15.5.1). This is the screen that CONFIGURES SSO; signing in through
 SSO is already solved in phase 2 and is not touched here.
 
 Four things about the server that govern this form:
@@ -133,12 +134,19 @@ export function Sso({ tabs, token, onNotice }: Props) {
   }, [load])
 
   /*
-  `loadAdminSsoConfig` (auth.js:2196-2204): the Redirect URI that has to be
-  registered with the provider is computed in the browser from the current URL,
-  appending `sso/callback` with a single slash.
+  `loadAdminSsoConfig` (auth.js:2260-2267 in v15.5.1): the Redirect URI that has
+  to be registered with the provider is computed in the browser from the current
+  URL, appending `sso/callback` with a single slash.
+
+  Upstream's `pathname` is the console's root, because its console is one page.
+  Here it is not: since the routes became real this screen lives at
+  `/admin/sso/`, and taking its `pathname` as it stands told the administrator
+  to register `…/admin/sso/sso/callback` — a URI the server does not serve, so
+  the provider's callback would fail. What upstream's expression means is the
+  root, and the root is `appRoot()` (found on 2026-09-30).
   */
   const redirectUri = (() => {
-    const base = `${window.location.protocol}//${window.location.host}${window.location.pathname}`
+    const base = `${window.location.protocol}//${window.location.host}${appRoot()}`
     return base.endsWith('/') ? `${base}sso/callback` : `${base}/sso/callback`
   })()
 
@@ -316,10 +324,14 @@ export function Sso({ tabs, token, onNotice }: Props) {
                     onChange={setAllowSignup}
                     help="Enable to allow automatically provisioning of user accounts for new users signing in via Single Sign-On (SSO). Keep this option disabled if you do not expect new SSO users to sign up."
                   />
+                  {/* v15.5.1: off while sign-up is off, on load and on click
+                      (auth.js:206-210 and 2253). Still READ when saving: upstream
+                      sends `.prop("checked")` whether it is enabled or not. */}
                   <Check
                     toggle
                     label="Allow Sign Up Only For Mapped Users"
                     checked={onlyMapped}
+                    disabled={!allowSignup}
                     onChange={setOnlyMapped}
                     help={
                       <>
@@ -559,7 +571,10 @@ export function Sso({ tabs, token, onNotice }: Props) {
       <Confirm
         open={confirm === 'authority'}
         title="Save Config"
-        text="WARNING! The SSO Authority must use a 'https' URL scheme for production environment. Are you sure you want to proceed with using a 'http' URL scheme?"
+        text={
+          // auth.js:2343 (v15.5.1): the question moved to its own paragraph.
+          "WARNING! The SSO Authority must use a 'https' URL scheme for production environment. \n\nAre you sure you want to proceed with using a 'http' URL scheme?"
+        }
         label="OK"
         variant="primary"
         onClose={() => setConfirm(null)}
@@ -571,7 +586,10 @@ export function Sso({ tabs, token, onNotice }: Props) {
       <Confirm
         open={confirm === 'metadata'}
         title="Save Config"
-        text="WARNING! The Metadata Address must use a 'https' URL scheme for production environment. Are you sure you want to proceed with using a 'http' URL scheme?"
+        text={
+          // auth.js:2350 (v15.5.1).
+          "WARNING! The Metadata Address must use a 'https' URL scheme for production environment. \n\nAre you sure you want to proceed with using a 'http' URL scheme?"
+        }
         label="OK"
         variant="primary"
         onClose={() => setConfirm(null)}

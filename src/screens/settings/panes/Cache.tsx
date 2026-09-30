@@ -1,7 +1,13 @@
-import { Notices, Block, Check, GroupRow, Note, Plain, TextRow } from '../parts'
+import { Notices, Block, Check, GroupRow, Note, TextRow } from '../parts'
 import type { PaneProps } from './types'
 
-/* Settings > Cache (index.html:1911-2064). Cuatro bloques. */
+/*
+Settings > Cache (index.html:1911-2046 in v15.5.1). Four blocks.
+
+v15.5 removed Auto Prefetch (upstream c405e035, b817fe4b): its two fields, its
+paragraph and the "& auto prefetching" in the Prefetch Trigger suffix are gone,
+and `settings/get` no longer returns the two values.
+*/
 export function Cache({ f, set, en }: PaneProps) {
   return (
     <>
@@ -157,33 +163,9 @@ export function Cache({ f, set, en }: PaneProps) {
           value={f.cachePrefetchTrigger}
           onChange={(v) => set({ cachePrefetchTrigger: v })}
           placeholder="trigger"
-          suffix="seconds (recommended 9; set 0 to disable prefetching & auto prefetching)"
+          suffix="seconds (recommended 9; set 0 to disable prefetching)"
           help="A record with TTL value less than trigger value will initiate prefetch operation immediately for itself."
         />
-        <TextRow
-          label="Auto Prefetch Sampling"
-          type="number"
-          value={f.cachePrefetchSampleIntervalInMinutes}
-          onChange={(v) => set({ cachePrefetchSampleIntervalInMinutes: v })}
-          placeholder="interval"
-          suffix="minutes (valid range 1-60; default 5)"
-          help="The interval to sample eligible domain names from last hour stats for auto prefetch."
-        />
-        <TextRow
-          label="Auto Prefetch Eligibility"
-          type="number"
-          value={f.cachePrefetchSampleEligibilityHitsPerHour}
-          onChange={(v) => set({ cachePrefetchSampleEligibilityHitsPerHour: v })}
-          placeholder="hits"
-          suffix="hits/hour (default 30)"
-          help="Minimum required hits per hour for a domain name to be eligible for auto prefetch."
-        />
-        <Plain>
-          The DNS Server cache auto prefetch option can keep eligible domain names from last hour
-          stats "hot" in cache. Auto prefetch eligibility value can be decided by keeping an eye on
-          the hits shown for last hour on the dashboard. Experiment with auto prefetch sampling
-          interval and eligibility to get best results.
-        </Plain>
       </Block>
     </>
   )

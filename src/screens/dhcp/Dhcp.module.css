@@ -4,13 +4,13 @@
    same as Settings. */
 
 /*
-The gap under a section title is `--hueco-bloque` throughout the console. Here it
+The gap under a section title is `--gap-block` throughout the console. Here it
 was taking 38 px instead of 24 because this container is `flex` with `gap`, and
 in flex the gap is ADDED to the child's margin: the header contributed its 24 and
 the container another 14.
 
 It is subtracted, and the subtraction is written once: the container's gap lives
-in `--hueco` and both rules read it from there, so changing it does not throw the
+in `--gap` and both rules read it from there, so changing it does not throw the
 title out again.
 */
 .wrap { composes: screen from '../../ui/SectionHeader.module.css'; }

@@ -26,11 +26,11 @@ they read.
 /*
 "show full", the button that expands that key. It sat inside a truncated key and
 measured 62×17 in one place and 44×18 in another: two sizes for the same control,
-and both below the 24 minimum. `.golpe` enlarges the target without moving the
+and both below the 24 minimum. `.hitArea` enlarges the target without moving the
 drawing. And `nowrap`: the key preceding it breaks, the button does NOT.
 */
 .showIt {
-  composes: golpe from './interaction.module.css';
+  composes: hitArea from './interaction.module.css';
   border: 0;
   background: transparent;
   padding: 0;

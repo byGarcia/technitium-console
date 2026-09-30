@@ -18,7 +18,7 @@ forcing a server failure:
     `flex` container and kept its `gap`;
   · 12 px in the four account modals, for the same reason inside the dialog.
 
-It settles at 24, which is `--hueco-bloque` —the token that names the distance
+It settles at 24, which is `--gap-block` —the token that names the distance
 between independent blocks— and the one three quarters of them already had.
 */
 export function Notifier({ notice, onClose }: { notice: Notice | null; onClose: () => void }) {

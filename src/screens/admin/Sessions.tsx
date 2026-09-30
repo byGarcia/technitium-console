@@ -6,6 +6,8 @@ import { Input, Select } from '../../ui/Field'
 import { AgentCell, LastSeenCell } from '../../ui/SessionCells'
 import { SectionHeader } from '../../ui/SectionHeader'
 import { Loading } from '../../ui/Empty'
+import { Warning } from '../../ui/PanelForm'
+import { TOKEN_PRIVILEGES, TOKEN_SHOWN_ONCE } from '../modals/CreateApiToken'
 import {
   createApiToken,
   deleteAdminSession,
@@ -338,6 +340,7 @@ function CreateApiToken({
             {(id) => <Input id={id} value={created.tokenName} readOnly />}
           </MRow>
           <MRow label="Token">{(id) => <Input id={id} mono value={created.token} readOnly />}</MRow>
+          <Warning>{TOKEN_SHOWN_ONCE}</Warning>
         </div>
       ) : loading ? (
         <Loading />
@@ -364,11 +367,13 @@ function CreateApiToken({
               <Input
                 id={id}
                 value={name}
+                placeholder="token name"
                 maxLength={255}
                 onChange={(e) => setName(e.target.value)}
               />
             )}
           </MRow>
+          <Warning>{TOKEN_PRIVILEGES}</Warning>
         </>
       )}
     </Dialog>

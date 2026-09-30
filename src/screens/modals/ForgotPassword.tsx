@@ -39,7 +39,8 @@ export function ForgotPassword({
         <li>Stop the DNS Server.</li>
         <li>
           Find the DNS Server config folder and locate the <b>auth.config</b> file. The config folder
-          will be found where the DNS Server is installed on Windows or /etc/dns/ folder on Linux.
+          will be found at 'C:\ProgramData\Technitium DNS Server' or where the DNS Server is
+          installed on Windows, or '/etc/dns/' folder on Linux.
         </li>
         <li>
           Rename the <b>auth.config</b> file as <b>resetadmin.config</b>

@@ -4,6 +4,74 @@ Notable changes, newest first. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html) once there is more than one.
 
+## [1.1.0](https://github.com/byGarcia/technitium-console/releases/tag/v1.1.0) — 2026-09-30
+
+Brought in line with **Technitium DNS Server v15.5.1**. Version 1.0.0 was built against v15.4 and,
+on a v15.5 server, **cannot save Settings at all**: v15.5 removed Auto Prefetch, and 1.0.0 still
+required its two fields before sending anything. Upgrade before (or together with) the server.
+
+### Added
+
+- **Administration › LDAP Authentication**, the tab v15.5 added: every field, the group map, the
+  Test Connection button and its own validation, the masked bind password sent back as it came.
+- **Edit Zone File** for Primary and Forwarder zones, from the zone's Options menu and from the
+  zone list's row menu. Every other zone type's row entry becomes **View Zone**, as upstream's.
+- **User types.** Local, Remote/SSO and Remote/LDAP decide the account menu, My Profile, the users
+  table and User Details exactly as v15.5 does, including which groups are managed remotely.
+- **Install into a folder of its own** on v15.5 or later, with
+  `DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH`: a server update no longer brings the stock console
+  back. See *Installing*.
+
+### Fixed
+
+- **Settings saves again against v15.5**, and the two Auto Prefetch fields are gone.
+- **Blocking follows v15.5's rules**: Blocking Answer TTL switches off with blocking, the update
+  interval does not, and Update Now depends only on the block lists that were loaded.
+- **The account dialogs behave as upstream's.** Configure 2FA and Change Password had drifted
+  since 1.0.0 in behaviour, not only in text: disabling 2FA now asks first and goes as upstream's
+  request, a rejected code is cleared, success closes the dialog and is announced on the page, and
+  both dialogs show the username, the status and the help they had lost. My Profile's success is
+  announced on the page too.
+- **Logging in with the factory credentials opens Change Password** with the current password
+  filled in, as upstream does. 1.0.0 worked out that it had to and then did nothing with it.
+- **Nineteen upstream texts that were missing**, most of them the explanations under the Zone
+  Options choices, one reworded paragraph in Sign Zone, the 2FA dialog's and Create API Token's two
+  warnings.
+- **Create API Token** swaps the form for its output once the token exists, as upstream does.
+- **The SSO Redirect URI** read `…/admin/sso/sso/callback` since the routes became real; it hangs
+  from the console root again.
+- **Settings follows the selected node.** It loaded with `node=cluster` on a standalone server and
+  saved with no node at all; it now sends what upstream sends and scopes its twelve blocks of
+  parameters to the node or the cluster. After a save or a restore that moves the web service to
+  another port or protocol, the console follows it, and the DoH/DoT/DoQ note shows the loaded
+  addresses.
+- Import Zone no longer refreshes the zone list, and a request that never gets an answer says
+  upstream's sentence.
+- Smaller v15.5 changes: the Docker note under Web Service, the Prefetch Trigger and Forgot
+  Password texts, the Import Zone title, the SSO sign-up checkbox rule, the refreshed block list
+  catalogue.
+
+### Security
+
+- **The installer can no longer remove what is not a console.** It refuses a non-empty folder
+  that is neither a Technitium console nor its own, trusts only a server process run by root or by
+  the service's account, does not write through symbolic links it found by itself, uninstalls only
+  the folder it recorded, and checks a downloaded release against its published `.sha256`.
+  Four new clauses and four new cases on the bench, seen failing on the 1.0.0 script first.
+- **A doubled slash at the front page** (`https://host//`) made the console address its API as
+  `//api/…` — another host — with the session token attached. The server's CSP blocked it; the
+  root is now normalised so it never gets that far.
+- A stored session token that fails at start-up is removed, as upstream does.
+
+None of the XSS issues fixed in upstream's console by v15.5 and v15.5.1 applied here: this console
+builds no HTML from strings.
+
+### Changed
+
+- `dev/check-parity-controls.mjs` also reads upstream's `<p>` notes and field explanations and its
+  JavaScript, and now checks the other direction too: a label of ours that upstream no longer has.
+  That is the check that would have caught Auto Prefetch.
+
 ## [1.0.0](https://github.com/byGarcia/technitium-console/releases/tag/v1.0.0) — 2026-09-07
 
 First public release. Feature-complete against Technitium DNS Server v15.4 and verified against it:

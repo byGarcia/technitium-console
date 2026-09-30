@@ -160,7 +160,7 @@ export function DnsClient({
             ))}
           </datalist>
         </div>
-        <div className={styles.medio}>
+        <div className={styles.medium}>
           <LabeledInput label="Domain" placeholder="example.com" mono value={domain} onChange={(e) => setDomain(e.target.value)} />
         </div>
         <div className={styles.short}>

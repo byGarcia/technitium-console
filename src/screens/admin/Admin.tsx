@@ -5,17 +5,18 @@ import { Users } from './Users'
 import { Groups } from './Groups'
 import { Permissions } from './Permissions'
 import { Sso } from './Sso'
+import { Ldap } from './Ldap'
 import { Cluster } from './Cluster'
 import { Notifier, type Notice } from './parts'
 import { SubTabs } from '../../ui/SubTabs'
 
 /*
-Administration. Six sub-tabs and thirty endpoints: the console's second largest
+Administration. Seven sub-tabs and thirty-three endpoints: the console's second largest
 block after Zones.
 
 The sub-navigation is NOT mounted here. Just as in Settings, the sub-tabs live in
 the Shell's side panel and arrive through the `sub` prop. This component only
-decides which panel it draws and holds the two things all six share: the page
+decides which panel it draws and holds the two things all seven share: the page
 alert and the cluster's state.
 
 About the permissions, and it goes against intuition: **upstream hides and
@@ -30,11 +31,16 @@ About the cluster: upstream reads `clusterInitialized` and `clusterNodes` from
 `sessionData.info`, which arrives on login. The session the Shell hands out does
 not expose them, so here they are asked for once with `admin/cluster/state` —the
 same datum, and allowed with the same `canView` needed to see the section— and
-shared with the six sub-tabs. The Cluster sub-tab refreshes it every time it
+shared with the seven sub-tabs. The Cluster sub-tab refreshes it every time it
 changes, just as `reloadAdminClusterView` does.
 */
 
-export const SUB_TABS = ['Sessions', 'Users', 'Groups', 'Permissions', 'SSO', 'Cluster'] as const
+/*
+Upstream's order (index.html:2922-2928). "LDAP Authentication" arrived in v15.5
+between SSO and Cluster; it is labelled `LDAP` here for the same reason
+"Single Sign-On (SSO)" is labelled `SSO`, and its route is `/admin/ldap/`.
+*/
+export const SUB_TABS = ['Sessions', 'Users', 'Groups', 'Permissions', 'SSO', 'LDAP', 'Cluster'] as const
 
 export type SubTab = (typeof SUB_TABS)[number]
 
@@ -58,7 +64,7 @@ export function Admin({ token, sub, onSubChange }: AdminProps) {
   The nodes come from this screen's own `getClusterState` rather than from the
   session, because it already loads them. The control itself stays in the header
   of Sessions or Cluster: mounting it here as well would put a dead duplicate on
-  all six sub-tabs.
+  all seven sub-tabs.
   */
   const [node, setNode] = useState<string>('')
 
@@ -105,7 +111,7 @@ export function Admin({ token, sub, onSubChange }: AdminProps) {
 
   /*
   The bar is built ONCE here and handed to whichever sub-screen is drawn: it is
-  the same object on the six, and building it in each of them is how six copies
+  the same object on the seven, and building it in each of them is how seven copies
   end up drifting apart.
   */
   const tabs = (
@@ -137,6 +143,7 @@ export function Admin({ token, sub, onSubChange }: AdminProps) {
         <Permissions tabs={tabs} token={token} cluster={cluster} onNotice={notify} />
       )}
       {active === 'SSO' && <Sso tabs={tabs} token={token} onNotice={notify} />}
+      {active === 'LDAP' && <Ldap tabs={tabs} token={token} onNotice={notify} />}
       {active === 'Cluster' && (
         <Cluster tabs={tabs}
           token={token}

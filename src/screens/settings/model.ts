@@ -150,8 +150,6 @@ export interface SettingsForm {
   cacheFailureRecordTtl: string
   cachePrefetchEligibility: string
   cachePrefetchTrigger: string
-  cachePrefetchSampleIntervalInMinutes: string
-  cachePrefetchSampleEligibilityHitsPerHour: string
 
   // Blocking
   enableBlocking: boolean
@@ -332,10 +330,6 @@ export function formFromSettings(s: DnsSettings): SettingsForm {
     cacheFailureRecordTtl: String(s.cacheFailureRecordTtl ?? ''),
     cachePrefetchEligibility: String(s.cachePrefetchEligibility ?? ''),
     cachePrefetchTrigger: String(s.cachePrefetchTrigger ?? ''),
-    cachePrefetchSampleIntervalInMinutes: String(s.cachePrefetchSampleIntervalInMinutes ?? ''),
-    cachePrefetchSampleEligibilityHitsPerHour: String(
-      s.cachePrefetchSampleEligibilityHitsPerHour ?? '',
-    ),
 
     enableBlocking: s.enableBlocking,
     allowTxtBlockingReport: s.allowTxtBlockingReport,
@@ -440,7 +434,6 @@ export function enabled(f: SettingsForm) {
     serveStale: f.serveStale,
     blocking: f.enableBlocking,
     customBlockingAddresses: f.enableBlocking && f.blockingType === 'CustomAddress',
-    updateListsNow: f.enableBlocking && f.blockListUrls !== '',
     proxy: f.proxyType !== 'None',
     forwarderConcurrency: f.concurrentForwarding,
     logging: f.loggingType.toLowerCase() !== 'none',
@@ -484,363 +477,424 @@ function serializeWithLocation(
   return { error: { title: r.failure.title, text: r.failure.text, tab, field } }
 }
 
+/*
+The value upstream's `#optSettingsClusterNode` holds (cluster.js:1021-1050, called
+with `addClusterNode = true` and the node remembered under `settingsClusterNode`):
+
+  · Cluster NOT initialised: the selector is hidden and holds one empty
+    `<option>`, so the value is `""` —whatever was remembered—. Checked on the
+    stock v15.5.1 console: `settings/get?node=` and `settings/set` with `node=&…`.
+  · Cluster initialised: the remembered node, `"cluster"` when nothing was
+    remembered, and the first node when the remembered one is no longer listed.
+*/
+export function selectedNode(
+  remembered: string | null,
+  clusterInitialised: boolean,
+  nodes: readonly { name: string }[],
+): string {
+  if (!clusterInitialised) return ''
+  const wanted = remembered == null || remembered === '' ? 'cluster' : remembered
+  if (wanted === 'cluster' || nodes.some((n) => n.name === wanted)) return wanted
+  return nodes.length > 0 ? nodes[0].name : wanted
+}
+
+/*
+Which blocks a save carries depends on the node chosen in the selector
+(main.js:1639-1644):
+
+  · `""` —a standalone server, where upstream's selector is hidden and holds the
+    empty `<option>` (cluster.js:1047-1049)— sends EVERYTHING.
+  · `"cluster"` —the aggregate— sends only the cluster-wide parameters.
+  · a node name sends only that node's own parameters.
+
+The skipped blocks are skipped whole, VALIDATIONS INCLUDED: with a node chosen,
+an empty Resolver Retries does not stop the save, because the Recursion block
+never runs. The comparison is upstream's literal `"cluster"`.
+*/
+export function nodeScope(node: string): { cluster: boolean; node: boolean } {
+  const includeClusterParameters = node === '' || node === 'cluster'
+  const includeNodeParameters = node === '' || !includeClusterParameters
+  return { cluster: includeClusterParameters, node: includeNodeParameters }
+}
+
 export function buildBody(f: SettingsForm, node = ''): ResultadoCuerpo {
+  // main.js:1644 — `node` is always the first parameter, even when empty.
   const body: Record<string, string> = { node }
   const sanitised: Partial<SettingsForm> = {}
+  const include = nodeScope(node)
 
   const missing = (text: string, tab: string, field: string): ResultadoCuerpo => ({
     error: { title: 'Missing!', text, tab, field },
   })
 
-  // ── General: local parameters
-  if (f.dnsServerDomain === '') {
-    return missing('Please enter server domain name.', 'General', 'dnsServerDomain')
-  }
-
-  let dnsServerLocalEndPoints = cleanList(f.dnsServerLocalEndPoints)
-  if (dnsServerLocalEndPoints.length === 0 || dnsServerLocalEndPoints === ',') {
-    dnsServerLocalEndPoints = '0.0.0.0:53,[::]:53'
-  } else {
-    sanitised.dnsServerLocalEndPoints = dnsServerLocalEndPoints.replace(/,/g, '\n')
-  }
-
-  const v4 = cleanList(f.dnsServerIPv4SourceAddresses)
-  const v6 = cleanList(f.dnsServerIPv6SourceAddresses)
-
-  body.dnsServerDomain = f.dnsServerDomain
-  body.dnsServerLocalEndPoints = dnsServerLocalEndPoints
-  body.dnsServerIPv4SourceAddresses = v4.length === 0 || v4 === ',' ? 'false' : v4
-  body.dnsServerIPv6SourceAddresses = v6.length === 0 || v6 === ',' ? 'false' : v6
-
-  // ── General: default values
-  const zta = cleanList(f.zoneTransferAllowedNetworks)
-  const nan = cleanList(f.notifyAllowedNetworks)
-  if (!(zta.length === 0 || zta === ',')) sanitised.zoneTransferAllowedNetworks = zta.replace(/,/g, '\n') + '\n'
-  if (!(nan.length === 0 || nan === ',')) sanitised.notifyAllowedNetworks = nan.replace(/,/g, '\n') + '\n'
-
-  body.defaultRecordTtl = f.defaultRecordTtl
-  body.defaultNsRecordTtl = f.defaultNsRecordTtl
-  body.defaultSoaRecordTtl = f.defaultSoaRecordTtl
-  body.defaultResponsiblePerson = f.defaultResponsiblePerson
-  body.useSoaSerialDateScheme = String(f.useSoaSerialDateScheme)
-  body.minSoaRefresh = f.minSoaRefresh
-  body.minSoaRetry = f.minSoaRetry
-  body.zoneTransferAllowedNetworks = zta.length === 0 || zta === ',' ? 'false' : zta
-  body.notifyAllowedNetworks = nan.length === 0 || nan === ',' ? 'false' : nan
-  body.dnsServerEnableCheckForUpdate = String(f.dnsServerEnableCheckForUpdate)
-  body.dnsAppsEnableAutomaticUpdate = String(f.dnsAppsEnableAutomaticUpdate)
-
-  // ── General: IPv6 and socket pool
-  const spep = cleanList(f.socketPoolExcludedPorts)
-  if (!(spep.length === 0 || spep === ',')) sanitised.socketPoolExcludedPorts = spep.replace(/,/g, '\n') + '\n'
-
-  body.ipv6Mode = f.ipv6Mode
-  body.enableUdpSocketPool = String(f.enableUdpSocketPool)
-  body.socketPoolExcludedPorts = spep.length === 0 || spep === ',' ? 'false' : spep
-
-  // ── General: EDNS / DNSSEC / ECS
-  if (f.eDnsClientSubnetIPv4PrefixLength === '') {
-    return missing(
-      'Please enter EDNS Client Subnet IPv4 prefix length.',
-      'General',
-      'eDnsClientSubnetIPv4PrefixLength',
-    )
-  }
-  if (f.eDnsClientSubnetIPv6PrefixLength === '') {
-    return missing(
-      'Please enter EDNS Client Subnet IPv6 prefix length.',
-      'General',
-      'eDnsClientSubnetIPv6PrefixLength',
-    )
-  }
-
-  // ── General: QPM
-  const qpm4 = serializeWithLocation(
-    f.qpmPrefixLimitsIPv4.map((r) => [
-      { type: 'text' as const, value: r.prefix },
-      { type: 'text' as const, value: r.udpLimit },
-      { type: 'text' as const, value: r.tcpLimit },
-    ]),
-    'General',
-    'qpmPrefixLimitsIPv4',
-  )
-  if ('error' in qpm4) return { error: qpm4.error }
-
-  const qpm6 = serializeWithLocation(
-    f.qpmPrefixLimitsIPv6.map((r) => [
-      { type: 'text' as const, value: r.prefix },
-      { type: 'text' as const, value: r.udpLimit },
-      { type: 'text' as const, value: r.tcpLimit },
-    ]),
-    'General',
-    'qpmPrefixLimitsIPv6',
-  )
-  if ('error' in qpm6) return { error: qpm6.error }
-
-  if (f.qpmLimitSampleMinutes === '') {
-    return missing(
-      'Please enter Queries Per Minute (QPM) sample value.',
-      'General',
-      'qpmLimitSampleMinutes',
-    )
-  }
-  if (f.qpmLimitUdpTruncationPercentage === '') {
-    return missing(
-      'Please enter Queries Per Minute (QPM) limit UDP truncation percentage value.',
-      'General',
-      'qpmLimitUdpTruncationPercentage',
-    )
-  }
-
-  const qbl = cleanList(f.qpmLimitBypassList)
-  if (!(qbl.length === 0 || qbl === ',')) sanitised.qpmLimitBypassList = qbl.replace(/,/g, '\n') + '\n'
-
-  // ── General: avanzado
-  const required: [keyof SettingsForm, string, string][] = [
-    ['clientTimeout', 'Please enter a value for Client Timeout.', 'clientTimeout'],
-    ['tcpSendTimeout', 'Please enter a value for TCP Send Timeout.', 'tcpSendTimeout'],
-    ['tcpReceiveTimeout', 'Please enter a value for TCP Receive Timeout.', 'tcpReceiveTimeout'],
-    ['quicIdleTimeout', 'Please enter a value for QUIC Idle Timeout.', 'quicIdleTimeout'],
-    ['quicMaxInboundStreams', 'Please enter a value for QUIC Max Inbound Streams.', 'quicMaxInboundStreams'],
-    ['listenBacklog', 'Please enter a value for Listen Backlog.', 'listenBacklog'],
-    ['udpSendBufferSizeKB', 'Please enter a value for UDP Send Buffer Size.', 'udpSendBufferSizeKB'],
-    ['udpReceiveBufferSizeKB', 'Please enter a value for UDP Receive Buffer Size.', 'udpReceiveBufferSizeKB'],
-    ['maxConcurrentResolutionsPerCore', 'Please enter a value for Max Concurrent Resolutions.', 'maxConcurrentResolutionsPerCore'],
-  ]
-  for (const [key, text, field] of required) {
-    if (f[key] === '') return missing(text, 'General', field)
-  }
-
-  body.udpPayloadSize = f.udpPayloadSize
-  body.dnssecValidation = String(f.dnssecValidation)
-  body.eDnsClientSubnet = String(f.eDnsClientSubnet)
-  body.eDnsClientSubnetIPv4PrefixLength = f.eDnsClientSubnetIPv4PrefixLength
-  body.eDnsClientSubnetIPv6PrefixLength = f.eDnsClientSubnetIPv6PrefixLength
-  body.eDnsClientSubnetIpv4Override = f.eDnsClientSubnetIpv4Override
-  body.eDnsClientSubnetIpv6Override = f.eDnsClientSubnetIpv6Override
-  body.qpmPrefixLimitsIPv4 = qpm4.value.length === 0 ? 'false' : qpm4.value
-  body.qpmPrefixLimitsIPv6 = qpm6.value.length === 0 ? 'false' : qpm6.value
-  body.qpmLimitSampleMinutes = f.qpmLimitSampleMinutes
-  body.qpmLimitUdpTruncationPercentage = f.qpmLimitUdpTruncationPercentage
-  body.qpmLimitBypassList = qbl.length === 0 || qbl === ',' ? 'false' : qbl
-  body.clientTimeout = f.clientTimeout
-  body.tcpSendTimeout = f.tcpSendTimeout
-  body.tcpReceiveTimeout = f.tcpReceiveTimeout
-  body.quicIdleTimeout = f.quicIdleTimeout
-  body.quicMaxInboundStreams = f.quicMaxInboundStreams
-  body.listenBacklog = f.listenBacklog
-  body.udpSendBufferSizeKB = f.udpSendBufferSizeKB
-  body.udpReceiveBufferSizeKB = f.udpReceiveBufferSizeKB
-  body.maxConcurrentResolutionsPerCore = f.maxConcurrentResolutionsPerCore
-
-  // ── Web Service (no validation: the empty ones fall to their default value)
-  let wsla = cleanList(f.webServiceLocalAddresses)
-  if (wsla.length === 0 || wsla === ',') wsla = '0.0.0.0,[::]'
-  else sanitised.webServiceLocalAddresses = wsla.replace(/,/g, '\n')
-
-  const wsrpa = cleanList(f.webServiceReverseProxyAddresses)
-  if (!(wsrpa.length === 0 || wsrpa === ',')) {
-    sanitised.webServiceReverseProxyAddresses = wsrpa.replace(/,/g, '\n')
-  }
-
-  body.webServiceLocalAddresses = wsla
-  body.webServiceHttpPort = f.webServiceHttpPort === '' ? '5380' : f.webServiceHttpPort
-  body.webServiceEnableHttpUnixSocket = String(f.webServiceEnableHttpUnixSocket)
-  body.webServiceHttpUnixSocket = f.webServiceHttpUnixSocket
-  body.webServiceEnableTlsUnixSocket = String(f.webServiceEnableTlsUnixSocket)
-  body.webServiceTlsUnixSocket = f.webServiceTlsUnixSocket
-  body.webServiceEnableTls = String(f.webServiceEnableTls)
-  body.webServiceEnableHttp3 = String(f.webServiceEnableHttp3)
-  body.webServiceHttpToTlsRedirect = String(f.webServiceHttpToTlsRedirect)
-  body.webServiceUseSelfSignedTlsCertificate = String(f.webServiceUseSelfSignedTlsCertificate)
-  body.webServiceTlsPort = f.webServiceTlsPort
-  body.webServiceReverseProxyAddresses = wsrpa.length === 0 || wsrpa === ',' ? 'false' : wsrpa
-  body.webServiceRealIpHeader = f.webServiceRealIpHeader
-  body.webServiceCspFrameAncestorsHeader = f.webServiceCspFrameAncestorsHeader
-  body.webServiceTlsCertificatePath = f.webServiceTlsCertificatePath
-  body.webServiceTlsCertificatePassword = f.webServiceTlsCertificatePassword
-
-  // ── Optional Protocols
-  const ports: [keyof SettingsForm, string, string][] = [
-    ['dnsOverUdpProxyPort', 'Please enter a value for DNS-over-UDP-PROXY Port.', 'dnsOverUdpProxyPort'],
-    ['dnsOverTcpProxyPort', 'Please enter a value for DNS-over-TCP-PROXY Port.', 'dnsOverTcpProxyPort'],
-    ['dnsOverHttpPort', 'Please enter a value for DNS-over-HTTP Port.', 'dnsOverHttpPort'],
-    ['dnsOverTlsPort', 'Please enter a value for DNS-over-TLS Port.', 'dnsOverTlsPort'],
-    ['dnsOverHttpsPort', 'Please enter a value for DNS-over-HTTPS Port.', 'dnsOverHttpsPort'],
-    ['dnsOverQuicPort', 'Please enter a value for DNS-over-QUIC Port.', 'dnsOverQuicPort'],
-  ]
-  for (const [key, text, field] of ports) {
-    if (f[key] === '') return missing(text, 'Optional Protocols', field)
-  }
-
-  const drpa = cleanList(f.dnsReverseProxyNetworkACL)
-  if (!(drpa.length === 0 || drpa === ',')) {
-    sanitised.dnsReverseProxyNetworkACL = drpa.replace(/,/g, '\n')
-  }
-
-  body.enableEDnsClientSubnetSourceAddress = String(f.enableEDnsClientSubnetSourceAddress)
-  body.enableDnsOverUdpProxy = String(f.enableDnsOverUdpProxy)
-  body.enableDnsOverTcpProxy = String(f.enableDnsOverTcpProxy)
-  body.enableDnsOverHttp = String(f.enableDnsOverHttp)
-  body.enableDnsOverHttpUnixSocket = String(f.enableDnsOverHttpUnixSocket)
-  body.enableDnsOverHttpsUnixSocket = String(f.enableDnsOverHttpsUnixSocket)
-  body.enableDnsOverTls = String(f.enableDnsOverTls)
-  body.enableDnsOverHttps = String(f.enableDnsOverHttps)
-  body.enableDnsOverHttp3 = String(f.enableDnsOverHttp3)
-  body.enableDnsOverQuic = String(f.enableDnsOverQuic)
-  body.enableDnsOverHttpHelpRedirect = String(f.enableDnsOverHttpHelpRedirect)
-  body.dnsOverUdpProxyPort = f.dnsOverUdpProxyPort
-  body.dnsOverTcpProxyPort = f.dnsOverTcpProxyPort
-  body.dnsOverHttpPort = f.dnsOverHttpPort
-  body.dnsOverHttpUnixSocket = f.dnsOverHttpUnixSocket
-  body.dnsOverHttpsUnixSocket = f.dnsOverHttpsUnixSocket
-  body.dnsOverTlsPort = f.dnsOverTlsPort
-  body.dnsOverHttpsPort = f.dnsOverHttpsPort
-  body.dnsOverQuicPort = f.dnsOverQuicPort
-  body.dnsReverseProxyNetworkACL = drpa.length === 0 || drpa === ',' ? 'false' : drpa
-  body.dnsOverHttpRealIpHeader = f.dnsOverHttpRealIpHeader
-  body.dnsTlsCertificatePath = f.dnsTlsCertificatePath
-  body.dnsTlsCertificatePassword = f.dnsTlsCertificatePassword
-
-  // ── TSIG
-  const tsig = serializeWithLocation(
-    f.tsigKeys.map((k) => [
-      { type: 'text' as const, value: k.keyName },
-      { type: 'text' as const, value: k.sharedSecret, optional: true },
-      { type: 'text' as const, value: k.algorithmName },
-    ]),
-    'TSIG',
-    'tsigKeys',
-  )
-  if ('error' in tsig) return { error: tsig.error }
-  body.tsigKeys = tsig.value.length === 0 ? 'false' : tsig.value
-
-  // ── Recursion
-  const racl = cleanList(f.recursionNetworkACL)
-  if (!(racl.length === 0 || racl === ',')) sanitised.recursionNetworkACL = racl.replace(/,/g, '\n')
-
-  const resolver: [keyof SettingsForm, string, string][] = [
-    ['resolverRetries', 'Please enter a value for Resolver Retries.', 'resolverRetries'],
-    ['resolverTimeout', 'Please enter a value for Resolver Timeout.', 'resolverTimeout'],
-    ['resolverConcurrency', 'Please enter a value for Resolver Concurrency.', 'resolverConcurrency'],
-    ['resolverMaxStackCount', 'Please enter a value for Resolver Max Stack Count.', 'resolverMaxStackCount'],
-  ]
-  for (const [key, text, field] of resolver) {
-    if (f[key] === '') return missing(text, 'Recursion', field)
-  }
-
-  body.recursion = f.recursion
-  body.recursionNetworkACL = racl.length === 0 || racl === ',' ? 'false' : racl
-  body.randomizeName = String(f.randomizeName)
-  body.qnameMinimization = String(f.qnameMinimization)
-  body.locallyServedDnsZones = String(f.locallyServedDnsZones)
-  body.resolverRetries = f.resolverRetries
-  body.resolverTimeout = f.resolverTimeout
-  body.resolverConcurrency = f.resolverConcurrency
-  body.resolverMaxStackCount = f.resolverMaxStackCount
-
-  // ── Cache
-  const cache: [keyof SettingsForm, string, string][] = [
-    ['cacheMaximumEntries', 'Please enter cache maximum entries value.', 'cacheMaximumEntries'],
-    ['cacheMinimumRecordTtl', 'Please enter cache minimum record TTL value.', 'cacheMinimumRecordTtl'],
-    ['cacheMaximumRecordTtl', 'Please enter cache maximum record TTL value.', 'cacheMaximumRecordTtl'],
-    ['cacheNegativeRecordTtl', 'Please enter cache negative record TTL value.', 'cacheNegativeRecordTtl'],
-    ['cacheFailureRecordTtl', 'Please enter cache failure record TTL value.', 'cacheFailureRecordTtl'],
-    ['cachePrefetchEligibility', 'Please enter cache prefetch eligibility value.', 'cachePrefetchEligibility'],
-    ['cachePrefetchTrigger', 'Please enter cache prefetch trigger value.', 'cachePrefetchTrigger'],
-    ['cachePrefetchSampleIntervalInMinutes', 'Please enter cache auto prefetch sample interval value.', 'cachePrefetchSampleIntervalInMinutes'],
-    ['cachePrefetchSampleEligibilityHitsPerHour', 'Please enter cache auto prefetch sample eligibility value.', 'cachePrefetchSampleEligibilityHitsPerHour'],
-  ]
-  for (const [key, text, field] of cache) {
-    if (f[key] === '') return missing(text, 'Cache', field)
-  }
-
-  body.saveCache = String(f.saveCache)
-  body.serveStale = String(f.serveStale)
-  body.serveStaleTtl = f.serveStaleTtl
-  body.serveStaleAnswerTtl = f.serveStaleAnswerTtl
-  body.serveStaleResetTtl = f.serveStaleResetTtl
-  body.serveStaleMaxWaitTime = f.serveStaleMaxWaitTime
-  body.cacheMaximumEntries = f.cacheMaximumEntries
-  body.cacheMinimumRecordTtl = f.cacheMinimumRecordTtl
-  body.cacheMaximumRecordTtl = f.cacheMaximumRecordTtl
-  body.cacheNegativeRecordTtl = f.cacheNegativeRecordTtl
-  body.cacheFailureRecordTtl = f.cacheFailureRecordTtl
-  body.cachePrefetchEligibility = f.cachePrefetchEligibility
-  body.cachePrefetchTrigger = f.cachePrefetchTrigger
-  body.cachePrefetchSampleIntervalInMinutes = f.cachePrefetchSampleIntervalInMinutes
-  body.cachePrefetchSampleEligibilityHitsPerHour = f.cachePrefetchSampleEligibilityHitsPerHour
-
-  // ── Blocking (no validation in upstream)
-  const bbl = cleanList(f.blockingBypassList)
-  if (!(bbl.length === 0 || bbl === ',')) sanitised.blockingBypassList = bbl.replace(/,/g, '\n') + '\n'
-
-  const cba = cleanList(f.customBlockingAddresses)
-  if (!(cba.length === 0 || cba === ',')) sanitised.customBlockingAddresses = cba.replace(/,/g, '\n') + '\n'
-
-  const blu = cleanList(f.blockListUrls)
-  if (!(blu.length === 0 || blu === ',')) sanitised.blockListUrls = blu.replace(/,/g, '\n') + '\n'
-
-  body.enableBlocking = String(f.enableBlocking)
-  body.allowTxtBlockingReport = String(f.allowTxtBlockingReport)
-  body.blockingBypassList = bbl.length === 0 || bbl === ',' ? 'false' : bbl
-  body.blockingType = f.blockingType
-  body.customBlockingAddresses = cba.length === 0 || cba === ',' ? 'false' : cba
-  body.blockingAnswerTtl = f.blockingAnswerTtl
-  body.blockListUrls = blu.length === 0 || blu === ',' ? 'false' : blu
-  body.blockListUpdateIntervalHours = f.blockListUpdateIntervalHours
-
-  // ── Proxy & Forwarders
-  const proxyType = f.proxyType.toLowerCase()
-  const proxy: Record<string, string> = { proxyType }
-  if (proxyType !== 'none') {
-    if (f.proxyAddress === '') {
-      return missing('Please enter proxy server address.', 'Proxy & Forwarders', 'proxyAddress')
+  // ── General: local parameters (node, main.js:1647-1672)
+  if (include.node) {
+    if (f.dnsServerDomain === '') {
+      return missing('Please enter server domain name.', 'General', 'dnsServerDomain')
     }
-    if (f.proxyPort === '') {
-      return missing('Please enter proxy server port.', 'Proxy & Forwarders', 'proxyPort')
+
+    let dnsServerLocalEndPoints = cleanList(f.dnsServerLocalEndPoints)
+    if (dnsServerLocalEndPoints.length === 0 || dnsServerLocalEndPoints === ',') {
+      dnsServerLocalEndPoints = '0.0.0.0:53,[::]:53'
+    } else {
+      sanitised.dnsServerLocalEndPoints = dnsServerLocalEndPoints.replace(/,/g, '\n')
     }
-    const pb = cleanList(f.proxyBypassList)
-    // main.js:2145 — here empty is NOT "false", it is an empty string.
-    if (!(pb.length === 0 || pb === ',')) sanitised.proxyBypassList = pb.replace(/,/g, '\n')
 
-    proxy.proxyAddress = f.proxyAddress
-    proxy.proxyPort = f.proxyPort
-    proxy.proxyUsername = f.proxyUsername
-    proxy.proxyPassword = f.proxyPassword
-    proxy.proxyBypass = pb.length === 0 || pb === ',' ? '' : pb
+    const v4 = cleanList(f.dnsServerIPv4SourceAddresses)
+    const v6 = cleanList(f.dnsServerIPv6SourceAddresses)
+
+    body.dnsServerDomain = f.dnsServerDomain
+    body.dnsServerLocalEndPoints = dnsServerLocalEndPoints
+    body.dnsServerIPv4SourceAddresses = v4.length === 0 || v4 === ',' ? 'false' : v4
+    body.dnsServerIPv6SourceAddresses = v6.length === 0 || v6 === ',' ? 'false' : v6
   }
 
-  const fwd = cleanList(f.forwarders)
-  if (!(fwd.length === 0 || fwd === ',')) sanitised.forwarders = fwd.replace(/,/g, '\n')
+  // ── General: default values and updates (cluster, main.js:1674-1699)
+  if (include.cluster) {
+    const zta = cleanList(f.zoneTransferAllowedNetworks)
+    const nan = cleanList(f.notifyAllowedNetworks)
+    if (!(zta.length === 0 || zta === ',')) sanitised.zoneTransferAllowedNetworks = zta.replace(/,/g, '\n') + '\n'
+    if (!(nan.length === 0 || nan === ',')) sanitised.notifyAllowedNetworks = nan.replace(/,/g, '\n') + '\n'
 
-  const forwarding: [keyof SettingsForm, string, string][] = [
-    ['forwarderRetries', 'Please enter a value for Forwarder Retries.', 'forwarderRetries'],
-    ['forwarderTimeout', 'Please enter a value for Forwarder Timeout.', 'forwarderTimeout'],
-    ['forwarderConcurrency', 'Please enter a value for Forwarder Concurrency.', 'forwarderConcurrency'],
-  ]
-  for (const [key, text, field] of forwarding) {
-    if (f[key] === '') return missing(text, 'Proxy & Forwarders', field)
+    body.defaultRecordTtl = f.defaultRecordTtl
+    body.defaultNsRecordTtl = f.defaultNsRecordTtl
+    body.defaultSoaRecordTtl = f.defaultSoaRecordTtl
+    body.defaultResponsiblePerson = f.defaultResponsiblePerson
+    body.useSoaSerialDateScheme = String(f.useSoaSerialDateScheme)
+    body.minSoaRefresh = f.minSoaRefresh
+    body.minSoaRetry = f.minSoaRetry
+    body.zoneTransferAllowedNetworks = zta.length === 0 || zta === ',' ? 'false' : zta
+    body.notifyAllowedNetworks = nan.length === 0 || nan === ',' ? 'false' : nan
+    body.dnsServerEnableCheckForUpdate = String(f.dnsServerEnableCheckForUpdate)
+    body.dnsAppsEnableAutomaticUpdate = String(f.dnsAppsEnableAutomaticUpdate)
   }
 
-  Object.assign(body, proxy)
-  body.forwarders = fwd.length === 0 || fwd === ',' ? 'false' : fwd
-  body.forwarderProtocol = f.forwarderProtocol
-  body.concurrentForwarding = String(f.concurrentForwarding)
-  body.forwarderRetries = f.forwarderRetries
-  body.forwarderTimeout = f.forwarderTimeout
-  body.forwarderConcurrency = f.forwarderConcurrency
+  // ── General: IPv6 and socket pool (node, main.js:1701-1712)
+  if (include.node) {
+    const spep = cleanList(f.socketPoolExcludedPorts)
+    if (!(spep.length === 0 || spep === ',')) sanitised.socketPoolExcludedPorts = spep.replace(/,/g, '\n') + '\n'
 
-  // ── Logging (no validation in upstream)
-  body.loggingType = f.loggingType
-  body.ignoreResolverLogs = String(f.ignoreResolverLogs)
-  body.noStackTrace = String(f.noStackTrace)
-  body.logQueries = String(f.logQueries)
-  body.useLocalTime = String(f.useLocalTime)
-  body.logFolder = f.logFolder
-  body.maxLogFileDays = f.maxLogFileDays
-  body.enableInMemoryStats = String(f.enableInMemoryStats)
-  body.maxStatFileDays = f.maxStatFileDays
+    body.ipv6Mode = f.ipv6Mode
+    body.enableUdpSocketPool = String(f.enableUdpSocketPool)
+    body.socketPoolExcludedPorts = spep.length === 0 || spep === ',' ? 'false' : spep
+  }
+
+  // ── General: EDNS, DNSSEC, ECS, QPM and advanced (cluster, main.js:1714-1838)
+  if (include.cluster) {
+    if (f.eDnsClientSubnetIPv4PrefixLength === '') {
+      return missing(
+        'Please enter EDNS Client Subnet IPv4 prefix length.',
+        'General',
+        'eDnsClientSubnetIPv4PrefixLength',
+      )
+    }
+    if (f.eDnsClientSubnetIPv6PrefixLength === '') {
+      return missing(
+        'Please enter EDNS Client Subnet IPv6 prefix length.',
+        'General',
+        'eDnsClientSubnetIPv6PrefixLength',
+      )
+    }
+
+    const qpm4 = serializeWithLocation(
+      f.qpmPrefixLimitsIPv4.map((r) => [
+        { type: 'text' as const, value: r.prefix },
+        { type: 'text' as const, value: r.udpLimit },
+        { type: 'text' as const, value: r.tcpLimit },
+      ]),
+      'General',
+      'qpmPrefixLimitsIPv4',
+    )
+    if ('error' in qpm4) return { error: qpm4.error }
+
+    const qpm6 = serializeWithLocation(
+      f.qpmPrefixLimitsIPv6.map((r) => [
+        { type: 'text' as const, value: r.prefix },
+        { type: 'text' as const, value: r.udpLimit },
+        { type: 'text' as const, value: r.tcpLimit },
+      ]),
+      'General',
+      'qpmPrefixLimitsIPv6',
+    )
+    if ('error' in qpm6) return { error: qpm6.error }
+
+    if (f.qpmLimitSampleMinutes === '') {
+      return missing(
+        'Please enter Queries Per Minute (QPM) sample value.',
+        'General',
+        'qpmLimitSampleMinutes',
+      )
+    }
+    if (f.qpmLimitUdpTruncationPercentage === '') {
+      return missing(
+        'Please enter Queries Per Minute (QPM) limit UDP truncation percentage value.',
+        'General',
+        'qpmLimitUdpTruncationPercentage',
+      )
+    }
+
+    const qbl = cleanList(f.qpmLimitBypassList)
+    if (!(qbl.length === 0 || qbl === ',')) sanitised.qpmLimitBypassList = qbl.replace(/,/g, '\n') + '\n'
+
+    const required: [keyof SettingsForm, string, string][] = [
+      ['clientTimeout', 'Please enter a value for Client Timeout.', 'clientTimeout'],
+      ['tcpSendTimeout', 'Please enter a value for TCP Send Timeout.', 'tcpSendTimeout'],
+      ['tcpReceiveTimeout', 'Please enter a value for TCP Receive Timeout.', 'tcpReceiveTimeout'],
+      ['quicIdleTimeout', 'Please enter a value for QUIC Idle Timeout.', 'quicIdleTimeout'],
+      ['quicMaxInboundStreams', 'Please enter a value for QUIC Max Inbound Streams.', 'quicMaxInboundStreams'],
+      ['listenBacklog', 'Please enter a value for Listen Backlog.', 'listenBacklog'],
+      ['udpSendBufferSizeKB', 'Please enter a value for UDP Send Buffer Size.', 'udpSendBufferSizeKB'],
+      ['udpReceiveBufferSizeKB', 'Please enter a value for UDP Receive Buffer Size.', 'udpReceiveBufferSizeKB'],
+      ['maxConcurrentResolutionsPerCore', 'Please enter a value for Max Concurrent Resolutions.', 'maxConcurrentResolutionsPerCore'],
+    ]
+    for (const [key, text, field] of required) {
+      if (f[key] === '') return missing(text, 'General', field)
+    }
+
+    body.udpPayloadSize = f.udpPayloadSize
+    body.dnssecValidation = String(f.dnssecValidation)
+    body.eDnsClientSubnet = String(f.eDnsClientSubnet)
+    body.eDnsClientSubnetIPv4PrefixLength = f.eDnsClientSubnetIPv4PrefixLength
+    body.eDnsClientSubnetIPv6PrefixLength = f.eDnsClientSubnetIPv6PrefixLength
+    body.eDnsClientSubnetIpv4Override = f.eDnsClientSubnetIpv4Override
+    body.eDnsClientSubnetIpv6Override = f.eDnsClientSubnetIpv6Override
+    body.qpmPrefixLimitsIPv4 = qpm4.value.length === 0 ? 'false' : qpm4.value
+    body.qpmPrefixLimitsIPv6 = qpm6.value.length === 0 ? 'false' : qpm6.value
+    body.qpmLimitSampleMinutes = f.qpmLimitSampleMinutes
+    body.qpmLimitUdpTruncationPercentage = f.qpmLimitUdpTruncationPercentage
+    body.qpmLimitBypassList = qbl.length === 0 || qbl === ',' ? 'false' : qbl
+    body.clientTimeout = f.clientTimeout
+    body.tcpSendTimeout = f.tcpSendTimeout
+    body.tcpReceiveTimeout = f.tcpReceiveTimeout
+    body.quicIdleTimeout = f.quicIdleTimeout
+    body.quicMaxInboundStreams = f.quicMaxInboundStreams
+    body.listenBacklog = f.listenBacklog
+    body.udpSendBufferSizeKB = f.udpSendBufferSizeKB
+    body.udpReceiveBufferSizeKB = f.udpReceiveBufferSizeKB
+    body.maxConcurrentResolutionsPerCore = f.maxConcurrentResolutionsPerCore
+  }
+
+  // ── Web Service (node, main.js:1841-1880; no validation: the empty ones fall
+  //    to their default value)
+  if (include.node) {
+    let wsla = cleanList(f.webServiceLocalAddresses)
+    if (wsla.length === 0 || wsla === ',') wsla = '0.0.0.0,[::]'
+    else sanitised.webServiceLocalAddresses = wsla.replace(/,/g, '\n')
+
+    const wsrpa = cleanList(f.webServiceReverseProxyAddresses)
+    if (!(wsrpa.length === 0 || wsrpa === ',')) {
+      sanitised.webServiceReverseProxyAddresses = wsrpa.replace(/,/g, '\n')
+    }
+
+    body.webServiceLocalAddresses = wsla
+    body.webServiceHttpPort = f.webServiceHttpPort === '' ? '5380' : f.webServiceHttpPort
+    body.webServiceEnableHttpUnixSocket = String(f.webServiceEnableHttpUnixSocket)
+    body.webServiceHttpUnixSocket = f.webServiceHttpUnixSocket
+    body.webServiceEnableTlsUnixSocket = String(f.webServiceEnableTlsUnixSocket)
+    body.webServiceTlsUnixSocket = f.webServiceTlsUnixSocket
+    body.webServiceEnableTls = String(f.webServiceEnableTls)
+    body.webServiceEnableHttp3 = String(f.webServiceEnableHttp3)
+    body.webServiceHttpToTlsRedirect = String(f.webServiceHttpToTlsRedirect)
+    body.webServiceUseSelfSignedTlsCertificate = String(f.webServiceUseSelfSignedTlsCertificate)
+    body.webServiceTlsPort = f.webServiceTlsPort
+    body.webServiceReverseProxyAddresses = wsrpa.length === 0 || wsrpa === ',' ? 'false' : wsrpa
+    body.webServiceRealIpHeader = f.webServiceRealIpHeader
+    body.webServiceCspFrameAncestorsHeader = f.webServiceCspFrameAncestorsHeader
+    body.webServiceTlsCertificatePath = f.webServiceTlsCertificatePath
+    body.webServiceTlsCertificatePassword = f.webServiceTlsCertificatePassword
+  }
+
+  // ── Optional Protocols (node, main.js:1883-1955)
+  if (include.node) {
+    const ports: [keyof SettingsForm, string, string][] = [
+      ['dnsOverUdpProxyPort', 'Please enter a value for DNS-over-UDP-PROXY Port.', 'dnsOverUdpProxyPort'],
+      ['dnsOverTcpProxyPort', 'Please enter a value for DNS-over-TCP-PROXY Port.', 'dnsOverTcpProxyPort'],
+      ['dnsOverHttpPort', 'Please enter a value for DNS-over-HTTP Port.', 'dnsOverHttpPort'],
+      ['dnsOverTlsPort', 'Please enter a value for DNS-over-TLS Port.', 'dnsOverTlsPort'],
+      ['dnsOverHttpsPort', 'Please enter a value for DNS-over-HTTPS Port.', 'dnsOverHttpsPort'],
+      ['dnsOverQuicPort', 'Please enter a value for DNS-over-QUIC Port.', 'dnsOverQuicPort'],
+    ]
+    for (const [key, text, field] of ports) {
+      if (f[key] === '') return missing(text, 'Optional Protocols', field)
+    }
+
+    const drpa = cleanList(f.dnsReverseProxyNetworkACL)
+    if (!(drpa.length === 0 || drpa === ',')) {
+      sanitised.dnsReverseProxyNetworkACL = drpa.replace(/,/g, '\n')
+    }
+
+    body.enableEDnsClientSubnetSourceAddress = String(f.enableEDnsClientSubnetSourceAddress)
+    body.enableDnsOverUdpProxy = String(f.enableDnsOverUdpProxy)
+    body.enableDnsOverTcpProxy = String(f.enableDnsOverTcpProxy)
+    body.enableDnsOverHttp = String(f.enableDnsOverHttp)
+    body.enableDnsOverHttpUnixSocket = String(f.enableDnsOverHttpUnixSocket)
+    body.enableDnsOverHttpsUnixSocket = String(f.enableDnsOverHttpsUnixSocket)
+    body.enableDnsOverTls = String(f.enableDnsOverTls)
+    body.enableDnsOverHttps = String(f.enableDnsOverHttps)
+    body.enableDnsOverHttp3 = String(f.enableDnsOverHttp3)
+    body.enableDnsOverQuic = String(f.enableDnsOverQuic)
+    body.enableDnsOverHttpHelpRedirect = String(f.enableDnsOverHttpHelpRedirect)
+    body.dnsOverUdpProxyPort = f.dnsOverUdpProxyPort
+    body.dnsOverTcpProxyPort = f.dnsOverTcpProxyPort
+    body.dnsOverHttpPort = f.dnsOverHttpPort
+    body.dnsOverHttpUnixSocket = f.dnsOverHttpUnixSocket
+    body.dnsOverHttpsUnixSocket = f.dnsOverHttpsUnixSocket
+    body.dnsOverTlsPort = f.dnsOverTlsPort
+    body.dnsOverHttpsPort = f.dnsOverHttpsPort
+    body.dnsOverQuicPort = f.dnsOverQuicPort
+    body.dnsReverseProxyNetworkACL = drpa.length === 0 || drpa === ',' ? 'false' : drpa
+    body.dnsOverHttpRealIpHeader = f.dnsOverHttpRealIpHeader
+    body.dnsTlsCertificatePath = f.dnsTlsCertificatePath
+    body.dnsTlsCertificatePassword = f.dnsTlsCertificatePassword
+  }
+
+  // ── TSIG (cluster, main.js:1958-1967)
+  if (include.cluster) {
+    const tsig = serializeWithLocation(
+      f.tsigKeys.map((k) => [
+        { type: 'text' as const, value: k.keyName },
+        { type: 'text' as const, value: k.sharedSecret, optional: true },
+        { type: 'text' as const, value: k.algorithmName },
+      ]),
+      'TSIG',
+      'tsigKeys',
+    )
+    if ('error' in tsig) return { error: tsig.error }
+    body.tsigKeys = tsig.value.length === 0 ? 'false' : tsig.value
+  }
+
+  // ── Recursion (cluster, main.js:1970-2013)
+  if (include.cluster) {
+    const racl = cleanList(f.recursionNetworkACL)
+    if (!(racl.length === 0 || racl === ',')) sanitised.recursionNetworkACL = racl.replace(/,/g, '\n')
+
+    const resolver: [keyof SettingsForm, string, string][] = [
+      ['resolverRetries', 'Please enter a value for Resolver Retries.', 'resolverRetries'],
+      ['resolverTimeout', 'Please enter a value for Resolver Timeout.', 'resolverTimeout'],
+      ['resolverConcurrency', 'Please enter a value for Resolver Concurrency.', 'resolverConcurrency'],
+      ['resolverMaxStackCount', 'Please enter a value for Resolver Max Stack Count.', 'resolverMaxStackCount'],
+    ]
+    for (const [key, text, field] of resolver) {
+      if (f[key] === '') return missing(text, 'Recursion', field)
+    }
+
+    body.recursion = f.recursion
+    body.recursionNetworkACL = racl.length === 0 || racl === ',' ? 'false' : racl
+    body.randomizeName = String(f.randomizeName)
+    body.qnameMinimization = String(f.qnameMinimization)
+    body.locallyServedDnsZones = String(f.locallyServedDnsZones)
+    body.resolverRetries = f.resolverRetries
+    body.resolverTimeout = f.resolverTimeout
+    body.resolverConcurrency = f.resolverConcurrency
+    body.resolverMaxStackCount = f.resolverMaxStackCount
+  }
+
+  // ── Cache (node, main.js:2016-2075)
+  if (include.node) {
+    const cache: [keyof SettingsForm, string, string][] = [
+      ['cacheMaximumEntries', 'Please enter cache maximum entries value.', 'cacheMaximumEntries'],
+      ['cacheMinimumRecordTtl', 'Please enter cache minimum record TTL value.', 'cacheMinimumRecordTtl'],
+      ['cacheMaximumRecordTtl', 'Please enter cache maximum record TTL value.', 'cacheMaximumRecordTtl'],
+      ['cacheNegativeRecordTtl', 'Please enter cache negative record TTL value.', 'cacheNegativeRecordTtl'],
+      ['cacheFailureRecordTtl', 'Please enter cache failure record TTL value.', 'cacheFailureRecordTtl'],
+      ['cachePrefetchEligibility', 'Please enter cache prefetch eligibility value.', 'cachePrefetchEligibility'],
+      ['cachePrefetchTrigger', 'Please enter cache prefetch trigger value.', 'cachePrefetchTrigger'],
+    ]
+    for (const [key, text, field] of cache) {
+      if (f[key] === '') return missing(text, 'Cache', field)
+    }
+
+    body.saveCache = String(f.saveCache)
+    body.serveStale = String(f.serveStale)
+    body.serveStaleTtl = f.serveStaleTtl
+    body.serveStaleAnswerTtl = f.serveStaleAnswerTtl
+    body.serveStaleResetTtl = f.serveStaleResetTtl
+    body.serveStaleMaxWaitTime = f.serveStaleMaxWaitTime
+    body.cacheMaximumEntries = f.cacheMaximumEntries
+    body.cacheMinimumRecordTtl = f.cacheMinimumRecordTtl
+    body.cacheMaximumRecordTtl = f.cacheMaximumRecordTtl
+    body.cacheNegativeRecordTtl = f.cacheNegativeRecordTtl
+    body.cacheFailureRecordTtl = f.cacheFailureRecordTtl
+    body.cachePrefetchEligibility = f.cachePrefetchEligibility
+    body.cachePrefetchTrigger = f.cachePrefetchTrigger
+  }
+
+  // ── Blocking (cluster, main.js:2078-2108; no validation in upstream)
+  if (include.cluster) {
+    const bbl = cleanList(f.blockingBypassList)
+    if (!(bbl.length === 0 || bbl === ',')) sanitised.blockingBypassList = bbl.replace(/,/g, '\n') + '\n'
+
+    const cba = cleanList(f.customBlockingAddresses)
+    if (!(cba.length === 0 || cba === ',')) sanitised.customBlockingAddresses = cba.replace(/,/g, '\n') + '\n'
+
+    const blu = cleanList(f.blockListUrls)
+    if (!(blu.length === 0 || blu === ',')) sanitised.blockListUrls = blu.replace(/,/g, '\n') + '\n'
+
+    body.enableBlocking = String(f.enableBlocking)
+    body.allowTxtBlockingReport = String(f.allowTxtBlockingReport)
+    body.blockingBypassList = bbl.length === 0 || bbl === ',' ? 'false' : bbl
+    body.blockingType = f.blockingType
+    body.customBlockingAddresses = cba.length === 0 || cba === ',' ? 'false' : cba
+    body.blockingAnswerTtl = f.blockingAnswerTtl
+    body.blockListUrls = blu.length === 0 || blu === ',' ? 'false' : blu
+    body.blockListUpdateIntervalHours = f.blockListUpdateIntervalHours
+  }
+
+  // ── Proxy & Forwarders (cluster, main.js:2111-2178)
+  if (include.cluster) {
+    const proxyType = f.proxyType.toLowerCase()
+    const proxy: Record<string, string> = { proxyType }
+    if (proxyType !== 'none') {
+      if (f.proxyAddress === '') {
+        return missing('Please enter proxy server address.', 'Proxy & Forwarders', 'proxyAddress')
+      }
+      if (f.proxyPort === '') {
+        return missing('Please enter proxy server port.', 'Proxy & Forwarders', 'proxyPort')
+      }
+      const pb = cleanList(f.proxyBypassList)
+      // main.js:2137 — here empty is NOT "false", it is an empty string.
+      if (!(pb.length === 0 || pb === ',')) sanitised.proxyBypassList = pb.replace(/,/g, '\n')
+
+      proxy.proxyAddress = f.proxyAddress
+      proxy.proxyPort = f.proxyPort
+      proxy.proxyUsername = f.proxyUsername
+      proxy.proxyPassword = f.proxyPassword
+      proxy.proxyBypass = pb.length === 0 || pb === ',' ? '' : pb
+    }
+
+    const fwd = cleanList(f.forwarders)
+    if (!(fwd.length === 0 || fwd === ',')) sanitised.forwarders = fwd.replace(/,/g, '\n')
+
+    const forwarding: [keyof SettingsForm, string, string][] = [
+      ['forwarderRetries', 'Please enter a value for Forwarder Retries.', 'forwarderRetries'],
+      ['forwarderTimeout', 'Please enter a value for Forwarder Timeout.', 'forwarderTimeout'],
+      ['forwarderConcurrency', 'Please enter a value for Forwarder Concurrency.', 'forwarderConcurrency'],
+    ]
+    for (const [key, text, field] of forwarding) {
+      if (f[key] === '') return missing(text, 'Proxy & Forwarders', field)
+    }
+
+    Object.assign(body, proxy)
+    body.forwarders = fwd.length === 0 || fwd === ',' ? 'false' : fwd
+    body.forwarderProtocol = f.forwarderProtocol
+    body.concurrentForwarding = String(f.concurrentForwarding)
+    body.forwarderRetries = f.forwarderRetries
+    body.forwarderTimeout = f.forwarderTimeout
+    body.forwarderConcurrency = f.forwarderConcurrency
+  }
+
+  // ── Logging (node, main.js:2181-2194; no validation in upstream)
+  if (include.node) {
+    body.loggingType = f.loggingType
+    body.ignoreResolverLogs = String(f.ignoreResolverLogs)
+    body.noStackTrace = String(f.noStackTrace)
+    body.logQueries = String(f.logQueries)
+    body.useLocalTime = String(f.useLocalTime)
+    body.logFolder = f.logFolder
+    body.maxLogFileDays = f.maxLogFileDays
+    body.enableInMemoryStats = String(f.enableInMemoryStats)
+    body.maxStatFileDays = f.maxStatFileDays
+  }
 
   return { body, sanitised }
 }

@@ -27,7 +27,7 @@ without treating it as a date, and the order is the same the old console gave.
 /*
 The table: the scaffolding, not just the styles.
 
-This module exported `useSort`, `Th` and `AccionFila` —the helpers— and let each
+This module exported `useSort`, `Th` and `RowAction` —the helpers— and let each
 screen write the wrapper, the `table`, the `thead` and the `tbody` by hand.
 Eighteen tables with the same structure typed out eighteen times, and everything
 copying allows: six of the seven data tables had been left without their "there
@@ -37,16 +37,16 @@ its own because nobody tied it to the shared one.
 What is shared now is the PIECE. What still belongs to each screen is the only
 thing that really changes: which columns there are and what goes in each row.
 
-    <Tabla
-      cabecera={<><Th …>Username</Th>…</>}
-      vacia={usuarios.length === 0}
-      empty="No User Found"
-      columnas={8}
+    <Table
+      header={<><Th …>Username</Th>…</>}
+      isEmpty={users.length === 0}
+      emptyText="No User Found"
+      columns={8}
     >
-      {usuarios.map((u) => <tr key={u.username}>…</tr>)}
-    </Tabla>
+      {users.map((u) => <tr key={u.username}>…</tr>)}
+    </Table>
 
-`vacia` is explicit and not guessed by counting children: a `.map()` over an empty
+`isEmpty` is explicit and not guessed by counting children: a `.map()` over an empty
 list hands back an empty array, not zero children, and a detection that is right
 by accident is worse than a parameter.
 */

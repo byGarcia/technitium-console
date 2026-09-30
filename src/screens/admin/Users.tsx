@@ -41,9 +41,33 @@ seventh are `admin/users/create` and `admin/users/delete`.
 Two asymmetries of upstream's that are replicated as they are:
 
   · Disabling asks for confirmation; ENABLING does not.
-  · "Reset Password" and "Disable 2FA" are only offered to a local user, and
-    "Disable 2FA" only if they have it on (auth.js:1150-1157).
+  · "Reset Password" is only offered to a `Local` user, and "Disable 2FA" to a
+    `Local` or `RemoteLDAP` one that has it on (auth.js:1195-1205, v15.5.1).
+    Since v15.5 both hang off `type`, not off the obsolete `isSsoUser`.
 */
+
+/*
+`getAdminUsersRowHtml` (auth.js:1148-1174): the user type label and the 2FA
+status. `RemoteSSO` is "Remote/SSO" and "SSO Managed"; `RemoteLDAP` is
+"Remote/LDAP" with its own 2FA status; `Local` and ANYTHING ELSE fall to the
+`default:`, which writes `user.type` itself as the label — "Local" reads "Local"
+because that is what the server sends.
+*/
+function userType(u: AdminUser): string {
+  switch (u.type) {
+    case 'RemoteSSO':
+      return 'Remote/SSO'
+    case 'RemoteLDAP':
+      return 'Remote/LDAP'
+    default:
+      return u.type
+  }
+}
+
+function totpStatus(u: AdminUser): string {
+  if (u.type === 'RemoteSSO') return 'SSO Managed'
+  return u.totpEnabled ? 'Enabled' : 'Disabled'
+}
 
 interface Props {
   /** The section sub-navigation, drawn under the header. */
@@ -67,8 +91,8 @@ function access(iso: string, address: string): string {
 const KEYS: Keys<AdminUser> = {
   username: (u) => u.username,
   display: (u) => u.displayName,
-  type: (u) => (u.isSsoUser ? 'Remote/SSO' : 'Local'),
-  totp: (u) => (u.isSsoUser ? 'SSO Managed' : u.totpEnabled ? 'Enabled' : 'Disabled'),
+  type: userType,
+  totp: totpStatus,
   status: (u) => (u.disabled ? 'Disabled' : 'Enabled'),
   recent: (u) => access(u.recentSessionLoggedOn, u.recentSessionRemoteAddress),
   previous: (u) => access(u.previousSessionLoggedOn, u.previousSessionRemoteAddress),
@@ -181,12 +205,17 @@ export function Users({ tabs, token, cluster, onNotice }: Props) {
                     say what a user IS, and they were reading as three different
                     kinds of thing: two pills and one bare word. The word does not
                     change — `Remote/SSO` is upstream's, `SSO Managed` in the next
-                    column is its sibling, so it takes the same `info` tone. */}
+                    column is its sibling, so it takes the same `info` tone, and
+                    `Remote/LDAP` is the other remote user, so it takes it too. */}
                 <td>
-                  {u.isSsoUser ? <Tag tone="info">Remote/SSO</Tag> : <Tag>Local</Tag>}
+                  {u.type === 'RemoteSSO' || u.type === 'RemoteLDAP' ? (
+                    <Tag tone="info">{userType(u)}</Tag>
+                  ) : (
+                    <Tag>{userType(u)}</Tag>
+                  )}
                 </td>
                 <td>
-                  {u.isSsoUser ? (
+                  {u.type === 'RemoteSSO' ? (
                     <Tag tone="info">SSO Managed</Tag>
                   ) : u.totpEnabled ? (
                     <Tag tone="ok">Enabled</Tag>
@@ -235,12 +264,12 @@ export function Users({ tabs, token, cluster, onNotice }: Props) {
                     <Menu label={`Actions for ${u.username}`}>
                       {(close) => (
                         <>
-                          {!u.isSsoUser && (
+                          {u.type === 'Local' && (
                             <button type="button" onClick={() => { close(); setReset(u.username) }}>
                               Reset Password
                             </button>
                           )}
-                          {!u.isSsoUser && u.totpEnabled && (
+                          {(u.type === 'Local' || u.type === 'RemoteLDAP') && u.totpEnabled && (
                             <button type="button" onClick={() => { close(); setAction({ type: '2fa', user: u }) }}>
                               Disable 2FA
                             </button>

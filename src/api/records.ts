@@ -345,7 +345,7 @@ export function fullDomain(zone: string, subDomain: string): string {
  * The body of a `records/delete`: the identity plus zone, domain and type.
  * An empty name is the root (zone.js:6410-6411).
  */
-export function cuerpoBorrado(zone: string, record: ResourceRecord): Record<string, string> {
+export function deletionBody(zone: string, record: ResourceRecord): Record<string, string> {
   return {
     zone,
     domain: record.name === '' ? '.' : record.name,
@@ -359,7 +359,7 @@ export function cuerpoBorrado(zone: string, record: ResourceRecord): Record<stri
  * whole record —ttl, comments and expiry included— with `disable` set.
  * `newDomain` is not sent: the name does not change (zone.js:6225-6390).
  */
-export function cuerpoCambioDeEstado(
+export function stateChangeBody(
   zone: string,
   record: ResourceRecord,
   disable: boolean,

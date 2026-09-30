@@ -51,14 +51,14 @@ export function Confirm({
   /** If it returns a promise, the dialog stays busy while it runs and closes when it settles. */
   onConfirm: () => unknown
 }) {
-  const [inProgress, setEnCurso] = useState(false)
+  const [inProgress, setInProgress] = useState(false)
 
   function confirm() {
     const r = onConfirm()
     if (!(r instanceof Promise)) return
-    setEnCurso(true)
+    setInProgress(true)
     void r.finally(() => {
-      setEnCurso(false)
+      setInProgress(false)
       onClose()
     })
   }

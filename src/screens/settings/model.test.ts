@@ -68,12 +68,6 @@ describe('enabled', () => {
     const en = enabled({ ...base(), enableBlocking: false })
     expect(en.blocking).toBe(false)
     expect(en.customBlockingAddresses).toBe(false)
-    expect(en.updateListsNow).toBe(false)
-  })
-
-  it('\"Update Now\" stays off with blocking on but no lists', () => {
-    expect(enabled({ ...base(), enableBlocking: true, blockListUrls: '' }).updateListsNow).toBe(false)
-    expect(enabled({ ...base(), enableBlocking: true, blockListUrls: 'http://x\n' }).updateListsNow).toBe(true)
   })
 
   it('the recursion ACL is only edited with the fourth option', () => {
@@ -131,8 +125,6 @@ describe('construirCuerpo — validation order of saveDnsSettings', () => {
     ['cacheFailureRecordTtl', { cacheFailureRecordTtl: '' }, 'Please enter cache failure record TTL value.'],
     ['cachePrefetchEligibility', { cachePrefetchEligibility: '' }, 'Please enter cache prefetch eligibility value.'],
     ['cachePrefetchTrigger', { cachePrefetchTrigger: '' }, 'Please enter cache prefetch trigger value.'],
-    ['cachePrefetchSampleIntervalInMinutes', { cachePrefetchSampleIntervalInMinutes: '' }, 'Please enter cache auto prefetch sample interval value.'],
-    ['cachePrefetchSampleEligibilityHitsPerHour', { cachePrefetchSampleEligibilityHitsPerHour: '' }, 'Please enter cache auto prefetch sample eligibility value.'],
     ['forwarderRetries', { forwarderRetries: '' }, 'Please enter a value for Forwarder Retries.'],
     ['forwarderTimeout', { forwarderTimeout: '' }, 'Please enter a value for Forwarder Timeout.'],
     ['forwarderConcurrency', { forwarderConcurrency: '' }, 'Please enter a value for Forwarder Concurrency.'],
@@ -284,5 +276,109 @@ describe('construirCuerpo — body of settings/set', () => {
     // Blocking adds a trailing newline; the forwarders do not. Upstream's asymmetry.
     expect(r.sanitised?.blockingBypassList).toBe('10.0.0.1\n10.0.0.2\n')
     expect(r.sanitised?.forwarders).toBe('1.1.1.1\n8.8.8.8')
+  })
+})
+
+/*
+The node selector decides WHICH blocks a save carries (main.js:1639-1644):
+`includeClusterParameters = (node == "") || (node == "cluster")` and
+`includeNodeParameters = (node == "") || !includeClusterParameters`. The two key
+lists are the parameter names of upstream's twelve `formData +=` blocks, in their
+order, extracted from main.js (v15.5.1) with the proxy left at "No Proxy".
+*/
+const NODE_KEYS = [
+  'dnsServerDomain', 'dnsServerLocalEndPoints', 'dnsServerIPv4SourceAddresses', 'dnsServerIPv6SourceAddresses',
+  'ipv6Mode', 'enableUdpSocketPool', 'socketPoolExcludedPorts',
+  'webServiceLocalAddresses', 'webServiceHttpPort', 'webServiceEnableHttpUnixSocket', 'webServiceHttpUnixSocket',
+  'webServiceEnableTlsUnixSocket', 'webServiceTlsUnixSocket', 'webServiceEnableTls', 'webServiceEnableHttp3',
+  'webServiceHttpToTlsRedirect', 'webServiceUseSelfSignedTlsCertificate', 'webServiceTlsPort',
+  'webServiceReverseProxyAddresses', 'webServiceRealIpHeader', 'webServiceCspFrameAncestorsHeader',
+  'webServiceTlsCertificatePath', 'webServiceTlsCertificatePassword',
+  'enableEDnsClientSubnetSourceAddress', 'enableDnsOverUdpProxy', 'enableDnsOverTcpProxy', 'enableDnsOverHttp',
+  'enableDnsOverHttpUnixSocket', 'enableDnsOverHttpsUnixSocket', 'enableDnsOverTls', 'enableDnsOverHttps',
+  'enableDnsOverHttp3', 'enableDnsOverQuic', 'enableDnsOverHttpHelpRedirect', 'dnsOverUdpProxyPort',
+  'dnsOverTcpProxyPort', 'dnsOverHttpPort', 'dnsOverHttpUnixSocket', 'dnsOverHttpsUnixSocket', 'dnsOverTlsPort',
+  'dnsOverHttpsPort', 'dnsOverQuicPort', 'dnsReverseProxyNetworkACL', 'dnsOverHttpRealIpHeader',
+  'dnsTlsCertificatePath', 'dnsTlsCertificatePassword',
+  'saveCache', 'serveStale', 'serveStaleTtl', 'serveStaleAnswerTtl', 'serveStaleResetTtl', 'serveStaleMaxWaitTime',
+  'cacheMaximumEntries', 'cacheMinimumRecordTtl', 'cacheMaximumRecordTtl', 'cacheNegativeRecordTtl',
+  'cacheFailureRecordTtl', 'cachePrefetchEligibility', 'cachePrefetchTrigger',
+  'loggingType', 'ignoreResolverLogs', 'noStackTrace', 'logQueries', 'useLocalTime', 'logFolder', 'maxLogFileDays',
+  'enableInMemoryStats', 'maxStatFileDays',
+]
+
+const CLUSTER_KEYS = [
+  'defaultRecordTtl', 'defaultNsRecordTtl', 'defaultSoaRecordTtl', 'defaultResponsiblePerson',
+  'useSoaSerialDateScheme', 'minSoaRefresh', 'minSoaRetry', 'zoneTransferAllowedNetworks', 'notifyAllowedNetworks',
+  'dnsServerEnableCheckForUpdate', 'dnsAppsEnableAutomaticUpdate',
+  'udpPayloadSize', 'dnssecValidation', 'eDnsClientSubnet', 'eDnsClientSubnetIPv4PrefixLength',
+  'eDnsClientSubnetIPv6PrefixLength', 'eDnsClientSubnetIpv4Override', 'eDnsClientSubnetIpv6Override',
+  'qpmPrefixLimitsIPv4', 'qpmPrefixLimitsIPv6', 'qpmLimitSampleMinutes', 'qpmLimitUdpTruncationPercentage',
+  'qpmLimitBypassList', 'clientTimeout', 'tcpSendTimeout', 'tcpReceiveTimeout', 'quicIdleTimeout',
+  'quicMaxInboundStreams', 'listenBacklog', 'udpSendBufferSizeKB', 'udpReceiveBufferSizeKB',
+  'maxConcurrentResolutionsPerCore',
+  'tsigKeys',
+  'recursion', 'recursionNetworkACL', 'randomizeName', 'qnameMinimization', 'locallyServedDnsZones',
+  'resolverRetries', 'resolverTimeout', 'resolverConcurrency', 'resolverMaxStackCount',
+  'enableBlocking', 'allowTxtBlockingReport', 'blockingBypassList', 'blockingType', 'customBlockingAddresses',
+  'blockingAnswerTtl', 'blockListUrls', 'blockListUpdateIntervalHours',
+  'proxyType', 'forwarders', 'forwarderProtocol', 'concurrentForwarding', 'forwarderRetries', 'forwarderTimeout',
+  'forwarderConcurrency',
+]
+
+describe('buildBody — node scope of saveDnsSettings (main.js:1639-1644)', () => {
+  const build = (node: string, partial: Partial<ReturnType<typeof base>> = {}) =>
+    buildBody({ ...base(), ...partial }, node)
+
+  it('a standalone server (node "") sends node first and EVERY block', () => {
+    const b = build('').body!
+    expect(Object.keys(b)[0]).toBe('node')
+    expect(b.node).toBe('')
+    for (const key of [...NODE_KEYS, ...CLUSTER_KEYS]) expect(b, key).toHaveProperty(key)
+  })
+
+  it('the aggregate (node "cluster") sends only the cluster parameters, in upstream order', () => {
+    const b = build('cluster').body!
+    expect(Object.keys(b)).toEqual(['node', ...CLUSTER_KEYS])
+    expect(b.node).toBe('cluster')
+  })
+
+  it('a named node sends only its own parameters, in upstream order', () => {
+    const b = build('node1.cluster.test').body!
+    expect(Object.keys(b)).toEqual(['node', ...NODE_KEYS])
+    expect(b.node).toBe('node1.cluster.test')
+  })
+
+  it('a skipped block does not validate: with a named node, cluster fields may be empty', () => {
+    const r = build('node1.cluster.test', {
+      eDnsClientSubnetIPv4PrefixLength: '',
+      qpmLimitSampleMinutes: '',
+      resolverRetries: '',
+      forwarderRetries: '',
+      proxyType: 'Http',
+      proxyAddress: '',
+      tsigKeys: [{ keyName: '', sharedSecret: '', algorithmName: 'hmac-sha256' }],
+    })
+    expect(r.error).toBeUndefined()
+    expect(r.body).toBeDefined()
+  })
+
+  it('a skipped block does not validate: with the aggregate, node fields may be empty', () => {
+    const r = build('cluster', {
+      dnsServerDomain: '',
+      dnsOverTlsPort: '',
+      cacheMaximumEntries: '',
+    })
+    expect(r.error).toBeUndefined()
+    expect(r.body).toBeDefined()
+  })
+
+  it('an included block still validates in both scopes', () => {
+    expect(build('node1.cluster.test', { dnsServerDomain: '' }).error?.text).toBe(
+      'Please enter server domain name.',
+    )
+    expect(build('cluster', { resolverRetries: '' }).error?.text).toBe(
+      'Please enter a value for Resolver Retries.',
+    )
   })
 })

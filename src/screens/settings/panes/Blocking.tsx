@@ -28,9 +28,15 @@ import type { PaneProps } from './types'
 Settings > Blocking (index.html:2066-2190).
 
 This is where the screen's only cascading enablement rule lives
-(`updateBlockingState`, main.js:2412): with "Enable Blocking" unchecked, ALL the
-sub-tab's controls go off, and "Update Now" additionally requires the URL list
-not to be empty.
+(`updateBlockingState`, main.js:2405 in v15.5.1): with "Enable Blocking"
+unchecked, the sub-tab's controls go off — Blocking Answer TTL included since
+v15.5, and Block List Update Interval no longer.
+
+"Update Now" is not part of that rule any more. v15.5 took it out of
+`updateBlockingState`, so neither the checkbox nor editing the URL list moves
+it: it is off only when the LOADED settings had no block lists
+(`blockListUrls == null`, main.js:1489-1496), and it is re-evaluated when the
+settings are loaded again.
 */
 export interface BlockingExtra {
   /** `temporaryDisableBlockingTill` from `settings/get`. Absent or null = "Not Set". */
@@ -39,6 +45,8 @@ export interface BlockingExtra {
   blockListNextUpdatedOn?: string | null
   onTemporaryDisable: () => void
   onUpdateNow: () => void
+  /** The loaded `blockListUrls` was not null — what enables "Update Now". */
+  hasSavedBlockLists: boolean
   busy?: boolean
 }
 
@@ -185,6 +193,7 @@ export function Blocking({ f, set, en, extra }: PaneProps & { extra: BlockingExt
         onChange={(v) => set({ blockingAnswerTtl: v })}
         placeholder="ttl"
         suffix="seconds (default 30)"
+        disabled={off}
         help="The TTL value in seconds that must be used for the records in a blocking response. This is the TTL value that the client will use to cache the blocking response."
       />
 
@@ -254,7 +263,6 @@ export function Blocking({ f, set, en, extra }: PaneProps & { extra: BlockingExt
         onChange={(v) => set({ blockListUpdateIntervalHours: v })}
         placeholder="hours"
         suffix="hours (valid range 0-168; default 24; set 0 to disable)"
-        disabled={off}
         help="The interval in hours to automatically download and update the block lists."
       />
 
@@ -264,7 +272,7 @@ export function Blocking({ f, set, en, extra }: PaneProps & { extra: BlockingExt
             {nextUpdateText(extra.blockListNextUpdatedOn)}
           </span>
           <Button
-            disabled={!en.updateListsNow || extra.busy}
+            disabled={!extra.hasSavedBlockLists || extra.busy}
             onClick={extra.onUpdateNow}
           >
             Update Now

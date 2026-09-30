@@ -1,5 +1,5 @@
-import { ClusterNodeSelect, AGGREGATE } from '../../ui/ClusterNodeSelect'
-import { useCallback, useEffect, useState } from 'react'
+import { ClusterNodeSelect } from '../../ui/ClusterNodeSelect'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { PermissionButton } from '../../ui/PermissionButton'
 import { SectionHeader } from '../../ui/SectionHeader'
 import { SubTabs } from '../../ui/SubTabs'
@@ -14,8 +14,10 @@ import {
   setSettings,
   temporaryDisableBlocking,
   type DnsSettings,
+  type SettingsEnvelope,
 } from '../../api/settings'
-import { buildBody, formFromSettings, enabled, type SettingsForm } from './model'
+import { buildBody, formFromSettings, enabled, selectedNode, type SettingsForm } from './model'
+import { detectReverseProxy, REDIRECT_DELAY_MS, webConsoleRedirection } from './redirect'
 import { General } from './panes/General'
 import { WebService } from './panes/WebService'
 import { OptionalProtocols } from './panes/OptionalProtocols'
@@ -82,6 +84,10 @@ export interface SettingsProps {
   canModify?: boolean
   canFlushCache?: boolean
   canBackup?: boolean
+  /** The session's `info.dnsServerDomain`: upstream compares it with the
+   *  `server` that answers a save or a restore before following the web
+   *  console to a new address (main.js:2216, 3187). */
+  serverDomain?: string
 }
 
 export function Settings({
@@ -93,19 +99,44 @@ export function Settings({
   canBackup = true,
   nodes = [],
   clusterInitialised = false,
+  serverDomain,
 }: SettingsProps) {
   /*
   Settings is one of only two screens that offer the aggregate and remember the
   choice; the key is upstream's own (`cluster.js`). Spec F10.
+
+  What travels is what upstream's selector HOLDS, not what was remembered: on a
+  standalone server that is `""`, never `"cluster"` —the save decides which
+  blocks to send from it, so `"cluster"` there would drop every node parameter—.
+  See `selectedNode`. Upstream stores the held value on every load
+  (main.js:905), so a standalone server remembers `""`.
   */
-  const [node, setNode] = useState<string>(
-    () => localStorage.getItem('settingsClusterNode') || AGGREGATE,
+  const [remembered, setNode] = useState<string | null>(() =>
+    localStorage.getItem('settingsClusterNode'),
   )
+  const node = selectedNode(remembered, clusterInitialised, nodes)
   useEffect(() => {
     localStorage.setItem('settingsClusterNode', node)
   }, [node])
 
-  const [settings, setAjustes] = useState<DnsSettings | null>(null)
+  /*
+  Two pieces of upstream's global state this screen reads and writes.
+
+  `sessionDomain` is `sessionData.info.dnsServerDomain`: upstream's
+  `updateDnsSettingsDataAndGui` (main.js:1158) rewrites it after a load of this
+  server or the aggregate (main.js:914) and after a save or a restore of this
+  server (main.js:2208, 3177), and the redirection check compares against the
+  rewritten value — so renaming the server does not stop the console from
+  following its new port. The rest of that function (the tab title, the domain
+  in the header, About's version and uptime) is not replicated here: this
+  console's session info is fixed at login.
+
+  `reverseProxy` is `reverseProxyDetected` (main.js:21), set on every load.
+  */
+  const sessionDomain = useRef(serverDomain)
+  const reverseProxy = useRef(false)
+
+  const [settings, setSettingsState] = useState<DnsSettings | null>(null)
   const [form, setForm] = useState<SettingsForm | null>(null)
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
@@ -123,12 +154,19 @@ export function Settings({
   const load = useCallback(async () => {
     setLoading(true)
     const s = await getSettings(token, node)
+    if (s != null) {
+      // main.js:914-918
+      if (node === '' || node === 'cluster' || node === sessionDomain.current) {
+        sessionDomain.current = s.dnsServerDomain
+      }
+      reverseProxy.current = detectReverseProxy(window.location, s)
+    }
     apply(s)
     setLoading(false)
   }, [token, node])
 
   function apply(s: DnsSettings | null) {
-    setAjustes(s)
+    setSettingsState(s)
     setForm(s ? formFromSettings(s) : null)
     setNextList(s?.blockListNextUpdatedOn)
   }
@@ -152,9 +190,26 @@ export function Settings({
 
   const en = enabled(form)
 
+  /** The part of the success path save and restore share (main.js:2208 and
+   *  2216-2217, 3177 and 3187-3188). */
+  function afterSaved(envelope: SettingsEnvelope) {
+    if (node === '' || node === sessionDomain.current) {
+      sessionDomain.current = envelope.response.dnsServerDomain
+    }
+    apply(envelope.response)
+  }
+
+  function followWebConsole(envelope: SettingsEnvelope) {
+    if (sessionDomain.current !== envelope.server) return
+    const url = webConsoleRedirection(window.location, envelope.response, reverseProxy.current)
+    if (url == null) return
+    // "delay redirection to allow web server to restart" (main.js:2300).
+    setTimeout(() => window.open(url, '_self'), REDIRECT_DELAY_MS)
+  }
+
   async function save() {
     if (form == null) return
-    const result = buildBody(form)
+    const result = buildBody(form, node)
 
     if (result.error) {
       const { title, text, tab } = result.error
@@ -174,18 +229,20 @@ export function Settings({
       return
     }
 
-    apply(outcome.data.response)
+    afterSaved(outcome.data)
     setNotice({
       type: 'success',
       title: 'Settings Saved!',
       text: 'DNS Server settings were saved successfully.',
     })
+    followWebConsole(outcome.data)
   }
 
   async function doFlushCache() {
     setConfirm(null)
     setBusy(true)
-    const ok = await flushCache(token)
+    // index.html:2461 — the flush goes to the node chosen in this selector.
+    const ok = await flushCache(token, node)
     setBusy(false)
     if (ok) {
       setNotice({
@@ -218,7 +275,7 @@ export function Settings({
     setBusy(false)
     if (till == null) return
 
-    setAjustes((a) => (a ? { ...a, temporaryDisableBlockingTill: till } : a))
+    setSettingsState((a) => (a ? { ...a, temporaryDisableBlockingTill: till } : a))
     set({ enableBlocking: false })
     setNotice({
       type: 'success',
@@ -249,7 +306,7 @@ export function Settings({
     }
     setModalNotice(null)
     setBusy(true)
-    const r = await openDownload(token, 'settings/backup', backupParams(selection), { ts: true })
+    const r = await openDownload(token, 'settings/backup', backupParams(selection, node), { ts: true })
     setBusy(false)
     if (!r.ok) return
     setModal(null)
@@ -273,7 +330,7 @@ export function Settings({
     }
     setModalNotice(null)
     setBusy(true)
-    const outcome = await restoreSettings(token, file, selection, remove)
+    const outcome = await restoreSettings(token, file, selection, remove, node)
     setBusy(false)
 
     if (outcome.kind !== 'ok') {
@@ -281,13 +338,14 @@ export function Settings({
       return
     }
 
-    apply(outcome.data.response)
+    afterSaved(outcome.data)
     setModal(null)
     setNotice({
       type: 'success',
       title: 'Restored!',
       text: 'Settings were restored successfully.',
     })
+    followWebConsole(outcome.data)
   }
 
   const props = { f: form, set, en }
@@ -330,8 +388,8 @@ export function Settings({
 
       <div>
         {active === 'General' && <General {...props} />}
-        {active === 'Web Service' && <WebService {...props} />}
-        {active === 'Optional Protocols' && <OptionalProtocols {...props} />}
+        {active === 'Web Service' && <WebService {...props} loaded={settings} />}
+        {active === 'Optional Protocols' && <OptionalProtocols {...props} loaded={settings} />}
         {active === 'TSIG' && <Tsig {...props} />}
         {active === 'Recursion' && <Recursion {...props} />}
         {active === 'Cache' && <Cache {...props} />}
@@ -343,6 +401,7 @@ export function Settings({
               blockListNextUpdatedOn: nextList,
               onTemporaryDisable: askDisableBlocking,
               onUpdateNow: () => setConfirm('update'),
+              hasSavedBlockLists: settings.blockListUrls != null,
               busy,
             }}
           />
@@ -372,7 +431,7 @@ export function Settings({
         <PermissionButton
           variant="primary"
           disabled={busy}
-          permiso={canModify ? undefined : 'Settings.canModify'}
+          permission={canModify ? undefined : 'Settings.canModify'}
           onClick={() => void save()}
         >
           Save Settings
@@ -380,14 +439,14 @@ export function Settings({
         <PermissionButton
           variant="danger"
           disabled={busy}
-          permiso={canFlushCache ? undefined : 'Cache.canDelete'}
+          permission={canFlushCache ? undefined : 'Cache.canDelete'}
           onClick={() => setConfirm('flush')}
         >
           Flush Cache
         </PermissionButton>
         <div className={formulario.spacer} />
         <PermissionButton
-          permiso={canBackup ? undefined : 'Settings.canDelete'}
+          permission={canBackup ? undefined : 'Settings.canDelete'}
           onClick={() => {
             setSelection(initialBackupSelection())
             setModalNotice(null)
@@ -397,7 +456,7 @@ export function Settings({
           Backup Settings
         </PermissionButton>
         <PermissionButton
-          permiso={canBackup ? undefined : 'Settings.canDelete'}
+          permission={canBackup ? undefined : 'Settings.canDelete'}
           onClick={() => {
             setSelection(initialBackupSelection())
             setModalNotice(null)

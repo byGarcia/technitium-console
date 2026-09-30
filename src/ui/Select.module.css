@@ -29,7 +29,7 @@ to weigh the same. What changes is that this one opens.
 .trigger[aria-expanded='true'] {
   outline: none;
   border-color: var(--acc);
-  box-shadow: var(--sunken), var(--halo-foco);
+  box-shadow: var(--sunken), var(--halo-focus);
 }
 
 .trigger:disabled { opacity: 0.45; cursor: default; }
@@ -47,7 +47,7 @@ over the form and has to read as something in front.
 .list {
   position: fixed;
   scrollbar-width: thin;
-  z-index: var(--layer-flotante);
+  z-index: var(--layer-float);
   overflow-y: auto;
   padding: var(--s-3);
   border: 1px solid var(--line);
@@ -68,7 +68,7 @@ over the form and has to read as something in front.
   white-space: nowrap;
 }
 
-.option[data-active='true'] { background: var(--hover-fuerte); }
+.option[data-active='true'] { background: var(--hover-strong); }
 .option[aria-selected='true'] { color: var(--acc); font-weight: 600; }
 .option[aria-disabled='true'] { color: var(--faint); cursor: default; }
 .option[aria-disabled='true'][data-active='true'] { background: none; }

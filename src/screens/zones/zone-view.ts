@@ -11,6 +11,8 @@ the DNSSEC menu but with only "hide records" inside.
 export interface ZoneHeader {
   addRecord: boolean
   resync: boolean
+  /** "Edit Zone File", new in v15.5 (`lnkEditZoneFile`, zone.js:3389-3410 in v15.5.1). */
+  editZoneFile: boolean
   runImport: boolean
   runExport: boolean
   convert: boolean
@@ -42,6 +44,9 @@ export function zoneHeader(type: string, dnssecStatus: string | undefined): Zone
     // Only Primary and Forwarder allow adding records by hand.
     addRecord: type === 'Primary' || type === 'Forwarder',
     resync: [...SECONDARIES, 'Stub'].includes(type),
+    // Same list as import: shown for Primary and Forwarder, hidden in the
+    // Secondary/Catalog branch AND in the `default` one (Stub and unknown).
+    editZoneFile: type === 'Primary' || type === 'Forwarder',
     runImport: type === 'Primary' || type === 'Forwarder',
     runExport: ['Primary', 'Forwarder', ...SECONDARIES, 'Catalog'].includes(type),
     convert: ['Primary', 'Secondary', 'SecondaryForwarder', 'Forwarder', 'SecondaryCatalog'].includes(type),

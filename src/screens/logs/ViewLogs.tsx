@@ -208,7 +208,7 @@ export function ViewLogs({
             <PermissionButton
               variant="danger"
               disabled={busy}
-              permiso={canDeleteLogs ? undefined : 'Logs.canDelete'}
+              permission={canDeleteLogs ? undefined : 'Logs.canDelete'}
               onClick={() => setConfirm('allLogs')}
             >
               Delete All Logs
@@ -217,7 +217,7 @@ export function ViewLogs({
           <PermissionButton
             variant="danger"
             disabled={busy}
-            permiso={canDeleteStats ? undefined : 'Dashboard.canDelete'}
+            permission={canDeleteStats ? undefined : 'Dashboard.canDelete'}
             onClick={() => setConfirm('allStats')}
           >
             Delete All Stats
@@ -226,7 +226,7 @@ export function ViewLogs({
 
       <Notifier notice={notice} onClose={() => setNotice(null)} />
 
-      <div className={styles.dos}>
+      <div className={styles.split}>
         <Panel title="Log Files">
           <Body className={styles.pbList}>
             {files.length === 0 ? (
@@ -259,14 +259,14 @@ export function ViewLogs({
             title={<span className={styles.mono}>{open}</span>}
             actions={
               <div className={styles.acts}>
-                {/* `Download` no pide permiso ninguno: se queda encendido. */}
+                {/* `Download` asks for no permission at all: it stays enabled. */}
                 <Button disabled={busy} onClick={() => void download()}>
                   Download
                 </Button>
                 <PermissionButton
                   variant="danger"
                   disabled={busy}
-                  permiso={canDeleteLogs ? undefined : 'Logs.canDelete'}
+                  permission={canDeleteLogs ? undefined : 'Logs.canDelete'}
                   onClick={() => setConfirm('log')}
                 >
                   Delete

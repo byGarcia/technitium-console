@@ -69,7 +69,7 @@ export function ZonePermissions({
     void getZonePermissions(token, zone, node).then((r) => {
       setLoading(false)
       if (r == null) {
-        setNotice({ type: 'danger', title: 'Error!', text: 'Unable to reach the DNS server.' })
+        setNotice({ type: 'danger', title: 'Error!', text: 'Unable to connect to the server. Please try again.' })
         return
       }
       setTitle(`Edit Permissions - ${r.section} / ${r.subItem === '.' ? '<root>' : r.subItem}`)

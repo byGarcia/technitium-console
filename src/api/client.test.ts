@@ -96,11 +96,22 @@ describe('apiRequest', () => {
     })
   })
 
+  it('an answer that is not JSON is reported as jQuery reports it (common.js:193)', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ json: () => Promise.reject(new SyntaxError('Unexpected token <')) }),
+    )
+    expect(await apiRequest('user/login')).toEqual({
+      kind: 'error',
+      message: 'parsererror - SyntaxError: Unexpected token <',
+    })
+  })
+
   it('turns a network failure into a readable error', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('boom')))
     expect(await apiRequest('user/login')).toEqual({
       kind: 'error',
-      message: 'Unable to reach the DNS server.',
+      message: 'Unable to connect to the server. Please try again.',
     })
   })
 })

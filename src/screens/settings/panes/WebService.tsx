@@ -1,5 +1,6 @@
 import { AreaRow, Notices, Block, Check, GroupRow, Help, Note, Plain, Pre, TextRow } from '../parts'
 import type { PaneProps } from './types'
+import type { DnsSettings } from '../../../api/settings'
 
 /*
 Settings > Web Service (index.html:1416-1560).
@@ -7,7 +8,10 @@ Settings > Web Service (index.html:1416-1560).
 Upstream draws it in a single `div.well`; here it is split into titled blocks
 without moving a single field or changing their order.
 */
-export function WebService({ f, set, en }: PaneProps) {
+export function WebService({ f, set, en, loaded }: PaneProps & { loaded: DnsSettings }) {
+  // main.js:1303-1304 — the reverse proxy note names the LOADED header, not the
+  // one being typed.
+  const realIpHeader = loaded.webServiceRealIpHeader
   return (
     <>
       <Block title="Listeners">
@@ -180,13 +184,20 @@ export function WebService({ f, set, en }: PaneProps) {
             page will be automatically redirected to the new web console URL after saving settings.
             The HTTPS protocol will be enabled only when a TLS certificate is configured.
           </Note>
+          {/* v15.5 (index.html:1551 in v15.5.1). */}
+          <Note>
+            When using docker image without "host" network mode, any changes to Web Service Local
+            Addresses and Web Service HTTP/HTTPS Port options must be done only at docker level using
+            docker compose file. Changing these options in Settings will make the Web Service
+            inaccessible.
+          </Note>
           <Note>
             When using a reverse proxy with the Web Service, you need to add{' '}
-            <code>{f.webServiceRealIpHeader || 'X-Real-IP'}</code> header to the proxy request with
+            <code>{realIpHeader}</code> header to the proxy request with
             the IP address of the client to allow the Web Service to know the real IP address of the
             client originating the request. For example, if you are using nginx as the reverse
             proxy, you can add{' '}
-            <code>proxy_set_header {f.webServiceRealIpHeader || 'X-Real-IP'} $remote_addr;</code> to
+            <code>{`proxy_set_header ${realIpHeader} $remote_addr;`}</code> to
             make it work.
           </Note>
           <Note>

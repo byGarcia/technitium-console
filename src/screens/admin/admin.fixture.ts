@@ -3,6 +3,7 @@ import type {
   AdminSession,
   AdminUser,
   AdminUserDetails,
+  LdapConfig,
   SectionPermission,
   SsoConfig,
 } from '../../api/admin'
@@ -14,6 +15,11 @@ invented. The odd shapes they bring are the subject of several tests:
 `tokenName: null`, `0001-01-01T00:00:00` as "never", `0.0.0.0` as the address of
 a session that never existed, and a `clusterState` WITHOUT `clusterNodes` because
 the cluster is not initialised.
+
+The users and the LDAP config were re-read from a v15.5.1 instance on 2026-09-30:
+`type` arrived with that release, `remotelyManagedGroups` replaced
+`ssoManagedGroups`, and a `RemoteSSO` user carries no `totpEnabled` at all
+(WebServiceAuthApi.cs:140-146) — which is why `SSO_USER` below does not either.
 */
 
 export const ADMIN_SESSION: AdminSession = {
@@ -41,6 +47,7 @@ export const TOKEN_SESSION: AdminSession = {
 export const ADMIN_USER: AdminUser = {
   displayName: 'Administrator',
   username: 'admin',
+  type: 'Local',
   isSsoUser: false,
   totpEnabled: false,
   disabled: false,
@@ -54,6 +61,7 @@ export const ADMIN_USER: AdminUser = {
 export const NEW_USER: AdminUser = {
   displayName: 'Test User',
   username: 'testuser',
+  type: 'Local',
   isSsoUser: false,
   totpEnabled: false,
   disabled: false,
@@ -63,18 +71,31 @@ export const NEW_USER: AdminUser = {
   recentSessionRemoteAddress: '0.0.0.0',
 }
 
+/* Built from the contract, not observed: the harness has no identity provider.
+   `totpEnabled` is left out because the server leaves it out for this type. */
+const { totpEnabled: _noTotp, ...NEW_USER_WITHOUT_TOTP } = NEW_USER
 export const SSO_USER: AdminUser = {
-  ...NEW_USER,
+  ...NEW_USER_WITHOUT_TOTP,
   displayName: 'Adrián',
   username: 'adrian@example.com',
+  type: 'RemoteSSO',
   isSsoUser: true,
+}
+
+/* Same: the harness has no directory, so this one is built from the contract. */
+export const LDAP_USER: AdminUser = {
+  ...NEW_USER,
+  displayName: 'Ana Directory',
+  username: 'ana',
+  type: 'RemoteLDAP',
+  isSsoUser: false,
   totpEnabled: false,
 }
 
 export const USER_DETAIL: AdminUserDetails = {
   ...NEW_USER,
   sessionTimeoutSeconds: 1800,
-  ssoManagedGroups: false,
+  remotelyManagedGroups: false,
   memberOfGroups: [],
   sessions: [],
   groups: ['Administrators', 'DHCP Administrators', 'DNS Administrators'],
@@ -114,6 +135,25 @@ export const SSO: SsoConfig = {
   ssoAllowSignup: false,
   ssoAllowSignupOnlyForMappedUsers: true,
   ssoGroupMap: [],
+  localGroups: ['Administrators', 'DHCP Administrators', 'DNS Administrators'],
+}
+
+/** `admin/ldap/get?includeGroups=true` on a fresh v15.5.1, literally: five
+ *  strings `null`, and sign-up off while "only for mapped users" is ON. */
+export const LDAP: LdapConfig = {
+  ldapEnabled: false,
+  ldapServer: null,
+  ldapPort: 389,
+  ldapSslOption: 'None',
+  ldapIgnoreSslErrors: false,
+  ldapBindUsername: null,
+  ldapBindPassword: null,
+  ldapSearchBase: null,
+  ldapUserSearchFilter: null,
+  ldapGroupAttribute: null,
+  ldapAllowSignup: false,
+  ldapAllowSignupOnlyForMappedUsers: true,
+  ldapGroupMap: [],
   localGroups: ['Administrators', 'DHCP Administrators', 'DNS Administrators'],
 }
 

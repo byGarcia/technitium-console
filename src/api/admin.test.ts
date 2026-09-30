@@ -8,6 +8,7 @@ import {
   deleteGroup,
   deleteUser,
   getGroup,
+  getLdapConfig,
   getPermission,
   getSsoConfig,
   getUser,
@@ -17,9 +18,11 @@ import {
   listUsers,
   resetUserPassword,
   setGroup,
+  setLdapConfig,
   setPermissions,
   setSsoConfig,
   setUser,
+  testLdapConnection,
 } from './admin'
 
 afterEach(() => vi.restoreAllMocks())
@@ -216,6 +219,37 @@ describe('admin — SSO', () => {
       token: 'tok',
       method: 'POST',
       body: { ssoEnabled: 'false' },
+    })
+  })
+})
+
+describe('admin — LDAP', () => {
+  it('reads asking for the local groups', async () => {
+    const spy = makeSpy()
+    await getLdapConfig('tok')
+    expect(spy).toHaveBeenCalledWith('admin/ldap/get', {
+      token: 'tok',
+      body: { includeGroups: 'true' },
+    })
+  })
+
+  it('saves by POST', async () => {
+    const spy = makeSpy()
+    await setLdapConfig('tok', { ldapEnabled: 'false' })
+    expect(spy).toHaveBeenCalledWith('admin/ldap/set', {
+      token: 'tok',
+      method: 'POST',
+      body: { ldapEnabled: 'false' },
+    })
+  })
+
+  it('tests the connection by POST', async () => {
+    const spy = makeSpy()
+    await testLdapConnection('tok', { ldapServer: 'ldap.test' })
+    expect(spy).toHaveBeenCalledWith('admin/ldap/test', {
+      token: 'tok',
+      method: 'POST',
+      body: { ldapServer: 'ldap.test' },
     })
   })
 })

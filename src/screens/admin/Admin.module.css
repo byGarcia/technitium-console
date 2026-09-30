@@ -55,7 +55,7 @@ it goes FIRST so the strip lands above what it indexes and not under it.
 
 /* The matrix's EDITABLE checkbox: 18 px tall, and until now not enlarged. The
    read-only one is `ui/Matrix`'s, is disabled and is no target for anything. */
-.chkPerm { composes: golpe from '../../ui/interaction.module.css'; margin: 0 auto; display: block; }
+.chkPerm { composes: hitArea from '../../ui/interaction.module.css'; margin: 0 auto; display: block; }
 
 @media (max-width: 960px) {
   .withIndex { grid-template-columns: minmax(0, 1fr); }

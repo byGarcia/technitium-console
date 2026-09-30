@@ -124,7 +124,21 @@ const asWords = (t) =>
     .trim() +
   ' '
 
-const prose = asWords(ours)
+/* JSX writes upstream's inline markup as markup too —`bind to <code>[::]</code>
+   local`— and the tag names would sit between the words as `code code`. Only
+   the attribute-free inline tags are dropped: a tag WITH attributes may be
+   carrying the very `help="…"` being looked for. Links are the exception: their
+   attributes are addresses, never explanations. */
+const prose = asWords(
+  ours
+    .replace(/<\/?(?:code|b|i|em|strong|kbd|br\s*\/?)>/g, ' ')
+    .replace(/<\/?(?:Link|External|a)\b[^>]*>/g, ' ')
+    .replace(/\{' '\}/g, ' ')
+    // A bare JSX expression —`{hosts.doh}`— is a value filled at runtime, not
+    // prose; its name would otherwise sit between the words. Upstream's side
+    // drops its runtime labels the same way (see NOTES).
+    .replace(/\{[A-Za-z_$][\w.$]*\}/g, ' '),
+)
 
 const missing = []
 for (const [url] of theirs) {
@@ -157,7 +171,12 @@ the beginning and the end are what gets reworded most while laying out, and what
 matters is whether the explanation is there or not.
 */
 const HELP = [...html.matchAll(/<div class="col-sm-offset-\d+ col-sm-\d+"[^>]*>([\s\S]*?)<\/div>/g)]
-  .map((m) => m[1].replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' '))
+  /* A `<span id="lbl…">` or `<code id="lbl…">` inside a note is a placeholder
+     `loadDnsSettings` overwrites on every load (main.js:1369-1372: the DoH, DoT,
+     DoQ and DoH(S) addresses). Its initial text is not contract, so it is not
+     compared. */
+  .map((m) => m[1].replace(/<(span|code) id="lbl\w+">[\s\S]*?<\/\1>/g, ' '))
+  .map((t) => t.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' '))
   .map((t) => decode(t).replace(/\s+/g, ' ').trim())
   .filter((t) => t.length > 40)
 
@@ -227,4 +246,99 @@ console.log(
     : `EXAMPLE PARITY: ${missingExample.length} of ${EXAMPLES.size} missing.`,
 )
 
-process.exit(missing.length + missingHelp.length + missingExample.length === 0 ? 0 : 1)
+/*
+The notes and the explanations that are NOT on the grid offset.
+
+HELP above only reads `col-sm-offset-*` divs, and on 2026-09-30 it said "all 110
+of upstream's texts are present" against a v15.5.1 whose new LDAP pane was not
+here at all: its eleven "Note!"/"Warning!" paragraphs are `<p>`, and its field
+explanations are `<div style="padding-top: 5px;">`. Neither shape was read. Both
+are now, with the same three-runs comparison.
+*/
+const NOTES = [
+  ...html.matchAll(/<p>([\s\S]*?)<\/p>/g),
+  ...html.matchAll(/<div style="padding-top: 5px;[^"]*">([\s\S]*?)<\/div>/g),
+  // and the third shape, the Zone Options tabs': `<div><b>Note!</b> …</div>`
+  ...html.matchAll(/<div>\s*(<b>(?:Note|Warning)!<\/b>[\s\S]*?)<\/div>/g),
+]
+  /* A `<span id="lbl…">` or `<code id="lbl…">` inside a note is a placeholder
+     `loadDnsSettings` overwrites on every load (main.js:1369-1372: the DoH, DoT,
+     DoQ and DoH(S) addresses). Its initial text is not contract, so it is not
+     compared. */
+  .map((m) => m[1].replace(/<(span|code) id="lbl\w+">[\s\S]*?<\/\1>/g, ' '))
+  .map((t) => t.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' '))
+  .map((t) => decode(t).replace(/\s+/g, ' ').trim())
+  .filter((t, i, all) => t.length > 40 && all.indexOf(t) === i)
+
+/* Texts upstream has and this console deliberately does not, with the reason. */
+const EXCUSED_NOTES = [
+  // deviation 1 in CONVENTIONS.md: a single dark theme, the Change Theme modal is gone
+  'theme',
+]
+
+const missingNotes = NOTES.filter((t) => {
+  const words = asWords(t).trim().split(' ')
+  if (words.length < 12) return false
+  if (EXCUSED_NOTES.some((e) => asWords(t).includes(` ${e} `) && words.length < 40 && /theme/i.test(t))) return false
+  const runs = [words.slice(2, 10), words.slice(6, 14), words.slice(-8)]
+  return !runs.some((p) => prose.includes(` ${p.join(' ')} `))
+})
+
+console.log('')
+for (const t of missingNotes) console.log(`  MISSING  note: ${t.slice(0, 120)}…`)
+console.log(
+  missingNotes.length === 0
+    ? `NOTE PARITY: all ${NOTES.length} of upstream's notes and explanations are present.`
+    : `NOTE PARITY: ${missingNotes.length} of ${NOTES.length} missing.`,
+)
+
+/*
+And the other direction, which none of the checks above can see: a field this
+console still draws after upstream REMOVED it. v15.5 dropped Auto Prefetch; its
+two fields stayed here, still required, and Settings could not be saved at all
+against the new server — with every parity check green, because every check
+asked "is upstream's text here?" and never "is our text still upstream's?".
+
+Every `label="…"` in the source must exist, word for word, somewhere in
+upstream's page.
+*/
+/* Upstream builds part of its interface from JavaScript —row menus, the Apps
+   buttons, the DHCP and Logs tab strips—, so its scripts are read too. */
+const scripts = await Promise.all(
+  [...html.matchAll(/<script src="(js\/[^"?]+)/g)].map((m) =>
+    fetch(`${REF}/${m[1]}`).then((r) => (r.ok ? r.text() : '')),
+  ),
+)
+const theirWords = asWords([html, decode(html), ...scripts].join(' '))
+const OUR_LABELS = new Set()
+for (const f of files(SOURCE).filter((f) => !/\.test\.|fixture/.test(f))) {
+  for (const m of withoutComments(readFileSync(f, 'utf8')).matchAll(/(?<![-\w])label="([^"{}]{3,})"/g)) {
+    OUR_LABELS.add(m[1])
+  }
+}
+/* Accessible names this console gives to controls upstream leaves unnamed: a
+   menu button's `aria-label` and a tab strip's. They are read by a screen
+   reader, never drawn, so they are not interface text upstream could own. */
+const ACCESSIBLE_NAMES = new Set([
+  'Blocking options',
+  'Zone actions',
+  'DNSSEC actions',
+  'DHCP sections',
+  'Logs sections',
+  'Settings sections',
+])
+const strayLabels = [...OUR_LABELS].filter(
+  (l) => !ACCESSIBLE_NAMES.has(l) && !theirWords.includes(asWords(l)),
+)
+
+console.log('')
+for (const l of strayLabels) console.log(`  NOT UPSTREAM  label: ${l}`)
+console.log(
+  strayLabels.length === 0
+    ? `LABEL PARITY: all ${OUR_LABELS.size} of our labels exist upstream.`
+    : `LABEL PARITY: ${strayLabels.length} of ${OUR_LABELS.size} labels are not upstream's.`,
+)
+
+process.exit(
+  missing.length + missingHelp.length + missingExample.length + missingNotes.length + strayLabels.length === 0 ? 0 : 1,
+)

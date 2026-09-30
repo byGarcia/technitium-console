@@ -25,7 +25,7 @@ function makeSpy() {
     .mockResolvedValue({ kind: 'ok', data: { response: {}, server: 's' } })
 }
 
-describe('cluster — estado', () => {
+describe('cluster — state', () => {
   it('with no options it sends no parameter', async () => {
     const spy = makeSpy()
     await getClusterState('tok')

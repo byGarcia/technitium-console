@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
-  cuerpoBorrado,
-  cuerpoCambioDeEstado,
+  deletionBody,
+  stateChangeBody,
   deleteRecord,
   getRecords,
   updateRecord,
@@ -62,6 +62,7 @@ export interface ZoneRecordsProps {
   onConfirm: (c: Confirmation) => void
   onAddRecord: (zoneInfo: ZoneDetails, records: ResourceRecord[]) => void
   onEditRecord: (zoneInfo: ZoneDetails, record: ResourceRecord, records: ResourceRecord[]) => void
+  onEditZoneFile: (zone: string) => void
   onImport: (zone: string) => void
   onConvert: (zone: string, type: string) => void
   onClone: (zone: string) => void
@@ -130,7 +131,7 @@ export function ZoneRecords(p: ZoneRecordsProps) {
     setLoading(false)
 
     if (r == null) {
-      onNotice({ type: 'danger', title: 'Error!', text: 'Unable to reach the DNS server.' })
+      onNotice({ type: 'danger', title: 'Error!', text: 'Unable to connect to the server. Please try again.' })
       return
     }
     setZoneInfo(r.zone)
@@ -172,11 +173,11 @@ export function ZoneRecords(p: ZoneRecordsProps) {
     onNotice(success)
   }
 
-  function cambiarEstado(r: ResourceRecord, disable: boolean) {
+  function setRecordState(r: ResourceRecord, disable: boolean) {
     const name = r.name === '' ? '.' : r.name
     const hints = zoneHasSvcbAutoHint(records, r.type === 'A', r.type === 'AAAA')
     const body = {
-      ...cuerpoCambioDeEstado(zone, r, disable, hints),
+      ...stateChangeBody(zone, r, disable, hints),
       expiryTtl: p.modalExpiryTtl,
     }
 
@@ -205,7 +206,7 @@ export function ZoneRecords(p: ZoneRecordsProps) {
   function removeRecord(r: ResourceRecord) {
     const name = r.name === '' ? '.' : r.name
     const hints = zoneHasSvcbAutoHint(records, r.type === 'A', r.type === 'AAAA')
-    const body = cuerpoBorrado(zone, r)
+    const body = deletionBody(zone, r)
     if (r.type === 'A' || r.type === 'AAAA') body.updateSvcbHints = String(hints)
 
     p.onConfirm({
@@ -371,6 +372,15 @@ export function ZoneRecords(p: ZoneRecordsProps) {
             <Menu label="Zone actions" text="Options">
               {(close) => (
                 <>
+                  {/* The FIRST entry of upstream's Options menu (index.html:574
+                      in v15.5.1). Not gated by permission: upstream shows it to
+                      anyone who can open the zone, the read needs only
+                      Zones: View, and it is the save that the server refuses. */}
+                  {cab?.editZoneFile && (
+                    <button type="button" onClick={() => { close(); p.onEditZoneFile(zone) }}>
+                      Edit Zone File
+                    </button>
+                  )}
                   {cab?.resync && (
                     <button type="button" disabled={!p.canModify} onClick={() => { close(); resync() }}>
                       Resync
@@ -553,7 +563,7 @@ export function ZoneRecords(p: ZoneRecordsProps) {
                         icon="power"
                         name={r.disabled ? 'Enable Record' : 'Disable Record'}
                         disabled={actions.editingOnly || !p.canModify || busy}
-                        onClick={() => cambiarEstado(r, !r.disabled)}
+                        onClick={() => setRecordState(r, !r.disabled)}
                       />
                       {/* Delete, inside the menu: the same rule as in the zone
                           list. */}

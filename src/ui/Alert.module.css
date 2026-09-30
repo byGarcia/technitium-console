@@ -100,7 +100,7 @@ four account modals, where the alert sat loose and kept the container's `gap`.
 
 The subtraction is the same one the section header does: in a `flex` container
 with `gap`, the child's margin ADDS to the gap, so 24 of margin inside a `gap` of
-14 gives 38. `--hueco` is declared by `.screen` in `SectionHeader.module.css`
+14 gives 38. `--gap` is declared by `.screen` in `SectionHeader.module.css`
 and inherits; outside it does not exist and the fallback is 0, which is exactly
 what is needed.
 */

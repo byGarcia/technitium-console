@@ -12,11 +12,11 @@ where a 240 px bubble beside a control almost never fits any more.
 */
 const v = (width: number, height: number): Rect => ({ top: 0, left: 0, width, height })
 const r = (left: number, top: number, width = 32, height = 32): Rect => ({ left, top, width, height })
-const burbuja = (width = 240, height = 40): Rect => ({ left: 0, top: 0, width, height })
+const bubble = (width = 240, height = 40): Rect => ({ left: 0, top: 0, width, height })
 
 describe('place', () => {
   it('to the right, centred on the trigger', () => {
-    const p = place({ trigger: r(100, 300), bubble: burbuja(), viewport: v(1440, 900) })
+    const p = place({ trigger: r(100, 300), bubble: bubble(), viewport: v(1440, 900) })
     expect(p.placement).toBe('right')
     expect(p.left).toBe(140) // 100 + 32 + 8
     expect(p.top).toBe(300 + 16 - 20) // the trigger centre minus half a bubble
@@ -24,19 +24,19 @@ describe('place', () => {
 
   /* The rail case at 1440: there is room to spare and it must not move. */
   it('it does not flip when it fits', () => {
-    const p = place({ trigger: r(60, 200), bubble: burbuja(), viewport: v(1440, 900) })
+    const p = place({ trigger: r(60, 200), bubble: bubble(), viewport: v(1440, 900) })
     expect(p.placement).toBe('right')
   })
 
   it('it flips left when it does not fit on the right', () => {
-    /* Disparador pegado al borde derecho de 1440. */
-    const p = place({ trigger: r(1380, 300), bubble: burbuja(), viewport: v(1440, 900) })
+    /* Trigger flush against the right edge of 1440. */
+    const p = place({ trigger: r(1380, 300), bubble: bubble(), viewport: v(1440, 900) })
     expect(p.placement).toBe('left')
     expect(p.left).toBe(1380 - 8 - 240)
   })
 
   it('it flips from top to bottom when it does not fit above', () => {
-    const p = place({ trigger: r(600, 10), bubble: burbuja(), viewport: v(1440, 900), placement: 'top' })
+    const p = place({ trigger: r(600, 10), bubble: bubble(), viewport: v(1440, 900), placement: 'top' })
     expect(p.placement).toBe('bottom')
     expect(p.top).toBe(10 + 32 + 8)
   })
@@ -48,33 +48,33 @@ describe('place', () => {
   */
   it('at 390 it never goes off screen, on the right or on the left', () => {
     for (const x of [0, 8, 40, 120, 200, 300, 358]) {
-      const p = place({ trigger: r(x, 300), bubble: burbuja(), viewport: v(390, 844) })
-      expect(p.left, `disparador en x=${x}`).toBeGreaterThanOrEqual(8)
-      expect(p.left + 240, `disparador en x=${x}`).toBeLessThanOrEqual(390 - 8)
+      const p = place({ trigger: r(x, 300), bubble: bubble(), viewport: v(390, 844) })
+      expect(p.left, `trigger en x=${x}`).toBeGreaterThanOrEqual(8)
+      expect(p.left + 240, `trigger en x=${x}`).toBeLessThanOrEqual(390 - 8)
     }
   })
 
   it('it does not flip to a place just as bad', () => {
     /* At 390 with a 240 bubble it fits on neither side: it stays where it was
        asked for and is clamped, instead of jumping from one edge to the other. */
-    const p = place({ trigger: r(180, 300), bubble: burbuja(), viewport: v(390, 844) })
+    const p = place({ trigger: r(180, 300), bubble: bubble(), viewport: v(390, 844) })
     expect(p.placement).toBe('right')
   })
 
   it('it clamps the cross axis too: a tall bubble by the top edge', () => {
-    const p = place({ trigger: r(100, 4), bubble: burbuja(240, 120), viewport: v(1440, 900) })
+    const p = place({ trigger: r(100, 4), bubble: bubble(240, 120), viewport: v(1440, 900) })
     expect(p.top).toBe(8) // centring would have put it negative
   })
 
   it('and by the bottom edge', () => {
-    const p = place({ trigger: r(100, 880), bubble: burbuja(240, 120), viewport: v(1440, 900) })
+    const p = place({ trigger: r(100, 880), bubble: bubble(240, 120), viewport: v(1440, 900) })
     expect(p.top).toBe(900 - 8 - 120)
   })
 
   /* Taller than the screen: it is cut off at the bottom, where there is scroll,
      and not at the top, where there is none. */
   it('a bubble taller than the viewport starts at the margin', () => {
-    const p = place({ trigger: r(100, 300), bubble: burbuja(240, 2000), viewport: v(1440, 900) })
+    const p = place({ trigger: r(100, 300), bubble: bubble(240, 2000), viewport: v(1440, 900) })
     expect(p.top).toBe(8)
   })
 })

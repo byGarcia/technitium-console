@@ -37,7 +37,7 @@ describe('a server with no traffic', () => {
     vi.spyOn(api, 'getDashboardStats').mockResolvedValue({ kind: 'ok', data: EMPTY } as never)
     render(<Dashboard token="t" />)
 
-    /* Cero es un datum verdadero: se dibuja `0`. */
+    /* Zero is a real datum: `0` is drawn. */
     const metrics = await screen.findByTestId('metrics')
     expect(metrics).toHaveTextContent('0')
     expect(metrics).not.toHaveTextContent('—')

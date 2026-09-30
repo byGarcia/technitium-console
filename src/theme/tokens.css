@@ -280,12 +280,12 @@ not one of these tokens.** A loose value is future drift.
   A translucent white lightens in PROPORTION, so it gives the same jump over all
   three surfaces:
 
-               canvas   panel   raised
-    --hover     1.19     1.22     1.23    rows and navigation: it repeats a lot
-    --hover-f   1.35     1.39     1.41    menus and options: you are pointing
+                    canvas   panel   raised
+    --hover          1.19     1.22     1.23    rows and navigation: it repeats a lot
+    --hover-strong   1.35     1.39     1.41    menus and options: you are pointing
   */
   --hover: rgba(255, 255, 255, 0.07);
-  --hover-fuerte: rgba(255, 255, 255, 0.11);
+  --hover-strong: rgba(255, 255, 255, 0.11);
 
   /* ── Typography ──────────────────────────────────────────────────────── */
   --font-ui: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -330,7 +330,7 @@ not one of these tokens.** A loose value is future drift.
   --t-6: 17px;    /* counter figure                               (16,17) */
   --t-7: 22px;    /* section title                             (19,21,22) */
 
-  /* ── Espaciado ──────────────────────────────────────────────────────── */
+  /* ── Spacing ────────────────────────────────────────────────────────── */
   /*
   Eleven steps. 14, 10, 9, 8 and 7 are the ones holding the console up and are
   kept; the outliers converge: 2.5→2 · 5→6 · 11,13→12 · 15,18→16 ·
@@ -356,16 +356,16 @@ not one of these tokens.** A loose value is future drift.
   with no rule to explain them: each block had picked its own. That is what makes
   a screen read as disordered even when every value is on the scale.
 
-    --hueco-bloque   between independent blocks: after the section title, between
-                     a filter bar and what it filters
-    --hueco-grupo    between things read together: the foot of a table
-    --hueco-pegado   between a thing and its label: the count bar and its table
+    --gap-block   between independent blocks: after the section title, between
+                  a filter bar and what it filters
+    --gap-group   between things read together: the foot of a table
+    --gap-tight   between a thing and its label: the count bar and its table
   */
   --gap-block: var(--s-11);
   --gap-group: var(--s-8);
-  --gap-pegado: var(--s-5);
+  --gap-tight: var(--s-5);
 
-  /* ── Radios ─────────────────────────────────────────────────────────── */
+  /* ── Radii ──────────────────────────────────────────────────────────── */
   /*
   The layers.
 
@@ -378,20 +378,20 @@ not one of these tokens.** A loose value is future drift.
 
   Bottom to top, and the reason for each jump:
   */
-  --layer-golpe: 0;      /* the pseudo that enlarges a target, beneath its own text */
+  --layer-hit: 0;        /* the pseudo that enlarges a target, beneath its own text */
   --layer-sticky: 10;  /* the header, which follows the scroll */
   --layer-veil: 20;      /* the side drawer's veil, on narrow screens */
   --layer-drawer: 30;     /* and the drawer, over its veil */
-  --layer-flotante: 40;  /* dropdowns: row menu, Select, account menu */
+  --layer-float: 40;     /* dropdowns: row menu, Select, account menu */
   --layer-dialog: 50;   /* the modal and its veil, above absolutely everything */
 
   --r-1: 4px;   /* colour swatch, tiny chip                   (4,5) */
   --r-2: 6px;   /* row button, menu item                        (6,7) */
-  --r-3: 8px;   /* campo, notice, bloque interior                (8,9) */
-  --r-4: 10px;  /* panel, card, tabla                       (10,12) */
+  --r-3: 8px;   /* field, notice, inner block                    (8,9) */
+  --r-4: 10px;  /* panel, card, table                       (10,12) */
   --r-full: 999px;
 
-  /* ── Foco ───────────────────────────────────────────────────────────── */
+  /* ── Focus ──────────────────────────────────────────────────────────── */
   /*
   A single focus language. There used to be two: an amber ring on buttons and
   fields, and the browser's on the navigation, the row actions, the pagination and
@@ -424,15 +424,15 @@ not one of these tokens.** A loose value is future drift.
   shadow. It goes as `inset` so it takes no room in the box.
   */
   --edge: inset 0 1px 0 rgba(255, 255, 255, 0.055);
-  --edge-fuerte: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  --edge-strong: inset 0 1px 0 rgba(255, 255, 255, 0.12);
 
   /* The sunken look: a field is a hole in the surface, not a sticker. */
   --sunken: inset 0 1px 2px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(0, 0, 0, 0.2);
 
   /* A field's focus is not just a border: it is a halo that lifts it. */
-  --halo-foco: 0 0 0 3px rgba(245, 165, 36, 0.18);
+  --halo-focus: 0 0 0 3px rgba(245, 165, 36, 0.18);
 
-  /* ── Controles ──────────────────────────────────────────────────────── */
+  /* ── Controls ───────────────────────────────────────────────────────── */
   --ctrl: 18px;          /* side of the checkbox and the radio */
   --ctrl-track-w: 34px;  /* the switch's track */
   --ctrl-track-h: 20px;
@@ -546,11 +546,11 @@ not one of these tokens.** A loose value is future drift.
   --ico: 18px;       /* full sidebar, row actions, inline */
   --ico-rail: 20px;  /* the 60 px rail and the drawer */
 
-  /* ── Movimiento ─────────────────────────────────────────────────────── */
+  /* ── Motion ─────────────────────────────────────────────────────────── */
   /* A single duration and a single curve. Exponential ease-out: it starts fast
      and settles, which is how something with weight moves. */
   --t-fast: 120ms cubic-bezier(0.2, 0.9, 0.3, 1);
-  --t-medio: 180ms cubic-bezier(0.2, 0.9, 0.3, 1);
+  --t-medium: 180ms cubic-bezier(0.2, 0.9, 0.3, 1);
 }
 
 /*

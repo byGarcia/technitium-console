@@ -85,11 +85,11 @@ button.ctx:hover { color: var(--acc); }
 The column of a screen whose header sits inside a `flex` container with `gap`. It
 lives here and not in the screens because what it corrects is this header.
 
-The gap under the title is `--hueco-bloque` across the whole console. On these
+The gap under the title is `--gap-block` across the whole console. On these
 screens it came to 38 px instead of 24 because in flex the gap ADDS to the child's
 margin: the header contributed its 24 and the container another 14. It is
 subtracted, and the subtraction is written ONCE: the container's gap lives in
-`--hueco` and both rules read it from there, so changing it does not knock the
+`--gap` and both rules read it from there, so changing it does not knock the
 title out of line again.
 */
 .screen {

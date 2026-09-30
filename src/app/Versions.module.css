@@ -84,11 +84,11 @@ Amber and not the red upstream uses: in this console red is what destroys
   display: flex; align-items: baseline; gap: var(--s-5);
   margin-bottom: var(--s-7); font-family: var(--font-mono);
 }
-.de { color: var(--mute); }
-.flecha { color: var(--faint); }
-.a { color: var(--acc); font-weight: 600; }
-.mensaje { margin-bottom: var(--s-7); }
-.enlaces { display: flex; flex-wrap: wrap; gap: var(--s-7); }
+.from { color: var(--mute); }
+.arrow { color: var(--faint); }
+.to { color: var(--acc); font-weight: 600; }
+.message { margin-bottom: var(--s-7); }
+.links { display: flex; flex-wrap: wrap; gap: var(--s-7); }
 
 /* Upstream's two `Note!`, after the links: they explain, they do not change the
    decision. Same rule as every other `Note!` in the console. */

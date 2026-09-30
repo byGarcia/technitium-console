@@ -107,22 +107,22 @@ export function Versions({ token, serverVersion, domain, markHidden = false }: {
           */}
           {info.currentVersion && info.updateVersion && (
             <div className={styles.jump}>
-              <span className={styles.de}>
+              <span className={styles.from}>
                 <span className={text.sr}>Current Version: </span>
                 {info.currentVersion}
               </span>
-              <span className={styles.flecha} aria-hidden="true">→</span>
-              <span className={styles.a}>
+              <span className={styles.arrow} aria-hidden="true">→</span>
+              <span className={styles.to}>
                 <span className={text.sr}>Update Version: </span>
                 {info.updateVersion}
               </span>
             </div>
           )}
 
-          {info.updateMessage && <p className={styles.mensaje}>{info.updateMessage}</p>}
+          {info.updateMessage && <p className={styles.message}>{info.updateMessage}</p>}
 
           {/* Upstream hides each of the three on its own when it comes null. */}
-          <div className={styles.enlaces}>
+          <div className={styles.links}>
             {info.downloadLink && <External href={info.downloadLink}>Download Now!</External>}
             {info.instructionsLink && <External href={info.instructionsLink}>Update Instructions</External>}
             {/* `Read Change Logs`, which is what upstream calls it. It said

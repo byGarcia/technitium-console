@@ -59,7 +59,7 @@ set already had to fix on its own.
 .item:focus-visible {
   outline: none;
   color: var(--ink);
-  box-shadow: var(--halo-foco);
+  box-shadow: var(--halo-focus);
 }
 
   /* `location`, not `selected`: you are here, you have not chosen this. */

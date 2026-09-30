@@ -81,10 +81,10 @@ describe('Tooltip', () => {
     render(<Rail />)
     await user.tab()
 
-    const disparador = screen.getByRole('button', { name: 'Zones' })
-    const burbuja = screen.getByRole('tooltip')
-    expect(disparador).toHaveAttribute('aria-describedby', burbuja.id)
-    expect(burbuja.id).toBeTruthy()
+    const trigger = screen.getByRole('button', { name: 'Zones' })
+    const bubble = screen.getByRole('tooltip')
+    expect(trigger).toHaveAttribute('aria-describedby', bubble.id)
+    expect(bubble.id).toBeTruthy()
   })
 
   /*
@@ -101,15 +101,15 @@ describe('Tooltip', () => {
       </Tooltip>,
     )
 
-    const disparador = screen.getByRole('button', { name: 'Delete Zones' })
-    await user.hover(disparador)
+    const trigger = screen.getByRole('button', { name: 'Delete Zones' })
+    await user.hover(trigger)
 
     /* With the bubble open, the name has not moved... */
-    expect(screen.getByRole('button', { name: 'Delete Zones' })).toBe(disparador)
+    expect(screen.getByRole('button', { name: 'Delete Zones' })).toBe(trigger)
     expect(screen.queryByRole('button', { name: 'Esto describe, no nombra' })).toBeNull()
     /* ...and it is not named with it. */
-    expect(disparador).not.toHaveAttribute('aria-labelledby')
-    expect(disparador).toHaveAttribute('aria-label', 'Delete Zones')
+    expect(trigger).not.toHaveAttribute('aria-labelledby')
+    expect(trigger).toHaveAttribute('aria-label', 'Delete Zones')
   })
 
   it('unopened it leaves no dangling `aria-describedby`', () => {
@@ -138,10 +138,10 @@ describe('Tooltip', () => {
         </Tooltip>
       </>,
     )
-    const disparador = screen.getByRole('button', { name: 'Zones' })
-    await user.hover(disparador)
+    const trigger = screen.getByRole('button', { name: 'Zones' })
+    await user.hover(trigger)
 
-    const ids = disparador.getAttribute('aria-describedby')!.split(' ')
+    const ids = trigger.getAttribute('aria-describedby')!.split(' ')
     expect(ids).toContain('help-previa')
     expect(ids).toContain(screen.getByRole('tooltip').id)
     expect(ids).toHaveLength(2)
@@ -156,11 +156,11 @@ describe('Tooltip', () => {
         </Button>
       </Tooltip>,
     )
-    const disparador = screen.getByRole('button', { name: 'Zones' })
-    await user.hover(disparador)
-    await user.unhover(disparador)
+    const trigger = screen.getByRole('button', { name: 'Zones' })
+    await user.hover(trigger)
+    await user.unhover(trigger)
 
-    expect(disparador).toHaveAttribute('aria-describedby', 'help-previa')
+    expect(trigger).toHaveAttribute('aria-describedby', 'help-previa')
   })
 
   /*
@@ -171,13 +171,13 @@ describe('Tooltip', () => {
   it('it stays open when the pointer leaves if the trigger keeps focus', async () => {
     const user = userEvent.setup()
     render(<Rail />)
-    const disparador = screen.getByRole('button', { name: 'Zones' })
+    const trigger = screen.getByRole('button', { name: 'Zones' })
 
-    await user.tab() // foco
-    await user.hover(disparador) // and the pointer as well
+    await user.tab() // focus
+    await user.hover(trigger) // and the pointer as well
     expect(screen.getByRole('tooltip')).toBeTruthy()
 
-    await user.unhover(disparador) // se va el puntero, queda el foco
+    await user.unhover(trigger) // the pointer leaves, the focus stays
     expect(screen.getByRole('tooltip')).toBeTruthy()
   })
 
@@ -189,9 +189,9 @@ describe('Tooltip', () => {
         <button>other</button>
       </>,
     )
-    const disparador = screen.getByRole('button', { name: 'Zones' })
+    const trigger = screen.getByRole('button', { name: 'Zones' })
 
-    await user.hover(disparador)
+    await user.hover(trigger)
     await user.tab()
     expect(screen.getByRole('tooltip')).toBeTruthy()
 
@@ -207,11 +207,11 @@ describe('Tooltip', () => {
         <button>other</button>
       </>,
     )
-    const disparador = screen.getByRole('button', { name: 'Zones' })
-    await user.hover(disparador)
+    const trigger = screen.getByRole('button', { name: 'Zones' })
+    await user.hover(trigger)
     await user.tab()
     await user.tab()
-    await user.unhover(disparador)
+    await user.unhover(trigger)
 
     expect(screen.queryByRole('tooltip')).toBeNull()
   })

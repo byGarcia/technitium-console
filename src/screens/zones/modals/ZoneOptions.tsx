@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { getZoneOptions, setZoneOptions, type ZoneOptions as Response } from '../../../api/zones'
 import { Alert } from '../../../ui/Alert'
 import { Button } from '../../../ui/Button'
@@ -20,6 +20,7 @@ import {
   type OptionsState,
   type OptionsForm,
   type OptionsTab,
+  type CriterionOption,
 } from '../options'
 import type { Notice } from '../types'
 import styles from '../Zones.module.css'
@@ -74,7 +75,7 @@ export function ZoneOptions({
     void getZoneOptions(token, zone, node).then((r) => {
       setLoading(false)
       if (r == null) {
-        setNotice({ type: 'danger', title: 'Error!', text: 'Unable to reach the DNS server.' })
+        setNotice({ type: 'danger', title: 'Error!', text: 'Unable to connect to the server. Please try again.' })
         return
       }
       setRespuesta(r)
@@ -172,40 +173,55 @@ export function ZoneOptions({
                         </Select>
                       )}
                     </Field>
+                    {/* The General tab's explanations, index.html:5313-5348 in v15.5.1. */}
+                    <div className={styles.help}>Select a Catalog zone to register as its member zone.</div>
 
                     {e.sobrescribirQueryAccess && (
-                      <label className={styles.chk}>
-                        <input
-                          type="checkbox"
-                          disabled={e.overrideLocked}
-                          checked={f.overrideCatalogQueryAccess}
-                          onChange={(ev) => set('overrideCatalogQueryAccess', ev.target.checked)}
-                        />
-                        Override Query Access Option
-                      </label>
+                      <div>
+                        <label className={styles.chk}>
+                          <input
+                            type="checkbox"
+                            disabled={e.overrideLocked}
+                            checked={f.overrideCatalogQueryAccess}
+                            onChange={(ev) => set('overrideCatalogQueryAccess', ev.target.checked)}
+                          />
+                          Override Query Access Option
+                        </label>
+                        <div className={styles.help}>Enable to override Query Access option in the Catalog zone.</div>
+                      </div>
                     )}
                     {e.sobrescribirZoneTransfer && (
-                      <label className={styles.chk}>
-                        <input
-                          type="checkbox"
-                          disabled={e.overrideLocked}
-                          checked={f.overrideCatalogZoneTransfer}
-                          onChange={(ev) => set('overrideCatalogZoneTransfer', ev.target.checked)}
-                        />
-                        Override Zone Transfer Option
-                      </label>
+                      <div>
+                        <label className={styles.chk}>
+                          <input
+                            type="checkbox"
+                            disabled={e.overrideLocked}
+                            checked={f.overrideCatalogZoneTransfer}
+                            onChange={(ev) => set('overrideCatalogZoneTransfer', ev.target.checked)}
+                          />
+                          Override Zone Transfer Option
+                        </label>
+                        <div className={styles.help}>Enable to override Zone Transfer option in the Catalog zone.</div>
+                      </div>
                     )}
                     {e.sobrescribirNotify && (
-                      <label className={styles.chk}>
-                        <input
-                          type="checkbox"
-                          disabled={e.overrideLocked}
-                          checked={f.overrideCatalogNotify}
-                          onChange={(ev) => set('overrideCatalogNotify', ev.target.checked)}
-                        />
-                        Override Notify Option
-                      </label>
+                      <div>
+                        <label className={styles.chk}>
+                          <input
+                            type="checkbox"
+                            disabled={e.overrideLocked}
+                            checked={f.overrideCatalogNotify}
+                            onChange={(ev) => set('overrideCatalogNotify', ev.target.checked)}
+                          />
+                          Override Notify Option
+                        </label>
+                        <div className={styles.help}>Enable to override Notify option in the Catalog zone.</div>
+                      </div>
                     )}
+                    <Alert type="info" title="Note!">
+                      When a zone becomes a member of a Catalog zone, all of the Catalog zone&apos;s Options are
+                      inherited unless they are explicitly overridden using the Override Options.
+                    </Alert>
                   </>
                 )}
 
@@ -273,15 +289,23 @@ export function ZoneOptions({
                     )}
 
                     {e.validateZone && (
-                      <label className={styles.chk}>
-                        <input
-                          type="checkbox"
-                          disabled={e.primaryServerLocked}
-                          checked={f.validateZone}
-                          onChange={(ev) => set('validateZone', ev.target.checked)}
-                        />
-                        Use <External href={RFC_ZONEMD}>ZONEMD</External> to Validate Zone
-                      </label>
+                      <div>
+                        <label className={styles.chk}>
+                          <input
+                            type="checkbox"
+                            disabled={e.primaryServerLocked}
+                            checked={f.validateZone}
+                            onChange={(ev) => set('validateZone', ev.target.checked)}
+                          />
+                          Use <External href={RFC_ZONEMD}>ZONEMD</External> to Validate Zone
+                        </label>
+                        {/* index.html:5402 in v15.5.1. */}
+                        <div className={styles.help}>
+                          When enabled, the secondary zone will be validated using the ZONEMD record after every
+                          zone transfer. The zone will get disabled if the validation fails. The zone must be DNSSEC
+                          signed for the validation to work.
+                        </div>
+                      </div>
                     )}
                   </>
                 )}
@@ -289,6 +313,7 @@ export function ZoneOptions({
             )}
 
             {tab === 'Query Access' && (
+              <>
               <Criterion
                 name="zoneOptionsQueryAccess"
                 options={QUERY_ACCESS.filter(
@@ -299,9 +324,16 @@ export function ZoneOptions({
                 onChanged2={(v) => set('queryAccess', v)}
                 list={f.queryAccessNetworkACL}
                 listLabel="Network Access Control List (ACL)"
+                listHelp={ACL_HELP}
                 editableList={aclEditable(f.queryAccess) && !e.queryAccessLocked}
                 onList={(v) => set('queryAccessNetworkACL', v)}
               />
+              {/* index.html:5467 in v15.5.1. */}
+              <Alert type="info" title="Note!">
+                The zone can always be queried from loopback IP addresses and internally by the DNS
+                Server irrespective of the Query Access configuration.
+              </Alert>
+              </>
             )}
 
             {tab === 'Zone Transfer' && (
@@ -316,9 +348,14 @@ export function ZoneOptions({
                   onChanged2={(v) => set('zoneTransfer', v)}
                   list={f.zoneTransferNetworkACL}
                   listLabel="Network Access Control List (ACL)"
+                  listHelp={ACL_HELP}
                   editableList={aclEditable(f.zoneTransfer) && !e.zoneTransferLocked}
                   onList={(v) => set('zoneTransferNetworkACL', v)}
                 />
+                {/* index.html:5522 in v15.5.1. */}
+                <Alert type="info" title="Note!">
+                  Zone transfer should be allowed only for trusted name servers to sync their secondary zone.
+                </Alert>
                 <Field label="Zone Transfer TSIG Key Names">
                   {(id) => (
                     <Textarea
@@ -355,6 +392,13 @@ export function ZoneOptions({
                     </Select>
                   )}
                 </Field>
+                {/* index.html:5537 in v15.5.1. */}
+                <Alert type="info" title="Note!">
+                  TSIG key names must be configured from the Settings before using them here. Entering one
+                  or more TSIG key names above will cause the DNS Server to authenticate all zone transfer
+                  requests. A secondary zone must be configured with one of the above keys to be able to
+                  perform a zone transfer.
+                </Alert>
               </>
             )}
 
@@ -374,6 +418,7 @@ export function ZoneOptions({
                   onChanged2={(v) => set('notify', v)}
                   list={f.notifyNameServers}
                   listLabel="Specified Name Servers"
+                  listHelp="Enter only the IP addresses of the name servers above."
                   editableList={notifyWithList(f.notify)}
                   onList={(v) => set('notifyNameServers', v)}
                 />
@@ -391,11 +436,21 @@ export function ZoneOptions({
                     )}
                   </Field>
                 )}
+                {e.notifySeparados && (
+                  <div className={styles.help}>
+                    Enter only the IP addresses of the Secondary Catalog name servers above.
+                  </div>
+                )}
                 {response?.notifyFailed === true && (
                   <Alert type="warning" title="Notify Failed For:">
                     {(response.notifyFailedFor ?? []).join(', ')}
                   </Alert>
                 )}
+                {/* index.html:5607 in v15.5.1. */}
+                <Alert type="info" title="Note!">
+                  Notification must be enabled to allow other name servers to trigger a zone transfer
+                  immediately when the zone is updated.
+                </Alert>
               </>
             )}
 
@@ -411,9 +466,20 @@ export function ZoneOptions({
                   onChanged2={(v) => set('update', v)}
                   list={f.updateNetworkACL}
                   listLabel="Network Access Control List (ACL)"
+                  listHelp={ACL_HELP}
                   editableList={aclEditable(f.update)}
                   onList={(v) => set('updateNetworkACL', v)}
                 />
+                {/* index.html:5662-5663 in v15.5.1: Note, then Warning, after the list. */}
+                <Alert type="info" title="Note!">
+                  Dynamic updates should be allowed only to trusted IP addresses since they will be able to
+                  add/delete records in the zone.
+                </Alert>
+                <Alert type="warning" title="Warning!">
+                  If no security policy is configured in the Primary Zone then access will be provided only
+                  based on the options selected here. Thus setting up a security policy in the Primary Zone
+                  is highly recommended.
+                </Alert>
 
                 {e.securityPolicies && (
                   <div className={styles.group}>
@@ -490,6 +556,15 @@ export function ZoneOptions({
                         Add Policy
                       </Button>
                     </div>
+                    {/* index.html:5683 in v15.5.1: inside the Security Policy box. */}
+                    <Alert type="info" title="Note!">
+                      Configuring a security policy above will cause the DNS Server to authenticate all
+                      dynamic update requests. A TSIG key can add/delete records only for the specified domain
+                      name and allowed record types. TSIG key names must be configured from the Settings
+                      before using them here. Use wildcard domain name to specify all sub domain names. Use a
+                      comma separator to specify more than one record type. Use ANY to specify all record
+                      types.
+                    </Alert>
                   </div>
                 )}
               </>
@@ -513,16 +588,19 @@ function Criterion({
   onChanged2,
   list,
   listLabel,
+  listHelp,
   editableList,
   onList,
 }: {
   name: string
-  options: { value: string; label: string }[]
+  options: CriterionOption[]
   value: string
   locked: boolean
   onChanged2: (v: string) => void
   list: string
   listLabel: string
+  /** The explanation upstream prints under the list's textarea. */
+  listHelp: ReactNode
   editableList: boolean
   onList: (v: string) => void
 }) {
@@ -530,16 +608,19 @@ function Criterion({
     <>
       <div className={frm.mrowCtl}>
         {options.map((o) => (
-          <label key={o.value} className={styles.chk}>
-            <input
-              type="radio"
-              name={name}
-              disabled={locked}
-              checked={value === o.value}
-              onChange={() => onChanged2(o.value)}
-            />
-            {o.label}
-          </label>
+          <div key={o.value}>
+            <label className={styles.chk}>
+              <input
+                type="radio"
+                name={name}
+                disabled={locked}
+                checked={value === o.value}
+                onChange={() => onChanged2(o.value)}
+              />
+              {o.label}
+            </label>
+            <div className={styles.help}>{o.help}</div>
+          </div>
         ))}
       </div>
       <Field label={listLabel}>
@@ -554,6 +635,19 @@ function Criterion({
           />
         )}
       </Field>
+      <div className={styles.help}>{listHelp}</div>
     </>
   )
 }
+
+/** The ACL explanation of the three ACL lists (index.html:5463, 5518 and 5658 in
+ *  v15.5.1). Unlike Settings' version it ends in "deny all.", without "except
+ *  loopback". */
+const ACL_HELP = (
+  <>
+    Enter IP addresses or network addresses one below another to allow access. Add <code>!</code>{' '}
+    character at the start to deny access, e.g. <code>!192.168.10.0/24</code> will deny entire subnet.
+    The ACL is processed in the same order its listed. If no networks match, the default policy is to
+    deny all.
+  </>
+)

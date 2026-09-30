@@ -1,5 +1,6 @@
 import { AreaRow, Notices, Block, Check, GroupRow, Help, Note, Plain, Pre, TextRow } from '../parts'
 import type { PaneProps } from './types'
+import type { DnsSettings } from '../../../api/settings'
 
 const PROXY_PROTOCOL = (
   <a href="https://www.haproxy.org/download/1.8/doc/proxy-protocol.txt" target="_blank" rel="noreferrer">
@@ -17,7 +18,24 @@ DNS-over-HTTPS` gets checked, so until the page is reloaded it stays off. Here
 the rule is derived from state and therefore DOES update itself; it is the only
 observable difference and it is noted in the phase's report.
 */
-export function OptionalProtocols({ f, set, en }: PaneProps) {
+/*
+The addresses in the third note and the header in the fourth are filled from the
+LOADED settings, not from the fields (main.js:1356-1357, 1369-1372): they say
+what the server is serving now, and they only change on the next load or save.
+The DoH one is the host the page is being served from.
+*/
+function clientAddresses(s: DnsSettings, hostname: string) {
+  return {
+    doh: hostname + (s.dnsOverHttpPort === 80 ? '' : ':' + s.dnsOverHttpPort),
+    dot: 'tls-certificate-domain:' + s.dnsOverTlsPort,
+    doq: 'tls-certificate-domain:' + s.dnsOverQuicPort,
+    dohs: 'tls-certificate-domain' + (s.dnsOverHttpsPort === 443 ? '' : ':' + s.dnsOverHttpsPort),
+  }
+}
+
+export function OptionalProtocols({ f, set, en, loaded }: PaneProps & { loaded: DnsSettings }) {
+  const hosts = clientAddresses(loaded, window.location.hostname)
+  const realIpHeader = loaded.dnsOverHttpRealIpHeader
   return (
     <>
       <Block title="Optional DNS Server Protocols">
@@ -297,19 +315,25 @@ export function OptionalProtocols({ f, set, en }: PaneProps) {
             Zones.
           </Note>
           <Note>
-            For DNS-over-HTTP, use <code>http://localhost:8053/dns-query</code> with a TLS
-            terminating reverse proxy like nginx. For DNS-over-TLS, use{' '}
-            <code>tls-certificate-domain:853</code>, for DNS-over-QUIC, use{' '}
-            <code>tls-certificate-domain:853</code>, and for DNS-over-HTTPS use{' '}
-            <code>https://tls-certificate-domain/dns-query</code> to configure supported DNS clients.
+            For DNS-over-HTTP, use{' '}
+            <code>
+              http://{hosts.doh}/dns-query
+            </code>{' '}
+            with a TLS terminating reverse proxy like nginx. For DNS-over-TLS, use{' '}
+            <code>{hosts.dot}</code>, for DNS-over-QUIC, use <code>{hosts.doq}</code>, and for
+            DNS-over-HTTPS use{' '}
+            <code>
+              https://{hosts.dohs}/dns-query
+            </code>{' '}
+            to configure supported DNS clients.
           </Note>
           <Note>
             When using a reverse proxy with the DNS-over-HTTP service, you need to add{' '}
-            <code>{f.dnsOverHttpRealIpHeader || 'X-Real-IP'}</code> header to the proxy request with
+            <code>{realIpHeader}</code> header to the proxy request with
             the IP address of the client to allow the DNS Server to know the real IP address of the
             client originating the request. For example, if you are using nginx as the reverse
             proxy, you can add{' '}
-            <code>proxy_set_header {f.dnsOverHttpRealIpHeader || 'X-Real-IP'} $remote_addr;</code>{' '}
+            <code>{`proxy_set_header ${realIpHeader} $remote_addr;`}</code>{' '}
             to make it work.
           </Note>
           <Note>

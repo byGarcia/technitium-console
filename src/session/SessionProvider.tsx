@@ -7,7 +7,7 @@ import { readBootIntent } from './boot'
 type State =
   | { phase: 'booting' }
   | { phase: 'login'; alert?: { type: 'danger'; title: string; text: string } }
-  | { phase: 'ready'; session: ShellSession }
+  | { phase: 'ready'; session: ShellSession; forcePasswordChange?: boolean }
 
 export function SessionProvider() {
   const [state, setState] = useState<State>({ phase: 'booting' })
@@ -33,6 +33,8 @@ export function SessionProvider() {
         localStorage.setItem('token', outcome.data.token)
         setState({ phase: 'ready', session: outcome.data })
       } else {
+        // auth.js:65-67 → showPageLogin, which removes the token (main.js:28).
+        localStorage.removeItem('token')
         setState({ phase: 'login' })
       }
     })()
@@ -61,9 +63,13 @@ export function SessionProvider() {
     return () => onSessionExpired(null)
   }, [])
 
-  const onSuccess = useCallback((session: Session) => {
+  const onSuccess = useCallback((session: Session, opts?: { forcePasswordChange: boolean }) => {
     localStorage.setItem('token', session.token)
-    setState({ phase: 'ready', session: session as ShellSession })
+    setState({
+      phase: 'ready',
+      session: session as ShellSession,
+      forcePasswordChange: opts?.forcePasswordChange ?? false,
+    })
   }, [])
 
   // auth.js:299-312 — the session is cleared whether the call succeeds or fails.
@@ -76,5 +82,11 @@ export function SessionProvider() {
 
   if (state.phase === 'booting') return null
   if (state.phase === 'login') return <Login onSuccess={onSuccess} initialAlert={state.alert} />
-  return <Shell session={state.session} onLogout={() => void onLogout()} />
+  return (
+    <Shell
+      session={state.session}
+      onLogout={() => void onLogout()}
+      forcePasswordChange={state.forcePasswordChange}
+    />
+  )
 }

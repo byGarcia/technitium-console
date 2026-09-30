@@ -19,8 +19,8 @@
   font-size: var(--t-4);
   cursor: pointer;
 }
-.row:hover { background: var(--hover-fuerte); }
-.menuList { position:fixed; overflow-y:auto; z-index: var(--layer-flotante); min-width:170px; padding: var(--s-3); background:var(--pan); border:1px solid var(--line); border-radius: var(--r-3); box-shadow: var(--e-2), var(--edge); display:flex; flex-direction:column; }
+.row:hover { background: var(--hover-strong); }
+.menuList { position:fixed; overflow-y:auto; z-index: var(--layer-float); min-width:170px; padding: var(--s-3); background:var(--pan); border:1px solid var(--line); border-radius: var(--r-3); box-shadow: var(--e-2), var(--edge); display:flex; flex-direction:column; }
 .sep { height:1px; margin: var(--s-2) var(--s-3); background:var(--line); }
 .menuList button { text-align:left; border:0; background:transparent; color:var(--mute); /* Longhands and not the `font:` shorthand: `inherit` is not valid as a
      component of a shorthand —only as the whole value— so the declaration was
@@ -31,7 +31,7 @@
   font-weight: 400;
   line-height: 1.2; padding: var(--s-4) var(--s-6); border-radius: var(--r-2); cursor:pointer; }
 .menuList button:hover,
-.menuList button:focus-visible { background:var(--hover-fuerte); color:var(--ink); }
+.menuList button:focus-visible { background:var(--hover-strong); color:var(--ink); }
 .menuList button:disabled { opacity:.4; cursor:default; }
 
 /*

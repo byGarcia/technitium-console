@@ -11,6 +11,7 @@ import { ConvertZone } from './modals/ConvertZone'
 import { UnsignZone } from './modals/UnsignZone'
 import { SignZone } from './modals/SignZone'
 import { ImportZone } from './modals/ImportZone'
+import { EditZoneFile } from './modals/EditZoneFile'
 import { ZoneOptions } from './modals/ZoneOptions'
 import { ZonePermissions } from './modals/ZonePermissions'
 import { PropiedadesDnssec } from './modals/DnssecProperties'
@@ -33,6 +34,7 @@ screen that case would be lost.
 
 type ModalId =
   | 'add'
+  | 'editZoneFile'
   | 'import'
   | 'clone'
   | 'convert'
@@ -111,6 +113,17 @@ export function Zones({
     else refreshZone()
   }
 
+  /*
+  After "Edit Zone File" and "Import Zone": upstream reloads the zone ONLY if its view is the one
+  showing (`if ($("#divEditZone").is(":visible")) showEditZone(zone)`,
+  zone.js:1302-1303 in v15.5.1). From the list nothing is reloaded, so this is
+  not `done`.
+  */
+  function zoneFileSaved(a: Notice) {
+    setNotice(a)
+    if (open != null) refreshZone()
+  }
+
   return (
     <>
       <Notifier notice={notice} onClose={() => setNotice(null)} />
@@ -139,6 +152,7 @@ export function Zones({
             setNotice(null)
             setOpen(z)
           }}
+          onEditZoneFile={(z) => openModal('editZoneFile', z)}
           onImport={(z) => openModal('import', z)}
           onConvert={(z, t) => openModal('convert', z, t)}
           onClone={(z) => openModal('clone', z)}
@@ -173,6 +187,7 @@ export function Zones({
             setOriginalRecord(record)
             openModal('record', open)
           }}
+          onEditZoneFile={(z) => openModal('editZoneFile', z)}
           onImport={(z) => openModal('import', z)}
           onConvert={(z, t) => openModal('convert', z, t)}
           onClone={(z) => openModal('clone', z)}
@@ -211,13 +226,24 @@ export function Zones({
         }}
       />
 
+      <EditZoneFile
+        zone={modalZone}
+        open={modal === 'editZoneFile'}
+        token={token}
+        node={node}
+        onClose={() => setModal(null)}
+        onSaved={zoneFileSaved}
+      />
+
       <ImportZone
         zone={modalZone}
         open={modal === 'import'}
         token={token}
         node={node}
         onClose={() => setModal(null)}
-        onDone={done}
+        // `importZone` (zone.js:1387-1393) reloads the zone only if its view is
+        // open, like the zone file editor; from the list it refreshes nothing.
+        onDone={zoneFileSaved}
       />
 
       <CloneZone

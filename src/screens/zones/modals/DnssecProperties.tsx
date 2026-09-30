@@ -40,7 +40,7 @@ import type { Notice, Confirmation } from '../types'
 import tbl from '../../../ui/Table.module.css'
 import styles from '../Zones.module.css'
 import { External } from '../../../ui/External'
-import { RFC_NSEC3_ITERACIONES, RFC_NSEC3_SAL } from '../references'
+import { RFC_NSEC3_ITERATIONS, RFC_NSEC3_SALT } from '../references'
 import frm from '../../../ui/Form.module.css'
 import { Th, useSort, type Keys, Table } from '../../../ui/Table'
 import { noticeFromFailure } from '../../../lib/notice'
@@ -111,7 +111,7 @@ export function PropiedadesDnssec({
     setLoading(false)
 
     if (r == null) {
-      setNotice({ type: 'danger', title: 'Error!', text: 'Unable to reach the DNS server.' })
+      setNotice({ type: 'danger', title: 'Error!', text: 'Unable to connect to the server. Please try again.' })
       return
     }
 
@@ -552,15 +552,18 @@ MII...
           <div className={styles.group}>
             <div className={styles.groupTitle}>Proof of Non-Existence</div>
             {NX_PROOFS.map((n) => (
-              <label key={n.value} className={styles.chk}>
-                <input
-                  type="radio"
-                  name="propsNxProof"
-                  checked={nxProof === n.value}
-                  onChange={() => setNxProof(n.value as NxProof)}
-                />
-                {n.label}
-              </label>
+              <div key={n.value}>
+                <label className={styles.chk}>
+                  <input
+                    type="radio"
+                    name="propsNxProof"
+                    checked={nxProof === n.value}
+                    onChange={() => setNxProof(n.value as NxProof)}
+                  />
+                  {n.label}
+                </label>
+                <div className={styles.help}>{n.help}</div>
+              </div>
             ))}
 
             {nxProof === 'NSEC3' && (
@@ -581,7 +584,7 @@ MII...
                   The number of iterations used by NSEC3 for hashing the domain names. It is
                   recommended to use 0 iterations since more iterations will increase computational
                   costs for both the DNS Server and resolver while not providing much value against
-                  &quot;zone walking&quot; [<External href={RFC_NSEC3_ITERACIONES}>RFC 9276</External>].
+                  &quot;zone walking&quot; [<External href={RFC_NSEC3_ITERATIONS}>RFC 9276</External>].
                 </div>
                 <Field label="NSEC3 Salt Length">
                   {(id) => (
@@ -598,7 +601,7 @@ MII...
                 <div className={styles.help}>
                   The number of bytes of random salt to generate to be used with the NSEC3 hash
                   computation. It is recommended to not use salt by setting the length to 0
-                  [<External href={RFC_NSEC3_SAL}>RFC 9276</External>].
+                  [<External href={RFC_NSEC3_SALT}>RFC 9276</External>].
                 </div>
               </>
             )}

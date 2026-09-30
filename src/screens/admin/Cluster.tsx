@@ -112,7 +112,7 @@ export function Cluster({ tabs, token, cluster, node: controlledNode, onNodeChan
   const [localNode, setLocalNode] = useState('')
   const node = controlledNode ?? localNode
   const setNode = onNodeChange ?? setLocalNode
-  const [state, setEstado] = useState<ClusterState | null>(cluster)
+  const [state, setState] = useState<ClusterState | null>(cluster)
   const [loading, setLoading] = useState(true)
   const [modal, setModal] = useState<Modal | null>(null)
 
@@ -125,7 +125,7 @@ export function Cluster({ tabs, token, cluster, node: controlledNode, onNodeChan
       onNotice(noticeFromFailure(outcome))
       return
     }
-    setEstado(outcome.data.response)
+    setState(outcome.data.response)
     onCluster(outcome.data.response)
   }, [token, node, onCluster, onNotice])
 
@@ -135,7 +135,7 @@ export function Cluster({ tabs, token, cluster, node: controlledNode, onNodeChan
 
 
   function reloadWith(s: ClusterState) {
-    setEstado(s)
+    setState(s)
     onCluster(s)
   }
 

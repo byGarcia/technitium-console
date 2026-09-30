@@ -152,10 +152,36 @@ installer; this script does not try to handle them.
 
 </details>
 
-> **After a server update.** Technitium restores its own console when it
-> updates, so run the installer again afterwards. This goes away once the server
-> can be told to serve the console from a folder of its own — the change is
-> written and the maintainer has agreed to merge it.
+### On Technitium v15.5 or later: give the console a folder of its own
+
+Since v15.5 the server can be told to serve its web console from another folder,
+with `DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH`. Do that, and a server update no
+longer puts the stock console back: its own `www/` is left untouched and this one
+lives somewhere the update does not write.
+
+For a systemd install, add the variable to the unit once:
+
+```sh
+sudo systemctl edit technitium.service     # dns.service on older installs
+```
+
+```ini
+[Service]
+Environment=DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH=/opt/technitium-console
+```
+
+Then run the installer as above. It sees the variable on the running server,
+installs into that folder, and asks to restart the service once — the folder is
+read when the server starts, and that is the only restart it ever asks for.
+`--uninstall` removes the folder again; unset the variable and restart, and the
+server is back on its own console.
+
+For Docker, set the variable in the container's environment and mount the folder
+you pass to `--dir` at that path.
+
+> **Without the variable** — before v15.5, or if you prefer not to set it — the
+> console replaces the files in the server's own `www/`. Technitium restores its
+> console when it updates, so run the installer again afterwards.
 
 ## Building
 
@@ -181,7 +207,10 @@ server imposes that will let you break production while development looks fine.
 
 ## Status
 
-Feature-complete against Technitium DNS Server v15.4 and verified against it. Not
+Feature-complete against Technitium DNS Server v15.5.1 and verified against it:
+the LDAP Authentication tab, the zone file editor and the removal of Auto Prefetch
+that v15.5 brought are all here. Version 1.0.0 was built against v15.4 and cannot
+save Settings on a v15.5 server; use 1.1.0 or later there. Not
 merged upstream: the maintainer
 [closed the pull request](https://github.com/TechnitiumSoftware/DnsServer/pull/2128)
 because he is not a frontend developer and could not maintain the stack through
