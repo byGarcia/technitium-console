@@ -159,9 +159,12 @@ with `DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH`. Do that, and a server update no
 longer puts the stock console back: its own `www/` is left untouched and this one
 lives somewhere the update does not write.
 
-For a systemd install, add the variable to the unit once:
+For a systemd install, create the folder, point the server at it and restart it
+once — the folder is read when the server starts, and it has to exist by then or
+the server falls back to its own `www/`:
 
 ```sh
+sudo mkdir -p /opt/technitium-console
 sudo systemctl edit technitium.service     # dns.service on older installs
 ```
 
@@ -170,11 +173,20 @@ sudo systemctl edit technitium.service     # dns.service on older installs
 Environment=DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH=/opt/technitium-console
 ```
 
-Then run the installer as above. It sees the variable on the running server,
-installs into that folder, and asks to restart the service once — the folder is
-read when the server starts, and that is the only restart it ever asks for.
-`--uninstall` removes the folder again; unset the variable and restart, and the
-server is back on its own console.
+```sh
+sudo systemctl restart technitium.service
+```
+
+That restart is the only one, and like any restart of the service it stops
+resolution for the few seconds it takes. Until the next step the web console
+answers with an empty page. Then run the installer as above: it sees the variable on the running
+server, checks that the folder is really the one being served, and installs into
+it with no second restart. `--uninstall` removes the folder again; unset the
+variable and restart, and the server is back on its own console.
+
+If the folder did not exist when the server restarted, the server logs it and
+keeps serving its own console; the installer reads that log, installs anyway and
+asks for one more restart.
 
 For Docker, set the variable in the container's environment and mount the folder
 you pass to `--dir` at that path.
