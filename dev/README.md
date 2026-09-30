@@ -18,42 +18,23 @@ contract lives.
 ## The installer has its own bench
 
 `sh dev/installer-probe.sh` measures `install.sh` against
-`docs/2026-09-07-installer-contract.md`: twenty-one cases, one throwaway
+`docs/2026-09-07-installer-contract.md`: twenty-five cases, one throwaway
 container each off the same official image, exit code = cases failed. It does not
-use the three containers below and does not touch them.
+use the three containers below and does not touch them. `INSTALLER=<file>`
+measures another `install.sh` — that is how the cases added on 2026-09-30 were
+seen failing on the old script before they were seen passing on the new one.
 
-Two of its cases need a server that honours
-`DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH`, which no released one does yet. They
-are not skipped by decree: the bench asks the image and believes the answer, so
-pointing `IMAGE` at a build that honours it turns them on with no edit.
+The mode B cases need a server that honours
+`DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH`. **Since v15.5 (2026-09-19) the official
+image does**, so they run against `technitium/dns-server:latest` with no build:
+24 met, 1 not applicable (C15, which needs a server that ignores the variable).
+They are not skipped by decree: the bench asks the image and believes the answer.
 
-### Building an image that does honour it
-
-The variable is twelve lines on the fork's `feat/configurable-www-folder`
-branch. Building a server from it takes a `TechnitiumLibrary` beside it — the
-server does not build alone — and nothing else:
-
-```sh
-mkdir -p /tmp/tw && cd /tmp/tw
-git -C ~/code/ORBITLAB/projects/technitium-ui archive feat/configurable-www-folder \
-  --prefix=DnsServer/ | tar -x                       # tracked files only: no node_modules
-git clone --depth 1 -b develop https://github.com/TechnitiumSoftware/TechnitiumLibrary.git
-
-SDK="docker run --rm --user $(id -u):$(id -g) -e HOME=/tmp -e NUGET_PACKAGES=/nuget \
-  -v /tmp/tw:/src -v /tmp/tw/nuget:/nuget mcr.microsoft.com/dotnet/sdk:10.0"
-for p in TechnitiumLibrary TechnitiumLibrary.ByteTree TechnitiumLibrary.IO \
-         TechnitiumLibrary.Net TechnitiumLibrary.Security.OTP; do
-  $SDK -w /src/TechnitiumLibrary dotnet build $p/$p.csproj -c Release
-done                                                  # .Net.Firewall is Windows-only and not needed
-$SDK -w /src/DnsServer dotnet publish DnsServerApp/DnsServerApp.csproj -c Release \
-  -o DnsServerApp/bin/Release/publish                 # which is what the Dockerfile copies
-docker build -t technitium-dns-server:wwwvar /tmp/tw/DnsServer
-
-IMAGE=technitium-dns-server:wwwvar sh dev/installer-probe.sh   # 20 met, 1 not applicable
-```
-
-The library has to come from its **`develop`** branch: `master` is behind what
-the server's `develop` expects and the build fails on `DnsClient.ResolverContext`.
+Before v15.5 the only server that honoured it was one built from the fork's
+`feat/configurable-www-folder` branch, and later from `upstream/develop`. How that
+was built — `TechnitiumLibrary` from its `develop` branch beside the server, five
+`dotnet build` and a `dotnet publish` in `mcr.microsoft.com/dotnet/sdk:10.0` — is
+in this file's history (`git log -p dev/README.md`); it is not needed any more.
 
 ## The cluster is DOWN — it was up on purpose, and it did its job
 

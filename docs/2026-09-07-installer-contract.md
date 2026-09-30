@@ -18,6 +18,13 @@ variable — because until that branch is merged, that is the only server there 
 that honours it. Building one takes four commands and they are written down in
 `dev/README.md`. Those numbers come out of the probe, not out of this paragraph.
 
+> **2026-09-30.** The security audit of that day (`docs/2026-09-30-audit-v15.5.md`)
+> found three ways the installer could remove what is not a console. They are
+> now clauses W6, W7 and A8, with a fourth, I1, for the download itself: twenty-five
+> clauses and twenty-five cases. Measured against `technitium/dns-server:latest`
+> (v15.5.1, which honours the variable): **24 met, 0 not met, 1 not applicable**
+> (C15). C22 to C25 were first seen failing against the `install.sh` of `HEAD`.
+
 The console goes in front of a DNS server that a whole house resolves through.
 The installer is the only part of this project that writes to somebody else's
 machine, so it is the part that has to be boring.
@@ -233,6 +240,31 @@ merges it.
 - **W5 ✓** (C9) A web root that is a mount point is installed into, in place.
   Nothing ever removes or renames the web root itself — see A1 — so the layout
   the README asks Docker users to create is no longer a special case.
+- **W6 ✓** (C22) *2026-09-30.* The installer writes only into a folder it can
+  show is a console, because publishing sweeps, as root, everything the release
+  does not ship. The folder has to be missing, empty, the one its own state says
+  it installed into, the stock console (an `index.html` titled *Technitium DNS
+  Server* next to `js/main.js` and `json/readme.txt`, true of every release since
+  v11, and of the hybrid of §1.3), or this console (an `index.html` that mounts
+  `#root` and names an `assets/*.js` that is there). Anything else stops the run
+  before anything is written, with or without `--yes` and with or without a
+  TTY. Before this, `--dir /opt/technitium/dns` by mistake removed the server's
+  binaries and configuration, with no backup — there was no `index.html` to back
+  up — and without asking, because `curl … | sudo sh` has no TTY to ask on.
+- **W7 ✓** (C23) *2026-09-30.* The running server is **identified**, not
+  matched. A command line ending in `DnsServerApp.dll` makes a process a
+  candidate; it is believed only when every uid it runs as (read from
+  `/proc/<pid>/status`, not from the owner of `/proc/<pid>`) and the owners of
+  its `DnsServerApp.dll`, of the folder holding it and of that folder's `www` are
+  root or the service's account — `dns-server`, which upstream's installer has
+  used since v15.0, or the `User=` of the unit that runs the server. Candidates
+  that fail are named and ignored; a process in another root filesystem (a
+  container seen from its host) is not a candidate. Two believable servers with
+  different web roots stop the run, listing both and asking for `--dir`. A web
+  root the installer found by itself is refused if any folder on its path, its
+  backup, or any folder inside it is a symbolic link; a path given with `--dir`
+  is resolved once and every later step, the state included, uses the resolved
+  one.
 
 ### The administrator's files
 
@@ -324,6 +356,14 @@ merges it.
   restore". The message names the repair that does not need us at all: re-run
   upstream's own installer, which puts back the console the running version
   ships.
+- **A8 ✓** (C24) *2026-09-30.* `--uninstall` acts on the folder **on record**
+  (`webroot` in the state), not on the one the server points at now. They differ
+  when the variable was removed and the server restarted before uninstalling,
+  and then the installer says so and leaves the current one alone. In mode B the
+  recorded folder is removed only if it still holds this console, and never when
+  it is the server's own `www`; before this, that `rm -rf` went to whatever
+  folder was resolved at the time — the stock console, in the case above. In
+  mode A the restore is held to W6.
 
 ### Fresh install and update behave the same
 
@@ -334,6 +374,19 @@ merges it.
   console reverted after a server update is told what happened — and told in the
   same breath that the backup is older than the server now running, which is the
   fact A7 will stop them on later.
+
+### What it installs
+
+- **I1 ✓** (C25) *2026-09-30.* A release download is checked against the
+  `technitium-console.tar.gz.sha256` the release publishes next to it
+  (`.github/workflows/release.yml`). A mismatch, or no checksum at all, stops the
+  run with nothing changed. `--from` is not checked, because there is nothing to
+  check it against, and the output says so. It is an integrity check against a
+  broken or altered download, not a signature: whoever can publish a release can
+  publish its checksum. The archive is unpacked with `--no-same-owner`, so the
+  staging copy belongs to root whatever the tarball says; the probe does not
+  measure that half, because what reaches the web root is written by `cp` as
+  root either way.
 
 ### The service and the browser
 
@@ -389,6 +442,13 @@ a folder neither known path points at, C16 lets one run once and stops it so
 page so the run dies exactly at the publication point, and C21 installs a
 `systemctl` whose only job is to record having been called.
 
+*2026-09-30:* twenty-five now. C22 aims `--dir` at the server's own folder, C23
+starts look-alike processes (one as `nobody`, one whose `www` is a link, two at
+once), C24 starts the server by hand so it can be restarted without the variable
+before uninstalling, and C25 installs a `curl` that plays GitHub with whatever
+checksum the case wants. `INSTALLER=<file>` measures another `install.sh`, which
+is how the four were seen failing on the old one.
+
 C12, C13 and C15 depend on what the image can do, and the probe does not decide
 that by decree: it **detects the capability** the same way W3 says the installer
 must — it starts the image with the variable pointing at a folder holding a probe
@@ -433,6 +493,18 @@ never exist. So there is no rename path at all, on any filesystem: one order, in
 place, everywhere. The clause was rewritten rather than the guarantee weakened.
 
 None of the five were visible from the code alone; all came out of running the
-installer against a real server. Which is the same lesson About left, in a
+installer against a real server.
+
+**2026-09-30.** The audit of that day found three more, by reading this time,
+and each has a probe case that fails on the script it was found in: a sweep with
+no check on what it was sweeping (W6, C22), a server taken to be the first
+process whose command line ended the right way, with a `www` that could be a
+link (W7, C23), and an uninstall that removed the folder it resolved instead of
+the one it had installed into (A8, C24). Left as they are, on purpose:
+`confirm` still answers yes when there is no TTY, because the documented path is
+`curl … | sudo sh` and W6 is what makes that safe, not a question nobody can
+answer; and a web root owned by the service account can still race the
+installer between a check and a write, because closing that needs writes that
+do not follow links, which POSIX `sh`, `cp` and `mv` cannot promise. Which is the same lesson About left, in a
 different costume: **a script that has never been run against the thing it
 manages is a draft, not a tool.**

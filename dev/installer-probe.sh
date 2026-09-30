@@ -5,6 +5,9 @@
 #
 #   sh dev/installer-probe.sh          # DEBUG=1 to see what a failing case printed
 #   IMAGE=<other> sh dev/installer-probe.sh   # to measure against another build
+#   INSTALLER=<file> sh dev/installer-probe.sh # to measure another install.sh,
+#                                              # e.g. the last release's, and see
+#                                              # a new case fail on it
 #
 # Every case runs in a throwaway container off the official Technitium image, so
 # nothing on this machine is touched and every run starts from the same stock
@@ -22,6 +25,7 @@ set -u
 
 IMAGE="${IMAGE:-technitium/dns-server:latest}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+INSTALLER="${INSTALLER:-$ROOT/install.sh}"
 WWW=/opt/technitium/dns/www
 
 [ -f "$ROOT/dist/index.html" ] || { echo "build first: npm run build"; exit 2; }
@@ -30,7 +34,7 @@ command -v docker >/dev/null 2>&1 || { echo "docker is needed"; exit 2; }
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT INT TERM
 tar -czf "$WORK/console.tar.gz" -C "$ROOT/dist" .
-cp "$ROOT/install.sh" "$WORK/install.sh"
+cp "$INSTALLER" "$WORK/install.sh"
 
 # A file only this console ships. Proving it is *served* is the only honest way
 # to say "the console is installed": a marker the installer wrote itself only
@@ -213,6 +217,11 @@ VERSION="$(docker exec "$NAME" sh -c 'grep -ho "DNS Server (v[0-9.]*)" /var/log/
 if [ "$CAPABLE" = "yes" ]; then
   # Mode B, against a server that serves the folder the variable names.
   #
+  # The capability file goes first: a folder holding a file that is not a
+  # console is exactly what the installer must refuse to sweep (W6), and an
+  # administrator's empty folder is what this case is about.
+  rm -f "$WORK/side/capability-probe.txt"
+  #
   # The list has to exist in the stock web root BEFORE the install, because half
   # of F3 is that the install carries it across. The other half is the way back.
   in_server "printf '[{\"name\":\"before\"}]\n' > $WWW/json/quick-block-lists-custom.json"
@@ -365,6 +374,162 @@ sh /w/install.sh --from /w/console.tar.gz --yes > /out 2>&1
 ! grep -qi 'F5' /out
 EOF
 verdict "C21" $? "no restart of the DNS service, and no cache advice that is not true"
+
+# ---------------------------- C22 · W6, a folder that is not a console is refused
+#
+# Publishing sweeps whatever the release does not ship, as root. Pointed at the
+# server's own folder by mistake, that is the binaries and nothing left to run.
+# The "step:" lines are what DEBUG=1 shows, to say which half failed.
+case_run <<'EOF'
+set -e
+fingerprint() { find "$1" -type f -exec md5sum {} + | sort; }
+fingerprint /opt/technitium/dns > /before
+
+echo "step: --dir at the server's own folder, no TTY and no --yes"
+sh /w/install.sh --dir /opt/technitium/dns --from /w/console.tar.gz </dev/null && exit 1
+echo "step: the same with --yes"
+sh /w/install.sh --dir /opt/technitium/dns --from /w/console.tar.gz --yes && exit 1
+fingerprint /opt/technitium/dns > /after
+diff /before /after
+[ ! -e /opt/technitium/dns.original ]
+
+echo "step: a folder of somebody else's files"
+mkdir -p /srv/data; printf 'keep\n' > /srv/data/notes.txt
+sh /w/install.sh --dir /srv/data --from /w/console.tar.gz --yes && exit 1
+[ -f /srv/data/notes.txt ]
+[ ! -f "/srv/data/$ASSET" ]
+
+echo "step: an empty folder is still what --dir is for"
+mkdir -p /srv/empty
+sh /w/install.sh --dir /srv/empty --from /w/console.tar.gz --yes
+[ -f "/srv/empty/$ASSET" ]
+EOF
+verdict "C22" $? "refuses a folder that is neither empty nor a console, and changes nothing"
+
+# ------------------------- C23 · W7, the server is identified, not the first match
+case_run <<'EOF'
+set -e
+mkdir -p /victim; printf 'precious\n' > /victim/data.txt
+# Something that looks like the server to /proc: its last argument ends in
+# DnsServerApp.dll. Nothing else about it is real, which is the point.
+look_alike() { sh -c 'sleep 300; :' "$1" & sleep 1; }
+
+echo "step: an unprivileged account's look-alike, www pointing elsewhere"
+mkdir -p /tmp/evil; touch /tmp/evil/DnsServerApp.dll; ln -s /victim /tmp/evil/www
+chown -hR nobody /tmp/evil
+setpriv --reuid=65534 --regid=65534 --clear-groups sh -c 'sleep 300; :' /tmp/evil/DnsServerApp.dll &
+evil=$!; sleep 1
+sh /w/install.sh --from /w/console.tar.gz --yes > /out 2>&1   # so the known folder
+grep -q 'Not trusting process' /out                 # ignored, and said so
+[ -f /victim/data.txt ]
+[ -f "$WWW/$ASSET" ]
+kill "$evil"
+sh /w/install.sh --uninstall --yes
+
+echo "step: a root process whose www is a symbolic link"
+mkdir -p /opt/linked; touch /opt/linked/DnsServerApp.dll; ln -s /victim /opt/linked/www
+look_alike /opt/linked/DnsServerApp.dll; linked=$!
+sh /w/install.sh --from /w/console.tar.gz --yes && exit 1
+[ -f /victim/data.txt ]
+[ ! -f "/victim/$ASSET" ]
+kill "$linked"
+
+echo "step: two servers, and no silent choice between them"
+mkdir -p /opt/second; cp -a "$WWW" /opt/second/www; touch /opt/second/DnsServerApp.dll
+look_alike /opt/technitium/dns/DnsServerApp.dll; one=$!
+look_alike /opt/second/DnsServerApp.dll; two=$!
+sh /w/install.sh --from /w/console.tar.gz --yes > /out 2>&1 && exit 1
+grep -q -- '--dir' /out
+[ ! -f "$WWW/$ASSET" ]
+[ ! -f "/opt/second/www/$ASSET" ]
+kill "$one" "$two"
+
+echo "step: --dir through a link is resolved once, and used resolved"
+ln -s "$WWW" /opt/console-link
+sh /w/install.sh --dir /opt/console-link --from /w/console.tar.gz --yes
+[ -f "$WWW/$ASSET" ]
+grep -qx "webroot=$WWW" /var/lib/technitium-console/install.state
+[ -d "$WWW.original" ]
+[ ! -e /opt/console-link.original ]
+[ -L /opt/console-link ]
+EOF
+verdict "C23" $? "a look-alike process, a linked www or two servers are not taken on trust"
+
+# -------------------------------- C24 · A8, uninstall acts on what it recorded
+#
+# Mode B, with a server started by hand so it can be restarted without the
+# variable in the same container — the audit's case: the variable is removed,
+# the server restarted, and only then is --uninstall run.
+case_run <<'EOF'
+set -e
+up() { i=0; while [ $i -lt 60 ] && ! curl -s -o /dev/null http://127.0.0.1:5380/; do i=$((i+1)); sleep 1; done; }
+mkdir -p /side
+DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH=/side /usr/bin/dotnet /opt/technitium/dns/DnsServerApp.dll /etc/dns >/dev/null 2>&1 &
+srv=$!; up
+echo "step: install into the variable's folder"
+sh /w/install.sh --from /w/console.tar.gz --yes
+[ -f "/side/$ASSET" ]
+grep -qx 'mode=side-by-side' /var/lib/technitium-console/install.state
+kill "$srv"; wait "$srv" || true
+
+/usr/bin/dotnet /opt/technitium/dns/DnsServerApp.dll /etc/dns >/dev/null 2>&1 &
+srv=$!; up
+echo "step: uninstall after the variable is gone"
+sh /w/install.sh --uninstall --yes
+[ ! -e /side ]                              # the folder it installed into went
+[ -f "$WWW/js/main.js" ]                    # and the server's own did not
+[ -f "$WWW/index.html" ]
+
+echo "step: a recorded folder that no longer looks like this console is left alone"
+mkdir -p /srv/precious /var/lib/technitium-console
+printf 'keep\n' > /srv/precious/data.txt
+printf 'mode=side-by-side\nwebroot=/srv/precious\n' > /var/lib/technitium-console/install.state
+sh /w/install.sh --uninstall --yes && exit 1
+[ -f /srv/precious/data.txt ]
+[ -f "$WWW/js/main.js" ]
+EOF
+verdict "C24" $? "--uninstall removes the folder it recorded, and only if it is still this console"
+
+# ------------------------------------- C25 · I1, the download is the release
+#
+# A curl of our own plays GitHub: the tarball, and whatever checksum /hash says.
+case_run <<'EOF'
+set -e
+mkdir -p /usr/local/bin
+cat > /usr/local/bin/curl <<'FAKE'
+#!/bin/sh
+out=""; url=""
+while [ $# -gt 0 ]; do
+  case "$1" in -o) out="$2"; shift ;; -*) ;; *) url="$1" ;; esac
+  shift
+done
+case "$url" in
+  */technitium-console.tar.gz)        cp /w/console.tar.gz "$out" ;;
+  */technitium-console.tar.gz.sha256) [ -f /hash ] || exit 22; cp /hash "$out" ;;
+esac
+FAKE
+chmod +x /usr/local/bin/curl
+
+echo "step: a checksum that does not match"
+printf '%064d  technitium-console.tar.gz\n' 0 > /hash
+sh /w/install.sh --yes && exit 1
+[ -f "$WWW/js/main.js" ]
+[ ! -f "$WWW/$ASSET" ]
+
+echo "step: no checksum at all"
+rm -f /hash
+sh /w/install.sh --yes && exit 1
+[ ! -f "$WWW/$ASSET" ]
+
+echo "step: the checksum the release publishes"
+printf '%s  technitium-console.tar.gz\n' "$(sha256sum /w/console.tar.gz | cut -d' ' -f1)" > /hash
+sh /w/install.sh --yes
+[ -f "$WWW/$ASSET" ]
+
+echo "step: --from says it did not verify"
+sh /w/install.sh --from /w/console.tar.gz --yes 2>&1 | grep -q 'not verified'
+EOF
+verdict "C25" $? "a download that does not match the release's .sha256 is refused"
 
 printf '\n  %d met · %d not met · %d not applicable to this image\n\n' "$PASS" "$FAIL" "$SKIP"
 exit "$FAIL"

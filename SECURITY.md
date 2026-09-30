@@ -60,10 +60,15 @@ There is no bounty.
 - **The token lives in `localStorage`.** So does the stock console's. That is a deliberate parity
   decision, not an oversight: this console is not allowed to change how sessions behave.
 - **`install.sh` runs as root and writes to three places**: the server's web root, its own backup,
-  and `/var/lib/technitium-console`. It never restarts the DNS service. If you find it writing
+  and `/var/lib/technitium-console`. It never restarts the DNS service. It will only write into a
+  folder that is empty, holds a Technitium console, or is the one it recorded installing into; it
+  only believes a running server started by root or by the service's own account, and does not
+  write through symbolic links it found by itself; `--uninstall` only removes the folder it
+  recorded, and only while that folder still holds this console. A release download is checked
+  against the `.sha256` the release publishes; `--from` is not, and says so. If you find it writing
   anywhere else, that is a bug and a serious one.
 - **Piping a script from the internet into `sudo sh`** is the documented install path and it is a
-  real trade-off. Download it, read it, run it — the file is 470 lines of POSIX shell and it is
+  real trade-off. Download it, read it, run it — the file is under 700 lines of POSIX shell and it is
   meant to be read.
 - **The console is served by the DNS server's own web service**, so its TLS, its bind address and
   its authentication are the server's. Nothing here changes them.
