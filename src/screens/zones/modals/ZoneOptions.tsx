@@ -10,7 +10,7 @@ import {
   UPDATES,
   NOTIFICATIONS,
   TABS,
-  PROTOCOLOS_XFR,
+  XFR_PROTOCOLS,
   TRANSFERS,
   aclEditable,
   buildOptionsBody,
@@ -61,9 +61,9 @@ export function ZoneOptions({
   onClose: () => void
   onDone: (a: Notice) => void
 }) {
-  const [response, setRespuesta] = useState<Response | null>(null)
+  const [response, setResponse] = useState<Response | null>(null)
   const [f, setF] = useState<OptionsForm | null>(null)
-  const [tab, setPestana] = useState<OptionsTab>('General')
+  const [tab, setTab] = useState<OptionsTab>('General')
   const [notice, setNotice] = useState<Notice | null>(null)
   const [loading, setLoading] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -78,9 +78,9 @@ export function ZoneOptions({
         setNotice({ type: 'danger', title: 'Error!', text: 'Unable to connect to the server. Please try again.' })
         return
       }
-      setRespuesta(r)
+      setResponse(r)
       setF(formFromOptions(r))
-      setPestana(optionsState(r).initialTab)
+      setTab(optionsState(r).initialTab)
     })
   }, [open, token, zone, node])
 
@@ -94,7 +94,7 @@ export function ZoneOptions({
 
     const r = buildOptionsBody(f, response.type)
     if ('error' in r) {
-      setPestana(r.error.tab)
+      setTab(r.error.tab)
       setNotice({ type: 'warning', title: r.error.title, text: r.error.text })
       return
     }
@@ -112,7 +112,7 @@ export function ZoneOptions({
     onDone({ type: 'success', title: 'Options Saved!', text: 'Zone options were saved successfully.' })
   }
 
-  const tsigDisponibles = response?.availableTsigKeyNames ?? []
+  const availableTsigKeys = response?.availableTsigKeyNames ?? []
   const availableCatalogs = response?.availableCatalogZoneNames ?? []
 
   return (
@@ -145,24 +145,24 @@ export function ZoneOptions({
               label: t.label,
             }))}
             active={tab}
-            onChoose={setPestana}
+            onChoose={setTab}
           />
 
           <div className={styles.fields}>
             {tab === 'General' && (
               <>
-                {e.catalogo && (
+                {e.catalog && (
                   <>
                     <Field label="Catalog Zone">
                       {(id) => (
                         <Select
                           id={id}
-                          disabled={e.catalogoFijo}
+                          disabled={e.catalogLocked}
                           value={f.catalog}
                           onChange={(ev) => set('catalog', ev.target.value)}
                         >
                           <option value="" />
-                          {(e.catalogoFijo && f.catalog !== ''
+                          {(e.catalogLocked && f.catalog !== ''
                             ? [f.catalog]
                             : availableCatalogs
                           ).map((c) => (
@@ -176,7 +176,7 @@ export function ZoneOptions({
                     {/* The General tab's explanations, index.html:5313-5348 in v15.5.1. */}
                     <div className={styles.help}>Select a Catalog zone to register as its member zone.</div>
 
-                    {e.sobrescribirQueryAccess && (
+                    {e.overrideQueryAccess && (
                       <div>
                         <label className={styles.chk}>
                           <input
@@ -190,7 +190,7 @@ export function ZoneOptions({
                         <div className={styles.help}>Enable to override Query Access option in the Catalog zone.</div>
                       </div>
                     )}
-                    {e.sobrescribirZoneTransfer && (
+                    {e.overrideZoneTransfer && (
                       <div>
                         <label className={styles.chk}>
                           <input
@@ -204,7 +204,7 @@ export function ZoneOptions({
                         <div className={styles.help}>Enable to override Zone Transfer option in the Catalog zone.</div>
                       </div>
                     )}
-                    {e.sobrescribirNotify && (
+                    {e.overrideNotify && (
                       <div>
                         <label className={styles.chk}>
                           <input
@@ -225,11 +225,11 @@ export function ZoneOptions({
                   </>
                 )}
 
-                {e.servidorPrimario && (
+                {e.primaryServer && (
                   <>
                     <Field
                       label={
-                        e.servidorPrimarioObligatorio
+                        e.primaryServerRequired
                           ? 'Primary Name Server Addresses'
                           : 'Primary Name Server Addresses (Optional)'
                       }
@@ -246,14 +246,14 @@ export function ZoneOptions({
                       )}
                     </Field>
                     <div className={styles.help}>
-                      {e.servidorPrimarioObligatorio
+                      {e.primaryServerRequired
                         ? 'Enter the primary name server addresses to sync the zone from.'
                         : 'Enter the primary name server addresses to sync the zone from. When unspecified, the SOA Primary Name Server will be resolved and used.'}
                     </div>
 
-                    {e.protocoloXfr && (
+                    {e.xfrProtocol && (
                       <GroupRow modal label="Zone Transfer Protocol">
-                        {PROTOCOLOS_XFR.map((x) => (
+                        {XFR_PROTOCOLS.map((x) => (
                           <label key={x.value} className={styles.chk}>
                             <input
                               type="radio"
@@ -278,7 +278,7 @@ export function ZoneOptions({
                             onChange={(ev) => set('primaryZoneTransferTsigKeyName', ev.target.value)}
                           >
                             <option value="" />
-                            {tsigDisponibles.map((k) => (
+                            {availableTsigKeys.map((k) => (
                               <option key={k} value={k}>
                                 {k}
                               </option>
@@ -384,7 +384,7 @@ export function ZoneOptions({
                     >
                       <option value="" />
                       <option value="none">None</option>
-                      {tsigDisponibles.map((k) => (
+                      {availableTsigKeys.map((k) => (
                         <option key={k} value={k}>
                           {k}
                         </option>
@@ -407,7 +407,7 @@ export function ZoneOptions({
                 <Criterion
                   name="zoneOptionsNotify"
                   options={NOTIFICATIONS.filter((o) => {
-                    if (o.value === 'SeparateNameServersForCatalogAndMemberZones') return e.notifySeparados
+                    if (o.value === 'SeparateNameServersForCatalogAndMemberZones') return e.notifySeparate
                     if (o.value === 'ZoneNameServers' || o.value === 'BothZoneAndSpecifiedNameServers') {
                       return e.notifyWithNameServers
                     }
@@ -422,7 +422,7 @@ export function ZoneOptions({
                   editableList={notifyWithList(f.notify)}
                   onList={(v) => set('notifyNameServers', v)}
                 />
-                {e.notifySeparados && (
+                {e.notifySeparate && (
                   <Field label="Secondary Catalog Name Servers">
                     {(id) => (
                       <Textarea
@@ -436,7 +436,7 @@ export function ZoneOptions({
                     )}
                   </Field>
                 )}
-                {e.notifySeparados && (
+                {e.notifySeparate && (
                   <div className={styles.help}>
                     Enter only the IP addresses of the Secondary Catalog name servers above.
                   </div>
@@ -499,7 +499,7 @@ export function ZoneOptions({
                           }
                         >
                           <option value="" />
-                          {tsigDisponibles.map((k) => (
+                          {availableTsigKeys.map((k) => (
                             <option key={k} value={k}>
                               {k}
                             </option>

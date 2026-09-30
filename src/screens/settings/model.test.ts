@@ -92,7 +92,7 @@ describe('enabled', () => {
   })
 })
 
-describe('construirCuerpo — validation order of saveDnsSettings', () => {
+describe('buildBody — validation order of saveDnsSettings', () => {
   const cases: [string, Record<string, unknown>, string][] = [
     ['dnsServerDomain', { dnsServerDomain: '' }, 'Please enter server domain name.'],
     ['ECS IPv4', { eDnsClientSubnetIPv4PrefixLength: '' }, 'Please enter EDNS Client Subnet IPv4 prefix length.'],
@@ -203,7 +203,7 @@ describe('construirCuerpo — validation order of saveDnsSettings', () => {
   })
 })
 
-describe('construirCuerpo — body of settings/set', () => {
+describe('buildBody — body of settings/set', () => {
   it('empty lists travel as the string \"false\"', () => {
     const b = body()
     expect(b.zoneTransferAllowedNetworks).toBe('false')

@@ -125,7 +125,7 @@ describe('add — the body', () => {
       overwrite: 'true',
       ipAddress: '10.0.0.1',
     })
-    // El alta NO manda `disable` ni `newDomain`.
+    // Adding does NOT send `disable` or `newDomain`.
     expect(b).not.toHaveProperty('disable')
     expect(b).not.toHaveProperty('newDomain')
   })

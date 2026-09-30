@@ -47,7 +47,7 @@ export function SlotProvider({
 }
 
 /** Whatever a screen wants to put there. With no slot yet, it draws nothing. */
-export function EnElCromo({ children }: { children: ReactNode }) {
+export function InChrome({ children }: { children: ReactNode }) {
   const node = useContext(Slot)
   if (node == null) return null
   return createPortal(children, node)

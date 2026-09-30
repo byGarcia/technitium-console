@@ -9,15 +9,15 @@ import styles from '../Zones.module.css'
 import {
   acceptsZoneFile,
   buildAddParams,
-  ejemploDeForwarder,
-  formularioAltaInicial,
+  forwarderExample,
+  initialAddZoneForm,
   proxyEditable,
-  PROTOCOLOS_FORWARDER,
+  FORWARDER_PROTOCOLS,
   TRANSFER_PROTOCOLS,
   visibleSections,
   ADD_TYPES,
   PROXY_TYPES,
-  type FormularioAlta,
+  type AddZoneForm,
   type AddZoneKind,
 } from './add-zone'
 import { HelpText, External } from '../../../ui/External'
@@ -54,28 +54,28 @@ export function AddZone({
   onClose: () => void
   onCreated: (domain: string, notice: Notice) => void
 }) {
-  const [f, setF] = useState<FormularioAlta>(() =>
-    formularioAltaInicial(useSoaSerialDateScheme, dnssecValidation),
+  const [f, setF] = useState<AddZoneForm>(() =>
+    initialAddZoneForm(useSoaSerialDateScheme, dnssecValidation),
   )
-  const [catalogs, setCatalogos] = useState<string[]>([])
+  const [catalogs, setCatalogs] = useState<string[]>([])
   const [tsigKeys, setTsigKeys] = useState<string[]>([])
-  const [archivo, setArchivo] = useState<File | null>(null)
+  const [zoneFile, setZoneFile] = useState<File | null>(null)
   const [notice, setNotice] = useState<Notice | null>(null)
   const [busy, setBusy] = useState(false)
   const zoneRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (!open) return
-    setF(formularioAltaInicial(useSoaSerialDateScheme, dnssecValidation))
-    setArchivo(null)
+    setF(initialAddZoneForm(useSoaSerialDateScheme, dnssecValidation))
+    setZoneFile(null)
     setNotice(null)
-    void listCatalogs(token, node).then((c) => setCatalogos(c ?? []))
+    void listCatalogs(token, node).then((c) => setCatalogs(c ?? []))
     void getTsigKeyNames(token, node).then(setTsigKeys)
     zoneRef.current?.focus()
   }, [open, token, node, useSoaSerialDateScheme, dnssecValidation])
 
   const v = visibleSections(f.type, f.initializeForwarder)
-  const set = <K extends keyof FormularioAlta>(k: K, value: FormularioAlta[K]) =>
+  const set = <K extends keyof AddZoneForm>(k: K, value: AddZoneForm[K]) =>
     setF((prev) => ({ ...prev, [k]: value }))
 
   function changeType(type: AddZoneKind) {
@@ -95,7 +95,7 @@ export function AddZone({
     const outcome = await createZone(
       token,
       r.params,
-      acceptsZoneFile(f.type) ? archivo : null,
+      acceptsZoneFile(f.type) ? zoneFile : null,
       node,
     )
     setBusy(false)
@@ -175,7 +175,7 @@ export function AddZone({
           ))}
         </GroupRow>
 
-        {v.catalogo && catalogs.length > 0 && (
+        {v.catalog && catalogs.length > 0 && (
           <Row modal label="Catalog Zone" help={<>Select a Catalog zone to register as its member zone.</>}>
             {(id) => (
               <Select id={id} value={f.catalog} onChange={(e) => set('catalog', e.target.value)}>
@@ -190,7 +190,7 @@ export function AddZone({
           </Row>
         )}
 
-        {v.casillaInicializarForwarder && (
+        {v.initializeForwarderCheckbox && (
           <GroupRow modal label="Conditional Forwarder">
             <label className={styles.chk}>
               <input
@@ -209,13 +209,13 @@ export function AddZone({
               <Input
                 id={id}
                 type="file"
-                onChange={(e) => setArchivo(e.target.files?.[0] ?? null)}
+                onChange={(e) => setZoneFile(e.target.files?.[0] ?? null)}
               />
             )}
           </Row>
         )}
 
-        {v.serieSoa && (
+        {v.soaSerial && (
           <GroupRow modal label="Zone Serial">
             <label className={styles.chk}>
               <input
@@ -228,16 +228,16 @@ export function AddZone({
           </GroupRow>
         )}
 
-        {v.servidoresPrimarios && (
+        {v.primaryServers && (
           <Row
             modal
             label={
-              v.servidoresPrimariosObligatorios
+              v.primaryServersRequired
                 ? 'Primary Name Server Addresses'
                 : 'Primary Name Server Addresses (Optional)'
             }
             help={
-              v.servidoresPrimariosObligatorios
+              v.primaryServersRequired
                 ? 'Enter the primary name server addresses to sync the zone from.'
                 : 'Enter the primary name server addresses to sync the zone from. When unspecified, the SOA Primary Name Server will be resolved and used.'
             }
@@ -307,7 +307,7 @@ export function AddZone({
         {v.forwarderFields && (
           <>
             <GroupRow modal label="Protocol">
-              {PROTOCOLOS_FORWARDER.map((p) => (
+              {FORWARDER_PROTOCOLS.map((p) => (
                 <label key={p.value} className={styles.chk}>
                   <input
                     type="radio"
@@ -346,7 +346,7 @@ export function AddZone({
                     id={id}
                     mono
                     disabled={f.useThisServer}
-                    placeholder={ejemploDeForwarder(f.forwarderProtocol)}
+                    placeholder={forwarderExample(f.forwarderProtocol)}
                     value={f.useThisServer ? 'this-server' : f.forwarder}
                     onChange={(e) => set('forwarder', e.target.value)}
                   />

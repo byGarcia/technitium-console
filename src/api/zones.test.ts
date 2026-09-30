@@ -76,8 +76,8 @@ describe('zones', () => {
 
   it('importing by file goes as multipart, with the fileImportZone field', async () => {
     const spy = vi.spyOn(client, 'apiRequest').mockResolvedValue({ kind: 'ok', data: {} })
-    const archivo = new File(['$ORIGIN casa.test.'], 'casa.zone')
-    await importZone('t', 'casa.test', { archivo }, {
+    const file = new File(['$ORIGIN casa.test.'], 'casa.zone')
+    await importZone('t', 'casa.test', { file }, {
       overwrite: true,
       overwriteZone: false,
       overwriteSoaSerial: false,

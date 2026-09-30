@@ -120,7 +120,7 @@ describe('Cluster — starting a new one', () => {
   })
 })
 
-describe('Cluster — unirse a uno existente', () => {
+describe('Cluster — joining an existing one', () => {
   async function open() {
     const spy = server()
     const user = userEvent.setup()

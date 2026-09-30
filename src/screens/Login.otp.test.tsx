@@ -13,7 +13,7 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-async function llegarAlPanelOtp() {
+async function reachOtpPanel() {
   vi.spyOn(client, 'apiRequest').mockResolvedValue({ kind: 'two-factor-required' })
   const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime, delay: null })
   render(<Login onSuccess={() => {}} />)
@@ -29,7 +29,7 @@ async function llegarAlPanelOtp() {
 
 describe('panel OTP', () => {
   it('it submits itself on typing the sixth digit, and not before', async () => {
-    const user = await llegarAlPanelOtp()
+    const user = await reachOtpPanel()
     const spy = vi.spyOn(client, 'apiRequest')
     spy.mockClear()
     await user.type(screen.getByLabelText('OTP'), '12345')
@@ -40,7 +40,7 @@ describe('panel OTP', () => {
   })
 
   it('it returns to the login after 30 seconds and gives the password back', async () => {
-    await llegarAlPanelOtp()
+    await reachOtpPanel()
     await act(async () => { vi.advanceTimersByTime(29_000) })
     expect(screen.queryByLabelText('OTP')).toBeInTheDocument()
     await act(async () => { vi.advanceTimersByTime(1_500) })
@@ -49,7 +49,7 @@ describe('panel OTP', () => {
   })
 
   it('it cancels the expiry when the OTP is accepted', async () => {
-    const user = await llegarAlPanelOtp()
+    const user = await reachOtpPanel()
     vi.spyOn(client, 'apiRequest').mockResolvedValue({
       kind: 'ok',
       data: { status: 'ok', token: 't', displayName: 'A', username: 'admin', totpEnabled: true },

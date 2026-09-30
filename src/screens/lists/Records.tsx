@@ -2,7 +2,7 @@ import { Chip, Tag } from '../../ui/Tag'
 import { Button } from '../../ui/Button'
 import { useState } from 'react'
 import type { DnsRecord } from '../../api/zonelists'
-import { rdataEntries, extras, meta, ttlPartido, type Entry } from './record'
+import { rdataEntries, extras, meta, splitTtl, type Entry } from './record'
 import tbl from '../../ui/Table.module.css'
 import { Table } from '../../ui/Table'
 import styles from './Lists.module.css'
@@ -54,7 +54,7 @@ function Row({ r, withDnssec, node }: { r: DnsRecord; withDnssec: boolean; node:
   const [signatures, setSignatures] = useState(false)
   const [glue, setGlue] = useState(false)
 
-  const ttl = ttlPartido(r)
+  const ttl = splitTtl(r)
   const name = r.nameIdn ?? r.name
   // The name always matches the open node; it is only said when it does NOT.
   const differentName = r.name !== node && name !== node

@@ -12,7 +12,7 @@ tests protect is exactly that separation.
 */
 import { describe, expect, it } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import { SlotProvider, EnElCromo } from './ChromeSlot'
+import { SlotProvider, InChrome } from './ChromeSlot'
 
 describe('the slot in the chrome', () => {
   it('what a screen puts in it shows up in the slot', () => {
@@ -20,18 +20,18 @@ describe('the slot in the chrome', () => {
       <SlotProvider>
         {(slot) => (
           <>
-            <div data-testid="hueco" ref={slot} />
+            <div data-testid="slot" ref={slot} />
             <main>
-              <EnElCromo>
+              <InChrome>
                 <button>Selector</button>
-              </EnElCromo>
+              </InChrome>
             </main>
           </>
         )}
       </SlotProvider>,
     )
 
-    expect(screen.getByTestId('hueco')).toContainElement(screen.getByRole('button', { name: 'Selector' }))
+    expect(screen.getByTestId('slot')).toContainElement(screen.getByRole('button', { name: 'Selector' }))
   })
 
   /* With no slot yet it does not blow up: it simply draws nothing. */
@@ -39,9 +39,9 @@ describe('the slot in the chrome', () => {
     render(
       <SlotProvider>
         {() => (
-          <EnElCromo>
+          <InChrome>
             <button>Selector</button>
-          </EnElCromo>
+          </InChrome>
         )}
       </SlotProvider>,
     )
@@ -58,13 +58,13 @@ describe('the slot in the chrome', () => {
       <SlotProvider>
         {(slot) => (
           <>
-            <div data-testid="hueco" ref={slot} />
+            <div data-testid="slot" ref={slot} />
             <main>nothing to hang</main>
           </>
         )}
       </SlotProvider>,
     )
 
-    expect(screen.getByTestId('hueco')).toBeEmptyDOMElement()
+    expect(screen.getByTestId('slot')).toBeEmptyDOMElement()
   })
 })

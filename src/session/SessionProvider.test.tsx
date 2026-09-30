@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { SessionProvider } from './SessionProvider'
 import { ThemeProvider } from '../theme/ThemeProvider'
 import * as client from '../api/client'
+import { SETTINGS } from '../screens/settings/settings.fixture'
 
 // The Shell consumes the theme, so it is mounted the way App.tsx will.
 function mount() {
@@ -115,6 +116,21 @@ describe('SessionProvider', () => {
     await waitFor(() =>
       expect(document.title).toBe('dns.example.net - Technitium DNS Server v15.4'),
     )
+  })
+
+  it('loading this server\'s settings refreshes the title and the header, as upstream (main.js:1158-1166)', async () => {
+    localStorage.setItem('token', 'tok')
+    window.history.replaceState(null, '', '/settings/general/')
+    vi.spyOn(client, 'apiRequest').mockImplementation(async (path: string) =>
+      path === 'settings/get'
+        ? { kind: 'ok' as const, data: { status: 'ok', server: 'renamed.example.net', response: { ...SETTINGS, dnsServerDomain: 'renamed.example.net', version: '15.5.1' } } }
+        : session(),
+    )
+    mount()
+    await waitFor(() =>
+      expect(document.title).toBe('renamed.example.net - Technitium DNS Server v15.5.1'),
+    )
+    expect(screen.getAllByText('renamed.example.net').length).toBeGreaterThan(0)
   })
 
   it('it hides the sections with no read permission', async () => {

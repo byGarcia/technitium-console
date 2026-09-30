@@ -279,7 +279,7 @@ export async function temporaryDisableBlocking(
 
 /** The thirteen items of the backup, in upstream's order and with its labels
  *  (index.html:6291-6385). `logs` is the only one that does NOT come checked. */
-export const ELEMENTOS_BACKUP = [
+export const BACKUP_ITEMS = [
   { key: 'authConfig', label: 'Authentication Config File (auth.config)' },
   { key: 'clusterConfig', label: 'Cluster Config File (cluster.config)' },
   { key: 'webServiceSettings', label: 'Web Service Config And Certificate File (webservice.config, *.pfx & *.p12)' },
@@ -295,12 +295,12 @@ export const ELEMENTOS_BACKUP = [
   { key: 'logs', label: 'Log Files (*.log)' },
 ] as const
 
-export type ElementoBackup = (typeof ELEMENTOS_BACKUP)[number]['key']
+export type BackupItem = (typeof BACKUP_ITEMS)[number]['key']
 
 /** Initial state of the two modals: everything checked except the logs
  *  (`resetBackupSettingsModal`, main.js:3049; `resetRestoreSettingsModal`, 3116). */
 export function initialBackupSelection(): Record<string, boolean> {
-  return Object.fromEntries(ELEMENTOS_BACKUP.map((e) => [e.key, e.key !== 'logs']))
+  return Object.fromEntries(BACKUP_ITEMS.map((e) => [e.key, e.key !== 'logs']))
 }
 
 export function backupParams(
@@ -308,7 +308,7 @@ export function backupParams(
   node = '',
 ): Record<string, string> {
   const params: Record<string, string> = {}
-  for (const e of ELEMENTOS_BACKUP) params[e.key] = String(selection[e.key] === true)
+  for (const e of BACKUP_ITEMS) params[e.key] = String(selection[e.key] === true)
   params.node = node
   return params
 }
@@ -332,7 +332,7 @@ export async function restoreSettings(
   return apiRequest<SettingsEnvelope>(`settings/restore?${query.toString()}`, {
     token,
     method: 'POST',
-    file: { field: 'fileBackupZip', archivo: file },
+    file: { field: 'fileBackupZip', file: file },
   })
 }
 

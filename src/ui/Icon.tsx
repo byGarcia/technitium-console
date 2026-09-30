@@ -32,7 +32,7 @@ export type IconName =
   | 'edit' | 'power' | 'card' | 'convert' | 'warning' | 'lock'
 
 const PATHS: Record<IconName, ReactElement> = {
-  // ── Secciones ─────────────────────────────────────────────────────────
+  // ── Sections ───────────────────────────────────────────────────────────
   /* A panel with its readings: the dashboard. */
   dashboard: (
     <>

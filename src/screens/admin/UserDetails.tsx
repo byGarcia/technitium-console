@@ -84,7 +84,7 @@ const KEYS: Keys<AdminSession> = {
 }
 
 export function UserDetails({ open, username, token, cluster, onClose, onSaved, onNotice }: Props) {
-  const [detail, setDetalle] = useState<AdminUserDetails | null>(null)
+  const [detail, setDetail] = useState<AdminUserDetails | null>(null)
   const [loading, setLoading] = useState(true)
   const [notice, setNotice] = useState<Notice | null>(null)
   const [busy, setBusy] = useState(false)
@@ -112,7 +112,7 @@ export function UserDetails({ open, username, token, cluster, onClose, onSaved, 
     }
 
     const d = outcome.data.response
-    setDetalle(d)
+    setDetail(d)
     setDisplayName(d.displayName)
     setNewUser(d.username)
     setDisabled(d.disabled)

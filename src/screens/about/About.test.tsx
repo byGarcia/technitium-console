@@ -37,7 +37,7 @@ describe('About', () => {
       'https://www.reddit.com/r/technitium/',
       'https://go.technitium.com/?id=35', // Donate
     ]) {
-      expect(targets, `falta ${expected}`).toContain(expected)
+      expect(targets, `missing ${expected}`).toContain(expected)
     }
   })
 

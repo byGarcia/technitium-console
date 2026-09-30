@@ -64,8 +64,8 @@ with a brace.
 It is checked at the START and not by looking for `"error"` inside, because a log
 file is full of the word "error" and we would mark ordinary content as a failure.
 */
-function isError(cuerpo: string | null): boolean {
-  return cuerpo != null && /^\s*\{\s*"status"\s*:\s*"error"/.test(cuerpo)
+function isError(text: string | null): boolean {
+  return text != null && /^\s*\{\s*"status"\s*:\s*"error"/.test(text)
 }
 
 export function ViewLogs({
@@ -77,7 +77,7 @@ export function ViewLogs({
 }: ViewLogsProps) {
   const [files, setFiles] = useState<LogFile[] | null>(null)
   const [open, setOpen] = useState<string | null>(null)
-  const [body, setCuerpo] = useState<string | null>(null)
+  const [body, setBody] = useState<string | null>(null)
   const [loadingBody, setLoadingBody] = useState(false)
   const [notice, setNotice] = useState<Notice | null>(null)
   const [busy, setBusy] = useState(false)
@@ -100,11 +100,11 @@ export function ViewLogs({
 
   async function view(fileName: string) {
     setOpen(fileName)
-    setCuerpo(null)
+    setBody(null)
     setLoadingBody(true)
     const text = await downloadLogText(token, fileName, node)
     setLoadingBody(false)
-    setCuerpo(text)
+    setBody(text)
   }
 
   async function download() {
@@ -124,7 +124,7 @@ export function ViewLogs({
 
     await load()
     setOpen(null)
-    setCuerpo(null)
+    setBody(null)
     setNotice({
       type: 'success',
       title: 'Log Deleted!',
@@ -141,7 +141,7 @@ export function ViewLogs({
 
     await load()
     setOpen(null)
-    setCuerpo(null)
+    setBody(null)
     setNotice({
       type: 'success',
       title: 'Logs Deleted!',
@@ -284,7 +284,7 @@ export function ViewLogs({
                 (`logs.js:170-172`). The frame turns `--dan` so it is framed and
                 not disguised as the file's content.
                 */
-                <Raw text={`${open} log file`} height={520} tono={isError(body) ? 'error' : 'normal'}>
+                <Raw text={`${open} log file`} height={520} tone={isError(body) ? 'error' : 'normal'}>
                   {body ?? ''}
                 </Raw>
               )}

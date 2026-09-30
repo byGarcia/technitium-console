@@ -64,7 +64,7 @@ export const TRANSFER_PROTOCOLS = [
   { value: 'Quic', label: 'XFR-over-QUIC' },
 ]
 
-export const PROTOCOLOS_FORWARDER = [
+export const FORWARDER_PROTOCOLS = [
   { value: 'Udp', label: 'DNS-over-UDP (default)' },
   { value: 'Tcp', label: 'DNS-over-TCP' },
   { value: 'Tls', label: 'DNS-over-TLS' },
@@ -79,7 +79,7 @@ export const PROXY_TYPES = [
   { value: 'Socks5', label: 'SOCKS5 Proxy' },
 ]
 
-export interface FormularioAlta {
+export interface AddZoneForm {
   zone: string
   type: AddZoneKind
   catalog: string
@@ -100,7 +100,7 @@ export interface FormularioAlta {
   proxyPassword: string
 }
 
-export function formularioAltaInicial(useSoaSerialDateScheme: boolean, dnssecValidation: boolean): FormularioAlta {
+export function initialAddZoneForm(useSoaSerialDateScheme: boolean, dnssecValidation: boolean): AddZoneForm {
   return {
     zone: '',
     type: 'Primary',
@@ -128,24 +128,24 @@ export interface AddError {
   title: string
   text: string
   /** Which field receives the focus, just as upstream does. */
-  field: keyof FormularioAlta
+  field: keyof AddZoneForm
 }
 
-export type ResultadoAlta = { error: AddError } | { params: Record<string, string> }
+export type AddParamsResult = { error: AddError } | { params: Record<string, string> }
 
-export interface SeccionesAlta {
+export interface AddZoneSections {
   /** Only if the dropdown also brought catalogs (`hasItems`). */
-  catalogo: boolean
+  catalog: boolean
   zoneFile: boolean
-  serieSoa: boolean
-  servidoresPrimarios: boolean
+  soaSerial: boolean
+  primaryServers: boolean
   /** The label and the help change: optional for Secondary and Stub, required
    *  for the two forwarder and catalog secondaries. */
-  servidoresPrimariosObligatorios: boolean
+  primaryServersRequired: boolean
   transferProtocol: boolean
   tsig: boolean
   validateZone: boolean
-  casillaInicializarForwarder: boolean
+  initializeForwarderCheckbox: boolean
   forwarderFields: boolean
   /** "Secondary ROOT" pins the zone to "." and locks the field. */
   fixedZone: string | null
@@ -157,44 +157,44 @@ export interface SeccionesAlta {
  * NOTHING**: it has no branch in the `switch`, so only the name and the type
  * remain.
  */
-export function visibleSections(type: AddZoneKind, initializeForwarder: boolean): SeccionesAlta {
-  const base: SeccionesAlta = {
-    catalogo: false,
+export function visibleSections(type: AddZoneKind, initializeForwarder: boolean): AddZoneSections {
+  const base: AddZoneSections = {
+    catalog: false,
     zoneFile: false,
-    serieSoa: false,
-    servidoresPrimarios: false,
-    servidoresPrimariosObligatorios: false,
+    soaSerial: false,
+    primaryServers: false,
+    primaryServersRequired: false,
     transferProtocol: false,
     tsig: false,
     validateZone: false,
-    casillaInicializarForwarder: false,
+    initializeForwarderCheckbox: false,
     forwarderFields: false,
     fixedZone: null,
   }
 
   switch (type) {
     case 'Primary':
-      return { ...base, catalogo: true, zoneFile: true, serieSoa: true }
+      return { ...base, catalog: true, zoneFile: true, soaSerial: true }
 
     case 'Secondary':
       return {
         ...base,
-        catalogo: true,
-        servidoresPrimarios: true,
+        catalog: true,
+        primaryServers: true,
         transferProtocol: true,
         tsig: true,
         validateZone: true,
       }
 
     case 'Stub':
-      return { ...base, catalogo: true, servidoresPrimarios: true }
+      return { ...base, catalog: true, primaryServers: true }
 
     case 'Forwarder':
       // The zone file and the forwarder fields are mutually exclusive.
       return {
         ...base,
-        catalogo: true,
-        casillaInicializarForwarder: true,
+        catalog: true,
+        initializeForwarderCheckbox: true,
         zoneFile: !initializeForwarder,
         forwarderFields: initializeForwarder,
       }
@@ -203,14 +203,14 @@ export function visibleSections(type: AddZoneKind, initializeForwarder: boolean)
     case 'SecondaryCatalog':
       return {
         ...base,
-        servidoresPrimarios: true,
-        servidoresPrimariosObligatorios: true,
+        primaryServers: true,
+        primaryServersRequired: true,
         transferProtocol: true,
         tsig: true,
       }
 
     case 'SecondaryRoot':
-      return { ...base, catalogo: true, fixedZone: '.' }
+      return { ...base, catalog: true, fixedZone: '.' }
 
     default:
       return base
@@ -218,7 +218,7 @@ export function visibleSections(type: AddZoneKind, initializeForwarder: boolean)
 }
 
 /** The "Forwarder" field's example changes with the protocol (zone.js:139-152). */
-export function ejemploDeForwarder(protocol: string): string {
+export function forwarderExample(protocol: string): string {
   switch (protocol) {
     case 'Tls':
     case 'Quic':
@@ -235,7 +235,7 @@ export function proxyEditable(proxyType: string): boolean {
   return proxyType !== 'NoProxy' && proxyType !== 'DefaultProxy'
 }
 
-export function buildAddParams(f: FormularioAlta): ResultadoAlta {
+export function buildAddParams(f: AddZoneForm): AddParamsResult {
   if (f.zone === '') {
     return {
       error: { title: 'Missing!', text: 'Please enter a domain name to add zone.', field: 'zone' },

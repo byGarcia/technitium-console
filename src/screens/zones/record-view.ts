@@ -40,7 +40,7 @@ function withNumber(name: unknown, number: unknown): string {
  * The escaping of a TXT before drawing it: backslashes, carriage returns and
  * newlines are shown as sequences, and quotes are escaped (zone.js:3778 and 3789).
  */
-export function escaparTxt(text: string): string {
+export function escapeTxt(text: string): string {
   return text
     .replace(/\\/g, '\\\\')
     .replace(/\r/g, '\\r')
@@ -105,9 +105,9 @@ export function recordCells(r: ResourceRecord): Cell[] {
       // Split, each string goes in quotes and on a line of its own.
       if (d.splitText === true) {
         const strings = (d.characterStrings ?? []) as string[]
-        output.push({ cls: 'lines', lines: strings.map((c) => `"${escaparTxt(c)}"`) })
+        output.push({ cls: 'lines', lines: strings.map((c) => `"${escapeTxt(c)}"`) })
       } else {
-        output.push({ cls: 'value', text: escaparTxt(s(d.text)) })
+        output.push({ cls: 'value', text: escapeTxt(s(d.text)) })
       }
       break
     }
@@ -483,7 +483,7 @@ export function hideDnssec(records: ResourceRecord[]): ResourceRecord[] {
 /* ── Dates ────────────────────────────────────────────────────────────── */
 
 /*
-The dates were unified into `src/lib/fechas.ts` when integrating phases 4, 8 and
+The dates were unified into `src/lib/dates.ts` when integrating phases 4, 8 and
 9: all three had written their own copy of `moment().format()` and `fromNow()`.
 They are re-exported under the names this screen uses so as not to touch its
 calls.

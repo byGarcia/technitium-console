@@ -86,7 +86,7 @@ export async function getRecords(
   return { zone: r.zone, records: r.records ?? [] }
 }
 
-export interface RespuestaAlta {
+export interface AddRecordResponse {
   response: { addedRecord: ResourceRecord; zone: ZoneDetails }
 }
 export interface EditResponse {
@@ -97,8 +97,8 @@ export function addRecord(
   token: string | null,
   body: Record<string, string>,
   node = '',
-): Promise<ApiOutcome<RespuestaAlta>> {
-  return apiRequest<RespuestaAlta>(`zones/records/add?node=${encodeURIComponent(node)}`, {
+): Promise<ApiOutcome<AddRecordResponse>> {
+  return apiRequest<AddRecordResponse>(`zones/records/add?node=${encodeURIComponent(node)}`, {
     token,
     method: 'POST',
     body,
@@ -138,7 +138,7 @@ const s = (v: unknown): string => (v == null ? '' : String(v))
  * travels as the string `"false"` — which is what comes out of concatenating the
  * boolean upstream reduces it to (zone.js:5990-6002).
  */
-export function aplanarSvcParams(params: unknown): string {
+export function flattenSvcParams(params: unknown): string {
   const obj = (params ?? {}) as Record<string, unknown>
   const parts: string[] = []
   for (const [k, v] of Object.entries(obj)) parts.push(k, s(v))
@@ -146,12 +146,12 @@ export function aplanarSvcParams(params: unknown): string {
 }
 
 /** `data-record-glue`: the addresses joined by ", " (zone.js:3700-3712). */
-export function aplanarGlue(glue: string[] | undefined): string {
+export function flattenGlue(glue: string[] | undefined): string {
   return (glue ?? []).join(', ')
 }
 
 /** `data-record-character-strings-base64`: comma-joined (zone.js:3797-3803). */
-export function aplanarCharacterStrings(r: Record<string, unknown>): string {
+export function flattenCharacterStrings(r: Record<string, unknown>): string {
   const list = (r.characterStringsBase64 ?? []) as string[]
   return list.join(',')
 }
@@ -182,7 +182,7 @@ export function recordIdentity(
 
     case 'NS':
       out.nameServer = s(d.nameServer)
-      if (!deletion) out.glue = aplanarGlue(record.glueRecords)
+      if (!deletion) out.glue = flattenGlue(record.glueRecords)
       break
 
     case 'CNAME':
@@ -199,7 +199,7 @@ export function recordIdentity(
       break
 
     case 'TXT':
-      out.characterStringsBase64 = aplanarCharacterStrings(d)
+      out.characterStringsBase64 = flattenCharacterStrings(d)
       break
 
     case 'RP':
@@ -252,7 +252,7 @@ export function recordIdentity(
       out.svcPriority = s(d.svcPriority)
       // An empty target is sent as the root, same as in the row (zone.js:4071).
       out.svcTargetName = s(d.svcTargetName) === '' ? '.' : s(d.svcTargetName)
-      out.svcParams = aplanarSvcParams(d.svcParams)
+      out.svcParams = flattenSvcParams(d.svcParams)
       if (!deletion) {
         out.autoIpv4Hint = String(d.autoIpv4Hint === true)
         out.autoIpv6Hint = String(d.autoIpv6Hint === true)

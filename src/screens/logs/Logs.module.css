@@ -123,7 +123,7 @@ to become a summary of what is in front of you.
 .legendItem { display: inline-flex; align-items: center; gap: var(--s-5); font-size: var(--t-2); }
 /* The swatch carries its own border: at 30 % over the panel, a square with no
    border is lost against the background in exactly the darkest tones. */
-.testigo { width: 12px; height: 12px; border-radius: 3px; border: 1px solid var(--line); flex: none; }
+.swatch { width: 12px; height: 12px; border-radius: 3px; border: 1px solid var(--line); flex: none; }
 .legendName { color: var(--ink); font-weight: 550; }
 .legendWhen { color: var(--faint); }
 
@@ -157,5 +157,5 @@ It goes on the GROUP and not on each field because all four switch off together:
 four pills saying the same thing are noise, and the `Settings` rule was already
 one pill per group.
 */
-.byMode { composes: dependiente from '../../ui/Form.module.css'; padding-left: var(--s-8); }
+.byMode { composes: dependent from '../../ui/Form.module.css'; padding-left: var(--s-8); }
 .frowLabel { display: flex; align-items: center; gap: var(--s-6); flex-wrap: wrap; }

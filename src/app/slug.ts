@@ -6,7 +6,7 @@ browser to read the address bar, and `vite.config` to know which folders the bui
 has to emit. `route.ts` touches `window` and `document`, and the config's TypeScript
 project has no DOM: a string function cannot drag that dependency along.
 */
-export function aSlug(label: string): string {
+export function toSlug(label: string): string {
   return label
     .toLowerCase()
     .replace(/&/g, '')

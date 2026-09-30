@@ -4,8 +4,8 @@ import {
   addRecord,
   deleteRecord,
   recordIdentity,
-  aplanarSvcParams,
-  aplanarGlue,
+  flattenSvcParams,
+  flattenGlue,
   deletionBody,
   stateChangeBody,
   fullDomain,
@@ -35,7 +35,7 @@ function rec(type: string, rData: Record<string, unknown>, extra: Partial<Resour
   }
 }
 
-describe('zones/records — transporte', () => {
+describe('zones/records — transport', () => {
   it('getRecords does NOT paginate: it asks with listZone=true and no page parameters', async () => {
     const spy = vi.spyOn(client, 'apiRequest').mockResolvedValue(
       env({ zone: { name: 'casa.test' }, records: [] }),
@@ -118,12 +118,12 @@ describe('identity of a record', () => {
   })
 
   it('an empty svcParams travels as the string \"false\", not as an empty string', () => {
-    expect(aplanarSvcParams({})).toBe('false')
-    expect(aplanarSvcParams(undefined)).toBe('false')
+    expect(flattenSvcParams({})).toBe('false')
+    expect(flattenSvcParams(undefined)).toBe('false')
   })
 
   it('with no glue, `glue` is an empty string', () => {
-    expect(aplanarGlue(undefined)).toBe('')
+    expect(flattenGlue(undefined)).toBe('')
   })
 
   it('FWD only drags the proxy along when the type has one', () => {
@@ -145,7 +145,7 @@ describe('identity of a record', () => {
   })
 })
 
-describe('cuerpos completos', () => {
+describe('complete bodies', () => {
   it('the delete sends zone, domain and type, and the root goes as a dot', () => {
     const r = rec('MX', { preference: 10, exchange: 'mail.casa.test' }, { name: '' })
     expect(deletionBody('casa.test', r)).toEqual({

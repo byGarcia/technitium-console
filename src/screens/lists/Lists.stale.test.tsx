@@ -19,7 +19,7 @@ afterEach(() => vi.restoreAllMocks())
 
 const NODE = { domain: '', zones: ['casa.test'], records: [] }
 
-/** Responde bien la primera vez y mal a partir de la segunda. */
+/** Answers well the first time and badly from the second on. */
 function goodThenBroken() {
   let n = 0
   return vi.spyOn(client, 'apiRequest').mockImplementation(async () => {

@@ -14,7 +14,7 @@ import { ImportZone } from './modals/ImportZone'
 import { EditZoneFile } from './modals/EditZoneFile'
 import { ZoneOptions } from './modals/ZoneOptions'
 import { ZonePermissions } from './modals/ZonePermissions'
-import { PropiedadesDnssec } from './modals/DnssecProperties'
+import { DnssecProperties } from './modals/DnssecProperties'
 import { ViewDs } from './modals/ViewDs'
 import type { Notice, Confirmation } from './types'
 import { Notifier } from '../../ui/Notifier'
@@ -79,7 +79,7 @@ export function Zones({
 
   /** The zone the open modal acts on; it may not be the one on screen. */
   const [modalZone, setModalZone] = useState('')
-  const [modalKind, setTipoModal] = useState('')
+  const [modalKind, setModalKind] = useState('')
 
   const [recordMode, setRecordMode] = useState<'add' | 'update'>('add')
   const [zoneDetails, setZoneDetails] = useState<ZoneDetails | null>(null)
@@ -102,7 +102,7 @@ export function Zones({
 
   function openModal(id: ModalId, zone: string, type = '') {
     setModalZone(zone)
-    setTipoModal(type)
+    setModalKind(type)
     setModal(id)
   }
 
@@ -196,7 +196,7 @@ export function Zones({
           onSign={(z) => openModal('sign', z)}
           onUnsign={(z) => openModal('unsign', z)}
           onViewDs={(z) => openModal('viewds', z)}
-          onPropiedadesDnssec={(z) => openModal('dnssec', z)}
+          onDnssecProperties={(z) => openModal('dnssec', z)}
           refresh={zoneRefresh}
           modalExpiryTtl={modalExpiryTtl}
         />
@@ -310,7 +310,7 @@ export function Zones({
         onClose={() => setModal(null)}
       />
 
-      <PropiedadesDnssec
+      <DnssecProperties
         zone={modalZone}
         open={modal === 'dnssec'}
         token={token}

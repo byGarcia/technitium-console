@@ -68,13 +68,13 @@ export function ConvertZone({
   onDone: (a: Notice) => void
 }) {
   const table = conversionTargets(sourceType)
-  const [target, setDestino] = useState<ConversionTarget | null>(table.byDefault)
+  const [target, setTarget] = useState<ConversionTarget | null>(table.byDefault)
   const [notice, setNotice] = useState<Notice | null>(null)
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {
     if (!open) return
-    setDestino(conversionTargets(sourceType).byDefault)
+    setTarget(conversionTargets(sourceType).byDefault)
     setNotice(null)
   }, [open, sourceType])
 
@@ -118,7 +118,7 @@ export function ConvertZone({
                 name="convertTo"
                 disabled={!table.enabled2.includes(d)}
                 checked={target === d}
-                onChange={() => setDestino(d)}
+                onChange={() => setTarget(d)}
               />
               {LABELS[d]}
             </label>

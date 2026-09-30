@@ -45,7 +45,7 @@ export interface PrivateKey {
   rolloverDays: number
 }
 
-export interface PropiedadesDnssec {
+export interface DnssecPropertiesData {
   name: string
   type: string
   disabled: boolean
@@ -166,12 +166,12 @@ export async function viewDs(
 }
 
 /** `zones/dnssec/properties/get` (zone.js:6836). */
-export async function getPropiedades(
+export async function getProperties(
   token: string | null,
   zone: string,
   node = '',
-): Promise<PropiedadesDnssec | null> {
-  const outcome = await apiRequest<{ response: PropiedadesDnssec }>(
+): Promise<DnssecPropertiesData | null> {
+  const outcome = await apiRequest<{ response: DnssecPropertiesData }>(
     'zones/dnssec/properties/get',
     { token, body: { zone, node } },
   )
@@ -348,7 +348,7 @@ called and the success alert is drawn all the same.
   NSEC3   → NSEC             convertToNSEC
 */
 export type PlanNxProof =
-  | { action: 'ninguna' }
+  | { action: 'none' }
   | { action: 'convertToNSEC' }
   | { action: 'convertToNSEC3'; iterations: string; saltLength: string }
   | { action: 'updateNSEC3Params'; iterations: string; saltLength: string }
@@ -360,14 +360,14 @@ export function planNxProof(
   blanks: { iterations: string; saltLength: string },
 ): PlanNxProof {
   if (current === 'NSEC') {
-    if (chosen === 'NSEC') return { action: 'ninguna' }
+    if (chosen === 'NSEC') return { action: 'none' }
     return { action: 'convertToNSEC3', ...blanks }
   }
 
   if (chosen === 'NSEC') return { action: 'convertToNSEC' }
 
   if (current2.iterations === blanks.iterations && current2.saltLength === blanks.saltLength) {
-    return { action: 'ninguna' }
+    return { action: 'none' }
   }
   return { action: 'updateNSEC3Params', ...blanks }
 }

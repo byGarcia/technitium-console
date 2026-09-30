@@ -20,20 +20,20 @@ export interface Section {
 }
 
 export const SECTIONS: Section[] = [
-  { id: 'dashboard', label: 'Dashboard', permission: 'Dashboard', phase: 'fase 3' },
-  { id: 'zones', label: 'Zones', permission: 'Zones', phase: 'fase 4' },
-  { id: 'cache', label: 'Cache', permission: 'Cache', phase: 'fase 5' },
-  { id: 'allowed', label: 'Allowed', permission: 'Allowed', phase: 'fase 5' },
-  { id: 'blocked', label: 'Blocked', permission: 'Blocked', phase: 'fase 5' },
-  { id: 'apps', label: 'Apps', permission: 'Apps', phase: 'fase 7' },
-  { id: 'dnsclient', label: 'DNS Client', permission: 'DnsClient', phase: 'fase 3' },
-  { id: 'settings', label: 'Settings', permission: 'Settings', phase: 'fase 6',
+  { id: 'dashboard', label: 'Dashboard', permission: 'Dashboard', phase: 'phase 3' },
+  { id: 'zones', label: 'Zones', permission: 'Zones', phase: 'phase 4' },
+  { id: 'cache', label: 'Cache', permission: 'Cache', phase: 'phase 5' },
+  { id: 'allowed', label: 'Allowed', permission: 'Allowed', phase: 'phase 5' },
+  { id: 'blocked', label: 'Blocked', permission: 'Blocked', phase: 'phase 5' },
+  { id: 'apps', label: 'Apps', permission: 'Apps', phase: 'phase 7' },
+  { id: 'dnsclient', label: 'DNS Client', permission: 'DnsClient', phase: 'phase 3' },
+  { id: 'settings', label: 'Settings', permission: 'Settings', phase: 'phase 6',
     subs: ['General','Web Service','Optional Protocols','TSIG','Recursion','Cache','Blocking','Proxy & Forwarders','Logging'] },
-  { id: 'dhcp', label: 'DHCP', permission: 'DhcpServer', phase: 'fase 8', subs: ['Leases','Scopes'] },
-  { id: 'admin', label: 'Administration', permission: 'Administration', phase: 'fase 9',
+  { id: 'dhcp', label: 'DHCP', permission: 'DhcpServer', phase: 'phase 8', subs: ['Leases','Scopes'] },
+  { id: 'admin', label: 'Administration', permission: 'Administration', phase: 'phase 9',
     subs: ['Sessions','Users','Groups','Permissions','SSO','LDAP','Cluster'] },
-  { id: 'logs', label: 'Logs', permission: 'Logs', phase: 'fase 8', subs: ['View Logs','Query Logs'] },
-  { id: 'about', label: 'About', permission: null, phase: 'fase 3' },
+  { id: 'logs', label: 'Logs', permission: 'Logs', phase: 'phase 8', subs: ['View Logs','Query Logs'] },
+  { id: 'about', label: 'About', permission: null, phase: 'phase 3' },
 ]
 
 export interface Permission { canView: boolean; canModify: boolean; canDelete: boolean }

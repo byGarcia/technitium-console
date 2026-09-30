@@ -509,12 +509,26 @@ if [ "$ACTION" = "uninstall" ]; then
     [ "$stock" != "$WWW_DIR" ] || die "$WWW_DIR is the server's own web root. Not removing it."
     refuse_links "$stock"
     carry_custom_lists "$WWW_DIR" "$stock"
-    rm -rf "$WWW_DIR"
-    state_clear
-    ok "Console removed" "$WWW_DIR"
-    say "Unset $VAR_NAME and the server goes back to its own console."
-    confirm "Restart the DNS server now so it stops looking at a folder that is gone?"
-    restart_server
+    # The contents first and the folder after, because the folder may be a
+    # mount point — the Docker layout the README describes — and a mount point
+    # cannot be removed from inside: `rm -rf` on it empties it and then fails,
+    # which used to stop the uninstall halfway.
+    find "$WWW_DIR" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+    if rmdir "$WWW_DIR" 2>/dev/null; then
+      state_clear
+      ok "Console removed" "$WWW_DIR"
+      say "Unset $VAR_NAME and the server goes back to its own console."
+      confirm "Restart the DNS server now so it stops looking at a folder that is gone?"
+      restart_server
+    else
+      # The folder stays, empty. A restart with the variable still set would
+      # serve that empty folder, so no restart is offered: the variable (or the
+      # mount) has to go first, and that is the administrator's to change.
+      state_clear
+      ok "Console removed" "$WWW_DIR (the folder itself stays: it is a mount point)"
+      warn "Unset $VAR_NAME, or remove the mount, BEFORE restarting the DNS server:"
+      warn "with the variable still set it would serve this empty folder."
+    fi
     printf '\n'
     exit 0
   fi

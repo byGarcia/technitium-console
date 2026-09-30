@@ -12,7 +12,7 @@ import { describe, expect, it } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { Raw } from './Raw'
 
-describe('la salida cruda', () => {
+describe('the raw output', () => {
   it('it can be focused, so it can be read with a keyboard', () => {
     render(<Raw text="DNS response">{'{ "a": 1 }'}</Raw>)
     expect(screen.getByLabelText('DNS response')).toHaveAttribute('tabindex', '0')
@@ -45,7 +45,7 @@ describe('la salida cruda', () => {
   })
 
   it('with the error tone, it is', () => {
-    const { container } = render(<Raw text="x" tono="error">y</Raw>)
+    const { container } = render(<Raw text="x" tone="error">y</Raw>)
     expect(container.firstElementChild?.className).toMatch(/error/)
   })
 })

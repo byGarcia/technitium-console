@@ -108,7 +108,7 @@ describe('Apps — installed list', () => {
     expect(await screen.findByText('1 update available')).toBeInTheDocument()
     // The installed count is gone: the header pill is for STATE, and counting
     // rows with that same look was an inconsistency.
-    expect(screen.queryByText(/^\d+ instaladas?$/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/^\d+ installed$/)).not.toBeInTheDocument()
   })
 
   it('with no updates it does not show the pill', async () => {
@@ -173,7 +173,7 @@ describe('Apps — installed list', () => {
 
     expect(await screen.findByText('No apps installed')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Open App Store' })).toBeInTheDocument()
-    expect(screen.queryByText('0 instaladas')).not.toBeInTheDocument()
+    expect(screen.queryByText('0 installed')).not.toBeInTheDocument()
   })
 
   it('if the server fails, it says so and does not blow up', async () => {
@@ -289,11 +289,11 @@ describe('Apps — config of the app', () => {
     await screen.findByRole('listitem', { name: 'What Is My Dns' })
 
     await userEvent.click(card('What Is My Dns').getByRole('button', { name: 'Config' }))
-    await userEvent.type(await screen.findByLabelText('Config File'), 'hola')
+    await userEvent.type(await screen.findByLabelText('Config File'), 'hello')
     await userEvent.click(screen.getByRole('button', { name: 'Save' }))
 
     expect(spy.mock.calls[0][1]).toBe('What Is My Dns')
-    expect(spy.mock.calls[0][2]).toBe('hola')
+    expect(spy.mock.calls[0][2]).toBe('hello')
     expect(
       await screen.findByText(
         "The DNS application 'What Is My Dns' config was saved and reloaded successfully.",

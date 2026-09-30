@@ -55,7 +55,7 @@ function anchor(section: string): string {
 }
 
 export function Permissions({ tabs, token, cluster, onNotice }: Props) {
-  const [sections, setSecciones] = useState<SectionPermission[]>([])
+  const [sections, setSections] = useState<SectionPermission[]>([])
   const [loading, setLoading] = useState(true)
   const [edit, setEdit] = useState<string | null>(null)
   const [here, setHere] = useState<string | undefined>(undefined)
@@ -66,11 +66,11 @@ export function Permissions({ tabs, token, cluster, onNotice }: Props) {
     setLoading(false)
 
     if (outcome.kind !== 'ok') {
-      setSecciones([])
+      setSections([])
       onNotice(noticeFromFailure(outcome))
       return
     }
-    setSecciones(outcome.data.response.permissions)
+    setSections(outcome.data.response.permissions)
   }, [token, onNotice])
 
   useEffect(() => {
@@ -88,17 +88,17 @@ export function Permissions({ tabs, token, cluster, onNotice }: Props) {
   const boxes = useRef<Map<string, HTMLElement>>(new Map())
   useEffect(() => {
     if (loading || sections.length === 0) return
-    const visto = new Set<string>()
+    const seen = new Set<string>()
     const observer = new IntersectionObserver(
       (entries) => {
         for (const e of entries) {
-          if (e.isIntersecting) visto.add(e.target.id)
-          else visto.delete(e.target.id)
+          if (e.isIntersecting) seen.add(e.target.id)
+          else seen.delete(e.target.id)
         }
         // The topmost one that is on screen: with eleven panels several are, and
         // marking the last would say you are further down than you are.
         const order = sections.map((x) => anchor(x.section))
-        setHere(order.find((id) => visto.has(id)))
+        setHere(order.find((id) => seen.has(id)))
       },
       { rootMargin: '-72px 0px -60% 0px' },
     )
@@ -118,7 +118,7 @@ export function Permissions({ tabs, token, cluster, onNotice }: Props) {
   Subjects come from the sections themselves and in the server's own order, so no
   list is invented and none is asked for twice.
   */
-  const sujetos = (() => {
+  const subjects = (() => {
     const users: string[] = []
     const groups: string[] = []
     for (const s of sections) {
@@ -128,11 +128,11 @@ export function Permissions({ tabs, token, cluster, onNotice }: Props) {
     return { users, groups }
   })()
 
-  const hasMap = sujetos.users.length + sujetos.groups.length > 0
+  const hasMap = subjects.users.length + subjects.groups.length > 0
 
   function row(who: string, population: 'user' | 'group') {
     return sections.map((s) => {
-      const entrada =
+      const entry =
         population === 'user'
           ? s.userPermissions.find((p) => p.username === who)
           : s.groupPermissions.find((p) => p.name === who)
@@ -143,14 +143,14 @@ export function Permissions({ tabs, token, cluster, onNotice }: Props) {
       the eleven sections below, which are unchanged — a subject with no entry
       simply has no row there.
       */
-      if (entrada == null) return <td key={s.section} />
+      if (entry == null) return <td key={s.section} />
       return (
         <MatrixMarks
           key={s.section}
           verbs={[
-            { verb: 'View', granted: entrada.canView },
-            { verb: 'Modify', granted: entrada.canModify },
-            { verb: 'Delete', granted: entrada.canDelete },
+            { verb: 'View', granted: entry.canView },
+            { verb: 'Modify', granted: entry.canModify },
+            { verb: 'Delete', granted: entry.canDelete },
           ]}
         />
       )
@@ -191,18 +191,18 @@ export function Permissions({ tabs, token, cluster, onNotice }: Props) {
                       ...sections.map((s) => ({ label: s.section })),
                     ]}
                   >
-                    {sujetos.users.length > 0 && (
+                    {subjects.users.length > 0 && (
                       <MatrixGroup label="User Permissions" span={sections.length + 1} />
                     )}
-                    {sujetos.users.map((u) => (
+                    {subjects.users.map((u) => (
                       <MatrixRow key={u} subject={u} stick>
                         {row(u, 'user')}
                       </MatrixRow>
                     ))}
-                    {sujetos.groups.length > 0 && (
+                    {subjects.groups.length > 0 && (
                       <MatrixGroup label="Group Permissions" span={sections.length + 1} />
                     )}
-                    {sujetos.groups.map((g) => (
+                    {subjects.groups.map((g) => (
                       <MatrixRow key={g} subject={g} stick>
                         {row(g, 'group')}
                       </MatrixRow>
@@ -321,7 +321,7 @@ export function Permissions({ tabs, token, cluster, onNotice }: Props) {
           primaryNode={primaryNodeName(cluster)}
           onClose={() => setEdit(null)}
           onSaved={(p) => {
-            setSecciones((list) => list.map((x) => (x.section === p.section ? p : x)))
+            setSections((list) => list.map((x) => (x.section === p.section ? p : x)))
             onNotice({
               type: 'success',
               title: 'Permissions Saved!',
@@ -403,20 +403,20 @@ function EditPermissions({
   }, [load])
 
   async function save() {
-    const serie = (rows: readonly Row[]): Cell[][] =>
+    const toCells = (rows: readonly Row[]): Cell[][] =>
       rows.map((f) => [
         { type: 'text', value: f.name },
-        { type: 'casilla', value: f.canView },
-        { type: 'casilla', value: f.canModify },
-        { type: 'casilla', value: f.canDelete },
+        { type: 'checkbox', value: f.canView },
+        { type: 'checkbox', value: f.canModify },
+        { type: 'checkbox', value: f.canDelete },
       ])
 
-    const u = serializeTable(serie(users))
+    const u = serializeTable(toCells(users))
     if (!u.ok) {
       setNotice({ type: 'warning', title: u.failure.title, text: u.failure.text })
       return
     }
-    const g = serializeTable(serie(groups))
+    const g = serializeTable(toCells(groups))
     if (!g.ok) {
       setNotice({ type: 'warning', title: g.failure.title, text: g.failure.text })
       return

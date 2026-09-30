@@ -58,7 +58,7 @@ same news, and a notice floating on its own could not say which one it meant.
 Amber and not the red upstream uses: in this console red is what destroys
 —Delete Zones, Flush Cache— and an available update destroys nothing.
 */
-.marca {
+.mark {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -74,10 +74,10 @@ Amber and not the red upstream uses: in this console red is what destroys
   cursor: pointer;
 }
 
-.marca:hover,
-.marca:focus-visible { background: color-mix(in srgb, var(--acc) 14%, transparent); }
+.mark:hover,
+.mark:focus-visible { background: color-mix(in srgb, var(--acc) 14%, transparent); }
 
-.punto { width: 5px; height: 5px; border-radius: 50%; background: var(--acc); }
+.dot { width: 5px; height: 5px; border-radius: 50%; background: var(--acc); }
 
 /* Inside the dialog. */
 .jump {

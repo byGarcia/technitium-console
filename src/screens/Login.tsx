@@ -55,7 +55,7 @@ export function Login({
   const [totp, setTotp] = useState('')
   const [otpVisible, setOtpVisible] = useState(false)
   const [busy, setBusy] = useState(false)
-  const [forgotten, setOlvido] = useState(false)
+  const [forgotten, setForgotten] = useState(false)
   const [alert, setAlert] = useState<AlertState | null>(initialAlert ?? null)
   // The SSO button is only drawn if the server says it is enabled
   // (main.js:48-56). By default NOT: SSO is not assumed.
@@ -206,7 +206,7 @@ export function Login({
  `{error: 'no main element'}` for the screen you enter the console through, so the
  front door had no contract.
 
-    Se arregla al redibujarla y sale gratis. Si no se nombra, vuelve.
+    It is fixed by redrawing it and costs nothing. If nobody names it, it comes back.
     */
     <main className={styles.page}>
       <div className={styles.card}>
@@ -260,13 +260,13 @@ export function Login({
         {/* In upstream the link goes BEFORE the SSO block, and the "or login
             with" only appears if there is SSO (index.html:119-124). */}
         <div className={styles.sso}>
-          <button type="button" className={styles.link} onClick={() => setOlvido(true)}>
+          <button type="button" className={styles.link} onClick={() => setForgotten(true)}>
             Forgot Password?
           </button>
 
           {ssoEnabled && (
             <>
-              <div className={styles.oLogin}>or login with</div>
+              <div className={styles.orLogin}>or login with</div>
               <a className={styles.ssoLink} href="sso/login">
                 Sign in with SSO
               </a>
@@ -279,7 +279,7 @@ export function Login({
           the `body` and not the panel. See `app/pie.ts`. */}
       <FooterLinks className={styles.footer} />
 
-      <ForgotPassword open={forgotten} onOpenChange={setOlvido} />
+      <ForgotPassword open={forgotten} onOpenChange={setForgotten} />
     </main>
   )
 }

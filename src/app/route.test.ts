@@ -1,6 +1,6 @@
 import { describe, expect, it, afterEach } from 'vitest'
 import { SECTIONS } from './sections'
-import { toTrail, aSlug, writeRoute, readRoute, forgetRoot, appRoot } from './route'
+import { toTrail, toSlug, writeRoute, readRoute, forgetRoot, appRoot } from './route'
 
 /** Serves the document as the server would: in its folder and with its meta. */
 function servedAt(trail: string, route: string | null = null) {
@@ -19,20 +19,20 @@ afterEach(() => {
   servedAt('/')
 })
 
-describe('aSlug', () => {
+describe('toSlug', () => {
   it('it turns the upstream label into something that fits in a URL', () => {
-    expect(aSlug('Leases')).toBe('leases')
-    expect(aSlug('Web Service')).toBe('web-service')
-    expect(aSlug('View Logs')).toBe('view-logs')
+    expect(toSlug('Leases')).toBe('leases')
+    expect(toSlug('Web Service')).toBe('web-service')
+    expect(toSlug('View Logs')).toBe('view-logs')
     // The `&` disappears instead of becoming a dash, so as not to leave `proxy--forwarders`
-    expect(aSlug('Proxy & Forwarders')).toBe('proxy-forwarders')
-    expect(aSlug('Optional Protocols')).toBe('optional-protocols')
+    expect(toSlug('Proxy & Forwarders')).toBe('proxy-forwarders')
+    expect(toSlug('Optional Protocols')).toBe('optional-protocols')
   })
 
   it('every sub-section yields a distinct slug within its section', () => {
     for (const s of SECTIONS) {
       if (s.subs == null) continue
-      const slugs = s.subs.map(aSlug)
+      const slugs = s.subs.map(toSlug)
       expect(new Set(slugs).size, `slug collision in ${s.id}: ${slugs.join(', ')}`).toBe(slugs.length)
     }
   })

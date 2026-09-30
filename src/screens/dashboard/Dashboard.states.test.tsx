@@ -53,12 +53,12 @@ describe('a server with no traffic', () => {
 })
 
 describe('when the request fails', () => {
-  const fallar = () =>
+  const failLoad = () =>
     vi.spyOn(api, 'getDashboardStats').mockResolvedValue({ kind: 'error', message: 'boom' } as never)
 
   /* The one that matters: it must NOT say the same as a quiet server. */
   it('the regions do NOT say "no queries for this period"', async () => {
-    fallar()
+    failLoad()
     render(<Dashboard token="t" />)
 
     await screen.findAllByText(/Could not load/)
@@ -67,7 +67,7 @@ describe('when the request fails', () => {
   })
 
   it('the eleven cards go to a dash and not to zero', async () => {
-    fallar()
+    failLoad()
     render(<Dashboard token="t" />)
 
     await screen.findAllByText(/Could not load/)
@@ -78,7 +78,7 @@ describe('when the request fails', () => {
 
   /* The detail goes ONCE, at the top, not repeated per panel. */
   it('the screen notice appears only once', async () => {
-    fallar()
+    failLoad()
     render(<Dashboard token="t" />)
 
     await screen.findAllByText(/Could not load/)
@@ -154,8 +154,8 @@ describe('the custom range', () => {
     await openIt(user)
     await user.click(screen.getByRole('button', { name: 'Show' }))
 
-    const campo = screen.getByLabelText(/Start/).closest('label')!
-    expect(campo).toHaveTextContent('Please select a start date.')
+    const field = screen.getByLabelText(/Start/).closest('label')!
+    expect(field).toHaveTextContent('Please select a start date.')
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 })

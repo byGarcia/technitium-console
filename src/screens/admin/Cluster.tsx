@@ -145,7 +145,7 @@ export function Cluster({ tabs, token, cluster, node: controlledNode, onNodeChan
   const initialised = state?.clusterInitialized === true
   const isPrimary = ownType === 'Primary'
 
-  async function lanzarResync() {
+  async function startResync() {
     setModal(null)
     const outcome = await resyncCluster(token, node)
     if (outcome.kind !== 'ok') {
@@ -346,7 +346,7 @@ export function Cluster({ tabs, token, cluster, node: controlledNode, onNodeChan
         label="Resync"
         variant="primary"
         onClose={() => setModal(null)}
-        onConfirm={() => void lanzarResync()}
+        onConfirm={() => void startResync()}
       />
 
       {modal?.type === 'new' && (
@@ -602,7 +602,7 @@ function NewCluster({
     }
   }, [token])
 
-  async function inicializar() {
+  async function initialize() {
     if (domain === '') {
       setNotice({ type: 'warning', title: 'Missing!', text: 'Please enter the Cluster domain name.' })
       return
@@ -636,7 +636,7 @@ function NewCluster({
       size="medium"
       actions={
         <>
-          <Button variant="primary" disabled={busy || loading || alreadyThere} onClick={() => void inicializar()}>
+          <Button variant="primary" disabled={busy || loading || alreadyThere} onClick={() => void initialize()}>
             Initialize
           </Button>
         </>
@@ -752,7 +752,7 @@ function JoinCluster({
   const [list, setList] = useState('')
   const [url, setUrl] = useState('')
   const [ip, setIp] = useState('')
-  const [ignore, setIgnorar] = useState('false')
+  const [ignore, setIgnore] = useState('false')
   const [user, setUser] = useState('admin')
   const [pass, setPass] = useState('')
   const [totp, setTotp] = useState('')
@@ -931,7 +931,7 @@ function JoinCluster({
             <Radios
               name="joinClusterCertificateValidation"
               value={ignore}
-              onChange={setIgnorar}
+              onChange={setIgnore}
               options={[
                 {
                   value: 'false',

@@ -73,14 +73,14 @@ describe('Note! against Warning!', () => {
         text
       </Alert>,
     )
-    const iconoNote = container.querySelector('svg')
-    expect(iconoNote).toBeTruthy()
-    expect(iconoNote).toHaveAttribute('aria-hidden', 'true')
-    expect(iconoNote).toHaveAttribute('focusable', 'false')
+    const noteIcon = container.querySelector('svg')
+    expect(noteIcon).toBeTruthy()
+    expect(noteIcon).toHaveAttribute('aria-hidden', 'true')
+    expect(noteIcon).toHaveAttribute('focusable', 'false')
     /* The STRING is kept, not the node: React reuses the same `svg` on
        re-render, so a live reference would end up compared with itself and the
        test would always pass. */
-    const dibujoNote = iconoNote!.innerHTML
+    const noteDrawing = noteIcon!.innerHTML
 
     rerender(
       <Alert type="warning" title="Warning!">
@@ -88,7 +88,7 @@ describe('Note! against Warning!', () => {
       </Alert>,
     )
     /* It is not the same drawing: if it were, the icon would tell nothing apart. */
-    expect(container.querySelector('svg')!.innerHTML).not.toBe(dibujoNote)
+    expect(container.querySelector('svg')!.innerHTML).not.toBe(noteDrawing)
   })
 
   /*

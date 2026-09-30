@@ -3,7 +3,7 @@ import {
   signZone,
   unsignZone,
   viewDs,
-  getPropiedades,
+  getProperties,
   addPrivateKey,
   updatePrivateKey,
   deletePrivateKey,
@@ -82,7 +82,7 @@ describe('signing and unsigning', () => {
   })
 })
 
-describe('lecturas', () => {
+describe('reads', () => {
   it('viewDS tolerates there being no DS records', async () => {
     vi.spyOn(client, 'apiRequest').mockResolvedValue(env({ name: 'casa.test' }))
     expect(await viewDs('t', 'casa.test')).toMatchObject({ dsRecords: [] })
@@ -90,13 +90,13 @@ describe('lecturas', () => {
 
   it('properties/get tolerates there being no keys', async () => {
     vi.spyOn(client, 'apiRequest').mockResolvedValue(env({ name: 'casa.test', dnsKeyTtl: 3600 }))
-    expect(await getPropiedades('t', 'casa.test')).toMatchObject({ dnssecPrivateKeys: [] })
+    expect(await getProperties('t', 'casa.test')).toMatchObject({ dnssecPrivateKeys: [] })
   })
 
   it('both return null if the call fails', async () => {
     vi.spyOn(client, 'apiRequest').mockResolvedValue({ kind: 'error', message: 'x' })
     expect(await viewDs('t', 'casa.test')).toBeNull()
-    expect(await getPropiedades('t', 'casa.test')).toBeNull()
+    expect(await getProperties('t', 'casa.test')).toBeNull()
   })
 })
 
@@ -162,7 +162,7 @@ describe('planNxProof — the decision table of changeDnssecNxProof', () => {
   const zeros = { iterations: '0', saltLength: '0' }
 
   it('NSEC to NSEC calls nobody', () => {
-    expect(planNxProof('NSEC', 'NSEC', zeros, zeros)).toEqual({ action: 'ninguna' })
+    expect(planNxProof('NSEC', 'NSEC', zeros, zeros)).toEqual({ action: 'none' })
   })
 
   it('NSEC → NSEC3 converts, with the new values', () => {
@@ -175,7 +175,7 @@ describe('planNxProof — the decision table of changeDnssecNxProof', () => {
 
   it('NSEC3 → NSEC3 with no changes calls nobody', () => {
     const v = { iterations: '5', saltLength: '8' }
-    expect(planNxProof('NSEC3', 'NSEC3', v, v)).toEqual({ action: 'ninguna' })
+    expect(planNxProof('NSEC3', 'NSEC3', v, v)).toEqual({ action: 'none' })
   })
 
   it('NSEC3 → NSEC3 with changes updates the parameters', () => {

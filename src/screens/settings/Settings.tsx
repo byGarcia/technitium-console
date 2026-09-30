@@ -30,7 +30,7 @@ import { Logging } from './panes/Logging'
 import { BackupDialog, Confirm, RestoreDialog } from './dialogs'
 import { Failure, Loading } from '../../ui/Empty'
 import styles from './Settings.module.css'
-import formulario from '../../ui/PanelForm.module.css'
+import panelFormStyles from '../../ui/PanelForm.module.css'
 import { noticeFromFailure, type Notice } from '../../lib/notice'
 import { Notifier } from '../../ui/Notifier'
 
@@ -70,6 +70,17 @@ export const SUB_TABS = [
 export type SubTab = (typeof SUB_TABS)[number]
 
 
+/** What `updateDnsSettingsDataAndGui` takes from a settings response. */
+export interface ServerInfo {
+  dnsServerDomain: string
+  version: string
+  uptimestamp: string
+}
+
+function serverInfoOf(s: DnsSettings): ServerInfo {
+  return { dnsServerDomain: s.dnsServerDomain, version: s.version, uptimestamp: s.uptimestamp }
+}
+
 export interface SettingsProps {
   /** The cluster nodes, for the node selector. Spec F10. */
   nodes?: { name: string; type: string }[]
@@ -88,6 +99,12 @@ export interface SettingsProps {
    *  `server` that answers a save or a restore before following the web
    *  console to a new address (main.js:2216, 3187). */
   serverDomain?: string
+  /**
+   * The rest of `updateDnsSettingsDataAndGui` (main.js:1158-1166): the session's
+   * domain, version and start time, which the tab title, the header and About
+   * draw. Called under the same conditions upstream calls it.
+   */
+  onServerInfo?: (info: ServerInfo) => void
 }
 
 export function Settings({
@@ -100,6 +117,7 @@ export function Settings({
   nodes = [],
   clusterInitialised = false,
   serverDomain,
+  onServerInfo,
 }: SettingsProps) {
   /*
   Settings is one of only two screens that offer the aggregate and remember the
@@ -127,9 +145,9 @@ export function Settings({
   server or the aggregate (main.js:914) and after a save or a restore of this
   server (main.js:2208, 3177), and the redirection check compares against the
   rewritten value — so renaming the server does not stop the console from
-  following its new port. The rest of that function (the tab title, the domain
-  in the header, About's version and uptime) is not replicated here: this
-  console's session info is fixed at login.
+  following its new port. The rest of that function —the tab title, the domain
+  in the header, About's version and uptime— goes up to the Shell through
+  `onServerInfo`, under the same conditions.
 
   `reverseProxy` is `reverseProxyDetected` (main.js:21), set on every load.
   */
@@ -158,12 +176,13 @@ export function Settings({
       // main.js:914-918
       if (node === '' || node === 'cluster' || node === sessionDomain.current) {
         sessionDomain.current = s.dnsServerDomain
+        onServerInfo?.(serverInfoOf(s))
       }
       reverseProxy.current = detectReverseProxy(window.location, s)
     }
     apply(s)
     setLoading(false)
-  }, [token, node])
+  }, [token, node, onServerInfo])
 
   function apply(s: DnsSettings | null) {
     setSettingsState(s)
@@ -195,6 +214,7 @@ export function Settings({
   function afterSaved(envelope: SettingsEnvelope) {
     if (node === '' || node === sessionDomain.current) {
       sessionDomain.current = envelope.response.dnsServerDomain
+      onServerInfo?.(serverInfoOf(envelope.response))
     }
     apply(envelope.response)
   }
@@ -299,7 +319,7 @@ export function Settings({
     })
   }
 
-  async function hacerBackup() {
+  async function runBackup() {
     if (!Object.values(selection).some(Boolean)) {
       setModalNotice({ title: 'Missing!', text: 'Please select at least one item to backup.' })
       return
@@ -317,7 +337,7 @@ export function Settings({
     })
   }
 
-  async function hacerRestore(file: File | null, remove: boolean) {
+  async function runRestore(file: File | null, remove: boolean) {
     // The validation order is upstream's: the file first, then that there is
     // at least one item checked (main.js:3137-3160).
     if (file == null) {
@@ -410,7 +430,7 @@ export function Settings({
         {active === 'Logging' && <Logging {...props} />}
       </div>
 
-      <div className={formulario.bar}>
+      <div className={panelFormStyles.bar}>
         {/*
         The four verbs are still THERE without the permission, disabled and with a
         padlock.
@@ -444,7 +464,7 @@ export function Settings({
         >
           Flush Cache
         </PermissionButton>
-        <div className={formulario.spacer} />
+        <div className={panelFormStyles.spacer} />
         <PermissionButton
           permission={canBackup ? undefined : 'Settings.canDelete'}
           onClick={() => {
@@ -505,7 +525,7 @@ export function Settings({
         onSelection={setSelection}
         notice={modalNotice}
         busy={busy}
-        onBackup={() => void hacerBackup()}
+        onBackup={() => void runBackup()}
       />
       <RestoreDialog
         open={modal === 'restore'}
@@ -514,7 +534,7 @@ export function Settings({
         onSelection={setSelection}
         notice={modalNotice}
         busy={busy}
-        onRestore={(file, remove) => void hacerRestore(file, remove)}
+        onRestore={(file, remove) => void runRestore(file, remove)}
       />
     </div>
   )

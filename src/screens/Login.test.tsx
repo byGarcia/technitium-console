@@ -6,7 +6,7 @@ import * as client from '../api/client'
 import * as status from '../api/status'
 
 /** Finds the login call without assuming it is the first: `api/status` goes before. */
-function llamadaLogin(spy: { mock: { calls: unknown[][] } }) {
+function loginCall(spy: { mock: { calls: unknown[][] } }) {
   return spy.mock.calls.find((c) => c[0] === 'user/login') as
     | [string, { method?: string; body?: Record<string, string> }]
     | undefined
@@ -58,7 +58,7 @@ describe('Login', () => {
     await userEvent.type(screen.getByLabelText('Username'), 'ADMIN')
     await userEvent.type(screen.getByLabelText('Password'), 'secreto')
     await userEvent.click(screen.getByRole('button', { name: 'Login' }))
-    expect(llamadaLogin(spy)?.[1]?.body?.user).toBe('admin')
+    expect(loginCall(spy)?.[1]?.body?.user).toBe('admin')
   })
 
   it('it sends includeInfo=true and by POST', async () => {
@@ -67,7 +67,7 @@ describe('Login', () => {
     await userEvent.type(screen.getByLabelText('Username'), 'admin')
     await userEvent.type(screen.getByLabelText('Password'), 'secreto')
     await userEvent.click(screen.getByRole('button', { name: 'Login' }))
-    const call = llamadaLogin(spy)
+    const call = loginCall(spy)
     expect(call).toBeDefined()
     expect(call?.[1]?.method).toBe('POST')
     expect(call?.[1]?.body?.includeInfo).toBe('true')

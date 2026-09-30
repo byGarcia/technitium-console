@@ -25,7 +25,7 @@ const ZONE = {
 }
 const LIST = { zones: [ZONE], pageNumber: 1, totalPages: 1, totalZones: 1 }
 
-/** Responde bien la primera vez y mal a partir de la segunda. */
+/** Answers well the first time and badly from the second on. */
 function goodThenBroken() {
   let n = 0
   return vi.spyOn(client, 'apiRequest').mockImplementation(async (route) => {
@@ -38,7 +38,7 @@ function goodThenBroken() {
   })
 }
 
-const refrescar = async (user: ReturnType<typeof userEvent.setup>) =>
+const clickGo = async (user: ReturnType<typeof userEvent.setup>) =>
   user.click(screen.getByRole('button', { name: 'Go' }))
 
 describe('stale data', () => {
@@ -59,7 +59,7 @@ describe('stale data', () => {
     render(<Zones token="t" canModify canDelete />)
     await screen.findByText('casa.test')
 
-    await refrescar(user)
+    await clickGo(user)
 
     await screen.findByText(/Could not refresh/)
     /* The previous one is not thrown away: that would leave the user with nothing over a network error. */
@@ -72,11 +72,11 @@ describe('stale data', () => {
     render(<Zones token="t" canModify canDelete />)
     await screen.findByText('casa.test')
 
-    await refrescar(user)
+    await clickGo(user)
 
-    const tira = (await screen.findByText(/Could not refresh/)).closest('[role=alert]')!
-    expect(tira).toHaveTextContent(/Last good data:/)
-    expect(within(tira as HTMLElement).getByRole('button', { name: 'Retry' })).toBeInTheDocument()
+    const banner = (await screen.findByText(/Could not refresh/)).closest('[role=alert]')!
+    expect(banner).toHaveTextContent(/Last good data:/)
+    expect(within(banner as HTMLElement).getByRole('button', { name: 'Retry' })).toBeInTheDocument()
   })
 
   /* No selection: acting in bulk on a list that no longer reflects the server is
@@ -88,7 +88,7 @@ describe('stale data', () => {
     await screen.findByText('casa.test')
     expect(screen.getByLabelText('Select casa.test')).toBeEnabled()
 
-    await refrescar(user)
+    await clickGo(user)
 
     await screen.findByText(/Could not refresh/)
     expect(screen.getByLabelText('Select casa.test')).toBeDisabled()
@@ -118,10 +118,10 @@ describe('stale data', () => {
     })
     render(<Zones token="t" canModify canDelete />)
     await screen.findByText('casa.test')
-    await refrescar(user)
+    await clickGo(user)
     await screen.findByText(/Could not refresh/)
 
-    await refrescar(user)
+    await clickGo(user)
 
     await waitFor(() => expect(screen.queryByText(/Could not refresh/)).not.toBeInTheDocument())
     expect(screen.getByLabelText('Select casa.test')).toBeEnabled()
@@ -144,7 +144,7 @@ describe('who reports the failure', () => {
     render(<Zones token="t" canModify canDelete />)
     await screen.findByText('casa.test')
 
-    await refrescar(user)
+    await clickGo(user)
 
     await screen.findByText(/Could not refresh/)
     /* A single `role=alert` on the screen: the strip. The server notice does not

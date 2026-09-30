@@ -56,7 +56,7 @@ export function Groups({ tabs, token, onNotice }: Props) {
   const [groups, setGroups] = useState<AdminGroup[]>([])
   const [loading, setLoading] = useState(true)
   const [add, setAdd] = useState(false)
-  const [detail, setDetalle] = useState<string | null>(null)
+  const [detail, setDetail] = useState<string | null>(null)
   const [pendingDelete, setPendingDelete] = useState<AdminGroup | null>(null)
 
   const load = useCallback(async () => {
@@ -121,7 +121,7 @@ export function Groups({ tabs, token, onNotice }: Props) {
                   <button
                     type="button"
                     className={styles.link}
-                    onClick={() => setDetalle(g.name)}
+                    onClick={() => setDetail(g.name)}
                   >
                     {g.name}
                   </button>
@@ -137,7 +137,7 @@ export function Groups({ tabs, token, onNotice }: Props) {
                     <RowAction
                       icon="card"
                       name="View Details"
-                      onClick={() => setDetalle(g.name)}
+                      onClick={() => setDetail(g.name)}
                     />
                     <Menu label={`Actions for ${g.name}`}>
                       {(close) => (
@@ -180,7 +180,7 @@ export function Groups({ tabs, token, onNotice }: Props) {
         <GroupDetail
           name={detail}
           token={token}
-          onClose={() => setDetalle(null)}
+          onClose={() => setDetail(null)}
           onSaved={(g) => {
             setGroups((list) => list.map((x) => (x.name === detail ? g : x)))
             onNotice({
@@ -294,7 +294,7 @@ function GroupDetail({
   const [loading, setLoading] = useState(true)
   const [newName, setNewName] = useState('')
   const [description, setDescription] = useState('')
-  const [members, setMiembros] = useState('')
+  const [members, setMembers] = useState('')
   const [users, setUsers] = useState<string[]>([])
   const [addUser, setAddUser] = useState(BLANK_OPTION)
   const [notice, setNotice] = useState<Notice | null>(null)
@@ -312,7 +312,7 @@ function GroupDetail({
     const d = outcome.data.response
     setNewName(d.name)
     setDescription(d.description)
-    setMiembros(d.members.map((m) => `${m}\n`).join(''))
+    setMembers(d.members.map((m) => `${m}\n`).join(''))
     setUsers(d.users ?? [])
     setAddUser(BLANK_OPTION)
   }, [token, name])
@@ -394,7 +394,7 @@ function GroupDetail({
                 className={styles.area}
                 rows={7}
                 value={members}
-                onChange={(e) => setMiembros(e.target.value)}
+                onChange={(e) => setMembers(e.target.value)}
               />
             )}
           </MRow>
@@ -406,7 +406,7 @@ function GroupDetail({
                 value={addUser}
                 onChange={(e) => {
                   setAddUser(e.target.value)
-                  setMiembros((t) => addToList(t, e.target.value))
+                  setMembers((t) => addToList(t, e.target.value))
                 }}
               >
                 <option value={BLANK_OPTION} />

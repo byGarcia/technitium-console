@@ -132,7 +132,7 @@ describe('Tooltip', () => {
       <>
         <span id="existing-help">The help it already had</span>
         <Tooltip text="Zones">
-          <Button aria-label="Zones" aria-describedby="help-previa" icon>
+          <Button aria-label="Zones" aria-describedby="help-previous" icon>
             ▣
           </Button>
         </Tooltip>
@@ -142,7 +142,7 @@ describe('Tooltip', () => {
     await user.hover(trigger)
 
     const ids = trigger.getAttribute('aria-describedby')!.split(' ')
-    expect(ids).toContain('help-previa')
+    expect(ids).toContain('help-previous')
     expect(ids).toContain(screen.getByRole('tooltip').id)
     expect(ids).toHaveLength(2)
   })
@@ -151,7 +151,7 @@ describe('Tooltip', () => {
     const user = userEvent.setup()
     render(
       <Tooltip text="Zones">
-        <Button aria-label="Zones" aria-describedby="help-previa" icon>
+        <Button aria-label="Zones" aria-describedby="help-previous" icon>
           ▣
         </Button>
       </Tooltip>,
@@ -160,7 +160,7 @@ describe('Tooltip', () => {
     await user.hover(trigger)
     await user.unhover(trigger)
 
-    expect(trigger).toHaveAttribute('aria-describedby', 'help-previa')
+    expect(trigger).toHaveAttribute('aria-describedby', 'help-previous')
   })
 
   /*

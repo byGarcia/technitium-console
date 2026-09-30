@@ -5,12 +5,12 @@ import { Dialog } from '../../../ui/Dialog'
 import { Field, Input, Select, Textarea } from '../../../ui/Field'
 import {
   ALGORITHMS,
-  CURVAS_ECDSA,
-  CURVAS_EDDSA,
+  ECDSA_CURVES,
+  EDDSA_CURVES,
   GENERATIONS,
   HASHES_RSA,
   NX_PROOFS,
-  TAMANOS_RSA,
+  RSA_KEY_SIZES,
   defaultCurve,
 } from './dnssec-options'
 import type { Notice } from '../types'
@@ -30,7 +30,7 @@ are **different between KSK and ZSK** —2048 and 1280— which is the kind of d
 that gets lost when "cleaning up" a form.
 */
 
-interface Formulario {
+interface SignZoneForm {
   algorithm: Algorithm
   hashAlgorithm: string
   curve: string
@@ -47,7 +47,7 @@ interface Formulario {
   zskRolloverDays: string
 }
 
-function initial(): Formulario {
+function initial(): SignZoneForm {
   return {
     algorithm: 'ECDSA',
     hashAlgorithm: 'SHA256',
@@ -81,7 +81,7 @@ export function SignZone({
   onClose: () => void
   onDone: (a: Notice) => void
 }) {
-  const [f, setF] = useState<Formulario>(initial)
+  const [f, setF] = useState<SignZoneForm>(initial)
   const [notice, setNotice] = useState<Notice | null>(null)
   const [busy, setBusy] = useState(false)
 
@@ -91,7 +91,7 @@ export function SignZone({
     setNotice(null)
   }, [open])
 
-  const set = <K extends keyof Formulario>(k: K, value: Formulario[K]) =>
+  const set = <K extends keyof SignZoneForm>(k: K, value: SignZoneForm[K]) =>
     setF((prev) => ({ ...prev, [k]: value }))
 
   function changeAlgorithm(algorithm: Algorithm) {
@@ -133,7 +133,7 @@ export function SignZone({
   }
 
   const isRsa = f.algorithm === 'RSA'
-  const curves = f.algorithm === 'EDDSA' ? CURVAS_EDDSA : CURVAS_ECDSA
+  const curves = f.algorithm === 'EDDSA' ? EDDSA_CURVES : ECDSA_CURVES
 
   return (
     <Dialog
@@ -381,7 +381,7 @@ function SigningKey({
           {(id) => (
             <div className={styles.inline}>
               <Select id={id} className={styles.short} value={size} onChange={(e) => onSize(e.target.value)}>
-                {TAMANOS_RSA.map((t) => (
+                {RSA_KEY_SIZES.map((t) => (
                   <option key={t} value={t}>
                     {t}
                   </option>

@@ -160,14 +160,14 @@ export function neverUsed(iso: string): boolean {
 export function createZone(
   token: string | null,
   params: Record<string, string>,
-  archivo?: File | null,
+  file?: File | null,
   node = '',
 ): Promise<ApiOutcome<{ response: { domain: string } }>> {
   const query = new URLSearchParams({ ...params, node })
   return apiRequest<{ response: { domain: string } }>(`zones/create?${query.toString()}`, {
     token,
     method: 'POST',
-    ...(archivo ? { file: { field: 'fileImportZone', archivo } } : {}),
+    ...(file ? { file: { field: 'fileImportZone', file } } : {}),
   })
 }
 
@@ -399,7 +399,7 @@ export interface ImportOptions {
 export function importZone(
   token: string | null,
   zone: string,
-  font: { archivo: File } | { text: string },
+  source: { file: File } | { text: string },
   options: ImportOptions,
   node = '',
 ): Promise<ApiOutcome> {
@@ -412,10 +412,10 @@ export function importZone(
   })
   const route = `zones/import?${query.toString()}`
 
-  if ('archivo' in font) {
-    return apiRequest(route, { token, method: 'POST', file: { field: 'fileImportZone', archivo: font.archivo } })
+  if ('file' in source) {
+    return apiRequest(route, { token, method: 'POST', file: { field: 'fileImportZone', file: source.file } })
   }
-  return apiRequest(route, { token, method: 'POST', text: font.text })
+  return apiRequest(route, { token, method: 'POST', text: source.text })
 }
 
 /**

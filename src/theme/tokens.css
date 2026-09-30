@@ -325,7 +325,7 @@ not one of these tokens.** A loose value is future drift.
   --t-1: 10.5px;  /* small-caps label, table header, pill             (10) */
   --t-2: 11px;    /* metadata, help under a field                           */
   --t-3: 11.5px;  /* field label, secondary text                            */
-  --t-4: 12.5px;  /* CUERPO                                       (12,13,13.5) */
+  --t-4: 12.5px;  /* BODY                                         (12,13,13.5) */
   --t-5: 14px;    /* block title, panel subtitle                      (15) */
   --t-6: 17px;    /* counter figure                               (16,17) */
   --t-7: 22px;    /* section title                             (19,21,22) */

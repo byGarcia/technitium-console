@@ -97,14 +97,14 @@ describe('DNS Client', () => {
   it('the DNSSEC checkbox keeps its accessible name and can be ticked', async () => {
     render(<DnsClient token="t" />)
 
-    const casilla = screen.getByLabelText('Enable DNSSEC Validation')
-    expect(casilla).toHaveProperty('type', 'checkbox')
+    const checkbox = screen.getByLabelText('Enable DNSSEC Validation')
+    expect(checkbox).toHaveProperty('type', 'checkbox')
     /* Arranca MARCADA (`useState(true)`, DnsClient.tsx:61). Se comprueba leyendo
  the source and not by assuming: the first version of this test took for granted
  that it started empty and failed because of that, not because of the component. */
-    expect(casilla).toBeChecked()
+    expect(checkbox).toBeChecked()
 
-    await userEvent.click(casilla)
-    expect(casilla).not.toBeChecked()
+    await userEvent.click(checkbox)
+    expect(checkbox).not.toBeChecked()
   })
 })

@@ -114,7 +114,7 @@ export function TopStats({
                   </span>
                 )}
               </td>
-              <td className={styles.topConteo}>{f.hits.toLocaleString()}</td>
+              <td className={styles.topCount}>{f.hits.toLocaleString()}</td>
             </tr>
           ))}
         </Table>

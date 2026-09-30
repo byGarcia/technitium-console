@@ -40,8 +40,8 @@ export function ImportZone({
   onClose: () => void
   onDone: (a: Notice) => void
 }) {
-  const [mode, setModo] = useState<Mode>('File')
-  const [archivo, setArchivo] = useState<File | null>(null)
+  const [mode, setMode] = useState<Mode>('File')
+  const [zoneFile, setZoneFile] = useState<File | null>(null)
   const [text, setText] = useState('')
   const [overwrite, setOverwrite] = useState(true)
   const [overwriteZone, setOverwriteZone] = useState(false)
@@ -54,8 +54,8 @@ export function ImportZone({
   // are all false — "Overwrite Existing Records" starts checked.
   useEffect(() => {
     if (!open) return
-    setModo('File')
-    setArchivo(null)
+    setMode('File')
+    setZoneFile(null)
     setText('')
     setOverwrite(true)
     setOverwriteZone(false)
@@ -64,7 +64,7 @@ export function ImportZone({
   }, [open])
 
   async function runImport() {
-    if (mode === 'File' && archivo == null) {
+    if (mode === 'File' && zoneFile == null) {
       setNotice({ type: 'warning', title: 'Missing!', text: 'Please select a zone file to import.' })
       file.current?.focus()
       return
@@ -74,7 +74,7 @@ export function ImportZone({
     const outcome = await importZone(
       token,
       zone,
-      mode === 'File' ? { archivo: archivo! } : { text },
+      mode === 'File' ? { file: zoneFile! } : { text },
       { overwrite, overwriteZone, overwriteSoaSerial },
       node,
     )
@@ -140,7 +140,7 @@ export function ImportZone({
               type="radio"
               name="importType"
               checked={mode === 'File'}
-              onChange={() => setModo('File')}
+              onChange={() => setMode('File')}
             />
             Zone File
           </label>
@@ -149,7 +149,7 @@ export function ImportZone({
               type="radio"
               name="importType"
               checked={mode === 'Text'}
-              onChange={() => setModo('Text')}
+              onChange={() => setMode('Text')}
             />
             Text Editor
           </label>
@@ -162,7 +162,7 @@ export function ImportZone({
                 id={id}
                 ref={file}
                 type="file"
-                onChange={(e) => setArchivo(e.target.files?.[0] ?? null)}
+                onChange={(e) => setZoneFile(e.target.files?.[0] ?? null)}
               />
             )}
           </Row>

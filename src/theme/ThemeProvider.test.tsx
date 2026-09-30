@@ -4,13 +4,13 @@ import { ThemeProvider } from './ThemeProvider'
 
 describe('ThemeProvider', () => {
   it('it pins the dark theme', () => {
-    render(<ThemeProvider><span>hola</span></ThemeProvider>)
+    render(<ThemeProvider><span>hello</span></ThemeProvider>)
     expect(document.documentElement.dataset.theme).toBe('dark')
   })
 
   it('it stores no theme preference: there is nothing to choose', () => {
     localStorage.clear()
-    render(<ThemeProvider><span>hola</span></ThemeProvider>)
+    render(<ThemeProvider><span>hello</span></ThemeProvider>)
     expect(localStorage.getItem('theme')).toBeNull()
   })
 })

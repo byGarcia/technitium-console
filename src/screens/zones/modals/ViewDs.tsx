@@ -23,12 +23,12 @@ unreadable.
 const CUTOFF = 64
 
 function Long({ value }: { value: string }) {
-  const [whole, setEntero] = useState(false)
+  const [whole, setWhole] = useState(false)
   if (value.length <= CUTOFF || whole) return <span className={styles.key}>{value}</span>
   return (
     <>
       <span className={styles.key}>{value.slice(0, CUTOFF)}… </span>
-      <button type="button" className={styles.showIt} onClick={() => setEntero(true)}>
+      <button type="button" className={styles.showIt} onClick={() => setWhole(true)}>
         show full
       </button>
     </>

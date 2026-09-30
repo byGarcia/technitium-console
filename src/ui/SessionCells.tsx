@@ -56,5 +56,5 @@ export function LastSeenCell({ date, ago }: { date: string; ago: string }) {
 
 /** The "User Agent" cell. */
 export function AgentCell({ children }: { children: string }) {
-  return <span className={styles.agente}>{children}</span>
+  return <span className={styles.agent}>{children}</span>
 }

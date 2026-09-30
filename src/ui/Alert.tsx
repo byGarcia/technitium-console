@@ -35,14 +35,14 @@ exactly the defect `Alert.module.css`'s header records having fixed.
 decorative by construction: the word `Note!`/`Warning!` is still in the text and
 the icon neither repeats nor replaces it.
 */
-const ICONO: Record<AlertType, IconName> = {
+const ICON_BY_TYPE: Record<AlertType, IconName> = {
   success: 'check',
   info: 'about',
   warning: 'warning',
   danger: 'warning',
 }
 
-const AUTO_DESCARTE_MS = 5000
+const AUTO_DISMISS_MS = 5000
 
 export function Alert({
   type,
@@ -63,7 +63,7 @@ export function Alert({
 
   useEffect(() => {
     if (type !== 'success' || onDismiss == null) return
-    const t = setTimeout(() => dismiss.current?.(), AUTO_DESCARTE_MS)
+    const t = setTimeout(() => dismiss.current?.(), AUTO_DISMISS_MS)
     return () => clearTimeout(t)
     // The timer restarts with each new alert, even if the previous one was also
     // a success: that is what upstream does, since it rebuilds the whole node.
@@ -77,7 +77,7 @@ export function Alert({
           <Icon name="close" size={14} />
         </button>
       )}
-      <Icon name={ICONO[type]} size={15} className={styles.icon} />
+      <Icon name={ICON_BY_TYPE[type]} size={15} className={styles.icon} />
       <b>{title}</b> {children}
     </div>
   )

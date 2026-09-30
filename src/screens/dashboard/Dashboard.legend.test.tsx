@@ -27,15 +27,15 @@ it is that **the legend says what to switch off and the chart hears it**.
 vi.mock('./Chart', () => ({
   Chart: ({ hidden, type, aria }: { hidden?: ReadonlySet<string>; type: string; aria: string }) => (
     <div
-      data-testid={`grafica-${type}`}
+      data-testid={`chart-${type}`}
       data-aria={aria}
       data-hidden={[...(hidden ?? [])].join(',')}
     />
   ),
 }))
 
-const serie = (label: string, data: number[]) => ({ label, data })
-const DATOS = {
+const dataset = (label: string, data: number[]) => ({ label, data })
+const STATS = {
   stats: {
     totalQueries: 15, totalNoError: 5, totalServerFailure: 0, totalNxDomain: 0,
     totalRefused: 0, totalAuthoritative: 0, totalRecursive: 0, totalCached: 0,
@@ -43,29 +43,29 @@ const DATOS = {
     zones: 1, cachedEntries: 0, allowedZones: 0, blockedZones: 0,
     allowListZones: 0, blockListZones: 0,
   },
-  mainChartData: { labels: ['a', 'b'], datasets: [serie('Total', [10, 5]), serie('No Error', [4, 1])] },
-  queryResponseChartData: { labels: ['a'], datasets: [serie('x', [1])] },
-  queryTypeChartData: { labels: ['a'], datasets: [serie('x', [1])] },
-  protocolTypeChartData: { labels: ['a'], datasets: [serie('x', [1])] },
+  mainChartData: { labels: ['a', 'b'], datasets: [dataset('Total', [10, 5]), dataset('No Error', [4, 1])] },
+  queryResponseChartData: { labels: ['a'], datasets: [dataset('x', [1])] },
+  queryTypeChartData: { labels: ['a'], datasets: [dataset('x', [1])] },
+  protocolTypeChartData: { labels: ['a'], datasets: [dataset('x', [1])] },
   topClients: [], topDomains: [], topBlockedDomains: [],
 }
 
-const pintar = () => {
-  vi.spyOn(api, 'getDashboardStats').mockResolvedValue({ kind: 'ok', data: DATOS } as never)
+const renderDashboard = () => {
+  vi.spyOn(api, 'getDashboardStats').mockResolvedValue({ kind: 'ok', data: STATS } as never)
   render(<Dashboard token="t" />)
 }
-const line = () => screen.getByTestId('grafica-line')
+const line = () => screen.getByTestId('chart-line')
 const seriesButton = (n: RegExp) => screen.getByRole('button', { name: n })
 
 describe('the Queries legend', () => {
   it('draws one entry per series, with its count', async () => {
-    pintar()
+    renderDashboard()
     expect(await screen.findByRole('button', { name: /^Total/ })).toHaveTextContent('15')
     expect(seriesButton(/^No Error/)).toHaveTextContent('5')
   })
 
   it('they all start switched on', async () => {
-    pintar()
+    renderDashboard()
     expect(await screen.findByRole('button', { name: /^Total/ })).toHaveAttribute('aria-pressed', 'true')
     expect(line()).toHaveAttribute('data-hidden', '')
   })
@@ -73,7 +73,7 @@ describe('the Queries legend', () => {
   /* The one that matters: that pressing switches off, and the chart hears it. */
   it('pressing a series switches it off, and the chart receives it', async () => {
     const user = userEvent.setup()
-    pintar()
+    renderDashboard()
     await user.click(await screen.findByRole('button', { name: /^Total/ }))
 
     expect(seriesButton(/^Total/)).toHaveAttribute('aria-pressed', 'false')
@@ -82,7 +82,7 @@ describe('the Queries legend', () => {
 
   it('and pressing again switches it back on', async () => {
     const user = userEvent.setup()
-    pintar()
+    renderDashboard()
     await user.click(await screen.findByRole('button', { name: /^Total/ }))
     await user.click(seriesButton(/^Total/))
 
@@ -93,7 +93,7 @@ describe('the Queries legend', () => {
   /* Independent: switching one off cannot switch the others off. */
   it('switching one off leaves the others on', async () => {
     const user = userEvent.setup()
-    pintar()
+    renderDashboard()
     await user.click(await screen.findByRole('button', { name: /^Total/ }))
 
     expect(seriesButton(/^No Error/)).toHaveAttribute('aria-pressed', 'true')
@@ -103,7 +103,7 @@ describe('the Queries legend', () => {
   /* It is reachable by keyboard, which inside the canvas it was not. */
   it('it toggles with the keyboard', async () => {
     const user = userEvent.setup()
-    pintar()
+    renderDashboard()
     await screen.findByRole('button', { name: /^Total/ })
 
     seriesButton(/^Total/).focus()
@@ -124,16 +124,16 @@ chart on pressing one slice.
 */
 describe('the doughnut charts legend', () => {
   const WITH_SLICES = {
-    ...DATOS,
-    queryTypeChartData: { labels: ['A', 'AAAA', 'PTR'], datasets: [serie('', [60, 30, 10])] },
+    ...STATS,
+    queryTypeChartData: { labels: ['A', 'AAAA', 'PTR'], datasets: [dataset('', [60, 30, 10])] },
   }
-  const pintarSectores = () => {
+  const renderSectors = () => {
     vi.spyOn(api, 'getDashboardStats').mockResolvedValue({ kind: 'ok', data: WITH_SLICES } as never)
     render(<Dashboard token="t" />)
   }
 
   it('they have a legend outside the canvas, with its percentage', async () => {
-    pintarSectores()
+    renderSectors()
     expect(await screen.findByRole('button', { name: /^A / })).toHaveTextContent('60.00%')
     expect(seriesButton(/^AAAA/)).toHaveTextContent('30.00%')
     expect(seriesButton(/^PTR/)).toHaveTextContent('10.00%')
@@ -141,13 +141,13 @@ describe('the doughnut charts legend', () => {
 
   /* The percentage is written as on the cards: a dot and two decimals. */
   it('the percentage is formatted like the card', async () => {
-    pintarSectores()
+    renderSectors()
     expect(await screen.findByRole('button', { name: /^A / })).not.toHaveTextContent(',')
   })
 
   it('pressing a slice switches it off without switching off the others', async () => {
     const user = userEvent.setup()
-    pintarSectores()
+    renderSectors()
     await user.click(await screen.findByRole('button', { name: /^A / }))
 
     expect(seriesButton(/^A /)).toHaveAttribute('aria-pressed', 'false')
@@ -172,17 +172,17 @@ Keeping it was no good either: Chart.js's stock legend loses its state on every
 rebuild, so remembering it would be inventing a memory the console does not have.
 */
 describe('when new data arrives', () => {
-  const sectores = (labels: string[]) => ({
-    ...DATOS,
-    queryTypeChartData: { labels, datasets: [serie('', labels.map((_, i) => 10 * (i + 1)))] },
+  const sectors = (labels: string[]) => ({
+    ...STATS,
+    queryTypeChartData: { labels, datasets: [dataset('', labels.map((_, i) => 10 * (i + 1)))] },
   })
 
   it('the switched-off slices come back on', async () => {
     const user = userEvent.setup()
     const spy = vi
       .spyOn(api, 'getDashboardStats')
-      .mockResolvedValueOnce({ kind: 'ok', data: sectores(['A', 'AAAA']) } as never)
-      .mockResolvedValue({ kind: 'ok', data: sectores(['A', 'AAAA']) } as never)
+      .mockResolvedValueOnce({ kind: 'ok', data: sectors(['A', 'AAAA']) } as never)
+      .mockResolvedValue({ kind: 'ok', data: sectors(['A', 'AAAA']) } as never)
     render(<Dashboard token="t" />)
 
     await user.click(await screen.findByRole('button', { name: /^A / }))

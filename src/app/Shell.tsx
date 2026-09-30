@@ -10,7 +10,7 @@ import { DnsClient } from '../screens/dnsclient/DnsClient'
 import { About } from '../screens/about/About'
 import { Apps } from '../screens/apps/Apps'
 import { Cache, Allowed, Blocked } from '../screens/lists/Lists'
-import { Settings } from '../screens/settings/Settings'
+import { Settings, type ServerInfo } from '../screens/settings/Settings'
 import { Zones } from '../screens/zones/Zones'
 import { Dhcp } from '../screens/dhcp/Dhcp'
 import { Logs } from '../screens/logs/Logs'
@@ -163,12 +163,20 @@ export function Shell({
     setModal(id)
   }
 
+  /*
+  `sessionData.info` is not fixed at login upstream: every load of this server's
+  settings, and every save or restore of them, rewrites its domain, version and
+  start time and redraws the tab title, the header and About
+  (`updateDnsSettingsDataAndGui`, main.js:1158-1166). Settings reports them here.
+  */
+  const [serverInfo, setServerInfo] = useState<ServerInfo | null>(null)
+  const info = session.info && serverInfo ? { ...session.info, ...serverInfo } : session.info
+
   // main.js — the document title carries the server domain and the version.
+  const title = info ? `${info.dnsServerDomain} - Technitium DNS Server v${info.version}` : null
   useEffect(() => {
-    if (session.info) {
-      document.title = `${session.info.dnsServerDomain} - Technitium DNS Server v${session.info.version}`
-    }
-  }, [session.info])
+    if (title != null) document.title = title
+  }, [title])
 
   const current = sections.find((s) => s.id === active) ?? sections[0]
 
@@ -182,7 +190,7 @@ export function Shell({
   sync: the menu said "General" and the address bar said `/settings/`, which is
   half a page.
   */
-  const subActual = current?.subs != null ? (sub ?? current.subs[0] ?? null) : null
+  const currentSub = current?.subs != null ? (sub ?? current.subs[0] ?? null) : null
 
   /*
   The URL follows the state, and the state follows the URL. The guard is in
@@ -196,10 +204,10 @@ export function Shell({
   const activeRef = useRef({ section: current?.id ?? 'about', sub })
   useEffect(() => {
     if (current == null) return
-    activeRef.current = { section: current.id, sub: subActual }
-    writeRoute({ section: current.id, sub: subActual }, firstRender.current)
+    activeRef.current = { section: current.id, sub: currentSub }
+    writeRoute({ section: current.id, sub: currentSub }, firstRender.current)
     firstRender.current = false
-  }, [current, sub, subActual])
+  }, [current, sub, currentSub])
 
   useEffect(() => {
     function onChanged() {
@@ -263,7 +271,7 @@ export function Shell({
           copied and bookmarked. The plain click is intercepted by the application
           —there is no reload—; the modifier click is passed through to the
           browser, which is what the routes existing as files is for. The active
-          section is marked with `data-activa` (that is visual state) and
+          section is marked with `data-active` (that is visual state) and
           `aria-current="page"` is reserved for ONE thing: the page you are on,
           which is the sub-section when there is one.
           */}
@@ -329,8 +337,8 @@ export function Shell({
           */}
           <Versions
             token={session.token}
-            serverVersion={session.info?.version}
-            domain={session.info?.dnsServerDomain}
+            serverVersion={info?.version}
+            domain={info?.dnsServerDomain}
             markHidden={markHidden}
           />
           <Menu label={displayName} text={displayName} anchor="left" asRow>
@@ -400,7 +408,7 @@ export function Shell({
           >
             <Icon name="menu" size={18} />
           </button>
-          <span className={styles.marcaTop}>
+          <span className={styles.topBrand}>
             <img className={styles.mark} src={publicUrl('img/logo.png')} alt="" width={22} height={22} /> Technitium
           </span>
         </header>
@@ -430,7 +438,7 @@ export function Shell({
         ) : current?.id === 'dnsclient' ? (
           <DnsClient token={session.token} nodes={session.info?.clusterNodes ?? []} clusterInitialised={session.info?.clusterInitialized === true} />
         ) : current?.id === 'about' ? (
-          <About info={session.info} />
+          <About info={info} />
         ) : current?.id === 'apps' ? (
           <Apps token={session.token} />
         ) : current?.id === 'cache' ? (
@@ -452,7 +460,7 @@ export function Shell({
             token={session.token}
             nodes={session.info?.clusterNodes ?? []}
             clusterInitialised={session.info?.clusterInitialized === true}
-            sub={subActual ?? 'Leases'}
+            sub={currentSub ?? 'Leases'}
             onSubChange={setSub}
             canModify={permissions?.DhcpServer?.canModify !== false}
             canDelete={permissions?.DhcpServer?.canDelete !== false}
@@ -464,7 +472,7 @@ export function Shell({
             token={session.token}
             nodes={session.info?.clusterNodes ?? []}
             clusterInitialised={session.info?.clusterInitialized === true}
-            sub={subActual ?? 'View Logs'}
+            sub={currentSub ?? 'View Logs'}
             onSubChange={setSub}
             canDeleteLogs={permissions?.Logs?.canDelete !== false}
             canDeleteStats={permissions?.Dashboard?.canDelete !== false}
@@ -472,7 +480,7 @@ export function Shell({
         ) : current?.id === 'admin' ? (
           /* No permission props on purpose: upstream hides and disables nothing
              inside Administration, only the whole section (main.js:165). */
-          <Admin token={session.token} sub={subActual ?? 'Sessions'} onSubChange={setSub} />
+          <Admin token={session.token} sub={currentSub ?? 'Sessions'} onSubChange={setSub} />
         ) : current?.id === 'settings' ? (
           /* main.js:906-930 — three different permissions in a single bar:
              saving requires Settings.canModify, flushing the cache
@@ -481,12 +489,13 @@ export function Shell({
             token={session.token}
             nodes={session.info?.clusterNodes ?? []}
             clusterInitialised={session.info?.clusterInitialized === true}
-            sub={subActual ?? 'General'}
+            sub={currentSub ?? 'General'}
             onSubChange={setSub}
             canModify={permissions?.Settings?.canModify !== false}
             canFlushCache={permissions?.Cache?.canDelete !== false}
             canBackup={permissions?.Settings?.canDelete !== false}
             serverDomain={session.info?.dnsServerDomain}
+            onServerInfo={setServerInfo}
           />
         ) : null}
         </main>

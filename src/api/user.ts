@@ -117,14 +117,14 @@ export async function openDownload(
   what it used to do: the `TypeError` was the same symptom for "the server said
   something else" as for a programming bug.
   */
-  const unico = outcome.data.response?.token
-  if (unico == null) return { ok: false }
+  const single = outcome.data.response?.token
+  if (single == null) return { ok: false }
 
   /* It is called `single` and not `token` because it is NOT the session's —that
      is the parameter above—: it is the one-shot one this endpoint issues for the
      download. Having them under the same name was asking for them to be
      confused. */
-  const query = new URLSearchParams({ ...params, token: unico })
+  const query = new URLSearchParams({ ...params, token: single })
   if (options.ts === true) {
     query.set('ts', String(performance.timeOrigin + performance.now()))
   }

@@ -111,7 +111,7 @@ export function Leases({ tabs, token, node = '', canModify = true, canDelete = t
 
   // The hook goes BEFORE any return: otherwise it would stop being called as soon
   // as the table is loading.
-  const { rows: leasesVisibles, sort, toggle } = useSort(KEYS, leases ?? [])
+  const { rows: visibleLeases, sort, toggle } = useSort(KEYS, leases ?? [])
 
   async function convert(i: number, type: 'reserve' | 'dynamic') {
     const lease = leases?.[i]
@@ -199,11 +199,11 @@ export function Leases({ tabs, token, node = '', canModify = true, canDelete = t
             <th className={tbl.actionsCell} />
           </>
         }
-        isEmpty={leasesVisibles.length === 0}
+        isEmpty={visibleLeases.length === 0}
         emptyText="No Lease Found"
         columns={8}
       >
-        {leasesVisibles.map((l, i) => (
+        {visibleLeases.map((l, i) => (
           <tr key={`${l.scope}/${l.clientIdentifier}`}>
             <td className={styles.mono}>{l.scope}</td>
             <td className={styles.mono}>{l.hardwareAddress}</td>

@@ -127,7 +127,7 @@ export const UPDATES: CriterionOption[] = [
   },
 ]
 
-export const PROTOCOLOS_XFR = [
+export const XFR_PROTOCOLS = [
   { value: 'Tcp', label: 'XFR-over-TCP (default)' },
   { value: 'Tls', label: 'XFR-over-TLS' },
   { value: 'Quic', label: 'XFR-over-QUIC' },
@@ -139,15 +139,15 @@ export interface OptionsState {
   tabs: OptionsTab[]
   initialTab: OptionsTab
   /** General */
-  catalogo: boolean
-  catalogoFijo: boolean
-  sobrescribirQueryAccess: boolean
-  sobrescribirZoneTransfer: boolean
-  sobrescribirNotify: boolean
+  catalog: boolean
+  catalogLocked: boolean
+  overrideQueryAccess: boolean
+  overrideZoneTransfer: boolean
+  overrideNotify: boolean
   overrideLocked: boolean
-  servidorPrimario: boolean
-  servidorPrimarioObligatorio: boolean
-  protocoloXfr: boolean
+  primaryServer: boolean
+  primaryServerRequired: boolean
+  xfrProtocol: boolean
   tsigFromPrimary: boolean
   validateZone: boolean
   primaryServerLocked: boolean
@@ -160,7 +160,7 @@ export interface OptionsState {
   zoneTransferWithNameServers: boolean
   /** Notify */
   notifyWithNameServers: boolean
-  notifySeparados: boolean
+  notifySeparate: boolean
   /** Dynamic Updates */
   updateWithNameServers: boolean
   securityPolicies: boolean
@@ -177,78 +177,78 @@ export function optionsState(r: ZoneOptions): OptionsState {
   const tabs: OptionsTab[] = []
 
   /* ── General ──────────────────────────────────────────────────────── */
-  let catalogo = false
-  let catalogoFijo = false
-  let sobrescribirQueryAccess = false
-  let sobrescribirZoneTransfer = false
-  let sobrescribirNotify = false
+  let catalog = false
+  let catalogLocked = false
+  let overrideQueryAccess = false
+  let overrideZoneTransfer = false
+  let overrideNotify = false
 
   switch (type) {
     case 'Primary':
     case 'Forwarder':
       if (availableCatalogs) {
-        catalogo = true
-        sobrescribirQueryAccess = true
-        sobrescribirZoneTransfer = true
-        sobrescribirNotify = true
+        catalog = true
+        overrideQueryAccess = true
+        overrideZoneTransfer = true
+        overrideNotify = true
       }
       break
 
     case 'Stub':
       if (secondaryMember) {
-        catalogo = true
-        catalogoFijo = true
-        sobrescribirQueryAccess = true
+        catalog = true
+        catalogLocked = true
+        overrideQueryAccess = true
       } else if (availableCatalogs) {
-        catalogo = true
-        sobrescribirQueryAccess = true
+        catalog = true
+        overrideQueryAccess = true
       }
       break
 
     case 'Secondary':
       if (secondaryMember) {
-        catalogo = true
-        catalogoFijo = true
-        sobrescribirQueryAccess = true
-        sobrescribirZoneTransfer = true
+        catalog = true
+        catalogLocked = true
+        overrideQueryAccess = true
+        overrideZoneTransfer = true
       } else if (availableCatalogs) {
-        catalogo = true
-        sobrescribirQueryAccess = true
-        sobrescribirZoneTransfer = true
+        catalog = true
+        overrideQueryAccess = true
+        overrideZoneTransfer = true
       }
       break
 
     case 'SecondaryForwarder':
       if (inCatalog) {
-        catalogo = true
-        catalogoFijo = true
-        sobrescribirQueryAccess = true
+        catalog = true
+        catalogLocked = true
+        overrideQueryAccess = true
       }
       break
   }
 
   // The primary server: the three secondaries and the stub.
-  let servidorPrimario = false
-  let protocoloXfr = false
+  let primaryServer = false
+  let xfrProtocol = false
   let tsigFromPrimary = false
   let validateZone = false
-  let servidorPrimarioObligatorio = false
+  let primaryServerRequired = false
 
   if (SECONDARIES.includes(type)) {
-    protocoloXfr = true
+    xfrProtocol = true
     tsigFromPrimary = true
     validateZone = type === 'Secondary'
-    servidorPrimarioObligatorio = type === 'SecondaryForwarder' || type === 'SecondaryCatalog'
+    primaryServerRequired = type === 'SecondaryForwarder' || type === 'SecondaryCatalog'
 
-    servidorPrimario =
+    primaryServer =
       type === 'Secondary' || type === 'SecondaryForwarder'
         ? !inCatalog || r.overrideCatalogPrimaryNameServers === true
         : true
   } else if (type === 'Stub') {
-    servidorPrimario = true
+    primaryServer = true
   }
 
-  if (catalogo || servidorPrimario) tabs.push('General')
+  if (catalog || primaryServer) tabs.push('General')
 
   /* ── Query Access ─────────────────────────────────────────────────── */
   let queryAccess = false
@@ -344,17 +344,17 @@ export function optionsState(r: ZoneOptions): OptionsState {
   return {
     tabs,
     initialTab: tabs.includes(initial) ? initial : (tabs[0] ?? 'Query Access'),
-    catalogo,
-    catalogoFijo,
-    sobrescribirQueryAccess,
-    sobrescribirZoneTransfer,
-    sobrescribirNotify,
+    catalog,
+    catalogLocked,
+    overrideQueryAccess,
+    overrideZoneTransfer,
+    overrideNotify,
     // The override checkboxes go off if the zone is not in a catalog,
     // and also when it is administered by a secondary catalog.
     overrideLocked: !inCatalog || secondaryMember,
-    servidorPrimario,
-    servidorPrimarioObligatorio,
-    protocoloXfr,
+    primaryServer,
+    primaryServerRequired,
+    xfrProtocol,
     tsigFromPrimary,
     validateZone,
     primaryServerLocked: secondaryMember,
@@ -363,13 +363,13 @@ export function optionsState(r: ZoneOptions): OptionsState {
     zoneTransferLocked,
     zoneTransferWithNameServers: !['Forwarder', 'Catalog', 'SecondaryCatalog'].includes(type),
     notifyWithNameServers: type !== 'Forwarder' && type !== 'Catalog',
-    notifySeparados: type === 'Catalog',
+    notifySeparate: type === 'Catalog',
     updateWithNameServers: !['Secondary', 'SecondaryForwarder', 'Forwarder'].includes(type),
     securityPolicies: type === 'Primary' || type === 'Forwarder',
   }
 }
 
-/* ── El formulario ─────────────────────────────────────────────────────── */
+/* ── The form ─────────────────────────────────────────────────────────── */
 
 export interface PolicyRow {
   tsigKeyName: string

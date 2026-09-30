@@ -48,7 +48,7 @@ what was missing: it was the only screen in the console with no heading at all.
   font: inherit; font-size: var(--t-4); color: var(--mute); cursor: pointer;
 }
 .link:hover { color: var(--acc); }
-.oLogin { margin: var(--s-8) 0 var(--s-7); text-align: center; font-size: var(--t-3); color: var(--faint); }
+.orLogin { margin: var(--s-8) 0 var(--s-7); text-align: center; font-size: var(--t-3); color: var(--faint); }
 
 /* The footer, under the card and centred: it belongs to the page, not the form. */
 .footer { font-size: var(--t-3); line-height: 2; text-align: center; }

@@ -343,8 +343,8 @@ export function buildRecordBody(
   f: RecordForm,
   ctx: RecordContext,
 ): RecordResult {
-  const alta = ctx.mode === 'add'
-  const verb = alta ? 'add' : 'update'
+  const adding = ctx.mode === 'add'
+  const verb = adding ? 'add' : 'update'
   const missing = (text: string, field: keyof RecordForm): RecordResult => ({
     error: { title: 'Missing!', text, field },
   })
@@ -361,7 +361,7 @@ export function buildRecordBody(
     case 'A':
     case 'AAAA': {
       if (f.value === '') return missing(`Please enter an IP address to ${verb} the record.`, 'value')
-      if (alta) p.ipAddress = f.value
+      if (adding) p.ipAddress = f.value
       else {
         p.ipAddress = old.ipAddress ?? ''
         p.newIpAddress = f.value
@@ -376,7 +376,7 @@ export function buildRecordBody(
       if (f.nsNameServer === '') {
         return missing(`Please enter a name server to ${verb} the record.`, 'nsNameServer')
       }
-      if (alta) p.nameServer = f.nsNameServer
+      if (adding) p.nameServer = f.nsNameServer
       else {
         p.nameServer = old.nameServer ?? ''
         p.newNameServer = f.nsNameServer
@@ -426,7 +426,7 @@ export function buildRecordBody(
 
     case 'PTR': {
       if (f.value === '') return missing(`Please enter a suitable value to ${verb} the record.`, 'value')
-      if (alta) p.ptrName = f.value
+      if (adding) p.ptrName = f.value
       else {
         p.ptrName = old.ptrName ?? ''
         p.newPtrName = f.value
@@ -440,7 +440,7 @@ export function buildRecordBody(
       if (f.mxExchange === '') {
         return missing(`Please enter a mail exchange domain name to ${verb} the record.`, 'mxExchange')
       }
-      if (alta) {
+      if (adding) {
         p.preference = preference
         p.exchange = f.mxExchange
       } else {
@@ -454,7 +454,7 @@ export function buildRecordBody(
 
     case 'TXT': {
       if (f.txt === '') return missing(`Please enter a suitable value to ${verb} the record.`, 'txt')
-      if (alta) {
+      if (adding) {
         p.text = f.txt
         p.splitText = String(f.txtSplitText)
       } else {
@@ -469,7 +469,7 @@ export function buildRecordBody(
       // Both empties fall to the root; there is no alert at all.
       const mailbox = f.rpMailbox === '' ? '.' : f.rpMailbox
       const domainTxt = f.rpTxtDomain === '' ? '.' : f.rpTxtDomain
-      if (alta) {
+      if (adding) {
         p.mailbox = mailbox
         p.txtDomain = domainTxt
       } else {
@@ -492,7 +492,7 @@ export function buildRecordBody(
         return missing('Please enter a suitable value into the target field.', 'srvTarget')
       }
 
-      if (alta) {
+      if (adding) {
         p.priority = f.srvPriority
         p.weight = f.srvWeight
         p.port = f.srvPort
@@ -514,7 +514,7 @@ export function buildRecordBody(
       if (f.naptrOrder === '') return missing('Please enter a suitable order.', 'naptrOrder')
       if (f.naptrPreference === '') return missing('Please enter a suitable preference.', 'naptrPreference')
 
-      if (alta) {
+      if (adding) {
         p.naptrOrder = f.naptrOrder
         p.naptrPreference = f.naptrPreference
         p.naptrFlags = f.naptrFlags
@@ -565,7 +565,7 @@ export function buildRecordBody(
         )
       }
 
-      if (alta) {
+      if (adding) {
         p.keyTag = f.dsKeyTag
         p.algorithm = f.dsAlgorithm
         p.digestType = f.dsDigestType
@@ -597,7 +597,7 @@ export function buildRecordBody(
         )
       }
 
-      if (alta) {
+      if (adding) {
         p.sshfpAlgorithm = f.sshfpAlgorithm
         p.sshfpFingerprintType = f.sshfpFingerprintType
         p.sshfpFingerprint = f.sshfpFingerprint
@@ -630,7 +630,7 @@ export function buildRecordBody(
       }
       // Only on add: with "Full" it requires a complete PEM.
       if (
-        alta &&
+        adding &&
         f.tlsaMatchingType === 'Full' &&
         !f.tlsaCertificateAssociationData.startsWith('-')
       ) {
@@ -640,7 +640,7 @@ export function buildRecordBody(
         )
       }
 
-      if (alta) {
+      if (adding) {
         p.tlsaCertificateUsage = f.tlsaCertificateUsage
         p.tlsaSelector = f.tlsaSelector
         p.tlsaMatchingType = f.tlsaMatchingType
@@ -670,7 +670,7 @@ export function buildRecordBody(
       const params = serializeSvcParams(f.svcbParams)
       if ('error' in params) return params
 
-      if (alta) {
+      if (adding) {
         p.svcPriority = f.svcbPriority
         p.svcTargetName = f.svcbTargetName
         p.svcParams = params.value
@@ -692,7 +692,7 @@ export function buildRecordBody(
       if (f.uriWeight === '') return missing('Please enter a suitable weight.', 'uriWeight')
       if (f.uri === '') return missing('Please enter a suitable value into the URI field.', 'uri')
 
-      if (alta) {
+      if (adding) {
         p.uriPriority = f.uriPriority
         p.uriWeight = f.uriWeight
         p.uri = f.uri
@@ -715,7 +715,7 @@ export function buildRecordBody(
         return missing('Please enter a suitable value into the authority field.', 'caaValue')
       }
 
-      if (alta) {
+      if (adding) {
         p.flags = flags
         p.tag = tag
         p.value = f.caaValue
@@ -732,7 +732,7 @@ export function buildRecordBody(
 
     case 'ANAME': {
       if (f.value === '') return missing(`Please enter a suitable value to ${verb} the record.`, 'value')
-      if (alta) p.aname = f.value
+      if (adding) p.aname = f.value
       else {
         p.aname = old.aname ?? ''
         p.newAName = f.value
@@ -749,7 +749,7 @@ export function buildRecordBody(
         )
       }
 
-      if (alta) {
+      if (adding) {
         p.protocol = f.forwarderProtocol
         p.forwarder = forwarder
       } else {
@@ -766,8 +766,8 @@ export function buildRecordBody(
       sent; when editing, only if the new forwarder is not "this-server". It is
       asymmetric in upstream and it is replicated.
       */
-      const mandarProxy = alta || forwarder !== 'this-server'
-      if (mandarProxy) {
+      const sendProxy = adding || forwarder !== 'this-server'
+      if (sendProxy) {
         p.proxyType = f.proxyType
         if (f.proxyType === 'Http' || f.proxyType === 'Socks5') {
           if (f.proxyAddress === '') {
@@ -792,7 +792,7 @@ export function buildRecordBody(
     }
 
     case 'APP': {
-      if (alta) {
+      if (adding) {
         if (f.appName === '') {
           return missing('Please select an application name to add record.', 'appName')
         }
@@ -814,7 +814,7 @@ export function buildRecordBody(
     default: {
       // "Unknown": the type is typed by the user. Only the add requires it.
       type = f.unknownType
-      if (alta && type === '') {
+      if (adding && type === '') {
         return missing('Please enter a resoure record name or number to add record.', 'unknownType')
       }
       /*
@@ -825,13 +825,13 @@ export function buildRecordBody(
       */
       if (f.value === '') {
         return missing(
-          alta
+          adding
             ? 'Please enter a hex value as the RDATA to add record.'
             : 'Please enter a hex value as the RDATA to update the record.',
           'value',
         )
       }
-      if (alta) p.rdata = f.value
+      if (adding) p.rdata = f.value
       else {
         p.rdata = old.rdata ?? ''
         p.newRData = f.value
@@ -842,7 +842,7 @@ export function buildRecordBody(
 
   const domain = fullDomain(ctx.zone, f.name)
 
-  if (alta) {
+  if (adding) {
     return {
       body: {
         zone: ctx.zone,

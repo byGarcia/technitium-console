@@ -32,7 +32,7 @@ esa ruta. Una señal de estado no puede mover el contenido que señala.
 */
 describe('el filete del maestro no desplaza la retícula', () => {
   const css = readFileSync(resolve(src, 'ui/Form.module.css'), 'utf8')
-  const regla = /\.dependiente\s*\{([^}]*)\}/.exec(css)?.[1] ?? ''
+  const regla = /\.dependent\s*\{([^}]*)\}/.exec(css)?.[1] ?? ''
 
   it('existe la regla y pinta el filete ámbar', () => {
     expect(regla).toMatch(/var\(--acc\)/)
@@ -76,7 +76,7 @@ describe('el ámbar de «puedes» no se cruza con el de «cuidado»', () => {
   }
 
   it('ningún fichero pinta las dos', () => {
-    const conAcc = ficheros(/dependeDe=|tone="acc"/)
+    const conAcc = ficheros(/dependsOn=|tone="acc"/)
     const conWarn = ficheros(/tone="warn"/)
 
     expect(conAcc.length).toBeGreaterThan(0)

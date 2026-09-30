@@ -69,8 +69,8 @@ export function Versions({ token, serverVersion, domain, markHidden = false }: {
               reason for reading them stacked. */}
           <span className={styles.ver}>
             {info && !markHidden && (
-              <button type="button" className={styles.marca} onClick={() => setOpen(true)} title={title}>
-                <span className={styles.punto} aria-hidden="true" />
+              <button type="button" className={styles.mark} onClick={() => setOpen(true)} title={title}>
+                <span className={styles.dot} aria-hidden="true" />
                 Update
               </button>
             )}

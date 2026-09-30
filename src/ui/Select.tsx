@@ -150,7 +150,7 @@ export function Select({
   // The selected option is kept in view when moving with the keyboard.
   useEffect(() => {
     if (!open) return
-    const checked = list.current?.querySelector('[data-activa="true"]')
+    const checked = list.current?.querySelector('[data-active="true"]')
     // `scrollIntoView` does not exist in jsdom, and nothing breaks without it.
     checked?.scrollIntoView?.({ block: 'nearest' })
   }, [open, active])

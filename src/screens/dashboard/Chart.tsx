@@ -202,16 +202,16 @@ export function Chart({
   useEffect(() => {
     const c = chart.current
     if (c == null) return
-    const apagada = (label: unknown) => hidden?.has(String(label)) ?? false
+    const isHidden = (label: unknown) => hidden?.has(String(label)) ?? false
 
     if (type === 'doughnut') {
       const labels = (c.data.labels ?? []) as unknown[]
       labels.forEach((l, i) => {
         const visible = c.getDataVisibility(i)
-        if (visible === apagada(l)) c.toggleDataVisibility(i)
+        if (visible === isHidden(l)) c.toggleDataVisibility(i)
       })
     } else {
-      c.data.datasets.forEach((d, i) => c.setDatasetVisibility(i, !apagada(d.label)))
+      c.data.datasets.forEach((d, i) => c.setDatasetVisibility(i, !isHidden(d.label)))
     }
     c.update()
   }, [hidden, data, type])

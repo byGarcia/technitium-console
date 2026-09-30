@@ -4,6 +4,28 @@ Notable changes, newest first. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html) once there is more than one.
 
+## [1.1.1](https://github.com/byGarcia/technitium-console/releases/tag/v1.1.1) — 2026-09-30
+
+### Fixed
+
+- **`--uninstall` finishes on a mount point.** In mode B the console's folder is removed, and in
+  the Docker layout that folder is a bind mount, which cannot be removed from inside: the uninstall
+  emptied it and then stopped with `Device or resource busy`. It now empties the folder, removes it
+  when it can, and when it cannot says to unset the variable before restarting instead of
+  offering a restart that would serve an empty folder. Found installing 1.1.0 from the release
+  into the official image; the probe case that should have caught it now checks the exit code.
+- **The tab title, the header and About follow the server.** Upstream refreshes the server's
+  domain, version and start time every time this server's settings are loaded, saved or restored;
+  here they were fixed at login, so renaming the server or updating it left them stale.
+- **The active option of a dropdown stays in view** while moving through it with the keyboard.
+  The lookup named a data attribute that had been renamed, and found nothing.
+
+### Changed
+
+- The language gate's fifth hole is closed: about 140 Spanish identifiers that its word list had
+  never met are renamed, the list learns them, and it now also reads test ids and `data-*`
+  attribute names.
+
 ## [1.1.0](https://github.com/byGarcia/technitium-console/releases/tag/v1.1.0) — 2026-09-30
 
 Brought in line with **Technitium DNS Server v15.5.1**. Version 1.0.0 was built against v15.4 and,

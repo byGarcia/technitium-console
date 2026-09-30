@@ -225,7 +225,7 @@ export function General({ f, set, en }: PaneProps) {
           onChange={(v) => set({ socketPoolExcludedPorts: v })}
           rows={5}
           disabled={!en.socketPoolExcludedPorts}
-          dependeDe="Enable UDP Socket Pool"
+          dependsOn="Enable UDP Socket Pool"
           help="Enter port numbers one below other to be excluded from being used by the UDP socket pool."
         />
         <Notices>
@@ -317,7 +317,7 @@ export function General({ f, set, en }: PaneProps) {
           placeholder="prefix"
           suffix="(valid range 0-32; default 24)"
           disabled={!en.ecs}
-          dependeDe="Enable EDNS Client Subnet"
+          dependsOn="Enable EDNS Client Subnet"
           help="The IPv4 prefix length to define the client subnet."
         />
         <TextRow
@@ -328,7 +328,7 @@ export function General({ f, set, en }: PaneProps) {
           placeholder="prefix"
           suffix="(valid range 0-64; default 56)"
           disabled={!en.ecs}
-          dependeDe="Enable EDNS Client Subnet"
+          dependsOn="Enable EDNS Client Subnet"
           help="The IPv6 prefix length to define the client subnet."
         />
         <TextRow
@@ -338,7 +338,7 @@ export function General({ f, set, en }: PaneProps) {
           placeholder="network address"
           width="wide"
           disabled={!en.ecs}
-          dependeDe="Enable EDNS Client Subnet"
+          dependsOn="Enable EDNS Client Subnet"
           help="The IPv4 network address that must be used as ECS for all outbound requests overriding client's actual subnet."
         />
         <TextRow
@@ -348,7 +348,7 @@ export function General({ f, set, en }: PaneProps) {
           placeholder="network address"
           width="wide"
           disabled={!en.ecs}
-          dependeDe="Enable EDNS Client Subnet"
+          dependsOn="Enable EDNS Client Subnet"
           help="The IPv6 network address that must be used as ECS for all outbound requests overriding client's actual subnet."
         />
         <Notices>

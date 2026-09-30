@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, afterEach } from 'vitest'
 import * as client from './client'
 import {
-  ELEMENTOS_BACKUP,
+  BACKUP_ITEMS,
   flushCache,
   forceUpdateBlockLists,
   getSettings,
@@ -83,7 +83,7 @@ describe('api/settings', () => {
 
   it('the initial backup selection checks everything except the logs', () => {
     const s = initialBackupSelection()
-    expect(Object.keys(s)).toEqual(ELEMENTOS_BACKUP.map((e) => e.key))
+    expect(Object.keys(s)).toEqual(BACKUP_ITEMS.map((e) => e.key))
     expect(s.logs).toBe(false)
     expect(s.authConfig).toBe(true)
   })
@@ -93,7 +93,7 @@ describe('api/settings', () => {
     expect(p.zones).toBe('false')
     expect(p.stats).toBe('true')
     expect(p.node).toBe('')
-    expect(Object.keys(p)).toHaveLength(ELEMENTOS_BACKUP.length + 1)
+    expect(Object.keys(p)).toHaveLength(BACKUP_ITEMS.length + 1)
   })
 
   it('settings/restore sends the file by multipart and the options in the query', async () => {
@@ -109,13 +109,13 @@ describe('api/settings', () => {
     expect(call[1]).toMatchObject({
       method: 'POST',
       token: 'tok',
-      file: { field: 'fileBackupZip', archivo: file },
+      file: { field: 'fileBackupZip', file: file },
     })
     // The body does NOT carry the options: upstream sends them by query only.
     expect(call[1]?.body).toBeUndefined()
   })
 
-  it('settings/restore propaga invalid-token tal cual', async () => {
+  it('settings/restore passes invalid-token through as it is', async () => {
     vi.spyOn(client, 'apiRequest').mockResolvedValue({ kind: 'invalid-token' })
     const outcome = await restoreSettings('tok', new File([''], 'b.zip'), {}, false)
     expect(outcome.kind).toBe('invalid-token')
@@ -123,8 +123,8 @@ describe('api/settings', () => {
 })
 
 // The type has to accept the real response without the absent null keys.
-const _forma: Partial<DnsSettings> = { temporaryDisableBlockingTill: undefined }
-void _forma
+const _shape: Partial<DnsSettings> = { temporaryDisableBlockingTill: undefined }
+void _shape
 
 describe('getTsigKeyNames', () => {
   it('Zones consumes it, not Settings: it returns the list of names', async () => {

@@ -13,7 +13,7 @@ const CLIENTS = [
   { name: '10.0.0.9', domain: '', hits: 99, rateLimited: true },
 ]
 
-function servidorTop(response: Record<string, unknown>) {
+function mockTop(response: Record<string, unknown>) {
   return vi.spyOn(client, 'apiRequest').mockResolvedValue({
     kind: 'ok',
     data: { status: 'ok', response: response },
@@ -22,19 +22,19 @@ function servidorTop(response: Record<string, unknown>) {
 
 describe('modal Top Stats', () => {
   it('closed it asks the server for nothing', () => {
-    const spy = servidorTop({ topClients: [] })
+    const spy = mockTop({ topClients: [] })
     render(<TopStats type={null} range="LastHour" token="t" onClose={() => {}} />)
     expect(spy).not.toHaveBeenCalled()
   })
 
   it('the title carries the limit inside it, as in upstream', async () => {
-    servidorTop({ topClients: CLIENTS })
+    mockTop({ topClients: CLIENTS })
     render(<TopStats type="TopClients" range="LastHour" token="t" onClose={() => {}} />)
     expect(await screen.findByText('Top 1000 Clients')).toBeTruthy()
   })
 
   it('it asks getTop with the range, the type and the limit of 1000', async () => {
-    const spy = servidorTop({ topDomains: [] })
+    const spy = mockTop({ topDomains: [] })
     render(<TopStats type="TopDomains" range="LastWeek" token="t" onClose={() => {}} />)
     await waitFor(() => {
       const call = spy.mock.calls.find((c) => c[0] === 'dashboard/stats/getTop')
@@ -47,33 +47,33 @@ describe('modal Top Stats', () => {
   })
 
   it('a client shows its domain under the name', async () => {
-    servidorTop({ topClients: CLIENTS })
+    mockTop({ topClients: CLIENTS })
     render(<TopStats type="TopClients" range="LastHour" token="t" onClose={() => {}} />)
     expect(await screen.findByText('pc.casa.test')).toBeTruthy()
   })
 
   it('a client with no domain is drawn as the root', async () => {
-    servidorTop({ topClients: CLIENTS })
+    mockTop({ topClients: CLIENTS })
     render(<TopStats type="TopClients" range="LastHour" token="t" onClose={() => {}} />)
     await screen.findByText('pc.casa.test')
     expect(screen.getByText('.')).toBeTruthy()
   })
 
   it('a rate-limited client says so after the name', async () => {
-    servidorTop({ topClients: CLIENTS })
+    mockTop({ topClients: CLIENTS })
     render(<TopStats type="TopClients" range="LastHour" token="t" onClose={() => {}} />)
     expect(await screen.findByText(/10\.0\.0\.9 \(rate limited\)/)).toBeTruthy()
   })
 
   it('a domain does NOT show the domain line: that field belongs to clients only', async () => {
-    servidorTop({ topDomains: [{ name: 'github.com', hits: 7 }] })
+    mockTop({ topDomains: [{ name: 'github.com', hits: 7 }] })
     render(<TopStats type="TopDomains" range="LastHour" token="t" onClose={() => {}} />)
     await screen.findByText('github.com')
     expect(screen.queryByText('.')).toBeNull()
   })
 
   it('the header switches between Client/Queries and Domain/Hits', async () => {
-    servidorTop({ topClients: CLIENTS })
+    mockTop({ topClients: CLIENTS })
     const { unmount } = render(
       <TopStats type="TopClients" range="LastHour" token="t" onClose={() => {}} />,
     )
@@ -81,14 +81,14 @@ describe('modal Top Stats', () => {
     expect(screen.getByText('Queries')).toBeTruthy()
     unmount()
 
-    servidorTop({ topDomains: [{ name: 'a.test', hits: 1 }] })
+    mockTop({ topDomains: [{ name: 'a.test', hits: 1 }] })
     render(<TopStats type="TopDomains" range="LastHour" token="t" onClose={() => {}} />)
     expect(await screen.findByText('Domain')).toBeTruthy()
     expect(screen.getByText('Hits')).toBeTruthy()
   })
 
   it('with no data it says \"No Data\", with the upstream text', async () => {
-    servidorTop({ topClients: [] })
+    mockTop({ topClients: [] })
     render(<TopStats type="TopClients" range="LastHour" token="t" onClose={() => {}} />)
     expect(await screen.findByText('No Data')).toBeTruthy()
   })

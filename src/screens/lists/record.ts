@@ -111,7 +111,7 @@ The TTL arrives in two different shapes depending on the list (see
 `zonelists.ts`). It is normalised to the pair the design asks for: the number,
 and its human form beside it.
 */
-export function ttlPartido(r: DnsRecord): { value: string; human: string } {
+export function splitTtl(r: DnsRecord): { value: string; human: string } {
   if (typeof r.ttl === 'string') {
     const m = /^(\S+)\s+\((.*)\)$/.exec(r.ttl)
     return m ? { value: m[1], human: m[2] } : { value: r.ttl, human: '' }

@@ -6,7 +6,7 @@ import {
 import { Chart } from './Chart'
 import { tokenForLabel } from './palette'
 import { ClusterNodeSelect, AGGREGATE, type ClusterNode } from '../../ui/ClusterNodeSelect'
-import { EnElCromo } from '../../app/ChromeSlot'
+import { InChrome } from '../../app/ChromeSlot'
 import { TopStats } from './TopStats'
 import type { ChartData } from '../../api/dashboard'
 import { SectionHeader } from '../../ui/SectionHeader'
@@ -16,7 +16,7 @@ import { Body, Panel } from '../../ui/Panel'
 import { Button } from '../../ui/Button'
 import { type AlertType } from '../../ui/Alert'
 import { BlockingMenu } from './BlockingMenu'
-import { rangeInstants, whatIsMissing, MSG_INICIO, MSG_FIN } from './custom-range'
+import { rangeInstants, whatIsMissing, MSG_START, MSG_END } from './custom-range'
 import { Segmented } from '../../ui/Segmented'
 import { noticeFromFailure } from '../../lib/notice'
 import { Notifier } from '../../ui/Notifier'
@@ -335,10 +335,10 @@ console does not have.
 It resets on the identity of `data`, which is what changes with every response.
 */
 function useHidden(data: ChartData | undefined) {
-  const [hidden, setOcultas] = useState<ReadonlySet<string>>(() => new Set())
-  useEffect(() => setOcultas(new Set()), [data])
+  const [hidden, setHidden] = useState<ReadonlySet<string>>(() => new Set())
+  useEffect(() => setHidden(new Set()), [data])
   const toggle = (label: string) =>
-    setOcultas((prev) => {
+    setHidden((prev) => {
       const next = new Set(prev)
       if (!next.delete(label)) next.add(label)
       return next
@@ -410,7 +410,7 @@ export function Dashboard({
   }, [node])
 
   const [range, setRange] = useState<Range>('LastHour')
-  const [data, setDatos] = useState<DashboardStats | null>(null)
+  const [data, setData] = useState<DashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
   /*
   That the request FAILED, which is not the same as there being no data.
@@ -433,8 +433,8 @@ export function Dashboard({
   query. They are kept apart because typing a date must not reload the Dashboard:
   upstream does not either, it waits for the button (`main.js:646`).
   */
-  const [start, setInicio] = useState('')
-  const [end, setFin] = useState('')
+  const [start, setStart] = useState('')
+  const [end, setEnd] = useState('')
   const [requested, setRequested] = useState<{ start: string; end: string } | null>(null)
 
   useEffect(() => {
@@ -450,7 +450,7 @@ export function Dashboard({
       if (cancelled) return
       setLoading(false)
       if (r.kind === 'ok') {
-        setDatos(r.data)
+        setData(r.data)
         setFailure(false)
         return
       }
@@ -460,7 +460,7 @@ export function Dashboard({
       exactly what a DNS that has received nothing shows: the screen was answering
       falsely about the one thing people come here to look at.
       */
-      setDatos(null)
+      setData(null)
       setFailure(true)
       setNotice(noticeFromFailure(r))
     })()
@@ -522,20 +522,20 @@ export function Dashboard({
             <input
               type="date"
               value={start}
-              aria-invalid={missingRange === MSG_INICIO || undefined}
-              onChange={(e) => setInicio(e.target.value)}
+              aria-invalid={missingRange === MSG_START || undefined}
+              onChange={(e) => setStart(e.target.value)}
             />
-            {missingRange === MSG_INICIO && <span className={styles.badRange}>{missingRange}</span>}
+            {missingRange === MSG_START && <span className={styles.badRange}>{missingRange}</span>}
           </label>
           <label>
             End
             <input
               type="date"
               value={end}
-              aria-invalid={missingRange === MSG_FIN || undefined}
-              onChange={(e) => setFin(e.target.value)}
+              aria-invalid={missingRange === MSG_END || undefined}
+              onChange={(e) => setEnd(e.target.value)}
             />
-            {missingRange === MSG_FIN && <span className={styles.badRange}>{missingRange}</span>}
+            {missingRange === MSG_END && <span className={styles.badRange}>{missingRange}</span>}
           </label>
           <Button size="sm" variant="primary" onClick={showRange}>
             Show
@@ -557,7 +557,7 @@ export function Dashboard({
       without `clusterInitialized`— so on a single-server install the slot stays
       empty and takes up nothing.
       */}
-      <EnElCromo>
+      <InChrome>
         <ClusterNodeSelect
           nodes={nodes}
           initialised={clusterInitialised}
@@ -565,7 +565,7 @@ export function Dashboard({
           value={node}
           onChange={setNode}
         />
-      </EnElCromo>
+      </InChrome>
 
       <Notifier notice={notice} onClose={() => setNotice(null)} />
 

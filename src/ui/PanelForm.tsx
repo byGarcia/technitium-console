@@ -76,8 +76,8 @@ export function Block({
   const box = useRef<HTMLDivElement>(null)
   const [howMany, setHowMany] = useState<number | null>(null)
   useEffect(() => {
-    const raiz = box.current
-    if (raiz == null) return
+    const root = box.current
+    if (root == null) return
     /*
     The cells of an editable list do NOT count.
 
@@ -91,8 +91,8 @@ export function Block({
     It is the same distinction the phase 3 contract already made: 39 comparable
     controls and 15 data cells, and the contract separated them on purpose.
     */
-    const todos = [...raiz.querySelectorAll('input, select, textarea, [role="combobox"]')]
-    const n = todos.filter((c) => c.closest('table') == null).length
+    const controls = [...root.querySelectorAll('input, select, textarea, [role="combobox"]')]
+    const n = controls.filter((c) => c.closest('table') == null).length
     setHowMany(n > 0 ? n : null)
     /* No dependency array, and on purpose: what has to be counted is the DOM as
        already drawn, and it changes for reasons that are not props of this block
@@ -106,7 +106,7 @@ export function Block({
         title={title}
         className={styles.block}
         groups2
-        actions={howMany != null ? <span className={styles.recuento}>{howMany}</span> : undefined}
+        actions={howMany != null ? <span className={styles.count}>{howMany}</span> : undefined}
       >
         {notices != null && <div className={styles.notices}>{notices}</div>}
         {children}
@@ -125,7 +125,7 @@ export function TextRow({
   type = 'text',
   width,
   disabled,
-  dependeDe,
+  dependsOn,
   maxLength,
 }: {
   label: string
@@ -147,11 +147,11 @@ export function TextRow({
   width?: number | 'wide'
   disabled?: boolean
   /** Who has it switched off, when it is a master switch and not a permission. */
-  dependeDe?: string
+  dependsOn?: string
   maxLength?: number
 }) {
   return (
-    <Row label={label} help={help} dependeDe={dependeDe}>
+    <Row label={label} help={help} dependsOn={dependsOn}>
       {(id) => (
         <div className={styles.inline}>
           <Input
@@ -182,7 +182,7 @@ export function AreaRow({
   rows = 3,
   help,
   disabled,
-  dependeDe,
+  dependsOn,
 }: {
   label: string
   value: string
@@ -191,10 +191,10 @@ export function AreaRow({
   help?: ReactNode
   disabled?: boolean
   /** Who has it switched off, when it is a master switch and not a permission. */
-  dependeDe?: string
+  dependsOn?: string
 }) {
   return (
-    <Row label={label} help={help} dependeDe={dependeDe}>
+    <Row label={label} help={help} dependsOn={dependsOn}>
       {(id) => (
         <Textarea
           mono

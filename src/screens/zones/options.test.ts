@@ -89,7 +89,7 @@ describe('which tabs are visible', () => {
       options({ type: 'Secondary', catalog: 'cat.test', isSecondaryCatalogMember: true, overrideCatalogPrimaryNameServers: true }),
     )
     expect(e.primaryServerLocked).toBe(true)
-    expect(e.catalogoFijo).toBe(true)
+    expect(e.catalogLocked).toBe(true)
   })
 })
 
@@ -107,8 +107,8 @@ describe('which criteria are offered', () => {
   })
 
   it('the separate catalog notify only exists on a Catalog', () => {
-    expect(optionsState(options({ type: 'Catalog' })).notifySeparados).toBe(true)
-    expect(optionsState(options({ type: 'Primary' })).notifySeparados).toBe(false)
+    expect(optionsState(options({ type: 'Catalog' })).notifySeparate).toBe(true)
+    expect(optionsState(options({ type: 'Primary' })).notifySeparate).toBe(false)
   })
 })
 
@@ -134,7 +134,7 @@ describe('the body of options/set', () => {
 
   it('the empty lists do NOT all travel the same', () => {
     const r = buildOptionsBody(f(), 'Primary')
-    if ('error' in r) throw new Error('esperaba cuerpo')
+    if ('error' in r) throw new Error('expected a body')
 
     // Four fall to the string "false"…
     expect(r.body.zoneTransferNetworkACL).toBe('false')
@@ -150,13 +150,13 @@ describe('the body of options/set', () => {
   it('the lists with content are cleaned and go comma-separated', () => {
     const form = { ...f(), notifyNameServers: '10.0.0.1\n\n10.0.0.2\n' }
     const r = buildOptionsBody(form, 'Primary')
-    if ('error' in r) throw new Error('esperaba cuerpo')
+    if ('error' in r) throw new Error('expected a body')
     expect(r.body.notifyNameServers).toBe('10.0.0.1,10.0.0.2')
   })
 
   it('a SecondaryForwarder with no primary servers gives an alert', () => {
     const r = buildOptionsBody(f(), 'SecondaryForwarder')
-    if ('body' in r) throw new Error('esperaba notice')
+    if ('body' in r) throw new Error('expected a notice')
     expect(r.error.text).toBe('Please enter at least one primary name server address to proceed.')
     expect(r.error.tab).toBe('General')
   })
@@ -170,7 +170,7 @@ describe('the body of options/set', () => {
       ],
     }
     const r = buildOptionsBody(form, 'Primary')
-    if ('error' in r) throw new Error('esperaba cuerpo')
+    if ('error' in r) throw new Error('expected a body')
     expect(r.body.updateSecurityPolicies).toBe('k1|casa.test|A, AAAA|k2|sub.casa.test|TXT')
   })
 
@@ -180,7 +180,7 @@ describe('the body of options/set', () => {
       updateSecurityPolicies: [{ tsigKeyName: '', domain: 'casa.test', allowedTypes: 'A' }],
     }
     const r = buildOptionsBody(form, 'Primary')
-    if ('body' in r) throw new Error('esperaba notice')
+    if ('body' in r) throw new Error('expected a notice')
     expect(r.error.text).toBe('Please enter a valid value in the text field in focus.')
     expect(r.error.tab).toBe('Dynamic Updates')
   })

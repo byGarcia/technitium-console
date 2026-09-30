@@ -45,11 +45,11 @@ describe('SectionIndex', () => {
   it('it marks no other one, not even with "false"', () => {
     render(<SectionIndex sections={SECTIONS} active="zone-defaults" />)
 
-    const otras = screen
+    const others = screen
       .getAllByRole('link')
       .filter((a) => a.textContent !== 'Zone Defaults')
-    expect(otras).toHaveLength(2)
-    for (const a of otras) expect(a.hasAttribute('aria-current')).toBe(false)
+    expect(others).toHaveLength(2)
+    for (const a of others) expect(a.hasAttribute('aria-current')).toBe(false)
   })
 
   it('with no active section it marks none', () => {
@@ -138,20 +138,20 @@ describe('SectionIndex', () => {
  then the decision to bring it in is taken in the open, not by stealth.
   */
   it('it does not watch the scroll: that is wiring the screen does', () => {
-    const enWindow = vi.spyOn(window, 'addEventListener')
-    const enDocument = vi.spyOn(document, 'addEventListener')
-    const observador = vi.fn()
-    vi.stubGlobal('IntersectionObserver', observador)
+    const onWindow = vi.spyOn(window, 'addEventListener')
+    const onDocument = vi.spyOn(document, 'addEventListener')
+    const observer = vi.fn()
+    vi.stubGlobal('IntersectionObserver', observer)
 
     render(<SectionIndex sections={SECTIONS} active="zone-defaults" />)
 
-    const eventos = [...enWindow.mock.calls, ...enDocument.mock.calls].map(([e]) => e)
-    expect(eventos).not.toContain('scroll')
-    expect(eventos).not.toContain('hashchange')
-    expect(observador).not.toHaveBeenCalled()
+    const events = [...onWindow.mock.calls, ...onDocument.mock.calls].map(([e]) => e)
+    expect(events).not.toContain('scroll')
+    expect(events).not.toContain('hashchange')
+    expect(observer).not.toHaveBeenCalled()
 
-    enWindow.mockRestore()
-    enDocument.mockRestore()
+    onWindow.mockRestore()
+    onDocument.mockRestore()
     vi.unstubAllGlobals()
   })
 })

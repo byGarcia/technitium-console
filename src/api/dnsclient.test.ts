@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, afterEach } from 'vitest'
-import { resolve, prepararServidor, TYPES, PROTOCOLS } from './dnsclient'
+import { resolve, prepareServer, TYPES, PROTOCOLS } from './dnsclient'
 import * as client from './client'
 
 afterEach(() => vi.restoreAllMocks())
@@ -32,26 +32,26 @@ describe('dnsClient', () => {
   })
 })
 
-describe('prepararServidor', () => {
+describe('prepareServer', () => {
   it('it extracts what sits between braces: that is what gets sent', () => {
-    expect(prepararServidor('This Server {this-server}', 'UDP').server).toBe('this-server')
-    expect(prepararServidor('Cloudflare {1.1.1.1} (DNS-over-TLS)', 'TLS').server).toBe('1.1.1.1')
+    expect(prepareServer('This Server {this-server}', 'UDP').server).toBe('this-server')
+    expect(prepareServer('Cloudflare {1.1.1.1} (DNS-over-TLS)', 'TLS').server).toBe('1.1.1.1')
   })
 
   it('with no braces, it sends the text as it is', () => {
-    expect(prepararServidor('8.8.8.8', 'UDP').server).toBe('8.8.8.8')
+    expect(prepareServer('8.8.8.8', 'UDP').server).toBe('8.8.8.8')
   })
 
   it('it forces UDP for recursive-resolver and system-dns', () => {
-    expect(prepararServidor('Recursive Resolver {recursive-resolver}', 'TLS').protocol).toBe('UDP')
-    expect(prepararServidor('System DNS {system-dns}', 'HTTPS').protocol).toBe('UDP')
+    expect(prepareServer('Recursive Resolver {recursive-resolver}', 'TLS').protocol).toBe('UDP')
+    expect(prepareServer('System DNS {system-dns}', 'HTTPS').protocol).toBe('UDP')
   })
 
   it('it honours the chosen protocol for any other server', () => {
-    expect(prepararServidor('{1.1.1.1}', 'TLS').protocol).toBe('TLS')
+    expect(prepareServer('{1.1.1.1}', 'TLS').protocol).toBe('TLS')
   })
 
   it('empty braces are an empty server, even though the field has text', () => {
-    expect(prepararServidor('Servidor {}', 'UDP').server).toBe('')
+    expect(prepareServer('Servidor {}', 'UDP').server).toBe('')
   })
 })

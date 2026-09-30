@@ -103,7 +103,7 @@ describe('cleanList', () => {
 })
 
 describe('cache', () => {
-  it('vaciarCache calls cache/flush with the cluster node', async () => {
+  it('flushCache calls cache/flush with the cluster node', async () => {
     const spy = vi.spyOn(client, 'apiRequest').mockResolvedValue({ kind: 'ok', data: {} })
     await flushCache('t')
     expect(spy.mock.calls[0][0]).toBe('cache/flush')
@@ -133,14 +133,14 @@ describe('allowed and blocked', () => {
   })
 
   /* the allowed/blocked flush does NOT carry `node`: upstream sends it on cache only. */
-  it('emptyList no manda node', async () => {
+  it('flushList does not send node', async () => {
     const spy = vi.spyOn(client, 'apiRequest').mockResolvedValue({ kind: 'ok', data: {} })
     await flushList('blocked', 't')
     expect(spy.mock.calls[0][0]).toBe('blocked/flush')
     expect(spy.mock.calls[0][1]?.body).toBeUndefined()
   })
 
-  it('importarDominios goes by POST and with the field name of each list', async () => {
+  it('importDomains goes by POST and with the field name of each list', async () => {
     const spy = vi.spyOn(client, 'apiRequest').mockResolvedValue({ kind: 'ok', data: {} })
 
     await importDomains('allowed', 't', 'a.test,b.test')
@@ -154,7 +154,7 @@ describe('allowed and blocked', () => {
   })
 
   /* The export does not go by XHR: it asks for a single-use token and opens a window. */
-  it('exportarDominios goes through openDownload', async () => {
+  it('exportDomains goes through openDownload', async () => {
     const spy = vi.spyOn(user, 'openDownload').mockResolvedValue({ ok: true })
     await exportDomains('allowed', 't')
     expect(spy.mock.calls[0][1]).toBe('allowed/export')

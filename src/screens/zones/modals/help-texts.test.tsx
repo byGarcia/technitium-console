@@ -6,7 +6,7 @@ import * as dnssec from '../../../api/dnssec'
 import type { ZoneOptions as ZoneOptionsResponse } from '../../../api/zones'
 import { ZoneOptions } from './ZoneOptions'
 import { SignZone } from './SignZone'
-import { PropiedadesDnssec } from './DnssecProperties'
+import { DnssecProperties } from './DnssecProperties'
 import { AddEditRecord } from './AddEditRecord'
 
 /*
@@ -189,7 +189,7 @@ describe('Proof of Non-Existence: upstream wording, not a summary', () => {
   })
 
   it('DNSSEC Properties prints both too', async () => {
-    vi.spyOn(dnssec, 'getPropiedades').mockResolvedValue({
+    vi.spyOn(dnssec, 'getProperties').mockResolvedValue({
       name: 'casa.test',
       type: 'Primary',
       internal: false,
@@ -199,7 +199,7 @@ describe('Proof of Non-Existence: upstream wording, not a summary', () => {
       dnssecPrivateKeys: [],
     } as never)
     render(
-      <PropiedadesDnssec zone="casa.test" open token="t" onClose={noop} onConfirm={noop} onChanged2={noop} />,
+      <DnssecProperties zone="casa.test" open token="t" onClose={noop} onConfirm={noop} onChanged2={noop} />,
     )
     const dialog = await screen.findByRole('dialog')
     expect(await within(dialog).findByText(NSEC_HELP)).toBeTruthy()

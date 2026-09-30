@@ -11,9 +11,9 @@ import { Button } from '../../../ui/Button'
 import { Dialog } from '../../../ui/Dialog'
 import { Field, Input, Select, Textarea } from '../../../ui/Field'
 import {
-  PROTOCOLOS_FORWARDER,
+  FORWARDER_PROTOCOLS,
   PROXY_TYPES,
-  ejemploDeForwarder,
+  forwarderExample,
   proxyEditable,
 } from './add-zone'
 import {
@@ -49,10 +49,10 @@ const DS_ALGORITHMS = [
 ]
 const DIGESTS_DS = ['SHA1 (1)', 'SHA256 (2)', 'SHA384 (4)']
 const SSHFP_ALGORITHMS = ['RSA', 'DSA', 'ECDSA', 'Ed25519', 'Ed448']
-const HUELLAS_SSHFP = ['SHA1', 'SHA256']
-const USOS_TLSA = ['PKIX-TA', 'PKIX-EE', 'DANE-TA', 'DANE-EE']
-const SELECTORES_TLSA = ['Cert', 'SPKI']
-const COINCIDENCIAS_TLSA = ['Full', 'SHA2-256', 'SHA2-512']
+const SSHFP_FINGERPRINT_TYPES = ['SHA1', 'SHA256']
+const TLSA_USAGES = ['PKIX-TA', 'PKIX-EE', 'DANE-TA', 'DANE-EE']
+const TLSA_SELECTORS = ['Cert', 'SPKI']
+const TLSA_MATCHING_TYPES = ['Full', 'SHA2-256', 'SHA2-512']
 
 export interface AddEditRecordProps {
   open: boolean
@@ -76,11 +76,11 @@ export function AddEditRecord(p: AddEditRecordProps) {
   const [notice, setNotice] = useState<Notice | null>(null)
   const [busy, setBusy] = useState(false)
   const [apps, setApps] = useState<string[]>([])
-  const [classes, setClases] = useState<string[]>([])
+  const [classes, setClasses] = useState<string[]>([])
   const nameRef = useRef<HTMLInputElement>(null)
 
   const editing = p.mode === 'update'
-  const ocultos = p.zoneInfo ? typesHiddenWhenAdding(p.zoneInfo.type, p.zoneInfo.dnssecStatus) : []
+  const hiddenTypes = p.zoneInfo ? typesHiddenWhenAdding(p.zoneInfo.type, p.zoneInfo.dnssecStatus) : []
 
   useEffect(() => {
     if (!p.open) return
@@ -91,13 +91,13 @@ export function AddEditRecord(p: AddEditRecordProps) {
       const initial = emptyForm()
       // The first visible type, not a blind "A": on a signed Primary the
       // dropdown starts the same, but on a Forwarder the hidden ones change.
-      const first = RECORD_TYPES.find((t) => t !== 'SOA' && !ocultos.includes(t))
+      const first = RECORD_TYPES.find((t) => t !== 'SOA' && !hiddenTypes.includes(t))
       initial.type = first ?? 'A'
       setF(initial)
     }
     setNotice(null)
     nameRef.current?.focus()
-    // `ocultos` is recalculated on every render; depending on it would loop.
+    // `hiddenTypes` is recalculated on every render; depending on it would loop.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [p.open, p.mode, p.original, p.zone])
 
@@ -112,7 +112,7 @@ export function AddEditRecord(p: AddEditRecordProps) {
       )
       setApps(withHandler.map((a) => a.name))
       const chosen = withHandler.find((a) => a.name === f.appName)
-      setClases(
+      setClasses(
         (chosen?.dnsApps ?? [])
           .filter((d) => d.isAppRecordRequestHandler)
           .map((d) => d.classPath),
@@ -202,7 +202,7 @@ export function AddEditRecord(p: AddEditRecordProps) {
             >
               {RECORD_TYPES.filter(
                 // SOA only appears on edit; the rest according to the zone type.
-                (t) => (t === 'SOA' ? editing : !ocultos.includes(t)),
+                (t) => (t === 'SOA' ? editing : !hiddenTypes.includes(t)),
               ).map((t) => (
                 <option key={t} value={t}>
                   {t}
@@ -467,7 +467,7 @@ function TypeFields({ f, set, apps, classes, editing }: FieldsProps) {
       return (
         <>
           {dropdown('Algorithm', 'sshfpAlgorithm', SSHFP_ALGORITHMS)}
-          {dropdown('Fingerprint Type', 'sshfpFingerprintType', HUELLAS_SSHFP)}
+          {dropdown('Fingerprint Type', 'sshfpFingerprintType', SSHFP_FINGERPRINT_TYPES)}
           {text('Fingerprint', 'sshfpFingerprint', { mono: true, placeholder: 'hash string' })}
         </>
       )
@@ -475,9 +475,9 @@ function TypeFields({ f, set, apps, classes, editing }: FieldsProps) {
     case 'TLSA':
       return (
         <>
-          {dropdown('Certificate Usage', 'tlsaCertificateUsage', USOS_TLSA)}
-          {dropdown('Selector', 'tlsaSelector', SELECTORES_TLSA)}
-          {dropdown('Matching Type', 'tlsaMatchingType', COINCIDENCIAS_TLSA)}
+          {dropdown('Certificate Usage', 'tlsaCertificateUsage', TLSA_USAGES)}
+          {dropdown('Selector', 'tlsaSelector', TLSA_SELECTORS)}
+          {dropdown('Matching Type', 'tlsaMatchingType', TLSA_MATCHING_TYPES)}
           <Field label="Certificate Association Data">
             {(id) => (
               <Textarea
@@ -512,12 +512,12 @@ MII...
           {text('Target Name', 'svcbTargetName', { mono: true })}
           <div className={styles.group}>
             <div className={styles.groupTitle}>Params</div>
-            {f.svcbParams.map((par, i) => (
+            {f.svcbParams.map((param, i) => (
               <div key={i} className={styles.inline}>
                 <Input
                   mono
                   aria-label={`Param key ${i + 1}`}
-                  value={par.key}
+                  value={param.key}
                   onChange={(e) =>
                     set(
                       'svcbParams',
@@ -528,7 +528,7 @@ MII...
                 <Input
                   mono
                   aria-label={`Param value ${i + 1}`}
-                  value={par.value}
+                  value={param.value}
                   onChange={(e) =>
                     set(
                       'svcbParams',
@@ -591,7 +591,7 @@ MII...
       return (
         <>
           <GroupRow modal label="Protocol">
-            {PROTOCOLOS_FORWARDER.map((x) => (
+            {FORWARDER_PROTOCOLS.map((x) => (
               <label key={x.value} className={styles.chk}>
                 <input
                   type="radio"
@@ -605,7 +605,7 @@ MII...
           </GroupRow>
           {text('Forwarder', 'forwarder', {
             mono: true,
-            placeholder: ejemploDeForwarder(f.forwarderProtocol),
+            placeholder: forwarderExample(f.forwarderProtocol),
           })}
           {text('Forwarder Priority', 'forwarderPriority', { mono: true, short: true, placeholder: '0' })}
           <div className={styles.help}>

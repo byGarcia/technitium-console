@@ -94,7 +94,35 @@ const PIECES = new Set(
     'cuenta cuentas ancho anchos alto largo corto nuevo nueva viejo antiguo activo activa apagado ' +
     'encendido cerrar abrir volver seguir contiene devuelve llama espera ' +
     'carga cargas bloques cero dos tres cuatro cinco seis siete ocho nueve diez digito digitos ' +
-    'usuario usuarios conserva pegado golpe flotante foco hueco fuerte medio cajon curso ajustes enlaces seccion contenido iteraciones mirar estado'
+    'usuario usuarios conserva pegado golpe flotante foco hueco fuerte medio cajon curso ajustes enlaces seccion contenido iteraciones mirar estado ' +
+    /*
+    2026-09-30, the fifth hole. The gate was green and a census —every identifier
+    split into its camelCase pieces, each piece looked up in an English corpus and
+    the leftovers read by hand— found about 140 Spanish identifiers in 90 files:
+    `PropiedadesDnssec`, `EnElCromo`, `servidoresPrimariosObligatorios`, `setOlvido`,
+    `.testigo`, `data-testid="hueco"`, a dozen Spanish test descriptions. None of
+    them used a word on this list, and that is the whole lesson: a blacklist only
+    sees the words someone has already met. It cannot be completed by thinking
+    harder; the census is what finds the next batch, and its words come here.
+
+    These are the pieces of that sweep, renamed and now refused. Left out on
+    purpose, although they were Spanish where they appeared: `el` and `en`, which
+    this code uses in English as the usual shorthand for an element and for the
+    enablement rules, and the one-letter `a` / `o` of `aSlug` and `.oLogin`, which
+    as whole pieces are in every English identifier.
+    */
+    'agente alta anadiendo apagada aplanar archivo automatico cambiar campo casilla casos catalogo ' +
+    'catalogos celda clases coincidencias conteo cromo crudas cruda cuerpo cuerpos curvas datos depende ' +
+    'dependiente descarte destino detalle dialogo dibujo disponibles ejemplo elemento elementos entero ' +
+    'entrada escapar eventos explicadas fallar fallido fijo forma formulario hacer hola huellas icono ' +
+    'ignorar inicial inicializar inicio instaladas interfaz inverso lanzar llamada llegar mandar manda ' +
+    'marca miembros modo muestra obligatorio obligatorios observador ocultas ocultos olvido otras ' +
+    'partido pestana pintadas pintar preparar previo previa primario primarios propiedades protocolo ' +
+    'protocolos punto raiz recuento refrescar respuesta resultado roto salida secciones sectores ' +
+    'selectores separados serie servidor servidores sobrescribir sujetos tamanos testigo tipo tira ' +
+    'todos tono unico usos visibles visto fin ir ya de al par fase grafica ninguna lecturas transporte ' +
+    'completos propaga tal cual vaciar importar exportar dominios unirse uno existente construir ' +
+    'piezas puras sesiones activas modales sobra esperaba falta'
   ).split(' '),
 )
 
@@ -109,6 +137,15 @@ So it is read back on purpose, and only from the three functions that take one.
 */
 const DESCRIPTION = /\b(?:it|test|describe)(?:\.\w+)?\(\s*(?:'([^']*)'|`([^`]*)`|"([^"]*)")/g
 
+/*
+Names that live inside a string and are still names: a test id and a `data-`
+attribute. Stripping string literals is what keeps Spanish DATA quiet, and it also
+hid `data-testid="hueco"` and a selector for `[data-activa="true"]` that matched
+nothing because the attribute had been renamed to `data-active` everywhere else
+(2026-09-30, the fifth hole). These are read back from the raw line.
+*/
+const NAMED_IN_STRING = /(?:data-testid=\{?\s*|ByTestId\(\s*)['"`]([^'"`]*)['"`]|\bdata-([a-z][a-z-]*)/g
+
 /** Every camelCase piece of every identifier on the line, lower-cased. */
 function pieces(line) {
   const out = []
@@ -121,8 +158,10 @@ function pieces(line) {
 }
 
 /* Proper names are not prose: `Adrián` carries an accent and appears in a dozen
-   decisions that are written in English around it. */
-const NAMES_ALLOWED = /Adri[áa]n/g
+   decisions that are written in English around it. `Archivo` is the typeface the
+   interface is set in (`theme/base.css`), capitalised as its foundry writes it; the
+   lower-case `archivo` is Spanish and stays refused. */
+const NAMES_ALLOWED = /Adri[áa]n|\bArchivo\b/g
 function stripQuoted(s) {
   return s
     .replace(NAMES_ALLOWED, ' ')
@@ -198,6 +237,13 @@ for (const file of walk(SRC)) {
       const piece = pieces(what).find((w) => PIECES.has(w))
       if (ACCENTS.test(what) || WORDS.test(what) || piece != null)
         findings.push(`${rel}:${n}  Spanish in a test description: ${what.slice(0, 70)}`)
+    }
+
+    for (const m of line.matchAll(NAMED_IN_STRING)) {
+      const name = m[1] ?? m[2] ?? ''
+      const piece = pieces(name.replace(/-/g, ' ')).find((w) => PIECES.has(w))
+      if (ACCENTS.test(name) || piece != null)
+        findings.push(`${rel}:${n}  Spanish in a test id or data attribute: ${name.slice(0, 70)}`)
     }
   }
 }

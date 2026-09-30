@@ -201,7 +201,7 @@ export function ZoneList({
     void loadRef.current(1)
   }, [refresh])
 
-  function irA(page: number) {
+  function goTo(page: number) {
     void load(page)
   }
 
@@ -350,7 +350,7 @@ export function ZoneList({
   const allChecked = zones.length > 0 && checkedOnes.length === zones.length
 
   // The last page is asked for with -1: the server works it out itself.
-  const pagination = <Pagination window={pg} current={pageNumber} last={-1} onIr={irA} />
+  const pagination = <Pagination window={pg} current={pageNumber} last={-1} onGoTo={goTo} />
 
   return (
     <>
@@ -622,7 +622,7 @@ function ZoneRow(p: RowProps) {
   The catalog the zone is a MEMBER of, and nothing else.
 
   Before, if the zone was itself a catalog, it got a tag with its own name: the
-  cell said `catalogo.test` twice in a row and the `Type` column already said
+  cell said `catalog.test` twice in a row and the `Type` column already said
   "Catalog". It informed of nothing. Upstream draws the tag only when there is
   membership (`zone.js:796`: `if (zones[i].catalog != null)`), so that was an
   addition of ours, not parity.

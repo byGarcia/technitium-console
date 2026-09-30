@@ -42,7 +42,7 @@ export function Raw({
   children,
   text,
   height = 440,
-  tono = 'normal',
+  tone = 'normal',
 }: {
   children: ReactNode
   /** What this is, for whoever hears it instead of seeing it. Compulsory on purpose. */
@@ -55,10 +55,10 @@ export function Raw({
   frame turns `--dan`: the error is framed, not disguised as data. It is the one
   exception to phase 1's "solid = error", and that is why the frame IS solid.
   */
-  tono?: 'normal' | 'error'
+  tone?: 'normal' | 'error'
 }) {
   return (
-    <div className={`${styles.box}${tono === 'error' ? ` ${styles.error}` : ''}`}>
+    <div className={`${styles.box}${tone === 'error' ? ` ${styles.error}` : ''}`}>
       <pre
         className={styles.text}
         style={{ '--raw-height': `${height}px` } as React.CSSProperties}

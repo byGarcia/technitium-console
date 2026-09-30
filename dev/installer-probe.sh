@@ -237,10 +237,14 @@ if [ "$CAPABLE" = "yes" ]; then
   # And a list written afterwards, in the folder that is actually being served:
   # it exists nowhere else, so only the uninstall can bring it home.
   in_server "printf '[{\"name\":\"after\"}]\n' > /side/json/quick-forwarders-list-custom.json"
-  in_server "sh /w/install.sh --uninstall --yes"
+  # The folder is a bind mount here, as in the README's Docker layout: the
+  # uninstall has to finish on it, not stop at the mount point (2026-09-30 —
+  # it did, and this case did not look at the exit code).
+  in_server "sh /w/install.sh --uninstall --yes" || c13=1
+  in_server '[ -z "$(ls -A /side)" ]' || c13=1
   in_server "[ -f $WWW/json/quick-forwarders-list-custom.json ]" || c13=1
   in_server "[ -f $WWW/json/quick-block-lists-custom.json ]" || c13=1
-  verdict "C13" $c13 "the custom lists travel into the console's folder and back"
+  verdict "C13" $c13 "the custom lists travel into the console's folder and back, and the uninstall finishes on a mount point"
 
 else
   verdict "C12" 3 "installs where the variable points and leaves www alone ($VERSION does not honour it)"

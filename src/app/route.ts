@@ -21,8 +21,8 @@ route in `<meta name="route">`, and the root comes from subtracting it from the
 `pathname`. That is the piece that makes all of this work behind a proxy.
 */
 
-export { aSlug } from './slug'
-import { aSlug } from './slug'
+export { toSlug } from './slug'
+import { toSlug } from './slug'
 export { forgetRoot, appRoot } from './base'
 import { appRoot } from './base'
 
@@ -51,12 +51,12 @@ export function readRoute(sections: Section[]): Route | null {
   if (section == null) return null
 
   // A sub that does not exist does not invalidate the section: it falls to the first.
-  const sub = slugSub == null ? null : (section.subs?.find((t) => aSlug(t) === slugSub) ?? null)
+  const sub = slugSub == null ? null : (section.subs?.find((t) => toSlug(t) === slugSub) ?? null)
   return { section: section.id, sub }
 }
 
 export function toTrail({ section, sub }: Route): string {
-  return appRoot() + (sub == null ? `${section}/` : `${section}/${aSlug(sub)}/`)
+  return appRoot() + (sub == null ? `${section}/` : `${section}/${toSlug(sub)}/`)
 }
 
 /**

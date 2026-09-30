@@ -16,7 +16,7 @@ import {
 import { Button } from '../../ui/Button'
 import { Input, Select } from '../../ui/Field'
 import { SectionHeader } from '../../ui/SectionHeader'
-import { aIso, dateTime } from './dates'
+import { toIso, dateTime } from './dates'
 import { Loading } from '../../ui/Empty'
 import { Check } from '../../ui/Check'
 import { Tag } from '../../ui/Tag'
@@ -243,8 +243,8 @@ export function QueryLogs({ tabs, token, node = '' }: QueryLogsProps) {
       pageNumber,
       entriesPerPage,
       descendingOrder: filters.descendingOrder,
-      start: aIso(filters.start),
-      end: aIso(filters.end),
+      start: toIso(filters.start),
+      end: toIso(filters.end),
       clientIpAddress: filters.clientIpAddress,
       protocol: filters.protocol,
       responseType: filters.responseType,
@@ -345,7 +345,7 @@ export function QueryLogs({ tabs, token, node = '' }: QueryLogsProps) {
     setF((prev) => ({ ...prev, ...partial }))
   }
 
-  function cambiarApp(name: string) {
+  function changeApp(name: string) {
     // logs.js:21 — on changing app its classes reload and the first is taken.
     const classes = apps?.find((a) => a.name === name)?.classPaths ?? []
     set({ appName: name, classPath: classes[0] ?? '' })
@@ -441,7 +441,7 @@ export function QueryLogs({ tabs, token, node = '' }: QueryLogsProps) {
                   id="ql-appName"
                   ref={appRef}
                   value={f.appName}
-                  onChange={(e) => cambiarApp(e.target.value)}
+                  onChange={(e) => changeApp(e.target.value)}
                 >
                   {apps.map((a) => (
                     <option key={a.name} value={a.name}>
@@ -687,7 +687,7 @@ export function QueryLogs({ tabs, token, node = '' }: QueryLogsProps) {
               window={pageWindow(page.pageNumber, page.totalPages)}
               current={page.pageNumber}
               last={-1}
-              onIr={(n) => void query(String(n), false)}
+              onGoTo={(n) => void query(String(n), false)}
             />
           </div>
 
@@ -696,7 +696,7 @@ export function QueryLogs({ tabs, token, node = '' }: QueryLogsProps) {
             <span className={styles.legendTitle}>Row colours</span>
             {LEGEND_ROWS.map((e) => (
               <span key={e.name} className={styles.legendItem}>
-                <span className={`${styles.testigo} ${e.cls}`} aria-hidden="true" />
+                <span className={`${styles.swatch} ${e.cls}`} aria-hidden="true" />
                 <span className={styles.legendName}>{e.name}</span>
                 <span className={styles.legendWhen}>{e.when}</span>
               </span>

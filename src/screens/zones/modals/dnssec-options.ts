@@ -18,17 +18,17 @@ export const HASHES_RSA = [
   { value: 'SHA512', label: 'SHA512' },
 ]
 
-export const CURVAS_ECDSA = [
+export const ECDSA_CURVES = [
   { value: 'P256', label: 'P256 (default)' },
   { value: 'P384', label: 'P384' },
 ]
 
-export const CURVAS_EDDSA = [
+export const EDDSA_CURVES = [
   { value: 'ED25519', label: 'Ed25519 (default)' },
   { value: 'ED448', label: 'Ed448' },
 ]
 
-export const TAMANOS_RSA = ['1024', '1280', '1536', '2048', '3072', '4096']
+export const RSA_KEY_SIZES = ['1024', '1280', '1536', '2048', '3072', '4096']
 
 export const KEY_TYPES = [
   { value: 'KeySigningKey', label: 'Key Signing Key (KSK)' },

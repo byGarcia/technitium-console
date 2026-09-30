@@ -29,7 +29,7 @@ it.
 export type Cell =
   /** `data-optional` in upstream: the cell that is allowed to be empty. */
   | { type: 'text'; value: string; optional?: boolean }
-  | { type: 'casilla'; value: boolean }
+  | { type: 'checkbox'; value: boolean }
 
 export interface TableFailure {
   title: string
@@ -48,7 +48,7 @@ export function serializeTable(rows: readonly (readonly Cell[])[]): TableResult 
     for (let j = 0; j < rows[i].length; j++) {
       const cell = rows[i][j]
 
-      if (cell.type === 'casilla') {
+      if (cell.type === 'checkbox') {
         output.push(cell.value ? 'true' : 'false')
         continue
       }

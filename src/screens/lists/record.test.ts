@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { DnsRecord } from '../../api/zonelists'
-import { rdataEntries, extras, shortDate, meta, ttlPartido } from './record'
+import { rdataEntries, extras, shortDate, meta, splitTtl } from './record'
 
 const CACHE_DNSKEY: DnsRecord = {
   name: '',
@@ -39,19 +39,19 @@ const ALLOWED_NS: DnsRecord = {
   expiryTtlString: '0s',
 }
 
-describe('ttlPartido', () => {
+describe('splitTtl', () => {
   /* In cache the server sends the TTL already composed as a STRING ("218
      (3m38s)"); in allowed and blocked it sends the number and `ttlString` apart. */
   it('it splits the cache string into a number and a human form', () => {
-    expect(ttlPartido(CACHE_DNSKEY)).toEqual({ value: '2000', human: '33m20s' })
+    expect(splitTtl(CACHE_DNSKEY)).toEqual({ value: '2000', human: '33m20s' })
   })
 
   it('it composes the allowed and blocked pair out of ttl and ttlString', () => {
-    expect(ttlPartido(ALLOWED_NS)).toEqual({ value: '14400', human: '4h' })
+    expect(splitTtl(ALLOWED_NS)).toEqual({ value: '14400', human: '4h' })
   })
 
   it('a stale cache record arrives as \"0 (0s)\" and is respected', () => {
-    expect(ttlPartido({ ...CACHE_DNSKEY, ttl: '0 (0s)' })).toEqual({ value: '0', human: '0s' })
+    expect(splitTtl({ ...CACHE_DNSKEY, ttl: '0 (0s)' })).toEqual({ value: '0', human: '0s' })
   })
 })
 

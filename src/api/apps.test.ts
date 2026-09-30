@@ -51,9 +51,9 @@ describe('apps — read endpoints', () => {
 
   it('it honours the node when one is passed', async () => {
     const spy = makeSpy()
-    await getAppConfig('t', 'NO DATA', 'primario')
+    await getAppConfig('t', 'NO DATA', 'primary')
     const call = spy.mock.calls.find((c) => c[0] === 'apps/config/get')
-    expect(call![1]?.body?.node).toBe('primario')
+    expect(call![1]?.body?.node).toBe('primary')
   })
 })
 

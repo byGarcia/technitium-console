@@ -72,7 +72,7 @@ function asMonths(days: number): number {
   return (days * 4800) / 146097
 }
 
-/** `moment(x).fromNow()` with the `en` locale. `ahora` is injected so it can be
+/** `moment(x).fromNow()` with the `en` locale. `now` is injected so it can be
  *  tested without depending on the clock. */
 export function fromNow(iso: string | null | undefined, now: number = Date.now()): string {
   if (iso == null) return ''

@@ -76,7 +76,7 @@ looking at it from a phone when something has stopped resolving.
 /* The drawer's trigger and the header's mark only exist on a narrow screen; on a
    wide one the side panel is already in sight. */
 .hamburger,
-.marcaTop {
+.topBrand {
   display: none;
 }
 
@@ -133,7 +133,7 @@ looking at it from a phone when something has stopped resolving.
     cursor: pointer;
   }
 
-  .marcaTop {
+  .topBrand {
     display: flex;
     align-items: center;
     gap: var(--s-5);

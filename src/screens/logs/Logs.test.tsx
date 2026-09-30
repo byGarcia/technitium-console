@@ -509,7 +509,7 @@ describe('Logs › Query Logs — the table', () => {
   })
 })
 
-describe('Query Logs — piezas puras', () => {
+describe('Query Logs — pure pieces', () => {
   it('the counter replicates the upstream format', () => {
     expect(
       statusText({
@@ -557,7 +557,7 @@ describe('Query Logs — piezas puras', () => {
 */
 describe('the row colour code', () => {
   it('the legend covers every class `rowClass` can return', () => {
-    const casos: QueryLogEntry[] = [
+    const cases: QueryLogEntry[] = [
       { rowNumber: 1, rcode: 'ServerFailure', responseType: 'Recursive' },
       { rowNumber: 2, rcode: 'NxDomain', responseType: 'Blocked' },
       { rowNumber: 3, rcode: 'NxDomain', responseType: 'Recursive' },
@@ -567,15 +567,15 @@ describe('the row colour code', () => {
       { rowNumber: 7, rcode: 'NoError', responseType: 'Cached' },
     ] as QueryLogEntry[]
 
-    const pintadas = new Set(casos.map((c) => rowClass(c)).filter(Boolean))
-    const explicadas = new Set(LEGEND_ROWS.map((e) => e.cls))
+    const painted = new Set(cases.map((c) => rowClass(c)).filter(Boolean))
+    const explained = new Set(LEGEND_ROWS.map((e) => e.cls))
 
-    expect(pintadas.size).toBe(7)
-    for (const c of pintadas) expect(explicadas).toContain(c)
+    expect(painted.size).toBe(7)
+    for (const c of painted) expect(explained).toContain(c)
   })
 
   /* And the other way round: a legend entry that no longer paints anything is a promise. */
-  it('y no sobra ninguna entrada', () => {
+  it('and no legend entry is left over', () => {
     expect(LEGEND_ROWS).toHaveLength(7)
     expect(new Set(LEGEND_ROWS.map((e) => e.name)).size).toBe(7)
   })

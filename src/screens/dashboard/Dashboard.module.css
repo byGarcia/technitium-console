@@ -180,7 +180,7 @@ screens it is at 12.5 and normal weight.
 .limited td { color: var(--warn); }
 .topName { display: block; font-family: var(--font-mono); word-break: break-all; }
 .topDomain { display: block; margin-top: var(--s-1); font: var(--t-2) var(--font-mono); color: var(--faint); word-break: break-all; }
-.topConteo { composes: mono from '../../ui/text.module.css'; }
+.topCount { composes: mono from '../../ui/text.module.css'; }
 
 /*
 The responsive steps of the lower half, measured at the four widths.

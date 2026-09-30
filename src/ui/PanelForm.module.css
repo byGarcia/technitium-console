@@ -150,7 +150,7 @@ It is the same count pill any table in the console carries
 (`ui/count.module.css`), placed here in the block's header. It is dimmed on
 purpose: it goes with the label, it does not compete with it.
 */
-.recuento {
+.count {
   font: 400 var(--t-2)/1 var(--font-mono);
   color: var(--faint);
   font-variant-numeric: tabular-nums;

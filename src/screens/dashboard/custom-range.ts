@@ -18,21 +18,21 @@ views.
 */
 
 /** The two ISO instants the API expects, with the seven-day rule. */
-export function rangeInstants(inicio: string, fin: string): { start: string; end: string } {
-  const days = (Date.parse(`${fin}T00:00:00Z`) - Date.parse(`${inicio}T00:00:00Z`)) / 86_400_000 + 1
-  const aIso = (d: string) => new Date(days > 7 ? `${d}T00:00:00Z` : `${d}T00:00:00`).toISOString()
-  return { start: aIso(inicio), end: aIso(fin) }
+export function rangeInstants(start: string, end: string): { start: string; end: string } {
+  const days = (Date.parse(`${end}T00:00:00Z`) - Date.parse(`${start}T00:00:00Z`)) / 86_400_000 + 1
+  const toIso = (d: string) => new Date(days > 7 ? `${d}T00:00:00Z` : `${d}T00:00:00`).toISOString()
+  return { start: toIso(start), end: toIso(end) }
 }
 
 /**
  * What is still to be filled in, with upstream's literal text
  * (`main.js:2591-2601`). `null` when the range is complete.
  */
-export const MSG_INICIO = 'Please select a start date.'
-export const MSG_FIN = 'Please select an end date.'
+export const MSG_START = 'Please select a start date.'
+export const MSG_END = 'Please select an end date.'
 
-export function whatIsMissing(inicio: string, fin: string): string | null {
-  if (inicio === '') return MSG_INICIO
-  if (fin === '') return MSG_FIN
+export function whatIsMissing(start: string, end: string): string | null {
+  if (start === '') return MSG_START
+  if (end === '') return MSG_END
   return null
 }

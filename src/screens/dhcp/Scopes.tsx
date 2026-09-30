@@ -60,7 +60,7 @@ const KEYS: Keys<DhcpScopeRow> = {
   name: (s) => s.name,
   range: (s) => `Range ${s.startingAddress} - ${s.endingAddress} Mask ${s.subnetMask}`,
   network: (s) => `Network ${s.networkAddress} Broadcast ${s.broadcastAddress}`,
-  interfaz: (s) => s.interfaceAddress ?? '',
+  interface: (s) => s.interfaceAddress ?? '',
 }
 
 export function Scopes({ tabs, token, node = '', canModify = true, canDelete = true }: ScopesProps) {
@@ -105,7 +105,7 @@ export function Scopes({ tabs, token, node = '', canModify = true, canDelete = t
 
   // The hook goes BEFORE any return: otherwise it would stop being called as soon
   // as the table is loading.
-  const { rows: scopesVisibles, sort, toggle } = useSort(KEYS, scopes ?? [])
+  const { rows: visibleScopes, sort, toggle } = useSort(KEYS, scopes ?? [])
 
   async function edit(name: string) {
     setBusy(true)
@@ -230,16 +230,16 @@ export function Scopes({ tabs, token, node = '', canModify = true, canDelete = t
             <Th field="name" sort={sort} onSort={toggle}>Name</Th>
             <Th field="range" sort={sort} onSort={toggle}>Scope Range/Subnet Mask</Th>
             <Th field="network" sort={sort} onSort={toggle}>Network/Broadcast</Th>
-            <Th field="interfaz" sort={sort} onSort={toggle}>Interface</Th>
+            <Th field="interface" sort={sort} onSort={toggle}>Interface</Th>
             <th>Status</th>
             <th className={tbl.actionsCell} />
           </>
         }
-        isEmpty={scopesVisibles.length === 0}
+        isEmpty={visibleScopes.length === 0}
         emptyText="No Scope Found"
         columns={6}
       >
-        {scopesVisibles.map((s) => (
+        {visibleScopes.map((s) => (
           <tr key={s.name}>
             <td className={styles.name}>{s.name}</td>
             <td>

@@ -3,7 +3,7 @@ import type { ResourceRecord } from '../../api/records'
 import {
   rowActions,
   recordCells,
-  escaparTxt,
+  escapeTxt,
   relativeName,
   hideDnssec,
   recordFooter,
@@ -81,7 +81,7 @@ describe('the Data cell by type', () => {
   })
 
   it('escapes backslashes, carriage returns, newlines and quotes of a TXT', () => {
-    expect(escaparTxt('a\\b"c\nd')).toBe('a\\\\b\\"c\\nd')
+    expect(escapeTxt('a\\b"c\nd')).toBe('a\\\\b\\"c\\nd')
   })
 
   it('SVCB states the mode according to the priority', () => {

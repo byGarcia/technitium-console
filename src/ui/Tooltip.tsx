@@ -80,8 +80,8 @@ export function Tooltip({
 
   /* What the trigger already carried, plus ours. If it carried nothing, only
      ours; and its own is never lost. */
-  const previo = children.props['aria-describedby']
-  const describedBy = [previo, id].filter(Boolean).join(' ')
+  const previous = children.props['aria-describedby']
+  const describedBy = [previous, id].filter(Boolean).join(' ')
 
   /*
   Two passes, and they are needed: to place the bubble you have to know how big it

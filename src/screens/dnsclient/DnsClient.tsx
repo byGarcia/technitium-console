@@ -1,6 +1,6 @@
 import { ClusterNodeSelect } from '../../ui/ClusterNodeSelect'
 import { useEffect, useState } from 'react'
-import { PROTOCOLS, TYPES, prepararServidor, resolve } from '../../api/dnsclient'
+import { PROTOCOLS, TYPES, prepareServer, resolve } from '../../api/dnsclient'
 import { type AlertType } from '../../ui/Alert'
 import { Button } from '../../ui/Button'
 import { Check } from '../../ui/Check'
@@ -60,7 +60,7 @@ export function DnsClient({
   const [protocol, setProtocol] = useState('UDP')
   const [ecs, setEcs] = useState('')
   const [dnssec, setDnssec] = useState(true)
-  const [output, setSalida] = useState<string | null>(null)
+  const [output, setOutput] = useState<string | null>(null)
   /*
   The raw responses of each hop of the resolution.
 
@@ -70,13 +70,13 @@ export function DnsClient({
   it. It is what lets you see what each server answered along the way when a
   recursive query goes wrong, which is exactly when this screen gets opened.
   */
-  const [raw, setCrudas] = useState<unknown[]>([])
+  const [raw, setRaw] = useState<unknown[]>([])
   const [alert, setAlert] = useState<AlertState | null>(null)
   const [busy, setBusy] = useState(false)
 
   async function fire(runImport: boolean) {
     // The order is upstream's: extract first, check afterwards.
-    const ready = prepararServidor(server, protocol)
+    const ready = prepareServer(server, protocol)
 
     if (ready.server === '') {
       setAlert({ type: 'warning', title: 'Missing!', text: 'Please enter a valid Name Server.' })
@@ -101,15 +101,15 @@ export function DnsClient({
     setBusy(false)
 
     if (outcome.kind !== 'ok') {
-      setSalida(null)
-      setCrudas([])
+      setOutput(null)
+      setRaw([])
       setAlert(noticeFromFailure(outcome))
       return
     }
 
     const r = outcome.data.response
-    setSalida(JSON.stringify(r.result, null, 2))
-    setCrudas(r.rawResponses ?? [])
+    setOutput(JSON.stringify(r.result, null, 2))
+    setRaw(r.rawResponses ?? [])
 
     if (r.warningMessage) {
       setAlert({ type: 'warning', title: 'Warning!', text: r.warningMessage })

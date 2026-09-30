@@ -364,6 +364,12 @@ merges it.
   it is the server's own `www`; before this, that `rm -rf` went to whatever
   folder was resolved at the time — the stock console, in the case above. In
   mode A the restore is held to W6.
+  *Same night (1.1.1):* removing it has to finish when the folder is a mount
+  point, as it is in the Docker layout. It is emptied and then removed if it can
+  be; if it cannot, it stays empty and no restart is offered, because with the
+  variable still set the server would serve an empty folder. Found installing
+  1.1.0 from the published release; C13 now checks the uninstall's exit code on
+  its bind-mounted folder, which it had not.
 
 ### Fresh install and update behave the same
 

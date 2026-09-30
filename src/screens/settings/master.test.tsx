@@ -17,15 +17,15 @@ import { Row } from '../../ui/Form'
 afterEach(() => vi.restoreAllMocks())
 
 describe('a row switched off by its master', () => {
-  const pintar = (dependeDe?: string) =>
+  const renderRow = (dependsOn?: string) =>
     render(
-      <Row label="ECS IPv4 Prefix Length" dependeDe={dependeDe}>
-        {(id) => <input id={id} disabled={dependeDe != null} />}
+      <Row label="ECS IPv4 Prefix Length" dependsOn={dependsOn}>
+        {(id) => <input id={id} disabled={dependsOn != null} />}
       </Row>,
     )
 
   it('it names the switch that turns it off', () => {
-    pintar('Enable EDNS Client Subnet')
+    renderRow('Enable EDNS Client Subnet')
     expect(screen.getByText(/Enable EDNS Client Subnet/)).toBeInTheDocument()
   })
 
@@ -38,13 +38,13 @@ describe('a row switched off by its master', () => {
  is layout; the name belongs to the control.
   */
   it('the pill goes in the same cell as the label', () => {
-    pintar('Enable EDNS Client Subnet')
-    const celda = screen.getByText('ECS IPv4 Prefix Length').parentElement!
-    expect(within(celda).getByText(/Enable EDNS Client Subnet/)).toBeInTheDocument()
+    renderRow('Enable EDNS Client Subnet')
+    const cell = screen.getByText('ECS IPv4 Prefix Length').parentElement!
+    expect(within(cell).getByText(/Enable EDNS Client Subnet/)).toBeInTheDocument()
   })
 
   it('with no master there is neither pill nor mark', () => {
-    pintar()
+    renderRow()
     expect(screen.queryByText(/Needs/)).not.toBeInTheDocument()
   })
 
@@ -60,7 +60,7 @@ describe('a row switched off by its master', () => {
  master: a test that exercises the good branch says nothing about the bad one.
   */
   it('WITH a master, the field is still found by its label and only by it', () => {
-    pintar('Enable EDNS Client Subnet')
+    renderRow('Enable EDNS Client Subnet')
 
     expect(screen.getByLabelText('ECS IPv4 Prefix Length')).toBeInTheDocument()
     expect(
@@ -70,10 +70,10 @@ describe('a row switched off by its master', () => {
 
   it('and clicking the label still takes you to the control', async () => {
     const user = userEvent.setup()
-    pintar()
+    renderRow()
 
-    const campo = screen.getByLabelText('ECS IPv4 Prefix Length')
+    const field = screen.getByLabelText('ECS IPv4 Prefix Length')
     await user.click(screen.getByText('ECS IPv4 Prefix Length'))
-    expect(document.activeElement).toBe(campo)
+    expect(document.activeElement).toBe(field)
   })
 })

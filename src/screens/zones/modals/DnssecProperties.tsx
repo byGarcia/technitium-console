@@ -5,7 +5,7 @@ import {
   convertToNSEC,
   convertToNSEC3,
   deletePrivateKey,
-  getPropiedades,
+  getProperties,
   planNxProof,
   publishAllPrivateKeys,
   retireDnsKey,
@@ -16,7 +16,7 @@ import {
   type Algorithm,
   type PrivateKey,
   type NxProof,
-  type PropiedadesDnssec as Properties,
+  type DnssecPropertiesData as Properties,
   type KeyKind,
 } from '../../../api/dnssec'
 import { Alert } from '../../../ui/Alert'
@@ -27,12 +27,12 @@ import { Loading } from '../../../ui/Empty'
 import { minuteStamp as shortDate } from '../../../lib/dates'
 import {
   ALGORITHMS,
-  CURVAS_ECDSA,
-  CURVAS_EDDSA,
+  ECDSA_CURVES,
+  EDDSA_CURVES,
   GENERATIONS,
   HASHES_RSA,
   NX_PROOFS,
-  TAMANOS_RSA,
+  RSA_KEY_SIZES,
   KEY_TYPES,
   defaultCurve,
 } from './dnssec-options'
@@ -73,7 +73,7 @@ const KEYS: Keys<PrivateKey> = {
   rollover: (k) => k.rolloverDays,
 }
 
-export function PropiedadesDnssec({
+export function DnssecProperties({
   zone,
   open,
   token,
@@ -102,12 +102,12 @@ export function PropiedadesDnssec({
   const [dnsKeyTtl, setDnsKeyTtl] = useState('3600')
   const [rollovers, setRollovers] = useState<Record<number, string>>({})
 
-  const [adding, setAnadiendo] = useState(false)
+  const [adding, setAdding] = useState(false)
   const [newKey, setNewKey] = useState(initialNewKey)
 
   const load = useCallback(async () => {
     setLoading(true)
-    const r = await getPropiedades(token, zone, node)
+    const r = await getProperties(token, zone, node)
     setLoading(false)
 
     if (r == null) {
@@ -133,7 +133,7 @@ export function PropiedadesDnssec({
   useEffect(() => {
     if (!open) return
     setNotice(null)
-    setAnadiendo(false)
+    setAdding(false)
     setNewKey(initialNewKey())
     void load()
   }, [open, load])
@@ -261,7 +261,7 @@ export function PropiedadesDnssec({
         ),
       { type: 'success', title: 'Key Added!', text: 'The DNSSEC private key was added successfully.' },
     ).then(() => {
-      setAnadiendo(false)
+      setAdding(false)
       setNewKey(initialNewKey())
     })
   }
@@ -284,7 +284,7 @@ export function PropiedadesDnssec({
     }
 
     // With no real change nobody is called… and the success alert comes out anyway.
-    if (plan.action === 'ninguna') {
+    if (plan.action === 'none') {
       setNotice(success)
       return
     }
@@ -382,7 +382,7 @@ export function PropiedadesDnssec({
           ))}
 
           <div className={styles.acts}>
-            <Button onClick={() => setAnadiendo((v) => !v)}>Add Private Key</Button>
+            <Button onClick={() => setAdding((v) => !v)}>Add Private Key</Button>
             <Button disabled={!hasGenerated || busy} onClick={publishAll}>
               Publish All Keys
             </Button>
@@ -453,7 +453,7 @@ export function PropiedadesDnssec({
                       value={newKey.curve}
                       onChange={(e) => setNewKey((k) => ({ ...k, curve: e.target.value }))}
                     >
-                      {(newKey.algorithm === 'EDDSA' ? CURVAS_EDDSA : CURVAS_ECDSA).map((c) => (
+                      {(newKey.algorithm === 'EDDSA' ? EDDSA_CURVES : ECDSA_CURVES).map((c) => (
                         <option key={c.value} value={c.value}>
                           {c.label}
                         </option>
@@ -487,7 +487,7 @@ export function PropiedadesDnssec({
                         value={newKey.keySize}
                         onChange={(e) => setNewKey((k) => ({ ...k, keySize: e.target.value }))}
                       >
-                        {TAMANOS_RSA.map((t) => (
+                        {RSA_KEY_SIZES.map((t) => (
                           <option key={t} value={t}>
                             {t}
                           </option>
@@ -677,7 +677,7 @@ export function keyActions(k: PrivateKey): {
   activate: boolean
   rollover: boolean
   retire: boolean
-  rolloverAutomatico: boolean
+  automaticRollover: boolean
 } {
   const zsk = k.keyType === 'ZoneSigningKey'
   const inProgress = ['Generated', 'Published', 'Ready', 'Active'].includes(k.state)
@@ -688,7 +688,7 @@ export function keyActions(k: PrivateKey): {
     rollover: (k.state === 'Ready' || k.state === 'Active') && !k.isRetiring,
     retire: (k.state === 'Ready' || k.state === 'Active') && !k.isRetiring,
     // Only ZSKs have automatic rollover, and only while they are in flight.
-    rolloverAutomatico: zsk && inProgress && !k.isRetiring,
+    automaticRollover: zsk && inProgress && !k.isRetiring,
   }
 }
 
@@ -755,7 +755,7 @@ function KeyRow({
         )}
       </td>
       <td>
-        {a.rolloverAutomatico ? (
+        {a.automaticRollover ? (
           <div className={styles.inline}>
             <Input
               mono

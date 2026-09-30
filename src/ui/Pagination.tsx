@@ -19,18 +19,18 @@ export function Pagination({
   window,
   current,
   last,
-  onIr,
+  onGoTo,
 }: {
   window: Window
   current: number
   /** Which number to ask for as "last". `-1` lets the server resolve it. */
   last: number
-  onIr: (page: number) => void
+  onGoTo: (page: number) => void
 }) {
   return (
     <span className={styles.pg}>
       {window.first && (
-        <button type="button" className={styles.pgb} aria-label="First" onClick={() => onIr(1)}>
+        <button type="button" className={styles.pgb} aria-label="First" onClick={() => onGoTo(1)}>
           <Icon name="first" size={14} />
         </button>
       )}
@@ -39,7 +39,7 @@ export function Pagination({
           type="button"
           className={styles.pgb}
           aria-label="Previous"
-          onClick={() => onIr(window.previous!)}
+          onClick={() => onGoTo(window.previous!)}
         >
           <Icon name="chevronLeft" size={14} />
         </button>
@@ -50,7 +50,7 @@ export function Pagination({
           type="button"
           className={styles.pgb}
           aria-current={p === current}
-          onClick={() => onIr(p)}
+          onClick={() => onGoTo(p)}
         >
           {p}
         </button>
@@ -60,13 +60,13 @@ export function Pagination({
           type="button"
           className={styles.pgb}
           aria-label="Next"
-          onClick={() => onIr(window.next!)}
+          onClick={() => onGoTo(window.next!)}
         >
           <Icon name="chevronRight" size={14} />
         </button>
       )}
       {window.last && (
-        <button type="button" className={styles.pgb} aria-label="Last" onClick={() => onIr(last)}>
+        <button type="button" className={styles.pgb} aria-label="Last" onClick={() => onGoTo(last)}>
           <Icon name="last" size={14} />
         </button>
       )}

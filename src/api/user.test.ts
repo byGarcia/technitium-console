@@ -40,14 +40,14 @@ describe('openDownload', () => {
   it('it asks for a single-use token and puts it in the query', async () => {
     vi.spyOn(client, 'apiRequest').mockResolvedValue({
       kind: 'ok',
-      data: { status: 'ok', response: { token: 'unico' } },
+      data: { status: 'ok', response: { token: 'single' } },
     })
     const open = vi.fn()
     vi.stubGlobal('open', open)
     const r = await openDownload('t', 'settings/backup', { zones: 'true' })
     expect(r.ok).toBe(true)
     expect(r.url).toContain('api/settings/backup?')
-    expect(r.url).toContain('token=unico')
+    expect(r.url).toContain('token=single')
     expect(r.url).toContain('zones=true')
     expect(open).toHaveBeenCalledWith(r.url, '_blank')
     vi.unstubAllGlobals()

@@ -71,7 +71,7 @@ export interface ZoneRecordsProps {
   onSign: (zone: string) => void
   onUnsign: (zone: string) => void
   onViewDs: (zone: string) => void
-  onPropiedadesDnssec: (zone: string) => void
+  onDnssecProperties: (zone: string) => void
   /** Changes when an external modal forces a re-read of the zone. */
   refresh: number
   /*
@@ -143,7 +143,7 @@ export function ZoneRecords(p: ZoneRecordsProps) {
   }, [load, p.refresh])
 
   // The DNSSEC filtering comes before the name/type filter, just as in
-  // upstream: `editZoneRecords` ya llega recortado a `showEditZonePage`.
+  // upstream: `editZoneRecords` already arrives trimmed to `showEditZonePage`.
   const visible = useMemo(() => {
     const signed = isSigned(zoneInfo?.dnssecStatus)
     const base = hideDnssecRecords && signed ? hideDnssec(records) : records
@@ -154,8 +154,8 @@ export function ZoneRecords(p: ZoneRecordsProps) {
 
   const totalPages = Math.max(1, Math.ceil(visible.length / perPage))
   const currentPage = Math.min(Math.max(page, 1), totalPages)
-  const inicio = (currentPage - 1) * perPage
-  const onPage = sorted.slice(inicio, inicio + perPage)
+  const offset = (currentPage - 1) * perPage
+  const onPage = sorted.slice(offset, offset + perPage)
 
   const cab = zoneInfo ? zoneHeader(zoneInfo.type, zoneInfo.dnssecStatus) : null
 
@@ -320,13 +320,13 @@ export function ZoneRecords(p: ZoneRecordsProps) {
 
   const state = zoneState(zoneInfo as unknown as Zone)
   const signed = isSigned(zoneInfo.dnssecStatus)
-  const text = statusText(inicio + 1, onPage.length, visible.length, currentPage, totalPages, 'records')
+  const text = statusText(offset + 1, onPage.length, visible.length, currentPage, totalPages, 'records')
   const pg = pageWindow(currentPage, totalPages)
 
   /* Here the last page is calculated on the client: the records are all
      loaded, there is no need to ask the server. */
   const pagination = (
-    <Pagination window={pg} current={currentPage} last={totalPages} onIr={setPage} />
+    <Pagination window={pg} current={currentPage} last={totalPages} onGoTo={setPage} />
   )
 
   return (
@@ -440,7 +440,7 @@ export function ZoneRecords(p: ZoneRecordsProps) {
                       </button>
                     )}
                     {cab.properties && (
-                      <button type="button" disabled={!p.canModify} onClick={() => { close(); p.onPropiedadesDnssec(zone) }}>
+                      <button type="button" disabled={!p.canModify} onClick={() => { close(); p.onDnssecProperties(zone) }}>
                         DNSSEC Properties
                       </button>
                     )}
@@ -533,8 +533,8 @@ export function ZoneRecords(p: ZoneRecordsProps) {
           onPage.map((r, i) => {
             const actions = rowActions(zoneInfo.type, r.type)
             return (
-              <tr key={`${r.name}|${r.type}|${inicio + i}`}>
-                <td className={styles.num2}>{inicio + i + 1}</td>
+              <tr key={`${r.name}|${r.type}|${offset + i}`}>
+                <td className={styles.num2}>{offset + i + 1}</td>
                 <td className={`${styles.mono}`}>{relativeName(r.name, zone)}</td>
                 <td>
                   <Chip>{r.type}</Chip>

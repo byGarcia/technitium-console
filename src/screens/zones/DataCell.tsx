@@ -28,7 +28,7 @@ const LONG_ONES = [
 const CUTOFF = 64
 
 function Value({ label, value }: { label: string; value: string }) {
-  const [whole, setEntero] = useState(false)
+  const [whole, setWhole] = useState(false)
   const truncable = LONG_ONES.includes(label) && value.length > CUTOFF
 
   if (!truncable || whole) {
@@ -38,7 +38,7 @@ function Value({ label, value }: { label: string; value: string }) {
   return (
     <>
       <span className={styles.key}>{value.slice(0, CUTOFF)}… </span>
-      <button type="button" className={styles.showIt} onClick={() => setEntero(true)}>
+      <button type="button" className={styles.showIt} onClick={() => setWhole(true)}>
         show full
       </button>
     </>
@@ -110,7 +110,7 @@ export function DataCell({
   const footer = recordFooter(record)
 
   // Only on NS, and only if THAT server is in the zone's failure list.
-  const notifyFallido =
+  const notifyFailed =
     record.type === 'NS' &&
     (notifyFailedFor ?? []).includes(String(record.rData.nameServer ?? ''))
 
@@ -120,7 +120,7 @@ export function DataCell({
         <CellBlock key={i} cell={c} />
       ))}
 
-      {notifyFallido && (
+      {notifyFailed && (
         <div className={styles.tags}>
           <Tag tone="warn">Notify Failed</Tag>
         </div>

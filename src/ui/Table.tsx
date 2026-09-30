@@ -133,14 +133,14 @@ export function useSort<T>(keys: Keys<T>, rows: T[]) {
     const read = keys[field]
     if (read == null) return
     // The list is looked at AS IT IS DRAWN, which is what upstream looks at.
-    const yaAsc = sorted.every((f, i) => i === 0 || text(read(sorted[i - 1])) <= text(read(f)))
-    setSort({ field, desc: yaAsc })
+    const alreadyAsc = sorted.every((f, i) => i === 0 || text(read(sorted[i - 1])) <= text(read(f)))
+    setSort({ field, desc: alreadyAsc })
   }
 
   return { rows: sorted, sort, toggle }
 }
 
-/** A sortable column header. Without `campo` it is an ordinary header. */
+/** A sortable column header. Without `field` it is an ordinary header. */
 export function Th({
   field,
   sort,

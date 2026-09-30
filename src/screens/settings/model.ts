@@ -392,7 +392,7 @@ function proxyType(type: string | undefined): string {
    `chkEnableDnsOverHttp3` (see this phase's report).                         */
 export function enabled(f: SettingsForm) {
   const tlsWeb = f.webServiceEnableTls || f.webServiceEnableTlsUnixSocket
-  const proxyInverso =
+  const reverseProxy =
     f.enableEDnsClientSubnetSourceAddress ||
     f.enableDnsOverUdpProxy ||
     f.enableDnsOverTcpProxy ||
@@ -426,7 +426,7 @@ export function enabled(f: SettingsForm) {
     dnsOverHttpsPort: f.enableDnsOverHttps,
     dnsOverQuicPort: f.enableDnsOverQuic,
     enableDnsOverHttp3: f.enableDnsOverHttps,
-    dnsReverseProxyNetworkACL: proxyInverso,
+    dnsReverseProxyNetworkACL: reverseProxy,
     dnsOverHttpRealIpHeader: doh,
     dnsTlsCert: certDns,
 
@@ -451,7 +451,7 @@ export interface ValidationError {
   field: string
 }
 
-export interface ResultadoCuerpo {
+export interface BodyResult {
   error?: ValidationError
   body?: Record<string, string>
   /** Textareas upstream rewrites with the sanitised list. */
@@ -517,13 +517,13 @@ export function nodeScope(node: string): { cluster: boolean; node: boolean } {
   return { cluster: includeClusterParameters, node: includeNodeParameters }
 }
 
-export function buildBody(f: SettingsForm, node = ''): ResultadoCuerpo {
+export function buildBody(f: SettingsForm, node = ''): BodyResult {
   // main.js:1644 — `node` is always the first parameter, even when empty.
   const body: Record<string, string> = { node }
   const sanitised: Partial<SettingsForm> = {}
   const include = nodeScope(node)
 
-  const missing = (text: string, tab: string, field: string): ResultadoCuerpo => ({
+  const missing = (text: string, tab: string, field: string): BodyResult => ({
     error: { title: 'Missing!', text, tab, field },
   })
 

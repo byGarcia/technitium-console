@@ -338,7 +338,7 @@ describe('My Profile', () => {
   })
 })
 
-describe('My Profile — sesiones activas', () => {
+describe('My Profile — active sessions', () => {
   const withSessions = ok({
     status: 'ok',
     response: {

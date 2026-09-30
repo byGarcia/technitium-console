@@ -103,7 +103,7 @@ export function Users({ tabs, token, cluster, onNotice }: Props) {
   const [loading, setLoading] = useState(true)
   const [add, setAdd] = useState(false)
   const [reset, setReset] = useState<string | null>(null)
-  const [detail, setDetalle] = useState<string | null>(null)
+  const [detail, setDetail] = useState<string | null>(null)
   const [action, setAction] = useState<Action | null>(null)
 
   const load = useCallback(async () => {
@@ -195,7 +195,7 @@ export function Users({ tabs, token, cluster, onNotice }: Props) {
                   <button
                     type="button"
                     className={styles.link}
-                    onClick={() => setDetalle(u.username)}
+                    onClick={() => setDetail(u.username)}
                   >
                     {u.username}
                   </button>
@@ -246,7 +246,7 @@ export function Users({ tabs, token, cluster, onNotice }: Props) {
                     <RowAction
                       icon="card"
                       name="View Details"
-                      onClick={() => setDetalle(u.username)}
+                      onClick={() => setDetail(u.username)}
                     />
                     <RowAction
                       icon="power"
@@ -358,7 +358,7 @@ export function Users({ tabs, token, cluster, onNotice }: Props) {
           username={detail}
           token={token}
           cluster={cluster}
-          onClose={() => setDetalle(null)}
+          onClose={() => setDetail(null)}
           onSaved={(u) => replaceWith(detail, u)}
           onNotice={onNotice}
         />

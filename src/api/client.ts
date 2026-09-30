@@ -47,7 +47,7 @@ export interface ApiOptions {
   Content-Type must NOT be set by hand: the browser sets it with its boundary.
   The fields of `body` travel inside the FormData too.
   */
-  file?: { field: string; archivo: File }
+  file?: { field: string; file: File }
   /** Alternative to `file` when the caller already built the FormData. */
   form?: FormData
   /*
@@ -112,7 +112,7 @@ export async function apiRequest<T = unknown>(
   } else if (opts.file) {
     const fd = new FormData()
     for (const [k, v] of Object.entries(body ?? {})) fd.append(k, v)
-    fd.append(opts.file.field, opts.file.archivo)
+    fd.append(opts.file.field, opts.file.file)
     init.method = 'POST'
     init.body = fd
     // No Content-Type by hand: the browser adds the boundary.

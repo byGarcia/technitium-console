@@ -272,7 +272,7 @@ describe('records of a zone', () => {
   })
 })
 
-describe('modales', () => {
+describe('modals', () => {
   it('\"Add Zone\" validates the name before calling the server', async () => {
     const user = userEvent.setup()
     const spy = server()

@@ -23,18 +23,18 @@ export interface Pagination {
 }
 
 export function pageWindow(pageNumber: number, totalPages: number): Pagination {
-  let inicio = pageNumber - 5
-  if (inicio < 1) inicio = 1
+  let start = pageNumber - 5
+  if (start < 1) start = 1
 
-  let fin = inicio + 9
-  if (fin > totalPages) {
-    inicio -= fin - totalPages
-    fin = totalPages
-    if (inicio < 1) inicio = 1
+  let end = start + 9
+  if (end > totalPages) {
+    start -= end - totalPages
+    end = totalPages
+    if (start < 1) start = 1
   }
 
   const pages: number[] = []
-  for (let i = inicio; i <= fin; i++) pages.push(i)
+  for (let i = start; i <= end; i++) pages.push(i)
 
   return {
     pages,

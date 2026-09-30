@@ -21,7 +21,7 @@ not obvious and that get lost if they are not replicated:
 And the empty-server warning is checked AFTER extracting, not before: a label
 like "{}" is an empty server even though the field has text.
 */
-export function prepararServidor(
+export function prepareServer(
   server: string,
   protocol: string,
 ): { server: string; protocol: string } {

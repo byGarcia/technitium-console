@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { ResourceRecords } from './Records'
 import type { ListNode, DnsRecord } from '../../api/zonelists'
-import muestra from './real-sample.json'
+import sample from './real-sample.json'
 
 /*
 The test that holds up the whole phase.
@@ -12,7 +12,7 @@ Upstream dumps the entire JSON inside a `<pre>`; we draw it as a table. That is
 only legitimate if NOT a single field is lost along the way, and that cannot be
 checked with an invented record: it has to be done with the real response.
 
-`muestra-real.json` is five nodes captured from a v15.4 instance (the one in
+`real-sample.json` is five nodes captured from a v15.4 instance (the one in
 `dev/`, at 127.0.0.1:5381) with `cache/list` and `allowed/list`: the root, `com`,
 `example.com`, `technitium.com` and a node from the allowed list. Between the
 five, A, NS, SOA, DS and DNSKEY come out, and `responseMetadata`,
@@ -21,7 +21,7 @@ and `expiryTtl` appear. To capture it again: see the curl block in
 CONVENTIONS.md.
 */
 
-const NODES = muestra as unknown as Record<string, ListNode>
+const NODES = sample as unknown as Record<string, ListNode>
 
 /** Every scalar value of an object, in depth. */
 function leaves(o: unknown): string[] {

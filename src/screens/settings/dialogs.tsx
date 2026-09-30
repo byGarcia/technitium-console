@@ -4,7 +4,7 @@ import { Dialog } from '../../ui/Dialog'
 import { Alert } from '../../ui/Alert'
 import { Field } from '../../ui/Field'
 import styles from './Settings.module.css'
-import { ELEMENTOS_BACKUP } from '../../api/settings'
+import { BACKUP_ITEMS } from '../../api/settings'
 import { Check } from './parts'
 import { Input } from '../../ui/Field'
 
@@ -25,7 +25,7 @@ function ItemList({
 }) {
   return (
     <div className={styles.group}>
-      {ELEMENTOS_BACKUP.map((e) => (
+      {BACKUP_ITEMS.map((e) => (
         <Check
           key={`${prefix}-${e.key}`}
           label={e.label}
@@ -37,7 +37,7 @@ function ItemList({
   )
 }
 
-export interface DialogoProps {
+export interface DialogProps {
   open: boolean
   onOpenChange: (o: boolean) => void
   selection: Record<string, boolean>
@@ -55,7 +55,7 @@ export function BackupDialog({
   notice,
   busy,
   onBackup,
-}: DialogoProps & { onBackup: () => void }) {
+}: DialogProps & { onBackup: () => void }) {
   return (
     <Dialog
       open={open}
@@ -99,7 +99,7 @@ export function RestoreDialog({
   notice,
   busy,
   onRestore,
-}: DialogoProps & { onRestore: (file: File | null, remove: boolean) => void }) {
+}: DialogProps & { onRestore: (file: File | null, remove: boolean) => void }) {
   const [file, setFile] = useState<File | null>(null)
   const [remove, setDelete] = useState(true)
 

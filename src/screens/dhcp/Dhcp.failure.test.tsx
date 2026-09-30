@@ -22,7 +22,7 @@ import { Scopes } from './Scopes'
 
 afterEach(() => vi.restoreAllMocks())
 
-const roto = () =>
+const failAll = () =>
   vi.spyOn(client, 'apiRequest').mockResolvedValue({ kind: 'error', message: 'boom' } as never)
 const empty = (response: unknown) =>
   vi.spyOn(client, 'apiRequest').mockResolvedValue({ kind: 'ok', data: { status: 'ok', response } } as never)
@@ -35,7 +35,7 @@ describe('Leases', () => {
   })
 
   it('when the load fails, it does NOT say there are none', async () => {
-    roto()
+    failAll()
     render(<Leases token="t" />)
 
     expect(await screen.findByText(/Could not load the list/)).toBeInTheDocument()
@@ -44,7 +44,7 @@ describe('Leases', () => {
 
   /* Nor does it invent a count: how many there are is not known. */
   it('and it does not show "Total Leases: 0"', async () => {
-    roto()
+    failAll()
     render(<Leases token="t" />)
 
     await screen.findByText(/Could not load the list/)
@@ -52,7 +52,7 @@ describe('Leases', () => {
   })
 
   it('the server message is still there', async () => {
-    roto()
+    failAll()
     render(<Leases token="t" />)
     expect(await screen.findByText(/boom/)).toBeInTheDocument()
   })
@@ -88,7 +88,7 @@ describe('Scopes', () => {
   })
 
   it('when the load fails, it does NOT say there are none', async () => {
-    roto()
+    failAll()
     render(<Scopes token="t" />)
 
     expect(await screen.findByText(/Could not load the list/)).toBeInTheDocument()

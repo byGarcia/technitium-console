@@ -79,7 +79,7 @@ export function Sessions({ tabs, token, cluster, node: controlledNode, onNodeCha
   const node = controlledNode ?? localNode
   const setNode = onNodeChange ?? setLocalNode
   const [sessions, setSessions] = useState<AdminSession[]>([])
-  const [server, setServidor] = useState('')
+  const [server, setServer] = useState('')
   const [loading, setLoading] = useState(true)
   const [pendingDelete, setPendingDelete] = useState<AdminSession | null>(null)
   const [create, setCreate] = useState(false)
@@ -96,7 +96,7 @@ export function Sessions({ tabs, token, cluster, node: controlledNode, onNodeCha
       return
     }
     setSessions(outcome.data.response.sessions)
-    setServidor(outcome.data.server)
+    setServer(outcome.data.server)
   }, [token, node, onNotice])
 
   useEffect(() => {
@@ -105,12 +105,12 @@ export function Sessions({ tabs, token, cluster, node: controlledNode, onNodeCha
 
   const { rows: visibleSessions, sort, toggle } = useSort(KEYS, sessions)
 
-  const primario = primaryNodeName(cluster)
-  const canCreateToken = primario === '' || primario === server
+  const primary = primaryNodeName(cluster)
+  const canCreateToken = primary === '' || primary === server
 
   async function remove(s: AdminSession) {
     setPendingDelete(null)
-    const target = s.type === 'ApiToken' ? primario : node
+    const target = s.type === 'ApiToken' ? primary : node
     const outcome = await deleteAdminSession(token, s.partialToken, target)
 
     if (outcome.kind !== 'ok') {

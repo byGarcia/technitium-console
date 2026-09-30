@@ -20,7 +20,7 @@ export function Row({
   label,
   help,
   modal = false,
-  dependeDe,
+  dependsOn,
   children,
 }: {
   label: string
@@ -40,13 +40,13 @@ export function Row({
   If both applied, **the padlock wins**: what you cannot touch does not need two
   explanations of why it is off.
   */
-  dependeDe?: string
+  dependsOn?: string
   /** Receives the `id` to put on the control, so the label governs it. */
   children: (id: string) => ReactNode
 }) {
   const id = useId()
   return (
-    <div className={`${modal ? frm.mrow : frm.row}${dependeDe != null ? ` ${frm.dependiente}` : ''}`}>
+    <div className={`${modal ? frm.mrow : frm.row}${dependsOn != null ? ` ${frm.dependent}` : ''}`}>
       {/*
       The pill goes OUTSIDE the `<label>`, and this was measured before being left
       this way.
@@ -60,14 +60,14 @@ export function Row({
       Outside, the label still governs its control and the pill is still read: it
       is in the same cell, next to it, and it is ordinary text.
       */}
-      {dependeDe == null ? (
+      {dependsOn == null ? (
         <label className={modal ? frm.mrowLabel : frm.rowLabel} htmlFor={id}>
           {label}
         </label>
       ) : (
         <div className={`${modal ? frm.mrowLabel : frm.rowLabel} ${frm.withPill}`}>
           <label htmlFor={id}>{label}</label>
-          <Tag tone="acc">Needs {dependeDe}</Tag>
+          <Tag tone="acc">Needs {dependsOn}</Tag>
         </div>
       )}
       <div className={modal ? frm.mrowCtl : frm.rowCtl}>

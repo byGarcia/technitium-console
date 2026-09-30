@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { serializeTable, type Cell } from './table-serialise'
 
 const t = (value: string): Cell => ({ type: 'text', value })
-const c = (value: boolean): Cell => ({ type: 'casilla', value })
+const c = (value: boolean): Cell => ({ type: 'checkbox', value })
 
 describe('serializeTable', () => {
   it('with no rows it produces the empty string, not "false"', () => {
