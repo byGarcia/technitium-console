@@ -15,6 +15,10 @@ Same API, same behaviour, same texts — the interface rebuilt from scratch.
 
 ![The dashboard](docs/screenshots/dashboard.png)
 
+**Latest: [v1.1.2](https://github.com/byGarcia/technitium-console/releases/latest) for Technitium DNS
+Server 15.5.x** — LDAP, the zone file editor and everything else 15.5 brought.
+[What's new](CHANGELOG.md) · [Which console for which server](CHANGELOG.md#which-version-for-which-server)
+
 It replaces the console the server ships with. Install it and the DNS service
 behaves exactly as before; remove it and you are back to the original. Nothing on
 the server side changes: this console talks to it only through its documented
@@ -195,13 +199,21 @@ you pass to `--dir` at that path.
 > console replaces the files in the server's own `www/`. Technitium restores its
 > console when it updates, so run the installer again afterwards.
 
+### Keeping it up to date
+
+Each console release is checked against one Technitium release — every action it sends, every text
+and every control, compared with that server's own console. When you update the server, update the
+console with it: run the installer again. It needs no restart, and
+[the changelog](CHANGELOG.md#which-version-for-which-server) says which console goes with which
+server.
+
 ## Building
 
 ```bash
 npm install
 npm run build        # emits into dist/
 npm run dev          # Vite development server
-npm test             # 1,121 tests
+npm test             # 1,260 tests
 npm run typecheck
 npm run lint
 ```

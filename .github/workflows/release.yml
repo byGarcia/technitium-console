@@ -39,9 +39,35 @@ jobs:
           sha256sum technitium-console.tar.gz > technitium-console.tar.gz.sha256
           echo "Routes emitted: $(find dist -name index.html | wc -l)"
 
+      # The release page is what people read, so it carries this version's own
+      # section of CHANGELOG.md. A tag with no section there fails here instead of
+      # publishing a release that says nothing.
+      - name: Release notes
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          awk -v head="## ${tag} " 'index($0, head) == 1 { on = 1; next } on && /^## v/ { exit } on' CHANGELOG.md \
+            | sed '/^---$/d' > section.md
+          # Release pages keep every newline, so the wrapped paragraphs of
+          # CHANGELOG.md are joined back into one line each.
+          python3 - <<'PY'
+          out = []
+          for line in open('section.md').read().split('\n'):
+              cont = line.startswith('  ') and not line.lstrip().startswith(('- ', '|', '#'))
+              plain = line and not line.startswith(('- ', '#', '|', '```')) and not line.startswith('  ')
+              if out and out[-1] and not out[-1].startswith(('#', '|')) and (cont or plain):
+                  out[-1] += ' ' + line.strip()
+              else:
+                  out.append(line)
+          open('notes.md', 'w').write('\n'.join(out))
+          PY
+          [ -s notes.md ] || { echo "CHANGELOG.md has no section for ${tag}"; exit 1; }
+          printf '\n**Install or update:** run the one-line installer from the [README](https://github.com/byGarcia/technitium-console#installing) again. Which console goes with which server: [CHANGELOG](https://github.com/byGarcia/technitium-console/blob/main/CHANGELOG.md#which-version-for-which-server).\n' >> notes.md
+          cat notes.md
+
       - uses: softprops/action-gh-release@v2
         with:
           files: |
             technitium-console.tar.gz
             technitium-console.tar.gz.sha256
+          body_path: notes.md
           generate_release_notes: true
