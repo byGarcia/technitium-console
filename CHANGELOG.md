@@ -4,6 +4,16 @@ Notable changes, newest first. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html) once there is more than one.
 
+## [1.1.2](https://github.com/byGarcia/technitium-console/releases/tag/v1.1.2) — 2026-09-30
+
+### Fixed
+
+- **Sign in with SSO works from any page.** The link was upstream's relative `sso/login`, which in
+  a one-page console always lands on the root; here the login can be drawn at any real route, and
+  after a session expired on `/dashboard/` it pointed at `/dashboard/sso/login`, a 404. Found on
+  the first real install. A test now fails on any literal relative `href`, `src` or `action` in the
+  markup, the second time this kind of path has bitten in a day.
+
 ## [1.1.1](https://github.com/byGarcia/technitium-console/releases/tag/v1.1.1) — 2026-09-30
 
 ### Fixed

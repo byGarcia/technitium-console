@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import { Login } from './Login'
 import * as client from '../api/client'
 import * as statusApi from '../api/status'
+import { forgetRoot } from '../app/base'
 
 afterEach(() => vi.restoreAllMocks())
 
@@ -17,6 +18,27 @@ describe('Login and api/status', () => {
     vi.spyOn(statusApi, 'getStatus').mockResolvedValue({ hasDefaultCredentials: false, ssoEnabled: true })
     render(<Login onSuccess={() => {}} />)
     expect(await screen.findByText('Sign in with SSO')).toBeInTheDocument()
+  })
+
+  it('the SSO link hangs from the root, not from the route the login is drawn at', async () => {
+    // A session that expires on /dns/dashboard/ draws the login there; a relative
+    // `sso/login` became /dns/dashboard/sso/login, a 404 on the home server.
+    const meta = document.createElement('meta')
+    meta.setAttribute('name', 'route')
+    meta.setAttribute('content', 'dashboard')
+    document.head.appendChild(meta)
+    window.history.replaceState(null, '', '/dns/dashboard/')
+    forgetRoot()
+    try {
+      vi.spyOn(statusApi, 'getStatus').mockResolvedValue({ hasDefaultCredentials: false, ssoEnabled: true })
+      render(<Login onSuccess={() => {}} />)
+      const link = await screen.findByRole('link', { name: 'Sign in with SSO' })
+      expect(link).toHaveAttribute('href', '/dns/sso/login')
+    } finally {
+      meta.remove()
+      window.history.replaceState(null, '', '/')
+      forgetRoot()
+    }
   })
 
   it('if status does not answer, it shows no button: SSO is not assumed', async () => {

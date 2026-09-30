@@ -267,7 +267,13 @@ export function Login({
           {ssoEnabled && (
             <>
               <div className={styles.orLogin}>or login with</div>
-              <a className={styles.ssoLink} href="sso/login">
+              {/* Upstream's link to `sso/login` is relative to a one-page console,
+                  so it always lands on the root. Here the login can be drawn at
+                  any real route —`/dashboard/`, after a session expires— and the
+                  relative link became `/dashboard/sso/login`, a 404 (2026-09-30,
+                  on the home server). It hangs from the root, like every other
+                  path in this console. */}
+              <a className={styles.ssoLink} href={publicUrl('sso/login')}>
                 Sign in with SSO
               </a>
             </>
