@@ -196,6 +196,12 @@ If the folder did not exist when the server restarted, the server logs it and
 keeps serving its own console; the installer reads that log, installs anyway and
 asks for one more restart.
 
+**On Proxmox VE with the community script** (`technitiumdns` from
+[community-scripts](https://github.com/community-scripts/ProxmoxVE)): run the steps
+above inside the container (`pct enter <id>`). Its unit is `technitium.service`, and
+the script's own *Update* no longer touches the console, since it lives in its own
+folder.
+
 For Docker, set the variable in the container's environment and mount the folder
 you pass to `--dir` at that path.
 
