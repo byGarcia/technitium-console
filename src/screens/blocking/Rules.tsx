@@ -328,17 +328,21 @@ export function Rules({
                 </Empty>
               </Body>
             ) : (
-              <Lists
-                key={`${treeList}:${generation}`}
-                list={treeList}
-                token={token}
-                nodes={nodes}
-                clusterInitialised={clusterInitialised}
-                embedded
-                initialFromPrimary={afterChange}
-                fieldName="Browse domain"
-                canDelete={missing(permissions, treeList === 'allowed' ? 'Allowed.canDelete' : 'Blocked.canDelete') == null}
-              />
+              /* Inset like the rest of the panel's content: the tree and the node detail
+                 are framed boxes of their own, and flush they doubled the panel's edge. */
+              <div className={styles.tree}>
+                <Lists
+                  key={`${treeList}:${generation}`}
+                  list={treeList}
+                  token={token}
+                  nodes={nodes}
+                  clusterInitialised={clusterInitialised}
+                  embedded
+                  initialFromPrimary={afterChange}
+                  fieldName="Browse domain"
+                  canDelete={missing(permissions, treeList === 'allowed' ? 'Allowed.canDelete' : 'Blocked.canDelete') == null}
+                />
+              </div>
             )
           ) : viewNone ? (
             <Body>
