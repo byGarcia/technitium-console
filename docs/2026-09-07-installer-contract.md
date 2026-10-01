@@ -25,6 +25,12 @@ that honours it. Building one takes four commands and they are written down in
 > (v15.5.1, which honours the variable): **24 met, 0 not met, 1 not applicable**
 > (C15). C22 to C25 were first seen failing against the `install.sh` of `HEAD`.
 
+> **2026-10-01.** Docker gets an install path of its own: an init image that
+> copies the console into a volume the official server mounts
+> (`docs/2026-10-01-docker-install-spec.md`). Four clauses for it, D1 to D4, an
+> amendment each to W6 and I1, and five cases, C26 to C30, with C11 extended:
+> thirty cases.
+
 The console goes in front of a DNS server that a whole house resolves through.
 The installer is the only part of this project that writes to somebody else's
 machine, so it is the part that has to be boring.
@@ -97,9 +103,17 @@ underneath (measured; the probe rebuilds this state in C3).
 
 The web root lives inside the image at `/opt/technitium/dns/www`
 (`Dockerfile`). An update is a new image, so anything written into the
-container's web root is gone. The only layout that survives is a bind mount from
-the host over that path — which is what our README tells people to do, and what
-`dev/compose.yaml` does.
+container's own files is gone with the next recreate — which is what
+`docker exec <c> sh -c "curl … | sh"` installs into, and the installer now says
+so when it does (C11).
+
+*2026-10-01:* two layouts survive. Since v15.5 the variable can point at a
+volume or a bind mount, and that is the one the README gives Docker users: an
+init image, `ghcr.io/bygarcia/technitium-console`, copies the console into a
+volume that the server mounts read-only (D1–D4). Before 15.5 the only one is a
+bind mount from the host over `www`, which is what `dev/compose.yaml` does for
+development. The previous wording — "the only layout that survives is a bind
+mount over that path" — stopped being true with 15.5.
 
 ### 1.5 Windows
 
@@ -251,6 +265,12 @@ merges it.
   TTY. Before this, `--dir /opt/technitium/dns` by mistake removed the server's
   binaries and configuration, with no backup — there was no `index.html` to back
   up — and without asking, because `curl … | sudo sh` has no TTY to ask on.
+  *2026-10-01* (C28): a folder holding nothing but `json/` and
+  `json/*-custom.json` counts as empty. Publishing neither overwrites nor sweeps
+  those files, so there is nothing in it to lose, and it is how a host folder
+  for the Docker image is prepared with lists written by hand before the first
+  run. One file of any other kind beside them and the folder is refused as
+  before (C22, C29).
 - **W7 ✓** (C23) *2026-09-30.* The running server is **identified**, not
   matched. A command line ending in `DnsServerApp.dll` makes a process a
   candidate; it is believed only when every uid it runs as (read from
@@ -393,6 +413,64 @@ merges it.
   staging copy belongs to root whatever the tarball says; the probe does not
   measure that half, because what reaches the web root is written by `cp` as
   root either way.
+  *2026-10-01* (C26): with `--into-volume`, the Docker image's mode, `--from`
+  is checked after all: the `.sha256` next to the tarball is required, and a
+  mismatch or a missing one stops the run with nothing changed, as above. The
+  image carries the release's checksum, so D4 holds when the image runs as well
+  as in CI.
+
+### Docker
+
+The init image runs `install.sh --into-volume /target` on the tarball it
+carries, into a volume the official server mounts read-only at the folder its
+`DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH` names. Inside that run the folder is
+given, not looked for: there is no server to find, so W1, W3 and W7's
+identification have nothing to do, and the folder is installed into side by
+side, with nothing backed up. W4 gives way to D1: `/target` has to be a mount
+point, not a folder to create. Everything else above still applies inside that
+run — W5, W6, W7's links, F1, A1, A2, A5, A6 and I1 as amended. These four are
+what the layout adds.
+
+- **D1** (C29) **The init never keeps the DNS server from starting.** The
+  compose block the README gives has no `depends_on` from the server on the
+  init, and the init neither looks for the server nor waits for it. When the
+  init fails — a folder W6 refuses, no volume mounted at `/target`, a checksum
+  that does not match — it exits non-zero having written nothing into the
+  volume, and the server starts all the same and serves whatever the volume holds: the previous
+  console on an update, nothing on a first install. Nothing on a first install
+  is also what is served for the second or two before the init's first
+  publication point: A2 is about replacing a console, and on a first install
+  there is none yet to keep serving. Not covered: a first `docker compose up`
+  has to be able to pull both images, which is the registry's business, not the
+  installer's.
+- **D2** (C27) **Updating the console does not restart the DNS server.** The
+  documented update, `docker compose pull technitium-console && docker compose
+  up -d technitium-console`, recreates the init only: the server's `StartedAt`
+  does not change and the new console is served at once (§1.1). Bringing the
+  whole file up again, with nothing about the server changed, does not touch it
+  either. An update that fails leaves the server alone too, and the previous
+  console served: the init stops before writing (I1, W6), or mid-copy with
+  A2 still standing. A plain `docker compose pull && docker compose up -d` also
+  updates the server when upstream has a new image, and that restart is the
+  server's, not the console's; the README says which command does which.
+- **D3** (C28) **Custom lists in the volume survive.** Every
+  `json/*-custom.json` in the volume, or in a host folder bound in its place,
+  survives an update of the console and a `--force-recreate` of the server, and
+  a host folder holding only such lists before the first run is accepted (W6).
+  A host folder holding anything else besides is refused, and D1 says what the
+  server does then.
+- **D4** (C26, and CI) **The image carries the release's tarball, byte for
+  byte.** CI downloads it from the release it has just published, checks it
+  against the release's `.sha256` before building, and after pushing checks it
+  again inside each of the three platforms (`.github/workflows/release.yml`,
+  job `image`). The init checks it once more when it runs (I1). C26 measures the
+  local half: the image built from `dist/` carries the tarball it was built
+  with. A check that fails before building stops the job with nothing pushed.
+  One that fails after pushing turns the job red with the tags already out, and
+  the init's own check is what stands between those bytes and a volume. Either
+  way the job is re-run on its own, which downloads the same bytes again —
+  never the whole workflow on a published tag, which would rebuild the tarball
+  under it with other bytes and another checksum.
 
 ### The service and the browser
 
@@ -427,7 +505,11 @@ merges it.
   the administrator's service starts, so it is **offered and confirmed**, never
   silent, and never on OpenRC or Docker, where the equivalent belongs to
   `/etc/conf.d/dns` and to the compose file — the installer prints those and
-  stops.
+  stops. *2026-10-01* (C30): on a Docker host it reads `docker inspect` and the
+  startup log through `docker exec`, and prints the exact change for each
+  container — the way in, and with `--uninstall` the way out — with the
+  container, service, file and volume names it found, and exits 0. It never
+  prints `$0`, which under `curl … | sudo sh` is `sh`.
 - **SELinux relabelling, distro packages, and updating the console by itself.**
   Not now, and each would need its own contract.
 
@@ -454,6 +536,15 @@ once), C24 starts the server by hand so it can be restarted without the variable
 before uninstalling, and C25 installs a `curl` that plays GitHub with whatever
 checksum the case wants. `INSTALLER=<file>` measures another `install.sh`, which
 is how the four were seen failing on the old one.
+
+*2026-10-01:* thirty. C26 to C29 build the init image from `dist/` with this
+checkout's `docker/Dockerfile` and `install.sh`, and bring up the README's
+compose block against the official server: a fresh install, an update, the
+custom lists, and an init that fails. C30 runs `install.sh` from stdin in
+`docker:cli` with the Docker socket, which is how `curl … | sudo sh` runs it on a
+Docker host. C11 now also expects the warning about installing into a
+container's own files, and runs on any server, as it always has. The five new
+ones need a server that honours the variable, and are not applicable otherwise.
 
 C12, C13 and C15 depend on what the image can do, and the probe does not decide
 that by decree: it **detects the capability** the same way W3 says the installer
