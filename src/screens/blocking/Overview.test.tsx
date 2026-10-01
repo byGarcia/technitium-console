@@ -63,6 +63,17 @@ describe('blockingChart', () => {
 })
 
 describe('Overview', () => {
+  /* As drawn, and as the bars stack: the ring starts at the top with Blocked. */
+  it('the ring draws Blocked first, then what got through', async () => {
+    serve()
+    render(<Overview token="T" permissions={undefined} />)
+    await screen.findByRole('img', { name: 'Blocked share: 26.09%' })
+    expect(drawn.get('ring')?.at(-1)).toEqual({
+      labels: ['Blocked', 'Allowed'],
+      datasets: [{ label: 'Share', data: [5310, 20354 - 5310] }],
+    })
+  })
+
   it('the bars read Allowed, then Blocked, in their legend', async () => {
     serve()
     render(<Overview token="T" permissions={undefined} />)

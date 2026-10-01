@@ -192,8 +192,10 @@ export function Overview({
     () =>
       data != null
         ? {
-            labels: ['Allowed', 'Blocked'],
-            datasets: [{ label: 'Share', data: [data.stats.totalQueries - data.stats.totalBlocked, data.stats.totalBlocked] }],
+            /* Blocked first: the ring starts at the top with it, as drawn and as the
+               bars stack it on the baseline. */
+            labels: ['Blocked', 'Allowed'],
+            datasets: [{ label: 'Share', data: [data.stats.totalBlocked, data.stats.totalQueries - data.stats.totalBlocked] }],
           }
         : null,
     [data],
