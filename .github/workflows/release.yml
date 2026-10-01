@@ -1,5 +1,9 @@
 # Builds the console and attaches it to the release, because that tarball is
 # what install.sh downloads. Without this there is nothing to install.
+#
+# npm (the dependencies' install scripts, the tests, the build) runs only in
+# `tarball`, which can read the repo and nothing else. The job that can write
+# to the repo, `release`, gets just the tarball and its checksum.
 name: Release
 
 on:
@@ -7,25 +11,53 @@ on:
     tags: ['v*']
   workflow_dispatch:
 
-permissions:
-  contents: write
+permissions: {}
 
 jobs:
-  release:
+  tarball:
     runs-on: ubuntu-latest
-    outputs:
-      latest: ${{ steps.floating.outputs.latest }}
-      floating: ${{ steps.floating.outputs.floating }}
+    permissions:
+      contents: read
     steps:
-      # npm runs in this job (install scripts, tests, build) and the job can
-      # write to the repo, so the token is not left in .git/config for that
-      # code to reuse. Only the release step below gets it, as an input.
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
 
       # The same tarball the develop image is built from (develop-image.yml).
       - uses: ./.github/actions/console-tarball
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: console-tarball
+          path: |
+            technitium-console.tar.gz
+            technitium-console.tar.gz.sha256
+          if-no-files-found: error
+          retention-days: 1
+
+  release:
+    needs: tarball
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      latest: ${{ steps.floating.outputs.latest }}
+      floating: ${{ steps.floating.outputs.floating }}
+    steps:
+      # For CHANGELOG.md and the tags; no npm here. The token is not left in
+      # .git/config: only the release step below gets it, as an input.
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # Into the workspace, where the release step below picks them up by name.
+      - uses: actions/download-artifact@v8
+        with:
+          name: console-tarball
+
+      # The bytes the tarball job packed, checked before anything is published.
+      - name: The tarball, checked against its checksum
+        run: sha256sum -c technitium-console.tar.gz.sha256
 
       # Docker's floating tags only ever move forward. latest goes to the highest
       # release in the repo and X.Y to the highest of its own line, so re-running
