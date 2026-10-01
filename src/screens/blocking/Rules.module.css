@@ -1,0 +1,17 @@
+/* The bar over the table: the filter, the search, and List / Tree. */
+.bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-5); padding: var(--s-7) var(--s-9); border-bottom: 1px solid var(--line2); }
+.spacer { flex: 1; }
+.filter { display: inline-flex; gap: var(--s-2); }
+.search { width: 220px; }
+.foot { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-5); padding: var(--s-7) var(--s-9); color: var(--mute); }
+.domain { font-family: var(--font-mono); overflow-wrap: anywhere; }
+.actions { text-align: right; white-space: nowrap; }
+
+/* The rule kind: an icon and a word, not only a colour. */
+.kind { display: inline-flex; align-items: center; gap: var(--s-2); }
+.blocked { color: var(--ch-block); }
+.allowed { color: var(--ch-ok); }
+
+@media (max-width: 560px) {
+  .search { width: 100%; }
+}
