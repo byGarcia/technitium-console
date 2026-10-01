@@ -36,7 +36,8 @@ measures the two ambers as indistinguishable. The sentence and its icon say it.
 /*
 A figure's trend, beside its text and as tall as it (`.kpi` in Blocking.module.css):
 the text keeps its width, so its three lines stay level with the other cards', and the
-trend takes what is left, up to half the card.
+trend takes what is left, up to half the card. Size containment drops the drawing's own
+100:32 shape, so a wide screen cannot make the trend, and with it the card, taller.
 */
 .spark {
   display: block;
@@ -45,6 +46,7 @@ trend takes what is left, up to half the card.
   min-width: var(--s-12);
   max-width: 50%;
   height: auto;
+  contain: size;
 }
 /*
 `--bp-stack`. Two cards a row leave no room beside the text, so the trend drops to the
