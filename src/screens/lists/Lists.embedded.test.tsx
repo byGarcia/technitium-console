@@ -52,4 +52,27 @@ describe('Lists embedded', () => {
     render(<Lists list="blocked" token="T" embedded canDelete={false} />)
     expect(await screen.findByRole('button', { name: /Delete/ })).toBeDisabled()
   })
+
+  it('its first read comes from the root of the connected node by default', async () => {
+    const list = vi.spyOn(api, 'listNode').mockResolvedValue({ kind: 'ok', data: { domain: '', zones: [], records: [] } })
+    render(<Lists list="blocked" token="T" nodes={NODES} clusterInitialised embedded />)
+    await screen.findByText('0 zones')
+    expect(list).toHaveBeenCalledWith('blocked', 'T', '', undefined, '')
+  })
+
+  it('with initialFromPrimary its first read comes from the primary node', async () => {
+    const list = vi.spyOn(api, 'listNode').mockResolvedValue({ kind: 'ok', data: { domain: '', zones: [], records: [] } })
+    render(<Lists list="blocked" token="T" nodes={NODES} clusterInitialised embedded initialFromPrimary />)
+    await screen.findByText('0 zones')
+    expect(list).toHaveBeenCalledTimes(1)
+    expect(list).toHaveBeenCalledWith('blocked', 'T', '', undefined, 'dev.cluster.test')
+  })
+
+  it('the tree field can take another accessible name and keeps its visible label', async () => {
+    vi.spyOn(api, 'listNode').mockResolvedValue({ kind: 'ok', data: { domain: '', zones: [], records: [] } })
+    render(<Lists list="blocked" token="T" embedded fieldName="Browse domain" />)
+    await screen.findByText('0 zones')
+    expect(screen.getByRole('textbox', { name: 'Browse domain' })).toBeInTheDocument()
+    expect(screen.getByText('Domain', { selector: 'label' })).toBeInTheDocument()
+  })
 })
