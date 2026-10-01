@@ -104,14 +104,14 @@ describe('Overview', () => {
       />,
     )
     await screen.findByText('20,354')
-    expect(screen.getByRole('heading', { name: /^Recently Blocked/ })).toHaveTextContent('Recently Blocked on dns1.example')
+    expect(screen.getByRole('heading', { name: 'Recently Blocked on dns1.example' })).toBeInTheDocument()
   })
 
   it('without a cluster, Recently Blocked names no node', async () => {
     serve()
     render(<Overview token="T" permissions={undefined} serverDomain="dns1.example" />)
     await screen.findByText('20,354')
-    expect(screen.getByRole('heading', { name: /^Recently Blocked/ })).toHaveTextContent(/^Recently Blocked$/)
+    expect(screen.getByRole('heading', { name: 'Recently Blocked' })).toBeInTheDocument()
   })
 
   it('without Dashboard.canView the figures are locked and nothing is asked', () => {
