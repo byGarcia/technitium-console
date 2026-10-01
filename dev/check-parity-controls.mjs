@@ -319,48 +319,51 @@ for (const f of files(SOURCE).filter((f) => !/\.test\.|fixture/.test(f))) {
     LABEL_FILES.set(m[1], [...new Set([...(LABEL_FILES.get(m[1]) ?? []), f])])
   }
 }
-/*
-The Blocking section is the deliberate exception that adds a screen
-(CONVENTIONS.md, "Deliberate deviations"), and one of its limits is that what is
-ours is in English and says so in the header comment of its file. So a label that
-is not upstream's passes ONLY when every file that writes it is under
-`screens/blocking/` and a comment of that file saying OURS names it in backticks.
-Anywhere else in the console, or undeclared, it is still a stray.
-*/
-const BLOCKING = join(SOURCE, 'screens/blocking/')
-const declaredOurs = (label) =>
-  (LABEL_FILES.get(label) ?? []).every(
-    (f) =>
-      f.startsWith(BLOCKING) &&
-      [...readFileSync(f, 'utf8').matchAll(/\/\*[\s\S]*?\*\//g)].some(
-        ([c]) => /\bOURS\b/.test(c) && c.includes('`' + label + '`'),
-      ),
-  )
 /* Accessible names this console gives to controls upstream leaves unnamed: a
    menu button's `aria-label` and a tab strip's. They are read by a screen
    reader, never drawn, so they are not interface text upstream could own. */
 const ACCESSIBLE_NAMES = new Set([
   'Blocking options',
+  'Blocking sections',
   'Zone actions',
   'DNSSEC actions',
   'DHCP sections',
   'Logs sections',
   'Settings sections',
 ])
-const notTheirs = [...OUR_LABELS].filter(
-  (l) => !ACCESSIBLE_NAMES.has(l) && !theirWords.includes(asWords(l)),
+/*
+The Blocking section is the deliberate exception that adds a screen
+(CONVENTIONS.md, "Deliberate deviations"), so it has words upstream does not.
+They are named here one by one, each with where it is written and where its file
+declares it as ours, and each passes ONLY while every file that writes it is
+under `screens/blocking/`. Anywhere else in the console it is still a stray, and
+a label that is not in this list is a stray even inside the section.
+*/
+const BLOCKING = join(SOURCE, 'screens/blocking/')
+const BLOCKING_OWN_LABELS = new Map([
+  ['Block List Domains', 'Overview figure, blocking/Overview.tsx:255; declared ours at Overview.tsx:35'],
+  ['Your Rules', 'Overview figure, blocking/Overview.tsx:259; declared ours at Overview.tsx:35'],
+  ['Tree', "the Tree view's Blocked/Allowed selector, blocking/Rules.tsx:329; declared ours at Rules.tsx:37-38"],
+])
+const onlyInBlocking = (label) => (LABEL_FILES.get(label) ?? []).every((f) => f.startsWith(BLOCKING))
+
+const labels = [...OUR_LABELS]
+const upstreamLabels = labels.filter((l) => theirWords.includes(asWords(l)))
+const accessible = labels.filter((l) => !upstreamLabels.includes(l) && ACCESSIBLE_NAMES.has(l))
+const blockingOwn = labels.filter(
+  (l) => !upstreamLabels.includes(l) && !accessible.includes(l) && BLOCKING_OWN_LABELS.has(l) && onlyInBlocking(l),
 )
-const blockingOwn = notTheirs.filter(declaredOurs)
-const strayLabels = notTheirs.filter((l) => !blockingOwn.includes(l))
+const strayLabels = labels.filter((l) => !upstreamLabels.includes(l) && !accessible.includes(l) && !blockingOwn.includes(l))
 
 console.log('')
-for (const l of blockingOwn) console.log(`  BLOCKING, DECLARED OURS  label: ${l}`)
+for (const l of blockingOwn) console.log(`  BLOCKING OWN  label: ${l}  (${BLOCKING_OWN_LABELS.get(l)})`)
 for (const l of strayLabels) console.log(`  NOT UPSTREAM  label: ${l}`)
 console.log(
   strayLabels.length === 0
-    ? `LABEL PARITY: all ${OUR_LABELS.size} of our labels exist upstream` +
-        (blockingOwn.length ? `, except ${blockingOwn.length} the Blocking section declares as its own.` : '.')
-    : `LABEL PARITY: ${strayLabels.length} of ${OUR_LABELS.size} labels are not upstream's.`,
+    ? `LABEL PARITY: ${upstreamLabels.length} of our ${labels.length} labels exist upstream; ` +
+        `${accessible.length} are accessible names upstream leaves unnamed (ACCESSIBLE_NAMES) and ` +
+        `${blockingOwn.length} are the Blocking section's own (BLOCKING_OWN_LABELS).`
+    : `LABEL PARITY: ${strayLabels.length} of ${labels.length} labels are not upstream's.`,
 )
 
 process.exit(
