@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { visibleSections, type Permission } from './sections'
-import { toTrail, writeRoute, readRoute } from './route'
+import { toTrail, writeRoute, readRoute, translateLegacyRoute, plainClick } from './route'
 import { ChangePassword } from '../screens/modals/ChangePassword'
 import { Configure2FA } from '../screens/modals/Configure2FA'
 import { CreateApiToken } from '../screens/modals/CreateApiToken'
@@ -9,7 +9,8 @@ import { Dashboard } from '../screens/dashboard/Dashboard'
 import { DnsClient } from '../screens/dnsclient/DnsClient'
 import { About } from '../screens/about/About'
 import { Apps } from '../screens/apps/Apps'
-import { Cache, Allowed, Blocked } from '../screens/lists/Lists'
+import { Cache } from '../screens/lists/Lists'
+import { Blocking } from '../screens/blocking/Blocking'
 import { Settings, type ServerInfo } from '../screens/settings/Settings'
 import { Zones } from '../screens/zones/Zones'
 import { Dhcp } from '../screens/dhcp/Dhcp'
@@ -35,22 +36,22 @@ type ModalId = 'profile' | 'password' | 'twofa' | 'token'
 
 /** One glyph per section. No icon dependency: the server's CSP does not allow a
  *  CDN and an icon font would have to ship as a file in www/. */
-/* The twelve section icons live in `ui/Icono`, drawn; here we only say which one
-   each section carries. */
+/* The section icons live in `ui/Icon`, drawn; here we only say which one each
+   section carries. Blocking carries Blocked's: it is the section that took its place. */
 /*
 The sidebar's three groups. It is not a new taxonomy: it is upstream's own order,
 with a gap where the kind of task already changed. What you operate daily, what you
 configure and what you consult.
 */
 const GROUPS: string[][] = [
-  ['dashboard', 'zones', 'cache', 'allowed', 'blocked', 'apps', 'dnsclient'],
+  ['dashboard', 'zones', 'cache', 'blocking', 'apps', 'dnsclient'],
   ['settings', 'dhcp', 'admin'],
   ['logs', 'about'],
 ]
 
 const ICONS: Record<string, IconName> = {
-  dashboard: 'dashboard', zones: 'zones', cache: 'cache', allowed: 'allowed',
-  blocked: 'blocked', apps: 'apps', dnsclient: 'dnsclient', settings: 'settings',
+  dashboard: 'dashboard', zones: 'zones', cache: 'cache', blocking: 'blocked',
+  apps: 'apps', dnsclient: 'dnsclient', settings: 'settings',
   dhcp: 'dhcp', admin: 'admin', logs: 'logs', about: 'about',
 }
 
@@ -75,15 +76,6 @@ export interface ShellSession {
   }
 }
 
-/*
-A click the browser should handle itself: middle or right button, or with a
-modifier —open in a new tab, in a window, download—. Intercepting them would turn a
-real link into a button in disguise, which is exactly what has just been removed.
-*/
-function plainClick(e: React.MouseEvent): boolean {
-  return e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey
-}
-
 export function Shell({
   session,
   onLogout,
@@ -99,7 +91,14 @@ export function Shell({
   const sections = useMemo(() => visibleSections(permissions), [permissions])
   /* The starting section comes from the address bar if it carries one, and only
      if not, from the first visible one. See `app/route.ts` for the reasoning. */
-  const initialRoute = readRoute(sections)
+  /* Read once, on mount. `/allowed/` and `/blocked/` are Blocking's Rules tab now:
+     the bar is rewritten (`replaceState`) before the route is read, here in the
+     initialiser and not in the render body, so the side effect runs once; see
+     `app/route.ts`. */
+  const [initialRoute] = useState(() => {
+    translateLegacyRoute()
+    return readRoute(sections)
+  })
   const [active, setActive] = useState(() => initialRoute?.section ?? sections[0]?.id ?? 'about')
   const [drawer, setDrawer] = useState(false)
   const [modal, setModal] = useState<ModalId | null>(forcePasswordChange ? 'password' : null)
@@ -211,6 +210,7 @@ export function Shell({
 
   useEffect(() => {
     function onChanged() {
+      translateLegacyRoute()
       const r = readRoute(sections)
       if (r == null) {
         // A route that does not resolve left the bar and the screen saying different
@@ -443,10 +443,16 @@ export function Shell({
           <Apps token={session.token} />
         ) : current?.id === 'cache' ? (
           <Cache token={session.token} nodes={session.info?.clusterNodes ?? []} clusterInitialised={session.info?.clusterInitialized === true} />
-        ) : current?.id === 'allowed' ? (
-          <Allowed token={session.token} nodes={session.info?.clusterNodes ?? []} clusterInitialised={session.info?.clusterInitialized === true} />
-        ) : current?.id === 'blocked' ? (
-          <Blocked token={session.token} nodes={session.info?.clusterNodes ?? []} clusterInitialised={session.info?.clusterInitialized === true} />
+        ) : current?.id === 'blocking' ? (
+          <Blocking
+            token={session.token}
+            sub={currentSub}
+            onSubChange={setSub}
+            permissions={permissions}
+            nodes={session.info?.clusterNodes ?? []}
+            clusterInitialised={session.info?.clusterInitialized === true}
+            serverDomain={info?.dnsServerDomain}
+          />
         ) : current?.id === 'zones' ? (
           <Zones
             token={session.token}

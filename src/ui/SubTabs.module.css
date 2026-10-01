@@ -9,7 +9,14 @@ marked with an edge and the rest read as ordinary links.
   display: flex;
   gap: var(--s-8);
   align-items: stretch;
-  border-bottom: 1px solid var(--line2);
+  /* The rule under the tabs is an inset shadow and not a border, so the active
+     tab's edge can sit on it without leaving the box. With a border, each tab had
+     to reach 1 px past the content box (`margin-bottom: -1px`) to cover it, and
+     inside `overflow-x: auto` —which makes `overflow-y` auto too— that pixel was
+     overflow: Chromium on Linux drew a 15 px vertical scrollbar beside the tabs of
+     every section. The children paint over their parent's shadow, so the active
+     edge still covers the rule. */
+  box-shadow: inset 0 -1px 0 var(--line2);
   margin-bottom: var(--gap-block);
   /* The strip scrolls rather than wrapping: nine panes on two lines turn a bar
      into a block, and the second line reads as a different thing. */
@@ -26,7 +33,6 @@ marked with an edge and the rest read as ordinary links.
   /* The edge is ALWAYS there, transparent when it does not apply: painting it
      only on the active one moves every tab 2 px each time it changes. */
   border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
   white-space: nowrap;
 }
 

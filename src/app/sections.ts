@@ -1,5 +1,8 @@
 /*
-The console's 12 sections, in upstream's order.
+The console's 11 sections, in upstream's order — with one that is OURS: Blocking
+takes the place of upstream's Allowed and Blocked, and gathers them with the block
+lists into three tabs (docs/2026-10-01-blocking-section-spec.md, "La excepción").
+Their old addresses still land: see `LEGACY_ROUTES` in `static-routes.ts`.
 
 `permission` is the key inside `sessionData.info.permissions`, and it does NOT
 always match the label: the "DNS Client" tab is governed by `DnsClient` and "DHCP"
@@ -12,7 +15,9 @@ unimplemented.
 export interface Section {
   id: string
   label: string
-  permission: string | null
+  /** The key inside `permissions`, or a LIST meaning "any of these" (Blocking:
+   *  visible with Blocked OR Allowed). */
+  permission: string | readonly string[] | null
   phase: string
   /** Sub-sections, with upstream's literal labels. They are only shown when their
    *  section is active, exactly as the sub-tabs are today. */
@@ -23,8 +28,8 @@ export const SECTIONS: Section[] = [
   { id: 'dashboard', label: 'Dashboard', permission: 'Dashboard', phase: 'phase 3' },
   { id: 'zones', label: 'Zones', permission: 'Zones', phase: 'phase 4' },
   { id: 'cache', label: 'Cache', permission: 'Cache', phase: 'phase 5' },
-  { id: 'allowed', label: 'Allowed', permission: 'Allowed', phase: 'phase 5' },
-  { id: 'blocked', label: 'Blocked', permission: 'Blocked', phase: 'phase 5' },
+  { id: 'blocking', label: 'Blocking', permission: ['Blocked', 'Allowed'], phase: 'blocking section',
+    subs: ['Overview', 'Rules', 'Lists'] },
   { id: 'apps', label: 'Apps', permission: 'Apps', phase: 'phase 7' },
   { id: 'dnsclient', label: 'DNS Client', permission: 'DnsClient', phase: 'phase 3' },
   { id: 'settings', label: 'Settings', permission: 'Settings', phase: 'phase 6',
@@ -38,7 +43,14 @@ export const SECTIONS: Section[] = [
 
 export interface Permission { canView: boolean; canModify: boolean; canDelete: boolean }
 
-export function visibleSections(permissions: Record<string, Permission> | undefined): Section[] {
-  if (!permissions) return SECTIONS
-  return SECTIONS.filter((s) => s.permission == null || permissions[s.permission]?.canView !== false)
+export function visibleSections(
+  permissions: Record<string, Permission> | undefined,
+  list: Section[] = SECTIONS,
+): Section[] {
+  if (!permissions) return list
+  return list.filter((s) => {
+    if (s.permission == null) return true
+    const keys = typeof s.permission === 'string' ? [s.permission] : s.permission
+    return keys.some((k) => permissions[k]?.canView !== false)
+  })
 }

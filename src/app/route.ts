@@ -25,6 +25,7 @@ export { toSlug } from './slug'
 import { toSlug } from './slug'
 export { forgetRoot, appRoot } from './base'
 import { appRoot } from './base'
+import { LEGACY_ROUTES } from './static-routes'
 
 export interface Route {
   section: string
@@ -74,4 +75,53 @@ export function writeRoute(route: Route, replaceEntry = false): void {
   if (window.location.pathname + window.location.search === blank) return
   if (replaceEntry) window.history.replaceState(null, '', blank)
   else window.history.pushState(null, '', blank)
+}
+
+/*
+`/allowed/` and `/blocked/` are Blocking's Rules tab now. The bar is rewritten to
+`blocking/rules/?rule=…` BEFORE the route is read, with `replaceState` so the back
+button does not walk into the old address. The root comes from `appRoot()`, which
+the legacy folder's own `<meta name="route">` lets it compute behind a prefix.
+*/
+export function translateLegacyRoute(): boolean {
+  const base = appRoot()
+  const trail = window.location.pathname
+  if (!trail.startsWith(base)) return false
+  const parts = trail.slice(base.length).split('/').filter(Boolean)
+  const legacy = parts.length === 1 ? LEGACY_ROUTES[parts[0]] : undefined
+  if (legacy == null) return false
+  const params = new URLSearchParams(window.location.search)
+  params.set('rule', legacy.rule)
+  window.history.replaceState(null, '', `${base}${legacy.section}/${toSlug(legacy.sub)}/?${params.toString()}`)
+  return true
+}
+
+/**
+ * A click the browser should handle itself: another button, or with a modifier
+ * —open in a new tab, in a window, download— or one something else already took.
+ * Intercepting them would turn a real link into a button in disguise. The sidebar,
+ * the sub-tabs and `ui/RouteLink` all ask this same question.
+ */
+export function plainClick(e: {
+  button: number
+  metaKey: boolean
+  ctrlKey: boolean
+  shiftKey: boolean
+  altKey: boolean
+  defaultPrevented?: boolean
+}): boolean {
+  return e.defaultPrevented !== true && e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey
+}
+
+/**
+ * Goes to another section from inside a screen, without reloading the console.
+ *
+ * The route is pushed —it is something the user did, so the back button returns—
+ * and then announced with the same `popstate` the back button fires. The Shell
+ * already follows that event (it reads the bar and moves to what it says), so a
+ * screen needs no handle on the Shell's state to send the user elsewhere.
+ */
+export function navigateTo(route: Route): void {
+  writeRoute(route)
+  window.dispatchEvent(new PopStateEvent('popstate'))
 }

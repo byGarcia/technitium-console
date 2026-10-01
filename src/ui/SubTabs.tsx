@@ -1,4 +1,4 @@
-import { toTrail } from '../app/route'
+import { plainClick, toTrail } from '../app/route'
 import styles from './SubTabs.module.css'
 
 /*
@@ -54,7 +54,7 @@ export function SubTabs({
           href={toTrail({ section, sub: t })}
           aria-current={t === active ? 'page' : undefined}
           onClick={(e) => {
-            if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+            if (!plainClick(e)) return
             e.preventDefault()
             onChoose(t)
           }}

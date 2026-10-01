@@ -87,6 +87,26 @@ export function onSessionExpired(fn: (() => void) | null): void {
   onExpired = fn
 }
 
+/*
+The envelope read in ONE place. `apiRequest` uses it, and so do the few calls that
+cannot go through it because their good answer is not JSON (`allowed/export`,
+`blocked/export`): when those fail they answer this same envelope, and an
+`invalid-token` there has to end the session like anywhere else.
+*/
+export function envelopeOutcome<T>(payload: Envelope): ApiOutcome<T> {
+  switch (payload.status) {
+    case 'ok':
+      return { kind: 'ok', data: payload as T }
+    case 'invalid-token':
+      onExpired?.()
+      return { kind: 'invalid-token' }
+    case '2fa-required':
+      return { kind: 'two-factor-required' }
+    default:
+      return { kind: 'error', message: payload.errorMessage ?? 'Unknown error.' }
+  }
+}
+
 export async function apiRequest<T = unknown>(
   path: string,
   opts: ApiOptions = {},
@@ -146,15 +166,5 @@ export async function apiRequest<T = unknown>(
     return { kind: 'error', message: `parsererror - ${String(e)}` }
   }
 
-  switch (payload.status) {
-    case 'ok':
-      return { kind: 'ok', data: payload as T }
-    case 'invalid-token':
-      onExpired?.()
-      return { kind: 'invalid-token' }
-    case '2fa-required':
-      return { kind: 'two-factor-required' }
-    default:
-      return { kind: 'error', message: payload.errorMessage ?? 'Unknown error.' }
-  }
+  return envelopeOutcome<T>(payload)
 }

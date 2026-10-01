@@ -28,6 +28,10 @@ describe('chart palette', () => {
     expect(tokenForLabel('Server Failure', 0)).toBe('--ch-fail')
   })
 
+  it('Allowed is the colour Allowed already wears in the console', () => {
+    expect(tokenForLabel('Allowed', 7)).toBe('--ch-ok')
+  })
+
   /* Record types and protocols are open sets: nobody can enumerate them, so
      they get position. It only has to be stable and to stay inside the cycle. */
   it('unknown series fall back to the cycle, and repeat only after it runs out', () => {

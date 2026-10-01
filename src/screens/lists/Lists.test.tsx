@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, afterEach } from 'vitest'
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { Allowed, Blocked, Cache } from './Lists'
+import { Cache, Lists, ImportDomains } from './Lists'
 import * as api from '../../api/zonelists'
 import type { ListNode, DnsRecord } from '../../api/zonelists'
 
@@ -66,8 +66,8 @@ describe('tree navigation', () => {
 
   it('each section asks for its own endpoint', async () => {
     const spy = withNode(node())
-    render(<Blocked token="t" />)
-    await screen.findByRole('heading', { name: 'Blocked' })
+    render(<Lists list="blocked" token="t" embedded />)
+    await screen.findByText('Domains the administrator blocks')
     expect(spy.mock.calls[0][0]).toBe('blocked')
   })
 
@@ -75,7 +75,7 @@ describe('tree navigation', () => {
      and no records: the domain to draw is the one it RETURNS, not the one asked for. */
   it('it obeys the domain the server returns, not the one asked for', async () => {
     withNode(node(), node({ domain: 'example.org', zones: ['foo.example.org'], records: [REG_AUTH] }))
-    render(<Allowed token="t" />)
+    render(<Lists list="allowed" token="t" embedded />)
     await userEvent.type(await screen.findByLabelText('Domain'), 'org')
     await userEvent.click(screen.getByRole('button', { name: 'Browse' }))
     expect(await screen.findByText('foo.example.org')).toBeInTheDocument()
@@ -92,7 +92,7 @@ describe('tree navigation', () => {
 
   it('going up to the parent from the tree sends direction=up, like the [up] link', async () => {
     const spy = withNode(node({ domain: 'a.casa.test', records: [REG_AUTH] }))
-    render(<Allowed token="t" />)
+    render(<Lists list="allowed" token="t" embedded />)
     await userEvent.click(await screen.findByRole('button', { name: 'casa.test' }))
     const upload = spy.mock.calls.find((c) => c[2] === 'casa.test')
     expect(upload?.[3]).toBe('up')
@@ -136,7 +136,7 @@ describe('records table', () => {
     unmount()
 
     withNode(node({ domain: 'example.org', records: [REG_AUTH] }))
-    render(<Allowed token="t" />)
+    render(<Lists list="allowed" token="t" embedded />)
     await screen.findByText('Name Server')
     expect(screen.queryByRole('columnheader', { name: 'DNSSEC' })).not.toBeInTheDocument()
     // But the DNSSEC state is not lost: it drops down to the grey line.
@@ -145,7 +145,7 @@ describe('records table', () => {
 
   it('it explains the empty node instead of leaving a bare []', async () => {
     withNode(node({ zones: ['com', 'net'] }))
-    render(<Blocked token="t" />)
+    render(<Lists list="blocked" token="t" embedded />)
     expect(await screen.findByText('No records at this node')).toBeInTheDocument()
   })
 })
@@ -205,46 +205,31 @@ describe('Cache', () => {
   })
 })
 
+/*
+Allowed and Blocked are no longer sections: their tree lives `embedded` inside
+Blocking's Rules tab, and the verbs of their old header —Allow, Block, Flush,
+Export— moved to Rules' add bar and foot, where `AddDomainBar.test.tsx` and
+`Rules.test.tsx` hold their literals. What stays here is what stayed in this
+component: the node's Delete, and the Import dialog Rules borrows.
+*/
 describe('Allowed', () => {
-  it('it requires the domain with the literal text of upstream', async () => {
-    withNode(node())
-    render(<Allowed token="t" />)
-    await userEvent.click(await screen.findByRole('button', { name: 'Allow' }))
-    expect(await screen.findByText('Please enter a domain name to allow.')).toBeInTheDocument()
-  })
-
-  it('it adds the domain, alerts with the literal text and empties the field', async () => {
-    const spy = vi.spyOn(api, 'addDomain').mockResolvedValue(OK)
-    withNode(node())
-    render(<Allowed token="t" />)
-    const field = await screen.findByLabelText('Domain')
-    await userEvent.type(field, 'casa.test')
-    await userEvent.click(screen.getByRole('button', { name: 'Allow' }))
-    expect(spy.mock.calls[0][0]).toBe('allowed')
-    expect(spy.mock.calls[0][2]).toBe('casa.test')
-    expect(
-      await screen.findByText("Domain 'casa.test' was added to Allowed Zone successfully."),
-    ).toBeInTheDocument()
-    expect(field).toHaveValue('')
-  })
-
   /* Delete here depends on the node HAVING records (other-zones.js:319-327). */
   it('Delete only appears when the node has records', async () => {
     withNode(node({ domain: 'casa.test', zones: ['a.casa.test'], records: [] }))
-    const { unmount } = render(<Allowed token="t" />)
+    const { unmount } = render(<Lists list="allowed" token="t" embedded />)
     await screen.findByText('a.casa.test')
     expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument()
     unmount()
 
     withNode(node({ domain: 'casa.test', records: [REG_AUTH] }))
-    render(<Allowed token="t" />)
+    render(<Lists list="allowed" token="t" embedded />)
     expect(await screen.findByRole('button', { name: 'Delete' })).toBeInTheDocument()
   })
 
   it('deleting alerts with \"deleted from Allowed Zone\", which is not the Blocked text', async () => {
     vi.spyOn(api, 'deleteDomain').mockResolvedValue(OK)
     withNode(node({ domain: 'casa.test', records: [REG_AUTH] }))
-    render(<Allowed token="t" />)
+    render(<Lists list="allowed" token="t" embedded />)
     await userEvent.click(await screen.findByRole('button', { name: 'Delete' }))
     expect(
       await screen.findByText("Are you sure you want to delete the allowed zone 'casa.test'?"),
@@ -255,32 +240,8 @@ describe('Allowed', () => {
     ).toBeInTheDocument()
   })
 
-  it('Flush confirms and alerts with the literal texts', async () => {
-    const spy = vi.spyOn(api, 'flushList').mockResolvedValue(OK)
-    withNode(node())
-    render(<Allowed token="t" />)
-    await userEvent.click(await screen.findByRole('button', { name: 'Flush' }))
-    expect(
-      await screen.findByText('Are you sure you want to flush the entire Allowed zone?'),
-    ).toBeInTheDocument()
-    await confirm('Flush')
-    expect(spy.mock.calls[0][0]).toBe('allowed')
-    expect(await screen.findByText('Allowed zone was flushed successfully.')).toBeInTheDocument()
-  })
-
-  it('Export goes through the single-use token and alerts', async () => {
-    const spy = vi.spyOn(api, 'exportDomains').mockResolvedValue({ ok: true })
-    withNode(node())
-    render(<Allowed token="t" />)
-    await userEvent.click(await screen.findByRole('button', { name: 'Export' }))
-    expect(spy.mock.calls[0][0]).toBe('allowed')
-    expect(await screen.findByText('Allowed zones were exported successfully.')).toBeInTheDocument()
-  })
-
   it('Import requires content with the literal text, inside the modal itself', async () => {
-    withNode(node())
-    render(<Allowed token="t" />)
-    await userEvent.click(await screen.findByRole('button', { name: 'Import' }))
+    render(<ImportDomains list="allowed" open token="t" onClose={() => {}} onDone={() => {}} />)
     const dialog = await screen.findByRole('dialog')
     await userEvent.click(within(dialog).getByRole('button', { name: 'Import' }))
     expect(
@@ -290,45 +251,26 @@ describe('Allowed', () => {
 
   it('Import sends the cleaned list and alerts with the literal text', async () => {
     const spy = vi.spyOn(api, 'importDomains').mockResolvedValue(OK)
-    withNode(node())
-    render(<Allowed token="t" />)
-    await userEvent.click(await screen.findByRole('button', { name: 'Import' }))
+    const done = vi.fn()
+    render(<ImportDomains list="allowed" open token="t" onClose={() => {}} onDone={done} />)
     const dialog = await screen.findByRole('dialog')
     await userEvent.type(within(dialog).getByLabelText('Allowed Zones'), 'a.test\n\nb.test')
     await userEvent.click(within(dialog).getByRole('button', { name: 'Import' }))
     expect(spy.mock.calls[0][2]).toBe('a.test,b.test')
-    expect(
-      await screen.findByText('Domain names were imported into allowed zone successfully.'),
-    ).toBeInTheDocument()
+    expect(done).toHaveBeenCalledWith(
+      expect.objectContaining({ text: 'Domain names were imported into allowed zone successfully.' }),
+    )
   })
 })
 
 describe('Blocked', () => {
-  it('it requires the domain with its own literal text', async () => {
-    withNode(node())
-    render(<Blocked token="t" />)
-    await userEvent.click(await screen.findByRole('button', { name: 'Block' }))
-    expect(await screen.findByText('Please enter a domain name to block.')).toBeInTheDocument()
-  })
-
-  it('it alerts with \"added to Blocked Zone\"', async () => {
-    vi.spyOn(api, 'addDomain').mockResolvedValue(OK)
-    withNode(node())
-    render(<Blocked token="t" />)
-    await userEvent.type(await screen.findByLabelText('Domain'), 'ads.test')
-    await userEvent.click(screen.getByRole('button', { name: 'Block' }))
-    expect(
-      await screen.findByText("Domain 'ads.test' was added to Blocked Zone successfully."),
-    ).toBeInTheDocument()
-  })
-
   /* Upstream's asymmetry: Allowed says "Domain 'x' was deleted from Allowed
      Zone successfully." and Blocked says "Blocked zone 'x' was deleted
      successfully.". They are two different sentences and both are contract. */
   it('deleting alerts with \"Blocked zone ... was deleted successfully\"', async () => {
     vi.spyOn(api, 'deleteDomain').mockResolvedValue(OK)
     withNode(node({ domain: 'ads.test', records: [REG_AUTH] }))
-    render(<Blocked token="t" />)
+    render(<Lists list="blocked" token="t" embedded />)
     await userEvent.click(await screen.findByRole('button', { name: 'Delete' }))
     expect(
       await screen.findByText("Are you sure you want to delete the blocked zone 'ads.test'?"),
@@ -339,29 +281,16 @@ describe('Blocked', () => {
     ).toBeInTheDocument()
   })
 
-  it('Flush and Import use the Blocked texts, not the Allowed ones', async () => {
-    vi.spyOn(api, 'flushList').mockResolvedValue(OK)
-    withNode(node())
-    render(<Blocked token="t" />)
-    await userEvent.click(await screen.findByRole('button', { name: 'Flush' }))
-    expect(
-      await screen.findByText('Are you sure you want to flush the entire Blocked zone?'),
-    ).toBeInTheDocument()
-    await confirm('Flush')
-    expect(await screen.findByText('Blocked zone was flushed successfully.')).toBeInTheDocument()
-  })
-
   it('the Import modal is the Blocked one', async () => {
     vi.spyOn(api, 'importDomains').mockResolvedValue(OK)
-    withNode(node())
-    render(<Blocked token="t" />)
-    await userEvent.click(await screen.findByRole('button', { name: 'Import' }))
+    const done = vi.fn()
+    render(<ImportDomains list="blocked" open token="t" onClose={() => {}} onDone={done} />)
     const dialog = await screen.findByRole('dialog')
     expect(within(dialog).getByText('Import Blocked Zones')).toBeInTheDocument()
     await userEvent.type(within(dialog).getByLabelText('Blocked Zones'), 'ads.test')
     await userEvent.click(within(dialog).getByRole('button', { name: 'Import' }))
-    expect(
-      await screen.findByText('Domain names were imported into blocked zone successfully.'),
-    ).toBeInTheDocument()
+    expect(done).toHaveBeenCalledWith(
+      expect.objectContaining({ text: 'Domain names were imported into blocked zone successfully.' }),
+    )
   })
 })

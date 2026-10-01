@@ -73,3 +73,10 @@ export function ClusterNodeSelect({
     </Field>
   )
 }
+
+/* `getPrimaryClusterNodeName` (cluster.js:997): the node whose type is `Primary`,
+   or empty when the cluster is not initialised. */
+export function primaryNodeName(nodes: readonly ClusterNode[], initialised: boolean): string {
+  if (!initialised) return ''
+  return nodes.find((n) => n.type === 'Primary')?.name ?? ''
+}

@@ -8,7 +8,7 @@ what shipped.
 */
 import { describe, expect, it, vi, afterEach } from 'vitest'
 import { render, screen, within } from '@testing-library/react'
-import { Allowed, Blocked, Cache, Lists } from './Lists'
+import { Cache, Lists } from './Lists'
 import * as api from '../../api/zonelists'
 import * as client from '../../api/client'
 import type { ListNode } from '../../api/zonelists'
@@ -42,7 +42,7 @@ describe('the path says where you are', () => {
      telling what it hung off. */
   it('it writes the whole chain, root first and the open node last', async () => {
     withNode(node({ domain: 'ads.example.net', records: [NS] }))
-    render(<Allowed token="t" />)
+    render(<Lists list="allowed" token="t" embedded />)
     await screen.findByText(/2 records at|1 records at/)
 
     const path = screen.getByText('Node').parentElement!
@@ -66,7 +66,7 @@ describe('the path says where you are', () => {
   */
   it('nothing in it is clickable', async () => {
     withNode(node({ domain: 'ads.example.net', records: [NS] }))
-    render(<Allowed token="t" />)
+    render(<Lists list="allowed" token="t" embedded />)
     await screen.findByText('Node')
 
     const path = screen.getByText('Node').parentElement!
@@ -79,13 +79,15 @@ describe('cache and policy are told apart', () => {
   /* Problem 2: three screens, one component, and nothing said which was which.
      The second line is one of the three channels, and the only one a test can
      read; the icon and the colour are checked in the 4x4 matrix. */
+  /* Allowed and Blocked are drawn `embedded` now, inside Blocking's Rules tab:
+     without the section header, the band is the only thing naming them. */
   it.each([
-    [Cache, 'Cache', 'What the server resolved and stored'],
-    [Allowed, 'Allowed', 'Domains the administrator lets through'],
-    [Blocked, 'Blocked', 'Domains the administrator blocks'],
-  ])('%#: the identity band names the screen and what it holds', async (Screen, title, sub) => {
+    ['cache' as const, false, 'Cache', 'What the server resolved and stored'],
+    ['allowed' as const, true, 'Allowed', 'Domains the administrator lets through'],
+    ['blocked' as const, true, 'Blocked', 'Domains the administrator blocks'],
+  ])('%#: the identity band names the screen and what it holds', async (list, embedded, title, sub) => {
     withNode(node())
-    render(<Screen token="t" />)
+    render(<Lists list={list} token="t" embedded={embedded} />)
     expect(await screen.findByText(sub)).toBeInTheDocument()
     expect(screen.getAllByText(title).length).toBeGreaterThan(0)
   })
@@ -100,15 +102,17 @@ describe('Delete weighs what it costs', () => {
   */
   it('the node Delete is a danger button, not a plain one', async () => {
     withNode(node({ domain: 'ads.example.net', records: [NS] }))
-    render(<Allowed token="t" />)
+    render(<Lists list="allowed" token="t" embedded />)
     const button = await screen.findByRole('button', { name: 'Delete' })
     expect(button).toHaveAttribute('data-variant', 'danger')
   })
 
-  it('and Flush stays the filled one, in the header', async () => {
+  /* The header's Flush of Allowed and Blocked left with their header (it is
+     Rules' now); the filled red one that stays in this component is Cache's. */
+  it('and Flush Cache stays the filled one, in the header', async () => {
     withNode(node())
-    render(<Blocked token="t" />)
-    const flush = await screen.findByRole('button', { name: 'Flush' })
+    render(<Cache token="t" />)
+    const flush = await screen.findByRole('button', { name: 'Flush Cache' })
     expect(flush).toHaveAttribute('data-variant', 'danger')
   })
 })
@@ -148,7 +152,7 @@ describe('loading is not emptiness, on either side', () => {
 describe('what the round was not allowed to break', () => {
   it('the two empty texts are still two, and each in its own case', async () => {
     withNode(node({ domain: 'example.org', zones: ['a.example.org', 'b.example.org'] }))
-    render(<Blocked token="t" />)
+    render(<Lists list="blocked" token="t" embedded />)
     expect(
       await screen.findByText('This node only contains sub-domains. Open one in the tree to see its records.'),
     ).toBeInTheDocument()
@@ -165,7 +169,7 @@ describe('what the round was not allowed to break', () => {
      and the path beside it must not have replaced it. */
   it('the tree keeps its <ROOT> node', async () => {
     withNode(node({ domain: 'example.org', zones: [] }))
-    render(<Blocked token="t" />)
+    render(<Lists list="blocked" token="t" embedded />)
     const tree = await screen.findByLabelText('Domain tree')
     expect(within(tree).getByText('<ROOT>')).toBeInTheDocument()
   })

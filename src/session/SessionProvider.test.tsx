@@ -1,10 +1,12 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
+import { StrictMode } from 'react'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { SessionProvider } from './SessionProvider'
 import { ThemeProvider } from '../theme/ThemeProvider'
 import * as client from '../api/client'
 import { SETTINGS } from '../screens/settings/settings.fixture'
+import { appRoot, forgetRoot } from '../app/route'
 
 // The Shell consumes the theme, so it is mounted the way App.tsx will.
 function mount() {
@@ -403,5 +405,128 @@ describe('SessionProvider', () => {
       expect(screen.queryByRole('button', { name: 'Disable Update Notification' })).not.toBeInTheDocument()
       await user.keyboard('{Escape}')
     })
+  })
+})
+
+/*
+Blocking replaced Allowed and Blocked in the sidebar, and the two old addresses
+still land: `/blocked/` is Blocking › Rules with the filter on Blocked.
+*/
+describe('the Blocking section', () => {
+  /** Serves the document from a folder, with the `<meta>` the build gives it. */
+  function servedAt(trail: string, route: string) {
+    document.head.querySelector('meta[name="route"]')?.remove()
+    const m = document.createElement('meta')
+    m.setAttribute('name', 'route')
+    m.setAttribute('content', route)
+    document.head.appendChild(m)
+    window.history.replaceState(null, '', trail)
+    forgetRoot()
+  }
+
+  afterEach(() => {
+    document.head.querySelector('meta[name="route"]')?.remove()
+    window.history.replaceState(null, '', '/')
+    // Frozen again at `/`: the other cases never forget the root.
+    forgetRoot()
+    appRoot()
+  })
+
+  /* Lists reads the settings and the dashboard counts. The counts answer with a
+     failure: the generic `session()` has no `stats`, and these cases are about
+     where the console goes, not about what Lists draws. */
+  function answer() {
+    vi.spyOn(client, 'apiRequest').mockImplementation(async (path: string) =>
+      path === 'settings/get'
+        ? { kind: 'ok' as const, data: { status: 'ok', response: SETTINGS } }
+        : path === 'dashboard/stats/get'
+          ? { kind: 'error' as const, message: 'not in this test' }
+          : session(),
+    )
+  }
+
+  it('takes the place of Allowed and Blocked in the sidebar', async () => {
+    localStorage.setItem('token', 'tok')
+    answer()
+    mount()
+    const nav = await screen.findByRole('navigation', { name: 'Sections' })
+    expect(within(nav).getByRole('link', { name: 'Blocking' })).toHaveAttribute('href', '/blocking/overview/')
+    expect(within(nav).queryByRole('link', { name: 'Allowed' })).not.toBeInTheDocument()
+    expect(within(nav).queryByRole('link', { name: 'Blocked' })).not.toBeInTheDocument()
+  })
+
+  it('an old /blocked/ address lands on Rules with the Blocked filter', async () => {
+    localStorage.setItem('token', 'tok')
+    answer()
+    servedAt('/blocked/', 'blocked')
+    mount()
+    const nav = await screen.findByRole('navigation', { name: 'Sections' })
+    expect(within(nav).getByRole('link', { name: 'Blocking' })).toHaveAttribute('aria-current', 'page')
+    expect(window.location.pathname + window.location.search).toBe('/blocking/rules/?rule=blocked')
+    expect(screen.getByRole('link', { name: 'Rules' })).toHaveAttribute('aria-current', 'page')
+  })
+
+  it('and behind a prefix', async () => {
+    localStorage.setItem('token', 'tok')
+    answer()
+    servedAt('/dns/allowed/', 'allowed')
+    mount()
+    await screen.findByRole('navigation', { name: 'Sections' })
+    expect(window.location.pathname + window.location.search).toBe('/dns/blocking/rules/?rule=allowed')
+  })
+
+  /* `?rule=` is Rules' filter. `writeRoute` keeps the search, so without the
+     section dropping it on the way out it followed the user to /zones/?rule=… and
+     came back with them to Rules. */
+  it('the rule filter does not follow the user out of the section', async () => {
+    localStorage.setItem('token', 'tok')
+    answer()
+    servedAt('/blocking/rules/?rule=blocked', 'blocking/rules')
+    mount()
+    const nav = await screen.findByRole('navigation', { name: 'Sections' })
+    await screen.findByRole('link', { name: 'Rules' })
+    expect(window.location.search).toBe('?rule=blocked')
+
+    fireEvent.click(within(nav).getByRole('link', { name: 'Zones' }))
+    await waitFor(() => expect(window.location.pathname).toBe('/zones/'))
+    expect(window.location.search).toBe('')
+  })
+
+  /* StrictMode mounts, unmounts and mounts again in development. The section's
+     way-out cleanup runs in the middle of that, and the filter must survive it:
+     Rules writes it back from what it read. */
+  it('and under StrictMode the filter survives the double mount', async () => {
+    localStorage.setItem('token', 'tok')
+    answer()
+    servedAt('/blocked/', 'blocked')
+    render(
+      <StrictMode>
+        <ThemeProvider>
+          <SessionProvider />
+        </ThemeProvider>
+      </StrictMode>,
+    )
+    await screen.findByRole('link', { name: 'Rules' })
+    // Every effect of both mounts has run by now.
+    await new Promise((r) => setTimeout(r, 50))
+    expect(window.location.pathname + window.location.search).toBe('/blocking/rules/?rule=blocked')
+  })
+
+  /* A link inside a screen to another section used to be a bare `<a href>` and
+     reloaded the whole console. Now it moves the Shell, like the sidebar does. */
+  it('a link inside the section moves the Shell without reloading', async () => {
+    localStorage.setItem('token', 'tok')
+    answer()
+    servedAt('/blocking/lists/', 'blocking/lists')
+    mount()
+    const link = await screen.findByRole('link', { name: 'More blocking settings in Settings › Blocking' })
+    expect(link).toHaveAttribute('href', '/settings/blocking/')
+    expect(fireEvent.click(link)).toBe(false)
+
+    const nav = screen.getByRole('navigation', { name: 'Sections' })
+    await waitFor(() =>
+      expect(within(nav).getByRole('link', { name: 'Settings' })).toHaveAttribute('aria-current', 'page'),
+    )
+    expect(window.location.pathname).toBe('/settings/blocking/')
   })
 })

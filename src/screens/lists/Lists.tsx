@@ -1,21 +1,19 @@
-import { ClusterNodeSelect } from '../../ui/ClusterNodeSelect'
+import { ClusterNodeSelect, primaryNodeName } from '../../ui/ClusterNodeSelect'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
-  addDomain,
   deleteDomain,
   deleteCacheNode,
   parentDomain,
-  exportDomains,
   importDomains,
   cleanList,
   listNode,
   flushCache,
-  flushList,
   type List,
   type DomainList,
   type ListNode,
 } from '../../api/zonelists'
 import { Button } from '../../ui/Button'
+import { PermissionButton } from '../../ui/PermissionButton'
 import { Confirm } from '../../ui/Confirm'
 import { Dialog } from '../../ui/Dialog'
 import { Field, Input, LabeledTextarea } from '../../ui/Field'
@@ -45,10 +43,14 @@ asymmetry uniform and would have changed a text.
 And what changes in the BEHAVIOUR is when the Delete button shows: in Cache it
 depends on being outside the root (other-zones.js:143-152) and in Allowed and
 Blocked on the node having records (lines 319-327). It is replicated as it is.
+
+Cache is still a section of its own. Allowed and Blocked are not any more: their
+tree is mounted `embedded` inside Blocking's Rules tab (screens/blocking/Rules.tsx).
 */
 
-
-interface Confirmation {
+/** A confirmation waiting in the dialog. Also Rules' (screens/blocking/Rules.tsx),
+ *  whose Delete is the same verb with the same sentences. */
+export interface Confirmation {
   title: string
   text: string
   label: string
@@ -78,7 +80,7 @@ const SUBTITLE: Record<List, string> = {
 empty-list alert goes INSIDE the modal, not on the page: upstream passes
 `showAlert` the modal's own `divImportAllowedZonesAlert`.
 */
-function Import({
+export function ImportDomains({
   list,
   open,
   token,
@@ -89,7 +91,7 @@ function Import({
   open: boolean
   token: string | null
   onClose: () => void
-  onDone: (a: Notice) => void
+  onDone: (n: Notice) => void
 }) {
   const [text, setText] = useState('')
   const [notice, setNotice] = useState<Notice | null>(null)
@@ -179,6 +181,13 @@ export function Lists({
   token,
   nodes = [],
   clusterInitialised = false,
+  embedded = false,
+  canDelete = true,
+  initialFromPrimary = false,
+  initialDomain = '',
+  fieldName,
+  onNotice,
+  onChanged,
 }: {
   list: List
   token: string | null
@@ -186,12 +195,54 @@ export function Lists({
    *  selected node of the cache TREE: two different things, same word. F10. */
   nodes?: { name: string; type: string }[]
   clusterInitialised?: boolean
+  /** Inside the Blocking section's Rules tab: no header (its verbs live in Rules)
+   *  and no node selector. */
+  embedded?: boolean
+  /** Allowed/Blocked: whether the session may delete from this list. */
+  canDelete?: boolean
+  /**
+   * The tree is mounted again BECAUSE of a change made outside it (Rules' table or
+   * foot): its first read comes from the primary node, as every read after a
+   * change does (other-zones.js:269 and 434). Read once, on mount.
+   */
+  initialFromPrimary?: boolean
+  /**
+   * The node the tree opens at on mount: the domain a Block or Allow just added,
+   * as upstream's blockZone/allowZone open it (`refreshBlockedZonesList(domain,
+   * null, true)`, other-zones.js:350 and 185). Read once, on mount.
+   */
+  initialDomain?: string
+  /**
+   * The tree field's label, when the screen already has another field labelled
+   * "Domain" (Rules' add bar): shown, not only announced, so the two fields do not
+   * read alike. Without it the field is "Domain", as in Cache.
+   */
+  fieldName?: string
+  /**
+   * Embedded only: the host's notifier. Rules has one alert slot at the top of the
+   * page, and a Delete from the tree reporting inside the panel gave the same verb
+   * two places on one screen. Cache never passes it.
+   */
+  onNotice?: (n: Notice) => void
+  /** Embedded only: called after a Delete from the tree succeeded, so the host can
+   *  read its own view of the list again. */
+  onChanged?: () => void
 }) {
   const [clusterNode, setClusterNode] = useState<string>('')
 
   const [node, setNode] = useState<ListNode | null>(null)
   const [field, setField] = useState('')
   const [notice, setNotice] = useState<Notice | null>(null)
+  /* Where this screen's alerts go: the host's notifier when it gives one, its own
+     otherwise. Read through a ref so `load` does not change with every render. */
+  const host = useRef(onNotice)
+  useEffect(() => {
+    host.current = onNotice
+  }, [onNotice])
+  const report = useCallback((n: Notice) => (host.current != null ? host.current(n) : setNotice(n)), [])
+  /* A first read that failed and was reported to the host: there is no notice here
+     to tell "failed" from "still loading", so it is said apart. */
+  const [failedOutside, setFailedOutside] = useState(false)
   /*
   Stale data. The same gap Zones had, and the same phase 1 rule: the previous list
   stays —throwing it away would leave the user with nothing over a network error—
@@ -209,16 +260,27 @@ export function Lists({
   const hadData = useRef(false)
   const [stale, setStale] = useState(false)
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null)
-  const [importOpen, setImportOpen] = useState(false)
   const [busy, setBusy] = useState(false)
-  const entry = useRef<HTMLInputElement>(null)
 
   const isCache = list === 'cache'
   const domainList = list as DomainList
 
+  /*
+  The primary node is read through a ref for the same reason as `hadData`: as a
+  dependency of `load`, the `nodes = []` default is a new array on every render,
+  and the mount effect would ask for the root forever again.
+  */
+  const primary = useRef('')
+  useEffect(() => {
+    primary.current = primaryNodeName(nodes, clusterInitialised)
+  }, [nodes, clusterInitialised])
+
   const load = useCallback(
-    async (domain: string, up?: boolean) => {
-      const outcome = await listNode(list, token, domain, up ? 'up' : undefined)
+    async (domain: string, up?: boolean, fromPrimary = false) => {
+      /* other-zones.js:269 and 434: after a change, Allowed and Blocked are read
+         back from the PRIMARY node, where the change was made. Cache never is. */
+      const node = fromPrimary && list !== 'cache' ? primary.current : ''
+      const outcome = await listNode(list, token, domain, up ? 'up' : undefined, node)
       if (outcome.kind === 'ok') {
         setNode(outcome.data)
         setStale(false)
@@ -237,14 +299,23 @@ export function Lists({
       there is nothing to go stale —marking it would promise an earlier tree that
       does not exist— so the notice speaks, carrying the server's message.
       */
-      if (!hadData.current) setNotice(noticeFromFailure(outcome))
-      else setStale(true)
+      if (!hadData.current) {
+        if (host.current != null) setFailedOutside(true)
+        report(noticeFromFailure(outcome))
+      } else setStale(true)
     },
-    [list, token],
+    [list, token, report],
   )
 
+  /* Read through a ref: it governs the mount only, and as a dependency it would
+     read the root again whenever it changed. It is not reset after use, so
+     StrictMode's second run of this effect reads from the same node. The primary
+     node is already in `primary.current` here: its effect is declared above, and
+     effects run in order. */
+  const firstFromPrimary = useRef(initialFromPrimary)
+  const firstDomain = useRef(initialDomain)
   useEffect(() => {
-    void load('')
+    void load(firstDomain.current, undefined, firstFromPrimary.current)
   }, [load])
 
   /** Wraps a mutation: runs it, and on failure draws the server's error. */
@@ -258,17 +329,17 @@ export function Lists({
     setBusy(false)
 
     if (outcome.kind !== 'ok') {
-      setNotice(noticeFromFailure(outcome))
+      report(noticeFromFailure(outcome))
       return
     }
     await after()
-    setNotice(success)
+    report(success)
   }
 
   /* The first load, still in flight: `node` is null and nothing failed. A load
      that FAILED leaves `node` null too, but it sets the notice — and then this is
      not loading, it is a failure with nothing behind it. */
-  const loading = node == null && notice == null
+  const loading = node == null && notice == null && !failedOutside
 
   const domain = node?.domain ?? ''
   const nodeTitle = domain === '' ? '<ROOT>' : (node?.domainIdn ?? domain)
@@ -322,44 +393,10 @@ export function Lists({
   }
 
   // ---- Allowed and Blocked actions ----------------------------------------
-
-  async function add() {
-    const domain = field
-
-    // The alert goes BEFORE any call, and leaves the focus in the field:
-    // other-zones.js:171-176 and 348-353.
-    if (domain === '') {
-      setNotice({
-        type: 'warning',
-        title: 'Missing!',
-        text:
-          domainList === 'allowed'
-            ? 'Please enter a domain name to allow.'
-            : 'Please enter a domain name to block.',
-      })
-      entry.current?.focus()
-      return
-    }
-
-    await mutate(
-      () => addDomain(domainList, token, domain),
-      domainList === 'allowed'
-        ? {
-            type: 'success',
-            title: 'Allowed!',
-            text: `Domain '${domain}' was added to Allowed Zone successfully.`,
-          }
-        : {
-            type: 'success',
-            title: 'Blocked!',
-            text: `Domain '${domain}' was added to Blocked Zone successfully.`,
-          },
-      async () => {
-        setField('')
-        await load(domain)
-      },
-    )
-  }
+  /* Only Delete is left here. Allowed and Blocked are no longer sections: this
+     component draws them only inside Blocking's Rules tab, which owns the verbs
+     of their old header —Allow, Block, Import, Export and Flush— in its add bar
+     and its foot. The tree's field still browses on Enter. */
 
   function askDeleteDomain() {
     const isAllowed = domainList === 'allowed'
@@ -383,78 +420,41 @@ export function Lists({
                 title: 'Deleted!',
                 text: `Blocked zone '${nodeTitle}' was deleted successfully.`,
               },
-          () => load(parentDomain(nodeTitle) ?? '', true),
+          async () => {
+            await load(parentDomain(nodeTitle) ?? '', true, true)
+            onChanged?.()
+          },
         ),
-    })
-  }
-
-  function askFlushList() {
-    const isAllowed = domainList === 'allowed'
-    setConfirmation({
-      title: isAllowed ? 'Flush Allowed Zone' : 'Flush Blocked Zone',
-      text: isAllowed
-        ? 'Are you sure you want to flush the entire Allowed zone?'
-        : 'Are you sure you want to flush the entire Blocked zone?',
-      label: 'Flush',
-      action: () =>
-        mutate(
-          () => flushList(domainList, token),
-          isAllowed
-            ? { type: 'success', title: 'Flushed!', text: 'Allowed zone was flushed successfully.' }
-            : { type: 'success', title: 'Flushed!', text: 'Blocked zone was flushed successfully.' },
-          () => load(''),
-        ),
-    })
-  }
-
-  async function runExport() {
-    setBusy(true)
-    const r = await exportDomains(domainList, token)
-    setBusy(false)
-    if (!r.ok) return
-    setNotice({
-      type: 'success',
-      title: 'Exported!',
-      text:
-        domainList === 'allowed'
-          ? 'Allowed zones were exported successfully.'
-          : 'Blocked zones were exported successfully.',
     })
   }
 
   return (
     <>
-      <ClusterNodeSelect
-        nodes={nodes}
-        initialised={clusterInitialised}
-        value={clusterNode}
-        onChange={setClusterNode}
-        label="Cluster Node"
-      />
+      {/* The node selector exists only on Cache: upstream has none on Allowed or
+          Blocked (index.html:712, `optCachedZonesClusterNode`, is the only one).
+          Its value is still not sent; that is a known gap, out of scope here. */}
+      {isCache && !embedded && (
+        <ClusterNodeSelect
+          nodes={nodes}
+          initialised={clusterInitialised}
+          value={clusterNode}
+          onChange={setClusterNode}
+          label="Cluster Node"
+        />
+      )}
 
-      <SectionHeader
-        title={TITLE[list]}
-        actions={<>{isCache ? (
-            <Button variant="danger" disabled={busy} onClick={askFlushCache}>
-              Flush Cache
-            </Button>
-          ) : (
-            <>
-              <Button variant="primary" disabled={busy} onClick={() => void add()}>
-                {domainList === 'allowed' ? 'Allow' : 'Block'}
+      {!embedded && (
+        <SectionHeader
+          title={TITLE[list]}
+          actions={
+            isCache ? (
+              <Button variant="danger" disabled={busy} onClick={askFlushCache}>
+                Flush Cache
               </Button>
-              <Button disabled={busy} onClick={() => setImportOpen(true)}>
-                Import
-              </Button>
-              <Button disabled={busy} onClick={() => void runExport()}>
-                Export
-              </Button>
-              <Button variant="danger" disabled={busy} onClick={askFlushList}>
-                Flush
-              </Button>
-            </>
-          )}</>}
-      />
+            ) : undefined
+          }
+        />
+      )}
 
       <Notifier notice={notice} onClose={() => setNotice(null)} />
 
@@ -468,12 +468,12 @@ export function Lists({
                   no label here —only the `placeholder`— so this one is an
                   addition of ours and can be called whatever suits; what it
                   cannot be called is the same as the button next to it, which
-                  does carry upstream's literal. */}
-              <Field label="Domain">
+                  does carry upstream's literal. Embedded under another "Domain"
+                  field, it takes the name the screen gives it. */}
+              <Field label={fieldName ?? 'Domain'}>
                 {(id) => (
                   <Input
                     id={id}
-                    ref={entry}
                     mono
                     placeholder="example.com"
                     value={field}
@@ -571,14 +571,15 @@ export function Lists({
                   precisely so a destructive verb in a bar does not shout.
                   */}
                   {mayDelete && (
-                    <Button
+                    <PermissionButton
                       size="sm"
                       variant="danger"
                       disabled={busy}
+                      permission={isCache || canDelete ? undefined : `${TITLE[list]}.canDelete`}
                       onClick={isCache ? askDeleteCacheNode : askDeleteDomain}
                     >
                       Delete
-                    </Button>
+                    </PermissionButton>
                   )}
                 </div>
               </div>
@@ -613,16 +614,6 @@ export function Lists({
         onClose={() => setConfirmation(null)}
         onConfirm={() => confirmation?.action()}
       />
-
-      {!isCache && (
-        <Import
-          list={domainList}
-          open={importOpen}
-          token={token}
-          onClose={() => setImportOpen(false)}
-          onDone={setNotice}
-        />
-      )}
     </>
   )
 }
@@ -633,20 +624,4 @@ export function Cache({ token, nodes, clusterInitialised }: {
   clusterInitialised?: boolean
 }) {
   return <Lists list="cache" token={token} nodes={nodes} clusterInitialised={clusterInitialised} />
-}
-
-export function Allowed({ token, nodes, clusterInitialised }: {
-  token: string | null
-  nodes?: { name: string; type: string }[]
-  clusterInitialised?: boolean
-}) {
-  return <Lists list="allowed" token={token} nodes={nodes} clusterInitialised={clusterInitialised} />
-}
-
-export function Blocked({ token, nodes, clusterInitialised }: {
-  token: string | null
-  nodes?: { name: string; type: string }[]
-  clusterInitialised?: boolean
-}) {
-  return <Lists list="blocked" token={token} nodes={nodes} clusterInitialised={clusterInitialised} />
 }

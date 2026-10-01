@@ -1,0 +1,56 @@
+/* The status block: a mark, two lines, the control. */
+.status { display: flex; align-items: center; gap: var(--s-9); }
+.mark { display: grid; place-items: center; width: var(--s-12); height: var(--s-12); border-radius: var(--r-3); flex: none; }
+.on { background: var(--ok-bg); border: 1px solid var(--ok-bd); color: var(--ok); }
+.paused { background: var(--acc-bg); border: 1px solid var(--acc-bd); color: var(--acc); }
+.off { background: var(--pan2); border: 1px solid var(--line); color: var(--mute); }
+.statusText { flex: 1; min-width: 0; }
+.statusTitle { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-5); font-size: var(--t-5); font-weight: 600; }
+.statusSub { color: var(--mute); margin-top: var(--s-1); }
+
+/* Top tables: name, a bar for the share, the hits, the row menu. */
+.name { font-family: var(--font-mono); overflow-wrap: anywhere; }
+.hits { font-family: var(--font-mono); text-align: right; white-space: nowrap; }
+/* The header over the hits sits where the figures end, not where they would begin.
+   Written to outweigh `.table thead th` of ui/Table, which sets every header left. */
+thead > tr > th.hitsHead { text-align: right; }
+/* A block, not the span's inline box: an inline element ignores `height`. */
+.share { display: block; position: relative; height: var(--s-3); min-width: var(--s-12); border-radius: var(--r-1); background: var(--line2); }
+.share > i { position: absolute; inset: 0 auto 0 0; border-radius: var(--r-1); }
+.shareBlocked > i { background: var(--ch-block); }
+.shareTotal > i { background: var(--ch-total); }
+.time { font-family: var(--font-mono); color: var(--faint); white-space: nowrap; }
+/* `--bp-stack`. At 390 the full date on one line left the domain a few characters per
+   line; the date and the hour go on two lines instead. */
+@media (max-width: 560px) {
+  .time { white-space: normal; }
+}
+.mono { font-family: var(--font-mono); }
+.where { color: var(--mute); font-weight: 400; text-transform: none; letter-spacing: 0; }
+/*
+Muted, not `--warn`: on this screen the paused mark is `--acc`, and tokens.css
+measures the two ambers as indistinguishable. The sentence and its icon say it.
+*/
+.partial { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-5) var(--s-9); color: var(--mute); }
+
+/* A figure: the number, its sub-line, its label, and the trend under it. */
+.kpi { display: flex; flex-direction: column; gap: var(--s-1); }
+.kpiValue { font-family: var(--font-mono); font-size: var(--t-7); font-weight: 600; }
+.kpiSub { font-family: var(--font-mono); font-size: var(--t-2); color: var(--faint); }
+.kpiLabel { font-size: var(--t-1); font-weight: var(--text-weight); letter-spacing: var(--text-tracking); text-transform: uppercase; color: var(--mute); }
+/* The trend runs to the card's edges and its foot, as the drawing has it: the body's
+   padding (`--s-9`, ui/Panel) is given back on three sides, and the panel's rounded
+   corners clip it. */
+.spark {
+  display: block;
+  width: calc(100% + 2 * var(--s-9));
+  height: var(--s-12);
+  margin: var(--s-5) calc(-1 * var(--s-9)) calc(-1 * var(--s-9));
+}
+.sparkTotal { color: var(--ch-total); }
+.sparkBlocked { color: var(--ch-block); }
+
+/* The ring, with the share written in its hole. */
+.ring { position: relative; }
+.ringValue { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; font-family: var(--font-mono); font-size: var(--t-6); font-weight: 600; pointer-events: none; }
+.ringLabel { display: block; font-family: var(--font-ui); font-size: var(--t-1); font-weight: var(--text-weight); letter-spacing: var(--text-tracking); text-transform: uppercase; color: var(--mute); }
