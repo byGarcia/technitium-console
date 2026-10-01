@@ -48,6 +48,29 @@ describe('readRuleExport', () => {
     }
   })
 
+  it('an answer that is neither the list nor an envelope (a proxy page) is an error, as jQuery reports it', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response('<html><body>502 Bad Gateway</body></html>', { status: 502, statusText: 'Bad Gateway' }),
+    )
+    expect(await readRuleExport('blocked', 'T')).toEqual({ kind: 'error', message: 'error - Bad Gateway' })
+  })
+
+  it('a failing answer without a status text falls to upstream sentence, as jQuery does', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('<html>…</html>', { status: 502 }))
+    expect(await readRuleExport('blocked', 'T')).toEqual({
+      kind: 'error',
+      message: 'Unable to connect to the server. Please try again.',
+    })
+  })
+
+  it('reads the envelope exactly as apiRequest does', async () => {
+    serve(JSON.stringify({ status: 'error' }))
+    expect(await readRuleExport('allowed', 'T')).toEqual({ kind: 'error', message: 'Unknown error.' })
+    vi.restoreAllMocks()
+    serve(JSON.stringify({ status: '2fa-required' }))
+    expect(await readRuleExport('allowed', 'T')).toEqual({ kind: 'two-factor-required' })
+  })
+
   it('a request that never arrives uses upstream sentence', async () => {
     vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('down'))
     expect(await readRuleExport('allowed', 'T')).toEqual({
@@ -111,6 +134,21 @@ describe('allowDomain and blockDomain', () => {
     expect(await allowDomain('T', 'ads.test')).toEqual(OK)
     expect(remove).toHaveBeenCalledWith('blocked', 'T', 'ads.test')
     expect(add).toHaveBeenCalledWith('allowed', 'T', 'ads.test')
+    expect(remove.mock.invocationCallOrder[0]).toBeLessThan(add.mock.invocationCallOrder[0])
+  })
+
+  it('Allow Domain stops if the delete fails', async () => {
+    vi.spyOn(zonelists, 'deleteDomain').mockResolvedValue({ kind: 'error', message: 'Access was denied.' })
+    const add = vi.spyOn(zonelists, 'addDomain').mockResolvedValue(OK)
+    expect(await allowDomain('T', 'ads.test')).toEqual({ kind: 'error', message: 'Access was denied.' })
+    expect(add).not.toHaveBeenCalled()
+  })
+
+  it('when the delete goes through and the add fails, both return the add error', async () => {
+    vi.spyOn(zonelists, 'deleteDomain').mockResolvedValue(OK)
+    vi.spyOn(zonelists, 'addDomain').mockResolvedValue({ kind: 'error', message: 'Invalid domain name.' })
+    expect(await allowDomain('T', 'x.test')).toEqual({ kind: 'error', message: 'Invalid domain name.' })
+    expect(await blockDomain('T', 'x.test')).toEqual({ kind: 'error', message: 'Invalid domain name.' })
   })
 
   it('Block Domain deletes from Allowed and then adds to Blocked, and stops if the delete fails', async () => {

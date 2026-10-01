@@ -1,5 +1,5 @@
 import { urlApi } from '../app/base'
-import { sessionExpired, type ApiOutcome } from './client'
+import { envelopeOutcome, type ApiOutcome } from './client'
 import { queryLogs, type QueryLogEntry } from './logs'
 import { addDomain, deleteDomain, type DomainList } from './zonelists'
 
@@ -21,26 +21,37 @@ export async function readRuleExport(
   const headers: Record<string, string> = {}
   if (token) headers.Authorization = `Bearer ${token}`
 
+  let res: Response
   let text: string
   try {
-    const res = await fetch(urlApi(`api/${list}/export`), { headers })
+    res = await fetch(urlApi(`api/${list}/export`), { headers })
     text = await res.text()
   } catch {
     return { kind: 'error', message: 'Unable to connect to the server. Please try again.' }
   }
 
+  /* A failure is the usual envelope, read where `apiRequest` reads it. */
   if (text.trimStart().startsWith('{')) {
     try {
       const env = JSON.parse(text) as { status?: string; errorMessage?: string }
-      if (env.status === 'invalid-token') {
-        sessionExpired()
-        return { kind: 'invalid-token' }
-      }
-      if (env.status != null && env.status !== 'ok') {
-        return { kind: 'error', message: env.errorMessage ?? env.status }
-      }
+      if (env.status != null && env.status !== 'ok') return envelopeOutcome<string[]>(env)
     } catch {
       /* Not JSON: a zone name cannot start with `{`, but the server owns the format. */
+    }
+  }
+
+  /*
+  Anything else that is not a 2xx —a reverse proxy's 502 page, a 404 page— is not
+  a list. common.js:186-193 reports it as jQuery does: `textStatus - errorThrown`,
+  i.e. `error - <status text>`, and upstream's own sentence when the status text
+  is empty.
+  */
+  if (!res.ok) {
+    return {
+      kind: 'error',
+      message: res.statusText === ''
+        ? 'Unable to connect to the server. Please try again.'
+        : `error - ${res.statusText}`,
     }
   }
 
