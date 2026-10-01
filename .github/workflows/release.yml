@@ -108,15 +108,34 @@ jobs:
             --pattern technitium-console.tar.gz --pattern technitium-console.tar.gz.sha256
           cd image && sha256sum -c technitium-console.tar.gz.sha256
 
-      # vX.Y.Z becomes X.Y.Z, X.Y and latest; a prerelease moves neither of the last two.
+      # The floating tags only ever move forward. latest goes to the highest
+      # release in the repo and X.Y to the highest of its own line, so re-running
+      # an old tag (by hand or "Re-run jobs") or tagging a backport points
+      # neither back in time. Prereleases are not releases here: they move neither.
+      - id: floating
+        run: |
+          releases="$(git ls-remote --tags --refs origin 'v*' | sed 's|.*refs/tags/||' \
+            | grep -Ex 'v[0-9]+\.[0-9]+\.[0-9]+' | sort -V)"
+          line="$(printf '%s\n' "$GITHUB_REF_NAME" | cut -d. -f1-2)."
+          top="$(printf '%s\n' "$releases" | tail -n1)"
+          top_of_line="$(printf '%s\n' "$releases" | awk -v p="$line" 'index($0, p) == 1' | tail -n1)"
+          latest=false; minor=false
+          if [ "$GITHUB_REF_NAME" = "$top" ]; then latest=true; fi
+          if [ "$GITHUB_REF_NAME" = "$top_of_line" ]; then minor=true; fi
+          echo "$GITHUB_REF_NAME: highest release $top, highest of its line $top_of_line -> latest=$latest X.Y=$minor"
+          echo "latest=$latest" >> "$GITHUB_OUTPUT"
+          echo "minor=$minor" >> "$GITHUB_OUTPUT"
+
+      # vX.Y.Z becomes X.Y.Z, plus X.Y and latest when the step above allows;
+      # a prerelease moves neither of the last two either way.
       - id: meta
         uses: docker/metadata-action@v6
         with:
           images: ${{ env.IMAGE }}
-          flavor: latest=auto
+          flavor: latest=${{ steps.floating.outputs.latest == 'true' && 'auto' || 'false' }}
           tags: |
             type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}.{{minor}},enable=${{ steps.floating.outputs.minor }}
           labels: |
             org.opencontainers.image.title=technitium-console
             org.opencontainers.image.description=Copies the technitium-console web console into a volume shared with Technitium DNS Server, then exits.
