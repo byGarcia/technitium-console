@@ -7,6 +7,9 @@ The Lists tab. Every value is a token of theme/tokens.css.
 .spacer { flex: 1; }
 
 .stat { font-family: var(--font-mono); font-size: var(--t-6); font-weight: 600; }
+/* A count the server is still reloading: dimmed, and the line under it says why. */
+.stale { opacity: var(--dim); }
+.pending { color: var(--mute); font-size: var(--t-2); margin-top: var(--s-2); }
 .statLabel { font-size: var(--t-1); font-weight: var(--text-weight); letter-spacing: var(--text-tracking); text-transform: uppercase; color: var(--mute); }
 .next { display: flex; align-items: center; gap: var(--s-8); }
 .next > div { flex: 1; min-width: 0; }

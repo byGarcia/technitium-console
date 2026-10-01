@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, within } from '@testing-library/react'
+import { act, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import * as settings from '../../api/settings'
 import * as dashboard from '../../api/dashboard'
@@ -7,7 +7,10 @@ import * as quick from '../../lib/quick-lists'
 import { chooseIn } from '../../test/dropdown'
 import { BlockLists } from './BlockLists'
 
-afterEach(() => vi.restoreAllMocks())
+afterEach(() => {
+  vi.useRealTimers()
+  vi.restoreAllMocks()
+})
 
 const HOSTS = 'https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts'
 
@@ -225,6 +228,88 @@ describe('BlockLists', () => {
     expect(force).toHaveBeenCalledWith('T')
     expect(await screen.findByText('Block list update was triggered successfully.')).toBeInTheDocument()
     expect(screen.getByText('Updating Now')).toBeInTheDocument()
+  })
+
+  /*
+  Spec, «Qué se refresca»: Block List Domains changes when the server finishes
+  downloading, not at once, and the figure says so. The figures stay marked as
+  pending while settings/get says "Updating Now", read every 3 s; when the next
+  update is a date again they are read once more and the mark goes.
+  */
+  describe('the figures after a change', () => {
+    const FUTURE = '2999-01-01T00:00:00Z'
+    const PAST = '2000-01-01T00:00:00Z'
+    const stats = (block: number) => ({ kind: 'ok' as const, data: { stats: { blockListZones: block, allowListZones: 0 } } as never })
+
+    function setup(next: string | null) {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+      vi.spyOn(quick, 'loadQuickList').mockResolvedValue([])
+      const read = vi.spyOn(settings, 'getSettings').mockResolvedValue({
+        blockListUrls: [HOSTS], blockListUpdateIntervalHours: 24, blockListNextUpdatedOn: next,
+      } as never)
+      const counts = vi.spyOn(dashboard, 'getDashboardStats').mockResolvedValue(stats(74771))
+      return { read, counts, user: userEvent.setup({ advanceTimers: vi.advanceTimersByTime }) }
+    }
+
+    it('after Update Now both figures say they are updating until the server has finished', async () => {
+      const { read, counts, user } = setup(FUTURE)
+      vi.spyOn(settings, 'forceUpdateBlockLists').mockResolvedValue(true)
+      draw()
+      expect(await screen.findByText((74771).toLocaleString())).toBeInTheDocument()
+      read.mockResolvedValue({ blockListUrls: [HOSTS], blockListUpdateIntervalHours: 24, blockListNextUpdatedOn: PAST } as never)
+
+      await user.click(screen.getByRole('button', { name: 'Update Now' }))
+      await user.click(screen.getByRole('button', { name: 'Update' }))
+      expect(await screen.findAllByText('Updating…')).toHaveLength(2)
+      const before = read.mock.calls.length
+
+      await act(() => vi.advanceTimersByTimeAsync(3000))
+      expect(read.mock.calls.length).toBe(before + 1)
+      expect(screen.getAllByText('Updating…')).toHaveLength(2)
+
+      counts.mockResolvedValue(stats(74763))
+      read.mockResolvedValue({ blockListUrls: [HOSTS], blockListUpdateIntervalHours: 24, blockListNextUpdatedOn: FUTURE } as never)
+      await act(() => vi.advanceTimersByTimeAsync(3000))
+      expect(await screen.findByText((74763).toLocaleString())).toBeInTheDocument()
+      expect(screen.queryByText('Updating…')).not.toBeInTheDocument()
+      expect(screen.queryByText('Updating Now')).not.toBeInTheDocument()
+    })
+
+    it('the wait is bounded: after two minutes the figures are read once more and the mark goes', async () => {
+      const { read, counts, user } = setup(FUTURE)
+      vi.spyOn(settings, 'forceUpdateBlockLists').mockResolvedValue(true)
+      draw()
+      await screen.findByText((74771).toLocaleString())
+      read.mockResolvedValue({ blockListUrls: [HOSTS], blockListUpdateIntervalHours: 24, blockListNextUpdatedOn: PAST } as never)
+      await user.click(screen.getByRole('button', { name: 'Update Now' }))
+      await user.click(screen.getByRole('button', { name: 'Update' }))
+      await screen.findAllByText('Updating…')
+      const statsBefore = counts.mock.calls.length
+
+      await act(() => vi.advanceTimersByTimeAsync(121_000))
+      expect(screen.queryByText('Updating…')).not.toBeInTheDocument()
+      expect(counts.mock.calls.length).toBe(statsBefore + 1)
+      const settled = read.mock.calls.length
+      await act(() => vi.advanceTimersByTimeAsync(30_000))
+      expect(read.mock.calls.length).toBe(settled)
+    })
+
+    it('after Save the figures are read again once the server has reloaded the lists', async () => {
+      const { counts, user } = setup(FUTURE)
+      vi.spyOn(settings, 'setSettings').mockResolvedValue({
+        kind: 'ok', data: { server: 'x', response: { blockListUrls: [`#${HOSTS}`], blockListNextUpdatedOn: FUTURE } as never },
+      })
+      draw()
+      await screen.findByText((74771).toLocaleString())
+      await user.click(screen.getByRole('checkbox', { name: /Enabled/ }))
+      await user.click(screen.getByRole('button', { name: 'Save' }))
+      expect(await screen.findAllByText('Updating…')).toHaveLength(2)
+
+      counts.mockResolvedValue(stats(11))
+      await act(() => vi.advanceTimersByTimeAsync(3000))
+      expect(await screen.findByText('11')).toBeInTheDocument()
+      expect(screen.queryByText('Updating…')).not.toBeInTheDocument()
+    })
   })
 
   it('without Settings.canModify, Save and the switches are disabled', async () => {

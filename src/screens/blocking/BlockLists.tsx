@@ -1,4 +1,4 @@
-import { useEffect, useId, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { getSettings, setSettings, forceUpdateBlockLists } from '../../api/settings'
 import { getDashboardStats } from '../../api/dashboard'
 import { loadQuickList, type QuickEntry } from '../../lib/quick-lists'
@@ -54,6 +54,18 @@ const MSG_PREFIX = 'Enter the URL without # or !; use the buttons to choose bloc
 const MSG_DUPLICATE = 'This list is already in the table.'
 /* OURS: `dashboard/stats/get` failed, which is not the same as zero domains. */
 const COUNTS_FAILED = 'Could not read the counts.'
+
+/*
+After a Save or an Update Now the server reloads the lists in the background, and
+the counts change when it has finished, not at once (spec, «Qué se refresca»). Until
+then both figures say "Updating…" (OURS): the settings are read every POLL_MS and,
+when the next update is a date again instead of "Updating Now", the counts are read
+once more. The wait is bounded by POLL_LIMIT_MS so a server that never says so does
+not keep this screen asking for ever; at the limit the counts are read anyway.
+*/
+const UPDATING = 'Updating…'
+const POLL_MS = 3000
+const POLL_LIMIT_MS = 120_000
 
 /*
 How many lines the save would change. A line is identified by its URL (a comment by
@@ -117,6 +129,15 @@ export function BlockLists({
   const [notice, setNotice] = useState<Notice | null>(null)
   const [busy, setBusy] = useState(false)
   const [askUpdate, setAskUpdate] = useState(false)
+  /** The server is reloading the lists: the counts on screen are not current yet. */
+  const [reloading, setReloading] = useState(false)
+  const mounted = useRef(true)
+  useEffect(() => {
+    mounted.current = true
+    return () => {
+      mounted.current = false
+    }
+  }, [])
 
   useEffect(() => {
     if (viewNeed != null) return
@@ -148,22 +169,46 @@ export function BlockLists({
     }
   }, [])
 
-  useEffect(() => {
+  const readCounts = useCallback(async () => {
     if (statsNeed != null) return
+    const r = await getDashboardStats(token, 'LastHour', undefined, node)
+    if (!mounted.current) return
+    if (r.kind !== 'ok') {
+      setCountsFailed(true)
+      return
+    }
+    setCountsFailed(false)
+    setCounts({ block: r.data.stats.blockListZones, allow: r.data.stats.allowListZones })
+  }, [token, node, statsNeed])
+
+  useEffect(() => {
+    void readCounts()
+  }, [readCounts])
+
+  /* The wait described at POLL_MS: armed by a Save or an Update Now. */
+  useEffect(() => {
+    if (!reloading) return
     let live = true
-    void getDashboardStats(token, 'LastHour', undefined, node).then((r) => {
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const started = Date.now()
+    const tick = async () => {
+      const s = await getSettings(token, node)
       if (!live) return
-      if (r.kind !== 'ok') {
-        setCountsFailed(true)
+      const finished = s != null && nextUpdateText(s.blockListNextUpdatedOn ?? null) !== 'Updating Now'
+      if (!finished && Date.now() - started < POLL_LIMIT_MS) {
+        timer = setTimeout(() => void tick(), POLL_MS)
         return
       }
-      setCountsFailed(false)
-      setCounts({ block: r.data.stats.blockListZones, allow: r.data.stats.allowListZones })
-    })
+      if (s != null) setNext(s.blockListNextUpdatedOn ?? null)
+      await readCounts()
+      if (live) setReloading(false)
+    }
+    timer = setTimeout(() => void tick(), POLL_MS)
     return () => {
       live = false
+      clearTimeout(timer)
     }
-  }, [token, node, statsNeed])
+  }, [reloading, token, node, readCounts])
 
   if (viewNeed != null) {
     return (
@@ -212,6 +257,8 @@ export function BlockLists({
     setIntervalHours(r.data.response.blockListUpdateIntervalHours)
     // Settings.tsx:253-257, title and sentence.
     setNotice({ type: 'success', title: 'Settings Saved!', text: 'DNS Server settings were saved successfully.' })
+    // A change of URLs makes the server reload its lists: the counts follow when it has.
+    setReloading(true)
   }
 
   async function updateNow() {
@@ -223,6 +270,7 @@ export function BlockLists({
     // main.js:2356 — the label becomes "Updating Now" without reloading the settings.
     setNext(new Date(0).toISOString())
     setNotice({ type: 'success', title: 'Updating Block List!', text: 'Block list update was triggered successfully.' })
+    setReloading(true)
   }
 
   const listsCount = lines.filter((l) => l.kind !== 'comment').length
@@ -247,17 +295,23 @@ export function BlockLists({
                 {countsFailed ? (
                   <Failure>{COUNTS_FAILED}</Failure>
                 ) : (
-                  <div className={styles.stat}>{counts ? counts.block.toLocaleString() : '—'}</div>
+                  <div className={`${styles.stat}${reloading ? ` ${styles.stale}` : ''}`}>
+                    {counts ? counts.block.toLocaleString() : '—'}
+                  </div>
                 )}
                 <div className={styles.statLabel}>Block List Domains</div>
+                {reloading && <div className={styles.pending}>{UPDATING}</div>}
               </Body></Panel>
               <Panel><Body>
                 {countsFailed ? (
                   <Failure>{COUNTS_FAILED}</Failure>
                 ) : (
-                  <div className={styles.stat}>{counts ? counts.allow.toLocaleString() : '—'}</div>
+                  <div className={`${styles.stat}${reloading ? ` ${styles.stale}` : ''}`}>
+                    {counts ? counts.allow.toLocaleString() : '—'}
+                  </div>
                 )}
                 <div className={styles.statLabel}>Allow List Domains</div>
+                {reloading && <div className={styles.pending}>{UPDATING}</div>}
               </Body></Panel>
             </>
           )}
