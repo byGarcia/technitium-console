@@ -40,7 +40,15 @@ measures the two ambers as indistinguishable. The sentence and its icon say it.
 .kpiValue { font-family: var(--font-mono); font-size: var(--t-7); font-weight: 600; }
 .kpiSub { font-family: var(--font-mono); font-size: var(--t-2); color: var(--faint); min-height: var(--s-8); }
 .kpiLabel { font-size: var(--t-1); font-weight: var(--text-weight); letter-spacing: var(--text-tracking); text-transform: uppercase; color: var(--mute); }
-.spark { display: block; width: 100%; height: var(--s-12); margin-top: var(--s-5); }
+/* The trend runs to the card's edges and its foot, as the drawing has it: the body's
+   padding (`--s-9`, ui/Panel) is given back on three sides, and the panel's rounded
+   corners clip it. */
+.spark {
+  display: block;
+  width: calc(100% + 2 * var(--s-9));
+  height: var(--s-12);
+  margin: var(--s-5) calc(-1 * var(--s-9)) calc(-1 * var(--s-9));
+}
 .sparkTotal { color: var(--ch-total); }
 .sparkBlocked { color: var(--ch-block); }
 
