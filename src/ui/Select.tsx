@@ -42,6 +42,8 @@ export interface Option {
 }
 
 const MAX_HEIGHT = 280
+/** What the list keeps clear of the window's edges, the same 8 px as `ui/Menu`. */
+const MARGIN = 8
 
 /*
 The options are read from the `<option>` children, as in the element it replaces.
@@ -128,13 +130,38 @@ export function Select({
     setBox({ left: r.left, top: up ? r.top : r.bottom, width: r.width, up })
   }, [open, options.length])
 
+  /*
+  The list is at least as wide as its trigger and grows to its longest option, up
+  to the window. It used to be exactly the trigger's width, so a narrow trigger
+  cut its options to a letter and scrolled them sideways (Blocking › Lists, Quick
+  Add, "Steven Black [adware + malware]" as "Ste"). Grown, it may cross the
+  window's right edge: it is pulled back left, before painting, as far as needed.
+  */
+  useLayoutEffect(() => {
+    const el = list.current
+    if (box == null || el == null) return
+    const room = window.innerWidth - MARGIN
+    const right = box.left + el.offsetWidth
+    if (right <= room) return
+    const left = Math.max(MARGIN, room - el.offsetWidth)
+    if (left !== box.left) setBox({ ...box, left })
+  }, [box])
+
   useEffect(() => {
     if (!open) return
     const outside = (e: MouseEvent) => {
       const t = e.target as Node
       if (!trigger.current?.contains(t) && !list.current?.contains(t)) setOpen(false)
     }
-    const onScroll = () => setOpen(false)
+    /* Scrolling the page closes it, scrolling the list itself does not: with more
+       options than its height cap, the wheel and the arrow keys (through
+       `scrollIntoView`) scroll the list, and they closed it, so an option below
+       the eighth was out of reach. The same guard as `ui/Menu`, and for the same
+       reason: `resize` shares the handler and its `target` is `window`, not a node. */
+    const onScroll = (e: Event) => {
+      if (e.target instanceof Node && list.current?.contains(e.target)) return
+      setOpen(false)
+    }
     document.addEventListener('mousedown', outside)
     // `true` so it also hears a container's scroll, not only the page's:
     // inside a modal the thing that scrolls is the modal.
@@ -245,7 +272,8 @@ export function Select({
           className={styles.list}
           style={{
             left: box.left,
-            width: box.width,
+            minWidth: box.width,
+            maxWidth: window.innerWidth - 2 * MARGIN,
             maxHeight: MAX_HEIGHT,
             ...(box.up
               ? { bottom: window.innerHeight - box.top + 4 }

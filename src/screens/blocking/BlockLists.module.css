@@ -14,6 +14,43 @@ The Lists tab. Every value is a token of theme/tokens.css.
 .next { display: flex; align-items: center; gap: var(--s-8); }
 .next > div { flex: 1; min-width: 0; }
 
+/*
+"Add a list" on a grid. The first column is the URL's: its field, its error, its
+hint and, on a line of its own, Quick Add, as wide as the URL. The two Add buttons
+sit beside the URL field, bottom-aligned with it, and their column stays empty
+below. Rows are separated by each item's own margin, not by `row-gap`, so the
+error and the hint keep hugging their field.
+*/
+.add {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: end;
+  column-gap: var(--s-5);
+}
+.add > .invalid,
+.add > .help,
+.add > .quick { grid-column: 1; }
+.quick { margin-top: var(--s-10); }
+
+/*
+`--bp-stack`: one column. The URL keeps its error and hint right under it, the two
+buttons share the next line in halves, and Quick Add closes. Rows are explicit
+because the DOM order puts the buttons before the hint; the error's row collapses
+to nothing while there is no error.
+*/
+@media (max-width: 560px) {
+  .add { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .add > :first-child { grid-column: 1 / -1; grid-row: 1; }
+  .add > .invalid { grid-column: 1 / -1; grid-row: 2; }
+  .add > .help { grid-column: 1 / -1; grid-row: 3; }
+  .add > :nth-child(2),
+  .add > :nth-child(3) { grid-row: 4; margin-top: var(--s-8); }
+  /* A locked button comes inside the tooltip's wrapper: the wrapper takes the half. */
+  .add > :nth-child(2) > button,
+  .add > :nth-child(3) > button { width: 100%; }
+  .add > .quick { grid-column: 1 / -1; grid-row: 5; }
+}
+
 /* The validation sentence under its field, with the field's border in `--dan`
    (DESIGN.md, the modal system: the error goes next to its field, once). */
 .bad[aria-invalid],

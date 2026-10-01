@@ -408,7 +408,7 @@ export function BlockLists({
 
         <Panel title="Add a list">
           <Body>
-            <div className={shared.add}>
+            <div className={styles.add}>
               <Field label="List URL">
                 {(id) => (
                   <Input
@@ -433,37 +433,43 @@ export function BlockLists({
               <PermissionButton permission={modifyNeed} disabled={loading} onClick={() => add('allow')}>
                 Add allow list
               </PermissionButton>
-              <Field label="Quick Add">
-                {(id) => (
-                  <Select
-                    id={id}
-                    disabled={off || loading}
-                    value=""
-                    onChange={(ev) => {
-                      const chosen = ev.target.value
-                      if (chosen === '') return
-                      const entry = chosen === 'none' ? 'none' : catalog.find((q) => q.name === chosen)
-                      if (entry != null) setLines((l) => applyQuick(l, entry))
-                    }}
-                  >
-                    <option value="" />
-                    <option value="none">None</option>
-                    {catalog.map((q) => (
-                      <option key={q.name} value={q.name}>{q.name}</option>
-                    ))}
-                  </Select>
-                )}
-              </Field>
-            </div>
-            {invalid != null && (
-              <p id={invalidId} className={styles.invalid}>
-                {invalid}
+              {/* The URL's own sentences stay under it, in the URL's column. */}
+              {invalid != null && (
+                <p id={invalidId} className={styles.invalid}>
+                  {invalid}
+                </p>
+              )}
+              <p className={styles.help}>
+                Use <code>file://</code> for a list stored on this server. Hosts, plain domain, wildcard or
+                Adblock Plus files.
               </p>
-            )}
-            <p className={styles.help}>
-              Use <code>file://</code> for a list stored on this server. Hosts, plain domain, wildcard or
-              Adblock Plus files.
-            </p>
+              {/* Its own line under the URL, as wide as the URL, as upstream draws it
+                  (`index.html:2156-2157`, `width: 100%`): the catalogue's names run to
+                  86 characters and a trigger beside the buttons cut them to one letter. */}
+              <div className={styles.quick}>
+                <Field label="Quick Add">
+                  {(id) => (
+                    <Select
+                      id={id}
+                      disabled={off || loading}
+                      value=""
+                      onChange={(ev) => {
+                        const chosen = ev.target.value
+                        if (chosen === '') return
+                        const entry = chosen === 'none' ? 'none' : catalog.find((q) => q.name === chosen)
+                        if (entry != null) setLines((l) => applyQuick(l, entry))
+                      }}
+                    >
+                      <option value="" />
+                      <option value="none">None</option>
+                      {catalog.map((q) => (
+                        <option key={q.name} value={q.name}>{q.name}</option>
+                      ))}
+                    </Select>
+                  )}
+                </Field>
+              </div>
+            </div>
           </Body>
         </Panel>
 
