@@ -12,7 +12,9 @@ unimplemented.
 export interface Section {
   id: string
   label: string
-  permission: string | null
+  /** The key inside `permissions`, or a LIST meaning "any of these" (Blocking:
+   *  visible with Blocked OR Allowed). */
+  permission: string | readonly string[] | null
   phase: string
   /** Sub-sections, with upstream's literal labels. They are only shown when their
    *  section is active, exactly as the sub-tabs are today. */
@@ -38,7 +40,14 @@ export const SECTIONS: Section[] = [
 
 export interface Permission { canView: boolean; canModify: boolean; canDelete: boolean }
 
-export function visibleSections(permissions: Record<string, Permission> | undefined): Section[] {
-  if (!permissions) return SECTIONS
-  return SECTIONS.filter((s) => s.permission == null || permissions[s.permission]?.canView !== false)
+export function visibleSections(
+  permissions: Record<string, Permission> | undefined,
+  list: Section[] = SECTIONS,
+): Section[] {
+  if (!permissions) return list
+  return list.filter((s) => {
+    if (s.permission == null) return true
+    const keys = typeof s.permission === 'string' ? [s.permission] : s.permission
+    return keys.some((k) => permissions[k]?.canView !== false)
+  })
 }
