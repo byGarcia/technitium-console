@@ -307,6 +307,10 @@ the three.
   before (C22; C29, lists and `notes.txt`). The amendment is not measured yet:
   the `✓` above is C22's, and W6 is re-measured with it in Task 6 of
   `docs/2026-10-01-docker-install-plan.md`.
+  *2026-10-01* (C22, `--dir /`): `--dir /`, or any path that resolves to the
+  root folder, is refused. It used to resolve to no folder at all, and no
+  folder means "ask the server", so the console went into the server's web
+  root, which nobody had asked for.
 - **W7 ✓** (C23) *2026-09-30.* The running server is **identified**, not
   matched. A command line ending in `DnsServerApp.dll` makes a process a
   candidate; it is believed only when every uid it runs as (read from

@@ -448,6 +448,11 @@ sh /w/install.sh --dir /srv/data --from /w/console.tar.gz --yes && exit 1
 [ -f /srv/data/notes.txt ]
 [ ! -f "/srv/data/$ASSET" ]
 
+echo "step: --dir / is the root folder, not a way of leaving --dir out"
+sh /w/install.sh --dir / --from /w/console.tar.gz --yes && exit 1
+[ ! -f "$WWW/$ASSET" ]
+[ ! -e "$WWW.original" ]
+
 echo "step: an empty folder is still what --dir is for"
 mkdir -p /srv/empty
 sh /w/install.sh --dir /srv/empty --from /w/console.tar.gz --yes

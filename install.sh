@@ -150,7 +150,13 @@ if [ -n "$INTO_VOLUME" ]; then
 fi
 
 if [ "$DIR_GIVEN" = "yes" ]; then
+  DIR_ASKED="--dir $WWW_DIR"
+  [ -z "$INTO_VOLUME" ] || DIR_ASKED="--into-volume $INTO_VOLUME"
   WWW_DIR="$(resolve_path "$WWW_DIR")" || exit 1
+  # resolve_path writes the root folder as nothing, and no folder at all would
+  # mean "ask the server": the run would install somewhere it was not told to.
+  [ -n "$WWW_DIR" ] || die "$DIR_ASKED is the root folder. Installing removes whatever the console does
+    not ship, so it goes into a folder of its own. Nothing was changed."
 fi
 
 # A folder is a mount point when this process's mount table lists it as one.
