@@ -39,8 +39,10 @@ every alert of the update and the save. Everything else is OURS:
   already in the table.`; `Add block list` / `Add allow list`;
 - the table: the columns `Enabled`, `List` and `Type`, the types `Block`, `Allow`
   and `Comment`, `Remove`, `No lists`, and the row controls' aria-labels;
-- the unsaved-changes bar: `1 unsaved change` / `N unsaved changes`, `Discard`, and
-  `Save`, shortened from upstream's "Save Settings" (index.html:2460);
+- the table's foot: `N list(s) · N disabled · N comment(s)`;
+- the unsaved-changes bar: `1 unsaved change` / `N unsaved changes` with its
+  suffix `to the block list URLs`, `Discard`, and `Save`, shortened from upstream's
+  "Save Settings" (index.html:2460);
 - the two `Could not read …` sentences and the link to Settings › Blocking.
 
 No node selector: `blockListUrls` is a CLUSTER-WIDE parameter (`nodeScope`,
