@@ -90,7 +90,10 @@ runs:
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
 
-    # By digest: what was pushed, whatever a tag points at by now.
+    # By digest: what was pushed, whatever a tag points at by now. Each
+    # platform is pulled by ITS OWN manifest digest, not the index's: the
+    # runner's containerd store refuses a second platform under the same
+    # index digest ("cannot overwrite digest", run 36910489933).
     - name: Every platform carries the tarball, byte for byte (D4)
       shell: bash
       env:
@@ -100,19 +103,24 @@ runs:
       run: |
         ref="$IMAGE@$DIGEST"
         want="$(cut -d' ' -f1 "$CONTEXT/technitium-console.tar.gz.sha256")"
-        docker buildx imagetools inspect --raw "$ref" \
-          | jq -r '.manifests[].platform | "\(.os)/\(.architecture)\(if .variant then "/" + .variant else "" end)"' \
+        index="$(docker buildx imagetools inspect --raw "$ref")"
+        jq -r '.manifests[].platform | "\(.os)/\(.architecture)\(if .variant then "/" + .variant else "" end)"' <<<"$index" \
           | tee "$RUNNER_TEMP/platforms"
         if ! grep -qx 'linux/amd64' "$RUNNER_TEMP/platforms" || ! grep -Eqx 'linux/arm64(/v8)?' "$RUNNER_TEMP/platforms" \
           || ! grep -qx 'linux/arm/v7' "$RUNNER_TEMP/platforms"; then
           echo "::error::the manifest list does not hold the three platforms"; exit 1
         fi
         for p in linux/amd64 linux/arm64 linux/arm/v7; do
-          docker pull -q --platform "$p" "$ref" >/dev/null
-          cid="$(docker create --platform "$p" "$ref")"
+          d="$(jq -r --arg p "$p" 'first(.manifests[]
+            | select((.platform.os + "/" + .platform.architecture + (if .platform.variant then "/" + .platform.variant else "" end)) as $q
+              | $q == $p or ($p == "linux/arm64" and $q == "linux/arm64/v8"))
+            | .digest) // empty' <<<"$index")"
+          [ -n "$d" ] || { echo "::error::no manifest for $p"; exit 1; }
+          docker pull -q --platform "$p" "$IMAGE@$d" >/dev/null
+          cid="$(docker create --platform "$p" "$IMAGE@$d")"
           got="$(docker cp "$cid:/usr/share/technitium-console/technitium-console.tar.gz" - | tar -xO | sha256sum | cut -d' ' -f1)"
           docker rm "$cid" >/dev/null
-          echo "$p $got"
+          echo "$p $d $got"
           [ "$got" = "$want" ] || { echo "::error::$p does not carry the tarball"; exit 1; }
         done
 
