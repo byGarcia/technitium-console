@@ -363,37 +363,50 @@ export function BlockLists({
             </>
           ) : (
             <>
-              <Panel><Body>
-                {countsFailed ? (
-                  <Failure>{COUNTS_FAILED}</Failure>
-                ) : (
-                  <div className={`${styles.stat}${reloading != null ? ` ${styles.stale}` : ''}`}>
-                    {counts ? counts.block.toLocaleString() : '—'}
-                  </div>
-                )}
-                <div className={styles.statLabel}>Block List Domains</div>
-                {reloading != null && <div className={styles.pending}>{UPDATING}</div>}
+              <Panel className={shared.centred}><Body>
+                <div className={shared.kpiText}>
+                  {countsFailed ? (
+                    <Failure>{COUNTS_FAILED}</Failure>
+                  ) : (
+                    <span className={`${shared.kpiValue}${reloading != null ? ` ${styles.stale}` : ''}`}>
+                      {counts ? counts.block.toLocaleString() : '—'}
+                    </span>
+                  )}
+                  {reloading != null ? (
+                    <span className={styles.pending}>{UPDATING}</span>
+                  ) : (
+                    <span className={shared.kpiSub}>{'\u00a0'}</span>
+                  )}
+                  <span className={shared.kpiLabel}>Block List Domains</span>
+                </div>
               </Body></Panel>
-              <Panel><Body>
-                {countsFailed ? (
-                  <Failure>{COUNTS_FAILED}</Failure>
-                ) : (
-                  <div className={`${styles.stat}${reloading != null ? ` ${styles.stale}` : ''}`}>
-                    {counts ? counts.allow.toLocaleString() : '—'}
-                  </div>
-                )}
-                <div className={styles.statLabel}>Allow List Domains</div>
-                {reloading != null && <div className={styles.pending}>{UPDATING}</div>}
+              <Panel className={shared.centred}><Body>
+                <div className={shared.kpiText}>
+                  {countsFailed ? (
+                    <Failure>{COUNTS_FAILED}</Failure>
+                  ) : (
+                    <span className={`${shared.kpiValue}${reloading != null ? ` ${styles.stale}` : ''}`}>
+                      {counts ? counts.allow.toLocaleString() : '—'}
+                    </span>
+                  )}
+                  {reloading != null ? (
+                    <span className={styles.pending}>{UPDATING}</span>
+                  ) : (
+                    <span className={shared.kpiSub}>{'\u00a0'}</span>
+                  )}
+                  <span className={shared.kpiLabel}>Allow List Domains</span>
+                </div>
               </Body></Panel>
             </>
           )}
-          <Panel><Body>
-            <div className={styles.next}>
-              <div>
-                <div className={styles.stat}>{loading ? '—' : nextUpdateText(next)}</div>
-                <div className={styles.statLabel}>
+          <Panel className={shared.centred}><Body>
+            <div className={shared.kpi}>
+              <div className={shared.kpiText}>
+                <span className={shared.kpiValue}>{loading ? '—' : nextUpdateText(next)}</span>
+                <span className={shared.kpiSub}>{'\u00a0'}</span>
+                <span className={shared.kpiLabel}>
                   Next update{interval != null && interval > 0 ? ` · every ${interval} h` : ''}
-                </div>
+                </span>
               </div>
               <PermissionButton
                 permission={modifyNeed}

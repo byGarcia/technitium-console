@@ -11,6 +11,7 @@ import { minuteStamp } from '../../lib/dates'
 import type { Notice } from '../../lib/notice'
 import { Locked } from './Locked'
 import { missing, type Permissions } from './permissions'
+import shared from './Blocking.module.css'
 import styles from './Overview.module.css'
 
 /*
@@ -98,7 +99,7 @@ export function StatusPanel({
 
   if (state === 'failed') {
     return (
-      <Panel>
+      <Panel className={shared.centred}>
         <Body>
           <Failure>
             Could not read the blocking state.{' '}
@@ -115,8 +116,9 @@ export function StatusPanel({
   /* The padlock wins: a pause the user cannot lift is not drawn in amber. */
   const tone = state?.kind === 'paused' && modifyNeed != null ? 'off' : state?.kind
 
+  /* Centred: the panel shares its row with the taller add bar and stretches to it. */
   return (
-    <Panel>
+    <Panel className={shared.centred}>
       <Body>
         {state == null ? (
           <Loading compact />
