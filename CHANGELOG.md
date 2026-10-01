@@ -108,6 +108,8 @@ time the way the stock console does.
   the stock console does.
 - **No stray scrollbar beside the section tabs.** Chromium on Linux drew one next to the tabs of
   Settings, Logs, Administration and DHCP.
+- **Drop-down lists show their options whole.** A list is now as wide as its longest option,
+  within the window, and scrolling it no longer closes it.
 
 ### 🧪 Under the hood
 
