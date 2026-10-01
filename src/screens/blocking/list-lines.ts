@@ -60,9 +60,20 @@ function toText(lines: readonly ListLine[]): string {
   return lines.map((l) => `${l.raw}\n`).join('')
 }
 
+/*
+Whether a line can be switched on or off. A comment cannot, and neither can an
+enabled line whose URL is not an `http:`, `https:` or `file:` URL: prefixing it
+with `#` would turn it into a comment, which can never be switched back on.
+A disabled line is a list URL by construction, so it can always be switched on.
+*/
+export function canToggle(line: ListLine): boolean {
+  if (line.kind === 'comment') return false
+  return !line.enabled || isListUrl(line.url ?? '')
+}
+
 /** Switching off prefixes `#`; switching on removes that `#` and the spaces after it. */
 export function toggleLine(line: ListLine): ListLine {
-  if (line.kind === 'comment') return line
+  if (!canToggle(line)) return line
   const raw = line.enabled ? `#${line.raw}` : line.raw.replace(/^#\s*/, '')
   return parseLine(raw) ?? line
 }

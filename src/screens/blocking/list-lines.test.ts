@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  addList, applyQuick, fromUrls, listName, parseLine, saveBody, sameLines, toggleLine,
+  addList, applyQuick, canToggle, fromUrls, listName, parseLine, saveBody, sameLines, toggleLine,
 } from './list-lines'
 
 const HOSTS = 'https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts'
@@ -57,6 +57,20 @@ describe('toggleLine', () => {
   it('a comment does not toggle', () => {
     const c = parseLine('# note')!
     expect(toggleLine(c)).toBe(c)
+  })
+
+  it('an enabled line that is not a list URL does not toggle: it would become a comment', () => {
+    const l = parseLine('not a url')!
+    expect(toggleLine(l)).toBe(l)
+  })
+})
+
+describe('canToggle', () => {
+  it('a block URL and a disabled URL toggle, a comment and a line that is not a list URL do not', () => {
+    expect(canToggle(parseLine(HOSTS)!)).toBe(true)
+    expect(canToggle(parseLine(`#${HOSTS}`)!)).toBe(true)
+    expect(canToggle(parseLine('# note')!)).toBe(false)
+    expect(canToggle(parseLine('not a url')!)).toBe(false)
   })
 })
 
