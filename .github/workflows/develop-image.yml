@@ -1,0 +1,44 @@
+# An init image of whatever is on develop, to pull and try before a release:
+# ghcr.io/bygarcia/technitium-console:develop and :develop-<sha7>. It is built
+# exactly as a release is (the same tarball action and the same image action)
+# and never touches latest, X.Y or X.Y.Z. No release, no notes. Not for
+# production: develop moves with every push.
+name: Develop image
+
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  image:
+    # develop of this repository only: a manual run from another branch, or a
+    # fork's own develop, builds nothing.
+    if: github.repository == 'byGarcia/technitium-console' && github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    # The newest push wins; an older build still running is dropped.
+    concurrency:
+      group: develop-image
+      cancel-in-progress: true
+    # bash -eo pipefail: a failing command in a pipe fails the step.
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/console-tarball
+
+      # develop-<sha7> is pushed with the build; develop moves to it once
+      # every platform has been checked.
+      - uses: ./.github/actions/init-image
+        with:
+          image: ghcr.io/bygarcia/technitium-console
+          tarball-dir: .
+          tags: type=sha,prefix=develop-,format=short
+          floating: develop

@@ -15,32 +15,12 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       latest: ${{ steps.floating.outputs.latest }}
-      minor: ${{ steps.floating.outputs.minor }}
+      floating: ${{ steps.floating.outputs.floating }}
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: npm
-
-      - run: npm ci
-
-      # The console goes in front of a DNS server, so a release that fails its
-      # own checks must not exist.
-      - run: npm run typecheck
-      - run: npm run lint
-      - run: npm test
-
-      - run: npm run build
-
-      # Flat archive: install.sh unpacks it straight into the web root, so the
-      # files have to be at the root of the tarball and not inside dist/.
-      - name: Pack
-        run: |
-          tar -czf technitium-console.tar.gz -C dist .
-          sha256sum technitium-console.tar.gz > technitium-console.tar.gz.sha256
-          echo "Routes emitted: $(find dist -name index.html | wc -l)"
+      # The same tarball the develop image is built from (develop-image.yml).
+      - uses: ./.github/actions/console-tarball
 
       # Docker's floating tags only ever move forward. latest goes to the highest
       # release in the repo and X.Y to the highest of its own line, so re-running
@@ -66,9 +46,12 @@ jobs:
             if [ "$GITHUB_REF_NAME" = "$top_of_line" ]; then minor=true; fi
             echo "$GITHUB_REF_NAME: highest release $top, highest of its line $top_of_line"
           fi
-          echo "latest=$latest X.Y=$minor"
+          floating=""
+          if [ "$minor" = true ]; then floating="$(printf '%s\n' "${GITHUB_REF_NAME#v}" | cut -d. -f1-2)"; fi
+          if [ "$latest" = true ]; then floating="$floating latest"; fi
+          echo "latest=$latest X.Y=$minor -> floating tags: ${floating:-none}"
           echo "latest=$latest" >> "$GITHUB_OUTPUT"
-          echo "minor=$minor" >> "$GITHUB_OUTPUT"
+          echo "floating=$floating" >> "$GITHUB_OUTPUT"
 
       # The release page is what people read, so it carries this version's own
       # section of CHANGELOG.md. A tag with no section there fails here instead of
@@ -118,12 +101,12 @@ jobs:
           body_path: notes.md
           generate_release_notes: true
 
-  # The init image for Docker (README, «Docker»): busybox, the install.sh of
-  # this tag and the tarball the job above has just published, checked against
-  # its own .sha256 before building and again inside every platform after
-  # pushing X.Y.Z (contract D4). Only then do X.Y and latest move, so a failed
-  # check leaves them where they were. GITHUB_TOKEN is the only credential. A
-  # package's first publication is private: it is made public by hand, once.
+  # The init image for Docker (README, «Docker»), from the tarball the job
+  # above has just published: X.Y.Z is pushed and checked in every platform
+  # (contract D4), and only then do X.Y and latest move, as the release job
+  # decided. The steps live in .github/actions/init-image, shared with the
+  # develop image. GITHUB_TOKEN is the only credential. A package's first
+  # publication is private: it is made public by hand, once.
   image:
     needs: release
     if: startsWith(github.ref, 'refs/tags/v')
@@ -139,94 +122,21 @@ jobs:
     defaults:
       run:
         shell: bash
-    env:
-      IMAGE: ghcr.io/bygarcia/technitium-console
     steps:
       - uses: actions/checkout@v4
 
       # The bytes people download, not a second build of them.
-      - name: The release's own tarball, checked against its checksum
+      - name: The release's own tarball
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          mkdir image
-          cp install.sh docker/Dockerfile image/
-          gh release download "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --dir image \
+          gh release download "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --dir "$RUNNER_TEMP/release" \
             --pattern technitium-console.tar.gz --pattern technitium-console.tar.gz.sha256
-          cd image && sha256sum -c technitium-console.tar.gz.sha256
 
-      # vX.Y.Z is pushed as X.Y.Z alone; the floating tags come at the end.
-      - id: meta
-        uses: docker/metadata-action@v6
+      # vX.Y.Z is pushed as X.Y.Z alone; a prerelease as its own version only.
+      - uses: ./.github/actions/init-image
         with:
-          images: ${{ env.IMAGE }}
-          flavor: latest=false
-          tags: |
-            type=semver,pattern={{version}}
-          labels: |
-            org.opencontainers.image.title=technitium-console
-            org.opencontainers.image.description=Copies the technitium-console web console into a volume shared with Technitium DNS Server, then exits.
-            org.opencontainers.image.licenses=GPL-3.0-or-later
-
-      - uses: docker/setup-buildx-action@v4
-
-      - uses: docker/login-action@v4
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ github.token }}
-
-      # No QEMU: the Dockerfile has no RUN, so nothing executes for the foreign
-      # platforms. No attestations: they show up as unknown/unknown entries in
-      # the manifest list, and older engines on NAS boxes trip over them.
-      - uses: docker/build-push-action@v7
-        with:
-          context: image
-          platforms: linux/amd64,linux/arm64,linux/arm/v7
-          push: true
-          provenance: false
-          sbom: false
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-
-      - name: Every platform carries the release's tarball, byte for byte (D4)
-        env:
-          VERSION: ${{ steps.meta.outputs.version }}
-        run: |
-          want="$(cut -d' ' -f1 image/technitium-console.tar.gz.sha256)"
-          docker buildx imagetools inspect --raw "$IMAGE:$VERSION" \
-            | jq -r '.manifests[].platform | "\(.os)/\(.architecture)\(if .variant then "/" + .variant else "" end)"' \
-            | tee platforms
-          if ! grep -qx 'linux/amd64' platforms || ! grep -Eqx 'linux/arm64(/v8)?' platforms \
-            || ! grep -qx 'linux/arm/v7' platforms; then
-            echo "::error::the manifest list does not hold the three platforms"; exit 1
-          fi
-          for p in linux/amd64 linux/arm64 linux/arm/v7; do
-            docker pull -q --platform "$p" "$IMAGE:$VERSION" >/dev/null
-            cid="$(docker create --platform "$p" "$IMAGE:$VERSION")"
-            got="$(docker cp "$cid:/usr/share/technitium-console/technitium-console.tar.gz" - | tar -xO | sha256sum | cut -d' ' -f1)"
-            docker rm "$cid" >/dev/null
-            echo "$p $got"
-            [ "$got" = "$want" ] || { echo "::error::$p does not carry the release's tarball"; exit 1; }
-          done
-
-      # The same manifest list, under the floating tags the release job allowed.
-      - name: X.Y and latest, now that the bytes are checked
-        if: needs.release.outputs.latest == 'true' || needs.release.outputs.minor == 'true'
-        env:
-          VERSION: ${{ steps.meta.outputs.version }}
-          LATEST: ${{ needs.release.outputs.latest }}
-          MINOR: ${{ needs.release.outputs.minor }}
-        run: |
-          floating=()
-          if [ "$MINOR" = true ]; then floating+=("${VERSION%.*}"); fi
-          if [ "$LATEST" = true ]; then floating+=(latest); fi
-          args=()
-          for t in "${floating[@]}"; do args+=(--tag "$IMAGE:$t"); done
-          docker buildx imagetools create "${args[@]}" "$IMAGE:$VERSION"
-          want="$(docker buildx imagetools inspect --raw "$IMAGE:$VERSION" | jq -c '[.manifests[].digest]')"
-          for t in "${floating[@]}"; do
-            got="$(docker buildx imagetools inspect --raw "$IMAGE:$t" | jq -c '[.manifests[].digest]')"
-            echo "$t $got"
-            [ "$got" = "$want" ] || { echo "::error::$t does not point at the images of $VERSION"; exit 1; }
-          done
+          image: ghcr.io/bygarcia/technitium-console
+          tarball-dir: ${{ runner.temp }}/release
+          tags: type=semver,pattern={{version}}
+          floating: ${{ needs.release.outputs.floating }}
