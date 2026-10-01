@@ -21,9 +21,28 @@ values are kept as they were; the outliers converge to the neighbouring step.
 
 **Rule: in `*.module.css` you do not write a spacing, type or radius px that is
 not one of these tokens.** A loose value is future drift.
+
+Colour is declared per theme, in a block of its own (`:root, [data-theme='dark']`,
+then `[data-theme='light']`); every other scale is shared by all themes and lives in
+the plain `:root` below them.
 */
 
-:root {
+/*
+── Colour, per theme ──────────────────────────────────────────────────────────
+
+Every colour of the console is declared in this block and nowhere else, and that
+is measured: `npm run lint:colours` (`dev/check-colour-tokens.mjs`) fails on a
+colour literal anywhere in `src/` outside it. The non-colour scales —type,
+spacing, radii, layers, motion— are the same in every theme and live in the plain
+`:root` further down.
+
+The dark theme is also the fallback: `:root` carries it, so the console is dark
+before `data-theme` is set and with any value nobody declared.
+*/
+:root,
+[data-theme='dark'] {
+  color-scheme: dark;
+
   /* ── Color ──────────────────────────────────────────────────────────── */
   --bg: #111315;
   --pan: #191c1f;
@@ -287,6 +306,107 @@ not one of these tokens.** A loose value is future drift.
   --hover: rgba(255, 255, 255, 0.07);
   --hover-strong: rgba(255, 255, 255, 0.11);
 
+  /*
+  THE COLOURS THAT WERE WRITTEN WHERE THEY WERE USED, until 2026-10-01. Each one
+  moved here with its value unchanged, so the dark theme renders exactly as it did;
+  the role in the name is what a second theme has to answer.
+
+  `--line-hover` and `--line-ctrl` are bluer than `--line`, and `--field-focus`
+  bluer than `--field`: they are what is left of the near-black blue ramp the
+  canvas left behind (see THE SURFACE RAMP above). Kept as they are because
+  converging them would be a visual change, and that is a decision of its own.
+  */
+  --selection: rgba(245, 165, 36, 0.28);  /* text selection: the accent, translucent */
+  --line-hover: #2f3846;    /* a button's border and the scrollbar thumb, under the pointer */
+  --line-ctrl: #3a465b;     /* a field's border under the pointer; a checkbox's at rest */
+  --field-focus: #0e131b;   /* a `ui/Field` input while it has the focus */
+  /* The veil behind what covers the page: the side drawer on a narrow screen,
+     and the dialog, which darkens more because it is modal. */
+  --veil: rgba(5, 7, 10, 0.6);
+  --veil-dialog: rgba(5, 7, 10, 0.72);
+
+  /* ── Material ───────────────────────────────────────────────────────── */
+  /*
+  The console had no elevation language: zero gradients and four shadows, all four
+  on things that float. Everything was flat panels with a 1 px border, and that is
+  why it read as having no material.
+
+  Three heights and nothing more. Each shadow carries an offset AND a blur —a halo
+  with no offset is decoration, not depth— and goes in two layers: a short contact
+  that settles the element and a diffuse one that lifts it off.
+  */
+  --e-1: 0 1px 2px rgba(0, 0, 0, 0.35), 0 8px 24px rgba(0, 0, 0, 0.22);
+  --e-2: 0 2px 6px rgba(0, 0, 0, 0.4), 0 12px 30px rgba(0, 0, 0, 0.45);
+  --e-3: 0 4px 12px rgba(0, 0, 0, 0.45), 0 24px 64px rgba(0, 0, 0, 0.6);
+
+  /* The two old names still hold: they are height 2 and height 3. */
+  --shadow-menu: var(--e-2);
+  --shadow-modal: var(--e-3);
+
+  /*
+  The light edge. A raised surface catches some light from above; that 1 px
+  reflection is what separates it from the background without having to raise the
+  shadow. It goes as `inset` so it takes no room in the box.
+  */
+  --edge: inset 0 1px 0 rgba(255, 255, 255, 0.055);
+  --edge-strong: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+
+  /* The sunken look: a field is a hole in the surface, not a sticker. */
+  --sunken: inset 0 1px 2px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(0, 0, 0, 0.2);
+
+  /* A field's focus is not just a border: it is a halo that lifts it. */
+  --halo-focus: 0 0 0 3px rgba(245, 165, 36, 0.18);
+
+  /* The checkbox's halo under the pointer: the focus halo, quieter. */
+  --halo-hover: 0 0 0 3px rgba(245, 165, 36, 0.12);
+
+  /* The switch's knob: a contact shadow, so it sits on its track. */
+  --shadow-knob: 0 1px 2px rgba(0, 0, 0, 0.5);
+
+  /*
+  THE SHINE. A filled control catches light from above like a raised surface does,
+  as a translucent white fading downwards over its fill. The stronger the fill,
+  the more light it takes: barely any on a neutral button, most on the amber one
+  and on a ticked checkbox. They go before the fill: `var(--shine-btn), var(--pan2)`.
+  */
+  --shine-btn: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0) 60%);
+  --shine-primary: linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0) 65%);
+  --shine-danger: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0) 65%);
+  --shine-check: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0) 60%);
+
+  /*
+  THE DRAWN GLYPHS. The dropdown's chevron and the checkbox's tick and dash are
+  inline SVG, because the CSP does not allow bringing anything in, and an SVG in a
+  `url()` cannot read a custom property: its stroke colour is written inside it,
+  URL-encoded (`%23` is `#`). So the whole image is the token.
+
+    --glyph-chevron   `#8b95a7`, its own grey: it is none of the text tokens
+    --glyph-tick      `#1a1205`, the value of `--on-acc`: the ink of the amber fill
+    --glyph-dash      the same ink, for the indeterminate checkbox
+    --glyph-tick-ok   `#052e26`, the value of `--ok-bg`: the ink of the green fill
+                      (`ui/Matrix`, a granted permission)
+
+  If one of those tokens changes, the glyph that copies it has to change too.
+  */
+  --glyph-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238b95a7' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  --glyph-tick: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231a1205' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m20 6-11 11-5-5'/%3E%3C/svg%3E");
+  --glyph-dash: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231a1205' stroke-width='3.5' stroke-linecap='round'%3E%3Cpath d='M6 12h12'/%3E%3C/svg%3E");
+  --glyph-tick-ok: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23052e26' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m20 6-11 11-5-5'/%3E%3C/svg%3E");
+}
+
+[data-theme='light'] {
+  /*
+  EMPTY on purpose: the light theme's values are designed and measured in a step
+  of their own, and this block is where they land.
+
+  It redeclares every colour token of the block above, `color-scheme` included,
+  and nothing else. Same specificity as `[data-theme='dark']` and later in the
+  file, so it wins wherever the attribute says `light`; while it is empty, a light
+  attribute still renders the dark theme, because `:root` carries it.
+  */
+}
+
+:root {
   /* ── Typography ──────────────────────────────────────────────────────── */
   --font-ui: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
@@ -399,38 +519,6 @@ not one of these tokens.** A loose value is future drift.
   */
   --focus: 2px solid var(--acc);
   --focus-offset: 1px;
-
-  /* ── Material ───────────────────────────────────────────────────────── */
-  /*
-  The console had no elevation language: zero gradients and four shadows, all four
-  on things that float. Everything was flat panels with a 1 px border, and that is
-  why it read as having no material.
-
-  Three heights and nothing more. Each shadow carries an offset AND a blur —a halo
-  with no offset is decoration, not depth— and goes in two layers: a short contact
-  that settles the element and a diffuse one that lifts it off.
-  */
-  --e-1: 0 1px 2px rgba(0, 0, 0, 0.35), 0 8px 24px rgba(0, 0, 0, 0.22);
-  --e-2: 0 2px 6px rgba(0, 0, 0, 0.4), 0 12px 30px rgba(0, 0, 0, 0.45);
-  --e-3: 0 4px 12px rgba(0, 0, 0, 0.45), 0 24px 64px rgba(0, 0, 0, 0.6);
-
-  /* The two old names still hold: they are height 2 and height 3. */
-  --shadow-menu: var(--e-2);
-  --shadow-modal: var(--e-3);
-
-  /*
-  The light edge. A raised surface catches some light from above; that 1 px
-  reflection is what separates it from the background without having to raise the
-  shadow. It goes as `inset` so it takes no room in the box.
-  */
-  --edge: inset 0 1px 0 rgba(255, 255, 255, 0.055);
-  --edge-strong: inset 0 1px 0 rgba(255, 255, 255, 0.12);
-
-  /* The sunken look: a field is a hole in the surface, not a sticker. */
-  --sunken: inset 0 1px 2px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(0, 0, 0, 0.2);
-
-  /* A field's focus is not just a border: it is a halo that lifts it. */
-  --halo-focus: 0 0 0 3px rgba(245, 165, 36, 0.18);
 
   /* ── Controls ───────────────────────────────────────────────────────── */
   --ctrl: 18px;          /* side of the checkbox and the radio */

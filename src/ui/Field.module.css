@@ -39,12 +39,12 @@ the cursor is.
 
 .input::placeholder { color: var(--faint); }
 
-.input:hover:not(:disabled):not(:focus) { border-color: #3a465b; }
+.input:hover:not(:disabled):not(:focus) { border-color: var(--line-ctrl); }
 
 .input:focus {
   outline: none;
   border-color: var(--acc);
-  background-color: #0e131b;
+  background-color: var(--field-focus);
   box-shadow: var(--sunken), var(--halo-focus);
 }
 

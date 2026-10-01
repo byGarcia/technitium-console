@@ -1,6 +1,6 @@
 /* The veil and the content go on the same layer and order themselves by DOM
    order. Without this declaration the sticky header painted over them. */
-.overlay { position: fixed; inset: 0; z-index: var(--layer-dialog); background: rgba(5, 7, 10, 0.72); }
+.overlay { position: fixed; inset: 0; z-index: var(--layer-dialog); background: var(--veil-dialog); }
 /*
 The BODY scrolls, not the whole dialog.
 

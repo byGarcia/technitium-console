@@ -23,7 +23,7 @@ to weigh the same. What changes is that this one opens.
   transition: border-color var(--t-fast), box-shadow var(--t-fast);
 }
 
-.trigger:hover:not(:disabled) { border-color: #3a465b; }
+.trigger:hover:not(:disabled) { border-color: var(--line-ctrl); }
 
 .trigger:focus-visible,
 .trigger[aria-expanded='true'] {

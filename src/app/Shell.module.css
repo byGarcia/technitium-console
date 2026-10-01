@@ -113,7 +113,7 @@ looking at it from a phone when something has stopped resolving.
     position: fixed;
     inset: 0;
     z-index: var(--layer-veil);
-    background: rgba(5, 7, 10, 0.6);
+    background: var(--veil);
     border: 0;
   }
 

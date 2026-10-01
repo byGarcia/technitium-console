@@ -86,12 +86,11 @@ ring come with the browser's values, which belong to no design system: they are
 what gives away that an interface was assembled and not built.
 */
 
-::selection { background: rgba(245, 165, 36, 0.28); color: var(--ink); }
+::selection { background: var(--selection); color: var(--ink); }
 
 :root {
   accent-color: var(--acc);
   caret-color: var(--acc);
-  color-scheme: dark;
   scrollbar-color: var(--line) transparent;
   scrollbar-width: thin;
 }
@@ -106,7 +105,7 @@ what gives away that an interface was assembled and not built.
   border-radius: var(--r-full);
 }
 
-::-webkit-scrollbar-thumb:hover { background: #2f3846; background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background: var(--line-hover); background-clip: padding-box; }
 ::-webkit-scrollbar-corner { background: transparent; }
 
 /*
@@ -151,14 +150,14 @@ inline SVG background because the CSP does not allow bringing anything in.
 select {
   appearance: none;
   padding-right: var(--s-11);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238b95a7' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-image: var(--glyph-chevron);
   background-repeat: no-repeat;
   background-position: right var(--s-6) center;
   cursor: pointer;
 }
 
 select:hover:not(:disabled),
-input[type='file']:hover:not(:disabled) { border-color: #3a465b; }
+input[type='file']:hover:not(:disabled) { border-color: var(--line-ctrl); }
 
 select:disabled,
 input[type='file']:disabled { opacity: 0.45; cursor: default; }
@@ -191,7 +190,7 @@ input[type='radio'] {
   width: var(--ctrl);
   height: var(--ctrl);
   margin: 0;
-  border: 1px solid #3a465b;
+  border: 1px solid var(--line-ctrl);
   background-color: var(--field);
   box-shadow: var(--sunken);
   cursor: pointer;
@@ -213,13 +212,13 @@ input[type='radio'] { border-radius: var(--r-full); }
 input[type='checkbox']:hover:not(:disabled),
 input[type='radio']:hover:not(:disabled) {
   border-color: var(--acc);
-  box-shadow: var(--sunken), 0 0 0 3px rgba(245, 165, 36, 0.12);
+  box-shadow: var(--sunken), var(--halo-hover);
 }
 
 input[type='checkbox']:checked,
 input[type='radio']:checked {
   background-color: var(--acc);
-  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0) 60%);
+  background-image: var(--shine-check);
   border-color: var(--acc);
   box-shadow: var(--edge-strong);
 }
@@ -227,8 +226,8 @@ input[type='radio']:checked {
 /* The tick is drawn, not written with a character. */
 input[type='checkbox']:checked {
   background-image:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231a1205' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m20 6-11 11-5-5'/%3E%3C/svg%3E"),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0) 60%);
+    var(--glyph-tick),
+    var(--shine-check);
   background-size: 13px 13px, 100% 100%;
   background-position: center, center;
   background-repeat: no-repeat, no-repeat;
@@ -237,13 +236,13 @@ input[type='checkbox']:checked {
 input[type='radio']:checked {
   background-image:
     radial-gradient(circle at center, var(--on-acc) 0 3.5px, transparent 4px),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0) 60%);
+    var(--shine-check);
 }
 
 input[type='checkbox']:indeterminate {
   background-color: var(--acc);
   border-color: var(--acc);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231a1205' stroke-width='3.5' stroke-linecap='round'%3E%3Cpath d='M6 12h12'/%3E%3C/svg%3E");
+  background-image: var(--glyph-dash);
   background-size: 12px 12px;
   background-position: center;
   background-repeat: no-repeat;
