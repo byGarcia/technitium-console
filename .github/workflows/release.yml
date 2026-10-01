@@ -87,7 +87,9 @@ jobs:
           LATEST: ${{ steps.floating.outputs.latest }}
         run: |
           tag="${GITHUB_REF_NAME}"
-          awk -v head="## ${tag} " 'index($0, head) == 1 { on = 1; next } on && /^## v/ { exit } on' CHANGELOG.md \
+          # A prerelease (vX.Y.Z-rc.N) reads the section of the version it previews.
+          base="${tag%%-*}"
+          awk -v head="## ${base} " 'index($0, head) == 1 { on = 1; next } on && /^## v/ { exit } on' CHANGELOG.md \
             | sed '/^---$/d' > section.md
           # Release pages keep every newline, so the wrapped paragraphs of
           # CHANGELOG.md are joined back into one line each.
@@ -102,8 +104,16 @@ jobs:
                   out.append(line)
           open('notes.md', 'w').write('\n'.join(out))
           PY
-          [ -s notes.md ] || { echo "CHANGELOG.md has no section for ${tag}"; exit 1; }
-          printf '\n**Install or update:** run the one-line installer from the [README](https://github.com/byGarcia/technitium-console#installing) again. Which console goes with which server: [CHANGELOG](https://github.com/byGarcia/technitium-console/blob/main/CHANGELOG.md#which-version-for-which-server).\n' >> notes.md
+          [ -s notes.md ] || { echo "CHANGELOG.md has no section for ${base}"; exit 1; }
+          # The installer's default is the latest release, which a prerelease
+          # never is: it is installed by naming it.
+          # shellcheck disable=SC2016 # the backticks are Markdown, not a command
+          if [ "$base" != "$tag" ]; then
+            printf '\n**A prerelease, for testing:** the one-line installer from the [README](https://github.com/byGarcia/technitium-console#installing) installs it with `sh -s -- --version %s`, and goes back with `--version` and the release you had. Which console goes with which server: [CHANGELOG](https://github.com/byGarcia/technitium-console/blob/main/CHANGELOG.md#which-version-for-which-server).\n' "$tag"
+          else
+            printf '\n**Install or update:** run the one-line installer from the [README](https://github.com/byGarcia/technitium-console#installing) again. Which console goes with which server: [CHANGELOG](https://github.com/byGarcia/technitium-console/blob/main/CHANGELOG.md#which-version-for-which-server).\n'
+          fi >> notes.md
+          echo "prerelease=$([ "$base" != "$tag" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
           # The image job below publishes this same release for Docker. Pulling
           # only brings it when it is the one latest points at.
           # shellcheck disable=SC2016 # the backticks are Markdown, not a command
@@ -126,6 +136,10 @@ jobs:
           name: ${{ steps.notes.outputs.title }}
           body_path: notes.md
           generate_release_notes: true
+          # A prerelease is never the one releases/latest, and so install.sh's
+          # default, points at.
+          prerelease: ${{ steps.notes.outputs.prerelease }}
+          make_latest: ${{ steps.notes.outputs.prerelease == 'true' && 'false' || 'true' }}
 
   # The init image for Docker (README, «Docker»), from the tarball the job
   # above has just published: X.Y.Z is pushed and checked in every platform
