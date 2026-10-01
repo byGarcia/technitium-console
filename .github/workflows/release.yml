@@ -45,9 +45,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    outputs:
-      latest: ${{ steps.floating.outputs.latest }}
-      floating: ${{ steps.floating.outputs.floating }}
     steps:
       # For CHANGELOG.md and the tags; no npm here. The token is not left in
       # .git/config: only the release step below gets it, as an input.
@@ -64,38 +61,21 @@ jobs:
       - name: The tarball, checked against its checksum
         run: sha256sum -c technitium-console.tar.gz.sha256
 
-      # Docker's floating tags only ever move forward. latest goes to the highest
-      # release in the repo and X.Y to the highest of its own line, so re-running
-      # an old tag (by hand or "Re-run jobs") or tagging a backport points neither
-      # back in time. Prereleases are not releases here: they move neither. The
-      # notes below and the image job both follow this decision.
+      # Docker's floating tags only ever move forward (latest to the highest
+      # release, X.Y to the highest of its line; prereleases move neither), as
+      # .github/actions/init-image/floating-tags.sh decides. The notes below
+      # need to know whether latest will be this release; the image job does not
+      # take it from here, it decides again right before moving the tags.
       - name: Which floating tags this release moves
         id: floating
         shell: bash
         run: |
           # Anonymous: the repo is public and checkout kept no token. If it ever
-          # cannot read the tags, the guard below fails the release.
-          releases="$(git ls-remote --tags --refs origin 'v*' | sed 's|.*refs/tags/||' \
-            | { grep -Ex 'v[0-9]+\.[0-9]+\.[0-9]+' || true; } | sort -V)"
-          latest=false; minor=false
-          if printf '%s\n' "$GITHUB_REF_NAME" | grep -Eqx 'v[0-9]+\.[0-9]+\.[0-9]+'; then
-            # A release that cannot find itself among the tags has not read them.
-            if ! printf '%s\n' "$releases" | grep -Fqx "$GITHUB_REF_NAME"; then
-              echo "::error::$GITHUB_REF_NAME is not among the tags read from origin"; exit 1
-            fi
-            line="$(printf '%s\n' "$GITHUB_REF_NAME" | cut -d. -f1-2)."
-            top="$(printf '%s\n' "$releases" | tail -n1)"
-            top_of_line="$(printf '%s\n' "$releases" | awk -v p="$line" 'index($0, p) == 1' | tail -n1)"
-            if [ "$GITHUB_REF_NAME" = "$top" ]; then latest=true; fi
-            if [ "$GITHUB_REF_NAME" = "$top_of_line" ]; then minor=true; fi
-            echo "$GITHUB_REF_NAME: highest release $top, highest of its line $top_of_line"
-          fi
-          floating=""
-          if [ "$minor" = true ]; then floating="$(printf '%s\n' "${GITHUB_REF_NAME#v}" | cut -d. -f1-2)"; fi
-          if [ "$latest" = true ]; then floating="$floating latest"; fi
-          echo "latest=$latest X.Y=$minor -> floating tags: ${floating:-none}"
+          # cannot read the tags, pipefail or the script's guard fails the release.
+          floating="$(git ls-remote --tags --refs origin 'v*' | sh .github/actions/init-image/floating-tags.sh "$GITHUB_REF_NAME")"
+          latest=false
+          case " $floating " in *" latest "*) latest=true ;; esac
           echo "latest=$latest" >> "$GITHUB_OUTPUT"
-          echo "floating=$floating" >> "$GITHUB_OUTPUT"
 
       # The release page is what people read, so it carries this version's own
       # section of CHANGELOG.md. A tag with no section there fails here instead of
@@ -149,9 +129,10 @@ jobs:
 
   # The init image for Docker (README, «Docker»), from the tarball the job
   # above has just published: X.Y.Z is pushed and checked in every platform
-  # (contract D4), and only then do X.Y and latest move, as the release job
-  # decided. The steps live in .github/actions/init-image, shared with the
-  # develop image. GITHUB_TOKEN is the only credential. A package's first
+  # (contract D4), and only then do X.Y and latest move, decided in that same
+  # step from the tags as they are then, so a re-run of this job alone never
+  # moves them back. The steps live in .github/actions/init-image, shared with
+  # the develop image. GITHUB_TOKEN is the only credential. A package's first
   # publication is private: it is made public by hand, once.
   image:
     needs: release
@@ -188,4 +169,4 @@ jobs:
           image: ghcr.io/bygarcia/technitium-console
           tarball-dir: ${{ runner.temp }}/release
           tags: type=semver,pattern={{version}}
-          floating: ${{ needs.release.outputs.floating }}
+          release-tag: ${{ github.ref_name }}
