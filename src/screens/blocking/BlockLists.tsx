@@ -13,6 +13,7 @@ import { Confirm } from '../../ui/Confirm'
 import { Notifier } from '../../ui/Notifier'
 import { Failure, Loading } from '../../ui/Empty'
 import { RouteLink } from '../../ui/RouteLink'
+import { Icon } from '../../ui/Icon'
 import { noticeFromFailure, type Notice } from '../../lib/notice'
 import {
   addList, applyQuick, canToggle, fromUrls, listName, saveBody, sameLines, toggleLine, type ListLine,
@@ -38,6 +39,9 @@ out of order.
 
 const KIND_LABEL = { block: 'Block', allow: 'Allow', comment: 'Comment' } as const
 const KIND_CLASS = { block: styles.block, allow: styles.allow, comment: styles.comment } as const
+/* An icon and a word, not only a colour, as the Rule column of Rules: the same two
+   icons, so a block list and a blocked rule read as the same kind. */
+const KIND_ICON = { block: 'blocked', allow: 'allowed' } as const
 
 /*
 The add field takes the bare URL; the buttons choose block or allow. Both sentences
@@ -373,7 +377,10 @@ export function BlockLists({
                       <div className={styles.url}>{l.url ?? l.raw}</div>
                     </td>
                     <td className={faded}>
-                      <span className={`${styles.kind} ${KIND_CLASS[l.kind]}`}>{KIND_LABEL[l.kind]}</span>
+                      <span className={`${styles.kind} ${KIND_CLASS[l.kind]}`}>
+                        {l.kind !== 'comment' && <Icon name={KIND_ICON[l.kind]} size={14} />}
+                        {KIND_LABEL[l.kind]}
+                      </span>
                     </td>
                     <td>
                       <PermissionButton size="sm" variant="danger" permission={modifyNeed}
