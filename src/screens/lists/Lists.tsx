@@ -48,8 +48,9 @@ Cache is still a section of its own. Allowed and Blocked are not any more: their
 tree is mounted `embedded` inside Blocking's Rules tab (screens/blocking/Rules.tsx).
 */
 
-
-interface Confirmation {
+/** A confirmation waiting in the dialog. Also Rules' (screens/blocking/Rules.tsx),
+ *  whose Delete is the same verb with the same sentences. */
+export interface Confirmation {
   title: string
   text: string
   label: string

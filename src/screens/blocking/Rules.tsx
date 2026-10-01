@@ -8,20 +8,20 @@ import { Pagination } from '../../ui/Pagination'
 import { Segmented } from '../../ui/Segmented'
 import { Menu } from '../../ui/Menu'
 import { PermissionButton } from '../../ui/PermissionButton'
-import { Tooltip } from '../../ui/Tooltip'
 import { Confirm } from '../../ui/Confirm'
 import { Notifier } from '../../ui/Notifier'
 import { Input } from '../../ui/Field'
 import { Icon } from '../../ui/Icon'
-import { Empty, Failure, Loading } from '../../ui/Empty'
+import { Failure, Loading } from '../../ui/Empty'
 import { Button } from '../../ui/Button'
 import { primaryNodeName } from '../../ui/ClusterNodeSelect'
 import { pageWindow } from '../../lib/pagination'
 import { noticeFromFailure, type Notice } from '../../lib/notice'
 import { StaleData } from '../StaleData'
-import { Lists, ImportDomains } from '../lists/Lists'
+import { Lists, ImportDomains, type Confirmation } from '../lists/Lists'
+import { LockedBody, LockedItem } from './Locked'
 import { AddDomainBar } from './AddDomainBar'
-import { missing, requiresText, type Need, type Permissions } from './permissions'
+import { missing, type Need, type Permissions } from './permissions'
 import {
   countRules, filterRules, mergeRules, pageOf, readRuleParam, ruleSearch,
   type Rule, type RuleFilter,
@@ -54,13 +54,6 @@ two separate pages, each with its own tree).
 */
 
 const LABEL: Record<DomainList, string> = { blocked: 'Blocked', allowed: 'Allowed' }
-
-interface Confirmation {
-  title: string
-  text: string
-  label: string
-  action: () => Promise<void>
-}
 
 export function Rules({
   tabs,
@@ -253,17 +246,13 @@ export function Rules({
   }
 
   /* One menu entry per list. Without its permission it stays, disabled, and says
-     which one is missing —the same padlock and tooltip `PermissionButton` draws—:
-     a verb that vanishes is a verb nobody knows exists. */
+     which one is missing (`LockedItem`). */
   function entry(list: DomainList, need: Need | undefined, run: () => void, close: () => void) {
     if (need != null) {
       return (
-        <Tooltip key={list} text={requiresText(need)} placement="left">
-          <button type="button" disabled>
-            <Icon name="lock" size={13} />
-            {LABEL[list]} zones
-          </button>
-        </Tooltip>
+        <LockedItem key={list} need={need} placement="left">
+          {LABEL[list]} zones
+        </LockedItem>
       )
     }
     return (
@@ -373,9 +362,7 @@ export function Rules({
           {view === 'tree' ? (
             treeNeed != null ? (
               <Body>
-                <Empty compact>
-                  <Icon name="lock" size={14} /> {requiresText(treeNeed)}
-                </Empty>
+                <LockedBody need={treeNeed} />
               </Body>
             ) : (
               /* Inset like the rest of the panel's content: the tree and the node detail
@@ -399,12 +386,8 @@ export function Rules({
             )
           ) : viewNone ? (
             <Body>
-              <Empty compact>
-                <Icon name="lock" size={14} /> {requiresText('Blocked.canView')}
-              </Empty>
-              <Empty compact>
-                <Icon name="lock" size={14} /> {requiresText('Allowed.canView')}
-              </Empty>
+              <LockedBody need="Blocked.canView" />
+              <LockedBody need="Allowed.canView" />
             </Body>
           ) : rules == null ? (
             failed ? (

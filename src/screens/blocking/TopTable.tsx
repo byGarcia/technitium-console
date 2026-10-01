@@ -6,10 +6,9 @@ import { Panel } from '../../ui/Panel'
 import { Table } from '../../ui/Table'
 import { Menu } from '../../ui/Menu'
 import { Button } from '../../ui/Button'
-import { Icon } from '../../ui/Icon'
-import { Tooltip } from '../../ui/Tooltip'
 import { noticeFromFailure, type Notice } from '../../lib/notice'
-import { missing, requiresText, type Permissions } from './permissions'
+import { missing, type Permissions } from './permissions'
+import { LockedItem } from './Locked'
 import shared from './Blocking.module.css'
 import styles from './Overview.module.css'
 
@@ -22,9 +21,7 @@ padlock names the first one missing. Upstream's: the titles, the `Domain` and
 only Domain and Hits), `No domains for this period.` (upstream says "No Data") and
 the `Actions` / `Actions for <domain>` labels.
 
-The disabled item explains itself the way `PermissionButton` does —padlock plus
-the `Tooltip` with `Requires X: Y`— and not with a native `title`: that is the one
-pattern the console has for "you cannot", and a menu item is no exception.
+The disabled item is `LockedItem`, the section's one padlocked menu entry.
 */
 
 type Kind = 'TopBlockedDomains' | 'TopDomains'
@@ -132,12 +129,7 @@ export function TopTable({
                       {verb}
                     </button>
                   ) : (
-                    <Tooltip text={requiresText(need)}>
-                      <button type="button" className={styles.locked} disabled>
-                        <Icon name="lock" size={13} />
-                        {verb}
-                      </button>
-                    </Tooltip>
+                    <LockedItem need={need}>{verb}</LockedItem>
                   )
                 }
               </Menu>

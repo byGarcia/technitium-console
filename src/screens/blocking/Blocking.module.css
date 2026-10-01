@@ -26,6 +26,9 @@ second frame, with rounded corners showing under the panel's header. Written und
   .kpis3 { grid-template-columns: minmax(0, 1fr); }
 }
 
+/* A menu entry without its permission (`LockedItem`): the padlock beside the verb. */
+.lockedItem { display: inline-flex; align-items: center; gap: var(--s-3); }
+
 /* The add bar: one field, Block first because Enter blocks. */
 .add { display: flex; align-items: flex-end; gap: var(--s-5); }
 .add > :first-child { flex: 1; min-width: 0; }
