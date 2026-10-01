@@ -417,16 +417,209 @@ before `data-theme` is set and with any value nobody declared.
   --glyph-tick-ok: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23052e26' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m20 6-11 11-5-5'/%3E%3C/svg%3E");
 }
 
-[data-theme='light'] {
-  /*
-  EMPTY on purpose: the light theme's values are designed and measured in a step
-  of their own, and this block is where they land.
+/*
+── The light theme, designed on 2026-10-01 ────────────────────────────────────
 
-  It redeclares every colour token of the block above, `color-scheme` included,
-  and nothing else. Same specificity as `[data-theme='dark']` and later in the
-  file, so it wins wherever the attribute says `light`; while it is empty, a light
-  attribute still renders the dark theme, because `:root` carries it.
+Not the dark theme inverted: every value below was chosen for a white ground and
+measured there. `node dev/theme-contrast.mjs` composes every surface a token is
+drawn on —the hovers and the Query Logs row colours are translucent, so it lays
+them over their ground first— and fails if any light pair misses its threshold:
+4.5:1 for text, 3:1 for a control's edge (WCAG 1.4.11). On 2026-10-01: 87 of 87.
+The figures quoted in this block are that script's output.
+
+Every token of the dark block is redeclared here; `npm run lint:colours` fails if
+one is missing, because a missing one would silently draw its dark value on white.
+Same specificity as `[data-theme='dark']` and later in the file, so it wins
+wherever the attribute says `light`.
+*/
+[data-theme='light'] {
+  color-scheme: light;
+
+  /*
+  THE SURFACE RAMP. On light, elevation is told the other way round: the canvas
+  sits a step DARKER than the panels, and a panel rises by its border and a soft
+  shadow, not by its own light. The greys are the same neutral the dark theme
+  chose —red and blue within three points, no blue cast— in the register of the
+  light consoles of GitHub, Linear and Vercel.
+
+    canvas → panel            1.13   (dark 1.09)
+    panel  → raised (pan2)    1.08
+    panel  → row hover        1.10   (hover-strong 1.17)
+    panel  → sunken field     1.05   plus `--line-field`, below
+    panel  → border           1.40   (`--line2` 1.22)
+
+  The field is the one step that is closer than in dark, on purpose: on white a
+  sunken field reads by its border, and that border is the one line here held
+  to 3:1.
   */
+  --bg: #f0f1f3;
+  --pan: #ffffff;
+  --pan2: #f5f6f8;
+  /*
+  The three text steps keep their order and all three meet 4.5:1 on every
+  surface they are drawn on, the worst being a raised panel under the strong hover
+  (`pan2 + hover-strong`):
+
+    --ink     16.91 on the panel, 13.42 at worst
+    --mute     7.42 on the panel,  5.89 at worst
+    --faint    5.89 on the panel,  4.67 at worst
+
+  `--faint-on-tint` is the response time inside a coloured Query Logs row. Those
+  rows lay a series colour at 30 % over the panel, which on light darkens the
+  ground —in dark it lightens it—, and `--faint` dropped to 3.43-4.28:1 on all
+  seven of them. One step darker it gives 4.67-5.83 on the seven and 8.02 on a
+  plain row.
+  */
+  --ink: #1a1d21;
+  --mute: #50565d;
+  --faint: #5f656c;
+  --faint-on-tint: #4b5158;
+  --line: #d7dadd;
+  --line2: #e7e9ec;
+  /*
+  AMBER. Brand amber stays the FILL, the same `#f5a524` as dark: the primary
+  button, the active rail entry, a ticked box, the current page. `--on-acc` on it
+  gives 9.09:1. As a fill it is not asked to contrast with the panel (2.04:1): it
+  is a solid mass of colour with its own ink, the way Technitium's site uses it.
+
+  Amber DRAWN on white —a link, the current sub-tab, the focus ring, a focused
+  field's border— is `--acc-ink`: the same hue taken down to `#8f5300`, 6.17:1 on
+  the panel and 4.89 at worst, so it serves as text and as a 3:1 line at once.
+  The focus ring is drawn in it, which is why `--focus` in the shared `:root`
+  points at `--acc-ink` and not at `--acc`.
+  */
+  --acc: #f5a524;
+  --acc-ink: #8f5300;
+  --on-acc: #1a1205;
+  /*
+  STATES: a pastel ground, a saturated dark ink and a mid border. Each ink meets
+  4.5:1 on its own ground and on the panel —ok 4.91 / 5.48, warn 5.34 / 5.93,
+  dan 5.75 / 6.57, info 5.92 / 6.70— and the destructive button's `--on-dan`
+  gives 6.98 on `--dan-fill`. The borders (1.7-2.0:1 on the panel) are a pill's
+  outline, not its meaning: the word inside carries it, as in dark.
+
+  `warn` against `acc` keeps the rule written in the dark block: ΔE00 4.4 on the
+  text, 6.2 on the border and 0.0 on the fill. Below 10, so the same colour by
+  the project's criterion, and on purpose; they still never meet on a screen.
+
+  Danger stays tonal here too —a pale red fill with dark red ink, not a solid red
+  button— because the dark theme's `--dan-fill` is tonal and a destructive button
+  should not become the loudest thing on the page only in light.
+  */
+  --ok: #047857;
+  --warn: #8a5a00;
+  --dan: #b42318;
+  --info: #1d4ed8;
+  --viol: #6d28d9;
+  --cyan: #0f766e;
+
+  /* The code chip: 8.50:1, a cool grey so it still reads as code and not as a state. */
+  --chip-bg: #e9edf3;  --chip-fg: #374357;
+
+  --ok-bg: #e7f6ee;    --ok-bd: #93d2b4;
+  --warn-bg: #fdf2dc;  --warn-bd: #e9c272;
+  --acc-bg: #fdf2dc;   --acc-bd: #e2ad4f;
+  --dan-bg: #fdeceb;   --dan-bd: #f0a9a3;
+  --dan-fill: #fbdcd9; --on-dan: #8f1c12;
+
+  /*
+  CHART SERIES, measured by `dev/palette-distance.mjs` against the light panel
+  (it reads this block as it reads the dark one). Every hue stays within 15° of
+  its dark counterpart, so a user who switches theme still finds Server Failure
+  red and Recursive orange; what moves is lightness and chroma, because a series
+  bright enough for charcoal vanishes on white.
+
+    · every series ≥ 3:1 on `--pan` (WCAG 1.4.11); none within ΔE00 10 of
+      `--ink`, `--mute`, `--faint` or `--line`
+    · main line chart, normal vision: worst pair 15.9 (Total / Dropped); dark's
+      is 10.5. Query Response Types 16.6. Blocking bars 48.3
+    · no pair that shares a chart separates less in light than in dark, unless
+      it is already ≥ 15 in light — the script's regression check
+
+  What it does not fix, as in dark: eleven series in one chart do not survive
+  colour blindness —Recursive / Clients is 3.3 under deuteranopia, dark's is 3.0—
+  and the pointer guide with the legend's values is what carries that chart.
+
+  `--ch-clients` cannot be the brand amber here as it is in dark: `#f5a524` is
+  2.04:1 on white. It is the same amber hue darkened to an ochre that clears 3:1.
+  `--ch-ok` (4.88:1 on white) is a line colour, not ink: `Allow` in Blocking is
+  written in `--ok`, which is the same value in dark.
+  */
+  --ch-total:  #688cff;
+  --ch-ok:     #08815c;
+  --ch-fail:   #d10a41;
+  --ch-nx:     #305a04;
+  --ch-refuse: #045a5a;
+  --ch-auth:   #239dce;
+  --ch-rec:    #f65f06;
+  --ch-cache:  #fe3d98;
+  --ch-block:  #6920d4;
+  --ch-drop:   #73818b;
+  --ch-clients: #b88b21;
+
+  --ch-1: #227cbb;  --ch-2: #1fa580;  --ch-3: #6446af;  --ch-4: #d47d01;
+  --ch-5: #19a2a3;  --ch-6: #9a0559;  --ch-7: #e43b66;  --ch-8: #886000;
+  --info-bg: #ebf1fe;  --info-bd: #a6bff3;
+  /*
+  FIELDS AND HOVERS. A hover on light is a veil of the ink, not of white: 4.5 % and
+  7.5 % of a near-black, which is 1.10 and 1.17 from the panel.
+  */
+  --field: #f9fafb;
+  --hover: rgba(16, 20, 24, 0.045);
+  --hover-strong: rgba(16, 20, 24, 0.075);
+
+  --selection: rgba(245, 165, 36, 0.35);
+  /*
+  The control lines. `--line-field` is a text field's and a select's border at
+  rest: on light it is what tells a field from the panel, so it is held to 3:1
+  —3.43 on the panel, 3.04 on the canvas, 3.18 on a raised panel—, where dark
+  keeps it equal to `--line`. `--line-ctrl`, a checkbox's or a radio's box, is
+  4.65. `--line-hover` (1.91) only has to move when the pointer arrives.
+  */
+  --line-hover: #b8bcc1;
+  --line-ctrl: #6f757c;
+  --line-field: #868b91;
+  --field-focus: #ffffff;
+  /*
+  OVERLAYS AND MATERIAL. The veils are the ink at a third and under a half: dark
+  enough to push the page back, light enough that the page stays a page and not a
+  black hole behind the dialog. The shadows are soft and cool-neutral; on light
+  they, with the border, are the elevation.
+
+  White shines are invisible on white, so the ones on light surfaces are `none`
+  (`--shine-btn`, `--shine-danger`) and the ones on the amber fill keep their
+  white, which still catches the light there. `--edge` stays a white top inset —it
+  sits inside `box-shadow` lists, so it cannot be `none`— and on light it reads as
+  a faint bevel on the raised controls. The text selection and the focus and
+  hover halos stay brand amber, translucent: ink on the selection is 13.19:1.
+
+  The glyphs: the chevron is `#66707a`, 4.83:1 on a field; the tick and the dash
+  are `--on-acc` on the amber; the granted permission's tick is `--ok-bg`
+  (`#e7f6ee`) on the `--ok` green, 4.91:1 —in light the green is the dark one,
+  so the tick turns pale.
+  */
+  --veil: rgba(26, 29, 33, 0.32);
+  --veil-dialog: rgba(26, 29, 33, 0.44);
+
+  --e-1: 0 1px 2px rgba(16, 20, 24, 0.06), 0 4px 12px rgba(16, 20, 24, 0.04);
+  --e-2: 0 2px 6px rgba(16, 20, 24, 0.08), 0 12px 28px rgba(16, 20, 24, 0.12);
+  --e-3: 0 4px 12px rgba(16, 20, 24, 0.1), 0 24px 64px rgba(16, 20, 24, 0.22);
+  --shadow-menu: var(--e-2);
+  --shadow-modal: var(--e-3);
+  --edge: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  --edge-strong: inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  --sunken: inset 0 1px 2px rgba(16, 20, 24, 0.07);
+  --halo-focus: 0 0 0 3px rgba(245, 165, 36, 0.3);
+  --halo-hover: 0 0 0 3px rgba(245, 165, 36, 0.2);
+  --shadow-knob: 0 1px 2px rgba(16, 20, 24, 0.3);
+  --shine-btn: none;
+  --shine-primary: linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0) 65%);
+  --shine-danger: none;
+  --shine-check: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0) 60%);
+  --glyph-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2366707a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  --glyph-tick: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231a1205' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m20 6-11 11-5-5'/%3E%3C/svg%3E");
+  --glyph-dash: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231a1205' stroke-width='3.5' stroke-linecap='round'%3E%3Cpath d='M6 12h12'/%3E%3C/svg%3E");
+  --glyph-tick-ok: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23e7f6ee' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m20 6-11 11-5-5'/%3E%3C/svg%3E");
 }
 
 :root {
