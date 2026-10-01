@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { formatLabel, localiseLabels } from './chart-labels'
 
 /*
@@ -11,17 +11,16 @@ Each half runs in a zone PINNED where it can fail: the UTC formats west of Green
 (Los Angeles, UTC−7 in October), where a midnight-UTC instant is still the day before
 in local time; the local formats east (Tokyo, UTC+9), where an evening hour in UTC is
 already the next day. In a runner on UTC, or in Madrid at midnight UTC, the two halves
-could not tell local from UTC apart. Node re-reads `TZ` when it is assigned.
+could not tell local from UTC apart. Node re-reads `TZ` when it is assigned, and
+`vi.stubEnv` assigns it (through `vi`, not `process`: `src/` compiles without node's
+types, and a `process` here passes the suite and breaks the build).
 */
 function inZone(zone: string) {
-  let before: string | undefined
   beforeAll(() => {
-    before = process.env.TZ
-    process.env.TZ = zone
+    vi.stubEnv('TZ', zone)
   })
   afterAll(() => {
-    if (before == null) delete process.env.TZ
-    else process.env.TZ = before
+    vi.unstubAllEnvs()
   })
 }
 
