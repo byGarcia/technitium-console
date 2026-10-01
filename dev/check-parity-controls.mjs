@@ -311,11 +311,31 @@ const scripts = await Promise.all(
 )
 const theirWords = asWords([html, decode(html), ...scripts].join(' '))
 const OUR_LABELS = new Set()
+/* Where each label is written, for the Blocking exception below. */
+const LABEL_FILES = new Map()
 for (const f of files(SOURCE).filter((f) => !/\.test\.|fixture/.test(f))) {
   for (const m of withoutComments(readFileSync(f, 'utf8')).matchAll(/(?<![-\w])label="([^"{}]{3,})"/g)) {
     OUR_LABELS.add(m[1])
+    LABEL_FILES.set(m[1], [...new Set([...(LABEL_FILES.get(m[1]) ?? []), f])])
   }
 }
+/*
+The Blocking section is the deliberate exception that adds a screen
+(CONVENTIONS.md, "Deliberate deviations"), and one of its limits is that what is
+ours is in English and says so in the header comment of its file. So a label that
+is not upstream's passes ONLY when every file that writes it is under
+`screens/blocking/` and a comment of that file saying OURS names it in backticks.
+Anywhere else in the console, or undeclared, it is still a stray.
+*/
+const BLOCKING = join(SOURCE, 'screens/blocking/')
+const declaredOurs = (label) =>
+  (LABEL_FILES.get(label) ?? []).every(
+    (f) =>
+      f.startsWith(BLOCKING) &&
+      [...readFileSync(f, 'utf8').matchAll(/\/\*[\s\S]*?\*\//g)].some(
+        ([c]) => /\bOURS\b/.test(c) && c.includes('`' + label + '`'),
+      ),
+  )
 /* Accessible names this console gives to controls upstream leaves unnamed: a
    menu button's `aria-label` and a tab strip's. They are read by a screen
    reader, never drawn, so they are not interface text upstream could own. */
@@ -327,15 +347,19 @@ const ACCESSIBLE_NAMES = new Set([
   'Logs sections',
   'Settings sections',
 ])
-const strayLabels = [...OUR_LABELS].filter(
+const notTheirs = [...OUR_LABELS].filter(
   (l) => !ACCESSIBLE_NAMES.has(l) && !theirWords.includes(asWords(l)),
 )
+const blockingOwn = notTheirs.filter(declaredOurs)
+const strayLabels = notTheirs.filter((l) => !blockingOwn.includes(l))
 
 console.log('')
+for (const l of blockingOwn) console.log(`  BLOCKING, DECLARED OURS  label: ${l}`)
 for (const l of strayLabels) console.log(`  NOT UPSTREAM  label: ${l}`)
 console.log(
   strayLabels.length === 0
-    ? `LABEL PARITY: all ${OUR_LABELS.size} of our labels exist upstream.`
+    ? `LABEL PARITY: all ${OUR_LABELS.size} of our labels exist upstream` +
+        (blockingOwn.length ? `, except ${blockingOwn.length} the Blocking section declares as its own.` : '.')
     : `LABEL PARITY: ${strayLabels.length} of ${OUR_LABELS.size} labels are not upstream's.`,
 )
 
