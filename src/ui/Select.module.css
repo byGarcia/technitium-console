@@ -46,6 +46,8 @@ over the form and has to read as something in front.
 */
 .list {
   position: fixed;
+  /* Its options' width, between the trigger's and the window's (set inline). */
+  width: max-content;
   scrollbar-width: thin;
   z-index: var(--layer-float);
   overflow-y: auto;
@@ -65,7 +67,8 @@ over the form and has to read as something in front.
   font-size: var(--t-4);
   color: var(--ink);
   cursor: pointer;
-  white-space: nowrap;
+  /* Only an option wider than the window wraps; the rest fit on one line. */
+  overflow-wrap: anywhere;
 }
 
 .option[data-active='true'] { background: var(--hover-strong); }
