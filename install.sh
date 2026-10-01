@@ -463,9 +463,12 @@ nameable() { # folder
   esac
   return 0
 }
-# The command that removes a host folder, printed only for a folder this script
-# can see and that holds this console and nothing it cannot vouch for. Anything
-# else gets nothing, and ds_remove says to look at it first.
+# The command that removes a host folder. It is printed only for a folder this
+# script can see and that is_this_console recognises — an index.html that mounts
+# #root and names an entry script that is there, the same test W6 trusts before
+# publishing sweeps a folder. That does not show nothing else is in it, which is
+# why the lists are named first. Anything else gets no command, and ds_remove
+# says to look at it.
 folder_removal() { # folder
   nameable "$1" || return 0
   [ -d "$1" ] && is_this_console "$1" || return 0
@@ -516,12 +519,13 @@ dk_compose() { # container
 # A volume or a folder goes once, after every container that mounts it has let
 # go of it — so when two of them share one, the command is given in the steps of
 # the last, and the others say where it is. Returns 1 when it is not given here.
-ds_remove() { # container, source of its mount, the command or nothing, the words before it
+ds_remove() { # container, source of its mount, the command or nothing, the words before it, [this installer's state]
   dr_how="$3"
   if [ -z "$dr_how" ]; then
     dr_what="the folder mounted there"
     if nameable "$DM_WHERE"; then dr_what="$(shq "$DM_WHERE")"; fi
     dr_how="look at what $dr_what holds and remove it yourself: this script cannot vouch that it is only the console."
+    if [ -n "${5:-}" ]; then dr_how="$dr_how Its record here goes with it: sudo rm -rf $5"; fi
   fi
   dr_with=""
   for dr_c in $DS_ALL; do
@@ -585,7 +589,7 @@ docker_steps() {
         ds_remove "$ds_c" "$DM_SOURCE" "docker volume rm $(shq "$DM_WHERE")" "" || true
       else
         ds_rm="$(folder_removal "$DM_WHERE")"
-        ds_remove "$ds_c" "$DM_SOURCE" "$ds_rm${ds_rm:+$ds_state}" "" || true
+        ds_remove "$ds_c" "$DM_SOURCE" "$ds_rm${ds_rm:+$ds_state}" "" "${ds_state# }" || true
       fi
     else
       say "The console is already set up: $ds_folder is served from $DM_TYPE $DM_WHERE."
@@ -606,27 +610,56 @@ docker_steps() {
     fi
   elif [ -n "$ds_legacy" ]; then
     dk_mount_read "$ds_legacy"
-    if [ "$(state_get webroot)" = "$DM_WHERE" ]; then ds_state=" $STATE_DIR"; fi
-    say "It serves $(shq "$DM_WHERE") mounted over its own web root, the layout used before 15.5."
+    if [ "$DM_TYPE" = "volume" ]; then
+      ds_short="$DM_WHERE"
+      if [ -n "$ds_project" ]; then ds_short="${DM_WHERE#"${ds_project}"_}"; fi
+      say "It serves the docker volume $(shq "$DM_WHERE") mounted over its own web root, the layout used before 15.5."
+    else
+      ds_short="$DM_WHERE"
+      if [ "$(state_get webroot)" = "$DM_WHERE" ]; then ds_state=" $STATE_DIR"; fi
+      if nameable "$DM_WHERE"; then
+        say "It serves $(shq "$DM_WHERE") mounted over its own web root, the layout used before 15.5."
+      else
+        say "It serves a host folder that cannot be named safely in a command, mounted over"
+        say "its own web root: the layout used before 15.5."
+      fi
+    fi
     if [ "$ACTION" = "uninstall" ]; then
       say "To remove the console:"
       say ""
-      say "  - Keep any json/*-custom.json you edited, from $(shq "$DM_WHERE/json")."
+      if [ "$DM_TYPE" = "volume" ]; then
+        say "  - Keep any json/*-custom.json you edited: they are in that volume, under json/."
+      elif nameable "$DM_WHERE"; then
+        say "  - Keep any json/*-custom.json you edited, from $(shq "${DM_WHERE%/}/json")."
+      else
+        say "  - Keep any json/*-custom.json you edited, from the json/ of the folder mounted there."
+      fi
       if [ -n "$ds_project" ]; then
         say "  - In ${ds_files:-the compose file}, take this line out of \"$ds_service\":"
-        say "        - $DM_WHERE:/opt/technitium/dns/www$DM_RO"
-        say "    (docker reports the path resolved; your file may write it relative to itself)"
+        say "        - $ds_short:/opt/technitium/dns/www$DM_RO"
+        if [ "$DM_TYPE" = "volume" ]; then
+          say "    and \"$ds_short:\" under the top-level volumes:."
+        else
+          say "    (docker reports the path resolved; your file may write it relative to itself)"
+        fi
         say "  - $ds_dc up -d $ds_service"
         say "    Its only restart: it comes back on the console its image ships."
       else
         say "  - Re-create $ds_c without -v $(shq "$DM_WHERE:/opt/technitium/dns/www$DM_RO") (its only restart)."
       fi
-      ds_rm="$(folder_removal "$DM_WHERE")"
-      if ds_remove "$ds_c" "$DM_SOURCE" "$ds_rm${ds_rm:+$ds_state}" "Then, and not before: "; then
-        say "    Emptied while still mounted, it would leave the server nothing to serve."
+      if [ "$DM_TYPE" = "volume" ]; then
+        ds_remove "$ds_c" "$DM_SOURCE" "docker volume rm $(shq "$DM_WHERE")" "Then: " || true
+      else
+        ds_rm="$(folder_removal "$DM_WHERE")"
+        if ds_remove "$ds_c" "$DM_SOURCE" "$ds_rm${ds_rm:+$ds_state}" "Then, and not before: " "${ds_state# }"; then
+          say "    Emptied while still mounted, it would leave the server nothing to serve."
+        fi
       fi
     else
-      if nameable "$DM_WHERE"; then
+      if [ "$DM_TYPE" = "volume" ]; then
+        say "Updating it from this host would mean writing into Docker's own storage,"
+        say "which this script does not do."
+      elif nameable "$DM_WHERE"; then
         say "To update the console in it:"
         say ""
         say "  $ONE_LINER --dir $(shq "$DM_WHERE")"
@@ -637,6 +670,11 @@ docker_steps() {
       if ! before_15_5 "$ds_version"; then
         say ""
         say "On 15.5 or later, the image is simpler and survives server updates: $DOCKER_DOCS"
+      elif [ "$DM_TYPE" = "volume" ]; then
+        say "Mount a folder of this host there instead, and install into it:"
+        say ""
+        say "  $ONE_LINER --dir $CONSOLE_DIR"
+        say "  - $CONSOLE_DIR:/opt/technitium/dns/www:ro"
       fi
     fi
   elif [ "$ACTION" = "uninstall" ]; then
@@ -828,8 +866,19 @@ copy_one() { # src root, dst root, relative path
   mv -f "$2/$3.tc-new" "$2/$3"
 }
 
-publish() {
-  src="$1"; dst="$2"; list="$3"
+# What step 3 may sweep is decided before W6 looks at the folder, and nothing
+# is ever added to it: only what was there then. Whatever appears afterwards is
+# not this run's to remove — the server writing its first files, if the folder
+# turns out to be its own (a volume swapped onto the init's /target, both
+# started together). Taken before W6 and not after it, so that anything already
+# there was there when W6 judged the folder.
+snapshot() { # folder, a folder of its own for the lists
+  ( cd "$1" 2>/dev/null && find . -type f -print ) | sed 's|^\./||' > "$2/before"
+  ( cd "$1" 2>/dev/null && find . -mindepth 1 -type d -print ) | sed 's|^\./||' | sort -r > "$2/dirs"
+}
+
+publish() { # src, dst, the folder snapshot wrote its lists in
+  src="$1"; dst="$2"; list="$3/list"
   mkdir -p "$dst"
 
   ( cd "$src" && find . -type f ! -name index.html -print ) | sed 's|^\./||' > "$list"
@@ -839,14 +888,17 @@ publish() {
     | awk '{ n = gsub(/\//, "/"); print n " " $0 }' | sort -rn | cut -d' ' -f2- > "$list"
   while IFS= read -r f; do [ -n "$f" ] && copy_one "$src" "$dst" "$f"; done < "$list"
 
-  ( cd "$dst" && find . -type f -print ) | sed 's|^\./||' > "$list"
   while IFS= read -r f; do
     [ -n "$f" ] || continue
     case "$f" in $CUSTOM_GLOB) continue ;; esac
     if [ -n "$INTO_VOLUME" ] && [ "$f" = "$MARKER" ]; then continue; fi
     [ -e "$src/$f" ] || rm -f "$dst/$f"
-  done < "$list"
-  find "$dst" -depth -type d -empty -exec rmdir {} + 2>/dev/null || true
+  done < "$3/before"
+  # Deepest first (sort -r puts a/b before a), and only folders that were there
+  # before and are empty now.
+  while IFS= read -r d; do
+    if [ -n "$d" ]; then rmdir "$dst/$d" 2>/dev/null || true; fi
+  done < "$3/dirs"
 }
 
 carry_custom_lists() { # from, to — used when the served folder changes
@@ -961,9 +1013,14 @@ if [ "$ACTION" = "uninstall" ]; then
     warn "Restoring a $taken console onto a $SERVER_VERSION server, because you asked."
   fi
 
+  PUBLISH_WORK="$(mktemp -d)"
+  # A signal ends the run; it does not clean up and carry on (see the install).
+  trap 'rm -rf "$PUBLISH_WORK"' EXIT
+  trap 'exit 130' INT
+  trap 'exit 143' TERM
+  snapshot "$WWW_DIR" "$PUBLISH_WORK"
   may_write_into "$WWW_DIR"
-  LIST="$(mktemp)"; trap 'rm -f "$LIST"' EXIT INT TERM
-  publish "$BACKUP" "$WWW_DIR" "$LIST"       # custom lists in place are kept: see copy_one
+  publish "$BACKUP" "$WWW_DIR" "$PUBLISH_WORK"   # custom lists in place are kept: see copy_one
   rm -rf "$BACKUP"
   state_clear
   ok "Original console restored" "$WWW_DIR"
@@ -973,7 +1030,6 @@ fi
 
 # ---------------------------------------------------------------------- install
 resolve_target
-may_write_into "$WWW_DIR"
 
 command -v tar >/dev/null 2>&1 || die "tar is needed and is not installed."
 
@@ -987,8 +1043,17 @@ fi
 
 TMP="$STATE_DIR/staging"
 mkdir -p "$TMP/dist"
+# A signal ends the run, and the exit removes the staging folder. It must not
+# remove it and carry on: the sweep compares the web root against that folder,
+# and with it gone it would remove the console it has just published. docker
+# stop and docker compose down send the init a TERM.
 # shellcheck disable=SC2064
-trap "rm -rf '$TMP'" EXIT INT TERM
+trap "rm -rf '$TMP'" EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+
+snapshot "$WWW_DIR" "$TMP"
+may_write_into "$WWW_DIR"
 
 if [ -n "$SOURCE" ] && [ -f "$SOURCE" ]; then
   cp "$SOURCE" "$TMP/console.tar.gz"
@@ -1079,8 +1144,7 @@ if [ -n "$INTO_VOLUME" ]; then
   printf 'technitium-console sha256:%s\n' "$(sha256sum "$TMP/console.tar.gz" | cut -d' ' -f1)" > "$WWW_DIR/$MARKER.tc-new"
   mv -f "$WWW_DIR/$MARKER.tc-new" "$WWW_DIR/$MARKER"
 fi
-LIST="$TMP/list"
-publish "$TMP/dist" "$WWW_DIR" "$LIST"
+publish "$TMP/dist" "$WWW_DIR" "$TMP"
 state_set version "$VERSION"
 state_set phase done
 ok "Console installed" "$WWW_DIR"

@@ -38,7 +38,8 @@ WORK="$(mktemp -d)"
 cleanup() {
   docker compose -p "installer-probe-$$" -f "$WORK/compose.yaml" down -v >/dev/null 2>&1 || true
   docker rm -f "installer-probe-$$" "installer-probe-$$-rw" "installer-probe-$$-root" \
-    "installer-probe-$$-pipe" "installer-probe-$$-other" >/dev/null 2>&1 || true
+    "installer-probe-$$-pipe" "installer-probe-$$-other" "installer-probe-$$-vol" >/dev/null 2>&1 || true
+  docker volume rm "installer-probe-$$-www" >/dev/null 2>&1 || true
   docker rmi "technitium-console-init:probe-$$" "technitium-console-init:probe-$$-badsum" \
     "technitium-console-init:probe-$$-nosum" >/dev/null 2>&1 || true
   docker run --rm -v "$WORK":/w busybox:stable sh -c 'rm -rf /w/* /w/.[!.]*' >/dev/null 2>&1 || true
@@ -345,6 +346,32 @@ rm -f /usr/local/bin/cp
 sh /w/install.sh --from /w/console.tar.gz --yes >/dev/null 2>&1   # and the next run finishes the job
 [ -f "$WWW/$ASSET" ]
 [ ! -f "$WWW/js/main.js" ]
+
+echo "step: a TERM in the middle of the sweep, as docker stop sends one"
+sh /w/install.sh --uninstall --yes >/dev/null 2>&1   # the stock console back, so there is something to sweep
+[ -f "$WWW/js/main.js" ]
+# The first removal of a file of the console being replaced sends the run a TERM.
+cat > /usr/local/bin/rm <<'FAKE'
+#!/bin/sh
+for a in "$@"; do
+  case "$a" in
+    "$WWW"/*.tc-new) ;;
+    "$WWW"/*) [ -e /termed ] || { : > /termed; kill -TERM "$PPID"; } ;;
+  esac
+done
+exec /bin/rm "$@"
+FAKE
+chmod +x /usr/local/bin/rm
+sh /w/install.sh --from /w/console.tar.gz --yes && exit 1          # it stops,
+[ -e /termed ]                                                     # in the sweep,
+[ -f "$WWW/$ASSET" ]                                               # with nothing of the new console swept
+grep -q '<div id="root"></div>' "$WWW/index.html"
+grep -qx 'phase=done' /var/lib/technitium-console/install.state && exit 1   # and not recorded as finished
+/bin/rm -f /usr/local/bin/rm
+sh /w/install.sh --from /w/console.tar.gz --yes >/dev/null 2>&1   # the next run repairs it (A2)
+[ -f "$WWW/$ASSET" ]
+[ ! -f "$WWW/js/main.js" ]
+grep -qx 'phase=done' /var/lib/technitium-console/install.state
 EOF
 verdict "C17" $? "a failure mid-publication leaves a whole console, and the next run finishes"
 
@@ -782,6 +809,26 @@ cmp -s "$WORK/conf.before" "$WORK/conf.after" || c29=1
 in_config "[ ! -e /v/.technitium-console ] && [ ! -e /v/$ASSET ]" || c29=1
 dc down -v >/dev/null 2>&1
 
+echo "step: the volumes swapped on a first up, init and server at once, three times: c29=$c29" >> "$WORK/log29"
+# The init may get there before the server has written anything, and then the
+# folder is empty and it installs. What must hold is that it never removes what
+# the server writes meanwhile: its sweep only touches what was there before.
+n=0
+while [ "$n" -lt 3 ]; do
+  n=$((n+1))
+  compose_file technitium-console config
+  dc up -d >>"$WORK/out" 2>&1 || c29=1
+  init_exit >/dev/null                                 # whichever way it went
+  first_boot='[ -f /v/dns.config ] && [ -f /v/auth.config ] && [ -f /v/webservice.config ] && [ -f /v/scopes/Default.scope ] && [ -d /v/blocklists ]'
+  i=0
+  while [ "$i" -lt 60 ] && ! in_config "$first_boot"; do i=$((i+1)); sleep 1; done
+  in_config "$first_boot" || {
+    c29=1; echo "  run $n: a first-boot file of the server is missing: $(in_config 'ls -A /v /v/scopes' | tr '\n' ' ')" >> "$WORK/log29"
+  }
+  [ "$(docker inspect -f '{{.State.Running}}' "$(dc ps -q dns-server)")" = "true" ] || c29=1
+  dc down -v >/dev/null 2>&1
+done
+
 echo "step: a folder holding the marker and a dns.config: c29=$c29" >> "$WORK/log29"
 mkdir -p "$WORK/confmark"
 printf 'technitium-console\n' > "$WORK/confmark/.technitium-console"
@@ -847,10 +894,17 @@ stop_server
 echo "step: a bind of /, a source with a |, a folder that is not the console: c30=$c30" >> "$WORK/log30"
 mkdir -p "$WORK/odd|dir" "$WORK/other"
 printf 'keep\n' > "$WORK/other/notes.txt"
-# No published ports: one of them serves this machine's / over its web root.
-docker run -d --name "$NAME-root" -v "/:$WWW:ro" "$IMAGE" >/dev/null 2>&1 || c30=1
-docker run -d --name "$NAME-pipe" -v "$WORK/odd|dir:$WWW:ro" "$IMAGE" >/dev/null 2>&1 || c30=1
-docker run -d --name "$NAME-other" -v "$WORK/other:$WWW:ro" "$IMAGE" >/dev/null 2>&1 || c30=1
+# Stand-ins, not servers: a command that names DnsServerApp.dll is what makes a
+# container a Technitium one to the installer, and a sleep cannot crash. Nothing
+# serves this machine's / over a web port.
+stand_in() { # name, docker run arguments
+  sn="$1"; shift
+  docker run -d --name "$sn" "$@" busybox:stable sh -c 'exec sleep 600' /opt/technitium/dns/DnsServerApp.dll >/dev/null 2>&1
+}
+stand_in "$NAME-root" -v "/:$WWW:ro" || c30=1
+stand_in "$NAME-pipe" -v "$WORK/odd|dir:$WWW:ro" || c30=1
+stand_in "$NAME-other" -v "$WORK/other:$WWW:ro" || c30=1
+stand_in "$NAME-vol" -v "$NAME-www:$WWW" || c30=1        # a named volume over www
 # The folders where the script can see them, as on the host itself.
 docker run --rm -i -v /var/run/docker.sock:/var/run/docker.sock -v "$WORK:$WORK" docker:cli \
   sh -s -- --uninstall < "$INSTALLER" > "$WORK/out" 2>&1 || c30=1
@@ -860,9 +914,15 @@ for c in root pipe other; do
   grep -q 'remove it yourself' "$WORK/sec" || c30=1
 done
 section "$NAME-pipe" | grep -qF "$WORK/odd|dir" || c30=1  # named whole, not cut at the |
+section "$NAME-root" | grep -q 'the folder mounted there' || c30=1
+! section "$NAME-root" | grep -q '//json' || c30=1
+section "$NAME-vol" | grep -qF "docker volume rm $NAME-www" || c30=1   # a volume is removed as one
+! section "$NAME-vol" | grep -q 'rm -rf' || c30=1
 host > "$WORK/out" 2>&1 || c30=1
-! section "$NAME-root" | grep -q -- '--dir' || c30=1      # and no update aimed at /
-docker rm -f "$NAME-root" "$NAME-pipe" "$NAME-other" >/dev/null 2>&1
+section "$NAME-root" | grep -q 'cannot be named safely' || c30=1   # said, not merely left out:
+! section "$NAME-root" | grep -q -- '--dir' || c30=1      # no update aimed at /
+docker rm -f "$NAME-root" "$NAME-pipe" "$NAME-other" "$NAME-vol" >/dev/null 2>&1
+docker volume rm "$NAME-www" >/dev/null 2>&1
 echo "step: done: c30=$c30" >> "$WORK/log30"
 cat "$WORK/log30" >> "$WORK/out"
 verdict "C30" $c30 "on a Docker host it prints the steps in and out, with real names and no \$0"
