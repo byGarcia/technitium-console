@@ -51,8 +51,8 @@ is not an opinion.
 
 - **Windows.** The installer is Linux only. Windows installs are laid out differently and have their
   own installer.
-- **A themed console.** There is one theme, dark, and the tokens that would make a second one
-  possible exist, but a light theme has not been drawn and would need its own contrast measurements.
+- **The Amber theme.** `Change Theme` offers System, Light and Dark; the stock console's fourth,
+  Amber, is not drawn. A browser that has it stored gets Dark.
 - **Translations.** Every literal is upstream's, in English, and translating them would be the first
   behavioural difference.
 

@@ -397,13 +397,26 @@ Write down here whatever you find. What is already known:
   error.
 - **Primitives** in `src/ui/`: `Button`, `Alert`, `Field`/`LabeledInput`,
   `Dialog`. Do not invent loose buttons or fields.
-- **Colours always by token** (`var(--acc)`, `var(--ink)`…). Not one `#hex`
-  outside `src/theme/tokens.css`.
+- **Colours always by token** (`var(--acc)`, `var(--ink)`…). Not one `#hex`,
+  `rgb()`, named colour or colour inside an inline SVG outside
+  `src/theme/tokens.css`, and inside it only in a theme block
+  (`:root, [data-theme='dark']`, `[data-theme='light']`), so every colour is one a
+  theme can redeclare. `color-scheme` too: only a theme block declares it, and
+  every element inherits it. **`npm run lint:colours` (`dev/check-colour-tokens.mjs`)
+  enforces it**, and `npm test` runs it too. What genuinely cannot be a token —the
+  white behind the 2FA QR code— is allowed by file and literal in that script, with
+  its reason.
 - **One CSS module per component** (`X.module.css`).
 - **Spacing, type and radii by token too.** In a `*.module.css` you do not write
   a px that is not one of the tokens in `theme/tokens.css`. A loose value is
   future drift: that is how the console reached 13 text sizes and 25 paddings.
-- **A single theme, the dark one.** There is no theme picker.
+- **Upstream's themes, without Amber.** System (the default), Light and Dark,
+  picked in `Change Theme` (deviation 1 below). Each theme declares its colours in
+  its own block of `src/theme/tokens.css`, and `npm run lint:colours` fails if the
+  light block leaves out a colour the dark one declares. A theme is measured before
+  it ships: contrast and chart distance against each one, not only against dark —
+  `node dev/theme-contrast.mjs` (every text and control token on every surface it
+  is drawn on) and `node dev/palette-distance.mjs` (the chart series).
 - **Everything is in ENGLISH** — the interface, the code, the comments and the
   tests. The console is `lang="en"` and the destination is a pull request
   upstream. **`npm run lint:language` is what enforces it**, and it exists because
@@ -437,9 +450,15 @@ Write down here whatever you find. What is already known:
 The rule is "zero functionality", but there are four exceptions, **decided and
 written down**. If you find a fifth, do not introduce it on your own: report it.
 
-1. **A single theme, the dark one** (Adrián's decision). The "Change Theme"
-   modal and its menu entry disappear. It is the only one that *removes*
-   something.
+1. **Amber is not offered** (Adrián's decision). `Change Theme` is back as
+   upstream has it: in the account menu, under the same `localStorage` key,
+   `theme`, as the stock console —same origin, so a choice made in one holds in
+   the other— with `system`, `light` or `dark`. System is the default and follows
+   `prefers-color-scheme` live; a radio applies on click; nothing is written on
+   load. Only the Amber radio is missing: a stored `amber` draws dark, is not
+   overwritten, and the dialog shows no radio checked until the user picks. It is
+   still the only one that *removes* something. The rules are in
+   `src/theme/theme.ts`.
 2. **The Blocking section** (`src/screens/blocking/`, spec
    `docs/2026-10-01-blocking-section-spec.md`). It replaces Allowed and Blocked
    with Overview, Rules and Lists, as AdGuard Home and Pi-hole organise blocking.

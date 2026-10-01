@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App'
 import { publicUrl } from './app/base'
+import { applyStoredTheme } from './theme/theme'
 
 /*
 The icon is anchored before anything else.
@@ -17,6 +18,10 @@ Pinning it here makes it absolute once, with the root already deduced, and it
 stops depending on what the address bar says afterwards.
 */
 document.querySelector<HTMLLinkElement>('link[rel="icon"]')?.setAttribute('href', publicUrl('favicon.ico'))
+
+/* The theme goes on before the first render, so not even the login is drawn in
+   the wrong one (see `theme/theme.ts`). */
+applyStoredTheme()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

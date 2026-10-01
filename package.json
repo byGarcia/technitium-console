@@ -10,6 +10,7 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "lint:language": "node dev/check-language.mjs",
+    "lint:colours": "node dev/check-colour-tokens.mjs",
     "typecheck": "tsc -b --force",
     "preview": "vite preview",
     "build:check": "vite build --mode check",

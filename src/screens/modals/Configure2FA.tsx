@@ -173,6 +173,9 @@ export function Configure2FA({
                 label="Secret Key"
                 help="Scan the QR Code or manually enter the secret key (spaces don't matter) given above in your authenticator app."
               >
+                {/* White in every theme, not a token: it is the code's quiet zone, and a
+                    scanner needs dark modules on a light ground. Allowed by name in
+                    `dev/check-colour-tokens.mjs`. */}
                 <img
                   src={`data:image/png;base64,${init.qrCodePngImage}`}
                   alt="QR code for the authenticator app"

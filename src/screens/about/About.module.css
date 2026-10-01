@@ -14,7 +14,7 @@ and that is how a header ended up 21 px shorter than its card.
 .prose { font-size: var(--t-4); line-height:1.7; color:var(--mute); max-width:720px; }
 .prose p { margin: 0 0 var(--s-7); }
 .prose h4 { margin: var(--s-10) 0 var(--s-2); font-size: var(--t-4); color:var(--ink); }
-.prose a { color:var(--acc); }
+.prose a { color:var(--acc-ink); }
 /*
 A link INSIDE a sentence is exempt from the minimum target size (WCAG 2.2,
 "inline"), but these five are not: the four titles and the "Donate Now!" are

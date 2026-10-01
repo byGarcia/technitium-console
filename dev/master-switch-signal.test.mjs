@@ -35,7 +35,7 @@ describe('el filete del maestro no desplaza la retícula', () => {
   const regla = /\.dependent\s*\{([^}]*)\}/.exec(css)?.[1] ?? ''
 
   it('existe la regla y pinta el filete ámbar', () => {
-    expect(regla).toMatch(/var\(--acc\)/)
+    expect(regla).toMatch(/var\(--acc(-ink)?\)/)
   })
 
   it('y lo pinta con sombra interior, no con un borde que ocupe caja', () => {

@@ -17,7 +17,7 @@ with a different stroke weight, and in duplicate. Now it is the real icon.
      in DNS Client it did carry it. The same old difference. */
   padding: var(--s-3) 0;
   font-size: var(--t-3);
-  color: var(--acc);
+  color: var(--acc-ink);
   cursor: pointer;
   list-style: none;
 }

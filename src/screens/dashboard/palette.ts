@@ -47,20 +47,26 @@ export function tokenForLabel(label: string, index: number): string {
   return SEMANTIC[label] ?? CYCLE[index % CYCLE.length] ?? '--ch-1'
 }
 
+/*
+No colour fallback here, on purpose. The tokens are always there —`tokens.css`
+goes into the same bundle as this file, through `ThemeProvider`— so a fallback
+never painted anything. What it did was keep a second, unchecked copy of the dark
+palette here, which any other theme would have silently disagreed with.
+*/
 export function readPalette(css: CSSStyleDeclaration) {
-  const get = (name: string, fallback: string) => css.getPropertyValue(name).trim() || fallback
+  const get = (name: string, fallback = '') => css.getPropertyValue(name).trim() || fallback
   return {
     /** The colour for a series, by its name and, failing that, by its position. */
     forLabel(label: string, index: number): string {
-      return get(tokenForLabel(label, index), '#94a3b8')
+      return get(tokenForLabel(label, index))
     },
-    ink: get('--mute', '#9aa1a8'),
-    faint: get('--faint', '#868e96'),
-    grid: get('--line2', '#24282d'),
-    panel: get('--pan', '#191c1f'),
-    surface: get('--pan2', '#212529'),
-    border: get('--line', '#333a41'),
-    text: get('--ink', '#e8eaec'),
+    ink: get('--mute'),
+    faint: get('--faint'),
+    grid: get('--line2'),
+    panel: get('--pan'),
+    surface: get('--pan2'),
+    border: get('--line'),
+    text: get('--ink'),
     mono: get('--font-mono', 'ui-monospace, monospace'),
   }
 }

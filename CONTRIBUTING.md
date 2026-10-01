@@ -49,6 +49,7 @@ npm run lint
 npm test
 npm run build
 node dev/check-language.mjs      # src/ is English: names, comments, tests
+node dev/check-colour-tokens.mjs # every colour is a token, declared in a theme block
 node dev/css-dead.mjs            # dead classes, unresolved composes, classes that do not exist
 node dev/check-parity-sort.mjs   # upstream's sortable columns against ours
 node dev/check-sort-fields.mjs   # every <Th field> names a key that exists

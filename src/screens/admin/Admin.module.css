@@ -14,7 +14,7 @@
 /* The first column's user / group / section name opens its record. */
 .link { composes: entityLink from '../../ui/Table.module.css'; word-break: break-all; }
 
-.node { font-size: var(--t-4); padding: var(--s-3) var(--s-6); border:1px solid var(--line); border-radius: var(--r-2); background:var(--field); color:var(--ink); }
+.node { font-size: var(--t-4); padding: var(--s-3) var(--s-6); border:1px solid var(--line-field); border-radius: var(--r-2); background:var(--field); color:var(--ink); }
 
 /*
 Permissions: the concession map and its index on top, then one card per section
@@ -100,6 +100,6 @@ two other modules with the same values copied by hand.
 .sub { margin: var(--s-10) 0 var(--s-5); font-size: var(--t-4); font-weight: 550; color:var(--ink); }
 .output { display:flex; flex-direction:column; gap: var(--s-5); }
 .link { font-size: var(--t-3); }
-.link a { color:var(--acc); }
+.link a { color:var(--acc-ink); }
 
 

@@ -112,7 +112,7 @@ out Zones' monospacing. It is the same trap already noted in `Menu.module.css`.
   word-break: break-word;
 }
 
-.entityLink:hover { color: var(--acc); }
+.entityLink:hover { color: var(--acc-ink); }
 
 /* Numbers: right-aligned and with fixed-width digits, so the units line up one
    above the other. */
@@ -199,7 +199,7 @@ saying nothing, because "this is sortable" is the same on all of them.
 
 .sort:hover .arrow,
 [aria-sort='ascending'] .arrow,
-[aria-sort='descending'] .arrow { color: var(--acc); }
+[aria-sort='descending'] .arrow { color: var(--acc-ink); }
 
 /*
 The actions column: hard against the end and as wide as what it carries.

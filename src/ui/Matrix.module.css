@@ -136,8 +136,8 @@ input[type='checkbox'].mark:checked {
   background-color: var(--ok);
   border-color: var(--ok);
   background-image:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23052e26' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m20 6-11 11-5-5'/%3E%3C/svg%3E"),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0) 60%);
+    var(--glyph-tick-ok),
+    var(--shine-check);
 }
 
 /*

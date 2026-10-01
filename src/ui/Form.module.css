@@ -152,7 +152,7 @@ what gets repeated ends up drifting apart.
   max-width: 720px;
 }
 
-.help a { color: var(--acc); }
+.help a { color: var(--acc-ink); }
 
 
 /* Several checkboxes or radios inside a single row. */
@@ -187,5 +187,5 @@ A state signal cannot move the content it points at. The inner shadow paints
 exactly the same edge and takes up no grid: the family is back to two signatures
 and the 39 rows stay aligned.
 */
-.dependent { box-shadow: inset 2px 0 0 0 var(--acc); }
+.dependent { box-shadow: inset 2px 0 0 0 var(--acc-ink); }
 .withPill { display: flex; align-items: center; gap: var(--s-4); flex-wrap: wrap; }

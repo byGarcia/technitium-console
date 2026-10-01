@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { visibleSections, type Permission } from './sections'
 import { toTrail, writeRoute, readRoute, translateLegacyRoute, plainClick } from './route'
 import { ChangePassword } from '../screens/modals/ChangePassword'
+import { ChangeTheme } from '../screens/modals/ChangeTheme'
 import { Configure2FA } from '../screens/modals/Configure2FA'
 import { CreateApiToken } from '../screens/modals/CreateApiToken'
 import { MyProfile } from '../screens/modals/MyProfile'
@@ -32,7 +33,7 @@ import {
   updateNotificationSilenced,
 } from '../api/user'
 
-type ModalId = 'profile' | 'password' | 'twofa' | 'token'
+type ModalId = 'profile' | 'password' | 'twofa' | 'token' | 'theme'
 
 /** One glyph per section. No icon dependency: the server's CSP does not allow a
  *  CDN and an icon font would have to ship as a file in www/. */
@@ -364,6 +365,11 @@ export function Shell({
                 <button type="button" onClick={() => { close(); open('token') }}>
                   Create API Token
                 </button>
+                {/* index.html:71 — after the account's own entries, before the
+                    update notification. */}
+                <button type="button" onClick={() => { close(); open('theme') }}>
+                  Change Theme
+                </button>
                 {/*
                 One entry and not two: upstream declares both and hides one
                 (`index.html:72-73`, `initUpdateNotificationMenu`), which is how
@@ -552,6 +558,10 @@ export function Shell({
         onOpenChange={(o) => setModal(o ? 'token' : null)}
         username={session.username}
         token={session.token}
+      />
+      <ChangeTheme
+        open={modal === 'theme'}
+        onOpenChange={(o) => setModal(o ? 'theme' : null)}
       />
 
       {/* Upstream asks with a native `confirm()`; this console asks with its own,

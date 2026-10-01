@@ -16,8 +16,8 @@ Same API, same behaviour, same texts — the interface rebuilt from scratch.
 ![The dashboard](docs/screenshots/dashboard.png)
 
 **Latest: [v1.2.0](https://github.com/byGarcia/technitium-console/releases/latest) for Technitium DNS
-Server 15.5.x** — Allowed and Blocked as one Blocking section, plus LDAP, the zone file editor and
-everything else 15.5 brought.
+Server 15.5.x** — Allowed and Blocked as one Blocking section, a light theme, plus LDAP, the zone
+file editor and everything else 15.5 brought.
 [What's new](CHANGELOG.md) · [Which console for which server](CHANGELOG.md#which-version-for-which-server) · [Installing](#installing) · [Technitium in Docker](#docker)
 
 It replaces the console the server ships with. Install it and the DNS service

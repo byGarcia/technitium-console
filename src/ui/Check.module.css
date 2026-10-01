@@ -76,14 +76,14 @@ element nor a pseudo-element the browser paints its own way is needed.
   height: calc(var(--ctrl-track-h) - 6px);
   border-radius: var(--r-full);
   background: var(--mute);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-knob);
   transition: transform var(--t-medium), background var(--t-fast);
 }
 
 .toggle input:checked {
   background-color: var(--acc);
   background-image: none;
-  border-color: var(--acc);
+  border-color: var(--acc-ink);
   box-shadow: var(--edge-strong);
 }
 
