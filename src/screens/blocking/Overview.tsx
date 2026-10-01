@@ -230,7 +230,7 @@ export function Overview({
             </Kpi>
             <Kpi
               value={s ? s.totalBlocked.toLocaleString() : '—'}
-              sub={s ? percentage(s.totalBlocked, s.totalQueries) : undefined}
+              sub={s ? `${percentage(s.totalBlocked, s.totalQueries)} of total` : undefined}
               label="Blocked"
             >
               {data && <Spark data={series(data.mainChartData, 'Blocked')} tone={styles.sparkBlocked} />}

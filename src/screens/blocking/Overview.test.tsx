@@ -64,7 +64,7 @@ describe('Overview', () => {
     expect(await screen.findByText('20,354')).toBeInTheDocument()
     expect(screen.getByText('5,310')).toBeInTheDocument()
     /* The ring writes the same share in its hole: the figure is looked for in its card. */
-    expect(within(screen.getByText('5,310').parentElement!).getByText('26.09%')).toBeInTheDocument()
+    expect(within(screen.getByText('5,310').parentElement!).getByText('26.09% of total')).toBeInTheDocument()
     expect(screen.getByText('74,779')).toBeInTheDocument()
     expect(screen.getByText('1 · 1')).toBeInTheDocument()
   })
@@ -230,7 +230,7 @@ describe('Overview', () => {
     const flat = { labels: ['a'], datasets: [{ label: 'Total', data: [0] }, { label: 'Blocked', data: [0] }] }
     serve().mockResolvedValue({ kind: 'ok', data: { ...OK.data, stats: zero, mainChartData: flat } })
     render(<Overview token="T" permissions={undefined} />)
-    expect(await screen.findByText('0%')).toBeInTheDocument()
+    expect(await screen.findByText('0% of total')).toBeInTheDocument()
     expect(screen.getAllByText('No queries for this period.').length).toBe(2)
     expect(screen.queryByRole('img', { name: 'Allowed and blocked queries over time' })).not.toBeInTheDocument()
   })
