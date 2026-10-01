@@ -240,12 +240,14 @@ export function Rules({
   }
 
   /* A list the session cannot read has no count: it was never read, and zero is a
-     figure. */
+     figure. The chosen filter says so with `aria-pressed` alone, the console's pressed
+     button (amber text and border, as Glue and RRSIG in Records.tsx): a primary that is
+     also pressed took the pressed rule's amber TEXT over its amber fill, and the label
+     vanished. */
   const filterButton = (f: RuleFilter, count: number | undefined, need?: Need) => (
     <PermissionButton
       key={f}
       size="sm"
-      variant={filter === f ? 'primary' : 'secondary'}
       aria-pressed={filter === f}
       permission={need}
       onClick={() => choose(f)}
@@ -272,7 +274,7 @@ export function Rules({
 
         {stale && <StaleData since={lastGood} onRetry={() => void load()} />}
 
-        <Panel>
+        <Panel className={shared.flush}>
           <div className={styles.bar}>
             {view === 'list' ? (
               <>
@@ -332,17 +334,21 @@ export function Rules({
                 </Empty>
               </Body>
             ) : (
-              <Lists
-                key={`${treeList}:${generation}`}
-                list={treeList}
-                token={token}
-                nodes={nodes}
-                clusterInitialised={clusterInitialised}
-                embedded
-                initialFromPrimary={afterChange}
-                fieldName="Browse domain"
-                canDelete={missing(permissions, treeList === 'allowed' ? 'Allowed.canDelete' : 'Blocked.canDelete') == null}
-              />
+              /* Inset like the rest of the panel's content: the tree and the node detail
+                 are framed boxes of their own, and flush they doubled the panel's edge. */
+              <div className={styles.tree}>
+                <Lists
+                  key={`${treeList}:${generation}`}
+                  list={treeList}
+                  token={token}
+                  nodes={nodes}
+                  clusterInitialised={clusterInitialised}
+                  embedded
+                  initialFromPrimary={afterChange}
+                  fieldName="Browse domain"
+                  canDelete={missing(permissions, treeList === 'allowed' ? 'Allowed.canDelete' : 'Blocked.canDelete') == null}
+                />
+              </div>
             )
           ) : viewNone ? (
             <Body>
@@ -368,6 +374,7 @@ export function Rules({
                 isEmpty={current.rows.length === 0}
                 emptyText={query === '' ? 'No rules' : 'No rules match this filter'}
                 columns={3}
+                className={shared.inPanel}
               >
                 {current.rows.map((r) => (
                   <tr key={`${r.list}:${r.domain}`}>

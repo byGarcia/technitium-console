@@ -7,6 +7,18 @@ What the three Blocking tabs share. Every value is a token of theme/tokens.css.
 .kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s-9); }
 .kpis3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-9); }
 
+/*
+A table inside a panel: the panel is already its frame. ui/Table draws a border,
+corners and a shadow because elsewhere the table IS the panel; inside one they drew a
+second frame, with rounded corners showing under the panel's header. Written under
+`.stack` to outweigh ui/Table's `.wrap`, which weighs the same as one class.
+*/
+.stack .inPanel { border: 0; border-radius: 0; box-shadow: none; }
+
+/* A panel without a title whose first child brings its own air —the filter bar, a
+   table—: the padding ui/Panel adds for a headerless body would be a band above it. */
+.stack .flush { padding-top: 0; }
+
 /* `--bp-index`: a custom property cannot go inside a media query, so its value is written. */
 @media (max-width: 960px) {
   .row2, .row21 { grid-template-columns: minmax(0, 1fr); }

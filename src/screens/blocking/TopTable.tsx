@@ -10,6 +10,7 @@ import { Icon } from '../../ui/Icon'
 import { Tooltip } from '../../ui/Tooltip'
 import { noticeFromFailure, type Notice } from '../../lib/notice'
 import { missing, requiresText, type Permissions } from './permissions'
+import shared from './Blocking.module.css'
 import styles from './Overview.module.css'
 
 /*
@@ -98,13 +99,14 @@ export function TopTable({
           <>
             <th>Domain</th>
             <th aria-label="Share" />
-            <th>Hits</th>
+            <th className={styles.hitsHead}>Hits</th>
             <th aria-label="Actions" />
           </>
         }
         isEmpty={rows.length === 0}
         emptyText={failure ? undefined : 'No domains for this period.'}
         columns={4}
+        className={shared.inPanel}
       >
         {rows.map((r) => (
           <tr key={r.name}>

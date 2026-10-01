@@ -12,10 +12,13 @@ import { Overview, blockingChart } from './Overview'
    new reference, so identity across renders is what the tests look at. */
 const drawn = vi.hoisted(() => new Map<string, unknown[]>())
 
+const legends = vi.hoisted(() => new Map<string, unknown>())
+
 vi.mock('../dashboard/Chart', () => ({
-  Chart: ({ aria, data }: { aria: string; data: unknown }) => {
+  Chart: ({ aria, data, legendOrder }: { aria: string; data: unknown; legendOrder?: readonly string[] }) => {
     const key = aria.startsWith('Blocked share') ? 'ring' : 'bars'
     drawn.set(key, [...(drawn.get(key) ?? []), data])
+    legends.set(key, legendOrder)
     return <div role="img" aria-label={aria} />
   },
 }))
@@ -49,22 +52,42 @@ function serve() {
 }
 
 describe('blockingChart', () => {
-  it('keeps only what got through and what was blocked, stacked', () => {
+  /* Chart.js stacks in dataset order from the axis up: Blocked first puts it on the
+     baseline, as drawn, where its own series reads off a common zero. */
+  it('keeps only what got through and what was blocked, Blocked at the bottom of the stack', () => {
     expect(blockingChart(MAIN)).toEqual({
       labels: ['a', 'b'],
-      datasets: [{ label: 'Allowed', data: [6, 24] }, { label: 'Blocked', data: [4, 6] }],
+      datasets: [{ label: 'Blocked', data: [4, 6] }, { label: 'Allowed', data: [6, 24] }],
     })
   })
 })
 
 describe('Overview', () => {
+  /* As drawn, and as the bars stack: the ring starts at the top with Blocked. */
+  it('the ring draws Blocked first, then what got through', async () => {
+    serve()
+    render(<Overview token="T" permissions={undefined} />)
+    await screen.findByRole('img', { name: 'Blocked share: 26.09%' })
+    expect(drawn.get('ring')?.at(-1)).toEqual({
+      labels: ['Blocked', 'Allowed'],
+      datasets: [{ label: 'Share', data: [5310, 20354 - 5310] }],
+    })
+  })
+
+  it('the bars read Allowed, then Blocked, in their legend', async () => {
+    serve()
+    render(<Overview token="T" permissions={undefined} />)
+    await screen.findByRole('img', { name: 'Allowed and blocked queries over time' })
+    expect(legends.get('bars')).toEqual(['Allowed', 'Blocked'])
+  })
+
   it('draws the four figures, Blocked with its share', async () => {
     serve()
     render(<Overview token="T" permissions={undefined} />)
     expect(await screen.findByText('20,354')).toBeInTheDocument()
     expect(screen.getByText('5,310')).toBeInTheDocument()
     /* The ring writes the same share in its hole: the figure is looked for in its card. */
-    expect(within(screen.getByText('5,310').parentElement!).getByText('26.09%')).toBeInTheDocument()
+    expect(within(screen.getByText('5,310').parentElement!).getByText('26.09% of total')).toBeInTheDocument()
     expect(screen.getByText('74,779')).toBeInTheDocument()
     expect(screen.getByText('1 · 1')).toBeInTheDocument()
   })
@@ -230,7 +253,7 @@ describe('Overview', () => {
     const flat = { labels: ['a'], datasets: [{ label: 'Total', data: [0] }, { label: 'Blocked', data: [0] }] }
     serve().mockResolvedValue({ kind: 'ok', data: { ...OK.data, stats: zero, mainChartData: flat } })
     render(<Overview token="T" permissions={undefined} />)
-    expect(await screen.findByText('0%')).toBeInTheDocument()
+    expect(await screen.findByText('0% of total')).toBeInTheDocument()
     expect(screen.getAllByText('No queries for this period.').length).toBe(2)
     expect(screen.queryByRole('img', { name: 'Allowed and blocked queries over time' })).not.toBeInTheDocument()
   })

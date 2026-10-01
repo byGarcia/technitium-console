@@ -13,6 +13,7 @@ import { dateTime } from '../../lib/dates'
 import { noticeFromFailure } from '../../lib/notice'
 import { Locked } from './Locked'
 import { missing, type Permissions } from './permissions'
+import shared from './Blocking.module.css'
 import styles from './Overview.module.css'
 
 /*
@@ -139,6 +140,7 @@ export function RecentBlocked({
             isEmpty={state.entries.length === 0}
             emptyText="No blocked queries."
             columns={4}
+            className={shared.inPanel}
           >
             {state.entries.map((e) => (
               <tr key={`${e.responseType}:${e.rowNumber}:${e.timestamp}`}>

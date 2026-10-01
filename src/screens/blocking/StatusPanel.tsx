@@ -6,6 +6,7 @@ import { PermissionButton } from '../../ui/PermissionButton'
 import { Button } from '../../ui/Button'
 import { Failure, Loading } from '../../ui/Empty'
 import { Icon } from '../../ui/Icon'
+import { Tag } from '../../ui/Tag'
 import { minuteStamp } from '../../lib/dates'
 import type { Notice } from '../../lib/notice'
 import { Locked } from './Locked'
@@ -39,6 +40,19 @@ const AFTER_PAUSE_MS = 1000
     AT ONCE, which with a far-off `till` would read in a loop; capped, it reads,
     finds the pause still on and waits again. */
 const MAX_TIMEOUT_MS = 2_147_483_647
+
+/*
+When a pause ends, as the pill says it: the hour alone when that is today, the date as
+well when it is not —a three-hour pause at 23:00 ends tomorrow, and "Until 01:30"
+alone would read as earlier today—. OURS, as the block is.
+*/
+function untilText(till: string, now: Date = new Date()): string {
+  const stamp = minuteStamp(till)
+  const end = new Date(till)
+  const today =
+    end.getFullYear() === now.getFullYear() && end.getMonth() === now.getMonth() && end.getDate() === now.getDate()
+  return `Until ${today ? stamp.slice(11) : stamp}`
+}
 
 type State = { kind: 'on' } | { kind: 'paused'; till: string } | { kind: 'off' }
 
@@ -118,10 +132,20 @@ export function StatusPanel({
                   : state.kind === 'paused'
                     ? 'Blocking is paused'
                     : 'Blocking is disabled'}
+                {/* The state as a pill, as the drawing has it. Paused, the amber says
+                    "yours to lift": without Settings.canModify it is neutral, because
+                    the padlock wins (DESIGN.md). */}
+                {state.kind === 'on' && <Tag tone="ok">Active</Tag>}
+                {state.kind === 'paused' &&
+                  (modifyNeed == null ? (
+                    <Tag tone="acc">{untilText(state.till)}</Tag>
+                  ) : (
+                    <Tag>{untilText(state.till)}</Tag>
+                  ))}
               </div>
               <div className={styles.statusSub}>
                 {state.kind === 'paused'
-                  ? `Until ${minuteStamp(state.till)}`
+                  ? 'Resumes automatically.'
                   : state.kind === 'on'
                     ? 'Queries matching a block list or your rules are answered as blocked.'
                     : 'Nothing is being blocked.'}

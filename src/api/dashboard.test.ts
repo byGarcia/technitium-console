@@ -17,17 +17,30 @@ describe('dashboard', () => {
     const spy = vi.spyOn(client, 'apiRequest').mockResolvedValue(response({ stats: { totalQueries: 7 } }))
     const r = await getDashboardStats('t', 'LastDay')
     expect(spy.mock.calls[0][0]).toBe('dashboard/stats/get')
-    expect(spy.mock.calls[0][1]?.body).toEqual({ type: 'LastDay' })
+    expect(spy.mock.calls[0][1]?.body).toEqual({ type: 'LastDay', utc: 'true' })
     expect(r.kind === 'ok' && r.data.stats.totalQueries).toBe(7)
+  })
+
+  /* main.js:2619 asks with `utc=true` and 2673-2686 writes the labels in the viewer's
+     time: the Dashboard and Blocking's Overview get them already written. */
+  it('it asks in UTC and hands back the main chart labelled in the viewer\'s time', async () => {
+    const iso = '2026-10-01T11:29:00.0000000Z'
+    const d = new Date(iso)
+    const hhmm = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+    vi.spyOn(client, 'apiRequest').mockResolvedValue(
+      response({ stats: {}, mainChartData: { labelFormat: 'HH:mm', labels: [iso], datasets: [] } }),
+    )
+    const r = await getDashboardStats('t', 'LastHour')
+    expect(r.kind === 'ok' && r.data.mainChartData.labels).toEqual([hhmm])
   })
 
   it('it only sends start and end when the range is Custom', async () => {
     const spy = vi.spyOn(client, 'apiRequest').mockResolvedValue(response({}))
     await getDashboardStats('t', 'LastHour', { start: 'a', end: 'b' })
-    expect(spy.mock.calls[0][1]?.body).toEqual({ type: 'LastHour' })
+    expect(spy.mock.calls[0][1]?.body).toEqual({ type: 'LastHour', utc: 'true' })
     spy.mockClear()
     await getDashboardStats('t', 'Custom', { start: 'a', end: 'b' })
-    expect(spy.mock.calls[0][1]?.body).toEqual({ type: 'Custom', start: 'a', end: 'b' })
+    expect(spy.mock.calls[0][1]?.body).toEqual({ type: 'Custom', utc: 'true', start: 'a', end: 'b' })
   })
 
   /*
@@ -45,6 +58,7 @@ describe('dashboard', () => {
       response({ topClients: [{ name: '10.0.1.42', hits: 12 }] }),
     )
     const r = await getTop('t', 'LastHour', 'TopClients')
+    /* main.js:2932 does not send `utc` here: the tops carry no times. */
     expect(spy.mock.calls[0][1]?.body).toEqual({ type: 'LastHour', statsType: 'TopClients', limit: '1000' })
     expect(r[0].name).toBe('10.0.1.42')
   })

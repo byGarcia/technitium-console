@@ -29,6 +29,47 @@ describe('StatusPanel', () => {
     expect(screen.getByText(/^Until /)).toBeInTheDocument()
   })
 
+  it('enabled, it carries the Active pill in the ok tone', async () => {
+    serve({ enableBlocking: true })
+    render(<StatusPanel token="T" permissions={undefined} onNotice={() => {}} />)
+    const pill = await screen.findByText('Active')
+    expect(pill.className).toMatch(/ok/)
+    expect(screen.getByText('Queries matching a block list or your rules are answered as blocked.')).toBeInTheDocument()
+  })
+
+  it('paused until later today, the pill gives the hour alone, in amber, and the sentence stays', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    vi.setSystemTime(new Date(2026, 9, 1, 20, 45, 0))
+    serve({ enableBlocking: false, temporaryDisableBlockingTill: new Date(2026, 9, 1, 21, 15, 0).toISOString() })
+    render(<StatusPanel token="T" permissions={undefined} onNotice={() => {}} />)
+    const pill = await screen.findByText('Until 21:15')
+    expect(pill.className).toMatch(/acc/)
+    expect(screen.getByText('Resumes automatically.')).toBeInTheDocument()
+  })
+
+  it('paused past today, the pill gives the date as well', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    vi.setSystemTime(new Date(2026, 9, 1, 23, 30, 0))
+    serve({ enableBlocking: false, temporaryDisableBlockingTill: new Date(2026, 9, 2, 1, 30, 0).toISOString() })
+    render(<StatusPanel token="T" permissions={undefined} onNotice={() => {}} />)
+    expect(await screen.findByText('Until 2026-10-02 01:30')).toBeInTheDocument()
+  })
+
+  it('paused without Settings.canModify, the pill is neutral: the padlock wins', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    vi.setSystemTime(new Date(2026, 9, 1, 20, 45, 0))
+    serve({ enableBlocking: false, temporaryDisableBlockingTill: new Date(2026, 9, 1, 21, 15, 0).toISOString() })
+    render(
+      <StatusPanel
+        token="T"
+        permissions={{ Settings: { canView: true, canModify: false, canDelete: false } }}
+        onNotice={() => {}}
+      />,
+    )
+    const pill = await screen.findByText('Until 21:15')
+    expect(pill.className).not.toMatch(/acc/)
+  })
+
   it('says until when to the minute, without seconds', async () => {
     const till = new Date(2099, 0, 1, 21, 15, 42).toISOString()
     serve({ enableBlocking: false, temporaryDisableBlockingTill: till })

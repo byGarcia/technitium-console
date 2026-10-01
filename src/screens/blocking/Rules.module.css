@@ -6,6 +6,8 @@
 .foot { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-5); padding: var(--s-7) var(--s-9); color: var(--mute); }
 .domain { font-family: var(--font-mono); overflow-wrap: anywhere; }
 .actions { text-align: right; white-space: nowrap; }
+/* The embedded tree, inset from the panel's edges as the bar above it is. */
+.tree { padding: var(--s-9) var(--s-9) 0; }
 
 /* The rule kind: an icon and a word, not only a colour. */
 .kind { display: inline-flex; align-items: center; gap: var(--s-2); }

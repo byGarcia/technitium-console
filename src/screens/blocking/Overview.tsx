@@ -46,18 +46,25 @@ function series(main: ChartData, label: string): number[] {
   return main.datasets.find((d) => d.label === label)?.data.map(Number) ?? []
 }
 
-/** The stacked bars: what got through (Total − Blocked) and what was blocked. */
+/**
+ * The stacked bars: what got through (Total − Blocked) and what was blocked. Blocked
+ * goes FIRST because Chart.js stacks in dataset order from the axis up: on the
+ * baseline, as drawn, its own series reads off a common zero. The legend still reads
+ * "Allowed, Blocked" (`BAR_LEGEND`).
+ */
 export function blockingChart(main: ChartData): ChartData {
   const total = series(main, 'Total')
   const blocked = series(main, 'Blocked')
   return {
     labels: main.labels,
     datasets: [
-      { label: 'Allowed', data: total.map((t, i) => t - (blocked[i] ?? 0)) },
       { label: 'Blocked', data: blocked },
+      { label: 'Allowed', data: total.map((t, i) => t - (blocked[i] ?? 0)) },
     ],
   }
 }
+
+const BAR_LEGEND = ['Allowed', 'Blocked'] as const
 
 /* A trend under a figure: decorative, so hidden from assistive technology — the
    figure above it says the number. */
@@ -80,7 +87,9 @@ function Kpi({ value, sub, label, children }: { value: string; sub?: string; lab
       <Body>
         <div className={styles.kpi}>
           <span className={styles.kpiValue}>{value}</span>
-          <span className={styles.kpiSub}>{sub ?? ''}</span>
+          {/* A figure without a sub-line keeps an empty one, a full line high, so the four
+              labels sit on one line as the drawing has them. */}
+          <span className={styles.kpiSub}>{sub ?? '\u00a0'}</span>
           <span className={styles.kpiLabel}>{label}</span>
           {children}
         </div>
@@ -189,8 +198,10 @@ export function Overview({
     () =>
       data != null
         ? {
-            labels: ['Allowed', 'Blocked'],
-            datasets: [{ label: 'Share', data: [data.stats.totalQueries - data.stats.totalBlocked, data.stats.totalBlocked] }],
+            /* Blocked first: the ring starts at the top with it, as drawn and as the
+               bars stack it on the baseline. */
+            labels: ['Blocked', 'Allowed'],
+            datasets: [{ label: 'Share', data: [data.stats.totalBlocked, data.stats.totalQueries - data.stats.totalBlocked] }],
           }
         : null,
     [data],
@@ -236,7 +247,7 @@ export function Overview({
             </Kpi>
             <Kpi
               value={s ? s.totalBlocked.toLocaleString() : '—'}
-              sub={s ? percentage(s.totalBlocked, s.totalQueries) : undefined}
+              sub={s ? `${percentage(s.totalBlocked, s.totalQueries)} of total` : undefined}
               label="Blocked"
             >
               {data && <Spark data={series(data.mainChartData, 'Blocked')} tone={styles.sparkBlocked} />}
@@ -265,7 +276,7 @@ export function Overview({
             <Panel title="Queries over time">
               <Body>
                 {chart && hasData(chart) ? (
-                  <Chart type="bar" data={chart} aria="Allowed and blocked queries over time" />
+                  <Chart type="bar" data={chart} legendOrder={BAR_LEGEND} aria="Allowed and blocked queries over time" />
                 ) : (
                   <Gap failure={failure} loading={loading} />
                 )}

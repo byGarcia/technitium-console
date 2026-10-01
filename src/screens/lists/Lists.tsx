@@ -203,8 +203,9 @@ export function Lists({
    */
   initialFromPrimary?: boolean
   /**
-   * An accessible name for the tree's field, when the screen already has another
-   * field labelled "Domain" (Rules' add bar). The visible label does not change.
+   * The tree field's label, when the screen already has another field labelled
+   * "Domain" (Rules' add bar): shown, not only announced, so the two fields do not
+   * read alike. Without it the field is "Domain", as in Cache.
    */
   fieldName?: string
 }) {
@@ -432,12 +433,12 @@ export function Lists({
                   no label here —only the `placeholder`— so this one is an
                   addition of ours and can be called whatever suits; what it
                   cannot be called is the same as the button next to it, which
-                  does carry upstream's literal. */}
-              <Field label="Domain">
+                  does carry upstream's literal. Embedded under another "Domain"
+                  field, it takes the name the screen gives it. */}
+              <Field label={fieldName ?? 'Domain'}>
                 {(id) => (
                   <Input
                     id={id}
-                    aria-label={fieldName}
                     mono
                     placeholder="example.com"
                     value={field}

@@ -68,11 +68,22 @@ describe('Lists embedded', () => {
     expect(list).toHaveBeenCalledWith('blocked', 'T', '', undefined, 'dev.cluster.test')
   })
 
-  it('the tree field can take another accessible name and keeps its visible label', async () => {
+  /* Under Rules' add bar, two fields both labelled "Domain" read as the same field:
+     the tree's shows its own name, visibly and to assistive technology alike. */
+  it('the tree field shows the name it is given as its visible label', async () => {
     vi.spyOn(api, 'listNode').mockResolvedValue({ kind: 'ok', data: { domain: '', zones: [], records: [] } })
     render(<Lists list="blocked" token="T" embedded fieldName="Browse domain" />)
     await screen.findByText('0 zones')
     expect(screen.getByRole('textbox', { name: 'Browse domain' })).toBeInTheDocument()
+    expect(screen.getByText('Browse domain', { selector: 'label' })).toBeInTheDocument()
+    expect(screen.queryByText('Domain', { selector: 'label' })).not.toBeInTheDocument()
+  })
+
+  it('without a name the field keeps "Domain", as Cache has it', async () => {
+    vi.spyOn(api, 'listNode').mockResolvedValue({ kind: 'ok', data: { domain: '', zones: [], records: [] } })
+    render(<Lists list="cache" token="T" />)
+    await screen.findByText('0 zones')
     expect(screen.getByText('Domain', { selector: 'label' })).toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: 'Domain' })).toBeInTheDocument()
   })
 })
