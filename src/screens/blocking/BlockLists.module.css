@@ -1,0 +1,38 @@
+/*
+The Lists tab. Every value is a token of theme/tokens.css.
+*/
+
+/* The save bar of Settings, sticky at the bottom: same piece, same place. */
+.bar { composes: bar from '../../ui/PanelForm.module.css'; }
+.spacer { flex: 1; }
+
+.stat { font-family: var(--font-mono); font-size: var(--t-6); font-weight: 600; }
+.statLabel { font-size: var(--t-1); font-weight: var(--text-weight); letter-spacing: var(--text-tracking); text-transform: uppercase; color: var(--mute); }
+.next { display: flex; align-items: center; gap: var(--s-8); }
+.next > div { flex: 1; min-width: 0; }
+
+/* The validation sentence under its field, with the field's border in `--dan`
+   (DESIGN.md, the modal system: the error goes next to its field, once). */
+.bad[aria-invalid],
+.bad[aria-invalid]:focus { border-color: var(--dan); }
+.invalid { color: var(--dan); font-size: var(--t-2); margin-top: var(--s-4); }
+.help { color: var(--faint); font-size: var(--t-2); margin-top: var(--s-5); }
+
+/*
+The row switch: `ui/Check`'s switch drawn on a bare checkbox. `Check` always paints
+its label, and here the label would repeat the URL the next cell already shows; the
+row's name goes in `aria-label` instead, as the table checkboxes of Zones do.
+*/
+.switch { composes: toggle from '../../ui/Check.module.css'; display: inline-flex; cursor: pointer; }
+
+.name { font-weight: 600; }
+.url { font-family: var(--font-mono); color: var(--mute); overflow-wrap: anywhere; }
+/* A switched-off list: its name and kind fade, its controls do not. */
+.off { opacity: var(--dim); }
+
+.kind { display: inline-flex; align-items: center; gap: var(--s-2); }
+.block { color: var(--ch-block); }
+.allow { color: var(--ch-ok); }
+.comment { color: var(--mute); }
+
+.foot { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-5); padding: var(--s-7) var(--s-9); color: var(--mute); }
