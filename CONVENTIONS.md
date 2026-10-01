@@ -412,9 +412,11 @@ Write down here whatever you find. What is already known:
   future drift: that is how the console reached 13 text sizes and 25 paddings.
 - **Upstream's themes, without Amber.** System (the default), Light and Dark,
   picked in `Change Theme` (deviation 1 below). Each theme declares its colours in
-  its own block of `src/theme/tokens.css`; the light one, `[data-theme='light']`,
-  is empty until its values are designed. A theme is measured before it ships:
-  contrast and chart distance against each one, not only against dark.
+  its own block of `src/theme/tokens.css`, and `npm run lint:colours` fails if the
+  light block leaves out a colour the dark one declares. A theme is measured before
+  it ships: contrast and chart distance against each one, not only against dark —
+  `node dev/theme-contrast.mjs` (every text and control token on every surface it
+  is drawn on) and `node dev/palette-distance.mjs` (the chart series).
 - **Everything is in ENGLISH** — the interface, the code, the comments and the
   tests. The console is `lang="en"` and the destination is a pull request
   upstream. **`npm run lint:language` is what enforces it**, and it exists because

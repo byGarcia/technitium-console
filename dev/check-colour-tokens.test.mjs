@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ALLOWED, check, findColourSchemes, findColours, findOutsideThemes, stripComments } from './check-colour-tokens.mjs'
+import { ALLOWED, check, findColourSchemes, findColours, findMissingInLight, findOutsideThemes, stripComments, themeTokens } from './check-colour-tokens.mjs'
 
 /*
 The gate behind "every colour is a token". It lives in `dev/` for the reason
@@ -78,6 +78,22 @@ describe('colour tokens', () => {
       ':root {\n  --s-1: 2px;\n  color-scheme: dark;\n}',
     ].join('\n')
     expect(findOutsideThemes(tokens)).toEqual([{ line: 10, literal: 'color-scheme: dark' }])
+  })
+
+  it('reads each theme block into its own map, comments out', () => {
+    const tokens = [
+      ":root,\n[data-theme='dark'] {\n  color-scheme: dark;\n  /* --ink: #000000; */\n  --ink: #e8eaec;\n  --shadow: 0 1px 2px\n    rgba(0, 0, 0, 0.4);\n}",
+      "[data-theme='light'] {\n  color-scheme: light;\n  --ink: #1a1d21;\n}",
+      ':root {\n  --s-1: 2px;\n}',
+    ].join('\n')
+    const { dark, light } = themeTokens(tokens)
+    expect([...dark]).toEqual([['color-scheme', 'dark'], ['--ink', '#e8eaec'], ['--shadow', '0 1px 2px rgba(0, 0, 0, 0.4)']])
+    expect([...light]).toEqual([['color-scheme', 'light'], ['--ink', '#1a1d21']])
+  })
+
+  it('a token the dark block declares and the light one does not is a finding', () => {
+    const tokens = ":root,\n[data-theme='dark'] {\n  --ink: #e8eaec;\n  --mute: #9aa1a8;\n}\n[data-theme='light'] {\n  --ink: #1a1d21;\n}"
+    expect(findMissingInLight(tokens)).toEqual(['--mute'])
   })
 
   it('an allowed literal that is no longer there is a finding', () => {

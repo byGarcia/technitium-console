@@ -23,7 +23,9 @@
  * And inside `tokens.css` itself it checks the other half of the rule: a colour
  * literal is only allowed in a THEME block (`:root, [data-theme='dark']` or
  * `[data-theme='light']`). A colour in the plain `:root` would be one no theme
- * can override.
+ * can override. And the light block declares every property the dark block
+ * does: one it forgets falls back to `:root`, which carries dark, and paints a
+ * dark value on a light page without anything else noticing.
  *
  * `color-scheme` follows the same rule, because it is colour too: it decides the
  * browser's own parts —scrollbars, date pickers, form controls—, and an element
@@ -191,6 +193,36 @@ function blocks(code) {
   return out.map((b) => ({ ...b, selector: b.selector.replace(/\s+/g, '') }))
 }
 
+/*
+What each theme block declares, as `{ dark, light }`, each a `Map` from the
+property (`--bg`, `color-scheme`) to its value as written. Shared with the tools
+that measure a theme —`palette-distance.mjs`, `theme-contrast.mjs`— so the three
+read the file the same way.
+*/
+export function themeTokens(text) {
+  const code = stripComments(text, 'css')
+  const out = {}
+  for (const b of blocks(code)) {
+    const theme = b.selector === THEME_BLOCKS[0] ? 'dark' : b.selector === THEME_BLOCKS[1] ? 'light' : null
+    if (!theme) continue
+    const decls = new Map()
+    for (const [, name, value] of code.slice(b.from + 1, b.to).matchAll(/(--[\w-]+|color-scheme)\s*:\s*([^;]+);/g))
+      decls.set(name, value.trim().replace(/\s+/g, ' '))
+    out[theme] = decls
+  }
+  return out
+}
+
+/*
+Every property the dark block declares, the light block declares too. A token
+light forgot is not an error anybody would see: `:root` carries the dark value,
+so it quietly paints dark on a light page.
+*/
+export function findMissingInLight(text) {
+  const { dark = new Map(), light = new Map() } = themeTokens(text)
+  return [...dark.keys()].filter((name) => !light.has(name))
+}
+
 /** The colour literals and `color-scheme` declarations in `tokens.css` that are outside every theme block. */
 export function findOutsideThemes(text) {
   const code = stripComments(text, 'css')
@@ -218,6 +250,8 @@ export function check(root = ROOT, allowed = ALLOWED) {
     if (rel === TOKENS) {
       for (const f of findOutsideThemes(text))
         findings.push(`${rel}:${f.line}  ${f.literal}  is outside every theme block`)
+      for (const name of findMissingInLight(text))
+        findings.push(`${rel}  ${name}  is declared for dark and not for light`)
       continue
     }
     const kind = file.endsWith('.css') ? 'css' : 'ts'

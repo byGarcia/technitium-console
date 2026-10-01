@@ -24,22 +24,43 @@ Thresholds, stated so they can be argued with:
   ΔE00 < 10  collision — the two read as the same colour at line and chip size
   ΔE00 < 15  at risk   — separable side by side, not separable across a chart
 
+Every theme is measured, not only the dark one: the code's palette is read from
+each theme block of `tokens.css` and reported against that theme's own panel and
+text tokens. Light is held to two more rules, because dark is the palette these
+thresholds were argued on and light has to answer to it pair by pair:
+
+  · no series under ΔE00 10 from a text or line token of its theme;
+  · no pair that shares a chart separates LESS in light than in dark, under any
+    of the three visions, unless it is still at 15 or more. A pair that was at
+    risk in dark may stay at risk in light, never sink further.
+
+Exit code: 1 when a theme of the code fails its rules (every theme: each series
+at 3:1 on its panel; light: also the two above), 0 otherwise. The pilot and the
+proposal are history, printed for comparison and never gated.
+
 Run: node dev/palette-distance.mjs
 */
 
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
+import { themeTokens } from './check-colour-tokens.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 
 // ── The two palettes under comparison ────────────────────────────────────────
 
-/* The code's, read from the file so this cannot go stale. */
-function codePalette() {
-  const css = readFileSync(join(ROOT, 'src/theme/tokens.css'), 'utf8')
+/*
+The code's, read from the file so this cannot go stale: one palette per theme
+block, with the six-digit hex tokens of that block and nothing else.
+*/
+export function codePalettes(css = readFileSync(join(ROOT, 'src/theme/tokens.css'), 'utf8')) {
   const out = {}
-  for (const [, name, hex] of css.matchAll(/--([\w-]+):\s*(#[0-9a-fA-F]{6})\b/g)) out[name] = hex.toLowerCase()
+  for (const [theme, decls] of Object.entries(themeTokens(css))) {
+    out[theme] = {}
+    for (const [name, value] of decls)
+      if (/^#[0-9a-f]{6}$/i.test(value)) out[theme][name.slice(2)] = value.toLowerCase()
+  }
   return out
 }
 
@@ -88,7 +109,7 @@ Which series share a chart. Read from the server, not guessed:
 WebServiceDashboardApi.cs:465-535 for the line, StatsManager.cs:2467 for the
 response doughnut. The two remaining doughnuts are open sets and get the cycle.
 */
-const CHARTS = {
+export const CHARTS = {
   'main line chart': ['ch-total', 'ch-ok', 'ch-fail', 'ch-nx', 'ch-refuse', 'ch-auth', 'ch-rec', 'ch-cache', 'ch-block', 'ch-drop', 'ch-clients'],
   'Query Response Types': ['ch-auth', 'ch-rec', 'ch-cache', 'ch-block', 'ch-drop'],
   'Blocking stacked bars': ['ch-ok', 'ch-block'],
@@ -96,7 +117,7 @@ const CHARTS = {
 }
 
 /* The interface tokens a series must not be mistaken for. */
-const UI = ['ink', 'mute', 'faint', 'line']
+export const UI = ['ink', 'mute', 'faint', 'line']
 
 // ── Colour ───────────────────────────────────────────────────────────────────
 
@@ -114,18 +135,18 @@ function lab(hex) {
   return [116 * fy - 16, 500 * (fx - fy), 200 * (fy - fz)]
 }
 
-const luminance = (hex) => {
+export const luminance = (hex) => {
   const [r, g, b] = srgb(hex).map(toLinear)
   return 0.2126 * r + 0.7152 * g + 0.0722 * b
 }
 
-const contrast = (a, b) => {
+export const contrast = (a, b) => {
   const [x, y] = [luminance(a), luminance(b)].sort((m, n) => n - m)
   return (x + 0.05) / (y + 0.05)
 }
 
 /* CIEDE2000. Sharma, Wu & Dalal's formulation. */
-function deltaE00(hexA, hexB) {
+export function deltaE00(hexA, hexB) {
   const [L1, a1, b1] = lab(hexA)
   const [L2, a2, b2] = lab(hexB)
   const rad = Math.PI / 180
@@ -188,7 +209,7 @@ const CVD = {
   ],
 }
 
-function simulate(hex, kind) {
+export function simulate(hex, kind) {
   if (!kind) return hex
   const m = CVD[kind]
   const lin = srgb(hex).map(toLinear)
@@ -211,7 +232,7 @@ const NAME = {
 }
 const label = (k) => NAME[k] ?? k
 
-function pairs(palette, keys, vision) {
+export function pairs(palette, keys, vision) {
   const present = keys.filter((k) => palette[k])
   const out = []
   for (let i = 0; i < present.length; i++)
@@ -222,12 +243,14 @@ function pairs(palette, keys, vision) {
   return out.sort((x, y) => x.d - y.d)
 }
 
+export const VISIONS = [null, 'deuteranopia', 'protanopia']
+
 function report(title, palette, ui) {
   console.log(`\n${'='.repeat(72)}\n${title}\n${'='.repeat(72)}`)
 
   for (const [chart, keys] of Object.entries(CHARTS)) {
     console.log(`\n── ${chart} ──`)
-    for (const vision of [null, 'deuteranopia', 'protanopia']) {
+    for (const vision of VISIONS) {
       const p = pairs(palette, keys, vision)
       if (!p.length) continue
       const bad = p.filter((x) => x.d < 15)
@@ -245,34 +268,86 @@ function report(title, palette, ui) {
   }
 
   console.log('\n── a series the colour of the interface ──')
-  const series = [...new Set(Object.values(CHARTS).flat())].filter((k) => palette[k])
-  let clash = 0
-  for (const k of series)
-    for (const t of UI) {
-      if (!ui[t]) continue
-      const d = deltaE00(palette[k], ui[t])
-      if (d < 10) {
-        console.log(`    ΔE00 ${d.toFixed(1).padStart(5)}  ${d < 1 ? 'IDENTICAL' : 'COLLISION'}  ${label(k)} ${palette[k]} / --${t} ${ui[t]}`)
-        clash++
-      }
-    }
-  if (!clash) console.log('    none under ΔE00 10')
+  const clashes = uiClashes(palette, ui)
+  for (const c of clashes)
+    console.log(`    ΔE00 ${c.d.toFixed(1).padStart(5)}  ${c.d < 1 ? 'IDENTICAL' : 'COLLISION'}  ${label(c.k)} ${palette[c.k]} / --${c.t} ${ui[c.t]}`)
+  if (!clashes.length) console.log('    none under ΔE00 10')
 
-  console.log('\n── contrast on the panel (WCAG 1.4.11 wants 3:1) ──')
-  const thin = series.filter((k) => contrast(palette[k], ui.pan) < 3)
+  console.log(`\n── contrast on the panel (WCAG 1.4.11 wants 3:1) ──`)
+  const thin = thinSeries(palette, ui.pan)
   if (!thin.length) console.log(`    every series ≥ 3:1 on --pan ${ui.pan}`)
   else for (const k of thin) console.log(`    ${contrast(palette[k], ui.pan).toFixed(2)}:1  ${label(k)} ${palette[k]}`)
 }
 
-const code = codePalette()
-const ui = { ink: code.ink, mute: code.mute, faint: code.faint, line: code.line, pan: code.pan }
+const seriesOf = (palette) => [...new Set(Object.values(CHARTS).flat())].filter((k) => palette[k])
 
-report('CODE — src/theme/tokens.css', code, ui)
-report('PILOT — 12-piloto-dashboard.dc.html', PILOT, ui)
-report('PROPOSED — the pilot with the two identities corrected', PROPOSED, ui)
-
-console.log(`\n${'='.repeat(72)}\nWhere the two disagree\n${'='.repeat(72)}`)
-for (const k of Object.keys(NAME)) {
-  if (code[k] !== PILOT[k]) console.log(`  ${label(k).padEnd(15)} code ${code[k]}   pilot ${PILOT[k]}`)
+/** The series under ΔE00 10 from a text or line token of the same theme. */
+export function uiClashes(palette, ui) {
+  const out = []
+  for (const k of seriesOf(palette))
+    for (const t of UI) {
+      if (!ui[t]) continue
+      const d = deltaE00(palette[k], ui[t])
+      if (d < 10) out.push({ k, t, d })
+    }
+  return out
 }
-console.log('')
+
+/** The series under 3:1 against the panel they are drawn on. */
+export function thinSeries(palette, pan) {
+  return seriesOf(palette).filter((k) => contrast(palette[k], pan) < 3)
+}
+
+/*
+Every pair, chart and vision where `light` separates less than `dark` AND is
+under 15. Pairs that do not share a chart are not compared, as everywhere else.
+*/
+export function regressions(dark, light) {
+  const out = []
+  for (const [chart, keys] of Object.entries(CHARTS))
+    for (const vision of VISIONS) {
+      const before = new Map(pairs(dark, keys, vision).map((x) => [`${x.a}|${x.b}`, x.d]))
+      for (const x of pairs(light, keys, vision)) {
+        const was = before.get(`${x.a}|${x.b}`)
+        if (x.d < 15 && was != null && x.d < was) out.push({ chart, vision, a: x.a, b: x.b, dark: was, light: x.d })
+      }
+    }
+  return out
+}
+
+const uiOf = (p) => ({ ink: p.ink, mute: p.mute, faint: p.faint, line: p.line, pan: p.pan })
+
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+  const { dark, light } = codePalettes()
+
+  report('CODE, dark — src/theme/tokens.css', dark, uiOf(dark))
+  report('CODE, light — src/theme/tokens.css', light, uiOf(light))
+  report('PILOT — 12-piloto-dashboard.dc.html', PILOT, uiOf(dark))
+  report('PROPOSED — the pilot with the two identities corrected', PROPOSED, uiOf(dark))
+
+  console.log(`\n${'='.repeat(72)}\nWhere the two disagree\n${'='.repeat(72)}`)
+  for (const k of Object.keys(NAME)) {
+    if (dark[k] !== PILOT[k]) console.log(`  ${label(k).padEnd(15)} code ${dark[k]}   pilot ${PILOT[k]}`)
+  }
+
+  console.log(`\n${'='.repeat(72)}\nLight against dark, pair by pair\n${'='.repeat(72)}`)
+  const worse = regressions(dark, light)
+  if (!worse.length) console.log('\n  no pair under 15 separates less in light than in dark')
+  for (const r of worse)
+    console.log(`  ${r.chart} · ${r.vision ?? 'normal'}: ${label(r.a)} / ${label(r.b)}  dark ${r.dark.toFixed(1)} → light ${r.light.toFixed(1)}`)
+
+  const failures = [
+    ...seriesOf(dark).filter((k) => !light[k]).map((k) => `light: ${label(k)} is not declared`),
+    ...thinSeries(dark, dark.pan).map((k) => `dark: ${label(k)} under 3:1 on its panel`),
+    ...thinSeries(light, light.pan).map((k) => `light: ${label(k)} under 3:1 on its panel`),
+    ...uiClashes(light, uiOf(light)).map((c) => `light: ${label(c.k)} is ΔE00 ${c.d.toFixed(1)} from --${c.t}`),
+    ...worse.map((r) => `light: ${label(r.a)} / ${label(r.b)} separates less than in dark (${r.chart}, ${r.vision ?? 'normal'})`),
+  ]
+  console.log(`\n${'='.repeat(72)}\nVerdict\n${'='.repeat(72)}`)
+  if (!failures.length) console.log('\n  dark and light both pass\n')
+  else {
+    for (const f of failures) console.log(`  FAIL  ${f}`)
+    console.log('')
+    process.exitCode = 1
+  }
+}
