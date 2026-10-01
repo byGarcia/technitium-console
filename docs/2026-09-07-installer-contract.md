@@ -311,6 +311,11 @@ the three.
   root folder, is refused. It used to resolve to no folder at all, and no
   folder means "ask the server", so the console went into the server's web
   root, which nobody had asked for.
+  *2026-10-01* (C22, a refused run): a run W6 stops leaves no trace outside
+  the folder either. What the sweep may remove is listed in a temporary folder
+  of the run's own, and the staging folder, with the state folder around it,
+  is made only once W6 has let the run through; a run that made the state
+  folder and stops before writing any state removes it on the way out.
 - **W7 ✓** (C23) *2026-09-30.* The running server is **identified**, not
   matched. A command line ending in `DnsServerApp.dll` makes a process a
   candidate; it is believed only when every uid it runs as (read from

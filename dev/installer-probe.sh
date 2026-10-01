@@ -453,6 +453,9 @@ sh /w/install.sh --dir / --from /w/console.tar.gz --yes && exit 1
 [ ! -f "$WWW/$ASSET" ]
 [ ! -e "$WWW.original" ]
 
+echo "step: and the refused runs left no state folder behind"
+[ ! -e /var/lib/technitium-console ]
+
 echo "step: an empty folder is still what --dir is for"
 mkdir -p /srv/empty
 sh /w/install.sh --dir /srv/empty --from /w/console.tar.gz --yes

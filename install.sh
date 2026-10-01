@@ -1039,27 +1039,38 @@ resolve_target
 
 command -v tar >/dev/null 2>&1 || die "tar is needed and is not installed."
 
-# A run that was interrupted leaves its staging folder behind. Nothing else is
-# needed to repair it: publishing is idempotent and the sweep below removes
-# whatever the interrupted run had already written.
-if [ -d "$STATE_DIR/staging" ]; then
-  warn "A previous run did not finish. Picking up from a clean slate."
-  rm -rf "$STATE_DIR/staging"
-fi
-
 TMP="$STATE_DIR/staging"
-mkdir -p "$TMP/dist"
-# A signal ends the run, and the exit removes the staging folder. It must not
-# remove it and carry on: the sweep compares the web root against that folder,
-# and with it gone it would remove the console it has just published. docker
-# stop and docker compose down send the init a TERM.
-# shellcheck disable=SC2064
-trap "rm -rf '$TMP'" EXIT
+# What the sweep may remove is listed before W6 looks, in a folder of this run's
+# own outside the state, so that a run W6 refuses leaves nothing behind — not
+# even an empty state folder. That one goes on the way out whenever this run
+# made it and wrote no state into it.
+LISTS="$(mktemp -d)" || die "could not create a working folder."
+STATE_DIR_MADE="no"
+[ -d "$STATE_DIR" ] || STATE_DIR_MADE="yes"
+cleanup() {
+  rm -rf "$TMP" "$LISTS"
+  if [ "$STATE_DIR_MADE" = "yes" ]; then rmdir "$STATE_DIR" 2>/dev/null || true; fi
+}
+# A signal ends the run, and the exit cleans up. It must not clean up and carry
+# on: the sweep compares the web root against those lists, and with them gone
+# it would remove the console it has just published. docker stop and docker
+# compose down send the init a TERM.
+trap cleanup EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
 
-snapshot "$WWW_DIR" "$TMP"
+snapshot "$WWW_DIR" "$LISTS"
 may_write_into "$WWW_DIR"
+
+# A run that was interrupted leaves its staging folder behind. Nothing else is
+# needed to repair it: publishing is idempotent and the sweep below removes
+# whatever the interrupted run had already written. Said only once W6 has let
+# this run through, because a run that is refused picks nothing up.
+if [ -d "$TMP" ]; then
+  warn "A previous run did not finish. Picking up from a clean slate."
+  rm -rf "$TMP"
+fi
+mkdir -p "$TMP/dist"
 
 if [ -n "$SOURCE" ] && [ -f "$SOURCE" ]; then
   cp "$SOURCE" "$TMP/console.tar.gz"
@@ -1150,7 +1161,7 @@ if [ -n "$INTO_VOLUME" ]; then
   printf 'technitium-console sha256:%s\n' "$(sha256sum "$TMP/console.tar.gz" | cut -d' ' -f1)" > "$WWW_DIR/$MARKER.tc-new"
   mv -f "$WWW_DIR/$MARKER.tc-new" "$WWW_DIR/$MARKER"
 fi
-publish "$TMP/dist" "$WWW_DIR" "$TMP"
+publish "$TMP/dist" "$WWW_DIR" "$LISTS"
 state_set version "$VERSION"
 state_set phase done
 ok "Console installed" "$WWW_DIR"
