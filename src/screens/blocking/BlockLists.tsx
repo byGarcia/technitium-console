@@ -48,6 +48,8 @@ the server loads twice.
 */
 const MSG_PREFIX = 'Enter the URL without # or !; use the buttons to choose block or allow.'
 const MSG_DUPLICATE = 'This list is already in the table.'
+/* OURS: `dashboard/stats/get` failed, which is not the same as zero domains. */
+const COUNTS_FAILED = 'Could not read the counts.'
 
 /*
 How many lines the save would change. A line is identified by its URL (a comment by
@@ -104,6 +106,7 @@ export function BlockLists({
   const [interval, setIntervalHours] = useState<number | null>(null)
   const [hasSaved, setHasSaved] = useState(false)
   const [counts, setCounts] = useState<{ block: number; allow: number } | null>(null)
+  const [countsFailed, setCountsFailed] = useState(false)
   const [catalog, setCatalog] = useState<QuickEntry[]>([])
   const [field, setField] = useState('')
   const [invalid, setInvalid] = useState<string | null>(null)
@@ -143,9 +146,19 @@ export function BlockLists({
 
   useEffect(() => {
     if (statsNeed != null) return
+    let live = true
     void getDashboardStats(token, 'LastHour', undefined, node).then((r) => {
-      if (r.kind === 'ok') setCounts({ block: r.data.stats.blockListZones, allow: r.data.stats.allowListZones })
+      if (!live) return
+      if (r.kind !== 'ok') {
+        setCountsFailed(true)
+        return
+      }
+      setCountsFailed(false)
+      setCounts({ block: r.data.stats.blockListZones, allow: r.data.stats.allowListZones })
     })
+    return () => {
+      live = false
+    }
   }, [token, node, statsNeed])
 
   if (viewNeed != null) {
@@ -189,6 +202,10 @@ export function BlockLists({
     setSaved(read)
     setLines(read)
     setHasSaved(r.data.response.blockListUrls != null)
+    // The response carries the server's schedule, as Settings redraws from it: emptying
+    // the lists stops the timer, and the key then comes back omitted ("Not Scheduled").
+    setNext(r.data.response.blockListNextUpdatedOn ?? null)
+    setIntervalHours(r.data.response.blockListUpdateIntervalHours)
     // Settings.tsx:253-257, title and sentence.
     setNotice({ type: 'success', title: 'Settings Saved!', text: 'DNS Server settings were saved successfully.' })
   }
@@ -223,11 +240,19 @@ export function BlockLists({
           ) : (
             <>
               <Panel><Body>
-                <div className={styles.stat}>{counts ? counts.block.toLocaleString() : '—'}</div>
+                {countsFailed ? (
+                  <Failure>{COUNTS_FAILED}</Failure>
+                ) : (
+                  <div className={styles.stat}>{counts ? counts.block.toLocaleString() : '—'}</div>
+                )}
                 <div className={styles.statLabel}>Block List Domains</div>
               </Body></Panel>
               <Panel><Body>
-                <div className={styles.stat}>{counts ? counts.allow.toLocaleString() : '—'}</div>
+                {countsFailed ? (
+                  <Failure>{COUNTS_FAILED}</Failure>
+                ) : (
+                  <div className={styles.stat}>{counts ? counts.allow.toLocaleString() : '—'}</div>
+                )}
                 <div className={styles.statLabel}>Allow List Domains</div>
               </Body></Panel>
             </>
@@ -334,7 +359,7 @@ export function BlockLists({
                         <label className={styles.switch}>
                           <input
                             type="checkbox"
-                            aria-label={`Enabled ${l.url ?? ''}`}
+                            aria-label={`Enabled ${l.kind} list ${l.url ?? ''}`}
                             checked={l.enabled}
                             disabled={off}
                             onChange={() => setLines((all) => all.map((x, j) => (j === i ? toggleLine(x) : x)))}

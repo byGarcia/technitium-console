@@ -38,7 +38,7 @@ describe('BlockLists', () => {
     draw()
     await screen.findByRole('table')
     expect(screen.getAllByRole('checkbox')).toHaveLength(1)
-    expect(screen.getByRole('checkbox', { name: `Enabled ${HOSTS}` })).toBeChecked()
+    expect(screen.getByRole('checkbox', { name: `Enabled block list ${HOSTS}` })).toBeChecked()
   })
 
   it('nothing is saved until Save, and Save sends only blockListUrls on the cluster', async () => {
@@ -64,8 +64,66 @@ describe('BlockLists', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Add block list' }))
     expect(screen.getByText('2 unsaved changes')).toBeInTheDocument()
     // Switching the first one back leaves only the addition.
-    await userEvent.click(screen.getByRole('checkbox', { name: `Enabled ${HOSTS}` }))
+    await userEvent.click(screen.getByRole('checkbox', { name: `Enabled block list ${HOSTS}` }))
     expect(screen.getByText('1 unsaved change')).toBeInTheDocument()
+  })
+
+  it('the same URL as a block and an allow list gets two distinct switch names', async () => {
+    serve([HOSTS, `#!${HOSTS}`])
+    draw()
+    await screen.findByRole('table')
+    expect(screen.getByRole('checkbox', { name: `Enabled block list ${HOSTS}` })).toBeChecked()
+    expect(screen.getByRole('checkbox', { name: `Enabled allow list ${HOSTS}` })).not.toBeChecked()
+  })
+
+  it('on a standalone server Save sends node empty', async () => {
+    serve([HOSTS])
+    const save = vi.spyOn(settings, 'setSettings').mockResolvedValue({
+      kind: 'ok', data: { server: 'x', response: { blockListUrls: null, blockListUpdateIntervalHours: 24 } as never },
+    })
+    draw(false)
+    await screen.findByRole('table')
+    await chooseIn(userEvent.setup(), 'Quick Add', 'None')
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }))
+    expect(save).toHaveBeenCalledWith('T', { node: '', blockListUrls: 'false' })
+  })
+
+  it('after a save the next update is the one the server answers', async () => {
+    vi.spyOn(dashboard, 'getDashboardStats').mockResolvedValue({ kind: 'error', message: 'n/a' })
+    vi.spyOn(quick, 'loadQuickList').mockResolvedValue([])
+    vi.spyOn(settings, 'getSettings').mockResolvedValue({
+      blockListUrls: [HOSTS], blockListUpdateIntervalHours: 24, blockListNextUpdatedOn: '2999-01-01T00:00:00Z',
+    } as never)
+    // Emptying the lists stops the server's timer: the key comes back omitted.
+    vi.spyOn(settings, 'setSettings').mockResolvedValue({
+      kind: 'ok', data: { server: 'x', response: { blockListUrls: null, blockListUpdateIntervalHours: 12 } as never },
+    })
+    draw()
+    await screen.findByRole('table')
+    expect(screen.queryByText('Not Scheduled')).not.toBeInTheDocument()
+    await chooseIn(userEvent.setup(), 'Quick Add', 'None')
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }))
+    await screen.findByText('DNS Server settings were saved successfully.')
+    expect(screen.getByText('Not Scheduled')).toBeInTheDocument()
+    expect(screen.getByText('Next update · every 12 h')).toBeInTheDocument()
+  })
+
+  it('a failed count read says so on both figures', async () => {
+    serve([HOSTS])
+    draw()
+    await screen.findByRole('table')
+    expect(await screen.findAllByText('Could not read the counts.')).toHaveLength(2)
+  })
+
+  it('the counts are drawn when the stats arrive, zero included', async () => {
+    serve([HOSTS])
+    vi.spyOn(dashboard, 'getDashboardStats').mockResolvedValue({
+      kind: 'ok', data: { stats: { blockListZones: 1234, allowListZones: 0 } } as never,
+    })
+    draw()
+    expect(await screen.findByText((1234).toLocaleString())).toBeInTheDocument()
+    expect(screen.getByText('0')).toBeInTheDocument()
+    expect(screen.queryByText('Could not read the counts.')).not.toBeInTheDocument()
   })
 
   it('Quick Add None empties the table and Discard brings it back', async () => {

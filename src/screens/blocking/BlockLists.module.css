@@ -22,8 +22,10 @@ The Lists tab. Every value is a token of theme/tokens.css.
 The row switch: `ui/Check`'s switch drawn on a bare checkbox. `Check` always paints
 its label, and here the label would repeat the URL the next cell already shows; the
 row's name goes in `aria-label` instead, as the table checkboxes of Zones do.
+It takes BOTH classes `Check` gives its own DOM: `check` on the label (the 26 px
+target and the input's alignment) and `toggle` for the switch drawing.
 */
-.switch { composes: toggle from '../../ui/Check.module.css'; display: inline-flex; cursor: pointer; }
+.switch { composes: check toggle from '../../ui/Check.module.css'; }
 
 .name { font-weight: 600; }
 .url { font-family: var(--font-mono); color: var(--mute); overflow-wrap: anywhere; }
