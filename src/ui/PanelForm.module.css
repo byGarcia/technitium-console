@@ -73,7 +73,7 @@ notices do not need it either, because the dialog itself is 880 at most.
 }
 
 .link { font-size: var(--t-3); padding: var(--s-5) var(--s-9) 0 var(--s-9); }
-.link a { color: var(--acc); }
+.link a { color: var(--acc-ink); }
 
 .pre {
   margin: 0 var(--s-9);

@@ -257,7 +257,7 @@ different questions. What gives is the size of the figure, not the grid.
 .ownRange input {
   padding: var(--s-4) var(--s-6);
   background: var(--pan2);
-  border: 1px solid var(--line);
+  border: 1px solid var(--line-field);
   border-radius: var(--r-2);
   color: var(--ink);
   font: 400 var(--t-4)/1.2 var(--font-mono);

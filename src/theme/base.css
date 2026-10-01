@@ -90,7 +90,7 @@ what gives away that an interface was assembled and not built.
 
 :root {
   accent-color: var(--acc);
-  caret-color: var(--acc);
+  caret-color: var(--acc-ink);
   scrollbar-color: var(--line) transparent;
   scrollbar-width: thin;
 }
@@ -126,7 +126,7 @@ input[type='file'] {
   min-height: var(--field-height);
   font-size: var(--t-4);
   padding: var(--s-5) var(--s-7);
-  border: 1px solid var(--line);
+  border: 1px solid var(--line-field);
   border-radius: var(--r-3);
   background-color: var(--field);
   color: var(--ink);
@@ -138,7 +138,7 @@ input[type='file'] {
 select:focus-visible,
 input[type='file']:focus-visible {
   outline: none;
-  border-color: var(--acc);
+  border-color: var(--acc-ink);
   box-shadow: var(--sunken), var(--halo-focus);
 }
 
@@ -173,7 +173,7 @@ input[type='file']::file-selector-button {
   cursor: pointer;
 }
 
-input[type='file']::file-selector-button:hover { border-color: var(--acc); }
+input[type='file']::file-selector-button:hover { border-color: var(--acc-ink); }
 
 /*
 The checkbox and the radio, drawn here and not by the operating system. They were
@@ -211,7 +211,7 @@ input[type='radio'] { border-radius: var(--r-full); }
 
 input[type='checkbox']:hover:not(:disabled),
 input[type='radio']:hover:not(:disabled) {
-  border-color: var(--acc);
+  border-color: var(--acc-ink);
   box-shadow: var(--sunken), var(--halo-hover);
 }
 
@@ -219,7 +219,7 @@ input[type='checkbox']:checked,
 input[type='radio']:checked {
   background-color: var(--acc);
   background-image: var(--shine-check);
-  border-color: var(--acc);
+  border-color: var(--acc-ink);
   box-shadow: var(--edge-strong);
 }
 
@@ -241,7 +241,7 @@ input[type='radio']:checked {
 
 input[type='checkbox']:indeterminate {
   background-color: var(--acc);
-  border-color: var(--acc);
+  border-color: var(--acc-ink);
   background-image: var(--glyph-dash);
   background-size: 12px 12px;
   background-position: center;
@@ -273,7 +273,7 @@ input[type='email']:focus,
 input[type='search']:focus,
 textarea:focus {
   outline: none;
-  border-color: var(--acc);
+  border-color: var(--acc-ink);
   box-shadow: var(--sunken), var(--halo-focus);
 }
 

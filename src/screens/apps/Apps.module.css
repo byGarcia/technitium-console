@@ -7,7 +7,7 @@
 .ah { display:flex; align-items:flex-start; justify-content:space-between; gap: var(--s-8); margin-bottom: var(--s-5); }
 .ah h2 { margin: 0; font-size: var(--t-4); font-weight: 550; color:var(--ink); }
 .view { font-family:var(--font-mono); font-size: var(--t-2); color:var(--faint); margin-top: var(--s-1); }
-.blank { color:var(--acc); }
+.blank { color:var(--acc-ink); }
 .desc { margin: 0 0 var(--s-7); font-size: var(--t-4); line-height:1.55; color:var(--mute); white-space:pre-line; }
 .foot { display:flex; gap: var(--s-3); justify-content:flex-end; flex-wrap:wrap; margin-top: auto; }
 
@@ -46,8 +46,8 @@ before.
 .total { composes: count2 below from '../../ui/count.module.css'; }
 /* --- Config --- */
 .note { font-size: var(--t-3); line-height:1.6; color:var(--mute); margin: 0 0 var(--s-7); }
-.note code { font-family:var(--font-mono); color:var(--acc); }
-.config { width:100%; min-height:300px; font-family:var(--font-mono); font-size: var(--t-4); line-height:1.5; padding: var(--s-6); border:1px solid var(--line); border-radius: var(--r-2); background:var(--field); color:var(--ink); resize:vertical; }
+.note code { font-family:var(--font-mono); color:var(--acc-ink); }
+.config { width:100%; min-height:300px; font-family:var(--font-mono); font-size: var(--t-4); line-height:1.5; padding: var(--s-6); border:1px solid var(--line-field); border-radius: var(--r-2); background:var(--field); color:var(--ink); resize:vertical; }
 
 /* The store's sort, which is upstream's `Store Apps` header link. */
 .sortRow { display:flex; justify-content:flex-start; padding-bottom: var(--s-5); border-bottom:1px solid var(--line); }

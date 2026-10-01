@@ -37,7 +37,12 @@ target and the input's alignment) and `toggle` for the switch drawing.
 
 .kind { display: inline-flex; align-items: center; gap: var(--s-2); }
 .block { color: var(--ch-block); }
-.allow { color: var(--ch-ok); }
+/*
+`--ok`, the text green, and not `--ch-ok`, the line green: the same value in dark;
+in light the series is tuned against the other ten lines and gives 4.45:1 under
+the row hover, the text tone 5.0:1.
+*/
+.allow { color: var(--ok); }
 .comment { color: var(--mute); }
 
 /* Remove, hard against the row's end as Delete is in Rules. */

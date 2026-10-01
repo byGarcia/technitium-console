@@ -63,10 +63,10 @@ Amber and not the red upstream uses: in this console red is what destroys
   align-items: center;
   gap: 4px;
   padding: 1px var(--s-4) 1px var(--s-3);
-  border: 1px solid var(--acc);
+  border: 1px solid var(--acc-ink);
   border-radius: 999px;
   background: transparent;
-  color: var(--acc);
+  color: var(--acc-ink);
   font: inherit;
   font-size: var(--t-1);
   
@@ -77,7 +77,7 @@ Amber and not the red upstream uses: in this console red is what destroys
 .mark:hover,
 .mark:focus-visible { background: color-mix(in srgb, var(--acc) 14%, transparent); }
 
-.dot { width: 5px; height: 5px; border-radius: 50%; background: var(--acc); }
+.dot { width: 5px; height: 5px; border-radius: 50%; background: var(--acc-ink); }
 
 /* Inside the dialog. */
 .jump {
@@ -86,7 +86,7 @@ Amber and not the red upstream uses: in this console red is what destroys
 }
 .from { color: var(--mute); }
 .arrow { color: var(--faint); }
-.to { color: var(--acc); font-weight: 600; }
+.to { color: var(--acc-ink); font-weight: 600; }
 .message { margin-bottom: var(--s-7); }
 .links { display: flex; flex-wrap: wrap; gap: var(--s-7); }
 

@@ -45,7 +45,7 @@ magazine kicker, which is decoration, and this is navigation.
 }
 
 button.ctx { cursor: pointer; }
-button.ctx:hover { color: var(--acc); }
+button.ctx:hover { color: var(--acc-ink); }
 
 .sep { color: var(--faint); flex: none; }
 

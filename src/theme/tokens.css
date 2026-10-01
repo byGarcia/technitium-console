@@ -81,9 +81,29 @@ before `data-theme` is set and with any value nobody declared.
   everywhere. It is still the most muted of the three steps, only now legible.
   */
   --faint: #868e96;
+  /*
+  The faintest text a coloured Query Logs row carries: the response time under
+  `Response Type`. In dark it IS `--faint`; in light the row colour darkens the
+  ground enough to take `--faint` under 4.5:1, so light gives it a step of its own.
+  */
+  --faint-on-tint: var(--faint);
   --line: #333a41;
   --line2: #24282d;
   --acc: #f5a524;
+  /*
+  AMBER AS INK, and AMBER AS A FILL, are two tokens since 2026-10-01. `--acc` is
+  the fill —the primary button, the active rail entry, a ticked checkbox, the
+  pagination's current page— with `--on-acc` written on top. `--acc-ink` is
+  amber DRAWN on a surface: a link, the current sub-tab and its underline, a
+  sorted column's arrow, the focus ring, the master switch's edge, a field's
+  border while it has the focus.
+
+  On this charcoal they are the same value, so nothing in dark changed when the
+  usages were split. On light they cannot be: `#f5a524` on white is 2.0:1, under
+  the 4.5 for text and the 3 for a line. Brand amber stays the fill in both
+  themes; light draws its ink darker (see the light block).
+  */
+  --acc-ink: #f5a524;
   --on-acc: #1a1205;
   --ok: #34d399;
   --warn: #fbbf24;
@@ -319,6 +339,9 @@ before `data-theme` is set and with any value nobody declared.
   --selection: rgba(245, 165, 36, 0.28);  /* text selection: the accent, translucent */
   --line-hover: #2f3846;    /* a button's border and the scrollbar thumb, under the pointer */
   --line-ctrl: #3a465b;     /* a field's border under the pointer; a checkbox's at rest */
+  /* A field's border at rest. The value of `--line` here; light needs it apart,
+     because there the border is what tells a field from the panel (light block). */
+  --line-field: #333a41;
   --field-focus: #0e131b;   /* a `ui/Field` input while it has the focus */
   /* The veil behind what covers the page: the side drawer on a narrow screen,
      and the dialog, which darkens more because it is modal. */
@@ -517,7 +540,7 @@ before `data-theme` is set and with any value nobody declared.
   fields, and the browser's on the navigation, the row actions, the pagination and
   the checkboxes. Everything focusable uses `outline: var(--focus)`.
   */
-  --focus: 2px solid var(--acc);
+  --focus: 2px solid var(--acc-ink);
   --focus-offset: 1px;
 
   /* ── Controls ───────────────────────────────────────────────────────── */

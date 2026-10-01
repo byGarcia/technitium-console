@@ -66,7 +66,7 @@ set already had to fix on its own.
 .item[aria-current='location'] {
   color: var(--ink);
   font-weight: 550;
-  border-left-color: var(--acc);
+  border-left-color: var(--acc-ink);
   background: var(--pan2);
 }
 
@@ -133,6 +133,6 @@ focus signal this
 
   .item[aria-current='location'] {
     border-left-color: transparent;
-    border-bottom-color: var(--acc);
+    border-bottom-color: var(--acc-ink);
   }
 }

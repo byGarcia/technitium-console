@@ -59,7 +59,7 @@ screen and a log line stops fitting anywhere.
 .mono { composes: mono from '../../ui/text.module.css'; }
 .nowrap { white-space: nowrap; }
 .breakUp { word-break: break-all; }
-.rtt { font-size: var(--t-2); color: var(--faint); }
+.rtt { font-size: var(--t-2); color: var(--faint-on-tint); }
 
 /* Upstream's five row backgrounds (logs.js:452-508), as they are. */
 /*

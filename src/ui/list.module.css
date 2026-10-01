@@ -34,4 +34,4 @@ difference instead of leaving it hidden in two paddings.
 }
 
 .row:hover { background: var(--hover-strong); color: var(--ink); }
-.row[aria-current='true'] { background: var(--pan2); color: var(--acc); font-weight: 550; }
+.row[aria-current='true'] { background: var(--pan2); color: var(--acc-ink); font-weight: 550; }

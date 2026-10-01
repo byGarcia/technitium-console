@@ -110,7 +110,7 @@ second clickable path would be behaviour upstream does not have. So it is a
   color: var(--faint);
   margin-right: var(--s-1);
 }
-.pathRoot { color: var(--acc); }
+.pathRoot { color: var(--acc-ink); }
 .pathUp { color: var(--mute); }
 .pathSep { color: var(--faint); opacity: 0.6; }
 .pathHere { color: var(--ink); font-weight: 650; }

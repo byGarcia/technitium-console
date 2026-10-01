@@ -36,7 +36,7 @@ drawing. And `nowrap`: the key preceding it breaks, the button does NOT.
   padding: 0;
   font: inherit;
   font-size: var(--t-3);
-  color: var(--acc);
+  color: var(--acc-ink);
   cursor: pointer;
   white-space: nowrap;
 }

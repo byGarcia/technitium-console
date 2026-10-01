@@ -49,7 +49,7 @@ Dashboard's custom range.
 
 /* A button that stays pressed —the "Glue" and "RRSIG" filters— says so with the
    accent colour, not only with `aria-pressed`. */
-.btn[aria-pressed='true'] { color: var(--acc); border-color: var(--acc); }
+.btn[aria-pressed='true'] { color: var(--acc-ink); border-color: var(--acc-ink); }
 
 /* The primary carries its own edge, stronger because amber takes more light. The
    text is dark and not white for a measured reason: white over `#f5a524` gives

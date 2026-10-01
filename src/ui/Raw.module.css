@@ -30,6 +30,6 @@ horizontal.
 
 /* The focus shows on the whole box and not on the text, which is what */
 .text:focus-visible {
-  outline: 2px solid var(--acc);
+  outline: 2px solid var(--acc-ink);
   outline-offset: -2px;
 }

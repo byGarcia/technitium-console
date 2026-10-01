@@ -12,7 +12,12 @@
 /* The rule kind: an icon and a word, not only a colour. */
 .kind { display: inline-flex; align-items: center; gap: var(--s-2); }
 .blocked { color: var(--ch-block); }
-.allowed { color: var(--ch-ok); }
+/*
+`--ok`, the text green, and not `--ch-ok`, the line green: the same value in dark;
+in light the series is tuned against the other ten lines and gives 4.45:1 under
+the row hover, the text tone 5.0:1.
+*/
+.allowed { color: var(--ok); }
 
 @media (max-width: 560px) {
   .search { width: 100%; }

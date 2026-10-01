@@ -83,7 +83,7 @@ element nor a pseudo-element the browser paints its own way is needed.
 .toggle input:checked {
   background-color: var(--acc);
   background-image: none;
-  border-color: var(--acc);
+  border-color: var(--acc-ink);
   box-shadow: var(--edge-strong);
 }
 

@@ -22,7 +22,7 @@ the cursor is.
   min-height: var(--field-height);
   font-size: var(--t-4);
   padding: var(--s-5) var(--s-7);
-  border: 1px solid var(--line);
+  border: 1px solid var(--line-field);
   border-radius: var(--r-3);
   /* `background-color` and not `background`: the shorthand would wipe out the
      chevron `theme/base.css` puts on the dropdown. */
@@ -43,7 +43,7 @@ the cursor is.
 
 .input:focus {
   outline: none;
-  border-color: var(--acc);
+  border-color: var(--acc-ink);
   background-color: var(--field-focus);
   box-shadow: var(--sunken), var(--halo-focus);
 }
