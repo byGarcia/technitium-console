@@ -82,7 +82,14 @@ export function RecentBlocked({
   const title = (
     <>
       Recently Blocked
-      {aggregate && serverDomain != null && <span className={styles.where}> on {serverDomain}</span>}
+      {/* The space goes OUTSIDE the span: inside it, the accessible name is built
+          from the span's trimmed text and reads "Recently Blockedon …". */}
+      {aggregate && serverDomain != null && (
+        <>
+          {' '}
+          <span className={styles.where}>on {serverDomain}</span>
+        </>
+      )}
     </>
   )
 
