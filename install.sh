@@ -98,7 +98,13 @@ while [ $# -gt 0 ]; do
   shift
 done
 
-[ "$(id -u)" = "0" ] || die "this has to run as root: prefix it with sudo."
+if [ "$(id -u)" != "0" ]; then
+  if [ -n "$INTO_VOLUME" ]; then
+    die "the init has to run as root to write the console into its volume. Take user: off
+    the technitium-console service (or run it with --user 0): $DOCKER_DOCS"
+  fi
+  die "this has to run as root: prefix it with sudo."
+fi
 
 printf '\n  \033[1mtechnitium-console\033[0m\n\n'
 
@@ -148,8 +154,19 @@ if [ "$DIR_GIVEN" = "yes" ]; then
 fi
 
 # A folder is a mount point when this process's mount table lists it as one.
+# The table writes a space, a tab, a newline and a backslash in a path as \040,
+# \011, \012 and \134; the folder is passed through the environment, because
+# awk -v would read its backslashes as escapes.
 is_mount_point() { # folder
-  awk -v d="$1" '$5 == d { found = 1 } END { exit !found }' /proc/self/mountinfo 2>/dev/null
+  IMP_DIR="$1" awk '
+    function plain(s,   r, i) {
+      gsub(/\\040/, " ", s); gsub(/\\011/, "\t", s); gsub(/\\012/, "\n", s)
+      # The backslash last, and not by gsub: awks disagree about "\\" there.
+      r = ""
+      while ((i = index(s, "\\134")) > 0) { r = r substr(s, 1, i - 1) "\\"; s = substr(s, i + 4) }
+      return r s
+    }
+    plain($5) == ENVIRON["IMP_DIR"] { found = 1 } END { exit !found }' /proc/self/mountinfo 2>/dev/null
 }
 
 if [ -n "$INTO_VOLUME" ] && ! is_mount_point "$WWW_DIR"; then
@@ -197,6 +214,21 @@ only_custom_lists() { # folder
   [ -z "$(find "$1" -mindepth 1 ! -path "$1/json" ! -path "$1/json/*-custom.json" -print 2>/dev/null | head -1)" ]
 }
 
+# The server's configuration folder (/etc/dns in the image) is never a console,
+# whatever else is in it: a mount swapped by mistake, or a marker beside it,
+# must not make it one. These are the files the server keeps there
+# (DnsServer.cs, DnsWebService.cs: dns.config, auth.config, webservice.config,
+# zones/*.zone). A bare zones/ is not one of them: this console ships a zones/.
+server_config_in() { # folder — prints what gives it away, or fails
+  for sc_f in dns.config auth.config webservice.config; do
+    if [ -e "$1/$sc_f" ]; then printf '%s' "$sc_f"; return 0; fi
+  done
+  for sc_f in "$1"/zones/*.zone; do
+    if [ -e "$sc_f" ]; then printf 'zones/%s' "${sc_f##*/}"; return 0; fi
+  done
+  return 1
+}
+
 # Publishing replaces what the release ships and sweeps everything else. That is
 # right for a console and a disaster for anything else — --dir /opt/technitium/dns
 # by mistake is the server's binaries and configuration gone, with no backup,
@@ -205,6 +237,16 @@ only_custom_lists() { # folder
 may_write_into() { # folder
   [ -e "$1" ] || return 0
   [ -d "$1" ] || die "$1 is not a folder."
+  if hc_found="$(server_config_in "$1")"; then
+    if [ -n "$INTO_VOLUME" ]; then
+      die "$1 holds a DNS server's configuration ($hc_found), not a console.
+    Installing removes whatever the console does not ship. Mount the console's own
+    volume at $1, not the server's /etc/dns one: $DOCKER_DOCS
+    Nothing was changed."
+    fi
+    die "$1 holds a DNS server's configuration ($hc_found), not a console.
+    Installing removes whatever the console does not ship. Nothing was changed."
+  fi
   [ -n "$(ls -A "$1" 2>/dev/null)" ] || return 0
   only_custom_lists "$1" && return 0
   # The init's volume, marked as its own before its first copy: a copy stopped
@@ -390,20 +432,44 @@ docker_servers() {
 dk() { docker inspect -f "$2" "$1" 2>/dev/null || true; }
 dk_label() { dk "$1" "{{index .Config.Labels \"$2\"}}"; }
 dk_env() { dk "$1" '{{range .Config.Env}}{{println .}}{{end}}' | sed -n "s/^$2=//p" | head -1; }
-dk_mount() { # container, destination — "type|rw or ro|volume name|source" of what is mounted there
-  dk "$1" '{{range .Mounts}}{{.Destination}}|{{.Type}}|{{.RW}}|{{.Name}}|{{.Source}}{{println}}{{end}}' \
-    | awk -F'|' -v d="$2" '$1 == d { print $2 "|" ($3 == "true" ? "rw" : "ro") "|" $4 "|" $5; exit }'
+# The source goes last and is everything after the fifth |, because a folder
+# can have a | in its name. One with a newline or another control character
+# would split the line, so docker says first whether %q leaves it as it is:
+# "plain" when it does, and only a plain source is ever put in a command.
+dk_mount() { # container, destination — "type|rw or ro|plain or odd|volume name|source"
+  dk "$1" '{{range .Mounts}}{{.Destination}}|{{.Type}}|{{.RW}}|{{if eq (printf "%q" .Source) (printf "\"%s\"" .Source)}}plain{{else}}odd{{end}}|{{.Name}}|{{.Source}}{{println}}{{end}}' \
+    | DM_DEST="$2" awk -F'|' '$1 == ENVIRON["DM_DEST"] {
+        s = $0; for (i = 0; i < 5; i++) s = substr(s, index(s, "|") + 1)
+        print $2 "|" ($3 == "true" ? "rw" : "ro") "|" $4 "|" $5 "|" s; exit
+      }'
 }
-# Sets DM_TYPE, DM_RO (":ro", or nothing when it is mounted read-write), DM_WHERE
-# (the volume's name, or the folder on the host) and DM_SOURCE, from dk_mount.
+# Sets DM_TYPE, DM_RO (":ro", or nothing when it is mounted read-write), DM_PLAIN,
+# DM_WHERE (the volume's name, or the folder on the host) and DM_SOURCE.
 dk_mount_read() {
-  IFS='|' read -r DM_TYPE dm_rw dm_name DM_SOURCE <<EOF
+  IFS='|' read -r DM_TYPE dm_rw DM_PLAIN dm_name DM_SOURCE <<EOF
 $1
 EOF
   DM_RO=":ro"
   if [ "$dm_rw" = "rw" ]; then DM_RO=""; fi
   DM_WHERE="$DM_SOURCE"
   if [ "$DM_TYPE" = "volume" ]; then DM_WHERE="$dm_name"; fi
+}
+# A host folder a command may be printed for: read whole, absolute, not / and
+# with nothing in it that a terminal or a shell would read differently.
+nameable() { # folder
+  [ "$DM_PLAIN" = "plain" ] || return 1
+  case "$1" in
+    ''|/|[!/]*|*[[:cntrl:]]*|*/.|*/./*|*/..|*/../*|*//*) return 1 ;;
+  esac
+  return 0
+}
+# The command that removes a host folder, printed only for a folder this script
+# can see and that holds this console and nothing it cannot vouch for. Anything
+# else gets nothing, and ds_remove says to look at it first.
+folder_removal() { # folder
+  nameable "$1" || return 0
+  [ -d "$1" ] && is_this_console "$1" || return 0
+  printf 'sudo rm -rf %s' "$(shq "$1")"
 }
 dk_has_source() {
   dk "$1" '{{range .Mounts}}{{.Source}}{{println}}{{end}}' | grep -qxF "$2"
@@ -450,7 +516,13 @@ dk_compose() { # container
 # A volume or a folder goes once, after every container that mounts it has let
 # go of it — so when two of them share one, the command is given in the steps of
 # the last, and the others say where it is. Returns 1 when it is not given here.
-ds_remove() { # container, source of its mount, the command, the words before it
+ds_remove() { # container, source of its mount, the command or nothing, the words before it
+  dr_how="$3"
+  if [ -z "$dr_how" ]; then
+    dr_what="the folder mounted there"
+    if nameable "$DM_WHERE"; then dr_what="$(shq "$DM_WHERE")"; fi
+    dr_how="look at what $dr_what holds and remove it yourself: this script cannot vouch that it is only the console."
+  fi
   dr_with=""
   for dr_c in $DS_ALL; do
     if dk_has_source "$dr_c" "$2"; then dr_with="$dr_with $dr_c"; fi
@@ -458,10 +530,10 @@ ds_remove() { # container, source of its mount, the command, the words before it
   dr_with="${dr_with# }"; dr_last="${dr_with##* }"
   case "$dr_with" in
     *" "*) ;;
-    *) say "  - $4$3"; return 0 ;;
+    *) say "  - $4$dr_how"; return 0 ;;
   esac
   if [ "$1" = "$dr_last" ]; then
-    say "  - Once $(printf '%s' "$dr_with" | sed 's/ /, /g') no longer mount it: $3"
+    say "  - Once $(printf '%s' "$dr_with" | sed 's/ /, /g') no longer mount it: $dr_how"
     return 0
   fi
   say "  - Not removed here: other containers mount it too. It goes once, in the steps for $dr_last."
@@ -491,23 +563,29 @@ docker_steps() {
     if [ "$ACTION" = "uninstall" ]; then
       say "To remove the console (the server goes back to the one its image ships):"
       say ""
-      say "  - Keep any json/*-custom.json you edited: they are in $DM_TYPE $DM_WHERE."
+      say "  - Keep any json/*-custom.json you edited: they are in $DM_TYPE $(shq "$DM_WHERE")."
       if [ -n "$ds_project" ]; then
         say "  - In ${ds_files:-the compose file}, take these two lines out of \"$ds_service\":"
         say "        - $VAR_NAME=$ds_folder"
         say "        - $ds_short:$ds_folder$DM_RO"
         if [ "$DM_TYPE" = "bind" ]; then say "    (docker reports the path resolved; your file may write it relative to itself)"; fi
-        say "    and remove the service that runs $IMAGE_REF."
+        if [ "$DM_TYPE" = "volume" ]; then
+          say "    and remove the service that runs $IMAGE_REF, and \"$ds_short:\" under"
+          say "    the top-level volumes:."
+        else
+          say "    and remove the service that runs $IMAGE_REF."
+        fi
         say "  - $ds_dc up -d --remove-orphans"
         say "    It restarts \"$ds_service\" once, because its environment changes."
       else
-        say "  - Re-create $ds_c without -e $VAR_NAME=$ds_folder"
-        say "    and without -v $DM_WHERE:$ds_folder$DM_RO. That is its only restart."
+        say "  - Re-create $ds_c without -e $(shq "$VAR_NAME=$ds_folder")"
+        say "    and without -v $(shq "$DM_WHERE:$ds_folder$DM_RO"). That is its only restart."
       fi
       if [ "$DM_TYPE" = "volume" ]; then
         ds_remove "$ds_c" "$DM_SOURCE" "docker volume rm $(shq "$DM_WHERE")" "" || true
       else
-        ds_remove "$ds_c" "$DM_SOURCE" "sudo rm -rf $(shq "$DM_WHERE")$ds_state" "" || true
+        ds_rm="$(folder_removal "$DM_WHERE")"
+        ds_remove "$ds_c" "$DM_SOURCE" "$ds_rm${ds_rm:+$ds_state}" "" || true
       fi
     else
       say "The console is already set up: $ds_folder is served from $DM_TYPE $DM_WHERE."
@@ -518,17 +596,22 @@ docker_steps() {
         say "  $ds_dc pull ${ds_init:-technitium-console} && $ds_dc up -d ${ds_init:-technitium-console}"
       else
         say "  docker pull $IMAGE_REF:latest"
-        say "  docker run --rm -v $(shq "$DM_WHERE"):/target $IMAGE_REF:latest"
+        if [ "$DM_TYPE" = "volume" ] || nameable "$DM_WHERE"; then
+          say "  docker run --rm -v $(shq "$DM_WHERE:/target") $IMAGE_REF:latest"
+        else
+          say "  and the image run with the folder mounted there at /target. It cannot be"
+          say "  named safely in a command: look at it first."
+        fi
       fi
     fi
   elif [ -n "$ds_legacy" ]; then
     dk_mount_read "$ds_legacy"
     if [ "$(state_get webroot)" = "$DM_WHERE" ]; then ds_state=" $STATE_DIR"; fi
-    say "It serves $DM_WHERE mounted over its own web root, the layout used before 15.5."
+    say "It serves $(shq "$DM_WHERE") mounted over its own web root, the layout used before 15.5."
     if [ "$ACTION" = "uninstall" ]; then
       say "To remove the console:"
       say ""
-      say "  - Keep any json/*-custom.json you edited, from $DM_WHERE/json."
+      say "  - Keep any json/*-custom.json you edited, from $(shq "$DM_WHERE/json")."
       if [ -n "$ds_project" ]; then
         say "  - In ${ds_files:-the compose file}, take this line out of \"$ds_service\":"
         say "        - $DM_WHERE:/opt/technitium/dns/www$DM_RO"
@@ -536,15 +619,21 @@ docker_steps() {
         say "  - $ds_dc up -d $ds_service"
         say "    Its only restart: it comes back on the console its image ships."
       else
-        say "  - Re-create $ds_c without -v $DM_WHERE:/opt/technitium/dns/www$DM_RO (its only restart)."
+        say "  - Re-create $ds_c without -v $(shq "$DM_WHERE:/opt/technitium/dns/www$DM_RO") (its only restart)."
       fi
-      if ds_remove "$ds_c" "$DM_SOURCE" "sudo rm -rf $(shq "$DM_WHERE")$ds_state" "Then, and not before: "; then
+      ds_rm="$(folder_removal "$DM_WHERE")"
+      if ds_remove "$ds_c" "$DM_SOURCE" "$ds_rm${ds_rm:+$ds_state}" "Then, and not before: "; then
         say "    Emptied while still mounted, it would leave the server nothing to serve."
       fi
     else
-      say "To update the console in it:"
-      say ""
-      say "  $ONE_LINER --dir $(shq "$DM_WHERE")"
+      if nameable "$DM_WHERE"; then
+        say "To update the console in it:"
+        say ""
+        say "  $ONE_LINER --dir $(shq "$DM_WHERE")"
+      else
+        say "That folder cannot be named safely in a command: look at what it holds"
+        say "before running the installer on it."
+      fi
       if ! before_15_5 "$ds_version"; then
         say ""
         say "On 15.5 or later, the image is simpler and survives server updates: $DOCKER_DOCS"
@@ -582,6 +671,8 @@ docker_steps() {
     say "It restarts \"$ds_service\" once, because its environment changes. Updates do not."
     if [ -z "$ds_version" ]; then say "It needs Technitium 15.5 or later."; fi
   else
+    say "Fill a volume with the console, on this host:"
+    say ""
     say "  docker volume create technitium-console"
     say "  docker run --rm -v technitium-console:/target $IMAGE_REF:latest"
     say ""
@@ -1027,7 +1118,7 @@ if in_container_layer "$WWW_DIR"; then
   say ""
   warn "This ran inside a container, and $WWW_DIR is part of the container's own"
   warn "files: the console goes the next time the container is recreated (an image"
-  warn "update, docker compose pull and up). The image does it so it stays:"
+  warn "update, docker compose pull and up). Our Docker image installs it where it stays:"
   warn "$DOCKER_DOCS"
 fi
 

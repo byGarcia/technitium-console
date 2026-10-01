@@ -37,13 +37,18 @@ WORK="$(mktemp -d)"
 # this cannot remove. All of it goes on the way out.
 cleanup() {
   docker compose -p "installer-probe-$$" -f "$WORK/compose.yaml" down -v >/dev/null 2>&1 || true
-  docker rm -f "installer-probe-$$" "installer-probe-$$-rw" >/dev/null 2>&1 || true
+  docker rm -f "installer-probe-$$" "installer-probe-$$-rw" "installer-probe-$$-root" \
+    "installer-probe-$$-pipe" "installer-probe-$$-other" >/dev/null 2>&1 || true
   docker rmi "technitium-console-init:probe-$$" "technitium-console-init:probe-$$-badsum" \
     "technitium-console-init:probe-$$-nosum" >/dev/null 2>&1 || true
   docker run --rm -v "$WORK":/w busybox:stable sh -c 'rm -rf /w/* /w/.[!.]*' >/dev/null 2>&1 || true
   rm -rf "$WORK"
 }
-trap cleanup EXIT INT TERM
+# A signal stops the run: cleaning up and carrying on would run the remaining
+# cases against a $WORK that is gone. The exit is what runs cleanup.
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 tar -czf "$WORK/console.tar.gz" -C "$ROOT/dist" .
 cp "$INSTALLER" "$WORK/install.sh"
 
@@ -575,6 +580,7 @@ build_init() { # [marker] — the image, with probe-marker.txt in its tarball if
 }
 
 compose_file() { # where the console lives: the volume, or a folder on this host
+  # [the init's /target, when it is not the same — a mistake C29 makes on purpose]
   cat > "$WORK/compose.yaml" <<EOF
 # The block in README.md, «Docker» — they change together. Only the two image
 # names, a published port and the admin password are the probe's own.
@@ -593,7 +599,7 @@ services:
   technitium-console:
     image: $INIT_IMAGE
     volumes:
-      - $1:/target
+      - ${2:-$1}:/target
     restart: "no"
 
 volumes:
@@ -614,6 +620,7 @@ served() { # path — the init and the server start side by side, so it waits
 init_exit() { docker wait "$(dc ps -a -q technitium-console)" 2>/dev/null; }
 started_at() { docker inspect -f '{{.State.StartedAt}}' "$(dc ps -q dns-server)" 2>/dev/null; }
 in_volume() { docker run --rm -v "${PROJECT}_technitium-console:/v" busybox:stable sh -c "$1"; }
+in_config() { docker run --rm -v "${PROJECT}_config:/v" busybox:stable sh -c "$1"; }
 section() { # container — its part of what the Docker branch printed
   awk -v n="$1" '/^  container /{ on = ($2 == n) } on' "$WORK/out"
 }
@@ -760,6 +767,32 @@ dc logs technitium-console 2>&1 | grep -q 'not a Technitium console' || c29=1
 [ "$(cat "$WORK/mixed/json/quick-block-lists-custom.json")" = '[{"name":"mine"}]' ] || c29=1
 [ ! -e "$WORK/mixed/$ASSET" ] && [ ! -e "$WORK/mixed/.technitium-console" ] || c29=1
 dc down -v >/dev/null 2>&1
+echo "step: the volumes swapped, the init's /target on the server's config: c29=$c29" >> "$WORK/log29"
+compose_file technitium-console config
+dc up -d dns-server >>"$WORK/out" 2>&1 || c29=1        # the server's data first, as on a live host
+i=0; while [ "$i" -lt 60 ] && ! in_config '[ -f /v/dns.config ]'; do i=$((i+1)); sleep 1; done
+dc stop dns-server >>"$WORK/out" 2>&1 || c29=1         # so nothing moves under the comparison
+in_config 'find /v -type f -exec md5sum {} + | sort' > "$WORK/conf.before"
+grep -q '/v/dns.config$' "$WORK/conf.before" || c29=1   # or the comparison proves nothing
+dc up -d technitium-console >>"$WORK/out" 2>&1 || c29=1
+[ "$(init_exit)" = "1" ] || c29=1
+dc logs technitium-console 2>&1 | grep -q "DNS server's configuration" || c29=1
+in_config 'find /v -type f -exec md5sum {} + | sort' > "$WORK/conf.after"
+cmp -s "$WORK/conf.before" "$WORK/conf.after" || c29=1
+in_config "[ ! -e /v/.technitium-console ] && [ ! -e /v/$ASSET ]" || c29=1
+dc down -v >/dev/null 2>&1
+
+echo "step: a folder holding the marker and a dns.config: c29=$c29" >> "$WORK/log29"
+mkdir -p "$WORK/confmark"
+printf 'technitium-console\n' > "$WORK/confmark/.technitium-console"
+printf '{}\n' > "$WORK/confmark/dns.config"
+compose_file "$WORK/confmark"
+dc up -d >>"$WORK/out" 2>&1 || c29=1
+[ "$(init_exit)" = "1" ] || c29=1
+dc logs technitium-console 2>&1 | grep -q "DNS server's configuration" || c29=1
+[ "$(cat "$WORK/confmark/dns.config")" = '{}' ] || c29=1
+[ ! -e "$WORK/confmark/$ASSET" ] || c29=1
+dc down -v >/dev/null 2>&1
 echo "step: done: c29=$c29" >> "$WORK/log29"
 cat "$WORK/log29" >> "$WORK/out"
 verdict "C29" $c29 "an init that fails never keeps the DNS server from starting"
@@ -811,6 +844,26 @@ section "$NAME-rw" | grep -qF -- "-v $WORK/legacy:$WWW (" || c30=1   # as it is 
 [ -f "$WORK/legacy/$ASSET" ] || c30=1                             # and the folder left whole until then
 docker rm -f "$NAME-rw" >/dev/null 2>&1
 stop_server
+echo "step: a bind of /, a source with a |, a folder that is not the console: c30=$c30" >> "$WORK/log30"
+mkdir -p "$WORK/odd|dir" "$WORK/other"
+printf 'keep\n' > "$WORK/other/notes.txt"
+# No published ports: one of them serves this machine's / over its web root.
+docker run -d --name "$NAME-root" -v "/:$WWW:ro" "$IMAGE" >/dev/null 2>&1 || c30=1
+docker run -d --name "$NAME-pipe" -v "$WORK/odd|dir:$WWW:ro" "$IMAGE" >/dev/null 2>&1 || c30=1
+docker run -d --name "$NAME-other" -v "$WORK/other:$WWW:ro" "$IMAGE" >/dev/null 2>&1 || c30=1
+# The folders where the script can see them, as on the host itself.
+docker run --rm -i -v /var/run/docker.sock:/var/run/docker.sock -v "$WORK:$WORK" docker:cli \
+  sh -s -- --uninstall < "$INSTALLER" > "$WORK/out" 2>&1 || c30=1
+for c in root pipe other; do
+  section "$NAME-$c" > "$WORK/sec"
+  ! grep -q 'rm -rf' "$WORK/sec" || c30=1                 # nothing to paste that could remove the wrong thing
+  grep -q 'remove it yourself' "$WORK/sec" || c30=1
+done
+section "$NAME-pipe" | grep -qF "$WORK/odd|dir" || c30=1  # named whole, not cut at the |
+host > "$WORK/out" 2>&1 || c30=1
+! section "$NAME-root" | grep -q -- '--dir' || c30=1      # and no update aimed at /
+docker rm -f "$NAME-root" "$NAME-pipe" "$NAME-other" >/dev/null 2>&1
+echo "step: done: c30=$c30" >> "$WORK/log30"
 cat "$WORK/log30" >> "$WORK/out"
 verdict "C30" $c30 "on a Docker host it prints the steps in and out, with real names and no \$0"
 
