@@ -58,14 +58,37 @@ const COUNTS_FAILED = 'Could not read the counts.'
 /*
 After a Save or an Update Now the server reloads the lists in the background, and
 the counts change when it has finished, not at once (spec, «Qué se refresca»). Until
-then both figures say "Updating…" (OURS): the settings are read every POLL_MS and,
-when the next update is a date again instead of "Updating Now", the counts are read
-once more. The wait is bounded by POLL_LIMIT_MS so a server that never says so does
-not keep this screen asking for ever; at the limit the counts are read anyway.
+then both figures say "Updating…" (OURS).
+
+How the end is told, from the server (v15.5.1): `blockListNextUpdatedOn` is the last
+SUCCESSFUL update plus the interval (WebServiceSettingsApi.cs:384), and the last update
+only moves when a download ends well (BlockListZoneManager.cs:674-692). While it
+reloads, then, the server keeps answering the OLD date —a future one, so "Updating
+Now" is no signal—. The value is captured when the action is taken (Save: from its
+own answer; Update Now: read just before the call) and the settings are read every
+POLL_MS until it differs; then the counts are read once more. POLL_LIMIT_MS bounds the
+wait —a download that fails never moves the date— and at the limit the counts are read
+anyway. A second Save or Update Now while waiting captures again and starts the limit
+again.
 */
 const UPDATING = 'Updating…'
 const POLL_MS = 3000
 const POLL_LIMIT_MS = 120_000
+
+/** A reload being waited for: the date captured when it was asked for. Each one is a
+    new object, so a second action restarts the wait even with the same date. */
+type Reload = { from: string | null }
+
+/*
+Whether a Save makes the server reload. Only when the set of lines changed —its
+`HasSameItems` (TechnitiumLibrary CollectionExtensions.cs: same count, every item of
+the one in the other, order aside; BlockListZoneManager.cs:512-523)— and there is
+something to reload with a timer to do it: with no lines the server flushes the zones
+there and then (`Flush()`, :527), and with the interval at 0 it reloads nothing.
+*/
+function sameItems(a: readonly string[], b: readonly string[]): boolean {
+  return a.length === b.length && a.every((x) => b.includes(x))
+}
 
 /*
 How many lines the save would change. A line is identified by its URL (a comment by
@@ -130,7 +153,11 @@ export function BlockLists({
   const [busy, setBusy] = useState(false)
   const [askUpdate, setAskUpdate] = useState(false)
   /** The server is reloading the lists: the counts on screen are not current yet. */
-  const [reloading, setReloading] = useState(false)
+  const [reloading, setReloading] = useState<Reload | null>(null)
+  /** The lines as the server last answered them, to tell whether a Save reloads. */
+  const serverUrls = useRef<string[]>([])
+  /** `blockListNextUpdatedOn` as the server last answered it. */
+  const serverNext = useRef<string | null>(null)
   const mounted = useRef(true)
   useEffect(() => {
     mounted.current = true
@@ -153,6 +180,8 @@ export function BlockLists({
       setLines(read)
       // `settings/get` OMITS this key when it is null (CONVENTIONS.md): absent is "Not Scheduled".
       setNext(s.blockListNextUpdatedOn ?? null)
+      serverNext.current = s.blockListNextUpdatedOn ?? null
+      serverUrls.current = s.blockListUrls ?? []
       setIntervalHours(s.blockListUpdateIntervalHours)
       setHasSaved(s.blockListUrls != null)
     })
@@ -185,23 +214,29 @@ export function BlockLists({
     void readCounts()
   }, [readCounts])
 
-  /* The wait described at POLL_MS: armed by a Save or an Update Now. */
+  /* The wait described at POLL_MS: armed by a Save or an Update Now. Until it ends the
+     next-update line keeps what the action left there ("Updating Now" after Update
+     Now, main.js:2352-2356). */
   useEffect(() => {
-    if (!reloading) return
+    if (reloading == null) return
     let live = true
     let timer: ReturnType<typeof setTimeout> | undefined
     const started = Date.now()
     const tick = async () => {
       const s = await getSettings(token, node)
       if (!live) return
-      const finished = s != null && nextUpdateText(s.blockListNextUpdatedOn ?? null) !== 'Updating Now'
+      const now = s == null ? undefined : (s.blockListNextUpdatedOn ?? null)
+      const finished = now !== undefined && now !== reloading.from
       if (!finished && Date.now() - started < POLL_LIMIT_MS) {
         timer = setTimeout(() => void tick(), POLL_MS)
         return
       }
-      if (s != null) setNext(s.blockListNextUpdatedOn ?? null)
+      if (now !== undefined) {
+        setNext(now)
+        serverNext.current = now
+      }
       await readCounts()
-      if (live) setReloading(false)
+      if (live) setReloading(null)
     }
     timer = setTimeout(() => void tick(), POLL_MS)
     return () => {
@@ -253,24 +288,39 @@ export function BlockLists({
     setHasSaved(r.data.response.blockListUrls != null)
     // The response carries the server's schedule, as Settings redraws from it: emptying
     // the lists stops the timer, and the key then comes back omitted ("Not Scheduled").
-    setNext(r.data.response.blockListNextUpdatedOn ?? null)
+    const answered = r.data.response.blockListNextUpdatedOn ?? null
+    setNext(answered)
     setIntervalHours(r.data.response.blockListUpdateIntervalHours)
     // Settings.tsx:253-257, title and sentence.
     setNotice({ type: 'success', title: 'Settings Saved!', text: 'DNS Server settings were saved successfully.' })
-    // A change of URLs makes the server reload its lists: the counts follow when it has.
-    setReloading(true)
+    // See `sameItems`: whether, and how, the counts change.
+    const urls = r.data.response.blockListUrls ?? []
+    const changed = !sameItems(urls, serverUrls.current)
+    serverUrls.current = urls
+    serverNext.current = answered
+    const interval = r.data.response.blockListUpdateIntervalHours ?? 0
+    if (!changed) return
+    if (urls.length > 0 && interval > 0) setReloading({ from: answered })
+    else {
+      setReloading(null)
+      void readCounts()
+    }
   }
 
   async function updateNow() {
     setAskUpdate(false)
     setBusy(true)
+    // The date to wait on, read just before the call (see POLL_MS); the last answer
+    // known if the read fails.
+    const before = await getSettings(token, node)
+    const from = before == null ? serverNext.current : (before.blockListNextUpdatedOn ?? null)
     const ok = await forceUpdateBlockLists(token)
     setBusy(false)
     if (!ok) return
     // main.js:2356 — the label becomes "Updating Now" without reloading the settings.
     setNext(new Date(0).toISOString())
     setNotice({ type: 'success', title: 'Updating Block List!', text: 'Block list update was triggered successfully.' })
-    setReloading(true)
+    setReloading({ from })
   }
 
   const listsCount = lines.filter((l) => l.kind !== 'comment').length
@@ -295,23 +345,23 @@ export function BlockLists({
                 {countsFailed ? (
                   <Failure>{COUNTS_FAILED}</Failure>
                 ) : (
-                  <div className={`${styles.stat}${reloading ? ` ${styles.stale}` : ''}`}>
+                  <div className={`${styles.stat}${reloading != null ? ` ${styles.stale}` : ''}`}>
                     {counts ? counts.block.toLocaleString() : '—'}
                   </div>
                 )}
                 <div className={styles.statLabel}>Block List Domains</div>
-                {reloading && <div className={styles.pending}>{UPDATING}</div>}
+                {reloading != null && <div className={styles.pending}>{UPDATING}</div>}
               </Body></Panel>
               <Panel><Body>
                 {countsFailed ? (
                   <Failure>{COUNTS_FAILED}</Failure>
                 ) : (
-                  <div className={`${styles.stat}${reloading ? ` ${styles.stale}` : ''}`}>
+                  <div className={`${styles.stat}${reloading != null ? ` ${styles.stale}` : ''}`}>
                     {counts ? counts.allow.toLocaleString() : '—'}
                   </div>
                 )}
                 <div className={styles.statLabel}>Allow List Domains</div>
-                {reloading && <div className={styles.pending}>{UPDATING}</div>}
+                {reloading != null && <div className={styles.pending}>{UPDATING}</div>}
               </Body></Panel>
             </>
           )}
