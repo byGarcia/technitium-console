@@ -81,7 +81,7 @@ fixed one by one.
 | API endpoints the stock console calls, and this one calls too | 132 of 132 |
 | Sortable columns kept | 64 of 66, and the two missing are declared |
 | Dialogs, checked one by one | 44 |
-| Tests | 1,425 |
+| Tests | 1,487 |
 
 Every figure in that table comes from a script in `dev/` —`check-endpoints.mjs`,
 `check-parity-sort.mjs`, `dialog-inventory.sh`— and not from this paragraph.
@@ -231,7 +231,7 @@ server.
 npm install
 npm run build        # emits into dist/
 npm run dev          # Vite development server
-npm test             # 1,425 tests
+npm test             # 1,487 tests
 npm run typecheck
 npm run lint
 ```
