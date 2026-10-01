@@ -17,7 +17,12 @@ jobs:
       latest: ${{ steps.floating.outputs.latest }}
       floating: ${{ steps.floating.outputs.floating }}
     steps:
+      # npm runs in this job (install scripts, tests, build) and the job can
+      # write to the repo, so the token is not left in .git/config for that
+      # code to reuse. Only the release step below gets it, as an input.
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       # The same tarball the develop image is built from (develop-image.yml).
       - uses: ./.github/actions/console-tarball
@@ -31,6 +36,8 @@ jobs:
         id: floating
         shell: bash
         run: |
+          # Anonymous: the repo is public and checkout kept no token. If it ever
+          # cannot read the tags, the guard below fails the release.
           releases="$(git ls-remote --tags --refs origin 'v*' | sed 's|.*refs/tags/||' \
             | { grep -Ex 'v[0-9]+\.[0-9]+\.[0-9]+' || true; } | sort -V)"
           latest=false; minor=false
@@ -94,6 +101,7 @@ jobs:
 
       - uses: softprops/action-gh-release@v2
         with:
+          token: ${{ github.token }}
           files: |
             technitium-console.tar.gz
             technitium-console.tar.gz.sha256
@@ -123,7 +131,10 @@ jobs:
       run:
         shell: bash
     steps:
+      # For install.sh, docker/Dockerfile and the image action; no npm here.
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       # The bytes people download, not a second build of them.
       - name: The release's own tarball

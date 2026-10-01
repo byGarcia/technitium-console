@@ -3,6 +3,10 @@
 # exactly as a release is (the same tarball action and the same image action)
 # and never touches latest, X.Y or X.Y.Z. No release, no notes. Not for
 # production: develop moves with every push.
+#
+# Two jobs, so that the one holding the package token never runs npm: the
+# dependencies' install scripts, the tests and the build run in `tarball`,
+# which can read the repo and nothing else; `image` only gets their output.
 name: Develop image
 
 on:
@@ -12,33 +16,66 @@ on:
 
 permissions: {}
 
+# The newest push wins; an older run still going is dropped.
+concurrency:
+  group: develop-image
+  cancel-in-progress: true
+
 jobs:
-  image:
+  tarball:
     # develop of this repository only: a manual run from another branch, or a
     # fork's own develop, builds nothing.
     if: github.repository == 'byGarcia/technitium-console' && github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: write
-    # The newest push wins; an older build still running is dropped.
-    concurrency:
-      group: develop-image
-      cancel-in-progress: true
-    # bash -eo pipefail: a failing command in a pipe fails the step.
     defaults:
       run:
         shell: bash
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - uses: ./.github/actions/console-tarball
 
+      - uses: actions/upload-artifact@v7
+        with:
+          name: console-tarball
+          path: |
+            technitium-console.tar.gz
+            technitium-console.tar.gz.sha256
+          if-no-files-found: error
+          retention-days: 1
+
+  image:
+    needs: tarball
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    # bash -eo pipefail: a failing command in a pipe fails the step.
+    defaults:
+      run:
+        shell: bash
+    steps:
+      # For install.sh, docker/Dockerfile and the image action; nothing here
+      # installs or runs the repo's dependencies.
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: console-tarball
+          path: ${{ runner.temp }}/tarball
+
+      # init-image checks the tarball against its .sha256 before building.
       # develop-<sha7> is pushed with the build; develop moves to it once
       # every platform has been checked.
       - uses: ./.github/actions/init-image
         with:
           image: ghcr.io/bygarcia/technitium-console
-          tarball-dir: .
+          tarball-dir: ${{ runner.temp }}/tarball
           tags: type=sha,prefix=develop-,format=short
           floating: develop
