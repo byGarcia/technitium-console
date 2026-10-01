@@ -48,6 +48,10 @@ export function TopTable({
   onChanged: () => void
 }) {
   const [more, setMore] = useState(false)
+  /* The domains whose two calls are in flight. Upstream disables THAT row's control
+     until they settle (other-zones.js:645, re-enabled at 660, 666 and 676), so a
+     second click cannot start a second sequence; the other rows stay usable. */
+  const [busy, setBusy] = useState<ReadonlySet<string>>(new Set())
   const isBlocked = kind === 'TopBlockedDomains'
   const need = isBlocked
     ? missing(permissions, 'Blocked.canDelete', 'Allowed.canModify')
@@ -56,7 +60,14 @@ export function TopTable({
   const verb = isBlocked ? 'Allow Domain' : 'Block Domain'
 
   async function act(domain: string) {
+    if (busy.has(domain)) return
+    setBusy((b) => new Set(b).add(domain))
     const outcome = await (isBlocked ? allowDomain(token, domain) : blockDomain(token, domain))
+    setBusy((b) => {
+      const next = new Set(b)
+      next.delete(domain)
+      return next
+    })
     if (outcome.kind !== 'ok') {
       onNotice(noticeFromFailure(outcome))
       return
@@ -107,6 +118,7 @@ export function TopTable({
                   need == null ? (
                     <button
                       type="button"
+                      disabled={busy.has(r.name)}
                       onClick={() => {
                         close()
                         void act(r.name)

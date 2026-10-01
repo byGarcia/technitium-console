@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import * as blocking from '../../api/blocking'
+import type { ApiOutcome } from '../../api/client'
 import type { TopEntry } from '../../api/dashboard'
 import { TopTable } from './TopTable'
 
@@ -60,6 +61,47 @@ describe('TopTable', () => {
     await userEvent.click(screen.getByRole('menuitem', { name: 'Allow Domain' }))
     expect(onNotice).toHaveBeenCalledWith({ type: 'danger', title: 'Error!', text: 'Access was denied.' })
     expect(onChanged).not.toHaveBeenCalled()
+  })
+
+  it('a row cannot run twice while its two calls are in flight, and settles enabled', async () => {
+    let settle: (o: ApiOutcome) => void = () => {}
+    const allow = vi.spyOn(blocking, 'allowDomain').mockReturnValue(new Promise((r) => { settle = r }))
+    render(
+      <TopTable kind="TopBlockedDomains" rows={ROWS} range="LastHour" token="T"
+        permissions={undefined} failure={false} onNotice={() => {}} onChanged={() => {}} />,
+    )
+    const trigger = screen.getByRole('button', { name: 'Actions for googleads.g.doubleclick.net' })
+    await userEvent.click(trigger)
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Allow Domain' }))
+
+    await userEvent.click(trigger)
+    const pending = screen.getByRole('button', { name: 'Allow Domain' })
+    expect(pending).toBeDisabled()
+    await userEvent.click(pending)
+    expect(allow).toHaveBeenCalledTimes(1)
+
+    /* Only that row: the other one can still act. */
+    await userEvent.click(screen.getByRole('button', { name: 'Actions for app-measurement.com' }))
+    expect(screen.getByRole('menuitem', { name: 'Allow Domain' })).toBeEnabled()
+
+    await act(async () => settle({ kind: 'ok', data: {} }))
+    await userEvent.click(trigger)
+    expect(screen.getByRole('menuitem', { name: 'Allow Domain' })).toBeEnabled()
+  })
+
+  it('a failed sequence also gives the row back', async () => {
+    let settle: (o: ApiOutcome) => void = () => {}
+    vi.spyOn(blocking, 'blockDomain').mockReturnValue(new Promise((r) => { settle = r }))
+    render(
+      <TopTable kind="TopDomains" rows={ROWS} range="LastHour" token="T"
+        permissions={undefined} failure={false} onNotice={() => {}} onChanged={() => {}} />,
+    )
+    const trigger = screen.getByRole('button', { name: 'Actions for app-measurement.com' })
+    await userEvent.click(trigger)
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Block Domain' }))
+    await act(async () => settle({ kind: 'error', message: 'Access was denied.' }))
+    await userEvent.click(trigger)
+    expect(screen.getByRole('menuitem', { name: 'Block Domain' })).toBeEnabled()
   })
 
   it('Block Domain needs Allowed.canDelete AND Blocked.canModify: missing one disables it', async () => {
