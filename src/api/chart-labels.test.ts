@@ -8,7 +8,7 @@ label format; day, month and year buckets are written in UTC (the server groups 
 by UTC day), anything with an hour in the viewer's local time.
 
 Each half runs in a zone PINNED where it can fail: the UTC formats west of Greenwich
-(Los Angeles, UTC−7 in October), where a midnight-UTC instant is still the day before
+(`America/Los_Angeles`, UTC−7 in October), where a midnight-UTC instant is still the day before
 in local time; the local formats east (Tokyo, UTC+9), where an evening hour in UTC is
 already the next day. In a runner on UTC, or in Madrid at midnight UTC, the two halves
 could not tell local from UTC apart. Node re-reads `TZ` when it is assigned, and
