@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react'
 import {
   Chart as ChartJS,
-  LineController, DoughnutController,
-  LineElement, PointElement, ArcElement,
+  LineController, DoughnutController, BarController,
+  LineElement, PointElement, ArcElement, BarElement,
   CategoryScale, LinearScale,
   Legend, Tooltip, Filler,
   type ChartData as ChartJsData, type ChartType, type ChartDataset,
@@ -10,7 +10,7 @@ import {
 import type { ChartData } from '../../api/dashboard'
 import { readPalette, type Palette } from './palette'
 
-ChartJS.register(LineController, DoughnutController, LineElement, PointElement, ArcElement, CategoryScale, LinearScale, Legend, Tooltip, Filler)
+ChartJS.register(LineController, DoughnutController, BarController, LineElement, PointElement, ArcElement, BarElement, CategoryScale, LinearScale, Legend, Tooltip, Filler)
 
 /*
 Chart.js is used, not hand-written SVG, for two behavioural reasons:
@@ -65,6 +65,11 @@ function repaint(
         cubicInterpolationMode: 'monotone' as const,
         tension: 0.4,
       }
+    }
+    if (type === 'bar') {
+      /* Stacked bars: a solid fill per series, the gap between bars is the panel. */
+      const colour = p.forLabel(String(d.label ?? ''), i)
+      return { ...d, backgroundColor: colour, borderColor: colour, borderWidth: 0, borderRadius: 2, stack: 'all' }
     }
     /* Doughnut: one colour per slice, and the gap is the panel showing through. */
     const labels = (data.labels ?? []) as string[]
@@ -155,9 +160,10 @@ export function Chart({
           },
         },
         scales:
-          type === 'line'
+          type === 'line' || type === 'bar'
             ? {
                 x: {
+                  stacked: type === 'bar',
                   /* Vertical rules add nothing here: time is read along the axis,
                      not compared column against column. */
                   grid: { display: false },
@@ -165,6 +171,7 @@ export function Chart({
                   ticks: { color: p.faint, maxTicksLimit: 8, font: { size: 10, family: p.mono } },
                 },
                 y: {
+                  stacked: type === 'bar',
                   grid: { color: p.grid },
                   border: { display: false },
                   beginAtZero: true,

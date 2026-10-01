@@ -25,6 +25,10 @@ const SEMANTIC: Record<string, string> = {
   Recursive: '--ch-rec',
   Cached: '--ch-cache',
   Blocked: '--ch-block',
+  /* The Blocking section's stacked bars: what got through. Green because that is
+     what Allowed already wears in the console (Lists.module.css, the Rules
+     table); blue is Total everywhere and would read as the total. */
+  Allowed: '--ch-ok',
   Dropped: '--ch-drop',
   Clients: '--ch-clients',
 }

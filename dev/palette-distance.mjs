@@ -91,6 +91,7 @@ response doughnut. The two remaining doughnuts are open sets and get the cycle.
 const CHARTS = {
   'main line chart': ['ch-total', 'ch-ok', 'ch-fail', 'ch-nx', 'ch-refuse', 'ch-auth', 'ch-rec', 'ch-cache', 'ch-block', 'ch-drop', 'ch-clients'],
   'Query Response Types': ['ch-auth', 'ch-rec', 'ch-cache', 'ch-block', 'ch-drop'],
+  'Blocking stacked bars': ['ch-ok', 'ch-block'],
   'open cycle (Query / Protocol Types)': ['ch-1', 'ch-2', 'ch-3', 'ch-4', 'ch-5', 'ch-6', 'ch-7', 'ch-8'],
 }
 
