@@ -30,7 +30,7 @@ seen failing on the old script before they were seen passing on the new one.
 The mode B cases need a server that honours
 `DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH`. **Since v15.5 (2026-09-19) the official
 image does**, so they run against `technitium/dns-server:latest` with no build:
-24 met, 1 not applicable (C15, which needs a server that ignores the variable).
+29 met, 1 not applicable (C15, which needs a server that ignores the variable).
 They are not skipped by decree: the bench asks the image and believes the answer.
 
 Before v15.5 the only server that honoured it was one built from the fork's

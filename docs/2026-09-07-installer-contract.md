@@ -27,9 +27,14 @@ that honours it. Building one takes four commands and they are written down in
 
 > **2026-10-01.** Docker gets an install path of its own: an init image that
 > copies the console into a volume the official server mounts
-> (`docs/2026-10-01-docker-install-spec.md`). Four clauses for it, D1 to D4, an
-> amendment each to W6 and I1, and five cases, C26 to C30, with C11 extended:
-> thirty cases. And a correction the same day: the variable is upstream's since
+> (`docs/2026-10-01-docker-install-spec.md`). Four clauses for it, D1 to D4;
+> amendments to W6, A6 and I1, W4 giving way inside the image (§3, «Docker»)
+> and the Docker host's steps in §4; and five cases, C26 to C30, with C11, C17
+> and C22 extended: thirty cases.
+> Measured against `technitium/dns-server:latest` (v15.5.1): **29 met, 0 not met,
+> 1 not applicable** (C15). C11 and C26 to C30 were first seen failing against
+> the `install.sh` of `main`, and so were the steps added to C17 and C22 the
+> same day. And a correction the same day: the variable is upstream's since
 > v15.5 (§1.7), so the official image honours it, the fork build the 2026-09-07
 > status relies on is not needed any more, and the `†` has come off W2, F3 and
 > S2.
@@ -304,9 +309,8 @@ the three.
   those files, so there is nothing in it to lose, and it is how a host folder
   for the Docker image is prepared with lists written by hand before the first
   run. One file of any other kind beside them and the folder is refused as
-  before (C22; C29, lists and `notes.txt`). The amendment is not measured yet:
-  the `✓` above is C22's, and W6 is re-measured with it in Task 6 of
-  `docs/2026-10-01-docker-install-plan.md`.
+  before (C22; C29, lists and `notes.txt`). Measured with the amendment on
+  2026-10-01, by C22, C28 and C29.
   *2026-10-01* (C22, `--dir /`): `--dir /`, or any path that resolves to the
   root folder, is refused. It used to resolve to no folder at all, and no
   folder means "ask the server", so the console went into the server's web
@@ -416,7 +420,11 @@ the three.
   *2026-10-01:* one exception, in the Docker image's volume only: the marker
   `.technitium-console` at its root (Docker, D1). It is a dotfile, so it is
   never served (§1.1), and the init reads it from the filesystem, not over
-  HTTP. No uninstall keys off it (A3): `--into-volume` has no uninstall.
+  HTTP. No uninstall keys off it (A3): `--into-volume` has no uninstall. The
+  `✓` is not C8's alone for this half: C26 finds nothing in the volume but the
+  console and the marker, and the marker not served, and C29 finds not even
+  the marker after an init that was refused; measured on 2026-10-01. Why the
+  marker is there is in «Docker», below.
 - **A7 ✓** (C19) When the version recorded with the backup and the running one
   differ, the backup is the console of another server: `--uninstall` **stops**,
   names both versions, and does nothing. Restoring it anyway takes a flag of its
@@ -466,9 +474,8 @@ the three.
   Docker image's mode, `--from` is checked after all: the `.sha256` next to the
   tarball is required, and a mismatch or a missing one stops the run with
   nothing written, as above. The image carries the release's checksum, so D4
-  holds when the image runs as well as in CI. The amendment is not measured
-  yet: the `✓` above is C25's, and I1 is re-measured with it in Task 6 of
-  `docs/2026-10-01-docker-install-plan.md`.
+  holds when the image runs as well as in CI. Measured with the amendment on
+  2026-10-01, by C25, C26 and C29.
 
 ### Docker
 
@@ -495,7 +502,7 @@ to A6.
 
 These four are what the layout adds.
 
-- **D1** (C29) **The init never keeps the DNS server from starting.** The
+- **D1 ✓** (C29) **The init never keeps the DNS server from starting.** The
   compose block the README gives has no `depends_on` from the server on the
   init, and the init neither looks for the server nor waits for it. When the
   init fails a check — a folder W6 refuses, no volume mounted at `/target`, a
@@ -510,7 +517,7 @@ These four are what the layout adds.
   A2 is about replacing a console, and on a first install there is none yet to
   keep serving. Not covered: a first `docker compose up` has to be able to pull
   both images, which is the registry's business, not the installer's.
-- **D2** (C27) **Updating the console does not restart the DNS server.** The
+- **D2 ✓** (C27) **Updating the console does not restart the DNS server.** The
   documented update, `docker compose pull technitium-console && docker compose
   up -d technitium-console`, recreates the init only: the server's `StartedAt`
   does not change and the new console is served at once (§1.1). Bringing the
@@ -520,14 +527,14 @@ These four are what the layout adds.
   in force. A plain `docker compose pull && docker compose up -d` also updates
   the server when upstream has a new image, and that restart is the server's,
   not the console's; the README says which command does which.
-- **D3** (C28) **Custom lists in the volume survive.** Every
+- **D3 ✓** (C28) **Custom lists in the volume survive.** Every
   `json/*-custom.json` in the volume survives an update of the console and a
   `--force-recreate` of the server, and so does one in a host folder bound in
   its place (C28, bind folder, update and `--force-recreate`). A host folder
   holding only such lists before the first run is accepted (W6); one holding
   them and any other file is refused (C29, lists and `notes.txt`), and D1 says
   what the server does then.
-- **D4** (C26, and CI) **The image carries the release's tarball, byte for
+- **D4 ✓** (C26, and CI) **The image carries the release's tarball, byte for
   byte.** CI downloads it from the release it has just published, checks it
   against the release's `.sha256` before building, and after pushing checks it
   again inside each of the three platforms (`.github/workflows/release.yml`, job
@@ -639,10 +646,15 @@ having to be built by hand.
 *2026-10-01:* it happened. Upstream released the variable in v15.5 (§1.7), and
 the two sides have swapped. Against `technitium/dns-server:latest` (v15.5.1) the
 capability answer is yes, so C12 and C13 run and C15 stands down: 24 met and 1
-not applicable on 2026-09-30. C15, the refusal, now needs an image before 15.5,
-given with `IMAGE=`; it was measured against v15.4 on 2026-09-07. The `†` is
-off W2, F3 and S2, and no server has to be built by hand. C26 to C30 are gated
-by the same answer as C12 and C13.
+not applicable on 2026-09-30, 29 and 1 on 2026-10-01 with the Docker cases. C15,
+the refusal, now needs an image before 15.5, given with `IMAGE=`; it was
+measured against v15.4 on 2026-09-07, and again on 2026-10-01 against
+`technitium/dns-server:15.4.0`, after the Docker changes to `install.sh`: met.
+That run also fails C24, whose first step needs a server that honours the
+variable and a `curl` in the image, and 15.4.0 has neither: unlike C12 and C13,
+the probe does not gate C24 on the capability. The `†` is off W2, F3 and S2, and
+no server has to be built by hand. C26 to C30 are gated by the same answer as
+C12 and C13.
 
 ---
 
