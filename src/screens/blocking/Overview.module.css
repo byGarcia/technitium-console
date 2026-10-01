@@ -26,3 +26,17 @@ Muted, not `--warn`: on this screen the paused mark is `--acc`, and tokens.css
 measures the two ambers as indistinguishable. The sentence and its icon say it.
 */
 .partial { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-5) var(--s-9); color: var(--mute); }
+
+/* A figure: the number, its sub-line, its label, and the trend under it. */
+.kpi { display: flex; flex-direction: column; gap: var(--s-1); }
+.kpiValue { font-family: var(--font-mono); font-size: var(--t-7); font-weight: 600; }
+.kpiSub { font-family: var(--font-mono); font-size: var(--t-2); color: var(--faint); min-height: var(--s-8); }
+.kpiLabel { font-size: var(--t-1); font-weight: var(--text-weight); letter-spacing: var(--text-tracking); text-transform: uppercase; color: var(--mute); }
+.spark { display: block; width: 100%; height: var(--s-12); margin-top: var(--s-5); }
+.sparkTotal { color: var(--ch-total); }
+.sparkBlocked { color: var(--ch-block); }
+
+/* The ring, with the share written in its hole. */
+.ring { position: relative; }
+.ringValue { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; font-family: var(--font-mono); font-size: var(--t-6); font-weight: 600; pointer-events: none; }
+.ringLabel { display: block; font-family: var(--font-ui); font-size: var(--t-1); font-weight: var(--text-weight); letter-spacing: var(--text-tracking); text-transform: uppercase; color: var(--mute); }

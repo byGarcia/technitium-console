@@ -57,7 +57,7 @@ describe('RecentBlocked', () => {
     withApps([LOGGER])
     const spy = vi.spyOn(blocking, 'recentBlocked').mockResolvedValue({ kind: 'ok', data: { partial: false, entries: [] } })
     render(<RecentBlocked token="T" permissions={undefined} node="cluster" aggregate serverDomain="dev.cluster.test" />)
-    expect(await screen.findByText('on dev.cluster.test')).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Recently Blocked on dev.cluster.test' })).toBeInTheDocument()
     expect(spy).toHaveBeenCalledWith('T', { name: 'Query Logs (Sqlite)', classPath: 'QueryLogsSqlite.App' }, '')
   })
 
