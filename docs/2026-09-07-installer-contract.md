@@ -29,7 +29,9 @@ that honours it. Building one takes four commands and they are written down in
 > copies the console into a volume the official server mounts
 > (`docs/2026-10-01-docker-install-spec.md`). Four clauses for it, D1 to D4, an
 > amendment each to W6 and I1, and five cases, C26 to C30, with C11 extended:
-> thirty cases.
+> thirty cases. And a correction the same day: the variable is upstream's since
+> v15.5 (§1.7), so the official image honours it, the fork build the 2026-09-07
+> status relies on is not needed any more, and the `†` has come off W2, F3 and S2.
 
 The console goes in front of a DNS server that a whole house resolves through.
 The installer is the only part of this project that writes to somebody else's
@@ -55,6 +57,13 @@ builder.Environment.WebRootFileProvider = new PhysicalFileProvider(Path.Combine(
 the web root is **always a `www` folder next to the binary**. It is not
 configurable, it is not in `dns.config`, and nothing in the console can change
 it.
+
+*2026-10-01:* that was upstream before v15.5. Since v15.5 the provider is built
+from the folder `DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH` names when it is set and
+the folder exists, and from `www` next to the binary otherwise
+(`DnsWebService.cs:1805-1816` at the `v15.5.1` tag; §1.7). It is still not in
+`dns.config`, and nothing in the console can change it. What follows holds for
+whichever folder is served; at `v15.5.1` the `no-cache` line is `:1950`.
 
 Two consequences that the installer lives with:
 
@@ -137,7 +146,21 @@ names. The installer must treat it as a glob, and does (probe C4).
 These files live in the web root and in no release. Replacing the web root
 deletes them, which is the whole reason this clause exists.
 
-### 1.7 The environment variable that does not exist yet
+### 1.7 The environment variable
+
+*2026-10-01:* it is upstream's since **v15.5 (2026-09-19)**: `CHANGELOG.md:10`
+at the `v15.5.0` tag, "Added new `DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH`
+environment variable … PR #2138", and v15.5.1 carries it. `DnsWebService.cs:1805-1814`
+at `v15.5.1` reads it, uses `www` when it is unset, and when the folder does not
+exist writes the log line W3 quotes and falls back to `www`. Upstream documents it
+in `EnvironmentVariables.md:11`, a file of its own for variables read on every
+start, whose note says that changing one needs a restart — not in
+`DockerEnvironmentVariables.md`, as the PR had it. **The official image honours
+it since v15.5**: the probe measured it against `technitium/dns-server:latest`
+(v15.5.1) on 2026-09-30, and C12 and C13 ran and were met against it. What
+follows is this section as written on 2026-09-07, when the variable did not exist
+in any release; its first bullet is true only of servers before 15.5, and the
+installer still does not trust a version number for it (W3).
 
 `DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH` is twelve lines on the fork's
 `feat/configurable-www-folder` branch (`1f097ea1`): it overrides the web root and
@@ -190,12 +213,16 @@ choice — it depends on the server in front of us.
 **Mode A — replacement.** The only mode possible today: install over
 `<appFolder>/www`, keep a copy of the stock console, restore it on uninstall.
 It cannot survive a server update (§1.3), so under this mode an update means the
-administrator re-runs the installer.
+administrator re-runs the installer. *2026-10-01:* no longer the only mode since
+v15.5 (§1.7). It is what the installer does when the variable is not set, and
+the only mode on a server before 15.5.
 
 **Mode B — side by side.** Once the variable lands: install into a folder of our
 own, never touch `www`, and let the variable point the server at it. Server
 updates stop mattering. This is the mode the project wants, and the reason the
-PR exists.
+PR exists. *2026-10-01:* the variable landed in v15.5 (§1.7). Mode B is what any
+server from 15.5 on gets once the variable is set (W2), and it is the layout of
+the Docker image (D1–D4).
 
 Mode B costs one restart the first time the served path changes, and one when
 that change is undone, because the variable is read once at start (S2). Every
@@ -214,7 +241,9 @@ invisible. `/opt/technitium-console` satisfies both.
 is left to a reading of the script. The three mode B clauses carry a `†`: they
 are measured against a build of the fork's `feat/configurable-www-folder`
 branch, not against a released server, and they stay that way until upstream
-merges it.
+merges it. *2026-10-01:* upstream released it in v15.5 (§1.7), and C12 and C13
+were met against the official v15.5.1 on 2026-09-30, so the `†` has come off
+the three.
 
 ### Where it installs
 
@@ -225,7 +254,7 @@ merges it.
   `/proc`, and its web root is derived from the path of the `DnsServerApp.dll` it
   was started with. The two known folders are still there, for the case of a
   host preparing a folder for a container, where there is no process to ask.
-- **W2 ✓†** (C12) When the running server honours the variable, the console is
+- **W2 ✓** (C12) When the running server honours the variable, the console is
   installed where it points and `www` is not touched. Measured: the console
   answers from the folder the variable names, and the stock `www` still holds
   the console the server shipped.
@@ -247,7 +276,10 @@ merges it.
   Without it, the server does not know the variable at all, and the console goes
   where it is actually read. The half of this clause that a released server can
   exercise is the refusal, and that is what C15 measures; the other half rides on
-  C12.
+  C12. *2026-10-01:* since v15.5 it is the other way round. A released server
+  honours the variable and rides on C12, and the refusal needs a server before
+  15.5: C15 is not applicable against `technitium/dns-server:latest`, and runs
+  against an older image given with `IMAGE=` (§5).
 - **W4 ✓** (C10) A target folder that does not exist is created. Nothing is
   backed up that was never there, which is what used to make the documented
   Docker flow fail before it had installed anything.
@@ -295,7 +327,7 @@ merges it.
   administrator runs expecting to lose nothing. It is kept by never being
   touched: a `*-custom.json` already in place is neither overwritten by a
   restore nor swept away as a leftover.
-- **F3 ✓†** (C13) In mode B the lists travel **both ways**, because the web app
+- **F3 ✓** (C13) In mode B the lists travel **both ways**, because the web app
   fetches them relative to whatever folder is being served. On install they are
   copied from `www/json` into the console's own folder, and the administrator is
   told that the one to edit from now on is the new one. On uninstall everything
@@ -480,7 +512,7 @@ what the layout adds.
   clause, with a `systemctl` of its own that records being called and never is.
   A restart is a resolution outage for everything behind this server; it is not
   spent on copying files.
-- **S2 ✓†** A restart happens **only when the path being served or the
+- **S2 ✓** A restart happens **only when the path being served or the
   environment changes**, because the file provider is built once at start
   (§1.1). That is the first install into the variable's folder and the uninstall
   out of it — not a property of mode B: a later reinstall into the same folder,
@@ -565,6 +597,14 @@ cases against `technitium/dns-server:latest` and twenty against a server that
 honours the variable. What is left is not a measurement: it is upstream merging
 the branch, at which point the `†` comes off W2, F3 and S2 and the image stops
 having to be built by hand.
+
+*2026-10-01:* it happened. Upstream released the variable in v15.5 (§1.7), and
+the two sides have swapped. Against `technitium/dns-server:latest` (v15.5.1) the
+capability answer is yes, so C12 and C13 run and C15 stands down: 24 met and 1
+not applicable on 2026-09-30. C15, the refusal, now needs an image before 15.5,
+given with `IMAGE=`; it was measured against v15.4 on 2026-09-07. The `†` is
+off W2, F3 and S2, and no server has to be built by hand. C26 to C30 are gated
+by the same answer as C12 and C13.
 
 ---
 
