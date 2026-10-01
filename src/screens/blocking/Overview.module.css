@@ -7,3 +7,22 @@
 .statusText { flex: 1; min-width: 0; }
 .statusTitle { font-size: var(--t-5); font-weight: 600; }
 .statusSub { color: var(--mute); margin-top: var(--s-1); }
+
+/* Top tables: name, a bar for the share, the hits, the row menu. */
+.name { font-family: var(--font-mono); overflow-wrap: anywhere; }
+.hits { font-family: var(--font-mono); text-align: right; white-space: nowrap; }
+/* A block, not the span's inline box: an inline element ignores `height`. */
+.share { display: block; position: relative; height: var(--s-3); min-width: var(--s-12); border-radius: var(--r-1); background: var(--line2); }
+.share > i { position: absolute; inset: 0 auto 0 0; border-radius: var(--r-1); }
+.shareBlocked > i { background: var(--ch-block); }
+.shareTotal > i { background: var(--ch-total); }
+/* A row-menu item without its permission: the padlock beside the verb. */
+.locked { display: inline-flex; align-items: center; gap: var(--s-3); }
+.time { font-family: var(--font-mono); color: var(--faint); white-space: nowrap; }
+.mono { font-family: var(--font-mono); }
+.where { color: var(--mute); font-weight: 400; text-transform: none; letter-spacing: 0; }
+/*
+Muted, not `--warn`: on this screen the paused mark is `--acc`, and tokens.css
+measures the two ambers as indistinguishable. The sentence and its icon say it.
+*/
+.partial { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-5) var(--s-9); color: var(--mute); }
