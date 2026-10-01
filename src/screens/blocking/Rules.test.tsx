@@ -197,4 +197,58 @@ describe('Rules', () => {
     expect(await screen.findByRole('textbox', { name: 'Browse domain' })).toBeInTheDocument()
     expect(screen.getAllByRole('textbox', { name: 'Domain' })).toHaveLength(1)
   })
+
+  it('with neither list viewable it draws the padlock, not zeros it never read', async () => {
+    const read = exports([], [])
+    draw({ Blocked: P(false), Allowed: P(false) })
+    expect(await screen.findByText('Requires Blocked: View')).toBeInTheDocument()
+    expect(screen.getByText('Requires Allowed: View')).toBeInTheDocument()
+    expect(read).not.toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: 'All' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.queryByRole('table')).toBeNull()
+    expect(screen.queryByText('No rules')).toBeNull()
+    expect(screen.queryByText('0 rules')).toBeNull()
+  })
+
+  it('Import opens the upstream dialog of the chosen list', async () => {
+    exports([], [])
+    draw()
+    await userEvent.click(await screen.findByRole('button', { name: 'Import' }))
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Blocked zones' }))
+    const dialog = await screen.findByRole('dialog')
+    expect(within(dialog).getByRole('heading', { name: 'Import Blocked Zones' })).toBeInTheDocument()
+    expect(dialog).toHaveTextContent('Enter domain names one below other to import into blocked zone:')
+  })
+
+  it('Delete on an allowed rule uses the Allowed sentences and list', async () => {
+    exports([], ['s.youtube.com'])
+    const remove = vi.spyOn(zonelists, 'deleteDomain').mockResolvedValue(OK)
+    draw()
+    await userEvent.click(await screen.findByRole('button', { name: 'Delete s.youtube.com' }))
+    const dialog = await screen.findByRole('dialog')
+    expect(within(dialog).getByRole('heading', { name: 'Delete Allowed Zone' })).toBeInTheDocument()
+    expect(dialog).toHaveTextContent("Are you sure you want to delete the allowed zone 's.youtube.com'?")
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Delete' }))
+    expect(remove).toHaveBeenCalledWith('allowed', 'T', 's.youtube.com')
+    expect(await screen.findByText("Domain 's.youtube.com' was deleted from Allowed Zone successfully.")).toBeInTheDocument()
+  })
+
+  it('the foot count belongs to the list view, not the tree', async () => {
+    exports(['ads.example.com'], [])
+    emptyTree()
+    draw()
+    await screen.findByRole('table')
+    expect(screen.getByText('1 rule')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Tree' }))
+    await screen.findByText('0 zones')
+    expect(screen.queryByText('1 rule')).toBeNull()
+  })
+
+  it('a ?rule= value that means nothing is taken out of the bar', async () => {
+    window.history.replaceState(null, '', '/blocking/rules/?rule=garbage&x=1')
+    exports(['ads.example.com'], [])
+    draw()
+    await screen.findByRole('table')
+    expect(window.location.search).toBe('?x=1')
+  })
 })

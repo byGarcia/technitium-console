@@ -62,6 +62,9 @@ export function Rules({
 }) {
   const viewBlocked = missing(permissions, 'Blocked.canView') == null
   const viewAllowed = missing(permissions, 'Allowed.canView') == null
+  /* Neither list can be read: there is nothing to count, so nothing is counted —
+     the table slot carries the padlock instead of zeros nobody read. */
+  const viewNone = !viewBlocked && !viewAllowed
 
   const [rules, setRules] = useState<Rule[] | null>(null)
   const [notice, setNotice] = useState<Notice | null>(null)
@@ -119,9 +122,11 @@ export function Rules({
   }, [load])
 
   /* The bar always says the filter on screen: on choosing, and on opening when the
-     one it asked for fell back to All. */
+     one it asked for fell back to All or meant nothing (`?rule=garbage`). The RAW
+     value is compared, because `readRuleParam` already reads nonsense as All. */
   useEffect(() => {
-    if (readRuleParam(window.location.search) === filter) return
+    const raw = new URLSearchParams(window.location.search).get('rule')
+    if (raw === (filter === 'all' ? null : filter)) return
     window.history.replaceState(null, '', window.location.pathname + ruleSearch(window.location.search, filter))
   }, [filter])
 
@@ -230,7 +235,7 @@ export function Rules({
 
   /* A list the session cannot read has no count: it was never read, and zero is a
      figure. */
-  const filterButton = (f: RuleFilter, count: number, need?: Need) => (
+  const filterButton = (f: RuleFilter, count: number | undefined, need?: Need) => (
     <PermissionButton
       key={f}
       size="sm"
@@ -240,7 +245,7 @@ export function Rules({
       onClick={() => choose(f)}
     >
       {f === 'all' ? 'All' : LABEL[f]}
-      {need == null && ` ${count}`}
+      {need == null && count != null && ` ${count}`}
     </PermissionButton>
   )
 
@@ -266,7 +271,7 @@ export function Rules({
             {view === 'list' ? (
               <>
                 <div className={styles.filter} role="group" aria-label="Rule">
-                  {filterButton('all', counts.all)}
+                  {filterButton('all', viewNone ? undefined : counts.all)}
                   {filterButton('blocked', counts.blocked, missing(permissions, 'Blocked.canView'))}
                   {filterButton('allowed', counts.allowed, missing(permissions, 'Allowed.canView'))}
                 </div>
@@ -333,6 +338,15 @@ export function Rules({
                 canDelete={missing(permissions, treeList === 'allowed' ? 'Allowed.canDelete' : 'Blocked.canDelete') == null}
               />
             )
+          ) : viewNone ? (
+            <Body>
+              <Empty compact>
+                <Icon name="lock" size={14} /> {requiresText('Blocked.canView')}
+              </Empty>
+              <Empty compact>
+                <Icon name="lock" size={14} /> {requiresText('Allowed.canView')}
+              </Empty>
+            </Body>
           ) : rules == null ? (
             failed ? null : <Loading />
           ) : (
@@ -385,7 +399,11 @@ export function Rules({
           )}
 
           <div className={styles.foot}>
-            <span>{shown.length === 1 ? '1 rule' : `${shown.length} rules`}</span>
+            {/* The count describes the table: not the tree, and not a table that
+                could not be read. */}
+            {view === 'list' && !viewNone && (
+              <span>{shown.length === 1 ? '1 rule' : `${shown.length} rules`}</span>
+            )}
             <span className={styles.spacer} />
             <Menu label="Import" text="Import">
               {(close) => (
