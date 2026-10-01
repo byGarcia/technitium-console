@@ -39,4 +39,4 @@ measures the two ambers as indistinguishable. The sentence and its icon say it.
 /* The ring, with the share written in its hole. */
 .ring { position: relative; }
 .ringValue { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; font-family: var(--font-mono); font-size: var(--t-6); font-weight: 600; pointer-events: none; }
-.ringLabel { display: block; font-family: var(--font-ui); font-size: var(--t-1); color: var(--mute); }
+.ringLabel { display: block; font-family: var(--font-ui); font-size: var(--t-1); font-weight: var(--text-weight); letter-spacing: var(--text-tracking); text-transform: uppercase; color: var(--mute); }

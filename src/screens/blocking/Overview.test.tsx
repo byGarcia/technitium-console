@@ -1,19 +1,29 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, within } from '@testing-library/react'
+import { act, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import * as dashboard from '../../api/dashboard'
 import * as settings from '../../api/settings'
 import * as apps from '../../api/apps'
 import * as zonelists from '../../api/zonelists'
+import { SlotProvider } from '../../app/ChromeSlot'
 import { Overview, blockingChart } from './Overview'
 
+/* Every `data` the charts were handed, by chart: Chart.tsx rebuilds its canvas on a
+   new reference, so identity across renders is what the tests look at. */
+const drawn = vi.hoisted(() => new Map<string, unknown[]>())
+
 vi.mock('../dashboard/Chart', () => ({
-  Chart: ({ aria }: { aria: string }) => <div role="img" aria-label={aria} />,
+  Chart: ({ aria, data }: { aria: string; data: unknown }) => {
+    const key = aria.startsWith('Blocked share') ? 'ring' : 'bars'
+    drawn.set(key, [...(drawn.get(key) ?? []), data])
+    return <div role="img" aria-label={aria} />
+  },
 }))
 
 afterEach(() => {
   vi.restoreAllMocks()
   localStorage.clear()
+  drawn.clear()
 })
 
 const STATS = {
@@ -54,7 +64,7 @@ describe('Overview', () => {
     expect(await screen.findByText('20,354')).toBeInTheDocument()
     expect(screen.getByText('5,310')).toBeInTheDocument()
     /* The ring writes the same share in its hole: the figure is looked for in its card. */
-    expect(within(screen.getByText('Blocked').parentElement!).getByText('26.09%')).toBeInTheDocument()
+    expect(within(screen.getByText('5,310').parentElement!).getByText('26.09%')).toBeInTheDocument()
     expect(screen.getByText('74,779')).toBeInTheDocument()
     expect(screen.getByText('1 · 1')).toBeInTheDocument()
   })
@@ -161,6 +171,58 @@ describe('Overview', () => {
     expect(await screen.findByText('The server is busy.')).toBeInTheDocument()
     expect(screen.queryByText('20,354')).not.toBeInTheDocument()
     expect(screen.queryByText('Could not refresh.')).not.toBeInTheDocument()
+  })
+
+  it('a render for another reason does not hand the charts new data', async () => {
+    serve()
+    render(<Overview token="T" permissions={undefined} />)
+    await screen.findByText('20,354')
+    const bars = drawn.get('bars')!.at(-1)
+    const ring = drawn.get('ring')!.at(-1)
+    const renders = drawn.get('bars')!.length
+    // An empty Block raises a notice: the screen renders again, the stats do not change.
+    await userEvent.click(screen.getByRole('button', { name: 'Block' }))
+    expect(await screen.findByText('Please enter a domain name to block.')).toBeInTheDocument()
+    expect(drawn.get('bars')!.length).toBeGreaterThan(renders)
+    expect(drawn.get('bars')!.at(-1)).toBe(bars)
+    expect(drawn.get('ring')!.at(-1)).toBe(ring)
+  })
+
+  it('choosing a node asks that node and remembers it for the Dashboard', async () => {
+    const spy = serve()
+    render(
+      <SlotProvider>
+        {(slot) => (
+          <>
+            <div ref={slot} />
+            <Overview
+              token="T"
+              permissions={undefined}
+              nodes={[{ name: 'dns1.example', type: 'Primary' }, { name: 'dns2.example', type: 'Secondary' }]}
+              clusterInitialised
+            />
+          </>
+        )}
+      </SlotProvider>,
+    )
+    await screen.findByText('20,354')
+    await userEvent.click(screen.getByRole('combobox', { name: 'Node' }))
+    await userEvent.click(screen.getByRole('option', { name: 'dns2.example (secondary)' }))
+    expect(localStorage.getItem('dashboardClusterNode')).toBe('dns2.example')
+    expect(spy).toHaveBeenLastCalledWith('T', 'LastHour', undefined, 'dns2.example')
+  })
+
+  it('a slow answer to an earlier period does not overwrite a later one', async () => {
+    const spy = serve()
+    let answerFirst: (v: typeof OK) => void = () => {}
+    spy.mockImplementationOnce(() => new Promise((resolve) => { answerFirst = resolve }))
+    spy.mockResolvedValueOnce({ kind: 'ok', data: { ...OK.data, stats: { ...STATS, totalQueries: 99999 } } })
+    render(<Overview token="T" permissions={undefined} />)
+    await userEvent.click(screen.getByRole('button', { name: 'Last Day' }))
+    expect(await screen.findByText('99,999')).toBeInTheDocument()
+    await act(async () => answerFirst(OK))
+    expect(screen.getByText('99,999')).toBeInTheDocument()
+    expect(screen.queryByText('20,354')).not.toBeInTheDocument()
   })
 
   it('a period with no queries draws zero and no empty chart', async () => {

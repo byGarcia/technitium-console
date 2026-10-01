@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import {
   getDashboardStats, RANGES, RANGE_LABEL,
   type ChartData, type DashboardStats, type Range,
@@ -32,7 +32,9 @@ data, so choosing a node here and seeing another there would be a contradiction.
 The five fixed periods and not Custom: a range of your own is the Dashboard's job.
 */
 
-const PERIODS = RANGES.filter((r): r is Exclude<Range, 'Custom'> => r !== 'Custom')
+type Period = Exclude<Range, 'Custom'>
+
+const PERIODS = RANGES.filter((r): r is Period => r !== 'Custom')
 
 function series(main: ChartData, label: string): number[] {
   return main.datasets.find((d) => d.label === label)?.data.map(Number) ?? []
@@ -109,7 +111,7 @@ export function Overview({
   serverDomain?: string
 }) {
   const statsNeed = missing(permissions, 'Dashboard.canView')
-  const [range, setRange] = useState<Range>('LastHour')
+  const [range, setRange] = useState<Period>('LastHour')
   const [node, setNode] = useState<string>(() => localStorage.getItem('dashboardClusterNode') || AGGREGATE)
   const [data, setData] = useState<DashboardStats | null>(null)
   /** The first read of this period and node failed: there is nothing to show. */
@@ -171,9 +173,23 @@ export function Overview({
   }, [load])
 
   const s = data?.stats
-  const chart = data != null ? blockingChart(data.mainChartData) : null
+  /*
+  Memoised on the response: Chart.tsx destroys and rebuilds its canvas on every new
+  `data` reference, so a notice or any other render would otherwise redraw and
+  re-animate both charts with the same numbers.
+  */
+  const chart = useMemo(() => (data != null ? blockingChart(data.mainChartData) : null), [data])
+  const share = useMemo<ChartData | null>(
+    () =>
+      data != null
+        ? {
+            labels: ['Allowed', 'Blocked'],
+            datasets: [{ label: 'Share', data: [data.stats.totalQueries - data.stats.totalBlocked, data.stats.totalBlocked] }],
+          }
+        : null,
+    [data],
+  )
   const loading = data == null && !failure
-  const allowedTotal = s != null ? s.totalQueries - s.totalBlocked : 0
 
   return (
     <>
@@ -195,7 +211,7 @@ export function Overview({
           <Segmented
             label="Period"
             options={PERIODS.map((r) => ({ id: r, label: RANGE_LABEL[r] }))}
-            active={range as Exclude<Range, 'Custom'>}
+            active={range}
             onChoose={setRange}
           />
         }
@@ -251,7 +267,7 @@ export function Overview({
             </Panel>
             <Panel title="Blocked share">
               <Body>
-                {s && s.totalQueries > 0 ? (
+                {s && share && s.totalQueries > 0 ? (
                   /* No legend: the hole says which share it is, and Chart.js's own
                      would be a second one inside the canvas. The figure is laid over
                      the canvas box, whose centre is the ring's. */
@@ -260,12 +276,12 @@ export function Overview({
                       type="doughnut"
                       height={180}
                       separateLegend
-                      data={{ labels: ['Allowed', 'Blocked'], datasets: [{ label: 'Share', data: [allowedTotal, s.totalBlocked] }] }}
+                      data={share}
                       aria={`Blocked share: ${percentage(s.totalBlocked, s.totalQueries)}`}
                     />
                     <span className={styles.ringValue} aria-hidden="true">
                       {percentage(s.totalBlocked, s.totalQueries)}
-                      <span className={styles.ringLabel}>BLOCKED</span>
+                      <span className={styles.ringLabel}>Blocked</span>
                     </span>
                   </div>
                 ) : (
