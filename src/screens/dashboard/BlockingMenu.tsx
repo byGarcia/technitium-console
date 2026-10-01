@@ -51,9 +51,15 @@ interface Pending {
 export function BlockingMenu({
   token,
   onNotice,
+  text = 'Blocking',
+  onChanged,
 }: {
   token: string | null
   onNotice: (a: { type: AlertType; title: string; text: string }) => void
+  /** The trigger text. The Dashboard keeps upstream's "Blocking". */
+  text?: string
+  /** After a successful change, for a caller that draws the state. */
+  onChanged?: () => void
 }) {
   const [active, setActive] = useState<boolean | null>(null)
   const [pending, setPending] = useState<Pending | null>(null)
@@ -110,6 +116,7 @@ export function BlockingMenu({
     setBusy(true)
     try {
       await pending.perform()
+      onChanged?.()
       setPending(null)
     } catch (e) {
       onNotice({ type: 'danger', title: 'Error!', text: (e as Error).message })
@@ -121,7 +128,7 @@ export function BlockingMenu({
 
   return (
     <>
-      <Menu label="Blocking options" text="Blocking" onOpen={() => void loadState()}>
+      <Menu label="Blocking options" text={text} onOpen={() => void loadState()}>
         {(close) => (
           <>
             {active === false && (
