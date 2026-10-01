@@ -63,6 +63,9 @@ jobs:
           PY
           [ -s notes.md ] || { echo "CHANGELOG.md has no section for ${tag}"; exit 1; }
           printf '\n**Install or update:** run the one-line installer from the [README](https://github.com/byGarcia/technitium-console#installing) again. Which console goes with which server: [CHANGELOG](https://github.com/byGarcia/technitium-console/blob/main/CHANGELOG.md#which-version-for-which-server).\n' >> notes.md
+          # The image job below publishes this same release for Docker.
+          # shellcheck disable=SC2016 # the backticks are Markdown, not a command
+          printf '\n**On Docker:** `docker compose pull technitium-console && docker compose up -d technitium-console`, or pin `ghcr.io/bygarcia/technitium-console:%s`. See [Docker](https://github.com/byGarcia/technitium-console#docker).\n' "${tag#v}" >> notes.md
           # The title is the tag and the section's opening bold sentence.
           lead="$(grep -m1 -o '^\*\*[^*]*\*\*' notes.md | sed 's/^\*\*//; s/\*\*$//; s/\.$//')"
           echo "title=${tag}${lead:+ — ${lead}}" >> "$GITHUB_OUTPUT"
@@ -76,3 +79,87 @@ jobs:
           name: ${{ steps.notes.outputs.title }}
           body_path: notes.md
           generate_release_notes: true
+
+  # The init image for Docker (README, «Docker»): busybox, the install.sh of
+  # this tag and the tarball the job above has just published, checked against
+  # its own .sha256 before building and again inside every platform after
+  # pushing (contract D4). GITHUB_TOKEN is the only credential. A package's
+  # first publication is private: it is made public by hand, once.
+  image:
+    needs: release
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      IMAGE: ghcr.io/bygarcia/technitium-console
+    steps:
+      - uses: actions/checkout@v4
+
+      # The bytes people download, not a second build of them.
+      - name: The release's own tarball, checked against its checksum
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir image
+          cp install.sh docker/Dockerfile image/
+          gh release download "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --dir image \
+            --pattern technitium-console.tar.gz --pattern technitium-console.tar.gz.sha256
+          cd image && sha256sum -c technitium-console.tar.gz.sha256
+
+      # vX.Y.Z becomes X.Y.Z, X.Y and latest; a prerelease moves neither of the last two.
+      - id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.IMAGE }}
+          flavor: latest=auto
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+          labels: |
+            org.opencontainers.image.title=technitium-console
+            org.opencontainers.image.description=Copies the technitium-console web console into a volume shared with Technitium DNS Server, then exits.
+            org.opencontainers.image.licenses=GPL-3.0-or-later
+
+      - uses: docker/setup-buildx-action@v4
+
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      # No QEMU: the Dockerfile has no RUN, so nothing executes for the foreign
+      # platforms. No attestations: they show up as unknown/unknown entries in
+      # the manifest list, and older engines on NAS boxes trip over them.
+      - uses: docker/build-push-action@v7
+        with:
+          context: image
+          platforms: linux/amd64,linux/arm64,linux/arm/v7
+          push: true
+          provenance: false
+          sbom: false
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Every platform carries the release's tarball, byte for byte (D4)
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          want="$(cut -d' ' -f1 image/technitium-console.tar.gz.sha256)"
+          docker buildx imagetools inspect --raw "$IMAGE:$VERSION" \
+            | jq -r '.manifests[].platform | "\(.os)/\(.architecture)\(if .variant then "/" + .variant else "" end)"' \
+            | tee platforms
+          if ! grep -qx 'linux/amd64' platforms || ! grep -Eqx 'linux/arm64(/v8)?' platforms \
+            || ! grep -qx 'linux/arm/v7' platforms; then
+            echo "::error::the manifest list does not hold the three platforms"; exit 1
+          fi
+          for p in linux/amd64 linux/arm64 linux/arm/v7; do
+            docker pull -q --platform "$p" "$IMAGE:$VERSION" >/dev/null
+            cid="$(docker create --platform "$p" "$IMAGE:$VERSION")"
+            got="$(docker cp "$cid:/usr/share/technitium-console/technitium-console.tar.gz" - | tar -xO | sha256sum | cut -d' ' -f1)"
+            docker rm "$cid" >/dev/null
+            echo "$p $got"
+            [ "$got" = "$want" ] || { echo "::error::$p does not carry the release's tarball"; exit 1; }
+          done
