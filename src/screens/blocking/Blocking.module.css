@@ -5,7 +5,31 @@ What the three Blocking tabs share. Every value is a token of theme/tokens.css.
 .row2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-9); }
 .row21 { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: var(--s-9); }
 .kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s-9); }
-.kpis3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-9); }
+/* Lists: the third card carries a date and a button, so its column never goes below
+   what they need on one line; with room to spare the three are equal. */
+.kpis3 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(max-content, 1fr); gap: var(--s-9); }
+
+/*
+A panel whose content sits in its middle. A grid row stretches its panels to the
+tallest one, and a headerless panel puts its air on top (ui/Panel `.noHeader`): the
+content stayed high with a band under it. Here the body's own padding is the only
+air, the same on every side, and the free height splits above and below. Written
+under `.stack` for the reason `.flush` is.
+*/
+.stack .centred { display: flex; flex-direction: column; justify-content: center; padding-top: 0; }
+
+/*
+A figure, the same on Overview and Lists, in the Dashboard tile's order: the number,
+its sub-line, its label. A figure without a sub-line keeps an empty one, a full line
+high, so every row of figures has its numbers, sub-lines and labels on the same three
+lines. Beside the text, on the right, whatever goes with the figure: its trend, or
+the button that acts on it.
+*/
+.kpi { display: flex; align-items: center; justify-content: space-between; gap: var(--s-9); }
+.kpiText { display: flex; flex-direction: column; gap: var(--s-1); flex: none; min-width: 0; }
+.kpiValue { font-family: var(--font-mono); font-size: var(--t-7); font-weight: 600; line-height: 1.1; }
+.kpiSub { font-family: var(--font-mono); font-size: var(--t-2); color: var(--faint); }
+.kpiLabel { font-size: var(--t-1); font-weight: var(--text-weight); letter-spacing: var(--text-tracking); text-transform: uppercase; color: var(--mute); }
 
 /*
 A table inside a panel: the panel is already its frame. ui/Table draws a border,
@@ -20,10 +44,17 @@ second frame, with rounded corners showing under the panel's header. Written und
 .stack .flush { padding-top: 0; }
 
 /* `--bp-index`: a custom property cannot go inside a media query, so its value is written. */
+/* `--bp-rail`. Four figures in a row left each card too narrow for its trend beside
+   the text; two by two they keep it. Lists keeps its two counts side by side and gives
+   the date and its button the whole width under them. */
+@media (max-width: 1180px) {
+  .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .kpis3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .kpis3 > :last-child { grid-column: 1 / -1; }
+}
+
 @media (max-width: 960px) {
   .row2, .row21 { grid-template-columns: minmax(0, 1fr); }
-  .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .kpis3 { grid-template-columns: minmax(0, 1fr); }
 }
 
 /* A menu entry without its permission (`LockedItem`): the padlock beside the verb. */
@@ -33,8 +64,9 @@ second frame, with rounded corners showing under the panel's header. Written und
 .add { display: flex; align-items: flex-end; gap: var(--s-5); }
 .add > :first-child { flex: 1; min-width: 0; }
 
-/* `--bp-stack`. */
+/* `--bp-stack`. The figure steps down to `--t-6`, as the Dashboard's tiles do. */
 @media (max-width: 560px) {
   .add { flex-wrap: wrap; }
   .add > :first-child { flex-basis: 100%; }
+  .kpiValue { font-size: var(--t-6); }
 }

@@ -66,8 +66,8 @@ export function blockingChart(main: ChartData): ChartData {
 
 const BAR_LEGEND = ['Allowed', 'Blocked'] as const
 
-/* A trend under a figure: decorative, so hidden from assistive technology — the
-   figure above it says the number. */
+/* A figure's trend, beside it: decorative, so hidden from assistive technology (the
+   figure says the number). */
 function Spark({ data, tone }: { data: number[]; tone: string }) {
   if (data.length < 2) return null
   const max = Math.max(...data, 1)
@@ -83,14 +83,16 @@ function Spark({ data, tone }: { data: number[]; tone: string }) {
 
 function Kpi({ value, sub, label, children }: { value: string; sub?: string; label: string; children?: ReactNode }) {
   return (
-    <Panel>
+    <Panel className={shared.centred}>
       <Body>
-        <div className={styles.kpi}>
-          <span className={styles.kpiValue}>{value}</span>
-          {/* A figure without a sub-line keeps an empty one, a full line high, so the four
-              labels sit on one line as the drawing has them. */}
-          <span className={styles.kpiSub}>{sub ?? '\u00a0'}</span>
-          <span className={styles.kpiLabel}>{label}</span>
+        <div className={`${shared.kpi}${children != null ? ` ${styles.trended}` : ''}`}>
+          <div className={shared.kpiText}>
+            <span className={shared.kpiValue}>{value}</span>
+            {/* A figure without a sub-line keeps an empty one, a full line high, so the four
+                labels sit on one line as the drawing has them. */}
+            <span className={shared.kpiSub}>{sub ?? '\u00a0'}</span>
+            <span className={shared.kpiLabel}>{label}</span>
+          </div>
           {children}
         </div>
       </Body>
