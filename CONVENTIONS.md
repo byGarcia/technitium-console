@@ -397,8 +397,14 @@ Write down here whatever you find. What is already known:
   error.
 - **Primitives** in `src/ui/`: `Button`, `Alert`, `Field`/`LabeledInput`,
   `Dialog`. Do not invent loose buttons or fields.
-- **Colours always by token** (`var(--acc)`, `var(--ink)`…). Not one `#hex`
-  outside `src/theme/tokens.css`.
+- **Colours always by token** (`var(--acc)`, `var(--ink)`…). Not one `#hex`,
+  `rgb()`, named colour or colour inside an inline SVG outside
+  `src/theme/tokens.css`, and inside it only in a theme block
+  (`:root, [data-theme='dark']`, `[data-theme='light']`), so every colour is one a
+  theme can redeclare. **`npm run lint:colours` (`dev/check-colour-tokens.mjs`)
+  enforces it**, and `npm test` runs it too. What genuinely cannot be a token —the
+  white behind the 2FA QR code— is allowed by file and literal in that script, with
+  its reason.
 - **One CSS module per component** (`X.module.css`).
 - **Spacing, type and radii by token too.** In a `*.module.css` you do not write
   a px that is not one of the tokens in `theme/tokens.css`. A loose value is
