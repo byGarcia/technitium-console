@@ -16,7 +16,10 @@ import styles from './Overview.module.css'
 Top Blocked Domains with "Allow Domain", Top Domains with "Block Domain": upstream's
 row menus (main.js:2826-2857), which this console's Dashboard does not have. Each is
 TWO calls (other-zones.js:637, 686), so each asks for two permissions, and the
-padlock names the first one missing.
+padlock names the first one missing. Upstream's: the titles, the `Domain` and
+`Hits` columns and the two verbs. OURS: the `Share` column (upstream's tops have
+only Domain and Hits), `No domains for this period.` (upstream says "No Data") and
+the `Actions` / `Actions for <domain>` labels.
 
 The disabled item explains itself the way `PermissionButton` does —padlock plus
 the `Tooltip` with `Requires X: Y`— and not with a native `title`: that is the one

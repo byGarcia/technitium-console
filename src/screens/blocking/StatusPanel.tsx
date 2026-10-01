@@ -14,7 +14,8 @@ import styles from './Overview.module.css'
 
 /*
 Whether blocking is on, and the control to change it. The block and its sentences are
-OURS (AdGuard shows when protection comes back; upstream only has the menu); the menu
+OURS (AdGuard shows when protection comes back; upstream only has the menu), and so
+is the trigger's `Disable` / `Enable` (upstream's button says "Blocking"); the menu
 and its eight durations are upstream's, reused whole from the Dashboard
 (`BlockingMenu`, main.js:2429). It reads and writes on the node the console is
 connected to, as that menu does.

@@ -30,6 +30,12 @@ Dashboard's own call, and they share its node memory (`dashboardClusterNode`): s
 data, so choosing a node here and seeing another there would be a contradiction.
 
 The five fixed periods and not Custom: a range of your own is the Dashboard's job.
+
+The words are OURS except `Total Queries` and `Blocked`, upstream's Dashboard tiles:
+the title `Overview`, `Period`, `Block List Domains`, `Your Rules` and its `blocked ·
+allowed`, the panel titles (`Statistics`, `Queries over time`, `Blocked share`), the
+`Allowed` series, the ring's `Share` and `Blocked share: N%`, and the chart's label.
+The two gap sentences are the ones this console's Dashboard already uses.
 */
 
 type Period = Exclude<Range, 'Custom'>
