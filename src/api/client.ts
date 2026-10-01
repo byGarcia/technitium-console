@@ -87,6 +87,12 @@ export function onSessionExpired(fn: (() => void) | null): void {
   onExpired = fn
 }
 
+/* For the few calls that cannot go through `apiRequest` (a `text/plain` answer)
+   and still have to end the session on `invalid-token`. */
+export function sessionExpired(): void {
+  onExpired?.()
+}
+
 export async function apiRequest<T = unknown>(
   path: string,
   opts: ApiOptions = {},

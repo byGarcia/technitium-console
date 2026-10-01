@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { allowDomain, blockDomain, mergeRecent, readRuleExport, recentBlocked } from './blocking'
+import { onSessionExpired } from './client'
 import * as logs from './logs'
 import type { QueryLogEntry } from './logs'
 import * as zonelists from './zonelists'
@@ -33,6 +34,18 @@ describe('readRuleExport', () => {
   it('an expired session is reported as such', async () => {
     serve(JSON.stringify({ status: 'invalid-token' }))
     expect(await readRuleExport('allowed', 'T')).toEqual({ kind: 'invalid-token' })
+  })
+
+  it('an expired session ends the session, like every other call', async () => {
+    const ended = vi.fn()
+    onSessionExpired(ended)
+    try {
+      serve(JSON.stringify({ status: 'invalid-token' }))
+      await readRuleExport('blocked', 'T')
+      expect(ended).toHaveBeenCalledOnce()
+    } finally {
+      onSessionExpired(null)
+    }
   })
 
   it('a request that never arrives uses upstream sentence', async () => {

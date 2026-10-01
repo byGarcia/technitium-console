@@ -1,5 +1,5 @@
 import { urlApi } from '../app/base'
-import type { ApiOutcome } from './client'
+import { sessionExpired, type ApiOutcome } from './client'
 import { queryLogs, type QueryLogEntry } from './logs'
 import { addDomain, deleteDomain, type DomainList } from './zonelists'
 
@@ -32,7 +32,10 @@ export async function readRuleExport(
   if (text.trimStart().startsWith('{')) {
     try {
       const env = JSON.parse(text) as { status?: string; errorMessage?: string }
-      if (env.status === 'invalid-token') return { kind: 'invalid-token' }
+      if (env.status === 'invalid-token') {
+        sessionExpired()
+        return { kind: 'invalid-token' }
+      }
       if (env.status != null && env.status !== 'ok') {
         return { kind: 'error', message: env.errorMessage ?? env.status }
       }
