@@ -396,7 +396,7 @@ export function BlockLists({
           )}
           <div className={styles.foot}>
             <span>
-              {listsCount} lists · {disabledCount} disabled · {commentCount} {commentCount === 1 ? 'comment' : 'comments'}
+              {listsCount} {listsCount === 1 ? 'list' : 'lists'} · {disabledCount} disabled · {commentCount} {commentCount === 1 ? 'comment' : 'comments'}
             </span>
             <span className={styles.spacer} />
             <RouteLink to={{ section: 'settings', sub: 'Blocking' }}>More blocking settings in Settings › Blocking</RouteLink>
