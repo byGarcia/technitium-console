@@ -13,18 +13,27 @@ what is ours is only how their answers are combined.
 opens them as a download (other-zones.js:554, 623); here the same answer is read in
 place. The good answer is `text/plain`, one zone per line
 (WebServiceOtherZonesApi.cs:306, 511); a failure is the usual JSON envelope.
+
+`node` is the cluster node that answers, sent exactly as `apiRequest` sends it: the
+empty string and `cluster` mean "this one" and travel as nothing. Rules reads the
+PRIMARY after a change (other-zones.js:269, 434): the change is made there, and a
+secondary still answers the old list until the cluster syncs.
 */
 export async function readRuleExport(
   list: DomainList,
   token: string | null,
+  node = '',
 ): Promise<ApiOutcome<string[]>> {
   const headers: Record<string, string> = {}
   if (token) headers.Authorization = `Bearer ${token}`
 
+  let url = urlApi(`api/${list}/export`)
+  if (node && node !== 'cluster') url += '?node=' + encodeURIComponent(node)
+
   let res: Response
   let text: string
   try {
-    res = await fetch(urlApi(`api/${list}/export`), { headers })
+    res = await fetch(url, { headers })
     text = await res.text()
   } catch {
     return { kind: 'error', message: 'Unable to connect to the server. Please try again.' }
@@ -53,6 +62,25 @@ export async function readRuleExport(
         ? 'Unable to connect to the server. Please try again.'
         : `error - ${res.statusText}`,
     }
+  }
+
+  /*
+  A 2xx that is not the list: a reverse proxy's sign-in or captive page answers 200
+  with HTML, and read as lines it would fill the table with markup. The server's own
+  answer is `text/plain` (checked against v15.5.1) and a zone name cannot start with
+  `<`. It is reported as `apiRequest` reports any answer it cannot read: jQuery's
+  `parsererror - <reason>`.
+  */
+  const type = res.headers.get('content-type')
+  const plain = type == null || type.toLowerCase().startsWith('text/plain')
+  if (!plain || text.trimStart().startsWith('<')) {
+    let reason = 'SyntaxError: not a list of zones'
+    try {
+      JSON.parse(text)
+    } catch (e) {
+      reason = String(e)
+    }
+    return { kind: 'error', message: `parsererror - ${reason}` }
   }
 
   const lines = text

@@ -71,6 +71,53 @@ describe('readRuleExport', () => {
     expect(await readRuleExport('allowed', 'T')).toEqual({ kind: 'two-factor-required' })
   })
 
+  /* I1: after a change the rules are read back from the PRIMARY node, as the tree
+     does (other-zones.js:269, 434). The node travels as apiRequest sends it. */
+  it('asks the node given, as apiRequest sends it', async () => {
+    const spy = serve('ads.example.com')
+    await readRuleExport('blocked', 'T', 'dev.cluster.test')
+    expect(String(spy.mock.calls[0][0])).toMatch(/api\/blocked\/export\?node=dev\.cluster\.test$/)
+  })
+
+  it('sends no node for this server, nor for the aggregate', async () => {
+    const spy = serve('')
+    await readRuleExport('blocked', 'T', '')
+    await readRuleExport('allowed', 'T', 'cluster')
+    expect(String(spy.mock.calls[0][0])).toMatch(/api\/blocked\/export$/)
+    expect(String(spy.mock.calls[1][0])).toMatch(/api\/allowed\/export$/)
+  })
+
+  /* M5: a reverse proxy's 200 page (an auth wall, a captive portal) is not a list
+     of zones; apiRequest would have said parsererror, and so does this. */
+  it('a 2xx page that is not plain zone lines is an error, not rules', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response('<!doctype html><title>Sign in</title>', { headers: { 'Content-Type': 'text/html' } }),
+    )
+    const r = await readRuleExport('blocked', 'T')
+    expect(r.kind).toBe('error')
+    expect(r.kind === 'error' && r.message).toMatch(/^parsererror - /)
+  })
+
+  it('a body starting with < is refused even when it claims to be plain text', async () => {
+    serve('<html><body>Login</body></html>')
+    const r = await readRuleExport('blocked', 'T')
+    expect(r.kind === 'error' && r.message).toMatch(/^parsererror - /)
+  })
+
+  it('a 2xx with another content type is refused', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response('ads.example.com', { headers: { 'Content-Type': 'application/octet-stream' } }),
+    )
+    expect((await readRuleExport('blocked', 'T')).kind).toBe('error')
+  })
+
+  it('the server answer, text/plain with no charset, is read as lines', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response('ads.example.com\n', { headers: { 'Content-Type': 'text/plain' } }),
+    )
+    expect(await readRuleExport('blocked', 'T')).toEqual({ kind: 'ok', data: ['ads.example.com'] })
+  })
+
   it('a request that never arrives uses upstream sentence', async () => {
     vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('down'))
     expect(await readRuleExport('allowed', 'T')).toEqual({
