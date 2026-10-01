@@ -1,6 +1,15 @@
 import { describe, expect, it, afterEach } from 'vitest'
 import { SECTIONS } from './sections'
-import { toTrail, toSlug, writeRoute, readRoute, forgetRoot, appRoot } from './route'
+import { STATIC_ROUTES } from './static-routes'
+import {
+  toTrail,
+  toSlug,
+  writeRoute,
+  readRoute,
+  forgetRoot,
+  appRoot,
+  translateLegacyRoute,
+} from './route'
 
 /** Serves the document as the server would: in its folder and with its meta. */
 function servedAt(trail: string, route: string | null = null) {
@@ -134,6 +143,37 @@ describe('toTrail', () => {
   })
 })
 
+describe('legacy routes', () => {
+  it('/allowed/ and /blocked/ still exist as folders', () => {
+    expect(STATIC_ROUTES).toEqual(expect.arrayContaining(['allowed', 'blocked', 'blocking/rules']))
+  })
+
+  it('/blocked/ becomes /blocking/rules/?rule=blocked, replacing the entry', () => {
+    servedAt('/blocked/', 'blocked')
+    const before = window.history.length
+    expect(translateLegacyRoute()).toBe(true)
+    expect(window.location.pathname + window.location.search).toBe('/blocking/rules/?rule=blocked')
+    expect(window.history.length).toBe(before)
+  })
+
+  it('behind a prefix', () => {
+    servedAt('/dns/allowed/', 'allowed')
+    expect(translateLegacyRoute()).toBe(true)
+    expect(window.location.pathname + window.location.search).toBe('/dns/blocking/rules/?rule=allowed')
+  })
+
+  it('leaves any other route alone', () => {
+    servedAt('/zones/', 'zones')
+    expect(translateLegacyRoute()).toBe(false)
+    expect(window.location.pathname).toBe('/zones/')
+  })
+
+  it('an unknown sub of blocking falls to its first tab', () => {
+    servedAt('/blocking/zzz/', 'blocking/zzz')
+    expect(readRoute(SECTIONS)).toEqual({ section: 'blocking', sub: null })
+  })
+})
+
 describe('writeRoute', () => {
   it('it leaves the address bar on the requested path', () => {
     servedAt('/')
@@ -149,7 +189,10 @@ describe('writeRoute', () => {
     expect(window.history.length).toBe(before2)
   })
 
-  it('what gets written reads back the same, across all 32 routes', () => {
+  /* 34 since Blocking (three tabs) replaced Allowed and Blocked (none): eleven
+     sections and twenty-three sub-sections. The two legacy folders are not
+     sections and are not in this walk. */
+  it('what gets written reads back the same, across all 34 routes', () => {
     servedAt('/')
     for (const s of SECTIONS) {
       for (const sub of s.subs ?? [null]) {

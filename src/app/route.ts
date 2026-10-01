@@ -25,6 +25,7 @@ export { toSlug } from './slug'
 import { toSlug } from './slug'
 export { forgetRoot, appRoot } from './base'
 import { appRoot } from './base'
+import { LEGACY_ROUTES } from './static-routes'
 
 export interface Route {
   section: string
@@ -74,4 +75,23 @@ export function writeRoute(route: Route, replaceEntry = false): void {
   if (window.location.pathname + window.location.search === blank) return
   if (replaceEntry) window.history.replaceState(null, '', blank)
   else window.history.pushState(null, '', blank)
+}
+
+/*
+`/allowed/` and `/blocked/` are Blocking's Rules tab now. The bar is rewritten to
+`blocking/rules/?rule=…` BEFORE the route is read, with `replaceState` so the back
+button does not walk into the old address. The root comes from `appRoot()`, which
+the legacy folder's own `<meta name="route">` lets it compute behind a prefix.
+*/
+export function translateLegacyRoute(): boolean {
+  const base = appRoot()
+  const trail = window.location.pathname
+  if (!trail.startsWith(base)) return false
+  const parts = trail.slice(base.length).split('/').filter(Boolean)
+  const legacy = parts.length === 1 ? LEGACY_ROUTES[parts[0]] : undefined
+  if (legacy == null) return false
+  const params = new URLSearchParams(window.location.search)
+  params.set('rule', legacy.rule)
+  window.history.replaceState(null, '', `${base}${legacy.section}/${toSlug(legacy.sub)}/?${params.toString()}`)
+  return true
 }
