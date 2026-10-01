@@ -33,8 +33,10 @@ that honours it. Building one takes four commands and they are written down in
 > and C22 extended: thirty cases.
 > Measured against `technitium/dns-server:latest` (v15.5.1): **29 met, 0 not met,
 > 1 not applicable** (C15). C11 and C26 to C30 were first seen failing against
-> the `install.sh` of `main`, and so were the steps added to C17 and C22 the
-> same day. And a correction the same day: the variable is upstream's since
+> the `install.sh` of `main`, and so were C17's step for a TERM mid-sweep and
+> C22's for `--dir /`. What C22's last step checks, no state folder left by a
+> refused run, was seen failing by hand against the `install.sh` of 7cf2d09.
+> And a correction the same day: the variable is upstream's since
 > v15.5 (§1.7), so the official image honours it, the fork build the 2026-09-07
 > status relies on is not needed any more, and the `†` has come off W2, F3 and
 > S2.
