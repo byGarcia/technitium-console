@@ -18,7 +18,7 @@ Same API, same behaviour, same texts — the interface rebuilt from scratch.
 **Latest: [v1.2.0](https://github.com/byGarcia/technitium-console/releases/latest) for Technitium DNS
 Server 15.5.x** — Allowed and Blocked as one Blocking section, plus LDAP, the zone file editor and
 everything else 15.5 brought.
-[What's new](CHANGELOG.md) · [Which console for which server](CHANGELOG.md#which-version-for-which-server)
+[What's new](CHANGELOG.md) · [Which console for which server](CHANGELOG.md#which-version-for-which-server) · [Installing](#installing) · [Technitium in Docker](#docker)
 
 It replaces the console the server ships with. Install it and the DNS service
 behaves exactly as before; remove it and you are back to the original. Nothing on
@@ -105,6 +105,9 @@ One command, on the machine where the DNS server runs:
 curl -sSL https://raw.githubusercontent.com/byGarcia/technitium-console/main/install.sh | sudo sh
 ```
 
+**Technitium in Docker?** See [Docker](#docker): a small image puts the console in a volume, and
+this command, run on a Docker host, prints the exact steps for your containers.
+
 It asks the running server where its web root is, saves the console you have
 now, and puts this one in its place. **Your DNS service is not restarted** — the
 server picks the new files up by itself, and a restart would be an outage for
@@ -137,23 +140,9 @@ every moment the server has a whole console to serve — the old one or the new
 one. Anything a killed run left behind is cleaned up by the next one.
 
 <details>
-<summary>Running in Docker, or want to install by hand</summary>
+<summary>Options</summary>
 
-The server's web root lives inside the container, so it has to be mounted in
-from outside. Install to a folder on the host:
-
-```sh
-sudo sh install.sh --dir /opt/technitium-console
-```
-
-and mount it over the container's web root:
-
-```yaml
-    volumes:
-      - /opt/technitium-console:/opt/technitium/dns/www:ro
-```
-
-Other options: `--version <tag>` to pin a release, `--from <path>` to install
+`--version <tag>` to pin a release, `--from <path>` to install
 from a tarball you already downloaded, `--dir <path>` to say where the web root
 is, `--url <base>` if your web console does not answer on
 `http://127.0.0.1:5380`, `--yes` to skip the confirmation.
@@ -211,8 +200,7 @@ above inside the container (`pct enter <id>`). Its unit is `technitium.service`,
 the script's own *Update* no longer touches the console, since it lives in its own
 folder.
 
-For Docker, set the variable in the container's environment and mount the folder
-you pass to `--dir` at that path.
+For Docker, see [Docker](#docker): the image does all of this with a volume.
 
 > **Without the variable** — before v15.5, or if you prefer not to set it — the
 > console replaces the files in the server's own `www/`. Technitium restores its
@@ -222,9 +210,142 @@ you pass to `--dir` at that path.
 
 Each console release is checked against one Technitium release — every action it sends, every text
 and every control, compared with that server's own console. When you update the server, update the
-console with it: run the installer again. It needs no restart, and
+console with it: run the installer again (on Docker,
+`docker compose pull technitium-console && docker compose up -d technitium-console`). It needs no restart, and
 [the changelog](CHANGELOG.md#which-version-for-which-server) says which console goes with which
 server.
+
+## Docker
+
+If Technitium runs in Docker, the console comes as a small image that copies it into a volume and
+exits. Your DNS server keeps running the official image: it mounts that volume and is told to
+serve it. **It needs Technitium DNS Server 15.5 or later**, the first version that can serve a
+folder of its own.
+
+Only the `technitium-console` lines below are new — add them to your compose file: the variable
+and the volume mount on your server, the `technitium-console` service, and the `technitium-console`
+volume at the end. The rest stands for what you already have: the `config` lines are your own
+`/etc/dns` mount, so keep it exactly as you have it.
+
+```yaml
+services:
+  dns-server:
+    image: technitium/dns-server:latest
+    # ports, hostname, restart… as you have them
+    environment:
+      - DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH=/opt/technitium-console
+    volumes:
+      - config:/etc/dns
+      - technitium-console:/opt/technitium-console:ro
+
+  technitium-console:          # copies the console into the volume, then exits
+    image: ghcr.io/bygarcia/technitium-console:latest
+    volumes:
+      - technitium-console:/target
+    restart: "no"
+
+volumes:
+  config:
+  technitium-console:
+```
+
+```sh
+docker compose up -d
+```
+
+That restarts the DNS server once, because its environment changed. The console shows up a
+second or two later, when the copy is done; until then the page is empty. If the copy ever fails,
+the server starts anyway — nothing waits on it.
+
+**Updating restarts nothing:**
+
+```sh
+docker compose pull technitium-console && docker compose up -d technitium-console
+```
+
+Only the copier runs again, and the server picks the new files up by itself. A plain
+`docker compose pull && docker compose up -d` also updates the DNS server when there is a new image
+of it — and that does restart it.
+
+**Pinning a version:** use a release number instead of `latest` — `X.Y.Z` for exactly that
+release (`ghcr.io/bygarcia/technitium-console:1.2.0`), `X.Y` to follow its fixes (`:1.2`). To go
+back, pin the older one and update. Images start at 1.2.0.
+
+`ghcr.io/bygarcia/technitium-console:develop` is built from every push to the `develop` branch,
+for trying changes before they are released; it is not for production — pin a release instead.
+If publishing an image fails or is cancelled halfway, `X.Y.Z` (or `develop-<sha7>`) can be left
+published before the check that every platform carries exactly the console it was built from.
+`latest`, `X.Y` and `develop` move only after that check, so they never point at such an image.
+
+**Custom lists** (`json/*-custom.json`, the files upstream's `www/json/readme.txt` describes) are
+kept in the volume across updates. To edit them by hand, use a folder on the host instead of the
+volume — `./technitium-console:/opt/technitium-console:ro` on the server and
+`./technitium-console:/target` on the copier — and write them in `./technitium-console/json/`.
+The folder can hold your lists before the first run. The copied files belong to root, so editing
+them takes `sudo`. Removing it is the last of the steps below.
+
+**Without Compose:**
+
+```sh
+docker volume create technitium-console
+docker run --rm -v technitium-console:/target ghcr.io/bygarcia/technitium-console:latest
+```
+
+then add `-e DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH=/opt/technitium-console` and
+`-v technitium-console:/opt/technitium-console:ro` to your server's `docker run`, and re-create it
+once. To update, run `docker pull ghcr.io/bygarcia/technitium-console:latest` and then the second
+command again.
+
+**Removing it:**
+
+1. Keep any `json/*-custom.json` you edited: they are in the volume, or in the folder if you use
+   one.
+2. Take the variable and the `technitium-console` volume line out of your server, remove the
+   `technitium-console` service, and remove the `technitium-console:` entry under the top-level
+   `volumes:`.
+3. `docker compose up -d --remove-orphans` — the server restarts once, back on the console its
+   image ships, which was never touched.
+4. `docker volume rm <project>_technitium-console` (`docker volume ls` shows the exact name).
+   With a folder on the host instead, delete it now, once the server no longer mounts it; its
+   files belong to root: `sudo rm -rf ./technitium-console`.
+
+Without Compose: re-create your server without the
+`-e DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH=/opt/technitium-console` and
+`-v technitium-console:/opt/technitium-console:ro` you added — it restarts once, back on its own
+console — and then `docker volume rm technitium-console`.
+
+**The one-line installer on a Docker host, without `--dir`,** does not install anything. It reads
+your containers and prints these steps with your own container, service, file and volume names —
+and with `--uninstall`, the way out. It does not write into a container because a container's own files are
+replaced every time it is recreated: a console copied into one with `docker exec` is gone after
+the next image update, and the installer says so if you try.
+
+<details>
+<summary>Servers before 15.5, and why not an image mount</summary>
+
+**Before 15.5** the server cannot serve another folder, so the console goes into a folder on the
+host mounted over the container's own web root:
+
+```sh
+curl -sSL https://raw.githubusercontent.com/byGarcia/technitium-console/main/install.sh | sudo sh -s -- --dir /opt/technitium-console
+```
+
+```yaml
+    volumes:
+      - /opt/technitium-console:/opt/technitium/dns/www:ro
+```
+
+then re-create the container once. To update, run the same command again. To remove it, take the
+mount out and re-create the container first, and only then delete the folder — emptied while still
+mounted, it would leave the server serving nothing. The same command with `--uninstall` prints
+these steps for your container. Moving to 15.5 or later and the image is the better way.
+
+**An image mount** (`type: image`, Docker Engine 28 and Compose 2.35 or later) is not offered: it
+is read-only, so no custom lists; every update would recreate the DNS container; older engines,
+like those on many NAS boxes, do not have it; and this image carries the release's tarball, not an
+unpacked folder.
+
+</details>
 
 ## Building
 

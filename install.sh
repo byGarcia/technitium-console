@@ -34,6 +34,15 @@ STATE_DIR="/var/lib/technitium-console"
 STATE="$STATE_DIR/install.state"
 BACKUP_SUFFIX=".original"
 VAR_NAME="DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH"
+DOCKER_DOCS="https://github.com/$REPO#docker"
+IMAGE_REF="ghcr.io/bygarcia/technitium-console"
+# What the administrator typed, never $0: under `curl … | sudo sh` that is "sh".
+ONE_LINER="curl -sSL https://raw.githubusercontent.com/$REPO/main/install.sh | sudo sh -s --"
+CONSOLE_DIR="/opt/technitium-console"
+# The init's record, at the root of its volume, that the volume is the console's
+# (contract, «Docker»). Its own state lives in its container's layer and goes
+# with it; this does not.
+MARKER=".technitium-console"
 
 VERSION="latest"
 SOURCE=""                    # local file or URL, for air-gapped installs
@@ -43,6 +52,7 @@ WEB_URL=""
 ACTION="install"
 ASSUME_YES="no"
 ALLOW_MISMATCH="no"
+INTO_VOLUME=""               # what the Docker image runs: see --into-volume
 
 say()  { printf '  %s\n' "$*"; }
 ok()   { printf '  \033[32m✓\033[0m %-34s %s\n' "$1" "${2:-}"; }
@@ -60,6 +70,9 @@ usage() {
     --dir <path>       web root to install into (default: ask the running server)
     --url <base>       where its web console answers (default: http://127.0.0.1:5380)
     --yes              do not ask for confirmation
+    --into-volume <path>
+                       copy the console into the volume mounted at <path> and
+                       stop. It is what the Docker image runs; needs --from.
     --restore-mismatched-backup
                        uninstall even though the backup is from another server
                        version. --yes does not grant this one.
@@ -78,13 +91,20 @@ while [ $# -gt 0 ]; do
     --url)       WEB_URL="${2:?--url needs a base URL}"; shift ;;
     --yes|-y)    ASSUME_YES="yes" ;;
     --restore-mismatched-backup) ALLOW_MISMATCH="yes" ;;
+    --into-volume) INTO_VOLUME="${2:?--into-volume needs a path}"; shift ;;
     --help|-h)   usage ;;
     *)           die "unknown option: $1  (try --help)" ;;
   esac
   shift
 done
 
-[ "$(id -u)" = "0" ] || die "this has to run as root: prefix it with sudo."
+if [ "$(id -u)" != "0" ]; then
+  if [ -n "$INTO_VOLUME" ]; then
+    die "the init has to run as root to write the console into its volume. Take user: off
+    the technitium-console service (or run it with --user 0): $DOCKER_DOCS"
+  fi
+  die "this has to run as root: prefix it with sudo."
+fi
 
 printf '\n  \033[1mtechnitium-console\033[0m\n\n'
 
@@ -110,8 +130,54 @@ resolve_path() { # absolute, every link resolved, even where its tail does not e
   rp="$(cd "$rp" && pwd -P)"
   printf '%s%s' "${rp%/}" "$rp_tail"
 }
+# --into-volume is the Docker image's mode (README, «Docker»): a volume shared
+# with the DNS server's container, the release tarball the image carries, and
+# nothing to look for — the server may not even be up yet, and it must not have
+# to be (contract D1). The version is the image's tag and the way out is taking
+# the volume away, so the options that mean something else are refused here.
+if [ -n "$INTO_VOLUME" ]; then
+  [ "$ACTION" = "install" ] || die "--into-volume only installs. On Docker the console is removed by taking
+    its volume out of the DNS server: $DOCKER_DOCS"
+  [ "$DIR_GIVEN" = "no" ] || die "--into-volume and --dir both say where. Give one."
+  if [ "$VERSION" != "latest" ] || [ -n "$WEB_URL" ]; then
+    die "--version and --url do not apply to --into-volume: the version is the image's
+    tag, ghcr.io/bygarcia/technitium-console:<version>."
+  fi
+  if [ -z "$SOURCE" ] || [ ! -f "$SOURCE" ]; then
+    die "--into-volume installs the tarball the image carries: give it with --from <file>."
+  fi
+  WWW_DIR="$INTO_VOLUME"; DIR_GIVEN="yes"
+fi
+
 if [ "$DIR_GIVEN" = "yes" ]; then
+  DIR_ASKED="--dir $WWW_DIR"
+  [ -z "$INTO_VOLUME" ] || DIR_ASKED="--into-volume $INTO_VOLUME"
   WWW_DIR="$(resolve_path "$WWW_DIR")" || exit 1
+  # resolve_path writes the root folder as nothing, and no folder at all would
+  # mean "ask the server": the run would install somewhere it was not told to.
+  [ -n "$WWW_DIR" ] || die "$DIR_ASKED is the root folder. Installing removes whatever the console does
+    not ship, so it goes into a folder of its own. Nothing was changed."
+fi
+
+# A folder is a mount point when this process's mount table lists it as one.
+# The table writes a space, a tab, a newline and a backslash in a path as \040,
+# \011, \012 and \134; the folder is passed through the environment, because
+# awk -v would read its backslashes as escapes.
+is_mount_point() { # folder
+  IMP_DIR="$1" awk '
+    function plain(s,   r, i) {
+      gsub(/\\040/, " ", s); gsub(/\\011/, "\t", s); gsub(/\\012/, "\n", s)
+      # The backslash last, and not by gsub: awks disagree about "\\" there.
+      r = ""
+      while ((i = index(s, "\\134")) > 0) { r = r substr(s, 1, i - 1) "\\"; s = substr(s, i + 4) }
+      return r s
+    }
+    plain($5) == ENVIRON["IMP_DIR"] { found = 1 } END { exit !found }' /proc/self/mountinfo 2>/dev/null
+}
+
+if [ -n "$INTO_VOLUME" ] && ! is_mount_point "$WWW_DIR"; then
+  die "$WWW_DIR is not a mounted volume, so whatever is copied there goes with this
+    container. Mount the console's volume at $WWW_DIR: $DOCKER_DOCS"
 fi
 
 refuse_links() { # folder about to be written into
@@ -146,6 +212,29 @@ is_this_console() {
   [ -n "$entry" ] && [ -f "$1/$entry" ]
 }
 
+# A folder holding nothing but the administrator's lists is as good as empty:
+# publishing neither overwrites nor sweeps json/*-custom.json (copy_one,
+# publish), so there is nothing in it to lose. It is how a host folder for the
+# Docker image is prepared, with lists written by hand before the first run.
+only_custom_lists() { # folder
+  [ -z "$(find "$1" -mindepth 1 ! -path "$1/json" ! -path "$1/json/*-custom.json" -print 2>/dev/null | head -1)" ]
+}
+
+# The server's configuration folder (/etc/dns in the image) is never a console,
+# whatever else is in it: a mount swapped by mistake, or a marker beside it,
+# must not make it one. These are the files the server keeps there
+# (DnsServer.cs, DnsWebService.cs: dns.config, auth.config, webservice.config,
+# zones/*.zone). A bare zones/ is not one of them: this console ships a zones/.
+server_config_in() { # folder — prints what gives it away, or fails
+  for sc_f in dns.config auth.config webservice.config; do
+    if [ -e "$1/$sc_f" ]; then printf '%s' "$sc_f"; return 0; fi
+  done
+  for sc_f in "$1"/zones/*.zone; do
+    if [ -e "$sc_f" ]; then printf 'zones/%s' "${sc_f##*/}"; return 0; fi
+  done
+  return 1
+}
+
 # Publishing replaces what the release ships and sweeps everything else. That is
 # right for a console and a disaster for anything else — --dir /opt/technitium/dns
 # by mistake is the server's binaries and configuration gone, with no backup,
@@ -154,7 +243,21 @@ is_this_console() {
 may_write_into() { # folder
   [ -e "$1" ] || return 0
   [ -d "$1" ] || die "$1 is not a folder."
+  if hc_found="$(server_config_in "$1")"; then
+    if [ -n "$INTO_VOLUME" ]; then
+      die "$1 holds a DNS server's configuration ($hc_found), not a console.
+    Installing removes whatever the console does not ship. Mount the console's own
+    volume at $1, not the server's /etc/dns one: $DOCKER_DOCS
+    Nothing was changed."
+    fi
+    die "$1 holds a DNS server's configuration ($hc_found), not a console.
+    Installing removes whatever the console does not ship. Nothing was changed."
+  fi
   [ -n "$(ls -A "$1" 2>/dev/null)" ] || return 0
+  only_custom_lists "$1" && return 0
+  # The init's volume, marked as its own before its first copy: a copy stopped
+  # halfway is no console yet, and the next run has to be able to finish it.
+  if [ -n "$INTO_VOLUME" ] && [ -f "$1/$MARKER" ] && [ ! -L "$1/$MARKER" ]; then return 0; fi
   [ "$(state_get webroot)" = "$1" ] && return 0
   is_stock_console "$1" && return 0
   is_this_console "$1" && return 0
@@ -320,12 +423,362 @@ serves_folder() {
   return "$answer"
 }
 
+# --------------------------------------------------- Docker, seen from the host
+#
+# On a host whose server runs in a container there is nothing here to install
+# into: a container's own files are replaced every time it is recreated, and
+# its environment and compose file are not this script's to edit (contract §4).
+# So it reads what is there — `docker inspect`, and the startup log through
+# `docker exec`, both read-only (F4) — and prints the exact change, for the way
+# in and for the way out. Printing it is what this path is for: it exits 0.
+docker_servers() {
+  docker ps --no-trunc --format '{{.Names}}|{{.Command}}' 2>/dev/null \
+    | awk -F'|' '$2 ~ /DnsServerApp\.dll/ { print $1 }'
+}
+dk() { docker inspect -f "$2" "$1" 2>/dev/null || true; }
+dk_label() { dk "$1" "{{index .Config.Labels \"$2\"}}"; }
+dk_env() { dk "$1" '{{range .Config.Env}}{{println .}}{{end}}' | sed -n "s/^$2=//p" | head -1; }
+# The source goes last and is everything after the fifth |, because a folder
+# can have a | in its name. One with a newline or another control character
+# would split the line, so docker says first whether %q leaves it as it is:
+# "plain" when it does, and only a plain source is ever put in a command.
+dk_mount() { # container, destination — "type|rw or ro|plain or odd|volume name|source"
+  dk "$1" '{{range .Mounts}}{{.Destination}}|{{.Type}}|{{.RW}}|{{if eq (printf "%q" .Source) (printf "\"%s\"" .Source)}}plain{{else}}odd{{end}}|{{.Name}}|{{.Source}}{{println}}{{end}}' \
+    | DM_DEST="$2" awk -F'|' '$1 == ENVIRON["DM_DEST"] {
+        s = $0; for (i = 0; i < 5; i++) s = substr(s, index(s, "|") + 1)
+        print $2 "|" ($3 == "true" ? "rw" : "ro") "|" $4 "|" $5 "|" s; exit
+      }'
+}
+# Sets DM_TYPE, DM_RO (":ro", or nothing when it is mounted read-write), DM_PLAIN,
+# DM_WHERE (the volume's name, or the folder on the host) and DM_SOURCE.
+dk_mount_read() {
+  IFS='|' read -r DM_TYPE dm_rw DM_PLAIN dm_name DM_SOURCE <<EOF
+$1
+EOF
+  DM_RO=":ro"
+  if [ "$dm_rw" = "rw" ]; then DM_RO=""; fi
+  DM_WHERE="$DM_SOURCE"
+  if [ "$DM_TYPE" = "volume" ]; then DM_WHERE="$dm_name"; fi
+}
+# A host folder a command may be printed for: read whole, absolute, not / and
+# with nothing in it that a terminal or a shell would read differently.
+nameable() { # folder
+  [ "$DM_PLAIN" = "plain" ] || return 1
+  case "$1" in
+    ''|/|[!/]*|*[[:cntrl:]]*|*/.|*/./*|*/..|*/../*|*//*) return 1 ;;
+  esac
+  return 0
+}
+# The command that removes a host folder. It is printed only for a folder this
+# script can see and that is_this_console recognises — an index.html that mounts
+# #root and names an entry script that is there, the same test W6 trusts before
+# publishing sweeps a folder. That does not show nothing else is in it, which is
+# why the lists are named first. Anything else gets no command, and ds_remove
+# says to look at it.
+folder_removal() { # folder
+  nameable "$1" || return 0
+  [ -d "$1" ] && is_this_console "$1" || return 0
+  printf 'sudo rm -rf %s' "$(shq "$1")"
+}
+dk_has_source() {
+  dk "$1" '{{range .Mounts}}{{.Source}}{{println}}{{end}}' | grep -qxF "$2"
+}
+dk_version() {
+  docker exec "$1" sh -c 'grep -ho "DNS Server (v[0-9.]*)" /var/log/technitium/dns/*.log 2>/dev/null | tail -1' 2>/dev/null \
+    | sed -n 's/.*(v\([0-9.]*\)).*/\1/p'
+}
+before_15_5() {
+  [ -n "$1" ] || return 1
+  bv_major="${1%%.*}"; bv_rest="${1#*.}"; bv_minor="${bv_rest%%.*}"
+  [ "$bv_major" -lt 15 ] || { [ "$bv_major" -eq 15 ] && [ "$bv_minor" -lt 5 ]; }
+}
+dk_init_service() {
+  docker ps -a --filter "label=com.docker.compose.project=$1" \
+    --format '{{.Image}}|{{.Label "com.docker.compose.service"}}' 2>/dev/null \
+    | awk -F'|' '$1 ~ /technitium-console/ { print $2; exit }'
+}
+shq() { # a word as a shell reads it back, quoted only when it has to be
+  case "$1" in
+    ''|*[!A-Za-z0-9_./:@%+=,-]*) printf "'%s'" "$(printf '%s' "$1" | sed "s/'/'\\\\''/g")" ;;
+    *) printf '%s' "$1" ;;
+  esac
+}
+# The `docker compose` that reaches a container's project from any folder: its
+# name, its files and, when it is not theirs, its folder, all from the labels
+# Compose put on the container.
+dk_compose() { # container
+  dc_cmd="docker compose -p $(shq "$(dk_label "$1" com.docker.compose.project)")"
+  dc_files="$(dk_label "$1" com.docker.compose.project.config_files)"
+  dc_dir="$(dk_label "$1" com.docker.compose.project.working_dir)"
+  dc_first=""
+  dc_ifs="$IFS"; IFS=','; set -f
+  for dc_f in $dc_files; do
+    if [ -z "$dc_first" ]; then dc_first="$dc_f"; fi
+    dc_cmd="$dc_cmd -f $(shq "$dc_f")"
+  done
+  IFS="$dc_ifs"; set +f
+  if [ -n "$dc_dir" ] && [ "$dc_dir" != "${dc_first%/*}" ]; then
+    dc_cmd="$dc_cmd --project-directory $(shq "$dc_dir")"
+  fi
+  printf '%s' "$dc_cmd"
+}
+# A volume or a folder goes once, after every container that mounts it has let
+# go of it — so when two of them share one, the command is given in the steps of
+# the last, and the others say where it is. Returns 1 when it is not given here.
+ds_remove() { # container, source of its mount, the command or nothing, the words before it, [this installer's state]
+  dr_how="$3"
+  if [ -z "$dr_how" ]; then
+    dr_what="the folder mounted there"
+    if nameable "$DM_WHERE"; then dr_what="$(shq "$DM_WHERE")"; fi
+    dr_how="look at what $dr_what holds and remove it yourself: this script cannot vouch that it is only the console."
+    if [ -n "${5:-}" ]; then dr_how="$dr_how Its record here goes with it: sudo rm -rf $5"; fi
+  fi
+  dr_with=""
+  for dr_c in $DS_ALL; do
+    if dk_has_source "$dr_c" "$2"; then dr_with="$dr_with $dr_c"; fi
+  done
+  dr_with="${dr_with# }"; dr_last="${dr_with##* }"
+  case "$dr_with" in
+    *" "*) ;;
+    *) say "  - $4$dr_how"; return 0 ;;
+  esac
+  if [ "$1" = "$dr_last" ]; then
+    say "  - Once $(printf '%s' "$dr_with" | sed 's/ /, /g') no longer mount it: $dr_how"
+    return 0
+  fi
+  say "  - Not removed here: other containers mount it too. It goes once, in the steps for $dr_last."
+  return 1
+}
+docker_steps() {
+  ds_c="$1"
+  ds_project="$(dk_label "$ds_c" com.docker.compose.project)"
+  ds_service="$(dk_label "$ds_c" com.docker.compose.service)"
+  ds_files="$(dk_label "$ds_c" com.docker.compose.project.config_files)"
+  ds_dc=""
+  if [ -n "$ds_project" ]; then ds_dc="$(dk_compose "$ds_c")"; fi
+  ds_version="$(dk_version "$ds_c")"
+  ds_folder="$(dk_env "$ds_c" "$VAR_NAME")"
+  ds_console=""
+  if [ -n "$ds_folder" ]; then ds_console="$(dk_mount "$ds_c" "$ds_folder")"; fi
+  ds_legacy="$(dk_mount "$ds_c" /opt/technitium/dns/www)"
+  ds_state=""
+  printf '\n  container %s%s%s\n\n' "$ds_c" "${ds_version:+  v$ds_version}" \
+    "${ds_service:+  · service \"$ds_service\" in ${ds_files:-its compose file}}"
+
+  if [ -n "$ds_console" ]; then
+    dk_mount_read "$ds_console"
+    ds_short="$DM_WHERE"
+    if [ "$DM_TYPE" = "volume" ] && [ -n "$ds_project" ]; then ds_short="${DM_WHERE#"${ds_project}"_}"; fi
+    if [ "$(state_get webroot)" = "$DM_WHERE" ]; then ds_state=" $STATE_DIR"; fi
+    if [ "$ACTION" = "uninstall" ]; then
+      say "To remove the console (the server goes back to the one its image ships):"
+      say ""
+      say "  - Keep any json/*-custom.json you edited: they are in $DM_TYPE $(shq "$DM_WHERE")."
+      if [ -n "$ds_project" ]; then
+        say "  - In ${ds_files:-the compose file}, take these two lines out of \"$ds_service\":"
+        say "        - $VAR_NAME=$ds_folder"
+        say "        - $ds_short:$ds_folder$DM_RO"
+        if [ "$DM_TYPE" = "bind" ]; then say "    (docker reports the path resolved; your file may write it relative to itself)"; fi
+        if [ "$DM_TYPE" = "volume" ]; then
+          say "    and remove the service that runs $IMAGE_REF, and \"$ds_short:\" under"
+          say "    the top-level volumes:."
+        else
+          say "    and remove the service that runs $IMAGE_REF."
+        fi
+        say "  - $ds_dc up -d --remove-orphans"
+        say "    It restarts \"$ds_service\" once, because its environment changes."
+      else
+        say "  - Re-create $ds_c without -e $(shq "$VAR_NAME=$ds_folder")"
+        say "    and without -v $(shq "$DM_WHERE:$ds_folder$DM_RO"). That is its only restart."
+      fi
+      if [ "$DM_TYPE" = "volume" ]; then
+        ds_remove "$ds_c" "$DM_SOURCE" "docker volume rm $(shq "$DM_WHERE")" "" || true
+      else
+        ds_rm="$(folder_removal "$DM_WHERE")"
+        ds_remove "$ds_c" "$DM_SOURCE" "$ds_rm${ds_rm:+$ds_state}" "" "${ds_state# }" || true
+      fi
+    else
+      say "The console is already set up: $ds_folder is served from $DM_TYPE $DM_WHERE."
+      say "To update it, without restarting the DNS server:"
+      say ""
+      if [ -n "$ds_project" ]; then
+        ds_init="$(dk_init_service "$ds_project")"
+        say "  $ds_dc pull ${ds_init:-technitium-console} && $ds_dc up -d ${ds_init:-technitium-console}"
+      else
+        say "  docker pull $IMAGE_REF:latest"
+        if [ "$DM_TYPE" = "volume" ] || nameable "$DM_WHERE"; then
+          say "  docker run --rm -v $(shq "$DM_WHERE:/target") $IMAGE_REF:latest"
+        else
+          say "  and the image run with the folder mounted there at /target. It cannot be"
+          say "  named safely in a command: look at it first."
+        fi
+      fi
+    fi
+  elif [ -n "$ds_legacy" ]; then
+    dk_mount_read "$ds_legacy"
+    if [ "$DM_TYPE" = "volume" ]; then
+      ds_short="$DM_WHERE"
+      if [ -n "$ds_project" ]; then ds_short="${DM_WHERE#"${ds_project}"_}"; fi
+      say "It serves the docker volume $(shq "$DM_WHERE") mounted over its own web root, the layout used before 15.5."
+    else
+      ds_short="$DM_WHERE"
+      if [ "$(state_get webroot)" = "$DM_WHERE" ]; then ds_state=" $STATE_DIR"; fi
+      if nameable "$DM_WHERE"; then
+        say "It serves $(shq "$DM_WHERE") mounted over its own web root, the layout used before 15.5."
+      else
+        say "It serves a host folder that cannot be named safely in a command, mounted over"
+        say "its own web root: the layout used before 15.5."
+      fi
+    fi
+    if [ "$ACTION" = "uninstall" ]; then
+      say "To remove the console:"
+      say ""
+      if [ "$DM_TYPE" = "volume" ]; then
+        say "  - Keep any json/*-custom.json you edited: they are in that volume, under json/."
+      elif nameable "$DM_WHERE"; then
+        say "  - Keep any json/*-custom.json you edited, from $(shq "${DM_WHERE%/}/json")."
+      else
+        say "  - Keep any json/*-custom.json you edited, from the json/ of the folder mounted there."
+      fi
+      if [ -n "$ds_project" ]; then
+        say "  - In ${ds_files:-the compose file}, take this line out of \"$ds_service\":"
+        say "        - $ds_short:/opt/technitium/dns/www$DM_RO"
+        if [ "$DM_TYPE" = "volume" ]; then
+          say "    and \"$ds_short:\" under the top-level volumes:."
+        else
+          say "    (docker reports the path resolved; your file may write it relative to itself)"
+        fi
+        say "  - $ds_dc up -d $ds_service"
+        say "    Its only restart: it comes back on the console its image ships."
+      else
+        say "  - Re-create $ds_c without -v $(shq "$DM_WHERE:/opt/technitium/dns/www$DM_RO") (its only restart)."
+      fi
+      if [ "$DM_TYPE" = "volume" ]; then
+        ds_remove "$ds_c" "$DM_SOURCE" "docker volume rm $(shq "$DM_WHERE")" "Then: " || true
+      else
+        ds_rm="$(folder_removal "$DM_WHERE")"
+        if ds_remove "$ds_c" "$DM_SOURCE" "$ds_rm${ds_rm:+$ds_state}" "Then, and not before: " "${ds_state# }"; then
+          say "    Emptied while still mounted, it would leave the server nothing to serve."
+        fi
+      fi
+    else
+      if [ "$DM_TYPE" = "volume" ]; then
+        say "Updating it from this host would mean writing into Docker's own storage,"
+        say "which this script does not do."
+      elif nameable "$DM_WHERE"; then
+        say "To update the console in it:"
+        say ""
+        say "  $ONE_LINER --dir $(shq "$DM_WHERE")"
+      else
+        say "That folder cannot be named safely in a command: look at what it holds"
+        say "before running the installer on it."
+      fi
+      if ! before_15_5 "$ds_version"; then
+        say ""
+        say "On 15.5 or later, the image is simpler and survives server updates: $DOCKER_DOCS"
+      elif [ "$DM_TYPE" = "volume" ]; then
+        say "Mount a folder of this host there instead, and install into it:"
+        say ""
+        say "  $ONE_LINER --dir $CONSOLE_DIR"
+        say "  - $CONSOLE_DIR:/opt/technitium/dns/www:ro"
+      fi
+    fi
+  elif [ "$ACTION" = "uninstall" ]; then
+    say "It serves the console its image ships. Nothing to remove."
+  elif before_15_5 "$ds_version"; then
+    say "v$ds_version cannot serve a folder of its own: that came with 15.5. Update the"
+    say "server and run this again, or install into a folder on this host and mount it"
+    say "over the container's web root:"
+    say ""
+    say "  $ONE_LINER --dir $CONSOLE_DIR"
+    say "  - $CONSOLE_DIR:/opt/technitium/dns/www:ro"
+  elif [ -n "$ds_project" ]; then
+    say "In ${ds_files:-your compose file}, add to \"$ds_service\":"
+    say ""
+    say "    environment:"
+    say "      - $VAR_NAME=$CONSOLE_DIR"
+    say "    volumes:"
+    say "      - technitium-console:$CONSOLE_DIR:ro"
+    say ""
+    say "and this service and volume, which copy the console in and stop:"
+    say ""
+    say "  services:"
+    say "    technitium-console:"
+    say "      image: $IMAGE_REF:latest"
+    say "      volumes:"
+    say "        - technitium-console:/target"
+    say "      restart: \"no\""
+    say "  volumes:"
+    say "    technitium-console:"
+    say ""
+    say "Then: $ds_dc up -d"
+    say "It restarts \"$ds_service\" once, because its environment changes. Updates do not."
+    if [ -z "$ds_version" ]; then say "It needs Technitium 15.5 or later."; fi
+  else
+    say "Fill a volume with the console, on this host:"
+    say ""
+    say "  docker volume create technitium-console"
+    say "  docker run --rm -v technitium-console:/target $IMAGE_REF:latest"
+    say ""
+    say "and re-create $ds_c with these two added to its docker run (its only restart):"
+    say ""
+    say "  -e $VAR_NAME=$CONSOLE_DIR"
+    say "  -v technitium-console:$CONSOLE_DIR:ro"
+    if [ -z "$ds_version" ]; then say "It needs Technitium 15.5 or later."; fi
+  fi
+}
+DS_ALL=""            # the containers whose steps are being printed: see ds_remove
+docker_guidance() {
+  dg_servers="$(docker_servers)"
+  [ -n "$dg_servers" ] || return 0
+  DS_ALL="$dg_servers"
+  say "Technitium runs in Docker here. Nothing is written into a container: it would"
+  say "be lost the next time the container is recreated. These are the steps instead."
+  say "More: $DOCKER_DOCS"
+  for dg_c in $dg_servers; do docker_steps "$dg_c"; done
+  printf '\n'
+  exit 0
+}
+docker_guidance_for() {
+  command -v docker >/dev/null 2>&1 || return 0
+  dgf_found=""
+  for dgf_c in $(docker_servers); do
+    if dk_has_source "$dgf_c" "$1"; then dgf_found="$dgf_found $dgf_c"; fi
+  done
+  [ -n "$dgf_found" ] || return 0
+  DS_ALL="$dgf_found"
+  say "$1 is mounted into a container, so undoing it is a change to that container."
+  for dgf_c in $dgf_found; do docker_steps "$dgf_c"; done
+  printf '\n'
+  exit 0
+}
+
+# Inside a container, a folder that is neither a mount point nor under one is
+# part of the container's own files, and goes with the next recreate. That is
+# what `docker exec <c> sh -c "curl … | sh"` installs into.
+in_container_layer() { # folder
+  [ -f /.dockerenv ] || [ -f /run/.containerenv ] || return 1
+  icl_d="$1"
+  while [ -n "$icl_d" ] && [ "$icl_d" != "/" ]; do
+    is_mount_point "$icl_d" && return 1
+    icl_d="${icl_d%/*}"
+  done
+  return 0
+}
+
 # ---------------------------------------------------------------- where it goes
 MODE=""              # replacement | side-by-side
 RESTART_NEEDED="no"
 SERVER_VERSION=""
 
 resolve_target() {
+  if [ -n "$INTO_VOLUME" ]; then
+    MODE="side-by-side"            # a folder of its own: nothing to back up, ever
+    refuse_links "$WWW_DIR"
+    ok "Installing into the volume" "$WWW_DIR"
+    return 0
+  fi
+
   SERVER_VERSION="$(server_version)"
   find_server
 
@@ -388,19 +841,7 @@ resolve_target() {
     fi
   done
 
-  if command -v docker >/dev/null 2>&1 && docker ps --format '{{.Image}}' 2>/dev/null | grep -q 'technitium/dns-server'; then
-    say "Technitium is running in Docker, so its web root is inside the container."
-    say "Install to a folder on the host and mount it over the container's:"
-    say ""
-    say "  sudo $0 --dir /opt/technitium-console"
-    say ""
-    say "then add this to the service in your compose file and bring it up again:"
-    say ""
-    say "    volumes:"
-    say "      - /opt/technitium-console:/opt/technitium/dns/www:ro"
-    say ""
-    exit 0
-  fi
+  if command -v docker >/dev/null 2>&1; then docker_guidance; fi
   die "no Technitium DNS Server found. Point at its web root with --dir <path>."
 }
 
@@ -431,8 +872,19 @@ copy_one() { # src root, dst root, relative path
   mv -f "$2/$3.tc-new" "$2/$3"
 }
 
-publish() {
-  src="$1"; dst="$2"; list="$3"
+# What step 3 may sweep is decided before W6 looks at the folder, and nothing
+# is ever added to it: only what was there then. Whatever appears afterwards is
+# not this run's to remove — the server writing its first files, if the folder
+# turns out to be its own (a volume swapped onto the init's /target, both
+# started together). Taken before W6 and not after it, so that anything already
+# there was there when W6 judged the folder.
+snapshot() { # folder, a folder of its own for the lists
+  ( cd "$1" 2>/dev/null && find . -type f -print ) | sed 's|^\./||' > "$2/before"
+  ( cd "$1" 2>/dev/null && find . -mindepth 1 -type d -print ) | sed 's|^\./||' | sort -r > "$2/dirs"
+}
+
+publish() { # src, dst, the folder snapshot wrote its lists in
+  src="$1"; dst="$2"; list="$3/list"
   mkdir -p "$dst"
 
   ( cd "$src" && find . -type f ! -name index.html -print ) | sed 's|^\./||' > "$list"
@@ -442,13 +894,17 @@ publish() {
     | awk '{ n = gsub(/\//, "/"); print n " " $0 }' | sort -rn | cut -d' ' -f2- > "$list"
   while IFS= read -r f; do [ -n "$f" ] && copy_one "$src" "$dst" "$f"; done < "$list"
 
-  ( cd "$dst" && find . -type f -print ) | sed 's|^\./||' > "$list"
   while IFS= read -r f; do
     [ -n "$f" ] || continue
     case "$f" in $CUSTOM_GLOB) continue ;; esac
+    if [ -n "$INTO_VOLUME" ] && [ "$f" = "$MARKER" ]; then continue; fi
     [ -e "$src/$f" ] || rm -f "$dst/$f"
-  done < "$list"
-  find "$dst" -depth -type d -empty -exec rmdir {} + 2>/dev/null || true
+  done < "$3/before"
+  # Deepest first (sort -r puts a/b before a), and only folders that were there
+  # before and are empty now.
+  while IFS= read -r d; do
+    if [ -n "$d" ]; then rmdir "$dst/$d" 2>/dev/null || true; fi
+  done < "$3/dirs"
 }
 
 carry_custom_lists() { # from, to — used when the served folder changes
@@ -458,6 +914,13 @@ carry_custom_lists() { # from, to — used when the served folder changes
     mkdir -p "$2/json"
     [ -e "$2/json/$(basename "$f")" ] || cp -f "$f" "$2/json/$(basename "$f")"
   done
+}
+
+verify_checksum() { # tarball, its .sha256 as sha256sum writes it
+  command -v sha256sum >/dev/null 2>&1 || die "sha256sum is needed to check the console, and is not installed."
+  vc_expected="$(cut -d' ' -f1 < "$2")"
+  vc_actual="$(sha256sum "$1" | cut -d' ' -f1)"
+  [ -n "$vc_expected" ] && [ "$vc_expected" = "$vc_actual" ]
 }
 
 confirm() { # question
@@ -534,7 +997,13 @@ if [ "$ACTION" = "uninstall" ]; then
   fi
 
   # Replacement mode: the backup is the authority, not a marker in the web root.
-  [ -d "$BACKUP" ] || die "the original console is not at $BACKUP: there is nothing to restore."
+  if [ ! -d "$BACKUP" ]; then
+    # Installed with --dir into an empty folder, there never was an original.
+    # On a Docker host that folder is mounted into a container, and the way out
+    # is a change to the container, which docker_guidance_for prints.
+    docker_guidance_for "$WWW_DIR"
+    die "the original console is not at $BACKUP: there is nothing to restore."
+  fi
 
   taken="$(state_get server_version)"
   if [ -n "$taken" ] && [ -n "$SERVER_VERSION" ] && [ "$taken" != "$SERVER_VERSION" ]; then
@@ -550,9 +1019,14 @@ if [ "$ACTION" = "uninstall" ]; then
     warn "Restoring a $taken console onto a $SERVER_VERSION server, because you asked."
   fi
 
+  PUBLISH_WORK="$(mktemp -d)"
+  # A signal ends the run; it does not clean up and carry on (see the install).
+  trap 'rm -rf "$PUBLISH_WORK"' EXIT
+  trap 'exit 130' INT
+  trap 'exit 143' TERM
+  snapshot "$WWW_DIR" "$PUBLISH_WORK"
   may_write_into "$WWW_DIR"
-  LIST="$(mktemp)"; trap 'rm -f "$LIST"' EXIT INT TERM
-  publish "$BACKUP" "$WWW_DIR" "$LIST"       # custom lists in place are kept: see copy_one
+  publish "$BACKUP" "$WWW_DIR" "$PUBLISH_WORK"   # custom lists in place are kept: see copy_one
   rm -rf "$BACKUP"
   state_clear
   ok "Original console restored" "$WWW_DIR"
@@ -562,27 +1036,55 @@ fi
 
 # ---------------------------------------------------------------------- install
 resolve_target
-may_write_into "$WWW_DIR"
 
 command -v tar >/dev/null 2>&1 || die "tar is needed and is not installed."
 
+TMP="$STATE_DIR/staging"
+# What the sweep may remove is listed before W6 looks, in a folder of this run's
+# own outside the state, so that a run W6 refuses leaves nothing behind — not
+# even an empty state folder. That one goes on the way out whenever this run
+# made it and wrote no state into it.
+LISTS="$(mktemp -d)" || die "could not create a working folder."
+STATE_DIR_MADE="no"
+[ -d "$STATE_DIR" ] || STATE_DIR_MADE="yes"
+cleanup() {
+  rm -rf "$TMP" "$LISTS"
+  if [ "$STATE_DIR_MADE" = "yes" ]; then rmdir "$STATE_DIR" 2>/dev/null || true; fi
+}
+# A signal ends the run, and the exit cleans up. It must not clean up and carry
+# on: the sweep compares the web root against those lists, and with them gone
+# it would remove the console it has just published. docker stop and docker
+# compose down send the init a TERM.
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+
+snapshot "$WWW_DIR" "$LISTS"
+may_write_into "$WWW_DIR"
+
 # A run that was interrupted leaves its staging folder behind. Nothing else is
 # needed to repair it: publishing is idempotent and the sweep below removes
-# whatever the interrupted run had already written.
-if [ -d "$STATE_DIR/staging" ]; then
+# whatever the interrupted run had already written. Said only once W6 has let
+# this run through, because a run that is refused picks nothing up.
+if [ -d "$TMP" ]; then
   warn "A previous run did not finish. Picking up from a clean slate."
-  rm -rf "$STATE_DIR/staging"
+  rm -rf "$TMP"
 fi
-
-TMP="$STATE_DIR/staging"
 mkdir -p "$TMP/dist"
-# shellcheck disable=SC2064
-trap "rm -rf '$TMP'" EXIT INT TERM
 
 if [ -n "$SOURCE" ] && [ -f "$SOURCE" ]; then
   cp "$SOURCE" "$TMP/console.tar.gz"
   ok "Console read from file" "$SOURCE"
-  warn "It is not verified: a tarball given with --from is installed as it is."
+  if [ -n "$INTO_VOLUME" ]; then
+    # The image carries the release's checksum next to its tarball (contract
+    # D4). CI checked it before building; it is checked again where it counts.
+    [ -f "$SOURCE.sha256" ] || die "there is no checksum next to $SOURCE. Not installing what cannot be checked."
+    verify_checksum "$TMP/console.tar.gz" "$SOURCE.sha256" \
+      || die "$SOURCE does not match the release's checksum. Nothing was changed."
+    ok "Checksum matches the release" "sha256"
+  else
+    warn "It is not verified: a tarball given with --from is installed as it is."
+  fi
 else
   if [ -n "$SOURCE" ]; then
     URL="$SOURCE"
@@ -599,12 +1101,9 @@ else
   else
     # Every release publishes the tarball's SHA-256 next to it, as sha256sum
     # writes it (.github/workflows/release.yml, "Pack"). No checksum, no install.
-    command -v sha256sum >/dev/null 2>&1 || die "sha256sum is needed to check the download, and is not installed."
     curl -fsSL "$URL.sha256" -o "$TMP/console.tar.gz.sha256" \
       || die "the release publishes no checksum at $URL.sha256. Not installing what cannot be checked."
-    expected="$(cut -d' ' -f1 < "$TMP/console.tar.gz.sha256")"
-    actual="$(sha256sum "$TMP/console.tar.gz" | cut -d' ' -f1)"
-    [ -n "$expected" ] && [ "$expected" = "$actual" ] \
+    verify_checksum "$TMP/console.tar.gz" "$TMP/console.tar.gz.sha256" \
       || die "the download does not match the checksum the release publishes. Nothing was changed."
     ok "Checksum matches the release" "sha256"
   fi
@@ -654,11 +1153,27 @@ state_set phase publishing
 state_set webroot "$WWW_DIR"
 state_set mode "$MODE"
 if [ -n "$BACKUP" ]; then state_set backup "$BACKUP"; fi
-LIST="$TMP/list"
-publish "$TMP/dist" "$WWW_DIR" "$LIST"
+if [ -n "$INTO_VOLUME" ]; then
+  # Every check has passed (the mount point, W6, the checksum, the archive), and
+  # nothing is copied yet: from here on the volume is the console's, finished or
+  # not. Written by rename, like every file publish writes.
+  rm -f "$WWW_DIR/$MARKER.tc-new"
+  printf 'technitium-console sha256:%s\n' "$(sha256sum "$TMP/console.tar.gz" | cut -d' ' -f1)" > "$WWW_DIR/$MARKER.tc-new"
+  mv -f "$WWW_DIR/$MARKER.tc-new" "$WWW_DIR/$MARKER"
+fi
+publish "$TMP/dist" "$WWW_DIR" "$LISTS"
 state_set version "$VERSION"
 state_set phase done
 ok "Console installed" "$WWW_DIR"
+
+if [ -n "$INTO_VOLUME" ]; then
+  say ""
+  say "A DNS server that mounts this volume and names it in $VAR_NAME"
+  say "is serving it already: it needs no restart. To update, run a newer image of"
+  say "this one. To remove it: $DOCKER_DOCS"
+  printf '\n'
+  exit 0
+fi
 
 if [ "$RESTART_NEEDED" = "yes" ]; then
   say ""
@@ -680,4 +1195,12 @@ else
   fi
 fi
 
-printf '\n  To go back:  sudo sh install.sh --uninstall\n\n'
+if in_container_layer "$WWW_DIR"; then
+  say ""
+  warn "This ran inside a container, and $WWW_DIR is part of the container's own"
+  warn "files: the console goes the next time the container is recreated (an image"
+  warn "update, docker compose pull and up). Our Docker image installs it where it stays:"
+  warn "$DOCKER_DOCS"
+fi
+
+printf '\n  To go back:  %s --uninstall\n\n' "$ONE_LINER"

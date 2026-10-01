@@ -17,7 +17,7 @@ sends, every text it shows and every control it offers, compared with that serve
 | 1.0.0 | 15.4 | Cannot save Settings on a 15.5 server. Upgrade. |
 
 To update, run the installer again — the same one-line command. It needs no restart of the DNS
-service.
+service. On Docker, pull the image again: see [Docker](README.md#docker).
 
 ---
 

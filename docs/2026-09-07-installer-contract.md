@@ -25,6 +25,22 @@ that honours it. Building one takes four commands and they are written down in
 > (v15.5.1, which honours the variable): **24 met, 0 not met, 1 not applicable**
 > (C15). C22 to C25 were first seen failing against the `install.sh` of `HEAD`.
 
+> **2026-10-01.** Docker gets an install path of its own: an init image that
+> copies the console into a volume the official server mounts
+> (`docs/2026-10-01-docker-install-spec.md`). Four clauses for it, D1 to D4;
+> amendments to W6, A6 and I1, W4 giving way inside the image (§3, «Docker»)
+> and the Docker host's steps in §4; and five cases, C26 to C30, with C11, C17
+> and C22 extended: thirty cases.
+> Measured against `technitium/dns-server:latest` (v15.5.1): **29 met, 0 not met,
+> 1 not applicable** (C15). C11 and C26 to C30 were first seen failing against
+> the `install.sh` of `main`, and so were C17's step for a TERM mid-sweep and
+> C22's for `--dir /`. What C22's last step checks, no state folder left by a
+> refused run, was seen failing by hand against the `install.sh` of 7cf2d09.
+> And a correction the same day: the variable is upstream's since
+> v15.5 (§1.7), so the official image honours it, the fork build the 2026-09-07
+> status relies on is not needed any more, and the `†` has come off W2, F3 and
+> S2.
+
 The console goes in front of a DNS server that a whole house resolves through.
 The installer is the only part of this project that writes to somebody else's
 machine, so it is the part that has to be boring.
@@ -49,6 +65,13 @@ builder.Environment.WebRootFileProvider = new PhysicalFileProvider(Path.Combine(
 the web root is **always a `www` folder next to the binary**. It is not
 configurable, it is not in `dns.config`, and nothing in the console can change
 it.
+
+*2026-10-01:* that was upstream before v15.5. Since v15.5 the provider is built
+from the folder `DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH` names when it is set
+and the folder exists, and from `www` next to the binary otherwise
+(`DnsWebService.cs:1805-1816` at the `v15.5.1` tag; §1.7). It is still not in
+`dns.config`, and nothing in the console can change it. What follows holds for
+whichever folder is served; at `v15.5.1` the `no-cache` line is `:1950`.
 
 Two consequences that the installer lives with:
 
@@ -97,9 +120,17 @@ underneath (measured; the probe rebuilds this state in C3).
 
 The web root lives inside the image at `/opt/technitium/dns/www`
 (`Dockerfile`). An update is a new image, so anything written into the
-container's web root is gone. The only layout that survives is a bind mount from
-the host over that path — which is what our README tells people to do, and what
-`dev/compose.yaml` does.
+container's own files is gone with the next recreate — which is what
+`docker exec <c> sh -c "curl … | sh"` installs into, and the installer now says
+so when it does (C11).
+
+*2026-10-01:* two layouts survive. Since v15.5 the variable can point at a
+volume or a bind mount, and that is the one the README gives Docker users: an
+init image, `ghcr.io/bygarcia/technitium-console`, copies the console into a
+volume that the server mounts read-only (D1–D4). Before 15.5 the only one is a
+bind mount from the host over `www`, which is what `dev/compose.yaml` does for
+development. The previous wording — "the only layout that survives is a bind
+mount over that path" — stopped being true with 15.5.
 
 ### 1.5 Windows
 
@@ -123,7 +154,22 @@ names. The installer must treat it as a glob, and does (probe C4).
 These files live in the web root and in no release. Replacing the web root
 deletes them, which is the whole reason this clause exists.
 
-### 1.7 The environment variable that does not exist yet
+### 1.7 The environment variable
+
+*2026-10-01:* it is upstream's since **v15.5 (2026-09-19)**: `CHANGELOG.md:10`
+at the `v15.5.0` tag, "Added new `DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH`
+environment variable … PR #2138", and v15.5.1 carries it.
+`DnsWebService.cs:1805-1814` at `v15.5.1` reads it, uses `www` when it is unset,
+and when the folder does not exist writes the log line W3 quotes and falls back
+to `www`. Upstream documents it in `EnvironmentVariables.md:11`, a file of its
+own for variables read on every start, whose note says that changing one needs a
+restart — not in `DockerEnvironmentVariables.md`, as the PR had it. **The
+official image honours it since v15.5**: the probe measured it against
+`technitium/dns-server:latest` (v15.5.1) on 2026-09-30, and C12 and C13 ran and
+were met against it. What follows is this section as written on 2026-09-07, when
+the variable did not exist in any release; its first bullet is true only of
+servers before 15.5, and the installer still does not trust a version number for
+it (W3).
 
 `DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH` is twelve lines on the fork's
 `feat/configurable-www-folder` branch (`1f097ea1`): it overrides the web root and
@@ -176,12 +222,16 @@ choice — it depends on the server in front of us.
 **Mode A — replacement.** The only mode possible today: install over
 `<appFolder>/www`, keep a copy of the stock console, restore it on uninstall.
 It cannot survive a server update (§1.3), so under this mode an update means the
-administrator re-runs the installer.
+administrator re-runs the installer. *2026-10-01:* no longer the only mode since
+v15.5 (§1.7). It is what the installer does when the variable is not set, and
+the only mode on a server before 15.5.
 
 **Mode B — side by side.** Once the variable lands: install into a folder of our
 own, never touch `www`, and let the variable point the server at it. Server
 updates stop mattering. This is the mode the project wants, and the reason the
-PR exists.
+PR exists. *2026-10-01:* the variable landed in v15.5 (§1.7). Mode B is what any
+server from 15.5 on gets once the variable is set (W2), and it is the layout of
+the Docker image (D1–D4).
 
 Mode B costs one restart the first time the served path changes, and one when
 that change is undone, because the variable is read once at start (S2). Every
@@ -200,7 +250,9 @@ invisible. `/opt/technitium-console` satisfies both.
 is left to a reading of the script. The three mode B clauses carry a `†`: they
 are measured against a build of the fork's `feat/configurable-www-folder`
 branch, not against a released server, and they stay that way until upstream
-merges it.
+merges it. *2026-10-01:* upstream released it in v15.5 (§1.7), and C12 and C13
+were met against the official v15.5.1 on 2026-09-30, so the `†` has come off
+the three.
 
 ### Where it installs
 
@@ -211,7 +263,7 @@ merges it.
   `/proc`, and its web root is derived from the path of the `DnsServerApp.dll` it
   was started with. The two known folders are still there, for the case of a
   host preparing a folder for a container, where there is no process to ask.
-- **W2 ✓†** (C12) When the running server honours the variable, the console is
+- **W2 ✓** (C12) When the running server honours the variable, the console is
   installed where it points and `www` is not touched. Measured: the console
   answers from the folder the variable names, and the stock `www` still holds
   the console the server shipped.
@@ -233,7 +285,10 @@ merges it.
   Without it, the server does not know the variable at all, and the console goes
   where it is actually read. The half of this clause that a released server can
   exercise is the refusal, and that is what C15 measures; the other half rides on
-  C12.
+  C12. *2026-10-01:* since v15.5 it is the other way round. A released server
+  honours the variable and rides on C12, and the refusal needs a server before
+  15.5: C15 is not applicable against `technitium/dns-server:latest`, and runs
+  against an older image given with `IMAGE=` (§5).
 - **W4 ✓** (C10) A target folder that does not exist is created. Nothing is
   backed up that was never there, which is what used to make the documented
   Docker flow fail before it had installed anything.
@@ -251,6 +306,22 @@ merges it.
   TTY. Before this, `--dir /opt/technitium/dns` by mistake removed the server's
   binaries and configuration, with no backup — there was no `index.html` to back
   up — and without asking, because `curl … | sudo sh` has no TTY to ask on.
+  *2026-10-01* (C28): a folder holding nothing but `json/` and
+  `json/*-custom.json` counts as empty. Publishing neither overwrites nor sweeps
+  those files, so there is nothing in it to lose, and it is how a host folder
+  for the Docker image is prepared with lists written by hand before the first
+  run. One file of any other kind beside them and the folder is refused as
+  before (C22; C29, lists and `notes.txt`). Measured with the amendment on
+  2026-10-01, by C22, C28 and C29.
+  *2026-10-01* (C22, `--dir /`): `--dir /`, or any path that resolves to the
+  root folder, is refused. It used to resolve to no folder at all, and no
+  folder means "ask the server", so the console went into the server's web
+  root, which nobody had asked for.
+  *2026-10-01* (C22, a refused run): a run W6 stops leaves no trace outside
+  the folder either. What the sweep may remove is listed in a temporary folder
+  of the run's own, and the staging folder, with the state folder around it,
+  is made only once W6 has let the run through; a run that made the state
+  folder and stops before writing any state removes it on the way out.
 - **W7 ✓** (C23) *2026-09-30.* The running server is **identified**, not
   matched. A command line ending in `DnsServerApp.dll` makes a process a
   candidate; it is believed only when every uid it runs as (read from
@@ -275,7 +346,7 @@ merges it.
   administrator runs expecting to lose nothing. It is kept by never being
   touched: a `*-custom.json` already in place is neither overwritten by a
   restore nor swept away as a leftover.
-- **F3 ✓†** (C13) In mode B the lists travel **both ways**, because the web app
+- **F3 ✓** (C13) In mode B the lists travel **both ways**, because the web app
   fetches them relative to whatever folder is being served. On install they are
   copied from `www/json` into the console's own folder, and the administrator is
   told that the one to edit from now on is the new one. On uninstall everything
@@ -348,6 +419,14 @@ merges it.
 - **A6 ✓** (C8) The web root holds the console and nothing else — no marker, no
   staging folder, nothing hidden. The staging area lives with the state, so a
   half-finished download is never inside the folder being served.
+  *2026-10-01:* one exception, in the Docker image's volume only: the marker
+  `.technitium-console` at its root (Docker, D1). It is a dotfile, so it is
+  never served (§1.1), and the init reads it from the filesystem, not over
+  HTTP. No uninstall keys off it (A3): `--into-volume` has no uninstall. The
+  `✓` is not C8's alone for this half: C26 finds nothing in the volume but the
+  console and the marker, and the marker not served, and C29 finds not even
+  the marker after an init that was refused; measured on 2026-10-01. Why the
+  marker is there is in «Docker», below.
 - **A7 ✓** (C19) When the version recorded with the backup and the running one
   differ, the backup is the console of another server: `--uninstall` **stops**,
   names both versions, and does nothing. Restoring it anyway takes a flag of its
@@ -393,6 +472,84 @@ merges it.
   staging copy belongs to root whatever the tarball says; the probe does not
   measure that half, because what reaches the web root is written by `cp` as
   root either way.
+  *2026-10-01* (C26; C29, bad or missing checksum): with `--into-volume`, the
+  Docker image's mode, `--from` is checked after all: the `.sha256` next to the
+  tarball is required, and a mismatch or a missing one stops the run with
+  nothing written, as above. The image carries the release's checksum, so D4
+  holds when the image runs as well as in CI. Measured with the amendment on
+  2026-10-01, by C25, C26 and C29.
+
+### Docker
+
+The init image runs `install.sh --into-volume /target` on the tarball it
+carries, into a volume the official server mounts read-only at the folder its
+`DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH` names. Inside that run the folder is
+given, not looked for: there is no server to find, so W1, W3 and W7's
+identification have nothing to do, and the folder is installed into side by
+side, with nothing backed up. W4 gives way: `/target` has to be a mount point,
+not a folder to create (C29). The rest of the clauses above still apply inside
+that run, notably W5, W6, W7's links, F1, F4, A1, A2, A4, U1, S1 and I1 as
+amended.
+
+One thing is the init's own. Its state (A5) lives in its container's layer and
+goes with it, so the record that the volume is the console's lives in the
+volume: after every check has passed and before the first file is copied, the
+init writes `.technitium-console` at the volume's root, and `--into-volume`
+accepts a volume that holds it as its own (W6). That is what lets A2's repair
+half hold in the init: a first copy interrupted halfway leaves assets and no
+`index.html`, which W6 alone would refuse forever, and the next run of the init
+— the next `up`, or the next update — finds the marker and finishes it (C29,
+interrupted first copy, then re-run). The marker stays; it is the one exception
+to A6.
+
+These four are what the layout adds.
+
+- **D1 ✓** (C29) **The init never keeps the DNS server from starting.** The
+  compose block the README gives has no `depends_on` from the server on the
+  init, and the init neither looks for the server nor waits for it. When the
+  init fails a check — a folder W6 refuses, no volume mounted at `/target`, a
+  bad or missing checksum (C29, bad or missing checksum) — it stops before
+  publishing, exits non-zero having written nothing into the volume, not even
+  the marker, and the server starts all the same and serves whatever the volume
+  holds: a whole console on an update, nothing on a first install. A failure
+  during the copy leaves A1's order in force, as D2 says: on an update, a whole
+  console is served throughout; on a first install, nothing yet, and the next
+  run finishes it (the marker, above). Nothing on a first install is also what
+  is served for the second or two before the init's first publication point:
+  A2 is about replacing a console, and on a first install there is none yet to
+  keep serving. Not covered: a first `docker compose up` has to be able to pull
+  both images, which is the registry's business, not the installer's.
+- **D2 ✓** (C27) **Updating the console does not restart the DNS server.** The
+  documented update, `docker compose pull technitium-console && docker compose
+  up -d technitium-console`, recreates the init only: the server's `StartedAt`
+  does not change and the new console is served at once (§1.1). Bringing the
+  whole file up again, with nothing about the server changed, does not touch it
+  either. An update that fails leaves the server alone too, and a whole console
+  served: the init stops before writing (I1, W6), or mid-copy with A1's order
+  in force. A plain `docker compose pull && docker compose up -d` also updates
+  the server when upstream has a new image, and that restart is the server's,
+  not the console's; the README says which command does which.
+- **D3 ✓** (C28) **Custom lists in the volume survive.** Every
+  `json/*-custom.json` in the volume survives an update of the console and a
+  `--force-recreate` of the server, and so does one in a host folder bound in
+  its place (C28, bind folder, update and `--force-recreate`). A host folder
+  holding only such lists before the first run is accepted (W6); one holding
+  them and any other file is refused (C29, lists and `notes.txt`), and D1 says
+  what the server does then.
+- **D4 ✓** (C26, and CI) **The image carries the release's tarball, byte for
+  byte.** CI downloads it from the release it has just published, checks it
+  against the release's `.sha256` before building, and after pushing checks it
+  again inside each of the three platforms (`.github/workflows/release.yml`, job
+  `image`). The init checks it once more when it runs (I1). C26 measures the
+  local half: the image built from `dist/` carries the tarball it was built
+  with. A check that fails before building stops the job with nothing pushed.
+  One that fails after pushing turns the job red with the tags already out, and
+  the init's own check is what stands between those bytes and a volume.
+  Re-running the `image` job on its own downloads the same bytes again, so it
+  only helps a failure that was transient — the network, the registry. A release
+  asset that does not match its own `.sha256` fails the same way every time, and
+  needs a new release. Never the whole workflow on a published tag: it would
+  rebuild the tarball under it with other bytes and another checksum.
 
 ### The service and the browser
 
@@ -402,7 +559,7 @@ merges it.
   clause, with a `systemctl` of its own that records being called and never is.
   A restart is a resolution outage for everything behind this server; it is not
   spent on copying files.
-- **S2 ✓†** A restart happens **only when the path being served or the
+- **S2 ✓** A restart happens **only when the path being served or the
   environment changes**, because the file provider is built once at start
   (§1.1). That is the first install into the variable's folder and the uninstall
   out of it — not a property of mode B: a later reinstall into the same folder,
@@ -427,7 +584,11 @@ merges it.
   the administrator's service starts, so it is **offered and confirmed**, never
   silent, and never on OpenRC or Docker, where the equivalent belongs to
   `/etc/conf.d/dns` and to the compose file — the installer prints those and
-  stops.
+  stops. *2026-10-01* (C30): on a Docker host it reads `docker inspect` and the
+  startup log through `docker exec`, and prints the exact change for each
+  container — the way in, and with `--uninstall` the way out — with the
+  container, service, file and volume names it found, and exits 0. It never
+  prints `$0`, which under `curl … | sudo sh` is `sh`.
 - **SELinux relabelling, distro packages, and updating the console by itself.**
   Not now, and each would need its own contract.
 
@@ -455,6 +616,15 @@ before uninstalling, and C25 installs a `curl` that plays GitHub with whatever
 checksum the case wants. `INSTALLER=<file>` measures another `install.sh`, which
 is how the four were seen failing on the old one.
 
+*2026-10-01:* thirty. C26 to C29 build the init image from `dist/` with this
+checkout's `docker/Dockerfile` and `install.sh`, and bring up the README's
+compose block against the official server: a fresh install, an update, the
+custom lists, and an init that fails. C30 runs `install.sh` from stdin in
+`docker:cli` with the Docker socket, which is how `curl … | sudo sh` runs it on
+a Docker host. C11 now also expects the warning about installing into a
+container's own files, and runs on any server, as it always has. The five new
+ones need a server that honours the variable, and are not applicable otherwise.
+
 C12, C13 and C15 depend on what the image can do, and the probe does not decide
 that by decree: it **detects the capability** the same way W3 says the installer
 must — it starts the image with the variable pointing at a folder holding a probe
@@ -474,6 +644,23 @@ cases against `technitium/dns-server:latest` and twenty against a server that
 honours the variable. What is left is not a measurement: it is upstream merging
 the branch, at which point the `†` comes off W2, F3 and S2 and the image stops
 having to be built by hand.
+
+*2026-10-01:* it happened. Upstream released the variable in v15.5 (§1.7), and
+the two sides have swapped. Against `technitium/dns-server:latest` (v15.5.1) the
+capability answer is yes, so C12 and C13 run and C15 stands down: 24 met and 1
+not applicable on 2026-09-30, 29 and 1 on 2026-10-01 with the Docker cases. C15,
+the refusal, now needs an image before 15.5, given with `IMAGE=`; it was
+measured against v15.4 on 2026-09-07, and again on 2026-10-01 against
+`technitium/dns-server:15.4.0`, after the Docker changes to `install.sh`: met.
+That run also failed C24, whose first two steps need a server that honours the
+variable and waited for it with a `curl` 15.4.0 does not have. The same day
+those two steps were gated by the capability, like C12 and C13; the third, a
+recorded folder that is no longer this console, runs on every image, because
+`--into-volume` can leave such a record on any server; and the case waits for
+the port in `/proc/net` instead. Against 15.4.0 then: 23 met, 0 not met, 7 not
+applicable, so on 2026-10-01 the probe is at zero on both images again. The `†`
+is off W2, F3 and S2, and no server has to be built by hand. C26 to C30 are
+gated by the same answer as C12 and C13.
 
 ---
 

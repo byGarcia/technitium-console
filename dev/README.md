@@ -18,16 +18,19 @@ contract lives.
 ## The installer has its own bench
 
 `sh dev/installer-probe.sh` measures `install.sh` against
-`docs/2026-09-07-installer-contract.md`: twenty-five cases, one throwaway
+`docs/2026-09-07-installer-contract.md`: thirty cases, one throwaway
 container each off the same official image, exit code = cases failed. It does not
-use the three containers below and does not touch them. `INSTALLER=<file>`
+use the three containers below and does not touch them. C26 to C30 (2026-10-01)
+also build the Docker init image from `dist/` and bring up a compose project of
+their own, `installer-probe-<pid>`; they pull `busybox:stable` and `docker:cli` the
+first time, and C30 mounts the Docker socket into `docker:cli`. `INSTALLER=<file>`
 measures another `install.sh` — that is how the cases added on 2026-09-30 were
 seen failing on the old script before they were seen passing on the new one.
 
 The mode B cases need a server that honours
 `DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH`. **Since v15.5 (2026-09-19) the official
 image does**, so they run against `technitium/dns-server:latest` with no build:
-24 met, 1 not applicable (C15, which needs a server that ignores the variable).
+29 met, 1 not applicable (C15, which needs a server that ignores the variable).
 They are not skipped by decree: the bench asks the image and believes the answer.
 
 Before v15.5 the only server that honoured it was one built from the fork's

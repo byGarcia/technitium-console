@@ -1,0 +1,37 @@
+# The console's tarball and its .sha256, built from the checked-out commit.
+# The release job and the develop image both use this, so a develop image
+# carries exactly what a release built from the same commit would carry.
+name: Console tarball
+description: Checks and builds the console, then packs dist/ as technitium-console.tar.gz with its .sha256.
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+        cache: npm
+
+    - shell: bash
+      run: npm ci
+
+    # The console goes in front of a DNS server, so a build that fails its own
+    # checks must not exist.
+    - shell: bash
+      run: npm run typecheck
+    - shell: bash
+      run: npm run lint
+    - shell: bash
+      run: npm test
+
+    - shell: bash
+      run: npm run build
+
+    # Flat archive: install.sh unpacks it straight into the web root, so the
+    # files have to be at the root of the tarball and not inside dist/.
+    - name: Pack
+      shell: bash
+      run: |
+        tar -czf technitium-console.tar.gz -C dist .
+        sha256sum technitium-console.tar.gz > technitium-console.tar.gz.sha256
+        echo "Routes emitted: $(find dist -name index.html | wc -l)"

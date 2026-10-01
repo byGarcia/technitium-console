@@ -1,5 +1,9 @@
 # Builds the console and attaches it to the release, because that tarball is
 # what install.sh downloads. Without this there is nothing to install.
+#
+# npm (the dependencies' install scripts, the tests, the build) runs only in
+# `tarball`, which can read the repo and nothing else. The job that can write
+# to the repo, `release`, gets just the tarball and its checksum.
 name: Release
 
 on:
@@ -7,43 +11,80 @@ on:
     tags: ['v*']
   workflow_dispatch:
 
-permissions:
-  contents: write
+permissions: {}
 
 jobs:
-  release:
+  tarball:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
         with:
-          node-version: '22'
-          cache: npm
+          persist-credentials: false
 
-      - run: npm ci
+      # The same tarball the develop image is built from (develop-image.yml).
+      - uses: ./.github/actions/console-tarball
 
-      # The console goes in front of a DNS server, so a release that fails its
-      # own checks must not exist.
-      - run: npm run typecheck
-      - run: npm run lint
-      - run: npm test
+      - uses: actions/upload-artifact@v7
+        with:
+          name: console-tarball
+          path: |
+            technitium-console.tar.gz
+            technitium-console.tar.gz.sha256
+          if-no-files-found: error
+          # A day: "Re-run failed jobs" of `release` after that fails at the
+          # download; "Re-run all jobs" is the way.
+          retention-days: 1
 
-      - run: npm run build
+  release:
+    needs: tarball
+    # Tags only: a manual run from a branch must not publish a release named
+    # after it. The image job below has the same guard.
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      # For CHANGELOG.md and the tags; no npm here. The token is not left in
+      # .git/config: only the release step below gets it, as an input.
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
-      # Flat archive: install.sh unpacks it straight into the web root, so the
-      # files have to be at the root of the tarball and not inside dist/.
-      - name: Pack
+      # Into the workspace, where the release step below picks them up by name.
+      - uses: actions/download-artifact@v8
+        with:
+          name: console-tarball
+
+      # The bytes the tarball job packed, checked before anything is published.
+      - name: The tarball, checked against its checksum
+        run: sha256sum -c technitium-console.tar.gz.sha256
+
+      # Docker's floating tags only ever move forward (latest to the highest
+      # release, X.Y to the highest of its line; prereleases move neither), as
+      # .github/actions/init-image/floating-tags.sh decides. The notes below
+      # need to know whether latest will be this release; the image job does not
+      # take it from here, it decides again right before moving the tags.
+      - name: Which floating tags this release moves
+        id: floating
+        shell: bash
         run: |
-          tar -czf technitium-console.tar.gz -C dist .
-          sha256sum technitium-console.tar.gz > technitium-console.tar.gz.sha256
-          echo "Routes emitted: $(find dist -name index.html | wc -l)"
+          # Anonymous: the repo is public and checkout kept no token. If it ever
+          # cannot read the tags, pipefail or the script's guard fails the release.
+          floating="$(git ls-remote --tags --refs origin 'v*' | sh .github/actions/init-image/floating-tags.sh "$GITHUB_REF_NAME")"
+          latest=false
+          case " $floating " in *" latest "*) latest=true ;; esac
+          echo "latest=$latest" >> "$GITHUB_OUTPUT"
 
       # The release page is what people read, so it carries this version's own
       # section of CHANGELOG.md. A tag with no section there fails here instead of
       # publishing a release that says nothing.
       - name: Release notes
         id: notes
+        shell: bash
+        env:
+          LATEST: ${{ steps.floating.outputs.latest }}
         run: |
           tag="${GITHUB_REF_NAME}"
           awk -v head="## ${tag} " 'index($0, head) == 1 { on = 1; next } on && /^## v/ { exit } on' CHANGELOG.md \
@@ -63,16 +104,69 @@ jobs:
           PY
           [ -s notes.md ] || { echo "CHANGELOG.md has no section for ${tag}"; exit 1; }
           printf '\n**Install or update:** run the one-line installer from the [README](https://github.com/byGarcia/technitium-console#installing) again. Which console goes with which server: [CHANGELOG](https://github.com/byGarcia/technitium-console/blob/main/CHANGELOG.md#which-version-for-which-server).\n' >> notes.md
+          # The image job below publishes this same release for Docker. Pulling
+          # only brings it when it is the one latest points at.
+          # shellcheck disable=SC2016 # the backticks are Markdown, not a command
+          if [ "$LATEST" = true ]; then
+            printf '\n**On Docker:** `docker compose pull technitium-console && docker compose up -d technitium-console`, or pin `ghcr.io/bygarcia/technitium-console:%s`. See [Docker](https://github.com/byGarcia/technitium-console#docker).\n' "${tag#v}"
+          else
+            printf '\n**On Docker:** pin `ghcr.io/bygarcia/technitium-console:%s`. See [Docker](https://github.com/byGarcia/technitium-console#docker).\n' "${tag#v}"
+          fi >> notes.md
           # The title is the tag and the section's opening bold sentence.
-          lead="$(grep -m1 -o '^\*\*[^*]*\*\*' notes.md | sed 's/^\*\*//; s/\*\*$//; s/\.$//')"
+          lead="$({ grep -m1 -o '^\*\*[^*]*\*\*' notes.md || true; } | sed 's/^\*\*//; s/\*\*$//; s/\.$//')"
           echo "title=${tag}${lead:+ — ${lead}}" >> "$GITHUB_OUTPUT"
           cat notes.md
 
       - uses: softprops/action-gh-release@v2
         with:
+          token: ${{ github.token }}
           files: |
             technitium-console.tar.gz
             technitium-console.tar.gz.sha256
           name: ${{ steps.notes.outputs.title }}
           body_path: notes.md
           generate_release_notes: true
+
+  # The init image for Docker (README, «Docker»), from the tarball the job
+  # above has just published: X.Y.Z is pushed and checked in every platform
+  # (contract D4), and only then do X.Y and latest move, decided in that same
+  # step from the tags as they are then, so a re-run of this job alone never
+  # moves them back. The steps live in .github/actions/init-image, shared with
+  # the develop image. GITHUB_TOKEN is the only credential. A package's first
+  # publication is private: it is made public by hand, once.
+  image:
+    needs: release
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    # Two runs of one tag never push over each other.
+    concurrency:
+      group: image-${{ github.ref }}
+      cancel-in-progress: false
+    # bash -eo pipefail: a failing command in a pipe fails the step.
+    defaults:
+      run:
+        shell: bash
+    steps:
+      # For install.sh, docker/Dockerfile and the image action; no npm here.
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # The bytes people download, not a second build of them.
+      - name: The release's own tarball
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --dir "$RUNNER_TEMP/release" \
+            --pattern technitium-console.tar.gz --pattern technitium-console.tar.gz.sha256
+
+      # vX.Y.Z is pushed as X.Y.Z alone; a prerelease as its own version only.
+      - uses: ./.github/actions/init-image
+        with:
+          image: ghcr.io/bygarcia/technitium-console
+          tarball-dir: ${{ runner.temp }}/release
+          tags: type=semver,pattern={{version}}
+          release-tag: ${{ github.ref_name }}
