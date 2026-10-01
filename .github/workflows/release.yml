@@ -137,9 +137,10 @@ jobs:
           body_path: notes.md
           generate_release_notes: true
           # A prerelease is never the one releases/latest, and so install.sh's
-          # default, points at.
+          # default, points at. A release leaves it unset, as before: an explicit
+          # true would also move latest back when an older tag is re-run.
           prerelease: ${{ steps.notes.outputs.prerelease }}
-          make_latest: ${{ steps.notes.outputs.prerelease == 'true' && 'false' || 'true' }}
+          make_latest: ${{ steps.notes.outputs.prerelease == 'true' && 'false' || '' }}
 
   # The init image for Docker (README, «Docker»), from the tarball the job
   # above has just published: X.Y.Z is pushed and checked in every platform
