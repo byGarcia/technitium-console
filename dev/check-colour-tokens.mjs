@@ -25,6 +25,16 @@
  * `[data-theme='light']`). A colour in the plain `:root` would be one no theme
  * can override.
  *
+ * `color-scheme` follows the same rule, because it is colour too: it decides the
+ * browser's own parts —scrollbars, date pickers, form controls—, and an element
+ * that pins it draws them dark on a light page or the other way round. So a
+ * `color-scheme` declaration is only allowed in a theme block of `tokens.css`;
+ * anywhere else, a stylesheet declaration of it, or an inline style that sets it
+ * to a fixed string, is a finding. Setting it from the resolved theme
+ * (`root.style.colorScheme = resolved` in `theme/theme.ts`) is not pinning it, and
+ * `prefers-color-scheme` is a media query, not a declaration. There is no
+ * allow-list for it: an element that needs its own scheme needs a theme to say so.
+ *
  * What it deliberately does NOT look at:
  *
  *  - Tests (`*.test.*`, `src/test/`). A test may write a colour as data.
@@ -89,6 +99,8 @@ const FUNCTION = /(?<![\w.$-])(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\([^)
 const DECLARATION = /[a-z-]+\s*:\s*([^;{}]*)(?=[;}])/gi
 const WORD = /(?<![\w-])[a-z]+(?![\w-])/gi
 const STRING = /(['"])([a-z]+)\1/gi
+const SCHEME_CSS = /(?<![\w-])color-scheme\s*:\s*[^;{}]*[^;{}\s]/gi
+const SCHEME_TS = /(?<![\w$-])colorScheme\s*[:=]\s*(['"`])[^'"`]*\1|setProperty\(\s*(['"`])color-scheme\2/g
 
 /*
 Comments out, everything else in place: each comment character becomes a space
@@ -151,6 +163,13 @@ export function findColours(text, kind) {
   return found.sort((a, b) => a.line - b.line)
 }
 
+/** The `color-scheme` declarations in a file's text, with their line. */
+export function findColourSchemes(text, kind) {
+  const code = stripComments(text, kind)
+  const re = kind === 'css' ? SCHEME_CSS : SCHEME_TS
+  return [...code.matchAll(re)].map((m) => ({ line: lineAt(code, m.index), literal: m[0] }))
+}
+
 /*
 The top-level blocks of a stylesheet, with the selector each one hangs from.
 `tokens.css` has no nesting except inside a block's own value, so counting
@@ -172,13 +191,13 @@ function blocks(code) {
   return out.map((b) => ({ ...b, selector: b.selector.replace(/\s+/g, '') }))
 }
 
-/** The colour literals in `tokens.css` that are outside every theme block. */
+/** The colour literals and `color-scheme` declarations in `tokens.css` that are outside every theme block. */
 export function findOutsideThemes(text) {
   const code = stripComments(text, 'css')
   const inside = blocks(code).filter((b) => THEME_BLOCKS.includes(b.selector))
-  return findColours(text, 'css').filter(({ line }) => {
-    return !inside.some((b) => line >= lineAt(code, b.from) && line <= lineAt(code, b.to))
-  })
+  return [...findColours(text, 'css'), ...findColourSchemes(text, 'css')]
+    .filter(({ line }) => !inside.some((b) => line >= lineAt(code, b.from) && line <= lineAt(code, b.to)))
+    .sort((a, b) => a.line - b.line)
 }
 
 function walk(dir) {
@@ -201,7 +220,10 @@ export function check(root = ROOT, allowed = ALLOWED) {
         findings.push(`${rel}:${f.line}  ${f.literal}  is outside every theme block`)
       continue
     }
-    for (const f of findColours(text, file.endsWith('.css') ? 'css' : 'ts')) {
+    const kind = file.endsWith('.css') ? 'css' : 'ts'
+    for (const f of findColourSchemes(text, kind))
+      findings.push(`${rel}:${f.line}  ${f.literal}  pins color-scheme outside the theme blocks of ${TOKENS}`)
+    for (const f of findColours(text, kind)) {
       const entry = allowed.find((a) => a.file === rel && a.literal.toLowerCase() === f.literal.toLowerCase())
       if (entry) { used.add(entry); continue }
       findings.push(`${rel}:${f.line}  ${f.literal}  is a colour outside ${TOKENS}`)
@@ -214,10 +236,10 @@ export function check(root = ROOT, allowed = ALLOWED) {
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const findings = check()
   if (findings.length === 0) {
-    console.log(`\n  Every colour is a token: no colour literal in src/ outside the theme blocks of ${TOKENS} (${ALLOWED.length} allowed, each with its reason).\n`)
+    console.log(`\n  Every colour is a token: no colour literal and no color-scheme in src/ outside the theme blocks of ${TOKENS} (${ALLOWED.length} allowed, each with its reason).\n`)
   } else {
     for (const f of findings) console.log('  ' + f)
-    console.log(`\n  ${findings.length} findings. A colour belongs in a theme block of ${TOKENS}; if one really cannot, ALLOWED in dev/check-colour-tokens.mjs takes it with its reason.\n`)
+    console.log(`\n  ${findings.length} findings. A colour, and color-scheme, belong in a theme block of ${TOKENS}; if a colour literal really cannot, ALLOWED in dev/check-colour-tokens.mjs takes it with its reason.\n`)
   }
   process.exit(Math.min(findings.length, 250))
 }

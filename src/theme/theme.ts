@@ -96,6 +96,15 @@ export function resolveTheme(choice: ThemeChoice | null, prefersDark: boolean): 
 `data-theme` on `<html>` is the contract with the stylesheets: the tokens are
 declared per theme under that attribute. `color-scheme` goes with it so the
 browser's own parts —scrollbars, date pickers, form controls— follow the page.
+
+`tokens.css` declares `color-scheme` in each theme block too, and both are kept on
+purpose. The stylesheet's is the fallback for the page before this runs, where
+`:root` makes it dark like everything else. This inline one is written by the same
+call that writes the attribute, so the two cannot disagree, and it wins over any
+stylesheet: the browser parts follow the theme even for an attribute whose block
+does not declare `color-scheme` yet. Where both are present they say the same:
+`light` for light, `dark` for dark. No element below `<html>` declares its own: they inherit it, and
+`npm run lint:colours` fails on one that pins it.
 */
 export function applyTheme(resolved: ResolvedTheme): void {
   const root = document.documentElement

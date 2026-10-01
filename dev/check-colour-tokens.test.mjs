@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ALLOWED, check, findColours, findOutsideThemes, stripComments } from './check-colour-tokens.mjs'
+import { ALLOWED, check, findColourSchemes, findColours, findOutsideThemes, stripComments } from './check-colour-tokens.mjs'
 
 /*
 The gate behind "every colour is a token". It lives in `dev/` for the reason
@@ -56,6 +56,28 @@ describe('colour tokens', () => {
       ':root {\n  --s-1: 2px;\n  --stray: #222222;\n}',
     ].join('\n')
     expect(findOutsideThemes(tokens)).toEqual([{ line: 10, literal: '#222222' }])
+  })
+
+  it('finds a color-scheme pinned in a stylesheet or a fixed inline style', () => {
+    const css = '.ownRange input {\n  color: var(--ink);\n  color-scheme: dark;\n}'
+    expect(findColourSchemes(css, 'css')).toEqual([{ line: 3, literal: 'color-scheme: dark' }])
+    expect(findColourSchemes("<input style={{ colorScheme: 'light' }} />", 'ts')).toHaveLength(1)
+    expect(findColourSchemes("el.style.setProperty('color-scheme', 'dark')", 'ts')).toHaveLength(1)
+  })
+
+  it('does not take a media query, a comment or the resolved theme for a pinned color-scheme', () => {
+    expect(findColourSchemes('@media (prefers-color-scheme: dark) { .a { color: var(--ink); } }', 'css')).toEqual([])
+    expect(findColourSchemes('/* color-scheme: dark; */ .a { color: var(--ink); }', 'css')).toEqual([])
+    expect(findColourSchemes("root.style.colorScheme = resolved\nconst q = '(prefers-color-scheme: dark)'", 'ts')).toEqual([])
+  })
+
+  it('in tokens.css, color-scheme is only allowed inside a theme block', () => {
+    const tokens = [
+      ":root,\n[data-theme='dark'] {\n  color-scheme: dark;\n}",
+      "[data-theme='light'] {\n  color-scheme: light;\n}",
+      ':root {\n  --s-1: 2px;\n  color-scheme: dark;\n}',
+    ].join('\n')
+    expect(findOutsideThemes(tokens)).toEqual([{ line: 10, literal: 'color-scheme: dark' }])
   })
 
   it('an allowed literal that is no longer there is a finding', () => {

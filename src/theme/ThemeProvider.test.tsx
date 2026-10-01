@@ -80,6 +80,9 @@ describe('the stored theme (main.js:3208-3263)', () => {
     localStorage.setItem('theme', 'light')
     applyStoredTheme()
     expect(document.documentElement.style.colorScheme).toBe('light')
+    localStorage.setItem('theme', 'dark')
+    applyStoredTheme()
+    expect(document.documentElement.style.colorScheme).toBe('dark')
   })
 
   it('does not write on load, not even the null upstream writes by accident', () => {
