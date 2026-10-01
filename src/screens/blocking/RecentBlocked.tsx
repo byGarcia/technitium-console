@@ -3,7 +3,7 @@ import { listApps } from '../../api/apps'
 import { recentBlocked } from '../../api/blocking'
 import type { QueryLogEntry } from '../../api/logs'
 import { appsWithQueryLogs } from '../logs/QueryLogs'
-import { toTrail } from '../../app/route'
+import { RouteLink } from '../../ui/RouteLink'
 import { Panel, Body } from '../../ui/Panel'
 import { Table } from '../../ui/Table'
 import { Chip } from '../../ui/Tag'
@@ -96,7 +96,7 @@ export function RecentBlocked({
   return (
     <Panel
       title={title}
-      actions={<a href={toTrail({ section: 'logs', sub: 'Query Logs' })}>Open Query Logs</a>}
+      actions={<RouteLink to={{ section: 'logs', sub: 'Query Logs' }}>Open Query Logs</RouteLink>}
     >
       {state.kind === 'loading' && (
         <Body>
@@ -112,7 +112,7 @@ export function RecentBlocked({
         <Body>
           <Empty title="No query logging app">
             Please install the &apos;Query Logs (Sqlite)&apos; DNS App or any other DNS app that supports
-            query logging feature from the <a href={toTrail({ section: 'apps', sub: null })}>Apps</a> section.
+            query logging feature from the <RouteLink to={{ section: 'apps', sub: null }}>Apps</RouteLink> section.
           </Empty>
         </Body>
       )}

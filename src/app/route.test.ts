@@ -1,4 +1,4 @@
-import { describe, expect, it, afterEach } from 'vitest'
+import { describe, expect, it, afterEach, vi } from 'vitest'
 import { SECTIONS } from './sections'
 import { STATIC_ROUTES } from './static-routes'
 import {
@@ -9,6 +9,8 @@ import {
   forgetRoot,
   appRoot,
   translateLegacyRoute,
+  navigateTo,
+  plainClick,
 } from './route'
 
 /** Serves the document as the server would: in its folder and with its meta. */
@@ -171,6 +173,51 @@ describe('legacy routes', () => {
   it('an unknown sub of blocking falls to its first tab', () => {
     servedAt('/blocking/zzz/', 'blocking/zzz')
     expect(readRoute(SECTIONS)).toEqual({ section: 'blocking', sub: null })
+  })
+})
+
+/*
+A link from inside a screen to another section. It used to be a bare `<a href>`
+and reloaded the whole console; `navigateTo` pushes the route and announces it
+with the same `popstate` the back button fires, which is what the Shell already
+follows.
+*/
+describe('navigateTo', () => {
+  it('pushes the route and fires popstate', () => {
+    servedAt('/blocking/overview/', 'blocking/overview')
+    // Spied, not counted: `history.length` does not move in jsdom.
+    const push = vi.spyOn(window.history, 'pushState')
+    const heard = vi.fn()
+    window.addEventListener('popstate', heard)
+    navigateTo({ section: 'logs', sub: 'Query Logs' })
+    window.removeEventListener('popstate', heard)
+    expect(push).toHaveBeenCalledTimes(1)
+    push.mockRestore()
+    expect(window.location.pathname).toBe('/logs/query-logs/')
+    expect(heard).toHaveBeenCalledTimes(1)
+  })
+
+  it('behind a prefix', () => {
+    servedAt('/dns/blocking/lists/', 'blocking/lists')
+    navigateTo({ section: 'settings', sub: 'Blocking' })
+    expect(window.location.pathname).toBe('/dns/settings/blocking/')
+  })
+})
+
+describe('plainClick', () => {
+  const click = { button: 0, metaKey: false, ctrlKey: false, shiftKey: false, altKey: false, defaultPrevented: false }
+
+  it('a left click with no modifier is the application one', () => {
+    expect(plainClick(click)).toBe(true)
+  })
+
+  it('any modifier, another button or a click already handled is the browser one', () => {
+    expect(plainClick({ ...click, ctrlKey: true })).toBe(false)
+    expect(plainClick({ ...click, metaKey: true })).toBe(false)
+    expect(plainClick({ ...click, shiftKey: true })).toBe(false)
+    expect(plainClick({ ...click, altKey: true })).toBe(false)
+    expect(plainClick({ ...click, button: 1 })).toBe(false)
+    expect(plainClick({ ...click, defaultPrevented: true })).toBe(false)
   })
 })
 

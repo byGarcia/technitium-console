@@ -95,3 +95,33 @@ export function translateLegacyRoute(): boolean {
   window.history.replaceState(null, '', `${base}${legacy.section}/${toSlug(legacy.sub)}/?${params.toString()}`)
   return true
 }
+
+/**
+ * A click the browser should handle itself: another button, or with a modifier
+ * —open in a new tab, in a window, download— or one something else already took.
+ * Intercepting them would turn a real link into a button in disguise. The sidebar,
+ * the sub-tabs and `ui/RouteLink` all ask this same question.
+ */
+export function plainClick(e: {
+  button: number
+  metaKey: boolean
+  ctrlKey: boolean
+  shiftKey: boolean
+  altKey: boolean
+  defaultPrevented?: boolean
+}): boolean {
+  return e.defaultPrevented !== true && e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey
+}
+
+/**
+ * Goes to another section from inside a screen, without reloading the console.
+ *
+ * The route is pushed —it is something the user did, so the back button returns—
+ * and then announced with the same `popstate` the back button fires. The Shell
+ * already follows that event (it reads the bar and moves to what it says), so a
+ * screen needs no handle on the Shell's state to send the user elsewhere.
+ */
+export function navigateTo(route: Route): void {
+  writeRoute(route)
+  window.dispatchEvent(new PopStateEvent('popstate'))
+}

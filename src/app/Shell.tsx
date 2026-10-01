@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { visibleSections, type Permission } from './sections'
-import { toTrail, writeRoute, readRoute, translateLegacyRoute } from './route'
+import { toTrail, writeRoute, readRoute, translateLegacyRoute, plainClick } from './route'
 import { ChangePassword } from '../screens/modals/ChangePassword'
 import { Configure2FA } from '../screens/modals/Configure2FA'
 import { CreateApiToken } from '../screens/modals/CreateApiToken'
@@ -74,15 +74,6 @@ export interface ShellSession {
     clusterInitialized?: boolean
     clusterNodes?: { name: string; type: string }[]
   }
-}
-
-/*
-A click the browser should handle itself: middle or right button, or with a
-modifier —open in a new tab, in a window, download—. Intercepting them would turn a
-real link into a button in disguise, which is exactly what has just been removed.
-*/
-function plainClick(e: React.MouseEvent): boolean {
-  return e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey
 }
 
 export function Shell({

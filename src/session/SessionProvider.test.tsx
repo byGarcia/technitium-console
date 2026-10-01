@@ -473,4 +473,22 @@ describe('the Blocking section', () => {
     await screen.findByRole('navigation', { name: 'Sections' })
     expect(window.location.pathname + window.location.search).toBe('/dns/blocking/rules/?rule=allowed')
   })
+
+  /* A link inside a screen to another section used to be a bare `<a href>` and
+     reloaded the whole console. Now it moves the Shell, like the sidebar does. */
+  it('a link inside the section moves the Shell without reloading', async () => {
+    localStorage.setItem('token', 'tok')
+    answer()
+    servedAt('/blocking/lists/', 'blocking/lists')
+    mount()
+    const link = await screen.findByRole('link', { name: 'More blocking settings in Settings › Blocking' })
+    expect(link).toHaveAttribute('href', '/settings/blocking/')
+    expect(fireEvent.click(link)).toBe(false)
+
+    const nav = screen.getByRole('navigation', { name: 'Sections' })
+    await waitFor(() =>
+      expect(within(nav).getByRole('link', { name: 'Settings' })).toHaveAttribute('aria-current', 'page'),
+    )
+    expect(window.location.pathname).toBe('/settings/blocking/')
+  })
 })
