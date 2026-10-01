@@ -103,10 +103,13 @@ describe('the stored theme (main.js:3208-3263)', () => {
     expect(theme()).toBe('light')
   })
 
+  /* The spies go on the prototype of whatever `localStorage` is: jsdom's Storage
+     turns a property defined on the instance into a stored item, so a spy there
+     never runs (Node 22), and Node 25+ brings a native Storage of its own. */
   it('a storage that refuses access does not stop the page from drawing', () => {
     localStorage.setItem('theme', 'light')
     mockSystemTheme(true)
-    const getItem = vi.spyOn(localStorage, 'getItem').mockImplementation(() => {
+    const getItem = vi.spyOn(Object.getPrototypeOf(localStorage) as Storage, 'getItem').mockImplementation(() => {
       throw new DOMException('denied', 'SecurityError')
     })
     expect(applyStoredTheme()).toBe('dark')
@@ -117,7 +120,7 @@ describe('the stored theme (main.js:3208-3263)', () => {
 
   it('a pick that cannot be stored still applies to the page', async () => {
     mockSystemTheme(true)
-    const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+    const setItem = vi.spyOn(Object.getPrototypeOf(localStorage) as Storage, 'setItem').mockImplementation(() => {
       throw new DOMException('denied', 'SecurityError')
     })
     mount()
