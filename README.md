@@ -213,8 +213,10 @@ exits. Your DNS server keeps running the official image: it mounts that volume a
 serve it. **It needs Technitium DNS Server 15.5 or later**, the first version that can serve a
 folder of its own.
 
-Add the variable and the `technitium-console` volume to your server, and the `technitium-console`
-service:
+Only the `technitium-console` lines below are new — add them to your compose file: the variable
+and the volume mount on your server, the `technitium-console` service, and the `technitium-console`
+volume at the end. The rest stands for what you already have: the `config` lines are your own
+`/etc/dns` mount, so keep it exactly as you have it.
 
 ```yaml
 services:
@@ -260,21 +262,12 @@ of it — and that does restart it.
 release (`ghcr.io/bygarcia/technitium-console:1.2.0`), `X.Y` to follow its fixes (`:1.2`). To go
 back, pin the older one and update. Images start at 1.2.0.
 
-**Removing it:**
-
-1. Keep any `json/*-custom.json` you edited: they are in the volume.
-2. Take the variable and the `technitium-console` volume line out of your server, and remove the
-   `technitium-console` service.
-3. `docker compose up -d --remove-orphans` — the server restarts once, back on the console its
-   image ships, which was never touched.
-4. `docker volume rm <project>_technitium-console` (`docker volume ls` shows the exact name).
-
 **Custom lists** (`json/*-custom.json`, the files upstream's `www/json/readme.txt` describes) are
 kept in the volume across updates. To edit them by hand, use a folder on the host instead of the
 volume — `./technitium-console:/opt/technitium-console:ro` on the server and
 `./technitium-console:/target` on the copier — and write them in `./technitium-console/json/`.
 The folder can hold your lists before the first run. The copied files belong to root, so editing
-them takes `sudo`. To remove the console, delete that folder instead of the volume.
+them takes `sudo`. Removing it is the last of the steps below.
 
 **Without Compose:**
 
@@ -285,11 +278,30 @@ docker run --rm -v technitium-console:/target ghcr.io/bygarcia/technitium-consol
 
 then add `-e DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH=/opt/technitium-console` and
 `-v technitium-console:/opt/technitium-console:ro` to your server's `docker run`, and re-create it
-once. To update, `docker pull` the image and run the second command again.
+once. To update, run `docker pull ghcr.io/bygarcia/technitium-console:latest` and then the second
+command again.
 
-**The one-line installer on a Docker host** does not install anything. It reads your containers
-and prints these steps with your own container, service, file and volume names — and with
-`--uninstall`, the way out. It does not write into a container because a container's own files are
+**Removing it:**
+
+1. Keep any `json/*-custom.json` you edited: they are in the volume, or in the folder if you use
+   one.
+2. Take the variable and the `technitium-console` volume line out of your server, remove the
+   `technitium-console` service, and remove the `technitium-console:` entry under the top-level
+   `volumes:`.
+3. `docker compose up -d --remove-orphans` — the server restarts once, back on the console its
+   image ships, which was never touched.
+4. `docker volume rm <project>_technitium-console` (`docker volume ls` shows the exact name).
+   With a folder on the host instead, delete it now, once the server no longer mounts it; its
+   files belong to root: `sudo rm -rf ./technitium-console`.
+
+Without Compose: re-create your server without the
+`-e DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH=/opt/technitium-console` and
+`-v technitium-console:/opt/technitium-console:ro` you added — it restarts once, back on its own
+console — and then `docker volume rm technitium-console`.
+
+**The one-line installer on a Docker host, without `--dir`,** does not install anything. It reads
+your containers and prints these steps with your own container, service, file and volume names —
+and with `--uninstall`, the way out. It does not write into a container because a container's own files are
 replaced every time it is recreated: a console copied into one with `docker exec` is gone after
 the next image update, and the installer says so if you try.
 
