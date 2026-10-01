@@ -262,6 +262,12 @@ of it — and that does restart it.
 release (`ghcr.io/bygarcia/technitium-console:1.2.0`), `X.Y` to follow its fixes (`:1.2`). To go
 back, pin the older one and update. Images start at 1.2.0.
 
+`ghcr.io/bygarcia/technitium-console:develop` is built from every push to the `develop` branch,
+for trying changes before they are released; it is not for production — pin a release instead.
+If publishing an image fails or is cancelled halfway, `X.Y.Z` (or `develop-<sha7>`) can be left
+published before the check that every platform carries exactly the console it was built from.
+`latest`, `X.Y` and `develop` move only after that check, so they never point at such an image.
+
 **Custom lists** (`json/*-custom.json`, the files upstream's `www/json/readme.txt` describes) are
 kept in the volume across updates. To edit them by hand, use a folder on the host instead of the
 volume — `./technitium-console:/opt/technitium-console:ro` on the server and
