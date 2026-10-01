@@ -35,6 +35,10 @@ STATE="$STATE_DIR/install.state"
 BACKUP_SUFFIX=".original"
 VAR_NAME="DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH"
 DOCKER_DOCS="https://github.com/$REPO#docker"
+IMAGE_REF="ghcr.io/bygarcia/technitium-console"
+# What the administrator typed, never $0: under `curl … | sudo sh` that is "sh".
+ONE_LINER="curl -sSL https://raw.githubusercontent.com/$REPO/main/install.sh | sudo sh -s --"
+CONSOLE_DIR="/opt/technitium-console"
 
 VERSION="latest"
 SOURCE=""                    # local file or URL, for air-gapped installs
@@ -364,6 +368,200 @@ serves_folder() {
   return "$answer"
 }
 
+# --------------------------------------------------- Docker, seen from the host
+#
+# On a host whose server runs in a container there is nothing here to install
+# into: a container's own files are replaced every time it is recreated, and
+# its environment and compose file are not this script's to edit (contract §4).
+# So it reads what is there — `docker inspect`, and the startup log through
+# `docker exec`, both read-only (F4) — and prints the exact change, for the way
+# in and for the way out. Printing it is what this path is for: it exits 0.
+docker_servers() {
+  docker ps --no-trunc --format '{{.Names}}|{{.Command}}' 2>/dev/null \
+    | awk -F'|' '$2 ~ /DnsServerApp\.dll/ { print $1 }'
+}
+dk() { docker inspect -f "$2" "$1" 2>/dev/null || true; }
+dk_label() { dk "$1" "{{index .Config.Labels \"$2\"}}"; }
+dk_env() { dk "$1" '{{range .Config.Env}}{{println .}}{{end}}' | sed -n "s/^$2=//p" | head -1; }
+dk_mount() {
+  dk "$1" '{{range .Mounts}}{{.Destination}}|{{.Type}}|{{.Name}}|{{.Source}}{{println}}{{end}}' \
+    | awk -F'|' -v d="$2" '$1 == d { print $2 " " ($2 == "volume" ? $3 : $4); exit }'
+}
+dk_has_source() {
+  dk "$1" '{{range .Mounts}}{{.Source}}{{println}}{{end}}' | grep -qx "$2"
+}
+dk_version() {
+  docker exec "$1" sh -c 'grep -ho "DNS Server (v[0-9.]*)" /var/log/technitium/dns/*.log 2>/dev/null | tail -1' 2>/dev/null \
+    | sed -n 's/.*(v\([0-9.]*\)).*/\1/p'
+}
+before_15_5() {
+  [ -n "$1" ] || return 1
+  bv_major="${1%%.*}"; bv_rest="${1#*.}"; bv_minor="${bv_rest%%.*}"
+  [ "$bv_major" -lt 15 ] || { [ "$bv_major" -eq 15 ] && [ "$bv_minor" -lt 5 ]; }
+}
+dk_init_service() {
+  docker ps -a --filter "label=com.docker.compose.project=$1" \
+    --format '{{.Image}}|{{.Label "com.docker.compose.service"}}' 2>/dev/null \
+    | awk -F'|' '$1 ~ /technitium-console/ { print $2; exit }'
+}
+docker_steps() {
+  ds_c="$1"
+  ds_project="$(dk_label "$ds_c" com.docker.compose.project)"
+  ds_service="$(dk_label "$ds_c" com.docker.compose.service)"
+  ds_files="$(dk_label "$ds_c" com.docker.compose.project.config_files)"
+  ds_version="$(dk_version "$ds_c")"
+  ds_folder="$(dk_env "$ds_c" "$VAR_NAME")"
+  ds_console=""
+  if [ -n "$ds_folder" ]; then ds_console="$(dk_mount "$ds_c" "$ds_folder")"; fi
+  ds_legacy="$(dk_mount "$ds_c" /opt/technitium/dns/www)"
+  ds_where=""; ds_type=""; ds_state=""
+  printf '\n  container %s%s%s\n\n' "$ds_c" "${ds_version:+  v$ds_version}" \
+    "${ds_service:+  · service \"$ds_service\" in ${ds_files:-its compose file}}"
+
+  if [ -n "$ds_console" ]; then
+    ds_type="${ds_console%% *}"; ds_where="${ds_console#* }"
+    ds_short="$ds_where"
+    if [ "$ds_type" = "volume" ] && [ -n "$ds_project" ]; then ds_short="${ds_where#"${ds_project}"_}"; fi
+    if [ "$(state_get webroot)" = "$ds_where" ]; then ds_state=" $STATE_DIR"; fi
+    if [ "$ACTION" = "uninstall" ]; then
+      say "To remove the console (the server goes back to the one its image ships):"
+      say ""
+      say "  - Keep any json/*-custom.json you edited: they are in $ds_type $ds_where."
+      if [ -n "$ds_project" ]; then
+        say "  - In ${ds_files:-the compose file}, take these two lines out of \"$ds_service\":"
+        say "        - $VAR_NAME=$ds_folder"
+        say "        - $ds_short:$ds_folder:ro"
+        if [ "$ds_type" = "bind" ]; then say "    (docker reports the path resolved; your file may write it relative to itself)"; fi
+        say "    and remove the service that runs $IMAGE_REF."
+        say "  - docker compose up -d --remove-orphans"
+        say "    It restarts \"$ds_service\" once, because its environment changes."
+      else
+        say "  - Re-create $ds_c without -e $VAR_NAME=$ds_folder"
+        say "    and without -v $ds_where:$ds_folder:ro. That is its only restart."
+      fi
+      if [ "$ds_type" = "volume" ]; then
+        say "  - docker volume rm $ds_where"
+      else
+        say "  - sudo rm -rf $ds_where$ds_state"
+      fi
+    else
+      say "The console is already set up: $ds_folder is served from $ds_type $ds_where."
+      say "To update it, without restarting the DNS server:"
+      say ""
+      if [ -n "$ds_project" ]; then
+        ds_init="$(dk_init_service "$ds_project")"
+        say "  docker compose pull ${ds_init:-technitium-console} && docker compose up -d ${ds_init:-technitium-console}"
+      else
+        say "  docker pull $IMAGE_REF:latest"
+        say "  docker run --rm -v $ds_where:/target $IMAGE_REF:latest"
+      fi
+    fi
+  elif [ -n "$ds_legacy" ]; then
+    ds_where="${ds_legacy#* }"
+    if [ "$(state_get webroot)" = "$ds_where" ]; then ds_state=" $STATE_DIR"; fi
+    say "It serves $ds_where mounted over its own web root, the layout used before 15.5."
+    if [ "$ACTION" = "uninstall" ]; then
+      say "To remove the console:"
+      say ""
+      say "  - Keep any json/*-custom.json you edited, from $ds_where/json."
+      if [ -n "$ds_project" ]; then
+        say "  - In ${ds_files:-the compose file}, take this line out of \"$ds_service\":"
+        say "        - $ds_where:/opt/technitium/dns/www:ro"
+        say "    (docker reports the path resolved; your file may write it relative to itself)"
+        say "  - docker compose up -d $ds_service"
+        say "    Its only restart: it comes back on the console its image ships."
+      else
+        say "  - Re-create $ds_c without -v $ds_where:/opt/technitium/dns/www:ro (its only restart)."
+      fi
+      say "  - Then, and not before: sudo rm -rf $ds_where$ds_state"
+      say "    Emptied while still mounted, it would leave the server nothing to serve."
+    else
+      say "To update the console in it:"
+      say ""
+      say "  $ONE_LINER --dir $ds_where"
+      if ! before_15_5 "$ds_version"; then
+        say ""
+        say "On 15.5 or later, the image is simpler and survives server updates: $DOCKER_DOCS"
+      fi
+    fi
+  elif [ "$ACTION" = "uninstall" ]; then
+    say "It serves the console its image ships. Nothing to remove."
+  elif before_15_5 "$ds_version"; then
+    say "v$ds_version cannot serve a folder of its own: that came with 15.5. Update the"
+    say "server and run this again, or install into a folder on this host and mount it"
+    say "over the container's web root:"
+    say ""
+    say "  $ONE_LINER --dir $CONSOLE_DIR"
+    say "  - $CONSOLE_DIR:/opt/technitium/dns/www:ro"
+  elif [ -n "$ds_project" ]; then
+    say "In ${ds_files:-your compose file}, add to \"$ds_service\":"
+    say ""
+    say "    environment:"
+    say "      - $VAR_NAME=$CONSOLE_DIR"
+    say "    volumes:"
+    say "      - technitium-console:$CONSOLE_DIR:ro"
+    say ""
+    say "and this service and volume, which copy the console in and stop:"
+    say ""
+    say "  services:"
+    say "    technitium-console:"
+    say "      image: $IMAGE_REF:latest"
+    say "      volumes:"
+    say "        - technitium-console:/target"
+    say "      restart: \"no\""
+    say "  volumes:"
+    say "    technitium-console:"
+    say ""
+    say "Then: docker compose up -d"
+    say "It restarts \"$ds_service\" once, because its environment changes. Updates do not."
+    if [ -z "$ds_version" ]; then say "It needs Technitium 15.5 or later."; fi
+  else
+    say "  docker volume create technitium-console"
+    say "  docker run --rm -v technitium-console:/target $IMAGE_REF:latest"
+    say ""
+    say "and re-create $ds_c with these two added to its docker run (its only restart):"
+    say ""
+    say "  -e $VAR_NAME=$CONSOLE_DIR"
+    say "  -v technitium-console:$CONSOLE_DIR:ro"
+    if [ -z "$ds_version" ]; then say "It needs Technitium 15.5 or later."; fi
+  fi
+}
+docker_guidance() {
+  dg_servers="$(docker_servers)"
+  [ -n "$dg_servers" ] || return 0
+  say "Technitium runs in Docker here. Nothing is written into a container: it would"
+  say "be lost the next time the container is recreated. These are the steps instead."
+  say "More: $DOCKER_DOCS"
+  for dg_c in $dg_servers; do docker_steps "$dg_c"; done
+  printf '\n'
+  exit 0
+}
+docker_guidance_for() {
+  command -v docker >/dev/null 2>&1 || return 0
+  dgf_found=""
+  for dgf_c in $(docker_servers); do
+    if dk_has_source "$dgf_c" "$1"; then dgf_found="$dgf_found $dgf_c"; fi
+  done
+  [ -n "$dgf_found" ] || return 0
+  say "$1 is mounted into a container, so undoing it is a change to that container."
+  for dgf_c in $dgf_found; do docker_steps "$dgf_c"; done
+  printf '\n'
+  exit 0
+}
+
+# Inside a container, a folder that is neither a mount point nor under one is
+# part of the container's own files, and goes with the next recreate. That is
+# what `docker exec <c> sh -c "curl … | sh"` installs into.
+in_container_layer() { # folder
+  [ -f /.dockerenv ] || [ -f /run/.containerenv ] || return 1
+  icl_d="$1"
+  while [ -n "$icl_d" ] && [ "$icl_d" != "/" ]; do
+    is_mount_point "$icl_d" && return 1
+    icl_d="${icl_d%/*}"
+  done
+  return 0
+}
+
 # ---------------------------------------------------------------- where it goes
 MODE=""              # replacement | side-by-side
 RESTART_NEEDED="no"
@@ -439,19 +637,7 @@ resolve_target() {
     fi
   done
 
-  if command -v docker >/dev/null 2>&1 && docker ps --format '{{.Image}}' 2>/dev/null | grep -q 'technitium/dns-server'; then
-    say "Technitium is running in Docker, so its web root is inside the container."
-    say "Install to a folder on the host and mount it over the container's:"
-    say ""
-    say "  sudo $0 --dir /opt/technitium-console"
-    say ""
-    say "then add this to the service in your compose file and bring it up again:"
-    say ""
-    say "    volumes:"
-    say "      - /opt/technitium-console:/opt/technitium/dns/www:ro"
-    say ""
-    exit 0
-  fi
+  if command -v docker >/dev/null 2>&1; then docker_guidance; fi
   die "no Technitium DNS Server found. Point at its web root with --dir <path>."
 }
 
@@ -592,7 +778,13 @@ if [ "$ACTION" = "uninstall" ]; then
   fi
 
   # Replacement mode: the backup is the authority, not a marker in the web root.
-  [ -d "$BACKUP" ] || die "the original console is not at $BACKUP: there is nothing to restore."
+  if [ ! -d "$BACKUP" ]; then
+    # Installed with --dir into an empty folder, there never was an original.
+    # On a Docker host that folder is mounted into a container, and the way out
+    # is a change to the container, which docker_guidance_for prints.
+    docker_guidance_for "$WWW_DIR"
+    die "the original console is not at $BACKUP: there is nothing to restore."
+  fi
 
   taken="$(state_get server_version)"
   if [ -n "$taken" ] && [ -n "$SERVER_VERSION" ] && [ "$taken" != "$SERVER_VERSION" ]; then
@@ -753,4 +945,12 @@ else
   fi
 fi
 
-printf '\n  To go back:  sudo sh install.sh --uninstall\n\n'
+if in_container_layer "$WWW_DIR"; then
+  say ""
+  warn "This ran inside a container, and $WWW_DIR is part of the container's own"
+  warn "files: the console goes the next time the container is recreated (an image"
+  warn "update, docker compose pull and up). The image does it so it stays:"
+  warn "$DOCKER_DOCS"
+fi
+
+printf '\n  To go back:  %s --uninstall\n\n' "$ONE_LINER"

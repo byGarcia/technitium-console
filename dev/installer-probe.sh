@@ -203,9 +203,11 @@ in_server() { docker exec "$NAME" sh -c "$1" >/dev/null 2>&1; }
 
 # ------------------------------------------------- C11 · no restart required
 start_server
-in_server "sh /w/install.sh --from /w/console.tar.gz --yes"
-curl -sf -o /dev/null "http://127.0.0.1:$PORT/$ASSET"
-verdict "C11" $? "the new console is served with no restart of the DNS service"
+docker exec "$NAME" sh /w/install.sh --from /w/console.tar.gz --yes > "$WORK/out" 2>&1
+c11=0
+curl -sf -o /dev/null "http://127.0.0.1:$PORT/$ASSET" || c11=1
+grep -q 'goes the next time the container is recreated' "$WORK/out" || c11=1   # its own layer: said so
+verdict "C11" $c11 "served with no restart, and an install into a container's own files is called out"
 stop_server
 
 # ------------------------------------------ C12/C13 · the environment variable
@@ -554,7 +556,7 @@ verdict "C25" $? "a download that does not match the release's .sha256 is refuse
 # release, so what is measured is this checkout's Dockerfile and install.sh.
 #
 # Every case needs a server that honours the variable, which was measured above
-# (CAPABLE).
+# (CAPABLE). C30 also needs docker:cli and the Docker socket.
 INIT_IMAGE="technitium-console-init:probe-$$"
 PROJECT="installer-probe-$$"
 dc() { docker compose -p "$PROJECT" -f "$WORK/compose.yaml" "$@"; }
@@ -611,8 +613,14 @@ served() { # path — the init and the server start side by side, so it waits
 init_exit() { docker wait "$(dc ps -a -q technitium-console)" 2>/dev/null; }
 started_at() { docker inspect -f '{{.State.StartedAt}}' "$(dc ps -q dns-server)" 2>/dev/null; }
 in_volume() { docker run --rm -v "${PROJECT}_technitium-console:/v" busybox:stable sh -c "$1"; }
+section() { # container — its part of what the Docker branch printed
+  awk -v n="$1" '/^  container /{ on = ($2 == n) } on' "$WORK/out"
+}
+host() { # install.sh as `curl … | sudo sh` runs it on a Docker host: from stdin, $0 is "sh"
+  docker run --rm -i -v /var/run/docker.sock:/var/run/docker.sock docker:cli sh -s -- "$@" < "$INSTALLER"
+}
 if [ "$CAPABLE" != "yes" ]; then
-  for c in C26 C27 C28 C29; do
+  for c in C26 C27 C28 C29 C30; do
     verdict "$c" 3 "the Docker layout ($VERSION does not honour the variable)"
   done
 else
@@ -692,6 +700,43 @@ dc down -v >/dev/null 2>&1
 docker run --rm "$INIT_IMAGE" >"$WORK/novol" 2>&1 && c29=1   # no volume at /target: refused,
 grep -q 'not a mounted volume' "$WORK/novol" || c29=1           # and not copied into nothing
 verdict "C29" $c29 "an init that fails never keeps the DNS server from starting"
+
+# ------------------------------- C30 · the Docker host gets a way in and a way out
+c30=0
+echo "step: a server with nothing set up, started with docker run" > "$WORK/log30"
+start_server
+host > "$WORK/out" 2>&1 || c30=1
+section "$NAME" | grep -q 'ghcr.io/bygarcia/technitium-console' || c30=1
+section "$NAME" | grep -q -- '-e DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH=/opt/technitium-console' || c30=1
+! grep -q 'sudo sh --dir' "$WORK/out" || c30=1
+! section "$NAME" | grep -q '/opt/technitium/dns/www:ro' || c30=1
+host --uninstall > "$WORK/out" 2>&1 || c30=1
+section "$NAME" | grep -q 'Nothing to remove' || c30=1
+stop_server
+echo "step: the README's compose layout, set up: c30=$c30" >> "$WORK/log30"
+build_init
+compose_file technitium-console
+dc up -d >/dev/null 2>&1; init_exit >/dev/null
+dns="$(docker inspect -f '{{.Name}}' "$(dc ps -q dns-server)" | sed 's|^/||')"
+host > "$WORK/out" 2>&1 || c30=1
+section "$dns" | grep -q 'already set up' || c30=1
+section "$dns" | grep -q 'docker compose pull technitium-console && docker compose up -d technitium-console' || c30=1
+host --uninstall > "$WORK/out" 2>&1 || c30=1
+section "$dns" | grep -q 'docker compose up -d --remove-orphans' || c30=1
+section "$dns" | grep -q "docker volume rm ${PROJECT}_technitium-console" || c30=1
+dc down -v >/dev/null 2>&1
+echo "step: a host folder over www, installed with --dir (the README before this): c30=$c30" >> "$WORK/log30"
+mkdir -p "$WORK/legacy"
+start_server -v "$WORK/legacy:$WWW:ro"
+docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$WORK/legacy:$WORK/legacy" \
+  -v "$WORK/console.tar.gz:/console.tar.gz:ro" -v "$INSTALLER:/install.sh:ro" docker:cli \
+  sh -c "sh /install.sh --dir $WORK/legacy --from /console.tar.gz --yes && sh /install.sh --uninstall --dir $WORK/legacy" \
+  > "$WORK/out" 2>&1 || c30=1
+section "$NAME" | grep -q "$WORK/legacy:$WWW:ro" || c30=1      # the mount to take out, named
+[ -f "$WORK/legacy/$ASSET" ] || c30=1                             # and the folder left whole until then
+stop_server
+cat "$WORK/log30" >> "$WORK/out"
+verdict "C30" $c30 "on a Docker host it prints the steps in and out, with real names and no \$0"
 
 fi
 
