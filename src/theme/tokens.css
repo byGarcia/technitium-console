@@ -1,11 +1,11 @@
 /*
-The console's tokens. **A single theme: the dark one** (Adrián's decision,
-2026-08-25).
+The console's tokens. **Upstream's themes, without Amber.**
 
 Upstream ships three —light, dark and amber— and a `Change Theme` modal to pick.
-That modal does not exist here. It is the ONLY deliberate exception to the
-project's "design only, zero functionality" rule: it is the one thing that removes
-something instead of only changing how it looks.
+From 2026-08-25 this console drew only the dark one and had no modal; since
+2026-10-01 `Change Theme` is back with System, Light and Dark (`theme/theme.ts`).
+Amber is still not offered: deviation 1 in CONVENTIONS.md, the only deliberate
+exception that removes something instead of only changing how it looks.
 
 ── Why this is no longer just a palette ───────────────────────────────────────
 
@@ -32,9 +32,9 @@ the plain `:root` below them.
 
 Every colour of the console is declared in this block and nowhere else, and that
 is measured: `npm run lint:colours` (`dev/check-colour-tokens.mjs`) fails on a
-colour literal anywhere in `src/` outside it. The non-colour scales —type,
-spacing, radii, layers, motion— are the same in every theme and live in the plain
-`:root` further down.
+colour literal, or a `color-scheme`, anywhere in `src/` outside the theme blocks.
+The non-colour scales —type, spacing, radii, layers, motion— are the same in
+every theme and live in the plain `:root` further down.
 
 The dark theme is also the fallback: `:root` carries it, so the console is dark
 before `data-theme` is set and with any value nobody declared.

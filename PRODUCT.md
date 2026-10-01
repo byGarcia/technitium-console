@@ -51,8 +51,9 @@ is not an opinion.
 
 - **Windows.** The installer is Linux only. Windows installs are laid out differently and have their
   own installer.
-- **A themed console.** There is one theme, dark, and the tokens that would make a second one
-  possible exist, but a light theme has not been drawn and would need its own contrast measurements.
+- **A light palette.** `Change Theme` is back with System, Light and Dark, and every colour token
+  is declared per theme, but the light values have not been drawn yet and need their own contrast
+  measurements.
 - **Translations.** Every literal is upstream's, in English, and translating them would be the first
   behavioural difference.
 
