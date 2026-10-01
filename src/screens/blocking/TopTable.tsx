@@ -95,7 +95,7 @@ export function TopTable({
           <>
             <th>Domain</th>
             <th aria-label="Share" />
-            <th>Hits</th>
+            <th className={styles.hitsHead}>Hits</th>
             <th aria-label="Actions" />
           </>
         }
