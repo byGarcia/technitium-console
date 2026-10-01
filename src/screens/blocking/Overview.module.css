@@ -22,6 +22,11 @@ thead > tr > th.hitsHead { text-align: right; }
 /* A row-menu item without its permission: the padlock beside the verb. */
 .locked { display: inline-flex; align-items: center; gap: var(--s-3); }
 .time { font-family: var(--font-mono); color: var(--faint); white-space: nowrap; }
+/* `--bp-stack`. At 390 the full date on one line left the domain a few characters per
+   line; the date and the hour go on two lines instead. */
+@media (max-width: 560px) {
+  .time { white-space: normal; }
+}
 .mono { font-family: var(--font-mono); }
 .where { color: var(--mute); font-weight: 400; text-transform: none; letter-spacing: 0; }
 /*
