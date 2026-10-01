@@ -1,4 +1,4 @@
-import { ClusterNodeSelect } from '../../ui/ClusterNodeSelect'
+import { ClusterNodeSelect, primaryNodeName } from '../../ui/ClusterNodeSelect'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   addDomain,
@@ -16,6 +16,7 @@ import {
   type ListNode,
 } from '../../api/zonelists'
 import { Button } from '../../ui/Button'
+import { PermissionButton } from '../../ui/PermissionButton'
 import { Confirm } from '../../ui/Confirm'
 import { Dialog } from '../../ui/Dialog'
 import { Field, Input, LabeledTextarea } from '../../ui/Field'
@@ -78,7 +79,7 @@ const SUBTITLE: Record<List, string> = {
 empty-list alert goes INSIDE the modal, not on the page: upstream passes
 `showAlert` the modal's own `divImportAllowedZonesAlert`.
 */
-function Import({
+export function ImportDomains({
   list,
   open,
   token,
@@ -89,7 +90,7 @@ function Import({
   open: boolean
   token: string | null
   onClose: () => void
-  onDone: (a: Notice) => void
+  onDone: (n: Notice) => void
 }) {
   const [text, setText] = useState('')
   const [notice, setNotice] = useState<Notice | null>(null)
@@ -179,6 +180,8 @@ export function Lists({
   token,
   nodes = [],
   clusterInitialised = false,
+  embedded = false,
+  canDelete = true,
 }: {
   list: List
   token: string | null
@@ -186,6 +189,11 @@ export function Lists({
    *  selected node of the cache TREE: two different things, same word. F10. */
   nodes?: { name: string; type: string }[]
   clusterInitialised?: boolean
+  /** Inside the Blocking section's Rules tab: no header (its verbs live in Rules)
+   *  and no node selector. */
+  embedded?: boolean
+  /** Allowed/Blocked: whether the session may delete from this list. */
+  canDelete?: boolean
 }) {
   const [clusterNode, setClusterNode] = useState<string>('')
 
@@ -216,9 +224,22 @@ export function Lists({
   const isCache = list === 'cache'
   const domainList = list as DomainList
 
+  /*
+  The primary node is read through a ref for the same reason as `hadData`: as a
+  dependency of `load`, the `nodes = []` default is a new array on every render,
+  and the mount effect would ask for the root forever again.
+  */
+  const primary = useRef('')
+  useEffect(() => {
+    primary.current = primaryNodeName(nodes, clusterInitialised)
+  }, [nodes, clusterInitialised])
+
   const load = useCallback(
-    async (domain: string, up?: boolean) => {
-      const outcome = await listNode(list, token, domain, up ? 'up' : undefined)
+    async (domain: string, up?: boolean, fromPrimary = false) => {
+      /* other-zones.js:269 and 434: after a change, Allowed and Blocked are read
+         back from the PRIMARY node, where the change was made. Cache never is. */
+      const node = fromPrimary && list !== 'cache' ? primary.current : ''
+      const outcome = await listNode(list, token, domain, up ? 'up' : undefined, node)
       if (outcome.kind === 'ok') {
         setNode(outcome.data)
         setStale(false)
@@ -356,7 +377,7 @@ export function Lists({
           },
       async () => {
         setField('')
-        await load(domain)
+        await load(domain, undefined, true)
       },
     )
   }
@@ -383,7 +404,7 @@ export function Lists({
                 title: 'Deleted!',
                 text: `Blocked zone '${nodeTitle}' was deleted successfully.`,
               },
-          () => load(parentDomain(nodeTitle) ?? '', true),
+          () => load(parentDomain(nodeTitle) ?? '', true, true),
         ),
     })
   }
@@ -424,37 +445,44 @@ export function Lists({
 
   return (
     <>
-      <ClusterNodeSelect
-        nodes={nodes}
-        initialised={clusterInitialised}
-        value={clusterNode}
-        onChange={setClusterNode}
-        label="Cluster Node"
-      />
+      {/* The node selector exists only on Cache: upstream has none on Allowed or
+          Blocked (index.html:712, `optCachedZonesClusterNode`, is the only one).
+          Its value is still not sent; that is a known gap, out of scope here. */}
+      {isCache && !embedded && (
+        <ClusterNodeSelect
+          nodes={nodes}
+          initialised={clusterInitialised}
+          value={clusterNode}
+          onChange={setClusterNode}
+          label="Cluster Node"
+        />
+      )}
 
-      <SectionHeader
-        title={TITLE[list]}
-        actions={<>{isCache ? (
-            <Button variant="danger" disabled={busy} onClick={askFlushCache}>
-              Flush Cache
-            </Button>
-          ) : (
-            <>
-              <Button variant="primary" disabled={busy} onClick={() => void add()}>
-                {domainList === 'allowed' ? 'Allow' : 'Block'}
+      {!embedded && (
+        <SectionHeader
+          title={TITLE[list]}
+          actions={<>{isCache ? (
+              <Button variant="danger" disabled={busy} onClick={askFlushCache}>
+                Flush Cache
               </Button>
-              <Button disabled={busy} onClick={() => setImportOpen(true)}>
-                Import
-              </Button>
-              <Button disabled={busy} onClick={() => void runExport()}>
-                Export
-              </Button>
-              <Button variant="danger" disabled={busy} onClick={askFlushList}>
-                Flush
-              </Button>
-            </>
-          )}</>}
-      />
+            ) : (
+              <>
+                <Button variant="primary" disabled={busy} onClick={() => void add()}>
+                  {domainList === 'allowed' ? 'Allow' : 'Block'}
+                </Button>
+                <Button disabled={busy} onClick={() => setImportOpen(true)}>
+                  Import
+                </Button>
+                <Button disabled={busy} onClick={() => void runExport()}>
+                  Export
+                </Button>
+                <Button variant="danger" disabled={busy} onClick={askFlushList}>
+                  Flush
+                </Button>
+              </>
+            )}</>}
+        />
+      )}
 
       <Notifier notice={notice} onClose={() => setNotice(null)} />
 
@@ -571,14 +599,15 @@ export function Lists({
                   precisely so a destructive verb in a bar does not shout.
                   */}
                   {mayDelete && (
-                    <Button
+                    <PermissionButton
                       size="sm"
                       variant="danger"
                       disabled={busy}
+                      permission={isCache || canDelete ? undefined : `${TITLE[list]}.canDelete`}
                       onClick={isCache ? askDeleteCacheNode : askDeleteDomain}
                     >
                       Delete
-                    </Button>
+                    </PermissionButton>
                   )}
                 </div>
               </div>
@@ -615,7 +644,7 @@ export function Lists({
       />
 
       {!isCache && (
-        <Import
+        <ImportDomains
           list={domainList}
           open={importOpen}
           token={token}
