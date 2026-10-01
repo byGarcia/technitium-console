@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react'
-import { getSettings, setSettings, forceUpdateBlockLists } from '../../api/settings'
+import { readSettings, setSettings, forceUpdateBlockLists } from '../../api/settings'
 import { getDashboardStats } from '../../api/dashboard'
 import { loadQuickList, type QuickEntry } from '../../lib/quick-lists'
 import { nextUpdateText } from '../settings/panes/Blocking'
@@ -185,12 +185,16 @@ export function BlockLists({
   useEffect(() => {
     if (viewNeed != null) return
     let live = true
-    void getSettings(token, node).then((s) => {
+    void readSettings(token, node).then((r) => {
       if (!live) return
-      if (s == null) {
+      /* As every other tab: with nothing on screen, the notice carries the server's
+         message, and the table slot says the read failed. */
+      if (r.kind !== 'ok') {
         setReadFailed(true)
+        setNotice(noticeFromFailure(r))
         return
       }
+      const s = r.data
       const read = fromUrls(s.blockListUrls)
       setSaved(read)
       setLines(read)
@@ -239,9 +243,9 @@ export function BlockLists({
     let timer: ReturnType<typeof setTimeout> | undefined
     const started = Date.now()
     const tick = async () => {
-      const s = await getSettings(token, node)
+      const r = await readSettings(token, node)
       if (!live) return
-      const now = s == null ? undefined : (s.blockListNextUpdatedOn ?? null)
+      const now = r.kind !== 'ok' ? undefined : (r.data.blockListNextUpdatedOn ?? null)
       const finished = now !== undefined && now !== reloading.from
       if (!finished && Date.now() - started < POLL_LIMIT_MS) {
         timer = setTimeout(() => void tick(), POLL_MS)
@@ -328,8 +332,8 @@ export function BlockLists({
     setBusy(true)
     // The date to wait on, read just before the call (see POLL_MS); the last answer
     // known if the read fails.
-    const before = await getSettings(token, node)
-    const from = before == null ? serverNext.current : (before.blockListNextUpdatedOn ?? null)
+    const before = await readSettings(token, node)
+    const from = before.kind !== 'ok' ? serverNext.current : (before.data.blockListNextUpdatedOn ?? null)
     const ok = await forceUpdateBlockLists(token)
     setBusy(false)
     if (!ok) return
