@@ -12,7 +12,7 @@ import { PermissionButton } from '../../ui/PermissionButton'
 import { Confirm } from '../../ui/Confirm'
 import { Notifier } from '../../ui/Notifier'
 import { Failure, Loading } from '../../ui/Empty'
-import { toTrail } from '../../app/route'
+import { RouteLink } from '../../ui/RouteLink'
 import { noticeFromFailure, type Notice } from '../../lib/notice'
 import {
   addList, applyQuick, canToggle, fromUrls, listName, saveBody, sameLines, toggleLine, type ListLine,
@@ -391,7 +391,7 @@ export function BlockLists({
               {listsCount} lists · {disabledCount} disabled · {commentCount} {commentCount === 1 ? 'comment' : 'comments'}
             </span>
             <span className={styles.spacer} />
-            <a href={toTrail({ section: 'settings', sub: 'Blocking' })}>More blocking settings in Settings › Blocking</a>
+            <RouteLink to={{ section: 'settings', sub: 'Blocking' }}>More blocking settings in Settings › Blocking</RouteLink>
           </div>
         </Panel>
 

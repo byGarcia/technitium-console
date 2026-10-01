@@ -1,5 +1,8 @@
 /*
-The console's 12 sections, in upstream's order.
+The console's 11 sections, in upstream's order — with one that is OURS: Blocking
+takes the place of upstream's Allowed and Blocked, and gathers them with the block
+lists into three tabs (docs/2026-10-01-blocking-section-spec.md, "La excepción").
+Their old addresses still land: see `LEGACY_ROUTES` in `static-routes.ts`.
 
 `permission` is the key inside `sessionData.info.permissions`, and it does NOT
 always match the label: the "DNS Client" tab is governed by `DnsClient` and "DHCP"
@@ -25,8 +28,8 @@ export const SECTIONS: Section[] = [
   { id: 'dashboard', label: 'Dashboard', permission: 'Dashboard', phase: 'phase 3' },
   { id: 'zones', label: 'Zones', permission: 'Zones', phase: 'phase 4' },
   { id: 'cache', label: 'Cache', permission: 'Cache', phase: 'phase 5' },
-  { id: 'allowed', label: 'Allowed', permission: 'Allowed', phase: 'phase 5' },
-  { id: 'blocked', label: 'Blocked', permission: 'Blocked', phase: 'phase 5' },
+  { id: 'blocking', label: 'Blocking', permission: ['Blocked', 'Allowed'], phase: 'blocking section',
+    subs: ['Overview', 'Rules', 'Lists'] },
   { id: 'apps', label: 'Apps', permission: 'Apps', phase: 'phase 7' },
   { id: 'dnsclient', label: 'DNS Client', permission: 'DnsClient', phase: 'phase 3' },
   { id: 'settings', label: 'Settings', permission: 'Settings', phase: 'phase 6',

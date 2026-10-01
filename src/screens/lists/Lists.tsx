@@ -1,16 +1,13 @@
 import { ClusterNodeSelect, primaryNodeName } from '../../ui/ClusterNodeSelect'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
-  addDomain,
   deleteDomain,
   deleteCacheNode,
   parentDomain,
-  exportDomains,
   importDomains,
   cleanList,
   listNode,
   flushCache,
-  flushList,
   type List,
   type DomainList,
   type ListNode,
@@ -46,6 +43,9 @@ asymmetry uniform and would have changed a text.
 And what changes in the BEHAVIOUR is when the Delete button shows: in Cache it
 depends on being outside the root (other-zones.js:143-152) and in Allowed and
 Blocked on the node having records (lines 319-327). It is replicated as it is.
+
+Cache is still a section of its own. Allowed and Blocked are not any more: their
+tree is mounted `embedded` inside Blocking's Rules tab (screens/blocking/Rules.tsx).
 */
 
 
@@ -230,9 +230,7 @@ export function Lists({
   const hadData = useRef(false)
   const [stale, setStale] = useState(false)
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null)
-  const [importOpen, setImportOpen] = useState(false)
   const [busy, setBusy] = useState(false)
-  const entry = useRef<HTMLInputElement>(null)
 
   const isCache = list === 'cache'
   const domainList = list as DomainList
@@ -362,44 +360,10 @@ export function Lists({
   }
 
   // ---- Allowed and Blocked actions ----------------------------------------
-
-  async function add() {
-    const domain = field
-
-    // The alert goes BEFORE any call, and leaves the focus in the field:
-    // other-zones.js:171-176 and 348-353.
-    if (domain === '') {
-      setNotice({
-        type: 'warning',
-        title: 'Missing!',
-        text:
-          domainList === 'allowed'
-            ? 'Please enter a domain name to allow.'
-            : 'Please enter a domain name to block.',
-      })
-      entry.current?.focus()
-      return
-    }
-
-    await mutate(
-      () => addDomain(domainList, token, domain),
-      domainList === 'allowed'
-        ? {
-            type: 'success',
-            title: 'Allowed!',
-            text: `Domain '${domain}' was added to Allowed Zone successfully.`,
-          }
-        : {
-            type: 'success',
-            title: 'Blocked!',
-            text: `Domain '${domain}' was added to Blocked Zone successfully.`,
-          },
-      async () => {
-        setField('')
-        await load(domain, undefined, true)
-      },
-    )
-  }
+  /* Only Delete is left here. Allowed and Blocked are no longer sections: this
+     component draws them only inside Blocking's Rules tab, which owns the verbs
+     of their old header —Allow, Block, Import, Export and Flush— in its add bar
+     and its foot. The tree's field still browses on Enter. */
 
   function askDeleteDomain() {
     const isAllowed = domainList === 'allowed'
@@ -428,40 +392,6 @@ export function Lists({
     })
   }
 
-  function askFlushList() {
-    const isAllowed = domainList === 'allowed'
-    setConfirmation({
-      title: isAllowed ? 'Flush Allowed Zone' : 'Flush Blocked Zone',
-      text: isAllowed
-        ? 'Are you sure you want to flush the entire Allowed zone?'
-        : 'Are you sure you want to flush the entire Blocked zone?',
-      label: 'Flush',
-      action: () =>
-        mutate(
-          () => flushList(domainList, token),
-          isAllowed
-            ? { type: 'success', title: 'Flushed!', text: 'Allowed zone was flushed successfully.' }
-            : { type: 'success', title: 'Flushed!', text: 'Blocked zone was flushed successfully.' },
-          () => load(''),
-        ),
-    })
-  }
-
-  async function runExport() {
-    setBusy(true)
-    const r = await exportDomains(domainList, token)
-    setBusy(false)
-    if (!r.ok) return
-    setNotice({
-      type: 'success',
-      title: 'Exported!',
-      text:
-        domainList === 'allowed'
-          ? 'Allowed zones were exported successfully.'
-          : 'Blocked zones were exported successfully.',
-    })
-  }
-
   return (
     <>
       {/* The node selector exists only on Cache: upstream has none on Allowed or
@@ -480,26 +410,13 @@ export function Lists({
       {!embedded && (
         <SectionHeader
           title={TITLE[list]}
-          actions={<>{isCache ? (
+          actions={
+            isCache ? (
               <Button variant="danger" disabled={busy} onClick={askFlushCache}>
                 Flush Cache
               </Button>
-            ) : (
-              <>
-                <Button variant="primary" disabled={busy} onClick={() => void add()}>
-                  {domainList === 'allowed' ? 'Allow' : 'Block'}
-                </Button>
-                <Button disabled={busy} onClick={() => setImportOpen(true)}>
-                  Import
-                </Button>
-                <Button disabled={busy} onClick={() => void runExport()}>
-                  Export
-                </Button>
-                <Button variant="danger" disabled={busy} onClick={askFlushList}>
-                  Flush
-                </Button>
-              </>
-            )}</>}
+            ) : undefined
+          }
         />
       )}
 
@@ -520,7 +437,6 @@ export function Lists({
                 {(id) => (
                   <Input
                     id={id}
-                    ref={entry}
                     aria-label={fieldName}
                     mono
                     placeholder="example.com"
@@ -662,16 +578,6 @@ export function Lists({
         onClose={() => setConfirmation(null)}
         onConfirm={() => confirmation?.action()}
       />
-
-      {!isCache && (
-        <ImportDomains
-          list={domainList}
-          open={importOpen}
-          token={token}
-          onClose={() => setImportOpen(false)}
-          onDone={setNotice}
-        />
-      )}
     </>
   )
 }
@@ -682,20 +588,4 @@ export function Cache({ token, nodes, clusterInitialised }: {
   clusterInitialised?: boolean
 }) {
   return <Lists list="cache" token={token} nodes={nodes} clusterInitialised={clusterInitialised} />
-}
-
-export function Allowed({ token, nodes, clusterInitialised }: {
-  token: string | null
-  nodes?: { name: string; type: string }[]
-  clusterInitialised?: boolean
-}) {
-  return <Lists list="allowed" token={token} nodes={nodes} clusterInitialised={clusterInitialised} />
-}
-
-export function Blocked({ token, nodes, clusterInitialised }: {
-  token: string | null
-  nodes?: { name: string; type: string }[]
-  clusterInitialised?: boolean
-}) {
-  return <Lists list="blocked" token={token} nodes={nodes} clusterInitialised={clusterInitialised} />
 }

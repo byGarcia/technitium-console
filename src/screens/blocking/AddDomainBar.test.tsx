@@ -49,6 +49,15 @@ describe('AddDomainBar', () => {
     expect(field).toHaveFocus()
   })
 
+  it('an empty field warns with the Allow sentence when Allow is pressed', async () => {
+    const add = vi.spyOn(api, 'addDomain')
+    const { onNotice, field } = setup()
+    await userEvent.click(screen.getByRole('button', { name: 'Allow' }))
+    expect(add).not.toHaveBeenCalled()
+    expect(onNotice).toHaveBeenCalledWith({ type: 'warning', title: 'Missing!', text: 'Please enter a domain name to allow.' })
+    expect(field).toHaveFocus()
+  })
+
   it('a server error is reported and the field is kept', async () => {
     vi.spyOn(api, 'addDomain').mockResolvedValue({ kind: 'error', message: 'Access was denied.' })
     const { onNotice, field } = setup()
