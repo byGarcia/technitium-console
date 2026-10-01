@@ -62,7 +62,7 @@ export async function readRuleExport(
   return { kind: 'ok', data: lines }
 }
 
-/* The three response types `totalBlocked` adds up (StatsManager.cs:329-338). */
+/* The three response types `totalBlocked` adds up (StatsManager.cs:329-341). */
 export const BLOCKED_TYPES = ['Blocked', 'UpstreamBlocked', 'UpstreamBlockedCached'] as const
 
 export function mergeRecent(

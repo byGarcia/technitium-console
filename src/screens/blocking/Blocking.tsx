@@ -10,7 +10,8 @@ import type { Permissions } from './permissions'
 The Blocking section, OURS: it replaces Allowed and Blocked with three tabs, as
 AdGuard Home and Pi-hole organise blocking. It is the second deliberate exception to
 "design only, zero functionality", inside the four limits written in CONVENTIONS.md.
-The section and tab names (`Blocking`, `Overview`, `Rules`, `Lists`) are OURS.
+The section and tab names (`Blocking`, `Overview`, `Rules`, `Lists`) and the tab
+list's label `Blocking sections` are OURS.
 */
 
 export const BLOCKING_TABS = ['Overview', 'Rules', 'Lists'] as const

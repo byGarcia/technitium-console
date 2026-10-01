@@ -24,8 +24,9 @@ header says which, so nobody reads one node's logs as the cluster's.
 The app is the first one that serves query logs, as `QueryLogs.tsx` resolves it.
 Without one, the sentence is upstream's (QueryLogs.tsx, logs.js:391) split only to
 link "Apps"; the empty-state title is ours. Ours too: the panel title `Recently
-Blocked`, `on <node>`, `Open Query Logs`, `No blocked queries.` and `Some blocked
-queries could not be read.`
+Blocked`, `on <node>`, `Open Query Logs`, the columns `Time`, `Client`, `Domain` and
+`Type` (upstream's Query Logs table calls them otherwise), `No blocked queries.` and
+`Some blocked queries could not be read.`
 */
 
 type Load =

@@ -41,8 +41,9 @@ infrastructure.
 One section is a deliberate exception, and it is written down rather than slipped
 in: **Allowed and Blocked are now a single Blocking section** — Overview, Rules and
 Lists, the way AdGuard Home and Pi-hole lay blocking out. It calls only endpoints the
-server already has, with upstream's actions and wording, and `/allowed/` and
-`/blocked/` still land. Its limits, and the other deliberate deviations, are in
+server already has, with upstream's actions and wording, and each of its files
+declares the words that are its own; `/allowed/` and `/blocked/` still land. Its
+limits, and the other deliberate deviations, are in
 [CONVENTIONS.md](CONVENTIONS.md#deliberate-deviations-from-upstream-behaviour).
 
 ## What it looks like

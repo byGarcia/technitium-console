@@ -32,8 +32,9 @@ data, so choosing a node here and seeing another there would be a contradiction.
 The five fixed periods and not Custom: a range of your own is the Dashboard's job.
 
 The words are OURS except `Total Queries` and `Blocked`, upstream's Dashboard tiles:
-`Block List Domains`, `Your Rules`, `Period`, the panel titles (`Statistics`,
-`Queries over time`, `Blocked share`), the `Allowed` series and the chart's label.
+the title `Overview`, `Period`, `Block List Domains`, `Your Rules` and its `blocked ·
+allowed`, the panel titles (`Statistics`, `Queries over time`, `Blocked share`), the
+`Allowed` series, the ring's `Share` and `Blocked share: N%`, and the chart's label.
 The two gap sentences are the ones this console's Dashboard already uses.
 */
 

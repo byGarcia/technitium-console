@@ -13,9 +13,10 @@ like an improvement.
 If you catch yourself thinking "while I am here, this could be better": no. That
 is a different job.
 
-The exceptions are few, decided and written down, each with its limits: see
+The exceptions are few, decided and written down: see
 [Deliberate deviations from upstream behaviour](#deliberate-deviations-from-upstream-behaviour).
-The largest is the Blocking section, which replaces Allowed and Blocked.
+The largest is the Blocking section, which replaces Allowed and Blocked, and it is
+the only one with written limits of its own.
 
 ## Where the reference is
 

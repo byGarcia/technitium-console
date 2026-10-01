@@ -11,8 +11,10 @@ import styles from './Blocking.module.css'
 "Block or allow a domain": upstream's single field with its verbs beside it
 (index.html:768-777), which this console had split — `Block` went up to the page
 header and the field stayed in the tree, labelled next to `Browse`, so it read as a
-search box. The panel title is OURS; the calls, the empty-field warning and the
-success sentences are upstream's (other-zones.js:171-200, 348-375).
+search box. The panel title and the field label `Domain` are OURS (upstream's field
+has only its `example.com` placeholder); the `Block` / `Allow` buttons, the calls,
+the empty-field warning and the success sentences are upstream's
+(other-zones.js:171-200, 348-375).
 
 ENTER BLOCKS. Upstream's form is submitted by `btnBlockZone`, so pressing Enter in
 the field blocks; this console's tree field navigated instead.
