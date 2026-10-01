@@ -30,7 +30,9 @@ import styles from './Rules.module.css'
 /*
 The Rules tab: the administrator's own blocked and allowed domains in one flat table,
 as Pi-hole's Domains page draws them. The table is OURS —and so are its words:
-`Filter domains`, `No rules`, `1 rule` / `N rules`, `List` / `Tree`—; every verb on
+`Filter domains`, `No rules`, `No rules match this filter`, `1 rule` / `N rules`,
+`List` / `Tree`, `Browse domain`, and the titles of the Delete and Flush
+confirmations, which upstream asks with a bare `confirm()`—; every verb on
 it is upstream's, with its sentences (other-zones.js), and the three verbs of the
 foot do NOT behave alike, so they are not made alike: Import opens its dialog,
 Export downloads at once with a single-use token, Flush asks first.

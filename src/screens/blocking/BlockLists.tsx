@@ -26,6 +26,13 @@ import styles from './BlockLists.module.css'
 The Lists tab: the "Allow / Block List URLs" field of Settings > Blocking drawn as a
 table. OURS as a table; every line is the server's own grammar (`list-lines.ts`).
 
+Its words are OURS where upstream has no counterpart: the figures (`Block List
+Domains`, `Allow List Domains`), the panel titles (`Block Lists`, `Add a list`,
+`Update Block Lists`), `Add block list` / `Add allow list`, `No lists`, `Discard`,
+`This list is already in the table.`, the two `Could not read …` sentences and the
+link to Settings › Blocking. `Quick Add`, `Update Now`, `Save` and every alert of
+the update and the save are upstream's.
+
 No node selector: `blockListUrls` is a CLUSTER-WIDE parameter (`nodeScope`,
 settings/model.ts:514), so it is read and saved on the cluster when there is one and
 on this server when there is not — what Settings does with the aggregate.
