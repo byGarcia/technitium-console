@@ -234,12 +234,14 @@ export function Rules({
   }
 
   /* A list the session cannot read has no count: it was never read, and zero is a
-     figure. */
+     figure. The chosen filter says so with `aria-pressed` alone, the console's pressed
+     button (amber text and border, as Glue and RRSIG in Records.tsx): a primary that is
+     also pressed took the pressed rule's amber TEXT over its amber fill, and the label
+     vanished. */
   const filterButton = (f: RuleFilter, count: number | undefined, need?: Need) => (
     <PermissionButton
       key={f}
       size="sm"
-      variant={filter === f ? 'primary' : 'secondary'}
       aria-pressed={filter === f}
       permission={need}
       onClick={() => choose(f)}
