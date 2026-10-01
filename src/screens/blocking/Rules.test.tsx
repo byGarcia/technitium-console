@@ -110,6 +110,40 @@ describe('Rules', () => {
     expect(await screen.findByRole('dialog')).toHaveTextContent('Are you sure you want to flush the entire Allowed zone?')
   })
 
+  /* The sentences Allowed and Blocked said from their own headers, character for
+     character (other-zones.js); they live in Rules' menus now. */
+  it('Export says which list it exported, with upstream sentences', async () => {
+    exports([], [])
+    vi.spyOn(zonelists, 'exportDomains').mockResolvedValue({ ok: true })
+    draw()
+    await userEvent.click(await screen.findByRole('button', { name: 'Export' }))
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Blocked zones' }))
+    expect(await screen.findByText('Blocked zones were exported successfully.')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Export' }))
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Allowed zones' }))
+    expect(await screen.findByText('Allowed zones were exported successfully.')).toBeInTheDocument()
+  })
+
+  it('Flush on Blocked asks with its own sentence, not the Allowed one', async () => {
+    exports([], [])
+    vi.spyOn(zonelists, 'flushList').mockResolvedValue(OK)
+    draw()
+    await userEvent.click(await screen.findByRole('button', { name: 'Flush' }))
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Blocked zones' }))
+    expect(await screen.findByRole('dialog')).toHaveTextContent('Are you sure you want to flush the entire Blocked zone?')
+  })
+
+  it('flushing Allowed says so with upstream sentence', async () => {
+    exports([], [])
+    const flush = vi.spyOn(zonelists, 'flushList').mockResolvedValue(OK)
+    draw()
+    await userEvent.click(await screen.findByRole('button', { name: 'Flush' }))
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Allowed zones' }))
+    await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Flush' }))
+    expect(await screen.findByText('Allowed zone was flushed successfully.')).toBeInTheDocument()
+    expect(flush).toHaveBeenCalledWith('allowed', 'T')
+  })
+
   it('a menu entry without its permission stays, disabled, and names the permission', async () => {
     exports([], [])
     draw({ Blocked: P(true), Allowed: P(true, true, false) })

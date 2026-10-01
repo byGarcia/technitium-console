@@ -1,4 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
+import { StrictMode } from 'react'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { SessionProvider } from './SessionProvider'
@@ -472,6 +473,43 @@ describe('the Blocking section', () => {
     mount()
     await screen.findByRole('navigation', { name: 'Sections' })
     expect(window.location.pathname + window.location.search).toBe('/dns/blocking/rules/?rule=allowed')
+  })
+
+  /* `?rule=` is Rules' filter. `writeRoute` keeps the search, so without the
+     section dropping it on the way out it followed the user to /zones/?rule=… and
+     came back with them to Rules. */
+  it('the rule filter does not follow the user out of the section', async () => {
+    localStorage.setItem('token', 'tok')
+    answer()
+    servedAt('/blocking/rules/?rule=blocked', 'blocking/rules')
+    mount()
+    const nav = await screen.findByRole('navigation', { name: 'Sections' })
+    await screen.findByRole('link', { name: 'Rules' })
+    expect(window.location.search).toBe('?rule=blocked')
+
+    fireEvent.click(within(nav).getByRole('link', { name: 'Zones' }))
+    await waitFor(() => expect(window.location.pathname).toBe('/zones/'))
+    expect(window.location.search).toBe('')
+  })
+
+  /* StrictMode mounts, unmounts and mounts again in development. The section's
+     way-out cleanup runs in the middle of that, and the filter must survive it:
+     Rules writes it back from what it read. */
+  it('and under StrictMode the filter survives the double mount', async () => {
+    localStorage.setItem('token', 'tok')
+    answer()
+    servedAt('/blocked/', 'blocked')
+    render(
+      <StrictMode>
+        <ThemeProvider>
+          <SessionProvider />
+        </ThemeProvider>
+      </StrictMode>,
+    )
+    await screen.findByRole('link', { name: 'Rules' })
+    // Every effect of both mounts has run by now.
+    await new Promise((r) => setTimeout(r, 50))
+    expect(window.location.pathname + window.location.search).toBe('/blocking/rules/?rule=blocked')
   })
 
   /* A link inside a screen to another section used to be a bare `<a href>` and

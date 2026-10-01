@@ -21,4 +21,12 @@ describe('Blocking', () => {
     render(<Blocking token="T" sub="Lists" onSubChange={() => {}} permissions={undefined} />)
     expect(window.location.search).toBe('')
   })
+
+  it('leaving the section drops ?rule= too, and Rules keeps it while it is open', () => {
+    window.history.replaceState(null, '', '/blocking/rules/?rule=blocked')
+    const { unmount } = render(<Blocking token="T" sub="Rules" onSubChange={() => {}} permissions={undefined} />)
+    expect(window.location.search).toBe('?rule=blocked')
+    unmount()
+    expect(window.location.pathname + window.location.search).toBe('/blocking/rules/')
+  })
 })

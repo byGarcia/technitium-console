@@ -15,6 +15,14 @@ AdGuard Home and Pi-hole organise blocking. It is the second deliberate exceptio
 export const BLOCKING_TABS = ['Overview', 'Rules', 'Lists'] as const
 type Tab = (typeof BLOCKING_TABS)[number]
 
+/** Takes `?rule=` out of the bar, replacing the entry: it is not a navigation. */
+function dropRule(): void {
+  const search = ruleSearch(window.location.search, 'all')
+  if (search !== window.location.search) {
+    window.history.replaceState(null, '', window.location.pathname + search)
+  }
+}
+
 export function Blocking({
   token,
   sub,
@@ -37,12 +45,23 @@ export function Blocking({
   /* `?rule=` belongs to Rules. `writeRoute` keeps the search, so without this it
      would follow the user into Overview and Lists. */
   useEffect(() => {
-    if (active === 'Rules') return
-    const search = ruleSearch(window.location.search, 'all')
-    if (search !== window.location.search) {
-      window.history.replaceState(null, '', window.location.pathname + search)
-    }
+    if (active !== 'Rules') dropRule()
   }, [active])
+
+  /*
+  And out of the section. Leaving Blocking from the sidebar, the Shell writes the
+  new route with whatever search the bar holds — `/zones/?rule=blocked`, and back
+  to Rules with the filter still on. This cleanup runs first: React runs the
+  cleanups of an unmounted tree before the effects of the tree that stays, and
+  the Shell's `writeRoute` is one of those.
+
+  Unmount only, not on every tab change: keyed on the tab it would also run when
+  the back button returns to `/blocking/rules/?rule=…`, and strip the filter Rules
+  is showing. StrictMode's rehearsal unmount does drop it, and Rules writes it
+  back from what it read on its first render (its own effect, which runs again on
+  the second mount).
+  */
+  useEffect(() => dropRule, [])
 
   const tabs = (
     <SubTabs label="Blocking sections" section="blocking" tabs={BLOCKING_TABS} active={active} onChoose={onSubChange} />
