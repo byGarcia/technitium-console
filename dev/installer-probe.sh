@@ -516,10 +516,18 @@ verdict "C23" $? "a look-alike process, a linked www or two servers are not take
 #
 # Mode B, with a server started by hand so it can be restarted without the
 # variable in the same container — the audit's case: the variable is removed,
-# the server restarted, and only then is --uninstall run.
-case_run <<'EOF'
+# the server restarted, and only then is --uninstall run. That needs a server
+# that honours the variable (CAPABLE). The last step does not: a mode B record
+# is also what --into-volume writes, on any server, so it runs on every image.
+# up() waits for the web port to listen (5380 is 1504 in /proc/net), because an
+# image before 15.5 has no curl, wget or busybox to ask it with.
+{
+cat <<'EOF'
 set -e
-up() { i=0; while [ $i -lt 60 ] && ! curl -s -o /dev/null http://127.0.0.1:5380/; do i=$((i+1)); sleep 1; done; }
+up() { i=0; while [ $i -lt 60 ] && ! grep -qi ':1504 [0-9a-f:]* 0A' /proc/net/tcp /proc/net/tcp6 2>/dev/null; do i=$((i+1)); sleep 1; done; }
+EOF
+if [ "$CAPABLE" = "yes" ]; then
+cat <<'EOF'
 mkdir -p /side
 DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH=/side /usr/bin/dotnet /opt/technitium/dns/DnsServerApp.dll /etc/dns >/dev/null 2>&1 &
 srv=$!; up
@@ -536,7 +544,9 @@ sh /w/install.sh --uninstall --yes
 [ ! -e /side ]                              # the folder it installed into went
 [ -f "$WWW/js/main.js" ]                    # and the server's own did not
 [ -f "$WWW/index.html" ]
-
+EOF
+fi
+cat <<'EOF'
 echo "step: a recorded folder that no longer looks like this console is left alone"
 mkdir -p /srv/precious /var/lib/technitium-console
 printf 'keep\n' > /srv/precious/data.txt
@@ -545,7 +555,13 @@ sh /w/install.sh --uninstall --yes && exit 1
 [ -f /srv/precious/data.txt ]
 [ -f "$WWW/js/main.js" ]
 EOF
-verdict "C24" $? "--uninstall removes the folder it recorded, and only if it is still this console"
+} | case_run
+c24=$?
+if [ "$CAPABLE" = "yes" ]; then
+  verdict "C24" $c24 "--uninstall removes the folder it recorded, and only if it is still this console"
+else
+  verdict "C24" $c24 "--uninstall leaves a recorded folder that is no longer this console ($VERSION does not honour the variable: that step only)"
+fi
 
 # ------------------------------------- C25 · I1, the download is the release
 #
