@@ -38,20 +38,27 @@ twice. You are changing how the console looks, not what your DNS server does —
 and that is the only reason it is safe to put a third-party interface in front of
 infrastructure.
 
+One section is a deliberate exception, and it is written down rather than slipped
+in: **Allowed and Blocked are now a single Blocking section** — Overview, Rules and
+Lists, the way AdGuard Home and Pi-hole lay blocking out. It calls only endpoints the
+server already has, with upstream's actions and wording, and `/allowed/` and
+`/blocked/` still land. Its limits, and the other deliberate deviations, are in
+[CONVENTIONS.md](CONVENTIONS.md#deliberate-deviations-from-upstream-behaviour).
+
 ## What it looks like
 
 | Zones | Settings |
 |---|---|
 | ![Zones](docs/screenshots/zones.png) | ![Settings](docs/screenshots/settings.png) |
 
-| Cache, Allowed and Blocked | Apps |
+| Cache, and the tree in Blocking › Rules | Apps |
 |---|---|
 | ![The domain tree](docs/screenshots/cache.png) | ![Apps](docs/screenshots/apps.png) |
 
-The three list screens share one component and used to be indistinguishable. The tree is the object
-you came to look at, so it is a column and not a box; the path says where you are; and the colour on
-the records panel is the one that already means *cached* and *blocked* in the Dashboard chart and in
-the Logs rows.
+The domain tree is one component, shared by Cache and by the Tree view of Blocking › Rules, and the
+screens it served used to be indistinguishable. The tree is the object you came to look at, so it is
+a column and not a box; the path says where you are; and the colour on the records panel is the one
+that already means *cached* and *blocked* in the Dashboard chart and in the Logs rows.
 
 <img src="docs/screenshots/mobile.png" alt="The console at 390 px" width="320" align="right">
 
@@ -68,12 +75,12 @@ fixed one by one.
 | | |
 |---|---|
 | Checked against | Technitium DNS Server 15.5.1 |
-| Sections | 12 |
-| Routes, each a real URL | 33 |
+| Sections | 11 |
+| Routes, each a real URL | 34 |
 | API endpoints the stock console calls, and this one calls too | 132 of 132 |
 | Sortable columns kept | 64 of 66, and the two missing are declared |
 | Dialogs, checked one by one | 44 |
-| Tests | 1,262 |
+| Tests | 1,425 |
 
 Every figure in that table comes from a script in `dev/` —`check-endpoints.mjs`,
 `check-parity-sort.mjs`, `dialog-inventory.sh`— and not from this paragraph.
@@ -223,7 +230,7 @@ server.
 npm install
 npm run build        # emits into dist/
 npm run dev          # Vite development server
-npm test             # 1,262 tests
+npm test             # 1,425 tests
 npm run typecheck
 npm run lint
 ```

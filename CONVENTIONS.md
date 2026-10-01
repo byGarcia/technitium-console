@@ -13,6 +13,10 @@ like an improvement.
 If you catch yourself thinking "while I am here, this could be better": no. That
 is a different job.
 
+The exceptions are few, decided and written down, each with its limits: see
+[Deliberate deviations from upstream behaviour](#deliberate-deviations-from-upstream-behaviour).
+The largest is the Blocking section, which replaces Allowed and Blocked.
+
 ## Where the reference is
 
 The console this one replaces is not in this repository. You read it from the
@@ -105,7 +109,16 @@ Write down here whatever you find. What is already known:
 - **`settings/get` OMITS the null keys**, it does not send them as `null`:
   fields like `temporaryDisableBlockingTill` or `blockListNextUpdatedOn` simply
   do not appear on a freshly installed server. Others do arrive as an explicit
-  `null`. Declaring them required fails against a new install.
+  `null`. Declaring them required fails against a new install. And
+  `blockListNextUpdatedOn` is not only a fresh-install gap: it is written only
+  while a block list update is scheduled (WebServiceSettingsApi.cs:382-386), so
+  saving an empty list makes it vanish from the answer. Settings › Blocking and
+  the Lists tab of Blocking both read its absence as "Not Scheduled".
+- **`logs/query` filters by ONE `responseType`** (WebServiceLogsApi.cs:182-185),
+  but the Dashboard's `totalBlocked` adds up three: `Blocked`, `UpstreamBlocked`
+  and `UpstreamBlockedCached` (StatsManager.cs:329-341). "The latest blocked
+  queries" is therefore three queries, merged by time: that is what Recently
+  Blocked does (`api/blocking.ts`).
 - **Careful with `\r\n` when replicating a list textarea.** Upstream builds its
   textareas with `\r\n`, but the browser normalises to `\n` when reading the
   value of a `<textarea>` from the DOM, and its cleanup only substitutes `\n`.
@@ -420,16 +433,44 @@ Write down here whatever you find. What is already known:
 
 ## Deliberate deviations from upstream behaviour
 
-The rule is "zero functionality", but there are three exceptions, **decided and
-written down**. If you find a fourth, do not introduce it on your own: report it.
+The rule is "zero functionality", but there are four exceptions, **decided and
+written down**. If you find a fifth, do not introduce it on your own: report it.
 
 1. **A single theme, the dark one** (Adrián's decision). The "Change Theme"
    modal and its menu entry disappear. It is the only one that *removes*
    something.
-2. **Settings jumps to the sub-tab of the invalid field.** Upstream focuses a
+2. **The Blocking section** (`src/screens/blocking/`, spec
+   `docs/2026-10-01-blocking-section-spec.md`). It replaces Allowed and Blocked
+   with Overview, Rules and Lists, as AdGuard Home and Pi-hole organise blocking.
+   It is the only one that *adds* a screen. It stays inside four limits, and a
+   change that crosses one is a bug:
+   - **only endpoints the server already has**, and only ones upstream's console
+     already calls. `dev/check-endpoints.mjs` measures the other direction
+     (upstream's endpoints this console covers), so a new path is checked by
+     hand against upstream's `www/js`;
+   - **upstream's actions, sentences and call sequences**: `Allow Domain` is
+     still `blocked/delete` then `allowed/add` (`api/blocking.ts`);
+   - **what is ours is in English and says so** in the header comment of its
+     file;
+   - **Settings › Blocking is untouched**: the Lists tab edits the same
+     `blockListUrls`, through the same cleaning (`list-lines.ts` calls
+     Settings' `cleanList`).
+
+   Two behaviours a maintainer would not guess:
+   - **`/allowed/` and `/blocked/` still exist as folders.** They are legacy
+     routes (`LEGACY_ROUTES` in `app/static-routes.ts`): `translateLegacyRoute()`
+     in `app/route.ts` rewrites them, with `replaceState`, to
+     `blocking/rules/?rule=allowed|blocked` before the route is read, so old
+     bookmarks land on the filtered Rules tab.
+   - **`?rule=` belongs to Rules alone.** `Blocking.tsx` strips it on switching to
+     Overview or Lists and on leaving the section, by replacing the current
+     history entry, which is the Rules one. So Back after leaving Rules returns
+     to Rules showing All, not the filter the user had. That is deliberate:
+     keeping it would mean teaching `writeRoute` about one section's query.
+3. **Settings jumps to the sub-tab of the invalid field.** Upstream focuses a
    hidden input and the user sees nothing; with one panel mounted at a time,
    without that jump the alert would be impossible to resolve.
-3. **The "Enable DNS-over-HTTP/3" checkbox re-enables itself.** In upstream it
+4. **The "Enable DNS-over-HTTP/3" checkbox re-enables itself.** In upstream it
    stays dead until the page is reloaded because nothing re-evaluates its state:
    that is a bug of theirs, and replicating it would mean introducing the fault
    on purpose.
@@ -444,9 +485,11 @@ fails in production.
   reverse proxy with a prefix. `dev/check-prefix.sh` checks it.
 - **Real routes, one folder per route.** The server's only `MapFallback` is
   `/api/{*path}`, so a deep route with no file on disk would 404. The build emits
-  one folder with its own `index.html` for each of the console's 33 routes, so the
-  URL is real —no `#/`— and F5 brings you back where you were, without touching a
-  line of C#. See `vite.config.ts`.
+  one folder with its own `index.html` for each of the console's 34 routes (11
+  sections and 23 sub-sections, from `SECTIONS`), plus the two legacy folders
+  `/allowed/` and `/blocked/`: 36 in all. The URL is real —no `#/`— and F5 brings
+  you back where you were, without touching a line of C#. See `vite.config.ts` and
+  `app/static-routes.ts`.
 - **Content-Security-Policy**: `default-src 'self'; script-src 'self'
   'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self'
   data:`. There is no `font-src`, so **the fonts have to be files served from the
