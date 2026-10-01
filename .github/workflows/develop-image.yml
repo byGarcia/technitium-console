@@ -16,9 +16,11 @@ on:
 
 permissions: {}
 
-# The newest push wins; an older run still going is dropped.
+# The newest push to develop wins; an older run still going is dropped. Keyed
+# on the ref, so a manual run from another branch (which builds nothing)
+# cannot cancel a develop build.
 concurrency:
-  group: develop-image
+  group: develop-image-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -46,6 +48,8 @@ jobs:
             technitium-console.tar.gz
             technitium-console.tar.gz.sha256
           if-no-files-found: error
+          # A day: "Re-run failed jobs" of `image` after that fails at the
+          # download; "Re-run all jobs" builds the tarball again.
           retention-days: 1
 
   image:
