@@ -49,7 +49,7 @@ describe('BlockLists', () => {
     draw(true)
     await userEvent.click(await screen.findByRole('checkbox', { name: /Enabled/ }))
     expect(save).not.toHaveBeenCalled()
-    expect(screen.getByText('1 unsaved change')).toBeInTheDocument()
+    expect(screen.getByText('1 unsaved change to the block list URLs')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Save' }))
     expect(save).toHaveBeenCalledWith('T', { node: 'cluster', blockListUrls: `#${HOSTS}` })
     expect(await screen.findByText('DNS Server settings were saved successfully.')).toBeInTheDocument()
@@ -62,10 +62,10 @@ describe('BlockLists', () => {
     await userEvent.click(await screen.findByRole('checkbox', { name: /Enabled/ }))
     await userEvent.type(screen.getByLabelText('List URL'), 'https://a.test/block.txt')
     await userEvent.click(screen.getByRole('button', { name: 'Add block list' }))
-    expect(screen.getByText('2 unsaved changes')).toBeInTheDocument()
+    expect(screen.getByText('2 unsaved changes to the block list URLs')).toBeInTheDocument()
     // Switching the first one back leaves only the addition.
     await userEvent.click(screen.getByRole('checkbox', { name: `Enabled block list ${HOSTS}` }))
-    expect(screen.getByText('1 unsaved change')).toBeInTheDocument()
+    expect(screen.getByText('1 unsaved change to the block list URLs')).toBeInTheDocument()
   })
 
   it('the same URL as a block and an allow list gets two distinct switch names', async () => {

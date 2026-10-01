@@ -405,7 +405,7 @@ export function BlockLists({
 
         {pending > 0 && (
           <div className={styles.bar}>
-            <span>{pending === 1 ? '1 unsaved change' : `${pending} unsaved changes`}</span>
+            <span>{pending === 1 ? '1 unsaved change' : `${pending} unsaved changes`} to the block list URLs</span>
             <span className={styles.spacer} />
             <Button disabled={busy} onClick={() => saved && setLines(saved)}>Discard</Button>
             <PermissionButton variant="primary" disabled={busy} permission={modifyNeed} onClick={() => void save()}>
