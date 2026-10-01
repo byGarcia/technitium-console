@@ -12,7 +12,7 @@ sends, every text it shows and every control it offers, compared with that serve
 
 | Console | Technitium DNS Server | Notes |
 |---|---|---|
-| **1.2.x** | **15.5.x** (checked against 15.5.1) | Current. Allowed and Blocked become one Blocking section, and the console comes as an image for Docker. Supports a console folder of its own (`DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH`), so server updates leave it alone. |
+| **1.2.x** | **15.5.x** (checked against 15.5.1) | Current. Allowed and Blocked become one Blocking section, a light theme, and the console comes as an image for Docker. Supports a console folder of its own (`DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH`), so server updates leave it alone. |
 | 1.1.x | 15.5.x | Superseded by 1.2.x on the same server. If you stay on it, use 1.1.3: earlier ones flood the server from Cache, Allowed and Blocked. |
 | 1.0.0 | 15.4 | Cannot save Settings on a 15.5 server. Upgrade. |
 
@@ -29,8 +29,25 @@ to "design only", written down with its limits: it calls only endpoints the serv
 with the stock console's own actions and wording, and Settings › Blocking is left exactly as it
 was. If Technitium runs in Docker, a small image now copies the console into a volume that the
 official server serves, and updating it restarts nothing: see
-[Docker](https://github.com/byGarcia/technitium-console#docker). On the way, the Dashboard's chart
-learned to tell the time the way the stock console does.
+[Docker](https://github.com/byGarcia/technitium-console#docker). There is a light theme now, and
+it follows your system unless you pick one. On the way, the Dashboard's chart learned to tell the
+time the way the stock console does.
+
+### 🌗 Light theme
+
+- **Change Theme is back** in the account menu, as in the stock console: Use System Theme
+  (default), Light Theme and Dark Theme, applied the moment you click. Asked for in
+  [#1](https://github.com/byGarcia/technitium-console/issues/1).
+- **It remembers what the stock console remembers.** The choice is kept under the same browser
+  key, so if you picked Light in the stock console you get Light here without doing anything, and
+  the other way round. Follow the system and it changes when your system does, without a reload.
+- **The light palette is measured, not inverted.** Every text colour reaches 4.5:1 on every
+  surface it is drawn on, field borders and the focus ring reach 3:1, and the chart colours were
+  checked against each other again on white, including for red-green colour blindness. Technitium's
+  amber stays the fill; where amber is text on white it darkens so it can be read.
+- **Amber is not offered.** The stock console's fourth theme is not drawn; a browser that has it
+  stored gets Dark, and its choice is left as it was.
+- The charts repaint when the theme changes, and series you switched off stay off.
 
 ### ✨ The Blocking section
 

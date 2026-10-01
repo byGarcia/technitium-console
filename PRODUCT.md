@@ -51,9 +51,8 @@ is not an opinion.
 
 - **Windows.** The installer is Linux only. Windows installs are laid out differently and have their
   own installer.
-- **A light palette.** `Change Theme` is back with System, Light and Dark, and every colour token
-  is declared per theme, but the light values have not been drawn yet and need their own contrast
-  measurements.
+- **The Amber theme.** `Change Theme` offers System, Light and Dark; the stock console's fourth,
+  Amber, is not drawn. A browser that has it stored gets Dark.
 - **Translations.** Every literal is upstream's, in English, and translating them would be the first
   behavioural difference.
 
