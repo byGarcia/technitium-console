@@ -32,7 +32,17 @@ WWW=/opt/technitium/dns/www
 command -v docker >/dev/null 2>&1 || { echo "docker is needed"; exit 2; }
 
 WORK="$(mktemp -d)"
-trap 'rm -rf "$WORK"' EXIT INT TERM
+# Some cases leave containers, a compose project and an image behind if they are
+# interrupted, and write as root into folders of $WORK that the user running
+# this cannot remove. All of it goes on the way out.
+cleanup() {
+  docker compose -p "installer-probe-$$" -f "$WORK/compose.yaml" down -v >/dev/null 2>&1 || true
+  docker rm -f "installer-probe-$$" >/dev/null 2>&1 || true
+  docker rmi "technitium-console-init:probe-$$" >/dev/null 2>&1 || true
+  docker run --rm -v "$WORK":/w busybox:stable sh -c 'rm -rf /w/* /w/.[!.]*' >/dev/null 2>&1 || true
+  rm -rf "$WORK"
+}
+trap cleanup EXIT INT TERM
 tar -czf "$WORK/console.tar.gz" -C "$ROOT/dist" .
 cp "$INSTALLER" "$WORK/install.sh"
 
@@ -168,7 +178,7 @@ case_run <<'EOF'
 sh /w/install.sh --dir /opt/technitium-console --from /w/console.tar.gz --yes >/dev/null 2>&1 || exit 1
 [ -f "/opt/technitium-console/$ASSET" ]
 EOF
-verdict "C10" $? "--dir creates the folder the README tells Docker users to create"
+verdict "C10" $? "--dir creates a folder that does not exist yet"
 
 # ------------------------------------------------------------ the server, live
 #
@@ -534,6 +544,156 @@ echo "step: --from says it did not verify"
 sh /w/install.sh --from /w/console.tar.gz --yes 2>&1 | grep -q 'not verified'
 EOF
 verdict "C25" $? "a download that does not match the release's .sha256 is refused"
+
+# ------------------------------------------------- Docker: the init image (D1–D4)
+#
+# The layout README.md gives Docker users (docs/2026-10-01-docker-install-spec.md):
+# an init container off our image copies the console into a volume, and the
+# official server mounts it read-only with the variable pointing at it. The
+# image is built here from dist/ with the same three files CI puts in it from a
+# release, so what is measured is this checkout's Dockerfile and install.sh.
+#
+# Every case needs a server that honours the variable, which was measured above
+# (CAPABLE).
+INIT_IMAGE="technitium-console-init:probe-$$"
+PROJECT="installer-probe-$$"
+dc() { docker compose -p "$PROJECT" -f "$WORK/compose.yaml" "$@"; }
+
+build_init() { # [marker] — the image, with probe-marker.txt in its tarball if given
+  rm -rf "$WORK/img"; mkdir -p "$WORK/img/dist"
+  cp -a "$ROOT/dist/." "$WORK/img/dist/"
+  [ -z "${1:-}" ] || printf '%s\n' "$1" > "$WORK/img/dist/probe-marker.txt"
+  tar -czf "$WORK/img/technitium-console.tar.gz" -C "$WORK/img/dist" .
+  rm -rf "$WORK/img/dist"
+  (cd "$WORK/img" && sha256sum technitium-console.tar.gz > technitium-console.tar.gz.sha256)
+  cp "$INSTALLER" "$WORK/img/install.sh"
+  cp "$ROOT/docker/Dockerfile" "$WORK/img/Dockerfile"
+  docker build -q -t "$INIT_IMAGE" "$WORK/img" >/dev/null 2>&1
+}
+
+compose_file() { # where the console lives: the volume, or a folder on this host
+  cat > "$WORK/compose.yaml" <<EOF
+# The block in README.md, «Docker» — they change together. Only the two image
+# names, a published port and the admin password are the probe's own.
+services:
+  dns-server:
+    image: $IMAGE
+    ports:
+      - "127.0.0.1::5380"
+    environment:
+      - DNS_SERVER_ADMIN_PASSWORD=probe
+      - DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH=/opt/technitium-console
+    volumes:
+      - config:/etc/dns
+      - $1:/opt/technitium-console:ro
+
+  technitium-console:
+    image: $INIT_IMAGE
+    volumes:
+      - $1:/target
+    restart: "no"
+
+volumes:
+  config:
+  technitium-console:
+EOF
+}
+
+base() { printf 'http://127.0.0.1:%s' "$(dc port dns-server 5380 2>/dev/null | sed 's/.*://')"; }
+served() { # path — the init and the server start side by side, so it waits
+  i=0
+  while [ "$i" -lt 60 ]; do
+    curl -sf -o /dev/null "$(base)/$1" && return 0
+    i=$((i+1)); sleep 1
+  done
+  return 1
+}
+init_exit() { docker wait "$(dc ps -a -q technitium-console)" 2>/dev/null; }
+started_at() { docker inspect -f '{{.State.StartedAt}}' "$(dc ps -q dns-server)" 2>/dev/null; }
+in_volume() { docker run --rm -v "${PROJECT}_technitium-console:/v" busybox:stable sh -c "$1"; }
+if [ "$CAPABLE" != "yes" ]; then
+  for c in C26 C27 C28 C29; do
+    verdict "$c" 3 "the Docker layout ($VERSION does not honour the variable)"
+  done
+else
+
+# ----------------------------------------- C26 · D4, the image fills the volume
+build_init
+compose_file technitium-console
+c26=0
+dc up -d >"$WORK/out" 2>&1 || c26=1
+[ "$(init_exit)" = "0" ] || c26=1
+served "$ASSET" || c26=1
+[ "$(curl -s -o /dev/null -w '%{http_code}' "$(base)/js/main.js")" = "404" ] || c26=1   # not the stock one behind it
+want="$(cut -d' ' -f1 < "$WORK/img/technitium-console.tar.gz.sha256")"
+got="$(docker run --rm --entrypoint sha256sum "$INIT_IMAGE" /usr/share/technitium-console/technitium-console.tar.gz | cut -d' ' -f1)"
+[ -n "$got" ] && [ "$got" = "$want" ] || c26=1                                         # the bytes it was built with
+tar -tzf "$WORK/img/technitium-console.tar.gz" | sed -e 's|^\./||' -e 's|/.*||' | grep . | sort -u > "$WORK/expected"
+in_volume 'ls -A /v' | sort -u > "$WORK/actual"
+[ -z "$(comm -13 "$WORK/expected" "$WORK/actual")" ] || c26=1                           # A6: nothing but the console
+dc logs technitium-console > "$WORK/out" 2>&1
+grep -q 'Checksum matches' "$WORK/out" || c26=1
+! grep -q 'sudo' "$WORK/out" || c26=1                                                    # no host advice from inside the image
+verdict "C26" $c26 "the init image fills the volume from the release's own bytes, and the server serves it"
+
+# ------------------------------------------ C27 · D2, an update restarts nothing
+c27=0
+before="$(started_at)"
+build_init "c27"                                       # a new release, as far as the volume can tell
+dc up -d technitium-console >"$WORK/out" 2>&1 || c27=1 # what the README says updating is
+[ "$(init_exit)" = "0" ] || c27=1
+served probe-marker.txt || c27=1
+[ "$(curl -s "$(base)/probe-marker.txt")" = "c27" ] || c27=1
+[ "$(started_at)" = "$before" ] || c27=1               # the server was never restarted
+dc up -d >>"$WORK/out" 2>&1 || c27=1                   # nor by bringing the whole file up again
+[ "$(started_at)" = "$before" ] || c27=1
+! dc logs technitium-console 2>&1 | grep -qi 'backed up' || c27=1   # a second pass is not a first install
+verdict "C27" $c27 "updating the console restarts nothing and is served at once"
+
+# --------------------------------------------- C28 · D3, the lists stay, and W6
+c28=0
+in_volume 'printf "[{\"name\":\"mine\"}]\n" > /v/json/quick-block-lists-custom.json' || c28=1
+build_init "c28"
+dc up -d technitium-console >"$WORK/out" 2>&1 || c28=1
+[ "$(init_exit)" = "0" ] || c28=1
+served probe-marker.txt || c28=1
+[ "$(curl -s "$(base)/probe-marker.txt")" = "c28" ] || c28=1
+[ "$(curl -s "$(base)/json/quick-block-lists-custom.json")" = '[{"name":"mine"}]' ] || c28=1
+dc up -d --force-recreate dns-server >>"$WORK/out" 2>&1 || c28=1
+served "$ASSET" || c28=1
+[ "$(curl -s "$(base)/json/quick-block-lists-custom.json")" = '[{"name":"mine"}]' ] || c28=1
+dc down -v >/dev/null 2>&1
+# A folder on the host, holding only a list written by hand before the first run.
+mkdir -p "$WORK/bind/json"
+printf '[{"name":"by hand"}]\n' > "$WORK/bind/json/quick-forwarders-list-custom.json"
+compose_file "$WORK/bind"
+dc up -d >>"$WORK/out" 2>&1 || c28=1
+[ "$(init_exit)" = "0" ] || c28=1
+served "$ASSET" || c28=1
+[ "$(cat "$WORK/bind/json/quick-forwarders-list-custom.json")" = '[{"name":"by hand"}]' ] || c28=1
+[ "$(curl -s "$(base)/json/quick-forwarders-list-custom.json")" = '[{"name":"by hand"}]' ] || c28=1
+dc down -v >/dev/null 2>&1
+verdict "C28" $c28 "custom lists, in the volume or in a host folder, survive updates and a new server container"
+
+# --------------------------------- C29 · D1, a failing init does not stop the DNS
+c29=0
+compose_file technitium-console
+dc create >"$WORK/out" 2>&1 || c29=1                   # the volume exists; nothing runs yet
+in_volume 'printf "keep\n" > /v/notes.txt' || c29=1    # somebody else's files: W6 has to stop the init
+dc up -d >>"$WORK/out" 2>&1 || c29=1
+[ "$(init_exit)" = "1" ] || c29=1
+dc logs technitium-console 2>&1 | grep -q 'not a Technitium console' || c29=1   # …and stopped it for that reason
+[ "$(docker inspect -f '{{.State.Running}}' "$(dc ps -q dns-server)")" = "true" ] || c29=1
+i=0; while [ "$i" -lt 60 ] && ! curl -s -o /dev/null "$(base)/"; do i=$((i+1)); sleep 1; done
+curl -s -o /dev/null "$(base)/" || c29=1               # and it answers
+[ "$(in_volume 'cat /v/notes.txt')" = "keep" ] || c29=1
+in_volume "[ ! -e /v/$ASSET ]" || c29=1
+dc down -v >/dev/null 2>&1
+docker run --rm "$INIT_IMAGE" >"$WORK/novol" 2>&1 && c29=1   # no volume at /target: refused,
+grep -q 'not a mounted volume' "$WORK/novol" || c29=1           # and not copied into nothing
+verdict "C29" $c29 "an init that fails never keeps the DNS server from starting"
+
+fi
 
 printf '\n  %d met · %d not met · %d not applicable to this image\n\n' "$PASS" "$FAIL" "$SKIP"
 exit "$FAIL"

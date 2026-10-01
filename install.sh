@@ -34,6 +34,7 @@ STATE_DIR="/var/lib/technitium-console"
 STATE="$STATE_DIR/install.state"
 BACKUP_SUFFIX=".original"
 VAR_NAME="DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH"
+DOCKER_DOCS="https://github.com/$REPO#docker"
 
 VERSION="latest"
 SOURCE=""                    # local file or URL, for air-gapped installs
@@ -43,6 +44,7 @@ WEB_URL=""
 ACTION="install"
 ASSUME_YES="no"
 ALLOW_MISMATCH="no"
+INTO_VOLUME=""               # what the Docker image runs: see --into-volume
 
 say()  { printf '  %s\n' "$*"; }
 ok()   { printf '  \033[32m✓\033[0m %-34s %s\n' "$1" "${2:-}"; }
@@ -60,6 +62,9 @@ usage() {
     --dir <path>       web root to install into (default: ask the running server)
     --url <base>       where its web console answers (default: http://127.0.0.1:5380)
     --yes              do not ask for confirmation
+    --into-volume <path>
+                       copy the console into the volume mounted at <path> and
+                       stop. It is what the Docker image runs; needs --from.
     --restore-mismatched-backup
                        uninstall even though the backup is from another server
                        version. --yes does not grant this one.
@@ -78,6 +83,7 @@ while [ $# -gt 0 ]; do
     --url)       WEB_URL="${2:?--url needs a base URL}"; shift ;;
     --yes|-y)    ASSUME_YES="yes" ;;
     --restore-mismatched-backup) ALLOW_MISMATCH="yes" ;;
+    --into-volume) INTO_VOLUME="${2:?--into-volume needs a path}"; shift ;;
     --help|-h)   usage ;;
     *)           die "unknown option: $1  (try --help)" ;;
   esac
@@ -110,8 +116,37 @@ resolve_path() { # absolute, every link resolved, even where its tail does not e
   rp="$(cd "$rp" && pwd -P)"
   printf '%s%s' "${rp%/}" "$rp_tail"
 }
+# --into-volume is the Docker image's mode (README, «Docker»): a volume shared
+# with the DNS server's container, the release tarball the image carries, and
+# nothing to look for — the server may not even be up yet, and it must not have
+# to be (contract D1). The version is the image's tag and the way out is taking
+# the volume away, so the options that mean something else are refused here.
+if [ -n "$INTO_VOLUME" ]; then
+  [ "$ACTION" = "install" ] || die "--into-volume only installs. On Docker the console is removed by taking
+    its volume out of the DNS server: $DOCKER_DOCS"
+  [ "$DIR_GIVEN" = "no" ] || die "--into-volume and --dir both say where. Give one."
+  if [ "$VERSION" != "latest" ] || [ -n "$WEB_URL" ]; then
+    die "--version and --url do not apply to --into-volume: the version is the image's
+    tag, ghcr.io/bygarcia/technitium-console:<version>."
+  fi
+  if [ -z "$SOURCE" ] || [ ! -f "$SOURCE" ]; then
+    die "--into-volume installs the tarball the image carries: give it with --from <file>."
+  fi
+  WWW_DIR="$INTO_VOLUME"; DIR_GIVEN="yes"
+fi
+
 if [ "$DIR_GIVEN" = "yes" ]; then
   WWW_DIR="$(resolve_path "$WWW_DIR")" || exit 1
+fi
+
+# A folder is a mount point when this process's mount table lists it as one.
+is_mount_point() { # folder
+  awk -v d="$1" '$5 == d { found = 1 } END { exit !found }' /proc/self/mountinfo 2>/dev/null
+}
+
+if [ -n "$INTO_VOLUME" ] && ! is_mount_point "$WWW_DIR"; then
+  die "$WWW_DIR is not a mounted volume, so whatever is copied there goes with this
+    container. Mount the console's volume at $WWW_DIR: $DOCKER_DOCS"
 fi
 
 refuse_links() { # folder about to be written into
@@ -146,6 +181,14 @@ is_this_console() {
   [ -n "$entry" ] && [ -f "$1/$entry" ]
 }
 
+# A folder holding nothing but the administrator's lists is as good as empty:
+# publishing neither overwrites nor sweeps json/*-custom.json (copy_one,
+# publish), so there is nothing in it to lose. It is how a host folder for the
+# Docker image is prepared, with lists written by hand before the first run.
+only_custom_lists() { # folder
+  [ -z "$(find "$1" -mindepth 1 ! -path "$1/json" ! -path "$1/json/*-custom.json" -print 2>/dev/null | head -1)" ]
+}
+
 # Publishing replaces what the release ships and sweeps everything else. That is
 # right for a console and a disaster for anything else — --dir /opt/technitium/dns
 # by mistake is the server's binaries and configuration gone, with no backup,
@@ -155,6 +198,7 @@ may_write_into() { # folder
   [ -e "$1" ] || return 0
   [ -d "$1" ] || die "$1 is not a folder."
   [ -n "$(ls -A "$1" 2>/dev/null)" ] || return 0
+  only_custom_lists "$1" && return 0
   [ "$(state_get webroot)" = "$1" ] && return 0
   is_stock_console "$1" && return 0
   is_this_console "$1" && return 0
@@ -326,6 +370,13 @@ RESTART_NEEDED="no"
 SERVER_VERSION=""
 
 resolve_target() {
+  if [ -n "$INTO_VOLUME" ]; then
+    MODE="side-by-side"            # a folder of its own: nothing to back up, ever
+    refuse_links "$WWW_DIR"
+    ok "Installing into the volume" "$WWW_DIR"
+    return 0
+  fi
+
   SERVER_VERSION="$(server_version)"
   find_server
 
@@ -460,6 +511,13 @@ carry_custom_lists() { # from, to — used when the served folder changes
   done
 }
 
+verify_checksum() { # tarball, its .sha256 as sha256sum writes it
+  command -v sha256sum >/dev/null 2>&1 || die "sha256sum is needed to check the console, and is not installed."
+  vc_expected="$(cut -d' ' -f1 < "$2")"
+  vc_actual="$(sha256sum "$1" | cut -d' ' -f1)"
+  [ -n "$vc_expected" ] && [ "$vc_expected" = "$vc_actual" ]
+}
+
 confirm() { # question
   [ "$ASSUME_YES" = "yes" ] && return 0
   [ -t 0 ] || return 0
@@ -582,7 +640,16 @@ trap "rm -rf '$TMP'" EXIT INT TERM
 if [ -n "$SOURCE" ] && [ -f "$SOURCE" ]; then
   cp "$SOURCE" "$TMP/console.tar.gz"
   ok "Console read from file" "$SOURCE"
-  warn "It is not verified: a tarball given with --from is installed as it is."
+  if [ -n "$INTO_VOLUME" ]; then
+    # The image carries the release's checksum next to its tarball (contract
+    # D4). CI checked it before building; it is checked again where it counts.
+    [ -f "$SOURCE.sha256" ] || die "there is no checksum next to $SOURCE. Not installing what cannot be checked."
+    verify_checksum "$TMP/console.tar.gz" "$SOURCE.sha256" \
+      || die "$SOURCE does not match the release's checksum. Nothing was changed."
+    ok "Checksum matches the release" "sha256"
+  else
+    warn "It is not verified: a tarball given with --from is installed as it is."
+  fi
 else
   if [ -n "$SOURCE" ]; then
     URL="$SOURCE"
@@ -599,12 +666,9 @@ else
   else
     # Every release publishes the tarball's SHA-256 next to it, as sha256sum
     # writes it (.github/workflows/release.yml, "Pack"). No checksum, no install.
-    command -v sha256sum >/dev/null 2>&1 || die "sha256sum is needed to check the download, and is not installed."
     curl -fsSL "$URL.sha256" -o "$TMP/console.tar.gz.sha256" \
       || die "the release publishes no checksum at $URL.sha256. Not installing what cannot be checked."
-    expected="$(cut -d' ' -f1 < "$TMP/console.tar.gz.sha256")"
-    actual="$(sha256sum "$TMP/console.tar.gz" | cut -d' ' -f1)"
-    [ -n "$expected" ] && [ "$expected" = "$actual" ] \
+    verify_checksum "$TMP/console.tar.gz" "$TMP/console.tar.gz.sha256" \
       || die "the download does not match the checksum the release publishes. Nothing was changed."
     ok "Checksum matches the release" "sha256"
   fi
@@ -659,6 +723,15 @@ publish "$TMP/dist" "$WWW_DIR" "$LIST"
 state_set version "$VERSION"
 state_set phase done
 ok "Console installed" "$WWW_DIR"
+
+if [ -n "$INTO_VOLUME" ]; then
+  say ""
+  say "A DNS server that mounts this volume and names it in $VAR_NAME"
+  say "is serving it already: it needs no restart. To update, run a newer image of"
+  say "this one. To remove it: $DOCKER_DOCS"
+  printf '\n'
+  exit 0
+fi
 
 if [ "$RESTART_NEEDED" = "yes" ]; then
   say ""
