@@ -382,7 +382,7 @@ export function BlockLists({
                         {KIND_LABEL[l.kind]}
                       </span>
                     </td>
-                    <td>
+                    <td className={styles.actions}>
                       <PermissionButton size="sm" variant="danger" permission={modifyNeed}
                         aria-label={`Remove ${l.url ?? l.raw}`}
                         onClick={() => setLines((all) => all.filter((_, j) => j !== i))}>

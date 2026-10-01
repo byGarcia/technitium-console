@@ -37,4 +37,7 @@ target and the input's alignment) and `toggle` for the switch drawing.
 .allow { color: var(--ch-ok); }
 .comment { color: var(--mute); }
 
+/* Remove, hard against the row's end as Delete is in Rules. */
+.actions { text-align: right; white-space: nowrap; }
+
 .foot { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-5); padding: var(--s-7) var(--s-9); color: var(--mute); }
