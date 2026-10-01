@@ -1,0 +1,25 @@
+/*
+What the three Blocking tabs share. Every value is a token of theme/tokens.css.
+*/
+.stack { display: flex; flex-direction: column; gap: var(--gap-block); }
+.row2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-9); }
+.row21 { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: var(--s-9); }
+.kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s-9); }
+.kpis3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-9); }
+
+/* `--bp-index`: a custom property cannot go inside a media query, so its value is written. */
+@media (max-width: 960px) {
+  .row2, .row21 { grid-template-columns: minmax(0, 1fr); }
+  .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .kpis3 { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* The add bar: one field, Block first because Enter blocks. */
+.add { display: flex; align-items: flex-end; gap: var(--s-5); }
+.add > :first-child { flex: 1; min-width: 0; }
+
+/* `--bp-stack`. */
+@media (max-width: 560px) {
+  .add { flex-wrap: wrap; }
+  .add > :first-child { flex-basis: 100%; }
+}
