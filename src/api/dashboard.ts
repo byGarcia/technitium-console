@@ -1,4 +1,5 @@
 import { apiRequest, type ApiOutcome } from './client'
+import { localiseLabels } from './chart-labels'
 
 /*
 The three endpoints of the `dashboard` family.
@@ -82,7 +83,9 @@ export async function getDashboardStats(
      parameter on every call; see spec F10. */
   node?: string,
 ): Promise<ApiOutcome<DashboardStats>> {
-  const body: Record<string, string> = { type }
+  /* `utc=true` as main.js:2619 sends it: the main chart comes labelled with UTC
+     instants, and `localiseLabels` writes them as main.js:2673-2686 does. */
+  const body: Record<string, string> = { type, utc: 'true' }
   if (type === 'Custom' && range) {
     body.start = range.start
     body.end = range.end
@@ -98,7 +101,12 @@ export async function getDashboardStats(
   traffic— and the easiest to believe, because it looks exactly like a normal
   response.
   */
-  return outcome.kind === 'ok' ? { kind: 'ok', data: outcome.data.response } : outcome
+  if (outcome.kind !== 'ok') return outcome
+  const data = outcome.data.response
+  return {
+    kind: 'ok',
+    data: data.mainChartData != null ? { ...data, mainChartData: localiseLabels(data.mainChartData) } : data,
+  }
 }
 
 export type TopKind = 'TopClients' | 'TopDomains' | 'TopBlockedDomains'
