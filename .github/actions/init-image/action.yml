@@ -1,0 +1,130 @@
+# The init image for Docker (README, «Docker»): busybox, the install.sh of the
+# checked-out commit and a console tarball, checked against its own .sha256
+# before building and again inside every platform after pushing (contract D4).
+# Only then do the moving tags (`floating`) point at it, so a failed check
+# leaves them where they were. Shared by the release and develop workflows, so
+# both publish the same image the same way.
+name: Init image
+description: Builds docker/Dockerfile around a console tarball, pushes it for three platforms, checks the bytes in each, then moves the floating tags.
+
+inputs:
+  image:
+    description: The image name, without a tag.
+    required: true
+  tarball-dir:
+    description: The folder holding technitium-console.tar.gz and technitium-console.tar.gz.sha256.
+    required: true
+  tags:
+    description: The tags pushed with the build, as docker/metadata-action `tags` lines. Never floating ones.
+    required: true
+  floating:
+    description: Space-separated tag names moved to the build once its bytes are checked. Empty moves none.
+    required: false
+    default: ''
+  token:
+    description: The token that pushes to GHCR.
+    required: false
+    default: ${{ github.token }}
+
+outputs:
+  version:
+    description: The version docker/metadata-action read from the first tag.
+    value: ${{ steps.meta.outputs.version }}
+  digest:
+    description: The digest of the manifest list that was pushed and checked.
+    value: ${{ steps.build.outputs.digest }}
+
+runs:
+  using: composite
+  steps:
+    - name: The build context, with the tarball checked against its checksum
+      id: context
+      shell: bash
+      env:
+        TARBALLS: ${{ inputs.tarball-dir }}
+      run: |
+        ctx="$RUNNER_TEMP/init-image"
+        rm -rf "$ctx"; mkdir -p "$ctx"
+        cp install.sh docker/Dockerfile "$ctx/"
+        cp "$TARBALLS/technitium-console.tar.gz" "$TARBALLS/technitium-console.tar.gz.sha256" "$ctx/"
+        (cd "$ctx" && sha256sum -c technitium-console.tar.gz.sha256)
+        echo "dir=$ctx" >> "$GITHUB_OUTPUT"
+
+    # latest is never this step's: it moves, with the other floating tags, at the end.
+    - id: meta
+      uses: docker/metadata-action@v6
+      with:
+        images: ${{ inputs.image }}
+        flavor: latest=false
+        tags: ${{ inputs.tags }}
+        labels: |
+          org.opencontainers.image.title=technitium-console
+          org.opencontainers.image.description=Copies the technitium-console web console into a volume shared with Technitium DNS Server, then exits.
+          org.opencontainers.image.licenses=GPL-3.0-or-later
+
+    - uses: docker/setup-buildx-action@v4
+
+    - uses: docker/login-action@v4
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ inputs.token }}
+
+    # No QEMU: the Dockerfile has no RUN, so nothing executes for the foreign
+    # platforms. No attestations: they show up as unknown/unknown entries in
+    # the manifest list, and older engines on NAS boxes trip over them.
+    - id: build
+      uses: docker/build-push-action@v7
+      with:
+        context: ${{ steps.context.outputs.dir }}
+        platforms: linux/amd64,linux/arm64,linux/arm/v7
+        push: true
+        provenance: false
+        sbom: false
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+
+    # By digest: what was pushed, whatever a tag points at by now.
+    - name: Every platform carries the tarball, byte for byte (D4)
+      shell: bash
+      env:
+        IMAGE: ${{ inputs.image }}
+        DIGEST: ${{ steps.build.outputs.digest }}
+        CONTEXT: ${{ steps.context.outputs.dir }}
+      run: |
+        ref="$IMAGE@$DIGEST"
+        want="$(cut -d' ' -f1 "$CONTEXT/technitium-console.tar.gz.sha256")"
+        docker buildx imagetools inspect --raw "$ref" \
+          | jq -r '.manifests[].platform | "\(.os)/\(.architecture)\(if .variant then "/" + .variant else "" end)"' \
+          | tee "$RUNNER_TEMP/platforms"
+        if ! grep -qx 'linux/amd64' "$RUNNER_TEMP/platforms" || ! grep -Eqx 'linux/arm64(/v8)?' "$RUNNER_TEMP/platforms" \
+          || ! grep -qx 'linux/arm/v7' "$RUNNER_TEMP/platforms"; then
+          echo "::error::the manifest list does not hold the three platforms"; exit 1
+        fi
+        for p in linux/amd64 linux/arm64 linux/arm/v7; do
+          docker pull -q --platform "$p" "$ref" >/dev/null
+          cid="$(docker create --platform "$p" "$ref")"
+          got="$(docker cp "$cid:/usr/share/technitium-console/technitium-console.tar.gz" - | tar -xO | sha256sum | cut -d' ' -f1)"
+          docker rm "$cid" >/dev/null
+          echo "$p $got"
+          [ "$got" = "$want" ] || { echo "::error::$p does not carry the tarball"; exit 1; }
+        done
+
+    - name: The floating tags, now that the bytes are checked
+      if: inputs.floating != ''
+      shell: bash
+      env:
+        IMAGE: ${{ inputs.image }}
+        DIGEST: ${{ steps.build.outputs.digest }}
+        FLOATING: ${{ inputs.floating }}
+      run: |
+        read -r -a names <<< "$FLOATING"
+        args=()
+        for t in "${names[@]}"; do args+=(--tag "$IMAGE:$t"); done
+        docker buildx imagetools create "${args[@]}" "$IMAGE@$DIGEST"
+        want="$(docker buildx imagetools inspect --raw "$IMAGE@$DIGEST" | jq -c '[.manifests[].digest]')"
+        for t in "${names[@]}"; do
+          got="$(docker buildx imagetools inspect --raw "$IMAGE:$t" | jq -c '[.manifests[].digest]')"
+          echo "$t $got"
+          [ "$got" = "$want" ] || { echo "::error::$t does not point at the images just checked"; exit 1; }
+        done
