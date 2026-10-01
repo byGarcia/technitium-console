@@ -182,6 +182,8 @@ export function Lists({
   clusterInitialised = false,
   embedded = false,
   canDelete = true,
+  initialFromPrimary = false,
+  fieldName,
 }: {
   list: List
   token: string | null
@@ -194,6 +196,17 @@ export function Lists({
   embedded?: boolean
   /** Allowed/Blocked: whether the session may delete from this list. */
   canDelete?: boolean
+  /**
+   * The tree is mounted again BECAUSE of a change made outside it (Rules' table or
+   * foot): its first read comes from the primary node, as every read after a
+   * change does (other-zones.js:269 and 434). Read once, on mount.
+   */
+  initialFromPrimary?: boolean
+  /**
+   * An accessible name for the tree's field, when the screen already has another
+   * field labelled "Domain" (Rules' add bar). The visible label does not change.
+   */
+  fieldName?: string
 }) {
   const [clusterNode, setClusterNode] = useState<string>('')
 
@@ -264,8 +277,14 @@ export function Lists({
     [list, token],
   )
 
+  /* Read through a ref: it governs the mount only, and as a dependency it would
+     read the root again whenever it changed. It is not reset after use, so
+     StrictMode's second run of this effect reads from the same node. The primary
+     node is already in `primary.current` here: its effect is declared above, and
+     effects run in order. */
+  const firstFromPrimary = useRef(initialFromPrimary)
   useEffect(() => {
-    void load('')
+    void load('', undefined, firstFromPrimary.current)
   }, [load])
 
   /** Wraps a mutation: runs it, and on failure draws the server's error. */
@@ -502,6 +521,7 @@ export function Lists({
                   <Input
                     id={id}
                     ref={entry}
+                    aria-label={fieldName}
                     mono
                     placeholder="example.com"
                     value={field}

@@ -21,6 +21,18 @@ function draw(permissions?: Parameters<typeof Rules>[0]['permissions']) {
   return render(<Rules token="T" permissions={permissions} />)
 }
 
+const NODES = [
+  { name: 'node2.cluster.test', type: 'Secondary' },
+  { name: 'dev.cluster.test', type: 'Primary' },
+]
+
+function emptyTree() {
+  return vi.spyOn(zonelists, 'listNode').mockResolvedValue({
+    kind: 'ok',
+    data: { domain: '', zones: [], records: [] },
+  })
+}
+
 describe('Rules', () => {
   it('draws both lists in one table with their kind', async () => {
     exports(['ads.example.com'], ['s.youtube.com'])
@@ -143,5 +155,46 @@ describe('Rules', () => {
     draw()
     expect(await screen.findByText('Access was denied.')).toBeInTheDocument()
     expect(screen.queryByText('No rules')).toBeNull()
+  })
+
+  it('?rule= naming a list the session cannot view opens on All and rewrites the bar', async () => {
+    window.history.replaceState(null, '', '/blocking/rules/?rule=allowed&x=1')
+    exports(['ads.example.com'], ['never.test'])
+    draw({ Blocked: P(true), Allowed: P(false) })
+    const table = await screen.findByRole('table')
+    expect(within(table).getByText('ads.example.com')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'All 1' })).toHaveAttribute('aria-pressed', 'true')
+    expect(window.location.search).toBe('?x=1')
+  })
+
+  it('the tree reads from the connected node first, and from the primary after a Flush', async () => {
+    exports(['ads.example.com'], [])
+    vi.spyOn(zonelists, 'flushList').mockResolvedValue(OK)
+    const list = emptyTree()
+    render(<Rules token="T" permissions={undefined} nodes={NODES} clusterInitialised />)
+    await screen.findByRole('table')
+    await userEvent.click(screen.getByRole('button', { name: 'Tree' }))
+    await screen.findByText('0 zones')
+    expect(list).toHaveBeenLastCalledWith('blocked', 'T', '', undefined, '')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Flush' }))
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Blocked zones' }))
+    await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Flush' }))
+    await screen.findByText('Blocked zone was flushed successfully.')
+    expect(list).toHaveBeenLastCalledWith('blocked', 'T', '', undefined, 'dev.cluster.test')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Allowed' }))
+    await screen.findByText('0 zones')
+    expect(list).toHaveBeenLastCalledWith('allowed', 'T', '', undefined, '')
+  })
+
+  it('the tree field is named apart from the add bar field', async () => {
+    exports([], [])
+    emptyTree()
+    draw()
+    await screen.findByRole('table')
+    await userEvent.click(screen.getByRole('button', { name: 'Tree' }))
+    expect(await screen.findByRole('textbox', { name: 'Browse domain' })).toBeInTheDocument()
+    expect(screen.getAllByRole('textbox', { name: 'Domain' })).toHaveLength(1)
   })
 })

@@ -72,14 +72,23 @@ export function Rules({
   const [stale, setStale] = useState(false)
   const [lastGood, setLastGood] = useState<string | null>(null)
   const hadData = useRef(false)
-  const [filter, setFilter] = useState<RuleFilter>(() => readRuleParam(window.location.search))
+  /* A filter on a list the session cannot view would open locked, pressed, over an
+     empty table — `/allowed/` for someone who may only see Blocked. It opens on All. */
+  const [filter, setFilter] = useState<RuleFilter>(() => {
+    const asked = readRuleParam(window.location.search)
+    const may = asked === 'all' || (asked === 'blocked' ? viewBlocked : viewAllowed)
+    return may ? asked : 'all'
+  })
   const [query, setQuery] = useState('')
   const [page, setPage] = useState(1)
   const [view, setView] = useState<'list' | 'tree'>('list')
   const [treeList, setTreeList] = useState<DomainList>(viewBlocked ? 'blocked' : 'allowed')
   /* Bumped after Delete, Import and Flush: the open tree is mounted again so it
-     reads the lists as they are now. */
+     reads the lists as they are now — from the primary node, as every read after a
+     change does (spec, «Clúster»). Choosing another list or view is a fresh read
+     again, from the connected node. */
   const [generation, setGeneration] = useState(0)
+  const [afterChange, setAfterChange] = useState(false)
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null)
   const [importing, setImporting] = useState<DomainList | null>(null)
   const [busy, setBusy] = useState(false)
@@ -109,10 +118,21 @@ export function Rules({
     void load()
   }, [load])
 
+  /* The bar always says the filter on screen: on choosing, and on opening when the
+     one it asked for fell back to All. */
+  useEffect(() => {
+    if (readRuleParam(window.location.search) === filter) return
+    window.history.replaceState(null, '', window.location.pathname + ruleSearch(window.location.search, filter))
+  }, [filter])
+
   function choose(f: RuleFilter) {
     setFilter(f)
     setPage(1)
-    window.history.replaceState(null, '', window.location.pathname + ruleSearch(window.location.search, f))
+  }
+
+  function changed() {
+    setGeneration((g) => g + 1)
+    setAfterChange(true)
   }
 
   const counts = useMemo(() => countRules(rules ?? []), [rules])
@@ -127,7 +147,7 @@ export function Rules({
       setNotice(noticeFromFailure(outcome))
       return
     }
-    setGeneration((g) => g + 1)
+    changed()
     await load()
     setNotice(success)
   }
@@ -269,7 +289,10 @@ export function Rules({
                   { id: 'allowed' as const, label: 'Allowed' },
                 ]}
                 active={treeList}
-                onChoose={setTreeList}
+                onChoose={(l) => {
+                  setTreeList(l)
+                  setAfterChange(false)
+                }}
               />
             )}
             <span className={styles.spacer} />
@@ -282,6 +305,7 @@ export function Rules({
               active={view}
               onChoose={(v) => {
                 setView(v)
+                setAfterChange(false)
                 /* The tree deletes on its own and does not tell this table: coming
                    back to the list reads it again rather than show a deleted row. */
                 if (v === 'list') void load()
@@ -304,6 +328,8 @@ export function Rules({
                 nodes={nodes}
                 clusterInitialised={clusterInitialised}
                 embedded
+                initialFromPrimary={afterChange}
+                fieldName="Browse domain"
                 canDelete={missing(permissions, treeList === 'allowed' ? 'Allowed.canDelete' : 'Blocked.canDelete') == null}
               />
             )
@@ -408,7 +434,7 @@ export function Rules({
           onClose={() => setImporting(null)}
           onDone={(n) => {
             setNotice(n)
-            setGeneration((g) => g + 1)
+            changed()
             void load()
           }}
         />
