@@ -5,7 +5,7 @@
 .paused { background: var(--acc-bg); border: 1px solid var(--acc-bd); color: var(--acc); }
 .off { background: var(--pan2); border: 1px solid var(--line); color: var(--mute); }
 .statusText { flex: 1; min-width: 0; }
-.statusTitle { font-size: var(--t-5); font-weight: 600; }
+.statusTitle { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-5); font-size: var(--t-5); font-weight: 600; }
 .statusSub { color: var(--mute); margin-top: var(--s-1); }
 
 /* Top tables: name, a bar for the share, the hits, the row menu. */
