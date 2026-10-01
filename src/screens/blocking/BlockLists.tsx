@@ -337,7 +337,7 @@ export function BlockLists({
           </Body>
         </Panel>
 
-        <Panel>
+        <Panel className={shared.flush}>
           {readFailed ? (
             <Body><Failure>Could not read the block list settings.</Failure></Body>
           ) : saved == null ? (
@@ -348,6 +348,7 @@ export function BlockLists({
               isEmpty={lines.length === 0}
               emptyText="No lists"
               columns={4}
+              className={shared.inPanel}
             >
               {lines.map((l, i) => {
                 const name = l.url == null ? null : listName(l.url, catalog)

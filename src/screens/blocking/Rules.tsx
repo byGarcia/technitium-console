@@ -268,7 +268,7 @@ export function Rules({
 
         {stale && <StaleData since={lastGood} onRetry={() => void load()} />}
 
-        <Panel>
+        <Panel className={shared.flush}>
           <div className={styles.bar}>
             {view === 'list' ? (
               <>
@@ -364,6 +364,7 @@ export function Rules({
                 isEmpty={current.rows.length === 0}
                 emptyText={query === '' ? 'No rules' : 'No rules match this filter'}
                 columns={3}
+                className={shared.inPanel}
               >
                 {current.rows.map((r) => (
                   <tr key={`${r.list}:${r.domain}`}>
