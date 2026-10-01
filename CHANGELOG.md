@@ -12,11 +12,70 @@ sends, every text it shows and every control it offers, compared with that serve
 
 | Console | Technitium DNS Server | Notes |
 |---|---|---|
-| **1.1.x** | **15.5.x** (checked against 15.5.1) | Current. Supports a console folder of its own (`DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH`), so server updates leave it alone. |
+| **1.2.x** | **15.5.x** (checked against 15.5.1) | Current. Allowed and Blocked become one Blocking section. Supports a console folder of its own (`DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH`), so server updates leave it alone. |
+| 1.1.x | 15.5.x | Superseded by 1.2.x on the same server. If you stay on it, use 1.1.3: earlier ones flood the server from Cache, Allowed and Blocked. |
 | 1.0.0 | 15.4 | Cannot save Settings on a 15.5 server. Upgrade. |
 
 To update, run the installer again — the same one-line command. It needs no restart of the DNS
 service.
+
+---
+
+## v1.2.0 — 2026-10-01
+
+**Allowed and Blocked are now one Blocking section.** Overview, Rules and Lists, laid out the way
+AdGuard Home and Pi-hole lay blocking out. It is a deliberate exception to "design only", written
+down with its limits: it calls only endpoints the server already has, with the stock console's own
+actions and wording, and Settings › Blocking is left exactly as it was. On the way, the Dashboard's
+chart learned to tell the time the way the stock console does.
+
+### ✨ The Blocking section
+
+- **Overview** — Total Queries and Blocked with a trend line under each and Blocked's share of the
+  total, Block List Domains and Your Rules. Blocking's status, with Disable for the stock console's
+  eight durations and, while paused, the time it comes back. Allowed against blocked over time as
+  stacked bars, and a ring with the blocked share, for the Dashboard's five fixed periods and with
+  its node selector and memory. Top Blocked Domains with **Allow Domain** and Top Domains with
+  **Block Domain**, in a menu on each row, as on the stock Dashboard. And Recently Blocked: the last
+  ten blocked queries, from the app that logs them.
+- **Rules** — every domain you blocked or allowed by hand in one table, filtered by All, Blocked or
+  Allowed with their counts, searchable, and paged 50 at a time however many there are. Delete
+  asks as the stock console asks. **Tree** switches to the domain tree you already know. Import,
+  Export and Flush sit at the foot, each for Blocked or Allowed.
+- **Block or allow a domain** — one field with Block and Allow, on Overview and on Rules. Enter
+  blocks, as the stock console's form does.
+- **Lists** — each block list URL is a row: its readable name when it is in the Quick Add
+  catalogue, an Enabled switch, its type and Remove. Add a block list or an allow list by URL or
+  with Quick Add. Changes wait in a bar with Save and Discard, so even Quick Add › None can be
+  undone, and Save sends only the list URLs, cleaned as Settings cleans them. Block List Domains,
+  Allow List Domains and the next update come with **Update Now**, and the figures say they are
+  updating until the server has finished.
+- **Old addresses still land.** `/allowed/` and `/blocked/` open Rules filtered to that list, and
+  the filter stays in the address, so it survives a reload.
+- **Nothing hides for want of a permission.** A panel you cannot view shows a padlock and the
+  permission it needs; a control you cannot use is disabled and says why. The section appears for
+  anyone who can view Blocked or Allowed.
+
+<!-- DOCKER: filled in phase 2 -->
+
+### 🛠 Fixes
+
+- **The Dashboard's chart tells the time as the stock console does.** The console never asked the
+  server for UTC (`utc=true`), so the hours on the axis were the server's clock and not yours, and
+  shifted whenever the two sit in different time zones. It now asks for UTC and labels the hours in
+  your local time, as the stock console does.
+- **The Allowed and Blocked tree, now Rules › Tree, has no cluster node selector**, which the stock
+  console only has on Cache, and after a change it reads the tree back from the primary node, as
+  the stock console does.
+- **No stray scrollbar beside the section tabs.** Chromium on Linux drew one next to the tabs of
+  Settings, Logs, Administration and DHCP.
+
+### 🧪 Under the hood
+
+- Overview, Rules and Lists are also tested against responses recorded from a real server, and
+  the rules table against 10,000 rules.
+- `CONVENTIONS.md` writes the Blocking section down as a deliberate deviation, with its four
+  limits and the two behaviours a maintainer would not guess.
 
 ---
 
