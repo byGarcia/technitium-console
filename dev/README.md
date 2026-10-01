@@ -18,9 +18,12 @@ contract lives.
 ## The installer has its own bench
 
 `sh dev/installer-probe.sh` measures `install.sh` against
-`docs/2026-09-07-installer-contract.md`: twenty-five cases, one throwaway
+`docs/2026-09-07-installer-contract.md`: thirty cases, one throwaway
 container each off the same official image, exit code = cases failed. It does not
-use the three containers below and does not touch them. `INSTALLER=<file>`
+use the three containers below and does not touch them. C26 to C30 (2026-10-01)
+also build the Docker init image from `dist/` and bring up a compose project of
+their own, `installer-probe-<pid>`; they pull `busybox:stable` and `docker:cli` the
+first time, and C30 mounts the Docker socket into `docker:cli`. `INSTALLER=<file>`
 measures another `install.sh` — that is how the cases added on 2026-09-30 were
 seen failing on the old script before they were seen passing on the new one.
 
