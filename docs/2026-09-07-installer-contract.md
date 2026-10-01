@@ -652,11 +652,15 @@ not applicable on 2026-09-30, 29 and 1 on 2026-10-01 with the Docker cases. C15,
 the refusal, now needs an image before 15.5, given with `IMAGE=`; it was
 measured against v15.4 on 2026-09-07, and again on 2026-10-01 against
 `technitium/dns-server:15.4.0`, after the Docker changes to `install.sh`: met.
-That run also fails C24, whose first step needs a server that honours the
-variable and a `curl` in the image, and 15.4.0 has neither: unlike C12 and C13,
-the probe does not gate C24 on the capability. The `†` is off W2, F3 and S2, and
-no server has to be built by hand. C26 to C30 are gated by the same answer as
-C12 and C13.
+That run also failed C24, whose first two steps need a server that honours the
+variable and waited for it with a `curl` 15.4.0 does not have. The same day
+those two steps were gated by the capability, like C12 and C13; the third, a
+recorded folder that is no longer this console, runs on every image, because
+`--into-volume` can leave such a record on any server; and the case waits for
+the port in `/proc/net` instead. Against 15.4.0 then: 23 met, 0 not met, 7 not
+applicable, so on 2026-10-01 the probe is at zero on both images again. The `†`
+is off W2, F3 and S2, and no server has to be built by hand. C26 to C30 are
+gated by the same answer as C12 and C13.
 
 ---
 
