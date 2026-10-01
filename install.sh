@@ -39,6 +39,10 @@ IMAGE_REF="ghcr.io/bygarcia/technitium-console"
 # What the administrator typed, never $0: under `curl … | sudo sh` that is "sh".
 ONE_LINER="curl -sSL https://raw.githubusercontent.com/$REPO/main/install.sh | sudo sh -s --"
 CONSOLE_DIR="/opt/technitium-console"
+# The init's record, at the root of its volume, that the volume is the console's
+# (contract, «Docker»). Its own state lives in its container's layer and goes
+# with it; this does not.
+MARKER=".technitium-console"
 
 VERSION="latest"
 SOURCE=""                    # local file or URL, for air-gapped installs
@@ -203,6 +207,9 @@ may_write_into() { # folder
   [ -d "$1" ] || die "$1 is not a folder."
   [ -n "$(ls -A "$1" 2>/dev/null)" ] || return 0
   only_custom_lists "$1" && return 0
+  # The init's volume, marked as its own before its first copy: a copy stopped
+  # halfway is no console yet, and the next run has to be able to finish it.
+  if [ -n "$INTO_VOLUME" ] && [ -f "$1/$MARKER" ] && [ ! -L "$1/$MARKER" ]; then return 0; fi
   [ "$(state_get webroot)" = "$1" ] && return 0
   is_stock_console "$1" && return 0
   is_this_console "$1" && return 0
@@ -383,12 +390,23 @@ docker_servers() {
 dk() { docker inspect -f "$2" "$1" 2>/dev/null || true; }
 dk_label() { dk "$1" "{{index .Config.Labels \"$2\"}}"; }
 dk_env() { dk "$1" '{{range .Config.Env}}{{println .}}{{end}}' | sed -n "s/^$2=//p" | head -1; }
-dk_mount() {
-  dk "$1" '{{range .Mounts}}{{.Destination}}|{{.Type}}|{{.Name}}|{{.Source}}{{println}}{{end}}' \
-    | awk -F'|' -v d="$2" '$1 == d { print $2 " " ($2 == "volume" ? $3 : $4); exit }'
+dk_mount() { # container, destination — "type|rw or ro|volume name|source" of what is mounted there
+  dk "$1" '{{range .Mounts}}{{.Destination}}|{{.Type}}|{{.RW}}|{{.Name}}|{{.Source}}{{println}}{{end}}' \
+    | awk -F'|' -v d="$2" '$1 == d { print $2 "|" ($3 == "true" ? "rw" : "ro") "|" $4 "|" $5; exit }'
+}
+# Sets DM_TYPE, DM_RO (":ro", or nothing when it is mounted read-write), DM_WHERE
+# (the volume's name, or the folder on the host) and DM_SOURCE, from dk_mount.
+dk_mount_read() {
+  IFS='|' read -r DM_TYPE dm_rw dm_name DM_SOURCE <<EOF
+$1
+EOF
+  DM_RO=":ro"
+  if [ "$dm_rw" = "rw" ]; then DM_RO=""; fi
+  DM_WHERE="$DM_SOURCE"
+  if [ "$DM_TYPE" = "volume" ]; then DM_WHERE="$dm_name"; fi
 }
 dk_has_source() {
-  dk "$1" '{{range .Mounts}}{{.Source}}{{println}}{{end}}' | grep -qx "$2"
+  dk "$1" '{{range .Mounts}}{{.Source}}{{println}}{{end}}' | grep -qxF "$2"
 }
 dk_version() {
   docker exec "$1" sh -c 'grep -ho "DNS Server (v[0-9.]*)" /var/log/technitium/dns/*.log 2>/dev/null | tail -1' 2>/dev/null \
@@ -404,81 +422,129 @@ dk_init_service() {
     --format '{{.Image}}|{{.Label "com.docker.compose.service"}}' 2>/dev/null \
     | awk -F'|' '$1 ~ /technitium-console/ { print $2; exit }'
 }
+shq() { # a word as a shell reads it back, quoted only when it has to be
+  case "$1" in
+    ''|*[!A-Za-z0-9_./:@%+=,-]*) printf "'%s'" "$(printf '%s' "$1" | sed "s/'/'\\\\''/g")" ;;
+    *) printf '%s' "$1" ;;
+  esac
+}
+# The `docker compose` that reaches a container's project from any folder: its
+# name, its files and, when it is not theirs, its folder, all from the labels
+# Compose put on the container.
+dk_compose() { # container
+  dc_cmd="docker compose -p $(shq "$(dk_label "$1" com.docker.compose.project)")"
+  dc_files="$(dk_label "$1" com.docker.compose.project.config_files)"
+  dc_dir="$(dk_label "$1" com.docker.compose.project.working_dir)"
+  dc_first=""
+  dc_ifs="$IFS"; IFS=','; set -f
+  for dc_f in $dc_files; do
+    if [ -z "$dc_first" ]; then dc_first="$dc_f"; fi
+    dc_cmd="$dc_cmd -f $(shq "$dc_f")"
+  done
+  IFS="$dc_ifs"; set +f
+  if [ -n "$dc_dir" ] && [ "$dc_dir" != "${dc_first%/*}" ]; then
+    dc_cmd="$dc_cmd --project-directory $(shq "$dc_dir")"
+  fi
+  printf '%s' "$dc_cmd"
+}
+# A volume or a folder goes once, after every container that mounts it has let
+# go of it — so when two of them share one, the command is given in the steps of
+# the last, and the others say where it is. Returns 1 when it is not given here.
+ds_remove() { # container, source of its mount, the command, the words before it
+  dr_with=""
+  for dr_c in $DS_ALL; do
+    if dk_has_source "$dr_c" "$2"; then dr_with="$dr_with $dr_c"; fi
+  done
+  dr_with="${dr_with# }"; dr_last="${dr_with##* }"
+  case "$dr_with" in
+    *" "*) ;;
+    *) say "  - $4$3"; return 0 ;;
+  esac
+  if [ "$1" = "$dr_last" ]; then
+    say "  - Once $(printf '%s' "$dr_with" | sed 's/ /, /g') no longer mount it: $3"
+    return 0
+  fi
+  say "  - Not removed here: other containers mount it too. It goes once, in the steps for $dr_last."
+  return 1
+}
 docker_steps() {
   ds_c="$1"
   ds_project="$(dk_label "$ds_c" com.docker.compose.project)"
   ds_service="$(dk_label "$ds_c" com.docker.compose.service)"
   ds_files="$(dk_label "$ds_c" com.docker.compose.project.config_files)"
+  ds_dc=""
+  if [ -n "$ds_project" ]; then ds_dc="$(dk_compose "$ds_c")"; fi
   ds_version="$(dk_version "$ds_c")"
   ds_folder="$(dk_env "$ds_c" "$VAR_NAME")"
   ds_console=""
   if [ -n "$ds_folder" ]; then ds_console="$(dk_mount "$ds_c" "$ds_folder")"; fi
   ds_legacy="$(dk_mount "$ds_c" /opt/technitium/dns/www)"
-  ds_where=""; ds_type=""; ds_state=""
+  ds_state=""
   printf '\n  container %s%s%s\n\n' "$ds_c" "${ds_version:+  v$ds_version}" \
     "${ds_service:+  · service \"$ds_service\" in ${ds_files:-its compose file}}"
 
   if [ -n "$ds_console" ]; then
-    ds_type="${ds_console%% *}"; ds_where="${ds_console#* }"
-    ds_short="$ds_where"
-    if [ "$ds_type" = "volume" ] && [ -n "$ds_project" ]; then ds_short="${ds_where#"${ds_project}"_}"; fi
-    if [ "$(state_get webroot)" = "$ds_where" ]; then ds_state=" $STATE_DIR"; fi
+    dk_mount_read "$ds_console"
+    ds_short="$DM_WHERE"
+    if [ "$DM_TYPE" = "volume" ] && [ -n "$ds_project" ]; then ds_short="${DM_WHERE#"${ds_project}"_}"; fi
+    if [ "$(state_get webroot)" = "$DM_WHERE" ]; then ds_state=" $STATE_DIR"; fi
     if [ "$ACTION" = "uninstall" ]; then
       say "To remove the console (the server goes back to the one its image ships):"
       say ""
-      say "  - Keep any json/*-custom.json you edited: they are in $ds_type $ds_where."
+      say "  - Keep any json/*-custom.json you edited: they are in $DM_TYPE $DM_WHERE."
       if [ -n "$ds_project" ]; then
         say "  - In ${ds_files:-the compose file}, take these two lines out of \"$ds_service\":"
         say "        - $VAR_NAME=$ds_folder"
-        say "        - $ds_short:$ds_folder:ro"
-        if [ "$ds_type" = "bind" ]; then say "    (docker reports the path resolved; your file may write it relative to itself)"; fi
+        say "        - $ds_short:$ds_folder$DM_RO"
+        if [ "$DM_TYPE" = "bind" ]; then say "    (docker reports the path resolved; your file may write it relative to itself)"; fi
         say "    and remove the service that runs $IMAGE_REF."
-        say "  - docker compose up -d --remove-orphans"
+        say "  - $ds_dc up -d --remove-orphans"
         say "    It restarts \"$ds_service\" once, because its environment changes."
       else
         say "  - Re-create $ds_c without -e $VAR_NAME=$ds_folder"
-        say "    and without -v $ds_where:$ds_folder:ro. That is its only restart."
+        say "    and without -v $DM_WHERE:$ds_folder$DM_RO. That is its only restart."
       fi
-      if [ "$ds_type" = "volume" ]; then
-        say "  - docker volume rm $ds_where"
+      if [ "$DM_TYPE" = "volume" ]; then
+        ds_remove "$ds_c" "$DM_SOURCE" "docker volume rm $(shq "$DM_WHERE")" "" || true
       else
-        say "  - sudo rm -rf $ds_where$ds_state"
+        ds_remove "$ds_c" "$DM_SOURCE" "sudo rm -rf $(shq "$DM_WHERE")$ds_state" "" || true
       fi
     else
-      say "The console is already set up: $ds_folder is served from $ds_type $ds_where."
+      say "The console is already set up: $ds_folder is served from $DM_TYPE $DM_WHERE."
       say "To update it, without restarting the DNS server:"
       say ""
       if [ -n "$ds_project" ]; then
         ds_init="$(dk_init_service "$ds_project")"
-        say "  docker compose pull ${ds_init:-technitium-console} && docker compose up -d ${ds_init:-technitium-console}"
+        say "  $ds_dc pull ${ds_init:-technitium-console} && $ds_dc up -d ${ds_init:-technitium-console}"
       else
         say "  docker pull $IMAGE_REF:latest"
-        say "  docker run --rm -v $ds_where:/target $IMAGE_REF:latest"
+        say "  docker run --rm -v $(shq "$DM_WHERE"):/target $IMAGE_REF:latest"
       fi
     fi
   elif [ -n "$ds_legacy" ]; then
-    ds_where="${ds_legacy#* }"
-    if [ "$(state_get webroot)" = "$ds_where" ]; then ds_state=" $STATE_DIR"; fi
-    say "It serves $ds_where mounted over its own web root, the layout used before 15.5."
+    dk_mount_read "$ds_legacy"
+    if [ "$(state_get webroot)" = "$DM_WHERE" ]; then ds_state=" $STATE_DIR"; fi
+    say "It serves $DM_WHERE mounted over its own web root, the layout used before 15.5."
     if [ "$ACTION" = "uninstall" ]; then
       say "To remove the console:"
       say ""
-      say "  - Keep any json/*-custom.json you edited, from $ds_where/json."
+      say "  - Keep any json/*-custom.json you edited, from $DM_WHERE/json."
       if [ -n "$ds_project" ]; then
         say "  - In ${ds_files:-the compose file}, take this line out of \"$ds_service\":"
-        say "        - $ds_where:/opt/technitium/dns/www:ro"
+        say "        - $DM_WHERE:/opt/technitium/dns/www$DM_RO"
         say "    (docker reports the path resolved; your file may write it relative to itself)"
-        say "  - docker compose up -d $ds_service"
+        say "  - $ds_dc up -d $ds_service"
         say "    Its only restart: it comes back on the console its image ships."
       else
-        say "  - Re-create $ds_c without -v $ds_where:/opt/technitium/dns/www:ro (its only restart)."
+        say "  - Re-create $ds_c without -v $DM_WHERE:/opt/technitium/dns/www$DM_RO (its only restart)."
       fi
-      say "  - Then, and not before: sudo rm -rf $ds_where$ds_state"
-      say "    Emptied while still mounted, it would leave the server nothing to serve."
+      if ds_remove "$ds_c" "$DM_SOURCE" "sudo rm -rf $(shq "$DM_WHERE")$ds_state" "Then, and not before: "; then
+        say "    Emptied while still mounted, it would leave the server nothing to serve."
+      fi
     else
       say "To update the console in it:"
       say ""
-      say "  $ONE_LINER --dir $ds_where"
+      say "  $ONE_LINER --dir $(shq "$DM_WHERE")"
       if ! before_15_5 "$ds_version"; then
         say ""
         say "On 15.5 or later, the image is simpler and survives server updates: $DOCKER_DOCS"
@@ -512,7 +578,7 @@ docker_steps() {
     say "  volumes:"
     say "    technitium-console:"
     say ""
-    say "Then: docker compose up -d"
+    say "Then: $ds_dc up -d"
     say "It restarts \"$ds_service\" once, because its environment changes. Updates do not."
     if [ -z "$ds_version" ]; then say "It needs Technitium 15.5 or later."; fi
   else
@@ -526,9 +592,11 @@ docker_steps() {
     if [ -z "$ds_version" ]; then say "It needs Technitium 15.5 or later."; fi
   fi
 }
+DS_ALL=""            # the containers whose steps are being printed: see ds_remove
 docker_guidance() {
   dg_servers="$(docker_servers)"
   [ -n "$dg_servers" ] || return 0
+  DS_ALL="$dg_servers"
   say "Technitium runs in Docker here. Nothing is written into a container: it would"
   say "be lost the next time the container is recreated. These are the steps instead."
   say "More: $DOCKER_DOCS"
@@ -543,6 +611,7 @@ docker_guidance_for() {
     if dk_has_source "$dgf_c" "$1"; then dgf_found="$dgf_found $dgf_c"; fi
   done
   [ -n "$dgf_found" ] || return 0
+  DS_ALL="$dgf_found"
   say "$1 is mounted into a container, so undoing it is a change to that container."
   for dgf_c in $dgf_found; do docker_steps "$dgf_c"; done
   printf '\n'
@@ -683,6 +752,7 @@ publish() {
   while IFS= read -r f; do
     [ -n "$f" ] || continue
     case "$f" in $CUSTOM_GLOB) continue ;; esac
+    if [ -n "$INTO_VOLUME" ] && [ "$f" = "$MARKER" ]; then continue; fi
     [ -e "$src/$f" ] || rm -f "$dst/$f"
   done < "$list"
   find "$dst" -depth -type d -empty -exec rmdir {} + 2>/dev/null || true
@@ -910,6 +980,14 @@ state_set phase publishing
 state_set webroot "$WWW_DIR"
 state_set mode "$MODE"
 if [ -n "$BACKUP" ]; then state_set backup "$BACKUP"; fi
+if [ -n "$INTO_VOLUME" ]; then
+  # Every check has passed (the mount point, W6, the checksum, the archive), and
+  # nothing is copied yet: from here on the volume is the console's, finished or
+  # not. Written by rename, like every file publish writes.
+  rm -f "$WWW_DIR/$MARKER.tc-new"
+  printf 'technitium-console sha256:%s\n' "$(sha256sum "$TMP/console.tar.gz" | cut -d' ' -f1)" > "$WWW_DIR/$MARKER.tc-new"
+  mv -f "$WWW_DIR/$MARKER.tc-new" "$WWW_DIR/$MARKER"
+fi
 LIST="$TMP/list"
 publish "$TMP/dist" "$WWW_DIR" "$LIST"
 state_set version "$VERSION"

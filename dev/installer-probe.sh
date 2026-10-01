@@ -37,8 +37,9 @@ WORK="$(mktemp -d)"
 # this cannot remove. All of it goes on the way out.
 cleanup() {
   docker compose -p "installer-probe-$$" -f "$WORK/compose.yaml" down -v >/dev/null 2>&1 || true
-  docker rm -f "installer-probe-$$" >/dev/null 2>&1 || true
-  docker rmi "technitium-console-init:probe-$$" >/dev/null 2>&1 || true
+  docker rm -f "installer-probe-$$" "installer-probe-$$-rw" >/dev/null 2>&1 || true
+  docker rmi "technitium-console-init:probe-$$" "technitium-console-init:probe-$$-badsum" \
+    "technitium-console-init:probe-$$-nosum" >/dev/null 2>&1 || true
   docker run --rm -v "$WORK":/w busybox:stable sh -c 'rm -rf /w/* /w/.[!.]*' >/dev/null 2>&1 || true
   rm -rf "$WORK"
 }
@@ -637,8 +638,10 @@ want="$(cut -d' ' -f1 < "$WORK/img/technitium-console.tar.gz.sha256")"
 got="$(docker run --rm --entrypoint sha256sum "$INIT_IMAGE" /usr/share/technitium-console/technitium-console.tar.gz | cut -d' ' -f1)"
 [ -n "$got" ] && [ "$got" = "$want" ] || c26=1                                         # the bytes it was built with
 tar -tzf "$WORK/img/technitium-console.tar.gz" | sed -e 's|^\./||' -e 's|/.*||' | grep . | sort -u > "$WORK/expected"
-in_volume 'ls -A /v' | sort -u > "$WORK/actual"
-[ -z "$(comm -13 "$WORK/expected" "$WORK/actual")" ] || c26=1                           # A6: nothing but the console
+in_volume 'ls -A /v' | grep -vx '\.technitium-console' | sort -u > "$WORK/actual"
+[ -z "$(comm -13 "$WORK/expected" "$WORK/actual")" ] || c26=1                           # A6: nothing but the console…
+in_volume '[ -f /v/.technitium-console ] && [ ! -L /v/.technitium-console ]' || c26=1     # …and the marker (A6's one exception)
+[ "$(curl -s -o /dev/null -w '%{http_code}' "$(base)/.technitium-console")" != "200" ] || c26=1   # which is never served
 dc logs technitium-console > "$WORK/out" 2>&1
 grep -q 'Checksum matches' "$WORK/out" || c26=1
 ! grep -q 'sudo' "$WORK/out" || c26=1                                                    # no host advice from inside the image
@@ -680,11 +683,22 @@ dc up -d >>"$WORK/out" 2>&1 || c28=1
 served "$ASSET" || c28=1
 [ "$(cat "$WORK/bind/json/quick-forwarders-list-custom.json")" = '[{"name":"by hand"}]' ] || c28=1
 [ "$(curl -s "$(base)/json/quick-forwarders-list-custom.json")" = '[{"name":"by hand"}]' ] || c28=1
+# The bind folder, through an update and a new server container.
+build_init "c28b"
+dc up -d technitium-console >>"$WORK/out" 2>&1 || c28=1
+[ "$(init_exit)" = "0" ] || c28=1
+[ "$(curl -s "$(base)/probe-marker.txt")" = "c28b" ] || c28=1
+[ "$(cat "$WORK/bind/json/quick-forwarders-list-custom.json")" = '[{"name":"by hand"}]' ] || c28=1
+dc up -d --force-recreate dns-server >>"$WORK/out" 2>&1 || c28=1
+served "$ASSET" || c28=1
+[ "$(curl -s "$(base)/probe-marker.txt")" = "c28b" ] || c28=1
+[ "$(curl -s "$(base)/json/quick-forwarders-list-custom.json")" = '[{"name":"by hand"}]' ] || c28=1
 dc down -v >/dev/null 2>&1
 verdict "C28" $c28 "custom lists, in the volume or in a host folder, survive updates and a new server container"
 
 # --------------------------------- C29 · D1, a failing init does not stop the DNS
 c29=0
+echo "step: a volume holding somebody else's files" > "$WORK/log29"
 compose_file technitium-console
 dc create >"$WORK/out" 2>&1 || c29=1                   # the volume exists; nothing runs yet
 in_volume 'printf "keep\n" > /v/notes.txt' || c29=1    # somebody else's files: W6 has to stop the init
@@ -695,10 +709,59 @@ dc logs technitium-console 2>&1 | grep -q 'not a Technitium console' || c29=1   
 i=0; while [ "$i" -lt 60 ] && ! curl -s -o /dev/null "$(base)/"; do i=$((i+1)); sleep 1; done
 curl -s -o /dev/null "$(base)/" || c29=1               # and it answers
 [ "$(in_volume 'cat /v/notes.txt')" = "keep" ] || c29=1
-in_volume "[ ! -e /v/$ASSET ]" || c29=1
+in_volume "[ ! -e /v/$ASSET ] && [ ! -e /v/.technitium-console ]" || c29=1   # nothing written, not even the marker
 dc down -v >/dev/null 2>&1
+
+echo "step: no volume at /target: c29=$c29" >> "$WORK/log29"
 docker run --rm "$INIT_IMAGE" >"$WORK/novol" 2>&1 && c29=1   # no volume at /target: refused,
 grep -q 'not a mounted volume' "$WORK/novol" || c29=1           # and not copied into nothing
+
+echo "step: a bad or a missing checksum: c29=$c29" >> "$WORK/log29"
+# The same image with its .sha256 altered, and with it gone: entrypoint and all.
+printf '%064d  technitium-console.tar.gz\n' 0 > "$WORK/img/bad.sha256"
+printf 'FROM %s\nCOPY bad.sha256 /usr/share/technitium-console/technitium-console.tar.gz.sha256\n' "$INIT_IMAGE" > "$WORK/img/Dockerfile.badsum"
+printf 'FROM %s\nRUN rm /usr/share/technitium-console/technitium-console.tar.gz.sha256\n' "$INIT_IMAGE" > "$WORK/img/Dockerfile.nosum"
+for v in badsum nosum; do
+  docker build -q -f "$WORK/img/Dockerfile.$v" -t "$INIT_IMAGE-$v" "$WORK/img" >/dev/null 2>&1 || c29=1
+done
+dc create >>"$WORK/out" 2>&1 || c29=1                  # a fresh, empty volume
+for v in badsum nosum; do
+  docker run --rm -v "${PROJECT}_technitium-console:/target" "$INIT_IMAGE-$v" >>"$WORK/out" 2>&1 && c29=1
+  [ -z "$(in_volume 'ls -A /v')" ] || c29=1             # nothing written, not even the marker
+done
+grep -q 'does not match the release' "$WORK/out" || c29=1
+grep -q 'no checksum next to' "$WORK/out" || c29=1
+dc down -v >/dev/null 2>&1
+
+echo "step: an interrupted first copy, then the next run: c29=$c29" >> "$WORK/log29"
+dc create >>"$WORK/out" 2>&1 || c29=1
+# What a first copy stopped halfway leaves: the marker, some assets, no page.
+docker run --rm --entrypoint sh -v "${PROJECT}_technitium-console:/target" "$INIT_IMAGE" -c \
+  'mkdir /tmp/x && tar -xzf /usr/share/technitium-console/technitium-console.tar.gz -C /tmp/x &&
+   cp -a /tmp/x/assets /target/ && printf "technitium-console\n" > /target/.technitium-console' >>"$WORK/out" 2>&1 || c29=1
+in_volume "[ -f /v/$ASSET ] && [ ! -e /v/index.html ]" || c29=1
+dc up -d >>"$WORK/out" 2>&1 || c29=1                   # the next up finishes it
+[ "$(init_exit)" = "0" ] || c29=1
+served "$ASSET" || c29=1
+served index.html || c29=1
+in_volume '[ -f /v/.technitium-console ]' || c29=1
+dc down -v >/dev/null 2>&1
+
+echo "step: a host folder with custom lists and another file: c29=$c29" >> "$WORK/log29"
+mkdir -p "$WORK/mixed/json"
+printf '[{"name":"mine"}]\n' > "$WORK/mixed/json/quick-block-lists-custom.json"
+printf 'keep\n' > "$WORK/mixed/notes.txt"
+compose_file "$WORK/mixed"
+dc up -d >>"$WORK/out" 2>&1 || c29=1
+[ "$(init_exit)" = "1" ] || c29=1
+dc logs technitium-console 2>&1 | grep -q 'not a Technitium console' || c29=1
+[ "$(docker inspect -f '{{.State.Running}}' "$(dc ps -q dns-server)")" = "true" ] || c29=1
+[ "$(cat "$WORK/mixed/notes.txt")" = "keep" ] || c29=1
+[ "$(cat "$WORK/mixed/json/quick-block-lists-custom.json")" = '[{"name":"mine"}]' ] || c29=1
+[ ! -e "$WORK/mixed/$ASSET" ] && [ ! -e "$WORK/mixed/.technitium-console" ] || c29=1
+dc down -v >/dev/null 2>&1
+echo "step: done: c29=$c29" >> "$WORK/log29"
+cat "$WORK/log29" >> "$WORK/out"
 verdict "C29" $c29 "an init that fails never keeps the DNS server from starting"
 
 # ------------------------------- C30 · the Docker host gets a way in and a way out
@@ -720,20 +783,33 @@ dc up -d >/dev/null 2>&1; init_exit >/dev/null
 dns="$(docker inspect -f '{{.Name}}' "$(dc ps -q dns-server)" | sed 's|^/||')"
 host > "$WORK/out" 2>&1 || c30=1
 section "$dns" | grep -q 'already set up' || c30=1
-section "$dns" | grep -q 'docker compose pull technitium-console && docker compose up -d technitium-console' || c30=1
+dcp="docker compose -p $PROJECT -f $WORK/compose.yaml"   # the project, named: runnable from anywhere
+section "$dns" | grep -qF "$dcp pull technitium-console && $dcp up -d technitium-console" || c30=1
+upd="$(section "$dns" | sed -n 's/.*&& \(docker compose .* up -d technitium-console\)$/\1/p')"
+before="$(started_at)"
+(cd / && sh -c "$upd") >/dev/null 2>&1 || c30=1        # run as printed, from another folder
+[ "$(init_exit)" = "0" ] || c30=1
+[ "$(started_at)" = "$before" ] || c30=1
 host --uninstall > "$WORK/out" 2>&1 || c30=1
-section "$dns" | grep -q 'docker compose up -d --remove-orphans' || c30=1
+section "$dns" | grep -qF "$dcp up -d --remove-orphans" || c30=1
 section "$dns" | grep -q "docker volume rm ${PROJECT}_technitium-console" || c30=1
 dc down -v >/dev/null 2>&1
 echo "step: a host folder over www, installed with --dir (the README before this): c30=$c30" >> "$WORK/log30"
 mkdir -p "$WORK/legacy"
 start_server -v "$WORK/legacy:$WWW:ro"
+# A second server on the same folder, read-write: its own line, and one removal.
+docker rm -f "$NAME-rw" >/dev/null 2>&1
+docker run -d --name "$NAME-rw" -v "$WORK/legacy:$WWW" "$IMAGE" >/dev/null 2>&1 || c30=1
 docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$WORK/legacy:$WORK/legacy" \
   -v "$WORK/console.tar.gz:/console.tar.gz:ro" -v "$INSTALLER:/install.sh:ro" docker:cli \
   sh -c "sh /install.sh --dir $WORK/legacy --from /console.tar.gz --yes && sh /install.sh --uninstall --dir $WORK/legacy" \
   > "$WORK/out" 2>&1 || c30=1
 section "$NAME" | grep -q "$WORK/legacy:$WWW:ro" || c30=1      # the mount to take out, named
+section "$NAME-rw" | grep -qF -- "-v $WORK/legacy:$WWW (" || c30=1   # as it is mounted, read-write
+! section "$NAME-rw" | grep -q "$WWW:ro" || c30=1
+[ "$(grep -c "sudo rm -rf $WORK/legacy" "$WORK/out")" = "1" ] || c30=1   # removed once, after both
 [ -f "$WORK/legacy/$ASSET" ] || c30=1                             # and the folder left whole until then
+docker rm -f "$NAME-rw" >/dev/null 2>&1
 stop_server
 cat "$WORK/log30" >> "$WORK/out"
 verdict "C30" $c30 "on a Docker host it prints the steps in and out, with real names and no \$0"
