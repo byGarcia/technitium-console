@@ -74,7 +74,9 @@ function Kpi({ value, sub, label, children }: { value: string; sub?: string; lab
       <Body>
         <div className={styles.kpi}>
           <span className={styles.kpiValue}>{value}</span>
-          <span className={styles.kpiSub}>{sub ?? ''}</span>
+          {/* A figure without a sub-line keeps an empty one, a full line high, so the four
+              labels sit on one line as the drawing has them. */}
+          <span className={styles.kpiSub}>{sub ?? '\u00a0'}</span>
           <span className={styles.kpiLabel}>{label}</span>
           {children}
         </div>

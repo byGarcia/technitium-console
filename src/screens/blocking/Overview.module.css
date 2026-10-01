@@ -38,7 +38,7 @@ measures the two ambers as indistinguishable. The sentence and its icon say it.
 /* A figure: the number, its sub-line, its label, and the trend under it. */
 .kpi { display: flex; flex-direction: column; gap: var(--s-1); }
 .kpiValue { font-family: var(--font-mono); font-size: var(--t-7); font-weight: 600; }
-.kpiSub { font-family: var(--font-mono); font-size: var(--t-2); color: var(--faint); min-height: var(--s-8); }
+.kpiSub { font-family: var(--font-mono); font-size: var(--t-2); color: var(--faint); }
 .kpiLabel { font-size: var(--t-1); font-weight: var(--text-weight); letter-spacing: var(--text-tracking); text-transform: uppercase; color: var(--mute); }
 /* The trend runs to the card's edges and its foot, as the drawing has it: the body's
    padding (`--s-9`, ui/Panel) is given back on three sides, and the panel's rounded
