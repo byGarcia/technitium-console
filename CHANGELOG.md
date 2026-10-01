@@ -12,7 +12,7 @@ sends, every text it shows and every control it offers, compared with that serve
 
 | Console | Technitium DNS Server | Notes |
 |---|---|---|
-| **1.2.x** | **15.5.x** (checked against 15.5.1) | Current. Allowed and Blocked become one Blocking section. Supports a console folder of its own (`DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH`), so server updates leave it alone. |
+| **1.2.x** | **15.5.x** (checked against 15.5.1) | Current. Allowed and Blocked become one Blocking section, and the console comes as an image for Docker. Supports a console folder of its own (`DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH`), so server updates leave it alone. |
 | 1.1.x | 15.5.x | Superseded by 1.2.x on the same server. If you stay on it, use 1.1.3: earlier ones flood the server from Cache, Allowed and Blocked. |
 | 1.0.0 | 15.4 | Cannot save Settings on a 15.5 server. Upgrade. |
 
@@ -23,11 +23,14 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
 
 ## v1.2.0 — 2026-10-01
 
-**Allowed and Blocked are now one Blocking section.** Overview, Rules and Lists, laid out the way
-AdGuard Home and Pi-hole lay blocking out. It is a deliberate exception to "design only", written
-down with its limits: it calls only endpoints the server already has, with the stock console's own
-actions and wording, and Settings › Blocking is left exactly as it was. On the way, the Dashboard's
-chart learned to tell the time the way the stock console does.
+**Allowed and Blocked are now one Blocking section, and Docker gets an image.** Overview, Rules
+and Lists, laid out the way AdGuard Home and Pi-hole lay blocking out. It is a deliberate exception
+to "design only", written down with its limits: it calls only endpoints the server already has,
+with the stock console's own actions and wording, and Settings › Blocking is left exactly as it
+was. If Technitium runs in Docker, a small image now copies the console into a volume that the
+official server serves, and updating it restarts nothing: see
+[Docker](https://github.com/byGarcia/technitium-console#docker). On the way, the Dashboard's chart
+learned to tell the time the way the stock console does.
 
 ### ✨ The Blocking section
 
@@ -56,7 +59,26 @@ chart learned to tell the time the way the stock console does.
   permission it needs; a control you cannot use is disabled and says why. The section appears for
   anyone who can view Blocked or Allowed.
 
-<!-- DOCKER: filled in phase 2 -->
+### 🧰 Installer
+
+- **`ghcr.io/bygarcia/technitium-console`**, for amd64, arm64 and arm/v7, on Technitium 15.5 or
+  later. It carries this release's tarball, byte for byte, checks it against its checksum again
+  every time it runs, copies the console into the volume and exits. Pin `:1.2.0`, follow `:1.2`,
+  or take `:latest`.
+- **On a Docker host the one-line installer prints the exact steps** for your containers, with
+  their own container, service, file and volume names: in, and with `--uninstall`, out. It used to
+  print a command that did not work (`sudo sh --dir …`) and a layout that 15.5 no longer needs.
+- **Installing into a container's own files is called out**: they are gone the next time the
+  container is recreated.
+- **A folder holding only your `json/*-custom.json` lists counts as empty**, so they can be in
+  place before the first install.
+- **`--dir /` is refused.** It used to fall back to the server's own web root and install there.
+  A folder holding a DNS server's configuration (`dns.config`, `zones/*.zone`…) is refused too,
+  whatever else is in it.
+- **Stopping the installer stops it.** A Ctrl-C or a `TERM` in the middle of a run used to clean
+  up its working files and carry on without them; now the run ends there, and the next one picks
+  up from a clean slate. A run it refuses leaves nothing behind, not even an empty
+  `/var/lib/technitium-console`.
 
 ### 🛠 Fixes
 
@@ -76,6 +98,11 @@ chart learned to tell the time the way the stock console does.
   the rules table against 10,000 rules.
 - `CONVENTIONS.md` writes the Blocking section down as a deliberate deviation, with its four
   limits and the two behaviours a maintainer would not guess.
+- Every image is checked on each of its three platforms to carry exactly the release's tarball
+  before `latest` and `1.2` move to it.
+- Every push to `develop` builds `ghcr.io/bygarcia/technitium-console:develop`, the same way a
+  release is built, for trying changes before they are released. It is not for production, and it
+  never moves `latest` or a version.
 
 ---
 
