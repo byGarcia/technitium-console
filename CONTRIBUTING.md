@@ -9,8 +9,8 @@ questions before they are asked:
 
 If your idea makes the console *do* something new, it is a change to
 [Technitium DNS Server](https://github.com/TechnitiumSoftware/DnsServer) and not to this. If it
-makes the console *look* or *behave as an interface* better — clearer, faster to read, reachable
-from a keyboard, correct at 390 px — it belongs here and it is welcome.
+makes the console *look* or *behave as an interface* better (clearer, faster to read, reachable
+from a keyboard, correct at 390 px), it belongs here and it is welcome.
 
 Bug fixes, documentation and accessibility fixes need no permission. Open the pull request.
 
@@ -32,8 +32,8 @@ The development server needs a real DNS server to talk to. The harness brings up
 cd dev && docker compose up -d
 ```
 
-- `http://127.0.0.1:5380` — the official image, serving **this** console out of `dist/`
-- `http://127.0.0.1:5381` — the official image, untouched, serving the **stock** console
+- `http://127.0.0.1:5380`: the official image, serving **this** console out of `dist/`
+- `http://127.0.0.1:5381`: the official image, untouched, serving the **stock** console
 
 Log into either with `admin` / `technitium-ui-dev`. Having both side by side is the whole method:
 when you are not sure what the console should do, you go and look at the one next door.
@@ -44,7 +44,7 @@ containers, wait about twenty seconds for the stats to settle, and it fills up.
 ## Before you open the pull request
 
 ```bash
-npm run typecheck    # tsc -b — NOT `npx tsc --noEmit`, which checks nothing here
+npm run typecheck    # tsc -b, NOT `npx tsc --noEmit`, which checks nothing here
 npm run lint
 npm test
 npm run build
@@ -72,12 +72,12 @@ interesting question is how many others there are.
 **It says what it did not do.** A drawing, a plan or an upstream behaviour you decided *not* to
 follow is worth writing down with the reason. Half the useful documentation in `docs/` is that.
 
-**Its comments explain why.** Not what the code does — what was tried, what broke, what the numbers
-were. If a value was chosen by measurement, the measurement goes in the comment.
+**Its comments explain why.** Not what the code does, but what was tried, what broke, what the
+numbers were. If a value was chosen by measurement, the measurement goes in the comment.
 
 ## Tests
 
-Vitest and Testing Library. Query by what a person sees — the label, the role, the text — and not by
+Vitest and Testing Library. Query by what a person sees (the label, the role, the text) and not by
 a class name, because a class name is exactly what a redesign changes.
 
 Test descriptions are English, like everything else in `src/`, and there is a gate that enforces it.
@@ -94,7 +94,7 @@ Test descriptions are English, like everything else in `src/`, and there is a ga
 
 ## Reporting a bug
 
-Say which version — the About screen has both the console's and the server's — what you did, what
+Say which version (the About screen has both the console's and the server's), what you did, what
 happened, and what the stock console does instead. That last one is usually the whole report: if the
 two differ, this one is wrong by definition.
 

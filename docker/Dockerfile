@@ -3,7 +3,7 @@
 # the same volume read-only and serves it.
 #
 # No RUN: nothing executes at build time, so the three platforms build anywhere
-# without emulation, and the image holds exactly what the context holds — the
+# without emulation, and the image holds exactly what the context holds: the
 # release's tarball and checksum, and the install.sh of the same tag (contract D4).
 #
 # No VOLUME either: without a volume at /target the installer refuses, instead of

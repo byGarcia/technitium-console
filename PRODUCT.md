@@ -6,8 +6,8 @@ An alternative administration console for [Technitium DNS Server](https://github
 the same API, the same behaviour and the same texts, with the interface rebuilt.
 
 It exists because the server is excellent and its console is the part people meet first. Rebuilding
-it is a contained problem — the API is documented and stable, and the console is a static bundle the
-server serves from a folder — so it can be replaced without touching anything that resolves.
+it is a contained problem: the API is documented and stable, and the console is a static bundle the
+server serves from a folder, so it can be replaced without touching anything that resolves.
 
 ## The rule the whole thing is built on
 
@@ -20,7 +20,7 @@ stays in lower case.
 
 This is not modesty, it is the only reason it is safe to put a third-party interface in front of
 infrastructure: you are changing how the console looks, not what your DNS server does. It is also
-what makes the project reviewable — every question of the form "should it do X?" has an answer that
+what makes the project reviewable: every question of the form "should it do X?" has an answer that
 is not an opinion.
 
 ## What this project owns
@@ -59,7 +59,7 @@ is not an opinion.
 ## How "the same" is checked
 
 Parity is measured, not asserted. `dev/` brings up **two instances of the official Technitium image
-side by side** — one serving this console, one untouched — and compares them: the controls on each
+side by side** (one serving this console, one untouched) and compares them: the controls on each
 screen, the state the server is left in after real actions, the widths at which something overflows,
 the sortable columns, the help texts, the dialogs one by one.
 

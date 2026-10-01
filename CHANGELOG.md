@@ -16,12 +16,12 @@ sends, every text it shows and every control it offers, compared with that serve
 | 1.1.x | 15.5.x | Superseded by 1.2.x on the same server. If you stay on it, use 1.1.3: earlier ones flood the server from Cache, Allowed and Blocked. |
 | 1.0.0 | 15.4 | Cannot save Settings on a 15.5 server. Upgrade. |
 
-To update, run the installer again — the same one-line command. It needs no restart of the DNS
+To update, run the installer again (the same one-line command). It needs no restart of the DNS
 service. On Docker, pull the image again: see [Docker](README.md#docker).
 
 ---
 
-## v1.2.0 — 2026-10-01
+## v1.2.0 (2026-10-01)
 
 **Allowed and Blocked are now one Blocking section, and Docker gets an image.** Overview, Rules
 and Lists, laid out the way AdGuard Home and Pi-hole lay blocking out. It is a deliberate exception
@@ -51,20 +51,20 @@ time the way the stock console does.
 
 ### ✨ The Blocking section
 
-- **Overview** — Total Queries and Blocked with a trend line under each and Blocked's share of the
+- **Overview.** Total Queries and Blocked with a trend line under each and Blocked's share of the
   total, Block List Domains and Your Rules. Blocking's status, with Disable for the stock console's
   eight durations and, while paused, the time it comes back. Allowed against blocked over time as
   stacked bars, and a ring with the blocked share, for the Dashboard's five fixed periods and with
   its node selector and memory. Top Blocked Domains with **Allow Domain** and Top Domains with
   **Block Domain**, in a menu on each row, as on the stock Dashboard. And Recently Blocked: the last
   ten blocked queries, from the app that logs them.
-- **Rules** — every domain you blocked or allowed by hand in one table, filtered by All, Blocked or
+- **Rules.** Every domain you blocked or allowed by hand in one table, filtered by All, Blocked or
   Allowed with their counts, searchable, and paged 50 at a time however many there are. Delete
   asks as the stock console asks. **Tree** switches to the domain tree you already know. Import,
   Export and Flush sit at the foot, each for Blocked or Allowed.
-- **Block or allow a domain** — one field with Block and Allow, on Overview and on Rules. Enter
+- **Block or allow a domain.** One field with Block and Allow, on Overview and on Rules. Enter
   blocks, as the stock console's form does.
-- **Lists** — each block list URL is a row: its readable name when it is in the Quick Add
+- **Lists.** Each block list URL is a row: its readable name when it is in the Quick Add
   catalogue, an Enabled switch, its type and Remove. Add a block list or an allow list by URL or
   with Quick Add. Changes wait in a bar with Save and Discard, so even Quick Add › None can be
   undone, and Save sends only the list URLs, cleaned as Settings cleans them. Block List Domains,
@@ -123,7 +123,7 @@ time the way the stock console does.
 
 ---
 
-## v1.1.3 — 2026-09-30
+## v1.1.3 (2026-09-30)
 
 **Cache, Allowed and Blocked stop hammering the server.** Please update: these three screens had a
 bug since 1.0.0 that kept asking the server for the root of the tree, hundreds of times a second,
@@ -146,7 +146,7 @@ for as long as the screen was open.
 
 ---
 
-## v1.1.2 — 2026-09-30
+## v1.1.2 (2026-09-30)
 
 **Sign in with SSO works from any page.** A one-line fix found on the first real install, the
 evening 1.1.1 came out.
@@ -164,14 +164,14 @@ evening 1.1.1 came out.
 
 ---
 
-## v1.1.1 — 2026-09-30
+## v1.1.1 (2026-09-30)
 
 **A clean uninstall on Docker, and the header keeps up with the server.** Found by installing 1.1.0
 from its own release, exactly as the README says to.
 
 ### 🧰 Installer
 
-- **`--uninstall` finishes when the console's folder is a mount point** — which it is in the
+- **`--uninstall` finishes when the console's folder is a mount point**, which it is in the
   Docker layout. It used to empty the folder and then stop with `Device or resource busy`. Now it
   empties it, removes it if it can, and if it cannot, tells you to unset the variable before
   restarting instead of offering a restart that would serve an empty folder.
@@ -179,7 +179,7 @@ from its own release, exactly as the README says to.
 ### 🖥 Interface
 
 - **The tab title, the header and About follow the server.** Rename the server or update it, and
-  they change the next time Settings loads — as the stock console does. They used to stay as they
+  they change the next time Settings loads, as the stock console does. They used to stay as they
   were when you logged in.
 - **The highlighted option of a dropdown stays in view** while you move through it with the
   keyboard.
@@ -191,7 +191,7 @@ from its own release, exactly as the README says to.
 
 ---
 
-## v1.1.0 — 2026-09-30
+## v1.1.0 (2026-09-30)
 
 **Ready for Technitium DNS Server 15.5.** Version 1.0.0 was built for 15.4 and, on a 15.5 server,
 could not save Settings at all: 15.5 removed Auto Prefetch, and 1.0.0 still required its two
@@ -200,19 +200,19 @@ keep the console in a folder of its own, so a server update no longer puts the s
 
 ### ✨ New in Technitium 15.5, now in the console
 
-- **Administration › LDAP Authentication** — every field, the group map, Test Connection, and the
+- **Administration › LDAP Authentication**: every field, the group map, Test Connection, and the
   bind password kept masked.
 - **Edit Zone File** for Primary and Forwarder zones, from the zone's Options menu and from the
   zone list. Other zone types show **View Zone** instead.
-- **LDAP users** — Local, Remote/SSO and Remote/LDAP accounts each get the right menu entries,
+- **LDAP users**: Local, Remote/SSO and Remote/LDAP accounts each get the right menu entries,
   profile fields and 2FA options.
 - Blocking's new rules, the Docker note under Web Service, and the refreshed block list catalogue.
 
 ### 🧰 Installer
 
 - **A folder of its own.** On 15.5 or later, point the server at a folder with
-  `DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH` — a variable contributed to Technitium for this very
-  purpose ([#2138](https://github.com/TechnitiumSoftware/DnsServer/pull/2138)) — and the console
+  `DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH`, a variable contributed to Technitium for this very
+  purpose ([#2138](https://github.com/TechnitiumSoftware/DnsServer/pull/2138)), and the console
   lives there, untouched by server updates. See *Installing* in the README.
 - **It only ever writes into a console.** It refuses a folder that is neither Technitium's console
   nor its own, trusts only the real server process, does not follow symbolic links, uninstalls
@@ -223,8 +223,8 @@ keep the console in a folder of its own, so a server update no longer puts the s
 - **Settings saves again** on 15.5.
 - **Settings follows the node you pick**, on a cluster and on a single server alike, and after you
   move the web service to another port or protocol the console follows it there.
-- **Single Sign-On** — the Redirect URI shown in Administration › SSO is the right one again.
-- **Your account** — Configure 2FA asks before turning 2FA off, Change Password shows your username
+- **Single Sign-On**: the Redirect URI shown in Administration › SSO is the right one again.
+- **Your account**: Configure 2FA asks before turning 2FA off, Change Password shows your username
   and the code's help, success messages close the dialog and appear on the page, and Create API
   Token shows the new token on its own with its warning. Logging in with the factory password
   opens Change Password straight away, as it should.
@@ -242,7 +242,7 @@ keep the console in a folder of its own, so a server update no longer puts the s
 
 ---
 
-## v1.0.0 — 2026-09-07
+## v1.0.0 (2026-09-07)
 
 **First public release.** The whole Technitium DNS Server 15.4 console, rebuilt: twelve sections,
 real addresses you can bookmark and reload, a layout that works on a phone, and a one-line
@@ -251,11 +251,11 @@ installer that puts it in place and takes it out again.
 ### ✨ Highlights
 
 - **Same console, new interface.** Every screen, dialog, text and step of the stock console, against
-  the same API — nothing changes on the server.
+  the same API. Nothing changes on the server.
 - **Works on a phone.** No section overflows at 390 px; tables reflow and the navigation collapses.
 - **Cache, Allowed and Blocked as a real tree**, full height beside the records, with the path you
   are on written out.
-- **An installer you can trust with your DNS server** — it keeps your custom lists, survives being
+- **An installer you can trust with your DNS server.** It keeps your custom lists, survives being
   interrupted, never restarts the DNS service, and uninstalls back to the original.
 
 ### 🛠 Fixes on the way to 1.0

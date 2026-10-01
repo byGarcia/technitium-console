@@ -39,8 +39,8 @@ rewording.
 
 There are two disposable instances in `dev/`:
 
-- `dev` at <http://127.0.0.1:5380> — serves our build
-- `ref` at <http://127.0.0.1:5381> — the upstream console, untouched
+- `dev` at <http://127.0.0.1:5380>: serves our build
+- `ref` at <http://127.0.0.1:5381>: the upstream console, untouched
 
 User `admin`, password `technitium-ui-dev`. Bring them up with
 `docker compose up -d` from `dev/`.
@@ -154,8 +154,8 @@ Write down here whatever you find. What is already known:
   Only the path that cuts the service asks.
 - **`dhcp/scopes/set` is a PARTIAL update**: each field is applied only if it
   comes in the request (`WebServiceDhcpApi.cs:390-650`), so a body with only
-  `name` and `newName` renames without touching anything else —checked against a
-  v15.4 instance. Upstream always sends all 36. And **a scope created with this
+  `name` and `newName` renames without touching anything else (checked against a
+  v15.4 instance). Upstream always sends all 36. And **a scope created with this
   endpoint is born enabled**, even though nothing says so.
 - **`dhcp/scopes/get` OMITS fifteen optional keys** instead of sending them
   `null`: `domainName`, `domainSearchList`, `serverAddress`, `serverHostName`,
@@ -249,7 +249,7 @@ Write down here whatever you find. What is already known:
 - **Asymmetric permissions, the concrete Administration case**:
   `permissions/set` and `sso/set` ask for `Administration.canDelete`, not
   `canModify` (WebServiceAuthApi.cs:1533 and 1692). In the cluster, nearly
-  everything asks for `canDelete` —including `init`, `initJoin` and `promote`—
+  everything asks for `canDelete` (including `init`, `initJoin` and `promote`),
   but `setOptions`, `resync`, `updatePrimary` and `updateIpAddress` ask for
   `canModify`.
 - **`zones/list` OMITS `dnssecStatus` and `hasDnssecPrivateKeys` on Catalog and
@@ -260,7 +260,7 @@ Write down here whatever you find. What is already known:
   `zones/permissions/get`, a user permission brings `username` and a group one
   brings `name`. Treating them as the same shape leaves half the table blank.
 - **`records/delete` has no branch for CNAME, DNAME, SOA or APP**: all four fall
-  to the `default`, which only sends `rdata` if it exists — and it exists for
+  to the `default`, which only sends `rdata` if it exists, and it exists for
   none of them. The server receives zone+domain+type and nothing else. And
   **deleting an NS does not send `glue`, but disabling it does**: same pair of
   actions, different set of parameters.
@@ -298,8 +298,8 @@ Write down here whatever you find. What is already known:
 - **The tab that comes up open in the zone options is not the first**: on a
   Catalog it is "Query Access", and on a Primary it depends on whether there are
   catalogs available.
-- **`convertZone` offers only three destinations** —Primary, Forwarder and
-  Catalog— and which of them are enabled depends on the source through a table
+- **`convertZone` offers only three destinations** (Primary, Forwarder and
+  Catalog), and which of them are enabled depends on the source through a table
   that follows from nothing: a Primary can only go to Forwarder.
 - **The year has to be padded to four digits.** `0001-01-01T00:00:00` is .NET's
   `default(DateTime)` and turns up on every unused record; without padding,
@@ -319,14 +319,14 @@ Write down here whatever you find. What is already known:
   (`Local`, `RemoteSSO`, `RemoteLDAP`) next to the obsolete `isSsoUser`, and
   **`totpEnabled` is omitted for a `RemoteSSO` user**, not sent as `false`
   (WebServiceAuthApi.cs:77-82 and 140-146). In the details, `ssoManagedGroups` is
-  now written ONLY for SSO users and `remotelyManagedGroups` for every type —
-  `false` for `Local` (lines 158-172). A screen still reading `ssoManagedGroups`
+  now written ONLY for SSO users and `remotelyManagedGroups` for every type
+  (`false` for `Local`, lines 158-172). A screen still reading `ssoManagedGroups`
   unlocks the groups of every LDAP user. Checked live against v15.5.1.
 - **`admin/ldap/get` on a fresh install is half `null`**: `ldapServer`,
   `ldapBindUsername`, `ldapBindPassword`, `ldapSearchBase`, `ldapUserSearchFilter`
   and `ldapGroupAttribute` arrive as `null`, `ldapPort` as `389`, and
   `ldapAllowSignupOnlyForMappedUsers` is **`true` while `ldapAllowSignup` is
-  `false`** — the box comes up checked and disabled. `ldap/set` repeats SSO's
+  `false`**: the box comes up checked and disabled. `ldap/set` repeats SSO's
   lesson and drops `localGroups` (line 2136). Checked live against v15.5.1.
 - **"Test Connection" is not a dry run of "Save".** It validates server and port
   even with LDAP disabled, ignores the group map and never asks the "Ignore SSL"
@@ -349,7 +349,7 @@ Write down here whatever you find. What is already known:
   the serial is not kept either: the server bumps it. Checked against v15.5.1.
 - **"Edit Zone File" never sends `overwrite`** (zone.js:1293): the server
   defaults it to `true` (WebServiceZonesApi.cs:1930). And its textarea is never
-  cleared on opening, only overwritten when the read succeeds — after a read that
+  cleared on opening, only overwritten when the read succeeds. After a read that
   never arrives, "Save" (always enabled) would send what the previous opening
   left, possibly another zone's file. Replicated; clearing it instead would send
   an empty file, which with `overwriteZone=true` empties the zone.
@@ -362,7 +362,7 @@ Write down here whatever you find. What is already known:
   Optional Protocols, Cache, Logging). A skipped block skips its VALIDATIONS too.
   On a standalone server the selector is hidden and holds an empty `<option>`
   (cluster.js:1047-1049), so the stock console loads `settings/get?node=` and
-  saves `node=&…` — never `cluster`, which there would drop every node
+  saves `node=&…`, never `cluster`, which there would drop every node
   parameter. Checked on the stock v15.5.1 of the harness. Flush, backup and
   restore take the same selector's node.
 - **The envelope's `server` is the domain of the server that ANSWERED**, written
@@ -391,7 +391,7 @@ Write down here whatever you find. What is already known:
   `X-Forwarded-Prefix`.
 - **One `src/api/<family>.ts` file per endpoint family**, with its types. It
   should return data that is already usable, and `null` or an empty list on
-  failure — but only where an empty result and a failure cannot be confused. If
+  failure, but only where an empty result and a failure cannot be confused. If
   the screen would draw them the same, return the whole `ApiOutcome`: saying
   "no queries for this period" when the call never arrived is worse than an
   error.
@@ -403,8 +403,8 @@ Write down here whatever you find. What is already known:
   (`:root, [data-theme='dark']`, `[data-theme='light']`), so every colour is one a
   theme can redeclare. `color-scheme` too: only a theme block declares it, and
   every element inherits it. **`npm run lint:colours` (`dev/check-colour-tokens.mjs`)
-  enforces it**, and `npm test` runs it too. What genuinely cannot be a token —the
-  white behind the 2FA QR code— is allowed by file and literal in that script, with
+  enforces it**, and `npm test` runs it too. What genuinely cannot be a token (the
+  white behind the 2FA QR code) is allowed by file and literal in that script, with
   its reason.
 - **One CSS module per component** (`X.module.css`).
 - **Spacing, type and radii by token too.** In a `*.module.css` you do not write
@@ -414,15 +414,15 @@ Write down here whatever you find. What is already known:
   picked in `Change Theme` (deviation 1 below). Each theme declares its colours in
   its own block of `src/theme/tokens.css`, and `npm run lint:colours` fails if the
   light block leaves out a colour the dark one declares. A theme is measured before
-  it ships: contrast and chart distance against each one, not only against dark —
-  `node dev/theme-contrast.mjs` (every text and control token on every surface it
-  is drawn on) and `node dev/palette-distance.mjs` (the chart series).
-- **Everything is in ENGLISH** — the interface, the code, the comments and the
+  it ships: contrast and chart distance against each one, not only against dark,
+  with `node dev/theme-contrast.mjs` (every text and control token on every
+  surface it is drawn on) and `node dev/palette-distance.mjs` (the chart series).
+- **Everything is in ENGLISH**: the interface, the code, the comments and the
   tests. The console is `lang="en"` and the destination is a pull request
   upstream. **`npm run lint:language` is what enforces it**, and it exists because
   the rule was broken for three weeks without anybody noticing: the visual
-  redesign left 1,098 pieces of Spanish across 67 files —comments, identifiers and
-  nineteen file names— while the interface stayed English and every other gate
+  redesign left 1,098 pieces of Spanish across 67 files (comments, identifiers and
+  nineteen file names) while the interface stayed English and every other gate
   stayed green. A rule nothing measures is a preference.
 - **No `BrowserRouter`**: the server's only `MapFallback` is `/api/{*path}`.
 - **No CDN and no fonts in `data:`**: the server's CSP does not declare
@@ -430,7 +430,7 @@ Write down here whatever you find. What is already known:
 
 ## Tests
 
-- `npm test` — vitest. **Do not run `npm run build`** if other agents are
+- `npm test`: vitest. **Do not run `npm run build`** if other agents are
   working: it writes into `dist/` and you would step on each other.
 - Every screen needs tests for: **the literal alert texts**, the **validation
   order**, which endpoint is called and with what body, and the behaviour with
@@ -452,8 +452,8 @@ written down**. If you find a fifth, do not introduce it on your own: report it.
 
 1. **Amber is not offered** (Adrián's decision). `Change Theme` is back as
    upstream has it: in the account menu, under the same `localStorage` key,
-   `theme`, as the stock console —same origin, so a choice made in one holds in
-   the other— with `system`, `light` or `dark`. System is the default and follows
+   `theme`, as the stock console (same origin, so a choice made in one holds in
+   the other), with `system`, `light` or `dark`. System is the default and follows
    `prefers-color-scheme` live; a radio applies on click; nothing is written on
    load. Only the Amber radio is missing: a stored `amber` draws dark, is not
    overwritten, and the dialog shows no radio checked until the user picks. It is
@@ -507,7 +507,7 @@ fails in production.
   `/api/{*path}`, so a deep route with no file on disk would 404. The build emits
   one folder with its own `index.html` for each of the console's 34 routes (11
   sections and 23 sub-sections, from `SECTIONS`), plus the two legacy folders
-  `/allowed/` and `/blocked/`: 36 in all. The URL is real —no `#/`— and F5 brings
+  `/allowed/` and `/blocked/`: 36 in all. The URL is real (no `#/`) and F5 brings
   you back where you were, without touching a line of C#. See `vite.config.ts` and
   `app/static-routes.ts`.
 - **Content-Security-Policy**: `default-src 'self'; script-src 'self'

@@ -11,7 +11,7 @@
 # and measured by dev/installer-probe.sh. Two of those clauses shape everything
 # below:
 #
-#   · At every moment there is a complete console being served — the previous one
+#   · At every moment there is a complete console being served: the previous one
 #     before the publication point, the new one after it. So files are never
 #     removed before their replacements are in place, and every page is published
 #     after the assets it names.
@@ -132,7 +132,7 @@ resolve_path() { # absolute, every link resolved, even where its tail does not e
 }
 # --into-volume is the Docker image's mode (README, «Docker»): a volume shared
 # with the DNS server's container, the release tarball the image carries, and
-# nothing to look for — the server may not even be up yet, and it must not have
+# nothing to look for. The server may not even be up yet, and it must not have
 # to be (contract D1). The version is the image's tag and the way out is taking
 # the volume away, so the options that mean something else are refused here.
 if [ -n "$INTO_VOLUME" ]; then
@@ -225,7 +225,7 @@ only_custom_lists() { # folder
 # must not make it one. These are the files the server keeps there
 # (DnsServer.cs, DnsWebService.cs: dns.config, auth.config, webservice.config,
 # zones/*.zone). A bare zones/ is not one of them: this console ships a zones/.
-server_config_in() { # folder — prints what gives it away, or fails
+server_config_in() { # folder (prints what gives it away, or fails)
   for sc_f in dns.config auth.config webservice.config; do
     if [ -e "$1/$sc_f" ]; then printf '%s' "$sc_f"; return 0; fi
   done
@@ -236,7 +236,7 @@ server_config_in() { # folder — prints what gives it away, or fails
 }
 
 # Publishing replaces what the release ships and sweeps everything else. That is
-# right for a console and a disaster for anything else — --dir /opt/technitium/dns
+# right for a console and a disaster for anything else: --dir /opt/technitium/dns
 # by mistake is the server's binaries and configuration gone, with no backup,
 # because there was no index.html to back up. So the folder must be one of these,
 # and otherwise nothing is changed at all.
@@ -315,7 +315,7 @@ service_uids() {
 # nobody but root or the service's own account could have started it: every uid
 # the process runs as, its DnsServerApp.dll, the folder that holds it and that
 # folder's www all belong to one of them. Anything else is named and ignored.
-untrusted_uid() { # pid, trusted uids — prints why not
+untrusted_uid() { # pid, trusted uids (prints why not)
   # /proc/<pid> itself is owned by root for any process that made itself
   # non-dumpable, so the uids are read from status, all four of them.
   ut_uids="$(sed -n 's/^Uid:[[:space:]]*//p' "/proc/$1/status" 2>/dev/null)"
@@ -325,7 +325,7 @@ untrusted_uid() { # pid, trusted uids — prints why not
   done
   return 0
 }
-untrusted_files() { # the DnsServerApp.dll it names, trusted uids — prints why not
+untrusted_files() { # the DnsServerApp.dll it names, trusted uids (prints why not)
   case "$1" in /*) ;; *) echo "it names DnsServerApp.dll by a relative path"; return 0 ;; esac
   [ -f "$1" ] || { echo "$1 is not there"; return 0; }
   for ut_f in "$1" "${1%/DnsServerApp.dll}" "${1%/DnsServerApp.dll}/www"; do
@@ -428,8 +428,8 @@ serves_folder() {
 # On a host whose server runs in a container there is nothing here to install
 # into: a container's own files are replaced every time it is recreated, and
 # its environment and compose file are not this script's to edit (contract §4).
-# So it reads what is there — `docker inspect`, and the startup log through
-# `docker exec`, both read-only (F4) — and prints the exact change, for the way
+# So it reads what is there, with `docker inspect` and the startup log through
+# `docker exec`, both read-only (F4), and prints the exact change, for the way
 # in and for the way out. Printing it is what this path is for: it exits 0.
 docker_servers() {
   docker ps --no-trunc --format '{{.Names}}|{{.Command}}' 2>/dev/null \
@@ -442,7 +442,7 @@ dk_env() { dk "$1" '{{range .Config.Env}}{{println .}}{{end}}' | sed -n "s/^$2=/
 # can have a | in its name. One with a newline or another control character
 # would split the line, so docker says first whether %q leaves it as it is:
 # "plain" when it does, and only a plain source is ever put in a command.
-dk_mount() { # container, destination — "type|rw or ro|plain or odd|volume name|source"
+dk_mount() { # container, destination (prints "type|rw or ro|plain or odd|volume name|source")
   dk "$1" '{{range .Mounts}}{{.Destination}}|{{.Type}}|{{.RW}}|{{if eq (printf "%q" .Source) (printf "\"%s\"" .Source)}}plain{{else}}odd{{end}}|{{.Name}}|{{.Source}}{{println}}{{end}}' \
     | DM_DEST="$2" awk -F'|' '$1 == ENVIRON["DM_DEST"] {
         s = $0; for (i = 0; i < 5; i++) s = substr(s, index(s, "|") + 1)
@@ -470,7 +470,7 @@ nameable() { # folder
   return 0
 }
 # The command that removes a host folder. It is printed only for a folder this
-# script can see and that is_this_console recognises — an index.html that mounts
+# script can see and that is_this_console recognises: an index.html that mounts
 # #root and names an entry script that is there, the same test W6 trusts before
 # publishing sweeps a folder. That does not show nothing else is in it, which is
 # why the lists are named first. Anything else gets no command, and ds_remove
@@ -523,7 +523,7 @@ dk_compose() { # container
   printf '%s' "$dc_cmd"
 }
 # A volume or a folder goes once, after every container that mounts it has let
-# go of it — so when two of them share one, the command is given in the steps of
+# go of it. So when two of them share one, the command is given in the steps of
 # the last, and the others say where it is. Returns 1 when it is not given here.
 ds_remove() { # container, source of its mount, the command or nothing, the words before it, [this installer's state]
   dr_how="$3"
@@ -848,7 +848,7 @@ resolve_target() {
 # ------------------------------------------------------------------- publishing
 #
 # The order is the whole point, and it is the same one whether the web root can
-# be renamed or not — because it cannot, when it is a mount point, and because
+# be renamed or not, because it cannot be when it is a mount point, and because
 # swapping two directories by rename has a moment in between with no web root at
 # all, which is exactly what must never happen.
 #
@@ -874,7 +874,7 @@ copy_one() { # src root, dst root, relative path
 
 # What step 3 may sweep is decided before W6 looks at the folder, and nothing
 # is ever added to it: only what was there then. Whatever appears afterwards is
-# not this run's to remove — the server writing its first files, if the folder
+# not this run's to remove: the server writing its first files, if the folder
 # turns out to be its own (a volume swapped onto the init's /target, both
 # started together). Taken before W6 and not after it, so that anything already
 # there was there when W6 judged the folder.
@@ -907,7 +907,7 @@ publish() { # src, dst, the folder snapshot wrote its lists in
   done < "$3/dirs"
 }
 
-carry_custom_lists() { # from, to — used when the served folder changes
+carry_custom_lists() { # from, to (used when the served folder changes)
   [ -d "$1/json" ] || return 0
   for f in "$1"/json/*-custom.json; do
     [ -f "$f" ] || continue
@@ -973,7 +973,7 @@ if [ "$ACTION" = "uninstall" ]; then
     refuse_links "$stock"
     carry_custom_lists "$WWW_DIR" "$stock"
     # The contents first and the folder after, because the folder may be a
-    # mount point — the Docker layout the README describes — and a mount point
+    # mount point (the Docker layout the README describes) and a mount point
     # cannot be removed from inside: `rm -rf` on it empties it and then fails,
     # which used to stop the uninstall halfway.
     find "$WWW_DIR" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
@@ -1041,7 +1041,7 @@ command -v tar >/dev/null 2>&1 || die "tar is needed and is not installed."
 
 TMP="$STATE_DIR/staging"
 # What the sweep may remove is listed before W6 looks, in a folder of this run's
-# own outside the state, so that a run W6 refuses leaves nothing behind — not
+# own outside the state, so that a run W6 refuses leaves nothing behind, not
 # even an empty state folder. That one goes on the way out whenever this run
 # made it and wrote no state into it.
 LISTS="$(mktemp -d)" || die "could not create a working folder."

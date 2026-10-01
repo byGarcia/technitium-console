@@ -34,7 +34,7 @@ next release.
 Use GitHub's private vulnerability reporting, which is enabled on this repository:
 
 > **[Report a vulnerability](https://github.com/byGarcia/technitium-console/security/advisories/new)**
-> — or the *Security* tab → *Advisories* → *Report a vulnerability*.
+> (or the *Security* tab → *Advisories* → *Report a vulnerability*).
 
 The thread is private between you and the maintainer, and it becomes the advisory if the report is
 confirmed. If you would rather not use GitHub, say so in a public issue **without any detail** and a
@@ -42,7 +42,7 @@ private channel will be arranged.
 
 ### What helps
 
-- The version — a release tag, or the commit SHA from the About screen.
+- The version: a release tag, or the commit SHA from the About screen.
 - The Technitium DNS Server version, which the same screen shows.
 - Whether the console was installed with `install.sh` or by hand, and to which path.
 - Steps, and what an attacker gets out of it.
@@ -68,7 +68,7 @@ There is no bounty.
   against the `.sha256` the release publishes; `--from` is not, and says so. If you find it writing
   anywhere else, that is a bug and a serious one.
 - **Piping a script from the internet into `sudo sh`** is the documented install path and it is a
-  real trade-off. Download it, read it, run it — the file is under 700 lines of POSIX shell and it is
+  real trade-off. Download it, read it, run it. The file is under 700 lines of POSIX shell and it is
   meant to be read.
 - **The console is served by the DNS server's own web service**, so its TLS, its bind address and
   its authentication are the server's. Nothing here changes them.

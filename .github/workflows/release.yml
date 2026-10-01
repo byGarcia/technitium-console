@@ -124,7 +124,7 @@ jobs:
           fi >> notes.md
           # The title is the tag and the section's opening bold sentence.
           lead="$({ grep -m1 -o '^\*\*[^*]*\*\*' notes.md || true; } | sed 's/^\*\*//; s/\*\*$//; s/\.$//')"
-          echo "title=${tag}${lead:+ — ${lead}}" >> "$GITHUB_OUTPUT"
+          echo "title=${tag}${lead:+: ${lead}}" >> "$GITHUB_OUTPUT"
           cat notes.md
 
       - uses: softprops/action-gh-release@v2

@@ -9,13 +9,13 @@ One folder with its own `index.html` for each route of the console.
 The server serves `www/` with static files and `UseDefaultFiles()`
 (DnsWebService.cs:1960): `/settings/logging/` resolves to
 `/settings/logging/index.html`, and `/settings/logging` gets a 301 to the
-trailing-slash version. With the file in place the URL is real —no `#/`— and F5
+trailing-slash version. With the file in place the URL is real (no `#/`) and F5
 brings you back where you were, **without touching a line of C#**.
 
 The asset paths are corrected to the depth of each copy (`../` or `../../`). It
-is not cosmetic: `base` is relative on purpose —the server honours
+is not cosmetic: `base` is relative on purpose. The server honours
 `X-Forwarded-Prefix` by mounting a `PathBase`, and with an absolute base the
-console breaks behind a prefixed proxy— so the only way for
+console breaks behind a prefixed proxy, so the only way for
 `/dns/settings/logging/` to find `/dns/assets/…` is to count the hops.
 
 And each copy carries its route in a `<meta>`, which is what lets the application
@@ -72,7 +72,7 @@ export default defineConfig(({ mode }) => ({
       consola NO pide `/api/…`, pide `/dashboard/api/…`.
 
       Y lleva la exclusión de `src/`, `@` y `node_modules/` por otra: sin ella se
-      tragaba `/src/api/client.ts` —el módulo que sirve el propio Vite— y lo
+      tragaba `/src/api/client.ts` (el módulo que sirve el propio Vite) y lo
       reenviaba al servidor DNS, que devolvía JSON. El navegador rechazaba el
       módulo por MIME y la consola no arrancaba.
 
@@ -81,9 +81,9 @@ export default defineConfig(({ mode }) => ({
       construir**: en `vite dev` no existe, así que la raíz acaba siendo la ruta
       actual. Con un proxy de `/api` a secas la sesión no se restauraba nunca y
       la consola se quedaba en el login, mientras un `fetch('/api/…')` a mano
-      funcionaba — que es lo que despistaba.
+      funcionaba, que es lo que despistaba.
       */
-      /* La consola servida desde la raíz —que es como se trabaja en dev— pide
+      /* La consola servida desde la raíz, que es como se trabaja en dev, pide
          `/api/…` a secas. Ésta es esa. */
       '/api/': {
         target: process.env.DNS ?? 'http://127.0.0.1:5380',

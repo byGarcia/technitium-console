@@ -11,6 +11,7 @@
     "lint": "oxlint",
     "lint:language": "node dev/check-language.mjs",
     "lint:colours": "node dev/check-colour-tokens.mjs",
+    "lint:dashes": "node dev/check-dashes.mjs",
     "typecheck": "tsc -b --force",
     "preview": "vite preview",
     "build:check": "vite build --mode check",

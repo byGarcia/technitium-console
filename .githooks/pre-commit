@@ -9,7 +9,7 @@
 # Por máquina:  git config core.hooksPath .githooks
 set -euo pipefail
 if ! command -v gitleaks >/dev/null 2>&1; then
-  echo "pre-commit: gitleaks no está instalado — commit abortado por seguridad" >&2
+  echo "pre-commit: gitleaks no está instalado. Commit abortado por seguridad" >&2
   exit 1
 fi
 # gitleaks v8.19+: `protect` fue sustituido por `git --staged` (modo pre-commit).

@@ -3,7 +3,7 @@
 # technitium-console
 
 **An alternative administration console for [Technitium DNS Server](https://github.com/TechnitiumSoftware/DnsServer).**
-Same API, same behaviour, same texts — the interface rebuilt from scratch.
+Same API, same behaviour, same texts: the interface rebuilt from scratch.
 
 [![License](https://img.shields.io/github/license/byGarcia/technitium-console)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/byGarcia/technitium-console?include_prereleases)](https://github.com/byGarcia/technitium-console/releases)
@@ -16,8 +16,8 @@ Same API, same behaviour, same texts — the interface rebuilt from scratch.
 ![The dashboard](docs/screenshots/dashboard.png)
 
 **Latest: [v1.2.0](https://github.com/byGarcia/technitium-console/releases/latest) for Technitium DNS
-Server 15.5.x** — Allowed and Blocked as one Blocking section, a light theme, plus LDAP, the zone
-file editor and everything else 15.5 brought.
+Server 15.5.x**, with Allowed and Blocked as one Blocking section, a light theme, plus LDAP, the
+zone file editor and everything else 15.5 brought.
 [What's new](CHANGELOG.md) · [Which console for which server](CHANGELOG.md#which-version-for-which-server) · [Installing](#installing) · [Technitium in Docker](#docker)
 
 It replaces the console the server ships with. Install it and the DNS service
@@ -35,13 +35,13 @@ because it is unusual:
 
 Same controls, same steps, same wording, same validation order. If a feature was
 missing before, it is still missing. If a confirmation asked twice, it still asks
-twice. You are changing how the console looks, not what your DNS server does —
-and that is the only reason it is safe to put a third-party interface in front of
+twice. You are changing how the console looks, not what your DNS server does.
+That is the only reason it is safe to put a third-party interface in front of
 infrastructure.
 
 One section is a deliberate exception, and it is written down rather than slipped
-in: **Allowed and Blocked are now a single Blocking section** — Overview, Rules and
-Lists, the way AdGuard Home and Pi-hole lay blocking out. It calls only endpoints the
+in: **Allowed and Blocked are now a single Blocking section**, with Overview, Rules
+and Lists laid out the way AdGuard Home and Pi-hole lay blocking out. It calls only endpoints the
 server already has, with upstream's actions and wording, and each of its files
 declares the words that are its own; `/allowed/` and `/blocked/` still land. Its
 limits, and the other deliberate deviations, are in
@@ -67,7 +67,7 @@ that already means *cached* and *blocked* in the Dashboard chart and in the Logs
 **It works on a phone.** The stock console overflows horizontally on a 390 px
 screen in twelve of its sections. This one does not overflow in any: the tables
 reflow, the navigation collapses, and the actions stay reachable. That was not a
-side effect — it was a defect found by measuring every section at 390 px and
+side effect. It was a defect found by measuring every section at 390 px and
 fixed one by one.
 
 <br clear="right">
@@ -84,12 +84,12 @@ fixed one by one.
 | Dialogs, checked one by one | 44 |
 | Tests | 1,487 |
 
-Every figure in that table comes from a script in `dev/` —`check-endpoints.mjs`,
-`check-parity-sort.mjs`, `dialog-inventory.sh`— and not from this paragraph.
+Every figure in that table comes from a script in `dev/` (`check-endpoints.mjs`,
+`check-parity-sort.mjs`, `dialog-inventory.sh`) and not from this paragraph.
 
 Parity is not asserted, it is measured. `dev/` brings up **two instances of the
-official Technitium image side by side** — one serving this console, one
-untouched — and the scripts in there compare them: the controls present on each
+official Technitium image side by side** (one serving this console, one
+untouched), and the scripts in there compare them: the controls present on each
 screen, the state the server is left in after fourteen real actions, the widths
 at which something overflows, the CSS classes nobody uses.
 
@@ -109,7 +109,7 @@ curl -sSL https://raw.githubusercontent.com/byGarcia/technitium-console/main/ins
 this command, run on a Docker host, prints the exact steps for your containers.
 
 It asks the running server where its web root is, saves the console you have
-now, and puts this one in its place. **Your DNS service is not restarted** — the
+now, and puts this one in its place. **Your DNS service is not restarted.** The
 server picks the new files up by itself, and a restart would be an outage for
 everything that resolves through it. To go back at any point:
 
@@ -126,7 +126,7 @@ command line that started it. Wherever you put it, that is where the console
 goes.
 
 **Your custom lists are kept**, on the way in and on the way out. Any
-`json/*-custom.json` you wrote by hand is left exactly where it is — including
+`json/*-custom.json` you wrote by hand is left exactly where it is, including
 one you write months after installing, which no backup could contain.
 
 **Nothing else on the server is touched.** Configuration, zones, users, logs and
@@ -136,7 +136,7 @@ backup, and its own state in `/var/lib/technitium-console`.
 
 **An interrupted run cannot leave you without a console.** Files go in before
 any are taken out, and every page is published after the assets it names, so at
-every moment the server has a whole console to serve — the old one or the new
+every moment the server has a whole console to serve: the old one or the new
 one. Anything a killed run left behind is cleaned up by the next one.
 
 <details>
@@ -148,7 +148,7 @@ is, `--url <base>` if your web console does not answer on
 `http://127.0.0.1:5380`, `--yes` to skip the confirmation.
 
 If the backup was taken from a different version of the DNS server than the one
-now running — which happens when the server was updated in between — the
+now running (which happens when the server was updated in between), the
 uninstall stops and says so rather than putting an old console in front of a new
 server. `--restore-mismatched-backup` overrides that, and `--yes` deliberately
 does not.
@@ -166,7 +166,7 @@ longer puts the stock console back: its own `www/` is left untouched and this on
 lives somewhere the update does not write.
 
 For a systemd install, create the folder, point the server at it and restart it
-once — the folder is read when the server starts, and it has to exist by then or
+once. The folder is read when the server starts, and it has to exist by then or
 the server falls back to its own `www/`:
 
 ```sh
@@ -202,13 +202,13 @@ folder.
 
 For Docker, see [Docker](#docker): the image does all of this with a volume.
 
-> **Without the variable** — before v15.5, or if you prefer not to set it — the
+> **Without the variable** (before v15.5, or if you prefer not to set it), the
 > console replaces the files in the server's own `www/`. Technitium restores its
 > console when it updates, so run the installer again afterwards.
 
 ### Keeping it up to date
 
-Each console release is checked against one Technitium release — every action it sends, every text
+Each console release is checked against one Technitium release: every action it sends, every text
 and every control, compared with that server's own console. When you update the server, update the
 console with it: run the installer again (on Docker,
 `docker compose pull technitium-console && docker compose up -d technitium-console`). It needs no restart, and
@@ -222,7 +222,7 @@ exits. Your DNS server keeps running the official image: it mounts that volume a
 serve it. **It needs Technitium DNS Server 15.5 or later**, the first version that can serve a
 folder of its own.
 
-Only the `technitium-console` lines below are new — add them to your compose file: the variable
+Only the `technitium-console` lines below are new. Add them to your compose file: the variable
 and the volume mount on your server, the `technitium-console` service, and the `technitium-console`
 volume at the end. The rest stands for what you already have: the `config` lines are your own
 `/etc/dns` mount, so keep it exactly as you have it.
@@ -255,7 +255,7 @@ docker compose up -d
 
 That restarts the DNS server once, because its environment changed. The console shows up a
 second or two later, when the copy is done; until then the page is empty. If the copy ever fails,
-the server starts anyway — nothing waits on it.
+the server starts anyway: nothing waits on it.
 
 **Updating restarts nothing:**
 
@@ -265,22 +265,22 @@ docker compose pull technitium-console && docker compose up -d technitium-consol
 
 Only the copier runs again, and the server picks the new files up by itself. A plain
 `docker compose pull && docker compose up -d` also updates the DNS server when there is a new image
-of it — and that does restart it.
+of it, and that does restart it.
 
-**Pinning a version:** use a release number instead of `latest` — `X.Y.Z` for exactly that
+**Pinning a version:** use a release number instead of `latest`: `X.Y.Z` for exactly that
 release (`ghcr.io/bygarcia/technitium-console:1.2.0`), `X.Y` to follow its fixes (`:1.2`). To go
 back, pin the older one and update. Images start at 1.2.0.
 
 `ghcr.io/bygarcia/technitium-console:develop` is built from every push to the `develop` branch,
-for trying changes before they are released; it is not for production — pin a release instead.
+for trying changes before they are released; it is not for production. Pin a release instead.
 If publishing an image fails or is cancelled halfway, `X.Y.Z` (or `develop-<sha7>`) can be left
 published before the check that every platform carries exactly the console it was built from.
 `latest`, `X.Y` and `develop` move only after that check, so they never point at such an image.
 
 **Custom lists** (`json/*-custom.json`, the files upstream's `www/json/readme.txt` describes) are
 kept in the volume across updates. To edit them by hand, use a folder on the host instead of the
-volume — `./technitium-console:/opt/technitium-console:ro` on the server and
-`./technitium-console:/target` on the copier — and write them in `./technitium-console/json/`.
+volume (`./technitium-console:/opt/technitium-console:ro` on the server and
+`./technitium-console:/target` on the copier) and write them in `./technitium-console/json/`.
 The folder can hold your lists before the first run. The copied files belong to root, so editing
 them takes `sudo`. Removing it is the last of the steps below.
 
@@ -303,7 +303,7 @@ command again.
 2. Take the variable and the `technitium-console` volume line out of your server, remove the
    `technitium-console` service, and remove the `technitium-console:` entry under the top-level
    `volumes:`.
-3. `docker compose up -d --remove-orphans` — the server restarts once, back on the console its
+3. `docker compose up -d --remove-orphans`. The server restarts once, back on the console its
    image ships, which was never touched.
 4. `docker volume rm <project>_technitium-console` (`docker volume ls` shows the exact name).
    With a folder on the host instead, delete it now, once the server no longer mounts it; its
@@ -311,11 +311,11 @@ command again.
 
 Without Compose: re-create your server without the
 `-e DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH=/opt/technitium-console` and
-`-v technitium-console:/opt/technitium-console:ro` you added — it restarts once, back on its own
-console — and then `docker volume rm technitium-console`.
+`-v technitium-console:/opt/technitium-console:ro` you added (it restarts once, back on its own
+console), and then `docker volume rm technitium-console`.
 
 **The one-line installer on a Docker host, without `--dir`,** does not install anything. It reads
-your containers and prints these steps with your own container, service, file and volume names —
+your containers and prints these steps with your own container, service, file and volume names,
 and with `--uninstall`, the way out. It does not write into a container because a container's own files are
 replaced every time it is recreated: a console copied into one with `docker exec` is gone after
 the next image update, and the installer says so if you try.
@@ -336,7 +336,7 @@ curl -sSL https://raw.githubusercontent.com/byGarcia/technitium-console/main/ins
 ```
 
 then re-create the container once. To update, run the same command again. To remove it, take the
-mount out and re-create the container first, and only then delete the folder — emptied while still
+mount out and re-create the container first, and only then delete the folder. Emptied while still
 mounted, it would leave the server serving nothing. The same command with `--uninstall` prints
 these steps for your container. Moving to 15.5 or later and the image is the better way.
 

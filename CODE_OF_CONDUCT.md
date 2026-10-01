@@ -36,7 +36,7 @@ This Code of Conduct applies within all community spaces, and also applies when 
 
 ## Enforcement
 
-Instances of abusive, harassing, or otherwise unacceptable behavior may be reported to the community leaders responsible for enforcement through this repository's private report form: the *Security* tab → *Advisories* → [**Report a vulnerability**](https://github.com/byGarcia/technitium-console/security/advisories/new). It is the same private channel [SECURITY.md](SECURITY.md) uses, and it does not have to be about a vulnerability — the form is simply the one place on this repository where a message stays between you and the maintainer instead of being public. All complaints will be reviewed and investigated promptly and fairly.
+Instances of abusive, harassing, or otherwise unacceptable behavior may be reported to the community leaders responsible for enforcement through this repository's private report form: the *Security* tab → *Advisories* → [**Report a vulnerability**](https://github.com/byGarcia/technitium-console/security/advisories/new). It is the same private channel [SECURITY.md](SECURITY.md) uses, and it does not have to be about a vulnerability: the form is simply the one place on this repository where a message stays between you and the maintainer instead of being public. All complaints will be reviewed and investigated promptly and fairly.
 
 All community leaders are obligated to respect the privacy and security of the reporter of any incident.
 
