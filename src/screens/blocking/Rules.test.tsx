@@ -26,6 +26,12 @@ const NODES = [
   { name: 'dev.cluster.test', type: 'Primary' },
 ]
 
+const RECORD = {
+  name: 'ads.test', type: 'A', ttl: 60, ttlString: '1m', disabled: false,
+  rData: { ipAddress: '0.0.0.0' }, dnssecStatus: 'Unknown',
+  lastUsedOn: '0001-01-01T00:00:00', lastModified: '0001-01-01T00:00:00', expiryTtl: 0, expiryTtlString: '0s',
+}
+
 function emptyTree() {
   return vi.spyOn(zonelists, 'listNode').mockResolvedValue({
     kind: 'ok',
@@ -79,7 +85,7 @@ describe('Rules', () => {
     draw({ Blocked: P(true), Allowed: P(false) })
     await screen.findByRole('table')
     expect(read).toHaveBeenCalledTimes(1)
-    expect(read).toHaveBeenCalledWith('blocked', 'T')
+    expect(read).toHaveBeenCalledWith('blocked', 'T', '')
     expect(screen.getByRole('button', { name: /Allowed/ })).toBeDisabled()
   })
 
@@ -169,19 +175,124 @@ describe('Rules', () => {
     expect(screen.getByText('Requires Allowed: View')).toBeInTheDocument()
   })
 
-  it('coming back from the tree reads the rules again', async () => {
-    const read = exports(['ads.example.com'], [])
+  /* The tree tells the table when it deleted (onChanged), and the table reads the
+     PRIMARY then: coming back to the list must not re-read the connected node, which
+     on a secondary still has the deleted row until the cluster syncs (I1). */
+  it('a Delete in the tree reads the rules again, from the primary', async () => {
+    const read = exports(['ads.test'], [])
     vi.spyOn(zonelists, 'listNode').mockResolvedValue({
-      kind: 'ok',
-      data: { domain: '', zones: [], records: [] },
+      kind: 'ok', data: { domain: 'ads.test', zones: [], records: [RECORD] },
     })
-    draw()
+    vi.spyOn(zonelists, 'deleteDomain').mockResolvedValue(OK)
+    render(<Rules token="T" permissions={undefined} nodes={NODES} clusterInitialised />)
     await screen.findByRole('table')
     expect(read).toHaveBeenCalledTimes(2)
     await userEvent.click(screen.getByRole('button', { name: 'Tree' }))
+    const tree = await screen.findByRole('region', { name: 'Records' })
+    await userEvent.click(within(tree).getByRole('button', { name: 'Delete' }))
+    await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Delete' }))
+    await vi.waitFor(() => expect(read).toHaveBeenCalledTimes(4))
+    expect(read).toHaveBeenLastCalledWith('allowed', 'T', 'dev.cluster.test')
     await userEvent.click(screen.getByRole('button', { name: 'List' }))
     await screen.findByRole('table')
     expect(read).toHaveBeenCalledTimes(4)
+  })
+
+  /* M3: one screen, one alert slot. The tree's Delete reports at the top of the
+     page, where the table's Delete reports — before the add bar, not inside the panel. */
+  it('a Delete in the tree reports through the notifier of the page', async () => {
+    exports(['ads.test'], [])
+    vi.spyOn(zonelists, 'listNode').mockResolvedValue({
+      kind: 'ok', data: { domain: 'ads.test', zones: [], records: [RECORD] },
+    })
+    vi.spyOn(zonelists, 'deleteDomain').mockResolvedValue(OK)
+    draw()
+    await screen.findByRole('table')
+    await userEvent.click(screen.getByRole('button', { name: 'Tree' }))
+    const tree = await screen.findByRole('region', { name: 'Records' })
+    await userEvent.click(within(tree).getByRole('button', { name: 'Delete' }))
+    await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Delete' }))
+    const said = await screen.findAllByText("Blocked zone 'ads.test' was deleted successfully.")
+    expect(said).toHaveLength(1)
+    const bar = screen.getByRole('textbox', { name: 'Domain' })
+    expect(said[0].compareDocumentPosition(bar) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  /* I1: every read after a change comes from the primary node, where the change was
+     made; the first read stays on the connected node. */
+  it('after a Delete the table is read from the primary node', async () => {
+    const read = exports(['ads.example.com'], [])
+    vi.spyOn(zonelists, 'deleteDomain').mockResolvedValue(OK)
+    render(<Rules token="T" permissions={undefined} nodes={NODES} clusterInitialised />)
+    await userEvent.click(await screen.findByRole('button', { name: 'Delete ads.example.com' }))
+    expect(read).toHaveBeenCalledWith('blocked', 'T', '')
+    expect(read).toHaveBeenCalledWith('allowed', 'T', '')
+    await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Delete' }))
+    await screen.findByText("Blocked zone 'ads.example.com' was deleted successfully.")
+    expect(read).toHaveBeenCalledTimes(4)
+    expect(read).toHaveBeenCalledWith('blocked', 'T', 'dev.cluster.test')
+    expect(read).toHaveBeenCalledWith('allowed', 'T', 'dev.cluster.test')
+  })
+
+  it('after a Block from the add bar the table is read from the primary node', async () => {
+    const read = exports([], [])
+    vi.spyOn(zonelists, 'addDomain').mockResolvedValue(OK)
+    render(<Rules token="T" permissions={undefined} nodes={NODES} clusterInitialised />)
+    await screen.findByRole('table')
+    await userEvent.type(screen.getByRole('textbox', { name: 'Domain' }), 'new.test{Enter}')
+    await screen.findByText("Domain 'new.test' was added to Blocked Zone successfully.")
+    await vi.waitFor(() => expect(read).toHaveBeenCalledTimes(4))
+    expect(read).toHaveBeenLastCalledWith('allowed', 'T', 'dev.cluster.test')
+  })
+
+  /* I2: with the tree open, a Block or Allow remounts it at the added domain, read from
+     the primary, as upstream's blockZone/allowZone do (other-zones.js:350, 185). */
+  it('a Block with the tree open takes the tree to the added domain, from the primary', async () => {
+    exports([], [])
+    vi.spyOn(zonelists, 'addDomain').mockResolvedValue(OK)
+    const list = emptyTree()
+    render(<Rules token="T" permissions={undefined} nodes={NODES} clusterInitialised />)
+    await screen.findByRole('table')
+    await userEvent.click(screen.getByRole('button', { name: 'Tree' }))
+    await screen.findByText('0 zones')
+    await userEvent.type(screen.getByRole('textbox', { name: 'Domain' }), 'new.test{Enter}')
+    await screen.findByText("Domain 'new.test' was added to Blocked Zone successfully.")
+    await vi.waitFor(() => expect(list).toHaveBeenLastCalledWith('blocked', 'T', 'new.test', undefined, 'dev.cluster.test'))
+  })
+
+  it('an Allow with the Blocked tree open turns the tree to Allowed, at the domain', async () => {
+    exports([], [])
+    vi.spyOn(zonelists, 'addDomain').mockResolvedValue(OK)
+    const list = emptyTree()
+    draw()
+    await screen.findByRole('table')
+    await userEvent.click(screen.getByRole('button', { name: 'Tree' }))
+    await screen.findByText('0 zones')
+    await userEvent.type(screen.getByRole('textbox', { name: 'Domain' }), 'ok.test')
+    await userEvent.click(screen.getByRole('button', { name: 'Allow' }))
+    await screen.findByText("Domain 'ok.test' was added to Allowed Zone successfully.")
+    await vi.waitFor(() => expect(list).toHaveBeenLastCalledWith('allowed', 'T', 'ok.test', undefined, ''))
+    expect(screen.getByRole('button', { name: 'Allowed' })).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  /* M4: an older read that answers last must not land over a newer one. */
+  it('a slow earlier read does not overwrite a later one', async () => {
+    const answers: Array<(v: { kind: 'ok'; data: string[] }) => void> = []
+    vi.spyOn(blocking, 'readRuleExport').mockImplementation(
+      () => new Promise((resolve) => { answers.push(resolve) }),
+    )
+    vi.spyOn(zonelists, 'addDomain').mockResolvedValue(OK)
+    draw()
+    await userEvent.type(screen.getByRole('textbox', { name: 'Domain' }), 'new.test{Enter}')
+    await vi.waitFor(() => expect(answers).toHaveLength(4))
+    answers[2]({ kind: 'ok', data: ['new.test'] })
+    answers[3]({ kind: 'ok', data: [] })
+    expect(await screen.findByText('new.test')).toBeInTheDocument()
+    answers[0]({ kind: 'ok', data: ['old.test'] })
+    answers[1]({ kind: 'ok', data: [] })
+    await new Promise((r) => setTimeout(r, 20))
+    expect(screen.queryByText('old.test')).toBeNull()
+    expect(screen.getByText('new.test')).toBeInTheDocument()
   })
 
   it('a failed first read says so instead of drawing an empty table', async () => {
@@ -189,6 +300,20 @@ describe('Rules', () => {
     draw()
     expect(await screen.findByText('Access was denied.')).toBeInTheDocument()
     expect(screen.queryByText('No rules')).toBeNull()
+  })
+
+  /* M2: once the notice is dismissed the slot still says what happened, and offers
+     to read again, as the blocking state does (StatusPanel). */
+  it('a failed first read leaves Failure and Retry in the table slot', async () => {
+    const read = vi.spyOn(blocking, 'readRuleExport').mockResolvedValue({ kind: 'error', message: 'Access was denied.' })
+    draw()
+    expect(await screen.findByText('Could not read the rules.')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Close' }))
+    expect(screen.getByText('Could not read the rules.')).toBeInTheDocument()
+    read.mockImplementation(async (list) => ({ kind: 'ok', data: list === 'blocked' ? ['ads.example.com'] : [] }))
+    await userEvent.click(screen.getByRole('button', { name: 'Retry' }))
+    expect(await screen.findByText('ads.example.com')).toBeInTheDocument()
+    expect(screen.queryByText('Could not read the rules.')).toBeNull()
   })
 
   it('?rule= naming a list the session cannot view opens on All and rewrites the bar', async () => {

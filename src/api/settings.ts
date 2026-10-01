@@ -219,17 +219,28 @@ export interface DnsSettings {
   maxStatFileDays: number
 }
 
+/** `settings/get` with the whole `ApiOutcome`, for a screen that must say the
+ *  server's message when the read fails (the Lists tab of Blocking): `null` alone
+ *  cannot carry it. Same call, same parameters as `getSettings`. */
+export async function readSettings(
+  token: string | null,
+  node = '',
+): Promise<ApiOutcome<DnsSettings>> {
+  const outcome = await apiRequest<{ response: DnsSettings }>('settings/get', {
+    token,
+    body: { node },
+  })
+  return outcome.kind === 'ok' ? { kind: 'ok', data: outcome.data.response } : outcome
+}
+
 /** `settings/get`. `node` exists for cluster mode; with a single instance
  *  upstream sends the empty string and the server answers with its own settings. */
 export async function getSettings(
   token: string | null,
   node = '',
 ): Promise<DnsSettings | null> {
-  const outcome = await apiRequest<{ response: DnsSettings }>('settings/get', {
-    token,
-    body: { node },
-  })
-  return outcome.kind === 'ok' ? outcome.data.response : null
+  const outcome = await readSettings(token, node)
+  return outcome.kind === 'ok' ? outcome.data : null
 }
 
 /*

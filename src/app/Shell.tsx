@@ -91,9 +91,14 @@ export function Shell({
   const sections = useMemo(() => visibleSections(permissions), [permissions])
   /* The starting section comes from the address bar if it carries one, and only
      if not, from the first visible one. See `app/route.ts` for the reasoning. */
-  /* `/allowed/` and `/blocked/` are Blocking's Rules tab now; see `app/route.ts`. */
-  translateLegacyRoute()
-  const initialRoute = readRoute(sections)
+  /* Read once, on mount. `/allowed/` and `/blocked/` are Blocking's Rules tab now:
+     the bar is rewritten (`replaceState`) before the route is read, here in the
+     initialiser and not in the render body, so the side effect runs once; see
+     `app/route.ts`. */
+  const [initialRoute] = useState(() => {
+    translateLegacyRoute()
+    return readRoute(sections)
+  })
   const [active, setActive] = useState(() => initialRoute?.section ?? sections[0]?.id ?? 'about')
   const [drawer, setDrawer] = useState(false)
   const [modal, setModal] = useState<ModalId | null>(forcePasswordChange ? 'password' : null)

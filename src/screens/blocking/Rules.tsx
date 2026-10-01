@@ -8,18 +8,20 @@ import { Pagination } from '../../ui/Pagination'
 import { Segmented } from '../../ui/Segmented'
 import { Menu } from '../../ui/Menu'
 import { PermissionButton } from '../../ui/PermissionButton'
-import { Tooltip } from '../../ui/Tooltip'
 import { Confirm } from '../../ui/Confirm'
 import { Notifier } from '../../ui/Notifier'
 import { Input } from '../../ui/Field'
 import { Icon } from '../../ui/Icon'
-import { Empty, Loading } from '../../ui/Empty'
+import { Failure, Loading } from '../../ui/Empty'
+import { Button } from '../../ui/Button'
+import { primaryNodeName } from '../../ui/ClusterNodeSelect'
 import { pageWindow } from '../../lib/pagination'
 import { noticeFromFailure, type Notice } from '../../lib/notice'
 import { StaleData } from '../StaleData'
-import { Lists, ImportDomains } from '../lists/Lists'
+import { Lists, ImportDomains, type Confirmation } from '../lists/Lists'
+import { LockedBody, LockedItem } from './Locked'
 import { AddDomainBar } from './AddDomainBar'
-import { missing, requiresText, type Need, type Permissions } from './permissions'
+import { missing, type Need, type Permissions } from './permissions'
 import {
   countRules, filterRules, mergeRules, pageOf, readRuleParam, ruleSearch,
   type Rule, type RuleFilter,
@@ -34,24 +36,24 @@ the title `Rules`; the filter `All` and the counts beside each filter; `Rule` (c
 and the filter group's label); the `Domain` column; `Filter domains`, `No rules`,
 `No rules match this filter`, `1 rule` / `N rules`; `View`, `List` / `Tree` and the
 `Tree` selector's label; `Browse domain`; the `Delete <domain>` labels; the menu
-entries `Blocked zones` / `Allowed zones`; and the titles of the Delete and Flush
-confirmations, which upstream asks with a bare `confirm()`—. The names `Blocked` and
+entries `Blocked zones` / `Allowed zones`; `Could not read the rules.` and its
+`Retry`; and the titles of the Delete and Flush confirmations, which upstream asks
+with a bare `confirm()`—. The names `Blocked` and
 `Allowed` are upstream's tabs, and every verb is upstream's, with its sentences
 (other-zones.js). The three verbs of the
 foot do NOT behave alike, so they are not made alike: Import opens its dialog,
 Export downloads at once with a single-use token, Flush asks first.
 
-`Tree` mounts the tree that exists today, so nothing upstream has is lost.
+`Tree` mounts the tree that exists today, so nothing upstream has is lost. It
+reports through this page's notifier, and every change —from the table, the foot,
+the add bar or the tree itself— reads the table again from the primary node and
+remounts the tree from there. A Block or Allow opens the tree at the added domain,
+as upstream's blockZone/allowZone do; because this one bar serves both lists, the
+tree also turns to the list the domain went into (ours: upstream's verbs live on
+two separate pages, each with its own tree).
 */
 
 const LABEL: Record<DomainList, string> = { blocked: 'Blocked', allowed: 'Allowed' }
-
-interface Confirmation {
-  title: string
-  text: string
-  label: string
-  action: () => Promise<void>
-}
 
 export function Rules({
   tabs,
@@ -92,21 +94,42 @@ export function Rules({
   const [page, setPage] = useState(1)
   const [view, setView] = useState<'list' | 'tree'>('list')
   const [treeList, setTreeList] = useState<DomainList>(viewBlocked ? 'blocked' : 'allowed')
-  /* Bumped after Delete, Import and Flush: the open tree is mounted again so it
-     reads the lists as they are now — from the primary node, as every read after a
-     change does (spec, «Clúster»). Choosing another list or view is a fresh read
-     again, from the connected node. */
+  /* Bumped after Block, Allow, Delete, Import and Flush: the open tree is mounted
+     again so it reads the lists as they are now — from the primary node, as every
+     read after a change does (spec, «Clúster»). Choosing another list or view is a
+     fresh read again, from the connected node. */
   const [generation, setGeneration] = useState(0)
   const [afterChange, setAfterChange] = useState(false)
+  /* Where the remounted tree opens: the domain a Block or Allow just added, as
+     upstream's blockZone/allowZone open it (other-zones.js:350, 185); the root after
+     anything else. */
+  const [treeDomain, setTreeDomain] = useState('')
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null)
   const [importing, setImporting] = useState<DomainList | null>(null)
   const [busy, setBusy] = useState(false)
 
+  /*
+  The primary node, read through a ref for the reason Lists.tsx gives: as a
+  dependency of `load`, the `nodes = []` default is a new array on every render.
+  `asked` numbers the reads, as Overview does, so an older export that answers last
+  cannot land over a newer one.
+  */
+  const primary = useRef('')
+  useEffect(() => {
+    primary.current = primaryNodeName(nodes, clusterInitialised)
+  }, [nodes, clusterInitialised])
+  const asked = useRef(0)
+
   /* Only the lists the session may view are read: the export of the other one
-     would be refused by the server. */
-  const load = useCallback(async () => {
-    const read = (list: DomainList, may: boolean) => (may ? readRuleExport(list, token) : null)
+     would be refused by the server. The first read asks the connected node; after a
+     change, the PRIMARY, where the change was made (other-zones.js:269, 434): a
+     secondary still answers the old list until the cluster syncs. */
+  const load = useCallback(async (fromPrimary = false) => {
+    const node = fromPrimary ? primary.current : ''
+    const mine = ++asked.current
+    const read = (list: DomainList, may: boolean) => (may ? readRuleExport(list, token, node) : null)
     const [b, a] = await Promise.all([read('blocked', viewBlocked), read('allowed', viewAllowed)])
+    if (mine !== asked.current) return
     const failure = [b, a].find((o) => o != null && o.kind !== 'ok')
     if (failure != null) {
       if (hadData.current) setStale(true)
@@ -141,9 +164,20 @@ export function Rules({
     setPage(1)
   }
 
-  function changed() {
+  /** A change was made: the open tree is mounted again, from the primary, at
+   *  `domain` when there is one to show. */
+  function changed(domain = '') {
     setGeneration((g) => g + 1)
     setAfterChange(true)
+    setTreeDomain(domain)
+  }
+
+  /* A Block or Allow from the add bar. With the tree open it turns to the list the
+     domain went into, when the session may view it, and opens at the domain. */
+  function added(list: DomainList, domain: string) {
+    if (list === 'blocked' ? viewBlocked : viewAllowed) setTreeList(list)
+    changed(domain)
+    void load(true)
   }
 
   const counts = useMemo(() => countRules(rules ?? []), [rules])
@@ -159,7 +193,7 @@ export function Rules({
       return
     }
     changed()
-    await load()
+    await load(true)
     setNotice(success)
   }
 
@@ -212,17 +246,13 @@ export function Rules({
   }
 
   /* One menu entry per list. Without its permission it stays, disabled, and says
-     which one is missing —the same padlock and tooltip `PermissionButton` draws—:
-     a verb that vanishes is a verb nobody knows exists. */
+     which one is missing (`LockedItem`). */
   function entry(list: DomainList, need: Need | undefined, run: () => void, close: () => void) {
     if (need != null) {
       return (
-        <Tooltip key={list} text={requiresText(need)} placement="left">
-          <button type="button" disabled>
-            <Icon name="lock" size={13} />
-            {LABEL[list]} zones
-          </button>
-        </Tooltip>
+        <LockedItem key={list} need={need} placement="left">
+          {LABEL[list]} zones
+        </LockedItem>
       )
     }
     return (
@@ -269,7 +299,7 @@ export function Rules({
           token={token}
           permissions={permissions}
           onNotice={setNotice}
-          onChanged={() => void load()}
+          onChanged={added}
         />
 
         {stale && <StaleData since={lastGood} onRetry={() => void load()} />}
@@ -305,6 +335,7 @@ export function Rules({
                 onChoose={(l) => {
                   setTreeList(l)
                   setAfterChange(false)
+                  setTreeDomain('')
                 }}
               />
             )}
@@ -319,9 +350,11 @@ export function Rules({
               onChoose={(v) => {
                 setView(v)
                 setAfterChange(false)
-                /* The tree deletes on its own and does not tell this table: coming
-                   back to the list reads it again rather than show a deleted row. */
-                if (v === 'list') void load()
+                setTreeDomain('')
+                /* No read on coming back to the list: the tree says when it deleted
+                   (`onChanged`) and the table was read again then, from the primary.
+                   Reading the connected node here would bring back, on a secondary,
+                   the row just deleted. */
               }}
             />
           </div>
@@ -329,9 +362,7 @@ export function Rules({
           {view === 'tree' ? (
             treeNeed != null ? (
               <Body>
-                <Empty compact>
-                  <Icon name="lock" size={14} /> {requiresText(treeNeed)}
-                </Empty>
+                <LockedBody need={treeNeed} />
               </Body>
             ) : (
               /* Inset like the rest of the panel's content: the tree and the node detail
@@ -345,22 +376,41 @@ export function Rules({
                   clusterInitialised={clusterInitialised}
                   embedded
                   initialFromPrimary={afterChange}
+                  initialDomain={treeDomain}
                   fieldName="Browse domain"
                   canDelete={missing(permissions, treeList === 'allowed' ? 'Allowed.canDelete' : 'Blocked.canDelete') == null}
+                  onNotice={setNotice}
+                  onChanged={() => void load(true)}
                 />
               </div>
             )
           ) : viewNone ? (
             <Body>
-              <Empty compact>
-                <Icon name="lock" size={14} /> {requiresText('Blocked.canView')}
-              </Empty>
-              <Empty compact>
-                <Icon name="lock" size={14} /> {requiresText('Allowed.canView')}
-              </Empty>
+              <LockedBody need="Blocked.canView" />
+              <LockedBody need="Allowed.canView" />
             </Body>
           ) : rules == null ? (
-            failed ? null : <Loading />
+            failed ? (
+              /* The notice at the top carries the server's message; once it is
+                 dismissed, the slot still says what happened and offers to read
+                 again, as the blocking state does (StatusPanel). */
+              <Body>
+                <Failure>
+                  Could not read the rules.{' '}
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      setFailed(false)
+                      void load()
+                    }}
+                  >
+                    Retry
+                  </Button>
+                </Failure>
+              </Body>
+            ) : (
+              <Loading />
+            )
           ) : (
             <>
               <Table
@@ -466,7 +516,7 @@ export function Rules({
           onDone={(n) => {
             setNotice(n)
             changed()
-            void load()
+            void load(true)
           }}
         />
       )}

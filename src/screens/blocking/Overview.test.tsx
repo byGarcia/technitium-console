@@ -154,6 +154,26 @@ describe('Overview', () => {
     expect(spy).not.toHaveBeenCalled()
   })
 
+  /* M1, spec «Permisos»: a panel without its view permission keeps its place and its
+     title, with the padlock, so the screen does not change shape with who looks. */
+  it('without Dashboard.canView the charts and both tops keep their place, locked', () => {
+    serve()
+    render(<Overview token="T" permissions={{ Dashboard: { canView: false, canModify: false, canDelete: false } }} />)
+    for (const title of ['Statistics', 'Queries over time', 'Blocked share', 'Top Blocked Domains', 'Top Domains']) {
+      /* The heading sits in the panel's header; the panel is the header's parent. */
+      const panel = screen.getByRole('heading', { name: title }).parentElement!.parentElement!
+      expect(within(panel).getByText('Requires Dashboard: View')).toBeInTheDocument()
+    }
+    expect(screen.queryByRole('table')).toBeNull()
+  })
+
+  /* M6: every figure is localised; 10,000 rules are not drawn `10000`. */
+  it('Your Rules is localised like the other figures', async () => {
+    serve().mockResolvedValue({ ...OK, data: { ...OK.data, stats: { ...STATS, blockedZones: 10000, allowedZones: 1234 } } })
+    render(<Overview token="T" permissions={undefined} />)
+    expect(await screen.findByText(`${(10000).toLocaleString()} · ${(1234).toLocaleString()}`)).toBeInTheDocument()
+  })
+
   it('while the figures travel the top tables do not claim there are no domains', () => {
     serve().mockReturnValue(new Promise(() => {}))
     render(<Overview token="T" permissions={undefined} />)

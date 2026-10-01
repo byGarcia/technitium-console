@@ -33,7 +33,7 @@ The five fixed periods and not Custom: a range of your own is the Dashboard's jo
 
 The words are OURS except `Total Queries` and `Blocked`, upstream's Dashboard tiles:
 the title `Overview`, `Period`, `Block List Domains`, `Your Rules` and its `blocked ·
-allowed`, the panel titles (`Statistics`, `Queries over time`, `Blocked share`), the
+allowed`, the `of total` after Blocked's share, the panel titles (`Statistics`, `Queries over time`, `Blocked share`), the
 `Allowed` series, the ring's `Share` and `Blocked share: N%`, and the chart's label.
 The two gap sentences are the ones this console's Dashboard already uses.
 */
@@ -254,7 +254,7 @@ export function Overview({
             </Kpi>
             <Kpi value={s ? s.blockListZones.toLocaleString() : '—'} label="Block List Domains" />
             <Kpi
-              value={s ? `${s.blockedZones} · ${s.allowedZones}` : '—'}
+              value={s ? `${s.blockedZones.toLocaleString()} · ${s.allowedZones.toLocaleString()}` : '—'}
               sub="blocked · allowed"
               label="Your Rules"
             />
@@ -271,7 +271,15 @@ export function Overview({
           />
         </div>
 
-        {statsNeed == null && (
+        {/* Without Dashboard.View every panel fed by the stats keeps its place and its
+            title, locked (spec, «Permisos»): the screen does not change shape with
+            who looks. */}
+        {statsNeed != null ? (
+          <div className={shared.row21}>
+            <Locked title="Queries over time" need={statsNeed} />
+            <Locked title="Blocked share" need={statsNeed} />
+          </div>
+        ) : (
           <div className={shared.row21}>
             <Panel title="Queries over time">
               <Body>
@@ -309,7 +317,12 @@ export function Overview({
           </div>
         )}
 
-        {statsNeed == null && (
+        {statsNeed != null ? (
+          <div className={shared.row2}>
+            <Locked title="Top Blocked Domains" need={statsNeed} />
+            <Locked title="Top Domains" need={statsNeed} />
+          </div>
+        ) : (
           <div className={shared.row2}>
             <TopTable
               kind="TopBlockedDomains"

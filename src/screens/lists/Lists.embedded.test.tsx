@@ -68,6 +68,44 @@ describe('Lists embedded', () => {
     expect(list).toHaveBeenCalledWith('blocked', 'T', '', undefined, 'dev.cluster.test')
   })
 
+  /* I2: a Block or Allow from Rules' add bar remounts the tree AT the added domain,
+     as upstream's blockZone/allowZone call refresh…ZonesList(domain, null, true). */
+  it('with initialDomain its first read opens that domain, from the primary', async () => {
+    const list = vi.spyOn(api, 'listNode').mockResolvedValue({ kind: 'ok', data: { domain: 'ads.test', zones: [], records: [] } })
+    render(<Lists list="blocked" token="T" nodes={NODES} clusterInitialised embedded initialFromPrimary initialDomain="ads.test" />)
+    await screen.findByText('No records at this node')
+    expect(list).toHaveBeenCalledTimes(1)
+    expect(list).toHaveBeenCalledWith('blocked', 'T', 'ads.test', undefined, 'dev.cluster.test')
+  })
+
+  /* M3: embedded, the tree reports through its host's notifier, so one screen has
+     one place for its alerts; and it tells the host that the list changed. */
+  it('with onNotice a Delete reports through the host, not inside the panel', async () => {
+    vi.spyOn(api, 'listNode').mockResolvedValue({
+      kind: 'ok', data: { domain: 'ads.test', zones: [], records: [RECORD] },
+    })
+    vi.spyOn(api, 'deleteDomain').mockResolvedValue({ kind: 'ok', data: {} })
+    const onNotice = vi.fn()
+    const onChanged = vi.fn()
+    render(<Lists list="blocked" token="T" embedded onNotice={onNotice} onChanged={onChanged} />)
+    await userEvent.click(await screen.findByRole('button', { name: 'Delete' }))
+    await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Delete' }))
+    expect(onNotice).toHaveBeenCalledWith({
+      type: 'success', title: 'Deleted!', text: "Blocked zone 'ads.test' was deleted successfully.",
+    })
+    expect(onChanged).toHaveBeenCalledOnce()
+    expect(screen.queryByText("Blocked zone 'ads.test' was deleted successfully.")).toBeNull()
+  })
+
+  it('with onNotice a failed first read reports through the host and stops loading', async () => {
+    vi.spyOn(api, 'listNode').mockResolvedValue({ kind: 'error', message: 'Access was denied.' })
+    const onNotice = vi.fn()
+    render(<Lists list="blocked" token="T" embedded onNotice={onNotice} />)
+    await vi.waitFor(() => expect(onNotice).toHaveBeenCalledWith({ type: 'danger', title: 'Error!', text: 'Access was denied.' }))
+    expect(screen.queryByText('Access was denied.')).toBeNull()
+    expect(screen.queryByRole('status')).toBeNull()
+  })
+
   /* Under Rules' add bar, two fields both labelled "Domain" read as the same field:
      the tree's shows its own name, visibly and to assistive technology alike. */
   it('the tree field shows the name it is given as its visible label', async () => {

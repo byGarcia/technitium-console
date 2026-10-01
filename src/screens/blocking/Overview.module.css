@@ -19,8 +19,6 @@ thead > tr > th.hitsHead { text-align: right; }
 .share > i { position: absolute; inset: 0 auto 0 0; border-radius: var(--r-1); }
 .shareBlocked > i { background: var(--ch-block); }
 .shareTotal > i { background: var(--ch-total); }
-/* A row-menu item without its permission: the padlock beside the verb. */
-.locked { display: inline-flex; align-items: center; gap: var(--s-3); }
 .time { font-family: var(--font-mono); color: var(--faint); white-space: nowrap; }
 /* `--bp-stack`. At 390 the full date on one line left the domain a few characters per
    line; the date and the hour go on two lines instead. */

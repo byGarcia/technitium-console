@@ -14,12 +14,16 @@ afterEach(() => {
 
 const HOSTS = 'https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts'
 
+/* `settings/get` as the outcome Lists reads it: the server's message has to reach
+   the notice when the read fails (M2). */
+const ok = (data: unknown) => ({ kind: 'ok' as const, data: data as never })
+
 function serve(urls: string[] | null) {
   vi.spyOn(dashboard, 'getDashboardStats').mockResolvedValue({ kind: 'error', message: 'n/a' })
   vi.spyOn(quick, 'loadQuickList').mockResolvedValue([{ name: 'Steven Black [adware + malware]', urls: [HOSTS] }])
-  return vi.spyOn(settings, 'getSettings').mockResolvedValue({
+  return vi.spyOn(settings, 'readSettings').mockResolvedValue(ok({
     blockListUrls: urls, blockListUpdateIntervalHours: 24, blockListNextUpdatedOn: null,
-  } as never)
+  }))
 }
 
 function draw(clusterInitialised = false) {
@@ -94,9 +98,9 @@ describe('BlockLists', () => {
   it('after a save the next update is the one the server answers', async () => {
     vi.spyOn(dashboard, 'getDashboardStats').mockResolvedValue({ kind: 'error', message: 'n/a' })
     vi.spyOn(quick, 'loadQuickList').mockResolvedValue([])
-    vi.spyOn(settings, 'getSettings').mockResolvedValue({
+    vi.spyOn(settings, 'readSettings').mockResolvedValue(ok({
       blockListUrls: [HOSTS], blockListUpdateIntervalHours: 24, blockListNextUpdatedOn: '2999-01-01T00:00:00Z',
-    } as never)
+    }))
     // Emptying the lists stops the server's timer: the key comes back omitted.
     vi.spyOn(settings, 'setSettings').mockResolvedValue({
       kind: 'ok', data: { server: 'x', response: { blockListUrls: null, blockListUpdateIntervalHours: 12 } as never },
@@ -198,9 +202,9 @@ describe('BlockLists', () => {
     vi.spyOn(dashboard, 'getDashboardStats').mockResolvedValue({ kind: 'error', message: 'n/a' })
     vi.spyOn(quick, 'loadQuickList').mockResolvedValue([])
     // `settings/get` drops null keys: a fresh server sends no blockListNextUpdatedOn at all.
-    vi.spyOn(settings, 'getSettings').mockResolvedValue({
+    vi.spyOn(settings, 'readSettings').mockResolvedValue(ok({
       blockListUrls: [HOSTS], blockListUpdateIntervalHours: 24,
-    } as never)
+    }))
     draw()
     await screen.findByRole('table')
     expect(screen.getByText('Not Scheduled')).toBeInTheDocument()
@@ -210,10 +214,22 @@ describe('BlockLists', () => {
   it('a failed read says so instead of loading for ever', async () => {
     vi.spyOn(dashboard, 'getDashboardStats').mockResolvedValue({ kind: 'error', message: 'n/a' })
     vi.spyOn(quick, 'loadQuickList').mockResolvedValue([])
-    vi.spyOn(settings, 'getSettings').mockResolvedValue(null)
+    vi.spyOn(settings, 'readSettings').mockResolvedValue({ kind: 'error', message: 'Access was denied.' })
     draw()
     expect(await screen.findByText('Could not read the block list settings.')).toBeInTheDocument()
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+
+  /* M2: as every other tab, a read that fails with nothing on screen says the
+     server's own message, in the notice. */
+  it('a failed read says the server message in the notice', async () => {
+    vi.spyOn(dashboard, 'getDashboardStats').mockResolvedValue({ kind: 'error', message: 'n/a' })
+    vi.spyOn(quick, 'loadQuickList').mockResolvedValue([])
+    const read = vi.spyOn(settings, 'readSettings').mockResolvedValue({ kind: 'error', message: 'Access was denied.' })
+    draw(true)
+    expect(await screen.findByText('Access was denied.')).toBeInTheDocument()
+    expect(screen.getByText('Error!')).toBeInTheDocument()
+    expect(read).toHaveBeenCalledWith('T', 'cluster')
   })
 
   it('Update Now asks first, then forces the update', async () => {
@@ -249,7 +265,7 @@ describe('BlockLists', () => {
     function setup(urls: string[] | null = [HOSTS]) {
       vi.useFakeTimers({ shouldAdvanceTime: true })
       vi.spyOn(quick, 'loadQuickList').mockResolvedValue([])
-      const read = vi.spyOn(settings, 'getSettings').mockResolvedValue(answer(OLD, urls))
+      const read = vi.spyOn(settings, 'readSettings').mockResolvedValue(ok(answer(OLD, urls)))
       const counts = vi.spyOn(dashboard, 'getDashboardStats').mockResolvedValue(stats(74771))
       const force = vi.spyOn(settings, 'forceUpdateBlockLists').mockResolvedValue(true)
       return { read, counts, force, user: userEvent.setup({ advanceTimers: vi.advanceTimersByTime }) }
@@ -275,7 +291,7 @@ describe('BlockLists', () => {
       expect(screen.getByText('Updating Now')).toBeInTheDocument()
 
       counts.mockResolvedValue(stats(74763))
-      read.mockResolvedValue(answer(NEW))
+      read.mockResolvedValue(ok(answer(NEW)))
       await act(() => vi.advanceTimersByTimeAsync(3000))
       expect(await screen.findByText((74763).toLocaleString())).toBeInTheDocument()
       expect(screen.queryByText('Updating…')).not.toBeInTheDocument()
@@ -328,7 +344,7 @@ describe('BlockLists', () => {
       expect(screen.getAllByText('Updating…')).toHaveLength(2)
 
       counts.mockResolvedValue(stats(11))
-      read.mockResolvedValue(answer(NEW, [`#${HOSTS}`]))
+      read.mockResolvedValue(ok(answer(NEW, [`#${HOSTS}`])))
       await act(() => vi.advanceTimersByTimeAsync(3000))
       expect(await screen.findByText('11')).toBeInTheDocument()
       expect(screen.queryByText('Updating…')).not.toBeInTheDocument()

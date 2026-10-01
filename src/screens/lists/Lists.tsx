@@ -48,8 +48,9 @@ Cache is still a section of its own. Allowed and Blocked are not any more: their
 tree is mounted `embedded` inside Blocking's Rules tab (screens/blocking/Rules.tsx).
 */
 
-
-interface Confirmation {
+/** A confirmation waiting in the dialog. Also Rules' (screens/blocking/Rules.tsx),
+ *  whose Delete is the same verb with the same sentences. */
+export interface Confirmation {
   title: string
   text: string
   label: string
@@ -183,7 +184,10 @@ export function Lists({
   embedded = false,
   canDelete = true,
   initialFromPrimary = false,
+  initialDomain = '',
   fieldName,
+  onNotice,
+  onChanged,
 }: {
   list: List
   token: string | null
@@ -203,17 +207,42 @@ export function Lists({
    */
   initialFromPrimary?: boolean
   /**
+   * The node the tree opens at on mount: the domain a Block or Allow just added,
+   * as upstream's blockZone/allowZone open it (`refreshBlockedZonesList(domain,
+   * null, true)`, other-zones.js:350 and 185). Read once, on mount.
+   */
+  initialDomain?: string
+  /**
    * The tree field's label, when the screen already has another field labelled
    * "Domain" (Rules' add bar): shown, not only announced, so the two fields do not
    * read alike. Without it the field is "Domain", as in Cache.
    */
   fieldName?: string
+  /**
+   * Embedded only: the host's notifier. Rules has one alert slot at the top of the
+   * page, and a Delete from the tree reporting inside the panel gave the same verb
+   * two places on one screen. Cache never passes it.
+   */
+  onNotice?: (n: Notice) => void
+  /** Embedded only: called after a Delete from the tree succeeded, so the host can
+   *  read its own view of the list again. */
+  onChanged?: () => void
 }) {
   const [clusterNode, setClusterNode] = useState<string>('')
 
   const [node, setNode] = useState<ListNode | null>(null)
   const [field, setField] = useState('')
   const [notice, setNotice] = useState<Notice | null>(null)
+  /* Where this screen's alerts go: the host's notifier when it gives one, its own
+     otherwise. Read through a ref so `load` does not change with every render. */
+  const host = useRef(onNotice)
+  useEffect(() => {
+    host.current = onNotice
+  }, [onNotice])
+  const report = useCallback((n: Notice) => (host.current != null ? host.current(n) : setNotice(n)), [])
+  /* A first read that failed and was reported to the host: there is no notice here
+     to tell "failed" from "still loading", so it is said apart. */
+  const [failedOutside, setFailedOutside] = useState(false)
   /*
   Stale data. The same gap Zones had, and the same phase 1 rule: the previous list
   stays —throwing it away would leave the user with nothing over a network error—
@@ -270,10 +299,12 @@ export function Lists({
       there is nothing to go stale —marking it would promise an earlier tree that
       does not exist— so the notice speaks, carrying the server's message.
       */
-      if (!hadData.current) setNotice(noticeFromFailure(outcome))
-      else setStale(true)
+      if (!hadData.current) {
+        if (host.current != null) setFailedOutside(true)
+        report(noticeFromFailure(outcome))
+      } else setStale(true)
     },
-    [list, token],
+    [list, token, report],
   )
 
   /* Read through a ref: it governs the mount only, and as a dependency it would
@@ -282,8 +313,9 @@ export function Lists({
      node is already in `primary.current` here: its effect is declared above, and
      effects run in order. */
   const firstFromPrimary = useRef(initialFromPrimary)
+  const firstDomain = useRef(initialDomain)
   useEffect(() => {
-    void load('', undefined, firstFromPrimary.current)
+    void load(firstDomain.current, undefined, firstFromPrimary.current)
   }, [load])
 
   /** Wraps a mutation: runs it, and on failure draws the server's error. */
@@ -297,17 +329,17 @@ export function Lists({
     setBusy(false)
 
     if (outcome.kind !== 'ok') {
-      setNotice(noticeFromFailure(outcome))
+      report(noticeFromFailure(outcome))
       return
     }
     await after()
-    setNotice(success)
+    report(success)
   }
 
   /* The first load, still in flight: `node` is null and nothing failed. A load
      that FAILED leaves `node` null too, but it sets the notice — and then this is
      not loading, it is a failure with nothing behind it. */
-  const loading = node == null && notice == null
+  const loading = node == null && notice == null && !failedOutside
 
   const domain = node?.domain ?? ''
   const nodeTitle = domain === '' ? '<ROOT>' : (node?.domainIdn ?? domain)
@@ -388,7 +420,10 @@ export function Lists({
                 title: 'Deleted!',
                 text: `Blocked zone '${nodeTitle}' was deleted successfully.`,
               },
-          () => load(parentDomain(nodeTitle) ?? '', true, true),
+          async () => {
+            await load(parentDomain(nodeTitle) ?? '', true, true)
+            onChanged?.()
+          },
         ),
     })
   }
