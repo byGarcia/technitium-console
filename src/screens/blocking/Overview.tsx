@@ -40,18 +40,25 @@ function series(main: ChartData, label: string): number[] {
   return main.datasets.find((d) => d.label === label)?.data.map(Number) ?? []
 }
 
-/** The stacked bars: what got through (Total − Blocked) and what was blocked. */
+/**
+ * The stacked bars: what got through (Total − Blocked) and what was blocked. Blocked
+ * goes FIRST because Chart.js stacks in dataset order from the axis up: on the
+ * baseline, as drawn, its own series reads off a common zero. The legend still reads
+ * "Allowed, Blocked" (`BAR_LEGEND`).
+ */
 export function blockingChart(main: ChartData): ChartData {
   const total = series(main, 'Total')
   const blocked = series(main, 'Blocked')
   return {
     labels: main.labels,
     datasets: [
-      { label: 'Allowed', data: total.map((t, i) => t - (blocked[i] ?? 0)) },
       { label: 'Blocked', data: blocked },
+      { label: 'Allowed', data: total.map((t, i) => t - (blocked[i] ?? 0)) },
     ],
   }
 }
+
+const BAR_LEGEND = ['Allowed', 'Blocked'] as const
 
 /* A trend under a figure: decorative, so hidden from assistive technology — the
    figure above it says the number. */
@@ -261,7 +268,7 @@ export function Overview({
             <Panel title="Queries over time">
               <Body>
                 {chart && hasData(chart) ? (
-                  <Chart type="bar" data={chart} aria="Allowed and blocked queries over time" />
+                  <Chart type="bar" data={chart} legendOrder={BAR_LEGEND} aria="Allowed and blocked queries over time" />
                 ) : (
                   <Gap failure={failure} loading={loading} />
                 )}

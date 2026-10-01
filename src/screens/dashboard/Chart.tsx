@@ -9,6 +9,7 @@ import {
 } from 'chart.js'
 import type { ChartData } from '../../api/dashboard'
 import { readPalette, type Palette } from './palette'
+import { byLegendOrder } from './legend-order'
 
 ChartJS.register(LineController, DoughnutController, BarController, LineElement, PointElement, ArcElement, BarElement, CategoryScale, LinearScale, Legend, Tooltip, Filler)
 
@@ -91,6 +92,7 @@ export function Chart({
   aria,
   separateLegend = false,
   hidden,
+  legendOrder,
 }: {
   type: ChartType
   data: ChartData
@@ -108,6 +110,12 @@ export function Chart({
   separateLegend?: boolean
   /** The labels of the switched-off series. Without it, they are all drawn. */
   hidden?: ReadonlySet<string>
+  /*
+  The order the legend and the tooltip READ the series in, when it is not the order
+  they are stacked in (see `legend-order.ts`). Without it, dataset order, as every
+  Dashboard chart has it.
+  */
+  legendOrder?: readonly string[]
 }) {
   const ref = useRef<HTMLCanvasElement>(null)
   const chart = useRef<ChartJS | null>(null)
@@ -133,6 +141,7 @@ export function Chart({
             display: !separateLegend,
             position: type === 'doughnut' ? ('bottom' as const) : ('top' as const),
             labels: {
+              ...(legendOrder != null ? { sort: byLegendOrder(legendOrder) } : {}),
               color: p.ink,
               usePointStyle: true,
               pointStyle: 'circle' as const,
@@ -157,6 +166,7 @@ export function Chart({
             displayColors: true,
             usePointStyle: true,
             boxPadding: 4,
+            ...(legendOrder != null ? { itemSort: byLegendOrder(legendOrder) } : {}),
           },
         },
         scales:
@@ -185,7 +195,7 @@ export function Chart({
       chart.current?.destroy()
       chart.current = null
     }
-  }, [type, data, height, separateLegend])
+  }, [type, data, height, separateLegend, legendOrder])
 
   /*
   Switching off and on, in its own effect — and **what is switched off is not the

@@ -12,10 +12,13 @@ import { Overview, blockingChart } from './Overview'
    new reference, so identity across renders is what the tests look at. */
 const drawn = vi.hoisted(() => new Map<string, unknown[]>())
 
+const legends = vi.hoisted(() => new Map<string, unknown>())
+
 vi.mock('../dashboard/Chart', () => ({
-  Chart: ({ aria, data }: { aria: string; data: unknown }) => {
+  Chart: ({ aria, data, legendOrder }: { aria: string; data: unknown; legendOrder?: readonly string[] }) => {
     const key = aria.startsWith('Blocked share') ? 'ring' : 'bars'
     drawn.set(key, [...(drawn.get(key) ?? []), data])
+    legends.set(key, legendOrder)
     return <div role="img" aria-label={aria} />
   },
 }))
@@ -49,15 +52,24 @@ function serve() {
 }
 
 describe('blockingChart', () => {
-  it('keeps only what got through and what was blocked, stacked', () => {
+  /* Chart.js stacks in dataset order from the axis up: Blocked first puts it on the
+     baseline, as drawn, where its own series reads off a common zero. */
+  it('keeps only what got through and what was blocked, Blocked at the bottom of the stack', () => {
     expect(blockingChart(MAIN)).toEqual({
       labels: ['a', 'b'],
-      datasets: [{ label: 'Allowed', data: [6, 24] }, { label: 'Blocked', data: [4, 6] }],
+      datasets: [{ label: 'Blocked', data: [4, 6] }, { label: 'Allowed', data: [6, 24] }],
     })
   })
 })
 
 describe('Overview', () => {
+  it('the bars read Allowed, then Blocked, in their legend', async () => {
+    serve()
+    render(<Overview token="T" permissions={undefined} />)
+    await screen.findByRole('img', { name: 'Allowed and blocked queries over time' })
+    expect(legends.get('bars')).toEqual(['Allowed', 'Blocked'])
+  })
+
   it('draws the four figures, Blocked with its share', async () => {
     serve()
     render(<Overview token="T" permissions={undefined} />)
