@@ -406,6 +406,39 @@ describe('SessionProvider', () => {
       await user.keyboard('{Escape}')
     })
   })
+
+  /*
+  Change Theme, back with the light theme on 2026-10-01. Upstream puts it after
+  the account entries and before the update notification (index.html:66-76).
+  */
+  describe('the account menu offers Change Theme', () => {
+    async function openMenu() {
+      vi.spyOn(client, 'apiRequest').mockImplementation(async (path: string) =>
+        path === 'user/session/get' ? session() : ({ kind: 'ok', data: { status: 'ok', response: {} } } as never),
+      )
+      document.cookie = 'token=tok; path=/'
+      mount()
+      const user = userEvent.setup()
+      await user.click(await screen.findByRole('button', { name: /Administrator/ }))
+      return user
+    }
+
+    it('after Create API Token and before the update notification, as upstream', async () => {
+      await openMenu()
+      await screen.findByRole('menuitem', { name: 'Change Theme' })
+      const names = screen.getAllByRole('menuitem').map((m) => m.textContent?.trim())
+      const at = names.indexOf('Change Theme')
+      expect(names[at - 1]).toBe('Create API Token')
+      expect(names[at + 1]).toBe('Disable Update Notification')
+    })
+
+    it('opens the Change Theme dialog', async () => {
+      const user = await openMenu()
+      await user.click(await screen.findByRole('menuitem', { name: 'Change Theme' }))
+      const dialog = await screen.findByRole('dialog', { name: 'Change Theme' })
+      expect(within(dialog).getByRole('radiogroup', { name: 'Theme' })).toBeInTheDocument()
+    })
+  })
 })
 
 /*

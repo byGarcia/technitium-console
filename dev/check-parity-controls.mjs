@@ -37,9 +37,8 @@ const SOURCE = new URL('../src/', import.meta.url).pathname
 /* Destinations upstream has and that must NOT be here, with their reason. Every
    line is a decision, not an oversight: if it is not justified, it is a finding. */
 const EXCUSED = new Map([
-  // The themes modal goes away with the "a single theme, the dark one" decision.
-  // It carries no links of its own, so today this list is deliberately empty:
-  // it is left written so that whoever adds an excuse has to reason it out here.
+  // Today this list is deliberately empty: it is left written so that whoever
+  // adds an excuse has to reason it out here.
 ])
 
 function files(dir) {
@@ -270,16 +269,18 @@ const NOTES = [
   .map((t) => decode(t).replace(/\s+/g, ' ').trim())
   .filter((t, i, all) => t.length > 40 && all.indexOf(t) === i)
 
-/* Texts upstream has and this console deliberately does not, with the reason. */
+/* Texts upstream has and this console deliberately does not, with the reason.
+   Each entry is a run of words, matched whole. */
 const EXCUSED_NOTES = [
-  // deviation 1 in CONVENTIONS.md: a single dark theme, the Change Theme modal is gone
-  'theme',
+  // deviation 1 in CONVENTIONS.md: Amber is not offered. No note names it today;
+  // the entry stays so that one which does is excused for that reason and no other.
+  'amber theme',
 ]
 
 const missingNotes = NOTES.filter((t) => {
   const words = asWords(t).trim().split(' ')
   if (words.length < 12) return false
-  if (EXCUSED_NOTES.some((e) => asWords(t).includes(` ${e} `) && words.length < 40 && /theme/i.test(t))) return false
+  if (EXCUSED_NOTES.some((e) => asWords(t).includes(` ${e} `) && words.length < 40)) return false
   const runs = [words.slice(2, 10), words.slice(6, 14), words.slice(-8)]
   return !runs.some((p) => prose.includes(` ${p.join(' ')} `))
 })
@@ -290,6 +291,41 @@ console.log(
   missingNotes.length === 0
     ? `NOTE PARITY: all ${NOTES.length} of upstream's notes and explanations are present.`
     : `NOTE PARITY: ${missingNotes.length} of ${NOTES.length} missing.`,
+)
+
+/*
+And the short texts of a control: a radio's option, a modal's title, an entry of
+the account menu.
+
+None of the passes above reads them —they are neither links, nor help, nor
+examples, nor notes— so a whole dialog could go missing and every one of them
+stay green. It is exactly what happened to `Change Theme`: absent by decision
+until 2026-10-01, and nothing here could have told whether it came back whole.
+They are compared as whole runs of words, against our source without comments.
+*/
+const accountMenu = html.slice(html.indexOf('<ul class="dropdown-menu">'))
+const CONTROL_TEXTS = [
+  ...[...html.matchAll(/<input type="radio"[^>]*>\s*([^<]+?)\s*<\/label>/g)].map((m) => ['radio', m[1]]),
+  ...[...html.matchAll(/<h4 class="modal-title"[^>]*>([^<]+)<\/h4>/g)].map((m) => ['modal title', m[1]]),
+  ...[...accountMenu.slice(0, accountMenu.indexOf('</ul>')).matchAll(/>([^<>]+)<\/a>/g)].map((m) => ['account menu', m[1]]),
+]
+  .map(([kind, t]) => [kind, decode(t).replace(/\s+/g, ' ').trim()])
+  .filter(([, t], i, all) => t.length > 0 && all.findIndex(([, u]) => u === t) === i)
+
+/* Upstream's control texts this console deliberately does not have, with the reason. */
+const EXCUSED_TEXTS = new Map([
+  ['Amber Theme', 'deviation 1 in CONVENTIONS.md: Amber is not offered in Change Theme'],
+])
+
+const missingText = CONTROL_TEXTS.filter(([, t]) => !EXCUSED_TEXTS.has(t) && !prose.includes(asWords(t)))
+
+console.log('')
+for (const [kind, t] of missingText) console.log(`  MISSING  ${kind}: ${t}`)
+for (const [t, why] of EXCUSED_TEXTS) console.log(`  EXCUSED  ${t}  (${why})`)
+console.log(
+  missingText.length === 0
+    ? `CONTROL TEXT PARITY: all ${CONTROL_TEXTS.length - EXCUSED_TEXTS.size} of upstream's radio options, modal titles and account-menu entries are present; ${EXCUSED_TEXTS.size} excused (EXCUSED_TEXTS).`
+    : `CONTROL TEXT PARITY: ${missingText.length} of ${CONTROL_TEXTS.length} missing.`,
 )
 
 /*
@@ -367,5 +403,7 @@ console.log(
 )
 
 process.exit(
-  missing.length + missingHelp.length + missingExample.length + missingNotes.length + strayLabels.length === 0 ? 0 : 1,
+  missing.length + missingHelp.length + missingExample.length + missingNotes.length + missingText.length + strayLabels.length === 0
+    ? 0
+    : 1,
 )

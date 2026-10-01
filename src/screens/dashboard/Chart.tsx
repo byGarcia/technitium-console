@@ -10,6 +10,7 @@ import {
 import type { ChartData } from '../../api/dashboard'
 import { readPalette, type Palette } from './palette'
 import { byLegendOrder } from './legend-order'
+import { useTheme } from '../../theme/useTheme'
 
 ChartJS.register(LineController, DoughnutController, BarController, LineElement, PointElement, ArcElement, BarElement, CategoryScale, LinearScale, Legend, Tooltip, Filler)
 
@@ -119,6 +120,13 @@ export function Chart({
 }) {
   const ref = useRef<HTMLCanvasElement>(null)
   const chart = useRef<ChartJS | null>(null)
+  /*
+  The palette is read from the tokens, and the tokens change with the theme. A
+  change of theme rebuilds the chart so it reads them again, which is what
+  upstream's `changeTheme` does by calling `update()` on its four charts
+  (main.js:3260-3265).
+  */
+  const { resolved: theme } = useTheme()
 
   useEffect(() => {
     if (!ref.current) return
@@ -195,7 +203,7 @@ export function Chart({
       chart.current?.destroy()
       chart.current = null
     }
-  }, [type, data, height, separateLegend, legendOrder])
+  }, [type, data, height, separateLegend, legendOrder, theme])
 
   /*
   Switching off and on, in its own effect — and **what is switched off is not the
@@ -214,7 +222,8 @@ export function Chart({
   **And it depends on `data`.** Without that, when new data arrives Chart.js
   rebuilds the chart from scratch, the visibility is lost and the button goes on
   saying `aria-pressed="false"` while the series has come back: the control and the
-  thing controlled, disagreeing.
+  thing controlled, disagreeing. A change of theme rebuilds it too, so it depends
+  on the theme for the same reason.
   */
   useEffect(() => {
     const c = chart.current
@@ -231,7 +240,7 @@ export function Chart({
       c.data.datasets.forEach((d, i) => c.setDatasetVisibility(i, !isHidden(d.label)))
     }
     c.update()
-  }, [hidden, data, type])
+  }, [hidden, data, type, theme])
 
   return (
     <div style={{ height: height }}>

@@ -94,18 +94,30 @@ export function GroupRow({
   label,
   help,
   modal = false,
+  role,
   children,
 }: {
   label: string
   help?: ReactNode
   modal?: boolean
+  /*
+  Opt-in: makes the group a `radiogroup` NAMED by the row's label, so a screen
+  reader announces that label before the options and a test can find the group
+  by it. Upstream's markup does not do it; it changes no text and no layout.
+  */
+  role?: 'radiogroup'
   children: ReactNode
 }) {
+  const labelId = useId()
   return (
     <div className={modal ? frm.mrow : frm.row}>
-      <div className={modal ? frm.mrowLabel : frm.rowLabel}>{label}</div>
+      <div className={modal ? frm.mrowLabel : frm.rowLabel} id={role != null ? labelId : undefined}>
+        {label}
+      </div>
       <div className={modal ? frm.mrowCtl : frm.rowCtl}>
-        <div className={frm.group}>{children}</div>
+        <div className={frm.group} role={role} aria-labelledby={role != null ? labelId : undefined}>
+          {children}
+        </div>
         {modal && help != null && <div className={frm.help}>{help}</div>}
       </div>
       {/* Same as in `Row`, and for the same reason: `GroupRow` draws on the SAME
