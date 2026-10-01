@@ -1,0 +1,9 @@
+/* The status block: a mark, two lines, the control. */
+.status { display: flex; align-items: center; gap: var(--s-9); }
+.mark { display: grid; place-items: center; width: var(--s-12); height: var(--s-12); border-radius: var(--r-3); flex: none; }
+.on { background: var(--ok-bg); border: 1px solid var(--ok-bd); color: var(--ok); }
+.paused { background: var(--acc-bg); border: 1px solid var(--acc-bd); color: var(--acc); }
+.off { background: var(--pan2); border: 1px solid var(--line); color: var(--mute); }
+.statusText { flex: 1; min-width: 0; }
+.statusTitle { font-size: var(--t-5); font-weight: 600; }
+.statusSub { color: var(--mute); margin-top: var(--s-1); }
