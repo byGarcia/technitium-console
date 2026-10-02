@@ -68,6 +68,8 @@ export function readPalette(css: CSSStyleDeclaration) {
     border: get('--line'),
     text: get('--ink'),
     mono: get('--font-mono', 'ui-monospace, monospace'),
+    /** The alpha, in two hex digits, of the fill that fades under a line. */
+    fade: get('--ch-fade', '2e'),
   }
 }
 

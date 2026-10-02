@@ -1,7 +1,7 @@
 /*
 The alert is FILLED, not just tinted at the border. Two treatments coexisted:
 this one, which only painted the border and the text, and Zones' local copy
-(`.nota` + `.notaAviso`), with a background. The result was that the "Note!" in
+(`.note` + `.noteWarning`), with a background. The result was that the "Note!" in
 "Delete Cluster" weighed less than the same alert inside a zone modal. The filled
 one wins, which is what was drawn and what is seen on the first pass.
 */
@@ -60,7 +60,13 @@ validation and the destructive.
 The tone still comes from `tones.module.css`: only the background is removed here,
 so the border and the text are still the shared pair's and no second blue is born.
 */
-.alert.info { background: transparent; }
+/*
+On light a whole paragraph in blue reads as a link, so the light theme sets
+`--note-ink` and the prose takes it, leaving `Note!` and the icon in blue. Dark
+does not set it, and its note stays blue throughout, as before.
+*/
+.alert.info { background: transparent; color: var(--note-ink, var(--info)); }
+.alert.info > b:first-of-type, .alert.info > .icon { color: var(--info); }
 
 /*
 Two classes and not one, and the reason matters more than the rule.
@@ -93,7 +99,7 @@ floats in the middle of the paragraph.
 
 /*
 The air an alert leaves beneath it. It was written across eleven modules under
-three names —`.notice`, `.avisoHueco` and `.alertSlot`— and produced four
+three names —`.notice`, `.noticeGap` and `.alertSlot`— and produced four
 distances: 24 px in Zones and its modals, the lists screens, Administration, the
 Dashboard, DNS Client and Apps; 14 in DHCP, in Logs and on login; and 12 in the
 four account modals, where the alert sat loose and kept the container's `gap`.

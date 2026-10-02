@@ -26,9 +26,9 @@ Everything else it sends —values, labels, series— is passed through untouche
 */
 
 /** A fill that fades out downwards. Needs the canvas, so it is built at draw time. */
-function fade(ctx: CanvasRenderingContext2D, height: number, colour: string): CanvasGradient {
+function fade(ctx: CanvasRenderingContext2D, height: number, colour: string, alpha: string): CanvasGradient {
   const g = ctx.createLinearGradient(0, 0, 0, height)
-  g.addColorStop(0, `${colour}2e`)
+  g.addColorStop(0, `${colour}${alpha}`)
   g.addColorStop(1, `${colour}00`)
   return g
 }
@@ -46,7 +46,7 @@ function repaint(
       return {
         ...d,
         borderColor: colour,
-        backgroundColor: fade(ctx, height, colour),
+        backgroundColor: fade(ctx, height, colour, p.fade),
         borderWidth: 1.75,
         fill: true,
         /*

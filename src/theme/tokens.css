@@ -274,6 +274,8 @@ before `data-theme` is set and with any value nobody declared.
   --ch-block:  #a13ae8;
   --ch-drop:   #94a3b8;
   --ch-clients: #f5a524;
+  /* The alpha, in hex, at the top of the fill under a line chart's series. */
+  --ch-fade: 2e;
 
   /*
   WHAT IS LEFT OF THE ROW COLOUR CODE, and why it is not fixed here.
@@ -442,7 +444,7 @@ wherever the attribute says `light`.
   chose —red and blue within three points, no blue cast— in the register of the
   light consoles of GitHub, Linear and Vercel.
 
-    canvas → panel            1.13   (dark 1.09)
+    canvas → panel            1.19   (dark 1.09)
     panel  → raised (pan2)    1.08
     panel  → row hover        1.10   (hover-strong 1.17)
     panel  → sunken field     1.05   plus `--line-field`, below
@@ -452,7 +454,7 @@ wherever the attribute says `light`.
   sunken field reads by its border, and that border is the one line here held
   to 3:1.
   */
-  --bg: #f0f1f3;
+  --bg: #e9ebee;
   --pan: #ffffff;
   --pan2: #f5f6f8;
   /*
@@ -556,6 +558,10 @@ wherever the attribute says `light`.
   --ch-block:  #6920d4;
   --ch-drop:   #73818b;
   --ch-clients: #b88b21;
+  /* The fill under a line: 18 % disappears on white, 35 % reads as on charcoal. */
+  --ch-fade: 59;
+  /* A Note! reads as prose: the ink, with the word and the icon in blue. */
+  --note-ink: var(--ink);
 
   --ch-1: #227cbb;  --ch-2: #1fa580;  --ch-3: #6446af;  --ch-4: #d47d01;
   --ch-5: #19a2a3;  --ch-6: #9a0559;  --ch-7: #e43b66;  --ch-8: #886000;
@@ -572,13 +578,13 @@ wherever the attribute says `light`.
   /*
   The control lines. `--line-field` is a text field's and a select's border at
   rest: on light it is what tells a field from the panel, so it is held to 3:1
-  —3.43 on the panel, 3.04 on the canvas, 3.18 on a raised panel—, where dark
+  —3.72 on the panel, 3.11 on the canvas, 3.44 on a raised panel—, where dark
   keeps it equal to `--line`. `--line-ctrl`, a checkbox's or a radio's box, is
   4.65. `--line-hover` (1.91) only has to move when the pointer arrives.
   */
   --line-hover: #b8bcc1;
   --line-ctrl: #6f757c;
-  --line-field: #868b91;
+  --line-field: #80858b;
   --field-focus: #ffffff;
   /*
   OVERLAYS AND MATERIAL. The veils are the ink at a third and under a half: dark
@@ -601,7 +607,7 @@ wherever the attribute says `light`.
   --veil: rgba(26, 29, 33, 0.32);
   --veil-dialog: rgba(26, 29, 33, 0.44);
 
-  --e-1: 0 1px 2px rgba(16, 20, 24, 0.06), 0 4px 12px rgba(16, 20, 24, 0.04);
+  --e-1: 0 1px 2px rgba(16, 20, 24, 0.08), 0 2px 10px rgba(16, 20, 24, 0.06);
   --e-2: 0 2px 6px rgba(16, 20, 24, 0.08), 0 12px 28px rgba(16, 20, 24, 0.12);
   --e-3: 0 4px 12px rgba(16, 20, 24, 0.1), 0 24px 64px rgba(16, 20, 24, 0.22);
   --shadow-menu: var(--e-2);
