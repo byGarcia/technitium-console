@@ -87,6 +87,61 @@ over the form and has to read as something in front.
 
 .isEmpty { color: var(--faint); }
 
+/*
+`searchable` (the console's own, see `Select.tsx`): the box holds the search field
+on top and the listbox under it, and only the listbox scrolls, so the field stays
+in view however far down the options go.
+*/
+.searching {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  overflow: hidden;
+}
+.scroll {
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+/* The field of `ui/Field`, one step smaller: it filters the list, it is not a value of the form. */
+.search {
+  flex: none;
+  width: 100%;
+  min-width: 0;
+  min-height: var(--field-height);
+  padding: var(--s-4) var(--s-6);
+  border: 1px solid var(--line-field);
+  border-radius: var(--r-2);
+  background-color: var(--field);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--t-4);
+  box-shadow: var(--sunken);
+}
+.search::placeholder { color: var(--faint); }
+.search:focus {
+  outline: none;
+  border-color: var(--acc-ink);
+  background-color: var(--field-focus);
+}
+
+/* An `<optgroup>`'s label: a heading of the options under it, not one of them. */
+.groupLabel {
+  composes: smallCaps from './label.module.css';
+  margin-top: var(--s-3);
+  padding: var(--s-4) var(--s-5) var(--s-2);
+  border-top: 1px solid var(--line);
+  cursor: default;
+}
+
+/* The search matched nothing: the line where the options would be. */
+.none {
+  padding: var(--s-4) var(--s-5);
+  font-size: var(--t-4);
+  color: var(--mute);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .trigger,
   .chevron { transition: none; }

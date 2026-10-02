@@ -71,6 +71,9 @@ time the way the stock console does.
   undone, and Save sends only the list URLs, cleaned as Settings cleans them. Block List Domains,
   Allow List Domains and the next update come with **Update Now**, and the figures say they are
   updating until the server has finished.
+- **More lists in Quick Add.** On Lists, Quick Add has a search field that filters by name or by
+  the list's host, and after Technitium's catalogue it offers more lists chosen by this console,
+  under More lists. Settings › Blocking offers Technitium's catalogue as before.
 - **Old addresses still land.** `/allowed/` and `/blocked/` open Rules filtered to that list, and
   the filter stays in the address, so it survives a reload.
 - **Nothing hides for want of a permission.** A panel you cannot view shows a padlock and the

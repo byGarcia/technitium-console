@@ -19,6 +19,7 @@ import {
   addList, applyQuick, canToggle, fromUrls, listName, saveBody, sameLines, toggleLine, type ListLine,
 } from './list-lines'
 import { Locked } from './Locked'
+import { hostsOf, moreLists } from './extra-lists'
 import { missing, type Permissions } from './permissions'
 import shared from './Blocking.module.css'
 import styles from './BlockLists.module.css'
@@ -43,7 +44,13 @@ every alert of the update and the save. Everything else is OURS:
 - the unsaved-changes bar: `1 unsaved change` / `N unsaved changes` with its
   suffix `to the block list URLs`, `Discard`, and `Save`, shortened from upstream's
   "Save Settings" (index.html:2460);
-- the two `Could not read …` sentences and the link to Settings › Blocking.
+- the two `Could not read …` sentences and the link to Settings › Blocking;
+- Quick Add's search (`Search lists`, `No lists match`) and its second catalogue, the
+  console's own (`extra-lists.ts`), under `More lists` after Technitium's.
+
+Quick Add here lists Technitium's catalogue first, as Settings does, then ours. An
+entry of ours is chosen exactly as one of theirs (`applyQuick`), and its single-URL
+entries name their rows too. Its search matches the name and the URL's host.
 
 No node selector: `blockListUrls` is a CLUSTER-WIDE parameter (`nodeScope`,
 settings/model.ts:514), so it is read and saved on the cluster when there is one and
@@ -54,6 +61,10 @@ Changes are KEPT until Save, as upstream's Save Settings keeps the textarea:
 click unrecoverable. One save also means one request, so quick changes cannot land
 out of order.
 */
+
+/* The value of an entry of ours in Quick Add: by position, so a name shared with an
+   entry of Technitium's still picks the right one. */
+const MORE = 'more:'
 
 const KIND_LABEL = { block: 'Block', allow: 'Allow', comment: 'Comment' } as const
 const KIND_CLASS = { block: styles.block, allow: styles.allow, comment: styles.comment } as const
@@ -164,6 +175,8 @@ export function BlockLists({
   const [counts, setCounts] = useState<{ block: number; allow: number } | null>(null)
   const [countsFailed, setCountsFailed] = useState(false)
   const [catalog, setCatalog] = useState<QuickEntry[]>([])
+  /** The console's own entries, once Technitium's are known to leave out repeats. */
+  const [more, setMore] = useState<QuickEntry[]>([])
   const [field, setField] = useState('')
   const [invalid, setInvalid] = useState<string | null>(null)
   const [notice, setNotice] = useState<Notice | null>(null)
@@ -213,7 +226,11 @@ export function BlockLists({
 
   useEffect(() => {
     let live = true
-    void loadQuickList('quick-block-lists').then((e) => live && setCatalog(e))
+    void loadQuickList('quick-block-lists').then((e) => {
+      if (!live) return
+      setCatalog(e)
+      setMore(moreLists(e))
+    })
     return () => {
       live = false
     }
@@ -344,6 +361,9 @@ export function BlockLists({
     setReloading({ from })
   }
 
+  /* What names a row: Technitium's entries first, so theirs wins a shared URL. */
+  const named = [...catalog, ...more]
+
   const listsCount = lines.filter((l) => l.kind !== 'comment').length
   const disabledCount = lines.filter((l) => l.kind !== 'comment' && !l.enabled).length
   const commentCount = lines.length - listsCount
@@ -465,18 +485,34 @@ export function BlockLists({
                       id={id}
                       disabled={off || loading}
                       value=""
+                      searchable
+                      searchLabel="Search lists"
+                      noMatchText="No lists match"
                       onChange={(ev) => {
                         const chosen = ev.target.value
                         if (chosen === '') return
-                        const entry = chosen === 'none' ? 'none' : catalog.find((q) => q.name === chosen)
+                        const entry = chosen === 'none'
+                          ? 'none'
+                          : chosen.startsWith(MORE)
+                            ? more[Number(chosen.slice(MORE.length))]
+                            : catalog.find((q) => q.name === chosen)
                         if (entry != null) setLines((l) => applyQuick(l, entry))
                       }}
                     >
                       <option value="" />
                       <option value="none">None</option>
                       {catalog.map((q) => (
-                        <option key={q.name} value={q.name}>{q.name}</option>
+                        <option key={q.name} value={q.name} data-search={hostsOf(q)}>{q.name}</option>
                       ))}
+                      {more.length > 0 && (
+                        <optgroup label="More lists">
+                          {more.map((q, i) => (
+                            <option key={`${MORE}${i}`} value={`${MORE}${i}`} data-search={hostsOf(q)}>
+                              {q.name}
+                            </option>
+                          ))}
+                        </optgroup>
+                      )}
                     </Select>
                   )}
                 </Field>
@@ -499,7 +535,7 @@ export function BlockLists({
               className={shared.inPanel}
             >
               {lines.map((l, i) => {
-                const name = l.url == null ? null : listName(l.url, catalog)
+                const name = l.url == null ? null : listName(l.url, named)
                 const faded = l.kind !== 'comment' && !l.enabled ? styles.off : undefined
                 return (
                   <tr key={`${i}:${l.raw}`}>
