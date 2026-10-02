@@ -1,0 +1,45 @@
+name: Bug report
+description: Something in the console looks or works wrong.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time. This console aims to look different from the stock one and behave exactly like it, so anything that behaves differently is a bug too.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: Which screen, what you did, what you expected and what you got. A screenshot helps a lot.
+    validations:
+      required: true
+  - type: input
+    id: console
+    attributes:
+      label: Console version
+      description: Shown at the bottom of the sidebar, next to Web Console.
+      placeholder: "1.2.0"
+    validations:
+      required: true
+  - type: input
+    id: server
+    attributes:
+      label: Technitium DNS Server version
+      description: Shown at the bottom of the sidebar, next to DNS Server.
+      placeholder: "15.5.1"
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: How it is installed
+      options:
+        - One-line installer
+        - Docker image
+        - By hand
+        - Other
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and window width
+      placeholder: "Chrome 141, 1440 px"

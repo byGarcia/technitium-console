@@ -1,0 +1,20 @@
+name: Feature request
+description: Something the console could do or show better.
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The console changes how Technitium looks, not what it does: it calls the same server API as the stock console, with the same actions and wording. A request that needs the server to do something new belongs in [Technitium DNS Server](https://github.com/TechnitiumSoftware/DnsServer/issues).
+  - type: textarea
+    id: problem
+    attributes:
+      label: What you are missing
+      description: What you are trying to do and what gets in the way.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What you would like
+      description: How you picture it. Screenshots or examples from other tools are welcome.

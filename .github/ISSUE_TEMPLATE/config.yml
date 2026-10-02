@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions
+    url: https://github.com/byGarcia/technitium-console/discussions
+    about: How to install it, how something works, or anything that is not a bug or a request.
+  - name: Technitium DNS Server
+    url: https://github.com/TechnitiumSoftware/DnsServer/issues
+    about: Problems with the DNS server itself, not with this console.
