@@ -26,7 +26,7 @@ import { Notifier } from '../../../ui/Notifier'
 
 The initial values are NOT those of an empty form: ECDSA with P256, automatic KSK
 and ZSK, NSEC, TTL 3600 and a ZSK rollover every 30 days. And RSA's default sizes
-are **different between KSK and ZSK** —2048 and 1280— which is the kind of detail
+are **different between KSK and ZSK** (2048 and 1280), which is the kind of detail
 that gets lost when "cleaning up" a form.
 */
 

@@ -21,10 +21,10 @@ relation is what makes the card useful.
 
 It used to be said with the same square swatch a legend uses, and this comment
 argued that the 3 px edge "is the trademark of a generated interface and looks
-like nothing in the chart". **Phase 3 revisited it and decided the opposite**,
+like nothing in the chart". **The Dashboard redesign revisited it and decided the opposite**,
 with an argument the first one did not have in front of it: the `Queries` legend
 uses the square swatch, so giving the card the same piece makes two different
-objects —the series and its total— announce themselves the same way. The edge
+objects (the series and its total) announce themselves the same way. The edge
 separates them without taking the colour from either.
 
 It is written down rather than deleted: a comment that contradicts the code is
@@ -41,7 +41,7 @@ The edge goes on `.tiles .tile` and not on `.tile`, and this is not fussiness.
 
 Measured: written on `.tile` it came out **1 px and grey**. `composes` ADDS
 `ui/Panel`'s class, it does not copy its declarations, so the element carries both
-and the two rules have the same specificity (0,1,0) — the last one emitted wins,
+and the two rules have the same specificity (0,1,0): the last one emitted wins,
 which is `Panel`'s `border`, and its shorthand resets the left side too.
 
 With the parent in front they are (0,2,0) against (0,1,0) and it stops depending
@@ -71,21 +71,21 @@ plus 1 px. A browser without container units (Firefox before 110, Safari before
 its whole box.
 
 Its size **is not from the scale, and it is a deliberate local exception**: 34 px,
-and only here. It is not debt —there is nothing left to unify— because **nothing
+and only here. It is not debt (there is nothing left to unify) because **nothing
 else uses it**: it is the size of ONE figure on ONE screen, the one read first on
 the Dashboard. A global token is declared when two places share it; declaring one
 for a single use is inventing vocabulary nobody speaks.
 
 Let it be on record how this was reached: the first version asked for a `--t-9`
-that **does not exist** —the phase 1 scale ends at `--t-7`, 22 px, the section
-title— so the declaration was dropped whole and in silence and the hero came out
-the size of the other ten. The browser discards the property without a word.
+that **does not exist** (the type scale in `tokens.css` ends at `--t-7`, 22 px,
+the section title), so the declaration was dropped whole and in silence and the
+hero came out the size of the other ten. The browser discards the property without a word.
 
 If some day a second screen needs this size, **then** it is a token and whoever
-owns `tokens.css` decides it, which is phase 1's.
+owns `tokens.css` decides it.
 
 And it goes AFTER `.tile .v` on purpose. The two rules have the same specificity
-—(0,2,0)— so the last one emitted wins; placed before, `.tile .v` cancelled it and
+(0,2,0), so the last one emitted wins; placed before, `.tile .v` cancelled it and
 the hero did not grow. It is the same failure that already cost a `background` in
 `ui/Alert`.
 */
@@ -109,8 +109,8 @@ The lower half, in three rows, which is what the accepted drawing has: `Queries`
 with `Server` beside it, then the three doughnuts, then the three top-N lists.
 
 It was a 310 px right rail with everything stacked inside it. Nothing recorded the
-change and the contract does not fix the layout, so it was drift and not a
-decision — and it cost the composition: a doughnut in 310 px is a huge centred
+change and nothing fixed the layout, so it was drift and not a
+decision, and it cost the composition: a doughnut in 310 px is a huge centred
 ring with its legend underneath, `Server` could only fit two columns, `Top
 Clients` sat away from the two lists it belongs with, and half the canvas below
 was empty at 1440.
@@ -142,7 +142,7 @@ turned three small charts into three big ones.
 /*
 Flex with wrap and NOT a grid with a breakpoint: the ring and its legend sit side
 by side while both fit, and the legend drops underneath when they do not. Measured
-at 1024 the grid version clipped five entries —`Author…`, `Recurs…`— because a
+at 1024 the grid version clipped five entries (`Author…`, `Recurs…`) because a
 column of `minmax(0,1fr)` is allowed to be narrower than its content. Here nothing
 is allowed to: the legend keeps its width, the ring gives way down to 110 px, and
 past that the row wraps. No width has to be guessed in advance.
@@ -152,7 +152,7 @@ past that the row wraps. No width has to be guessed in advance.
 /*
 The legend is a column here and a wrapping row everywhere else, and it must not
 truncate: an entry that reads `Author…` has lost the word the colour is for. The
-ring is what gives way —it is drawn smaller— because the legend's width is set by
+ring is what gives way (it is drawn smaller) because the legend's width is set by
 its longest label plus its percentage, and that is not negotiable.
 */
 .split .legend { margin-bottom:0; flex-direction:column; flex-wrap:nowrap; align-items:flex-start; gap: var(--s-3); flex:0 1 auto; }
@@ -171,8 +171,8 @@ The "More" dialog's table is the console's table, with one difference that does
 have a reason: the header stays stuck to the top because the list can have three
 hundred rows inside a dialog that scrolls.
 
-It used to be a table apart —header at `--t-2` and over `--pan` instead of
-`--pan2`— and that is why the same datum looked different in the Dashboard's
+It used to be a table apart (header at `--t-2` and over `--pan` instead of
+`--pan2`), and that is why the same datum looked different in the Dashboard's
 panel and in the dialog that expands it.
 */
 .topTable { composes: table from '../../ui/Table.module.css'; }
@@ -203,18 +203,18 @@ screens it is at 12.5 and normal weight.
 /*
 The responsive steps of the lower half, measured at the four widths.
 
-1080 — `Server` stops fitting beside `Queries`: the chart was down to 425 px and
+At 1080, `Server` stops fitting beside `Queries`: the chart was down to 425 px and
 at 390 it was pushed off the screen. Both go full width, and `Server`, with room
 to spare, goes to three columns: two rows of three read better than three of two
 across the whole width.
 
-980 — the three doughnuts and the three top-N lists stop being three: a
+At 980, the three doughnuts and the three top-N lists stop being three: a
 doughnut's ring plus its legend needs about 300 px, and three of those plus the
 gaps do not fit. They go to one column rather than two, because two would leave an
 orphan on a second row and the panels are tall enough that a single column reads
 better than a 2+1.
 
-560 — the doughnut's legend, once wrapped under the ring, goes back to being a
+At 560, the doughnut's legend, once wrapped under the ring, goes back to being a
 row: a column of five entries under a ring doubles the panel's height for nothing.
 */
 @media (max-width: 1080px) {
@@ -226,7 +226,7 @@ row: a column of five entries under a ring doubles the panel's height for nothin
   .trio { grid-template-columns: minmax(0, 1fr); }
 }
 
-/* Wrapped —narrow panel— the legend goes back to being a row: a column of five
+/* Wrapped (narrow panel), the legend goes back to being a row: a column of five
    entries under a ring makes the panel twice as tall for no reason. */
 @media (max-width: 560px) {
   .split .legend { flex-direction:row; flex-wrap:wrap; justify-content:center; }
@@ -236,11 +236,11 @@ row: a column of five entries under a ring doubles the panel's height for nothin
 The card breakpoints, which the first version did NOT have.
 
 The matrix found them, not a reading: at 1440, 1024, 768 and 390 the split
-measured exactly the same —two columns and the nine in three— because the rules
+measured exactly the same (two columns and the nine in three) because the rules
 were written without a single media query. At 390 the nine sat in three columns of
 about a hundred pixels each. It did not overflow, so by eye it passed.
 
-900 — the column of the two totals stops being a column: it no longer fits beside
+At 900, the column of the two totals stops being a column: it no longer fits beside
 the nine, so the two totals go side by side and the nine drop below.
 */
 @media (max-width: 900px) {
@@ -249,7 +249,7 @@ the nine, so the two totals go side by side and the nine drop below.
 }
 
 /*
-560 — the nine **stay in three columns**, and that is deliberate: they are three
+At 560, the nine **stay in three columns**, and that is deliberate: they are three
 families of three, and breaking them into two columns mixes rows that answer
 different questions. What gives is the size of the figure, not the grid.
 */
@@ -267,7 +267,7 @@ different questions. What gives is the size of the figure, not the grid.
 
 .pbAdjusted { padding-top: var(--s-2); }
 
-/* The alert for the screen's own actions —today, the blocking menu. */
+/* The alert for the screen's own actions: today, the blocking menu. */
 /* A panel's header can carry more than one control. */
 .panelActions { display: flex; align-items: center; gap: var(--s-4); }
 
@@ -309,8 +309,8 @@ neither.
 
 /*
 A series that is off is DIMMED, it does not disappear: it is still one of the
-eleven and it has to be possible to switch it back on. `--dim` is the phase 1
-token for exactly this — something that is there, is legible, and is not current.
+eleven and it has to be possible to switch it back on. `--dim` is the design
+token for exactly this: something that is there, is legible, and is not current.
 */
 .lgOff { opacity: var(--dim); }
 .lgOff b { color: var(--mute); }
@@ -318,8 +318,8 @@ token for exactly this — something that is there, is legible, and is not curre
 /*
 The range message, under its field.
 
-It goes here and not in the notice at the top because phase 1 decided it: the
-validation error goes next to its field, and never in two places at once.
+It goes here and not in the notice at the top because the design rule says so:
+the validation error goes next to its field, and never in two places at once.
 */
 .badRange { color: var(--dan); font-size: var(--t-2); }
 .ownRange input[aria-invalid] { border-color: var(--dan); }

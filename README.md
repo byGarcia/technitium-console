@@ -13,7 +13,7 @@ Same API, same behaviour, same texts: the interface rebuilt from scratch.
 
 </div>
 
-![The dashboard](docs/screenshots/dashboard.png)
+![Blocking › Overview](docs/screenshots/blocking-overview.png)
 
 **Latest: [v1.2.0](https://github.com/byGarcia/technitium-console/releases/latest) for Technitium DNS
 Server 15.5.x**, with Allowed and Blocked as one Blocking section, a light theme, plus LDAP, the
@@ -24,6 +24,28 @@ It replaces the console the server ships with. Install it and the DNS service
 behaves exactly as before; remove it and you are back to the original. Nothing on
 the server side changes: this console talks to it only through its documented
 `/api` endpoints.
+
+## Blocking, in one place
+
+The stock console spreads blocking over three places: Allowed and Blocked are two separate domain
+trees, and the block lists sit in Settings › Blocking. This console brings them together in one
+**Blocking** section, with what blocking is doing, your own rules and your lists each in one place.
+It is the one part of the console that goes beyond a new look:
+
+- **Overview** shows what blocking is doing: Total Queries and Blocked with their trend, the blocked
+  share, allowed against blocked over time, the top blocked domains and the last ten blocked
+  queries. Disable blocking for one of the stock console's eight durations and see when it comes back.
+- **Rules** puts every domain you blocked or allowed by hand in one table, filtered, searchable and
+  paged however many there are. The domain tree you already know is one switch away.
+- **Lists** turns your block and allow lists into rows, each with its readable name, an Enabled
+  switch and Remove. Add one by URL or with Quick Add, update them all with Update Now, and nothing
+  changes until you Save.
+- **Block or allow a domain** from Overview or Rules, or from the menu on any row of Top Domains and
+  Top Blocked Domains.
+
+| Rules | Lists |
+|---|---|
+| ![Blocking › Rules](docs/screenshots/blocking-rules.png) | ![Blocking › Lists](docs/screenshots/blocking-lists.png) |
 
 ## Design only. Zero functionality.
 
@@ -40,22 +62,28 @@ That is the only reason it is safe to put a third-party interface in front of
 infrastructure.
 
 One section is a deliberate exception, and it is written down rather than slipped
-in: **Allowed and Blocked are now a single Blocking section**, with Overview, Rules
-and Lists laid out the way AdGuard Home and Pi-hole lay blocking out. It calls only endpoints the
-server already has, with upstream's actions and wording, and each of its files
+in: **Blocking**, above. It calls only endpoints the server already has, with upstream's actions and wording, and each of its files
 declares the words that are its own; `/allowed/` and `/blocked/` still land. Its
 limits, and the other deliberate deviations, are in
 [CONVENTIONS.md](CONVENTIONS.md#deliberate-deviations-from-upstream-behaviour).
 
 ## What it looks like
 
-| Zones | Settings |
+| Dashboard | Zones |
 |---|---|
-| ![Zones](docs/screenshots/zones.png) | ![Settings](docs/screenshots/settings.png) |
+| ![The dashboard](docs/screenshots/dashboard.png) | ![Zones](docs/screenshots/zones.png) |
 
-| Cache, and the tree in Blocking › Rules | Apps |
+| Settings | Cache, and the tree in Blocking › Rules |
 |---|---|
-| ![The domain tree](docs/screenshots/cache.png) | ![Apps](docs/screenshots/apps.png) |
+| ![Settings](docs/screenshots/settings.png) | ![The domain tree](docs/screenshots/cache.png) |
+
+| Apps | The light theme |
+|---|---|
+| ![Apps](docs/screenshots/apps.png) | ![Blocking › Overview in the light theme](docs/screenshots/blocking-overview-light.png) |
+
+**Light or dark, or whatever your system uses**, from Change Theme in the account menu, as in the
+stock console. Both themes are measured: every text colour reaches 4.5:1 on every surface it is
+drawn on.
 
 The domain tree is one component, shared by Cache and by the Tree view of Blocking › Rules, and the
 screens it served used to be indistinguishable. The tree is the object you came to look at, so it is
@@ -82,7 +110,7 @@ fixed one by one.
 | API endpoints the stock console calls, and this one calls too | 132 of 132 |
 | Sortable columns kept | 64 of 66, and the two missing are declared |
 | Dialogs, checked one by one | 44 |
-| Tests | 1,487 |
+| Tests | 1,492 |
 
 Every figure in that table comes from a script in `dev/` (`check-endpoints.mjs`,
 `check-parity-sort.mjs`, `dialog-inventory.sh`) and not from this paragraph.
@@ -90,8 +118,8 @@ Every figure in that table comes from a script in `dev/` (`check-endpoints.mjs`,
 Parity is not asserted, it is measured. `dev/` brings up **two instances of the
 official Technitium image side by side** (one serving this console, one
 untouched), and the scripts in there compare them: the controls present on each
-screen, the state the server is left in after fourteen real actions, the widths
-at which something overflows, the CSS classes nobody uses.
+screen, the state the server is left in after fourteen real actions, the sortable
+columns, the dialogs, the CSS classes nobody uses.
 
 ```bash
 cd dev && docker compose up -d     # this console on :5380, the stock one on :5381
@@ -365,9 +393,8 @@ Before changing anything, read [CONVENTIONS.md](CONVENTIONS.md). It holds the ru
 above, the upstream behaviours discovered along the way, and four constraints the
 server imposes that will let you break production while development looks fine.
 
-[PRODUCT.md](PRODUCT.md) says what this owns and what it refuses to become,
-[CONTRIBUTING.md](CONTRIBUTING.md) how to run the two-instance harness, and
-[AGENTS.md](AGENTS.md) is the short version for whoever arrives next.
+[PRODUCT.md](PRODUCT.md) says what this owns and what it refuses to become, and
+[CONTRIBUTING.md](CONTRIBUTING.md) how to run the two-instance harness.
 
 ## Status
 

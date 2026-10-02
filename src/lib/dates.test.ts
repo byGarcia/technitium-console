@@ -25,7 +25,7 @@ describe('dateTime / minuteStamp', () => {
   })
 })
 
-describe('fromNow — the moment literals', () => {
+describe('fromNow: the moment literals', () => {
   const now = Date.UTC(2026, 7, 25, 12, 0, 0)
   const ago = (ms: number) => fromNow(new Date(now - ms).toISOString(), now)
 

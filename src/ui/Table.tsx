@@ -27,7 +27,7 @@ without treating it as a date, and the order is the same the old console gave.
 /*
 The table: the scaffolding, not just the styles.
 
-This module exported `useSort`, `Th` and `RowAction` —the helpers— and let each
+This module exported `useSort`, `Th` and `RowAction` (the helpers) and let each
 screen write the wrapper, the `table`, the `thead` and the `tbody` by hand.
 Eighteen tables with the same structure typed out eighteen times, and everything
 copying allows: six of the seven data tables had been left without their "there
@@ -178,8 +178,8 @@ export function Th({
 }
 
 /*
-The button for a row action. It carries an icon and not a label —see the measured
-reasoning in `Table.module.css`— but keeps its name in `aria-label` and in
+The button for a row action. It carries an icon and not a label (see the measured
+reasoning in `Table.module.css`) but keeps its name in `aria-label` and in
 `title`, so the keyboard, the screen reader and the tooltip all say the same thing
 the text that used to fill the column said.
 */

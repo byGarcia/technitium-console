@@ -11,8 +11,8 @@ Upstream does it in two steps (main.js:2275-2340):
     port; over HTTP, if it listens on another HTTP port. The verdict lives in a
     global until the next load.
   · `checkForWebConsoleRedirection` runs after a successful save (main.js:2217)
-    and restore (main.js:3188) —only when the answering server is the session's
-    own— and, unless a proxy was detected, opens the new address in the same tab
+    and restore (main.js:3188), but only when the answering server is the session's
+    own. Unless a proxy was detected, it opens the new address in the same tab
     2.5 s later, "to allow web server to restart".
 
 Both are replicated as pure functions over a location-like input. The comparisons

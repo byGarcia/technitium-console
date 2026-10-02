@@ -289,7 +289,7 @@ describe('DHCP › Scopes', () => {
   })
 })
 
-describe('DHCP › Scopes — the form', () => {
+describe('DHCP › Scopes: the form', () => {
   it('\"Add Scope\" opens the empty form with \"Use This DNS Server\" checked', async () => {
     const user = userEvent.setup()
     vi.spyOn(api, 'listScopes').mockResolvedValue({ kind: 'ok', data: [] })

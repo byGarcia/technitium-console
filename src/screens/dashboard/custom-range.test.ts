@@ -4,8 +4,8 @@ import { rangeInstants, whatIsMissing } from './custom-range'
 describe('rangeInstants', () => {
   /*
   Upstream's seven-day rule (`main.js:2604-2612`): up to a week, the date is read
-  in the local zone —the server returns by the hour and those have to line up with
-  the clock of whoever is looking— and beyond that, in UTC, which is how it groups
+  in the local zone (the server returns by the hour and those have to line up with
+  the clock of whoever is looking), and beyond that, in UTC, which is how it groups
   the days.
   */
   it('beyond seven days it reads the dates in UTC', () => {

@@ -158,7 +158,7 @@ describe('the nine actions on keys', () => {
   })
 })
 
-describe('planNxProof — the decision table of changeDnssecNxProof', () => {
+describe('planNxProof: the decision table of changeDnssecNxProof', () => {
   const zeros = { iterations: '0', saltLength: '0' }
 
   it('NSEC to NSEC calls nobody', () => {

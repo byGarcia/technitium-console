@@ -23,6 +23,6 @@
 The textarea of a pane. `Recursion` named `settings.area` and this module
 declared no such class, so the ACL box rendered with no class at all: no width,
 no minimum height. `Admin.module.css` composes the same one from `ui/PanelForm`
-and that is where it belongs — the pane's form is that form.
+and that is where it belongs: the pane's form is that form.
 */
 .area { composes: area from '../../ui/PanelForm.module.css'; }

@@ -118,7 +118,7 @@ describe('formFromScope', () => {
   })
 })
 
-describe('buildBody — name and rename', () => {
+describe('buildBody: name and rename', () => {
   it('a new scope does NOT send `newName`', () => {
     const b = body(form({ oldName: '', name: 'New' }))
     expect(b.name).toBe('New')
@@ -138,7 +138,7 @@ describe('buildBody — name and rename', () => {
   })
 })
 
-describe('buildBody — DNS servers', () => {
+describe('buildBody: DNS servers', () => {
   it('with \"Use This DNS Server\" checked `dnsServers` is NOT sent', () => {
     const b = body(form({ useThisDnsServer: true, dnsServers: '1.1.1.1' }))
     expect(b.useThisDnsServer).toBe('true')
@@ -151,7 +151,7 @@ describe('buildBody — DNS servers', () => {
   })
 })
 
-describe('buildBody — the five tables', () => {
+describe('buildBody: the five tables', () => {
   it('it serialises ALL the cells joined by `|`, between rows as well', () => {
     const b = body(
       form({
@@ -192,7 +192,7 @@ describe('buildBody — the five tables', () => {
   })
 })
 
-describe('buildBody — validation alerts, with their literal texts', () => {
+describe('buildBody: validation alerts, with their literal texts', () => {
   it('an empty required cell gives \"Missing!\" and points at that cell', () => {
     const e = error(
       form({ exclusions: [{ startingAddress: '192.168.1.1', endingAddress: '' }] }),
@@ -276,7 +276,7 @@ describe('buildBody — validation alerts, with their literal texts', () => {
   })
 })
 
-describe('buildBody — the 36 parameters', () => {
+describe('buildBody: the 36 parameters', () => {
   it('it sends the whole form, with the booleans as strings', () => {
     const b = body(
       form({

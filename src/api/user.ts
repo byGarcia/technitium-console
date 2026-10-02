@@ -2,9 +2,8 @@ import { apiRequest, type ApiOutcome } from './client'
 import { urlApi } from '../app/base'
 
 /*
-The endpoints of the `user` family. Thirteen in all; this is the phase that
-implements them, even though `createSingleUseToken` has no consumers until
-phases 4, 5, 6 and 8.
+The endpoints of the `user` family. Thirteen in all, implemented together, even
+though `createSingleUseToken` has no consumer in the console.
 */
 
 export interface SessionRow {
@@ -23,7 +22,7 @@ export function deleteSession(token: string | null, partialToken: string): Promi
 }
 
 /*
-main.js:734-740 — the update notice can be silenced persistently, and while it
+main.js:734-740: the update notice can be silenced persistently, and while it
 is silenced the endpoint is NOT EVEN called. Only an explicit `force` skips that
 preference.
 */
@@ -49,7 +48,7 @@ export interface UpdateInfo {
 /*
 And the two that WRITE it, which did not exist: the preference was read and
 nothing could set it, so the branch above was unreachable and the user had no way
-to silence the notice. Restored on 2026-09-04, contracting About.
+to silence the notice. Restored on 2026-09-04, checking About against upstream.
 
 They are `localStorage` and not an endpoint because that is what upstream does
 (`main.js:714-732`): the preference is this browser's, not the server's, so
@@ -91,7 +90,7 @@ export async function openDownload(
   params: Record<string, string> = {},
   /*
   `ts` is a cache-buster that upstream adds on ONLY TWO of the six downloads
-  —the settings backup (main.js:3100) and a log download (logs.js:202)— and not
+  (the settings backup, main.js:3100, and a log download, logs.js:202) and not
   on the other four: exporting a zone, exporting allowed, exporting blocked and
   `logs/export` (logs.js:696). The server ignores it, but the URL that gets
   opened is not the same, so where it goes and where it does not is replicated.
@@ -120,8 +119,8 @@ export async function openDownload(
   const single = outcome.data.response?.token
   if (single == null) return { ok: false }
 
-  /* It is called `single` and not `token` because it is NOT the session's —that
-     is the parameter above—: it is the one-shot one this endpoint issues for the
+  /* It is called `single` and not `token` because it is NOT the session's (that
+     is the parameter above): it is the one-shot one this endpoint issues for the
      download. Having them under the same name was asking for them to be
      confused. */
   const query = new URLSearchParams({ ...params, token: single })

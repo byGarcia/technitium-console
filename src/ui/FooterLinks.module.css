@@ -2,8 +2,8 @@
 Upstream's five links that hang off the `body`. See `app/footer.ts` for which ones
 they are and why.
 
-The markup and the link treatment were written twice —in the sidebar and on the
-login screen— and out of that came two different targets for the same link:
+The markup and the link treatment were written twice (in the sidebar and on the
+login screen), and out of that came two different targets for the same link:
 `padding: var(--s-2) var(--s-1)` in one and `var(--s-1) 0` in the other. Here they
 go once.
 
@@ -14,7 +14,7 @@ the caller's `className`.
 
 .footer { color: var(--faint); }
 
-/* The name does not break —"DNS Client" was falling onto two lines— but a break
+/* The name does not break ("DNS Client" was falling onto two lines), but a break
    is still possible: the separator sits loose between the anchors, with its
    spaces, exactly as upstream has it. Putting `nowrap` on the wrapper instead of
    on the link left the list without a single break opportunity and the sidebar
@@ -32,12 +32,12 @@ the caller's `className`.
 
 /*
 The theme credit: its own line below the links. It deliberately does not share a
-row with them —see `app/footer.ts`— and the link is treated like the ones above, so
+row with them (see `app/footer.ts`), and the link is treated like the ones above, so
 as not to invent a third kind of link inside the same six-line block.
 
 The hierarchy comes from the SEPARATE LINE, not from colour: the first attempt
 dropped the "Theme by" to `--line`, which is a border colour, and it measured
-1.62:1 against the background —the minimum for text is 4.5—. It inherits the
+1.62:1 against the background (the minimum for text is 4.5). It inherits the
 footer's `--faint`, which gives 5.61:1.
 */
 .credit { margin-top: var(--s-3); }

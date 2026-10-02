@@ -21,8 +21,8 @@ was written once per screen. Out of the five copies came four behaviours: two
 allowed an optional cell, this one allows a boolean checkbox and the two in Zones
 allowed neither. The algorithm and the two alert literals belong to upstream and
 are one single thing; what does belong to each screen is how it LOCATES the
-failing cell —a row and a column here, a field `id` in DHCP, a sub-tab in
-Settings— and that is why the failure returns the index and the caller translates
+failing cell (a row and a column here, a field `id` in DHCP, a sub-tab in
+Settings), and that is why the failure returns the index and the caller translates
 it.
 */
 

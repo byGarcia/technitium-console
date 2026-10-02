@@ -3,7 +3,7 @@ import { ALLOWED, check, findColourSchemes, findColours, findMissingInLight, fin
 
 /*
 The gate behind "every colour is a token". It lives in `dev/` for the reason
-`relative-paths.test.mjs` gives —`src/` compiles without node's types— and it
+`relative-paths.test.mjs` gives (`src/` compiles without node's types), and it
 runs inside `npm test`, so the rule is checked wherever the suite is.
 */
 

@@ -2,7 +2,7 @@
 Stale data in Cache, Allowed and Blocked.
 
 The three are **the same component** with three wrappers, so they inherit the
-collection pattern pilot 2 closed — and they had the same gap Zones did: when a
+collection pattern Zones settled, and they had the same gap Zones did: when a
 refresh failed the previous tree stayed, which is right, but nothing said it was
 no longer current.
 

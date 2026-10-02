@@ -50,7 +50,7 @@ to nothing while there is no error.
 }
 
 /* The validation sentence under its field, with the field's border in `--dan`
-   (DESIGN.md, the modal system: the error goes next to its field, once). */
+   (the design rule: the error goes next to its field, once). */
 .bad[aria-invalid],
 .bad[aria-invalid]:focus { border-color: var(--dan); }
 .invalid { color: var(--dan); font-size: var(--t-2); margin-top: var(--s-4); }

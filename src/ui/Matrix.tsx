@@ -4,24 +4,24 @@ import styles from './Matrix.module.css'
 /*
 The permissions matrix: two axes, read only, and every cell with a name.
 
-It is the one primitive this round adds, and it is added because none of the
+It is a primitive of its own because none of the
 twenty-eight already there does what `Administration > Permissions` needs:
 
   · `Table` orders rows of data. Its columns are labels, not an axis: nothing in
     it says that a cell belongs to a column AND to a row.
-  · `EditableTable` edits, and this list does not edit — the editing happens in
+  · `EditableTable` edits, and this list does not edit; the editing happens in
     `Edit Permissions`.
   · `Check` is a control, and these cells are a state.
 
 ## What it fixes, and it is not decoration
 
 Before this, the eleven sections were a CSS grid (`_permCols_`): no `<table>`, no
-`<th>`, no `<tbody>`. Measured with `contract()` on 2026-09-04: `tables: []` on
+`<th>`, no `<tbody>`. Measured in the browser on 2026-09-04: no `<table>` at all on
 `/admin/permissions/`, with 84 cells inside. A screen reader moving through it had
 no rows and no columns to move by, so "which of these is Modify" could only be
 answered by counting.
 
-So the three things this contributes, and they are the three the round asked for:
+So the three things this contributes:
 
   1. `th[scope=col]` on the three verbs and `th[scope=row]` on the subject, so the
      reader announces both headers for every cell.
@@ -32,16 +32,16 @@ So the three things this contributes, and they are the three the round asked for
 
 ## Why the cell is still an `<input type="checkbox" disabled>`
 
-The drawing proposed replacing it with a glyph, and the argument is good — these
+The drawing proposed replacing it with a glyph, and the argument is good: these
 are not controls, and amber is this console's word for "you can". Half of it is
 taken: the mark is `--ok` and no longer amber, because amber is for the things you
 can press and this list is read only.
 
 The control itself stays, and for a reason that is not inertia: a checkbox
 announces its own state, in the reader's own language, with no literal to write.
-A glyph does not, so it would need the words for granted and not granted — and
-upstream has no such words. This round's own rule is that where there is no
-upstream literal, none is written. Keeping the checkbox is what lets the cell be
+A glyph does not, so it would need the words for granted and not granted, and
+upstream has no such words. The rule is that where there is no upstream literal,
+none is written. Keeping the checkbox is what lets the cell be
 named without inventing copy.
 
 It costs nothing in the tab order either: a `disabled` input is not focusable, so
@@ -91,7 +91,7 @@ export function Matrix({
               >
                 {/* The corner cell of a cross-tab labels nothing: it is neither a
                     section nor a verb. It stays empty rather than being given an
-                    invented name — the row headers under it say what they are. */}
+                    invented name; the row headers under it say what they are. */}
                 {c.label === '' ? null : c.hidden ? <span className={styles.sr}>{c.label}</span> : c.label}
               </th>
             ))}
@@ -104,7 +104,7 @@ export function Matrix({
 }
 
 /** The population a run of rows belongs to: `th[scope=rowgroup]`. Only the
- *  concession map needs it — the eleven sections say it in their caption. */
+ *  concession map needs it; the eleven sections say it in their caption. */
 export function MatrixGroup({ label, span }: { label: string; span: number }) {
   return (
     <tr>
@@ -166,8 +166,8 @@ export function MatrixCell({ name, granted }: { name: string; granted: boolean }
 /*
 The map's cell: the three verbs at once.
 
-The marks are decoration —the reader gets the row's subject, the column's section
-and the names of the verbs that ARE granted, which is the whole content— so they
+The marks are decoration (the reader gets the row's subject, the column's section
+and the names of the verbs that ARE granted, which is the whole content), so they
 carry `aria-hidden` and the cell says its verbs in text. A cell with nothing
 granted says nothing, exactly as upstream's empty cell does.
 */

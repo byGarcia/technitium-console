@@ -41,7 +41,7 @@ to weigh the same. What changes is that this one opens.
 .trigger[aria-expanded='true'] .chevron { transform: rotate(180deg); }
 
 /*
-The list. It is genuinely raised —two steps above the field— because it floats
+The list. It is genuinely raised (two steps above the field) because it floats
 over the form and has to read as something in front.
 */
 .list {

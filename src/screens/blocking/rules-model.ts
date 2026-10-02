@@ -2,7 +2,7 @@ import type { DomainList } from '../../api/zonelists'
 
 /*
 The flat table of the Rules tab: the administrator's own blocked and allowed domains
-in one list, the way Pi-hole draws its Domains page. OURS: upstream only has the tree.
+in one list. OURS: upstream only has the tree.
 
 The server does not bound the size: `allowed/export` and `blocked/export` return
 `GetAllZones()` whole (WebServiceOtherZonesApi.cs:289, 494), and an import can be as

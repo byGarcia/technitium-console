@@ -1,8 +1,8 @@
 /*
 The panel: the bordered box where a piece of screen lives.
 
-It was defined SEVEN times —`.panel` in Dashboard, DNS Client, Logs and About;
-`.block` in Settings, DHCP and Administration— and no two were alike:
+It was defined SEVEN times (`.panel` in Dashboard, DNS Client, Logs and About;
+`.block` in Settings, DHCP and Administration) and no two were alike:
 
   · shadow yes in Dashboard, About and Settings; no in Logs, DNS Client, DHCP and Admin
   · header background yes in Dashboard and Settings; no in the other five
@@ -11,8 +11,8 @@ It was defined SEVEN times —`.panel` in Dashboard, DNS Client, Logs and About;
 
 The values are not chosen from scratch: they are the table's
 (`ui/Table.module.css`), which is the most-seen surface in this console. That way
-a panel and a table are the same object —same border, same shadow, same header on
-the raised step— instead of two similar things.
+a panel and a table are the same object (same border, same shadow, same header on
+the raised step) instead of two similar things.
 */
 .panel {
   border: 1px solid var(--line);
@@ -27,8 +27,8 @@ the raised step— instead of two similar things.
 The header sits on the raised step, just like the table's `thead`: it separates
 the label from the content without spending another rule line.
 
-It is `flex` because many of them carry an action on the right —"More",
-"Blocking"— and the ones that do not never notice.
+It is `flex` because many of them carry an action on the right ("More",
+"Blocking"), and the ones that do not never notice.
 */
 .header {
   display: flex;

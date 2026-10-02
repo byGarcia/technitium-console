@@ -35,8 +35,8 @@ export const KEY_TYPES = [
   { value: 'ZoneSigningKey', label: 'Zone Signing Key (ZSK)' },
 ]
 
-/* Each with the explanation upstream prints under its radio, literally —comma
-   after "NSEC3" included— in both Sign Zone and DNSSEC Properties
+/* Each with the explanation upstream prints under its radio, literally (comma
+   after "NSEC3" included), in both Sign Zone and DNSSEC Properties
    (index.html:5874, 5883, 6208 and 6217 in v15.5.1). */
 export const NX_PROOFS = [
   {

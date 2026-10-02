@@ -82,7 +82,7 @@ function serverInfoOf(s: DnsSettings): ServerInfo {
 }
 
 export interface SettingsProps {
-  /** The cluster nodes, for the node selector. Spec F10. */
+  /** The cluster nodes, for the node selector. */
   nodes?: { name: string; type: string }[]
   clusterInitialised?: boolean
 
@@ -121,11 +121,11 @@ export function Settings({
 }: SettingsProps) {
   /*
   Settings is one of only two screens that offer the aggregate and remember the
-  choice; the key is upstream's own (`cluster.js`). Spec F10.
+  choice; the key is upstream's own (`cluster.js`).
 
   What travels is what upstream's selector HOLDS, not what was remembered: on a
-  standalone server that is `""`, never `"cluster"` —the save decides which
-  blocks to send from it, so `"cluster"` there would drop every node parameter—.
+  standalone server that is `""`, never `"cluster"` (the save decides which
+  blocks to send from it, so `"cluster"` there would drop every node parameter).
   See `selectedNode`. Upstream stores the held value on every load
   (main.js:905), so a standalone server remembers `""`.
   */
@@ -144,9 +144,9 @@ export function Settings({
   `updateDnsSettingsDataAndGui` (main.js:1158) rewrites it after a load of this
   server or the aggregate (main.js:914) and after a save or a restore of this
   server (main.js:2208, 3177), and the redirection check compares against the
-  rewritten value — so renaming the server does not stop the console from
-  following its new port. The rest of that function —the tab title, the domain
-  in the header, About's version and uptime— goes up to the Shell through
+  rewritten value, so renaming the server does not stop the console from
+  following its new port. The rest of that function (the tab title, the domain
+  in the header, About's version and uptime) goes up to the Shell through
   `onServerInfo`, under the same conditions.
 
   `reverseProxy` is `reverseProxyDetected` (main.js:21), set on every load.
@@ -261,7 +261,7 @@ export function Settings({
   async function doFlushCache() {
     setConfirm(null)
     setBusy(true)
-    // index.html:2461 — the flush goes to the node chosen in this selector.
+    // index.html:2461. The flush goes to the node chosen in this selector.
     const ok = await flushCache(token, node)
     setBusy(false)
     if (ok) {
@@ -310,7 +310,7 @@ export function Settings({
     const ok = await forceUpdateBlockLists(token)
     setBusy(false)
     if (!ok) return
-    // main.js:2356 — the label becomes "Updating Now" without reloading the settings.
+    // main.js:2356. The label becomes "Updating Now" without reloading the settings.
     setNextList(new Date(0).toISOString())
     setNotice({
       type: 'success',
@@ -374,10 +374,10 @@ export function Settings({
     <div className={styles.wrap}>
       {/*
       The title is the SECTION and the nine panes are the bar underneath, which is
-      what the pilot 3 delivery draws and what its reconciliation states: "the nine
-      leave the sidebar and live above the title at every width". The title used to
+      what the dense-form design draws and states: "the nine leave the sidebar and
+      live above the title at every width". The title used to
       be the pane with "Settings" as a breadcrumb, and that was the answer to a
-      different problem —nine sub-tabs all titled "Settings"— which the bar solves
+      different problem (nine sub-tabs all titled "Settings"), which the bar solves
       better: the active pane is named, and it is named where you click to change
       it.
       */}
@@ -435,18 +435,18 @@ export function Settings({
         The four verbs are still THERE without the permission, disabled and with a
         padlock.
 
-        They used to disappear —`{canModify && …}`— and that breaks rule 2 of
-        phase 1 twice over: the bar changed shape depending on who was looking, and
+        They used to disappear (`{canModify && …}`), and that breaks the console's
+        design rule *disabled, never hidden* twice over: the bar changed shape depending on who was looking, and
         nobody could tell the action exists and a permission is missing.
 
-        The permission names come from the table in `docs/phase0-upstream-diff.md`
-        and **are not deduced from the button**: these four verbs ask for THREE
-        different permissions, and `Flush Cache` asks for `Cache.canDelete` —another
-        screen's— which is one of the three variants that table marks as "does not
-        ask for the permission of the screen whose name it carries" out of the nine
-        it censuses. Backup and restore ask for `Settings.canDelete`, not
-        `canModify`, and that has to be read off the table too: a backup asking for
-        the DELETE permission is not what anyone would assume.
+        The permission names come from upstream and **are not deduced from the
+        button**: these four verbs ask for THREE different permissions, and `Flush
+        Cache` asks for `Cache.canDelete` (another screen's), one of the three
+        controls, among the nine compared with upstream, that "does not ask for the
+        permission of the screen whose name it carries". Backup and restore ask for
+        `Settings.canDelete`, not `canModify`, and that has to be read off upstream
+        too: a backup asking for the DELETE permission is not what anyone would
+        assume.
         */}
         <PermissionButton
           variant="primary"

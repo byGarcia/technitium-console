@@ -11,7 +11,7 @@ import styles from './Lists.module.css'
 The table that replaces the `<pre>` with the raw JSON.
 
 Only HOW it reads changes: there is not one new control. The two row buttons
-—"RRSIG" and "Glue"— call no endpoint: they expand fields that already came in
+("RRSIG" and "Glue") call no endpoint: they expand fields that already came in
 the same JSON (`dnssecRecords` and `glueRecords`) and that in upstream's dump read
 just as badly as the rest.
 */

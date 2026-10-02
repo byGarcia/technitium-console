@@ -12,8 +12,9 @@ and the screen run as they do in production.
 - `statsLastHour`, `statsLastDay`: `dashboard/stats/get?type=…&utc=true`;
 - `blockedExport`, `allowedExport`: `blocked/export`, `allowed/export` (text);
 - `settings`: `settings/get?node=`, trimmed to the five blocking fields the section
-  reads (`enableBlocking`, `temporaryDisableBlockingTill` —absent: the server omits
-  it—, `blockListUrls`, `blockListUpdateIntervalHours`, `blockListNextUpdatedOn`);
+  reads (`enableBlocking`, `blockListUrls`, `blockListUpdateIntervalHours`,
+  `blockListNextUpdatedOn` and `temporaryDisableBlockingTill`, which is absent because
+  the server omits it);
 - `apps`: `apps/list`, without the long descriptions of each DNS app class;
 - `logsBlocked`, `logsUpstreamBlocked`, `logsUpstreamBlockedCached`: `logs/query` of
   the Query Logs (Sqlite) app, one per blocked class, 10 per page, newest first.

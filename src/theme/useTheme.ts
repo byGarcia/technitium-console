@@ -11,7 +11,7 @@ export interface ThemeState {
 }
 
 /*
-Outside a `ThemeProvider` —screens mounted on their own in tests— there is nothing
+Outside a `ThemeProvider` (screens mounted on their own in tests) there is nothing
 to follow and nothing to pick: the dark theme, the tokens' default, and a pick that
 does nothing.
 */

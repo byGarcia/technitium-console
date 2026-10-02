@@ -24,7 +24,7 @@ import shared from './Blocking.module.css'
 import styles from './Overview.module.css'
 
 /*
-The Overview tab: AdGuard's and Pi-hole's dashboards, built from what Technitium
+The Overview tab: what blocking is doing at a glance, built from what Technitium
 already sends. The figures, the bars and the ring come from `dashboard/stats/get`, the
 Dashboard's own call, and they share its node memory (`dashboardClusterNode`): same
 data, so choosing a node here and seeing another there would be a contradiction.
@@ -274,7 +274,7 @@ export function Overview({
         </div>
 
         {/* Without Dashboard.View every panel fed by the stats keeps its place and its
-            title, locked (spec, the section on permissions, «Permisos»): the screen
+            title, locked: the screen
             does not change shape with who looks. */}
         {statsNeed != null ? (
           <div className={shared.row21}>

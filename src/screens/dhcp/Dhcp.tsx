@@ -10,7 +10,7 @@ DHCP. Two sub-tabs, with upstream's literal labels (index.html:2496-2497):
 
 The sub-navigation is NOT mounted here: it lives in the Shell's side panel, just
 like Settings', and arrives through the `sub` prop. Unlike Settings, the two
-sub-tabs are independent screens —each with its own loading and its own state— so
+sub-tabs are independent screens (each with its own loading and its own state), so
 they can be split up: in upstream they are two different functions,
 `refreshDhcpLeases` and `refreshDhcpScopes`, and they share no form.
 
@@ -23,7 +23,7 @@ export const SUB_TABS = ['Leases', 'Scopes'] as const
 export type SubTab = (typeof SUB_TABS)[number]
 
 export interface DhcpProps {
-  /** The cluster nodes, for the node selector. Spec F10. */
+  /** The cluster nodes, for the node selector. */
   nodes?: { name: string; type: string }[]
   clusterInitialised?: boolean
 
@@ -52,7 +52,7 @@ export function Dhcp({
   canDelete = true,
 }: DhcpProps) {
   /* Which node this screen reads. Upstream mounts a selector here
-     and the parameter was already travelling empty; spec F10. */
+     and the parameter was already travelling empty. */
   const [node, setNode] = useState<string>(() => '')
   const requested = (sub ?? 'Leases') as SubTab
   const active: SubTab = SUB_TABS.includes(requested) ? requested : 'Leases'
@@ -75,7 +75,7 @@ export function Dhcp({
     <>
       {/* Upstream mounts one here (`optDhcpClusterNode` / `optLogsClusterNode`).
           It draws nothing without a cluster, so it costs a single-server install
-          nothing. Spec F10. */}
+          nothing. */}
       <ClusterNodeSelect
         nodes={nodes}
         initialised={clusterInitialised}

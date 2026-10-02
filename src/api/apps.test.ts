@@ -20,7 +20,7 @@ function makeSpy() {
   return vi.spyOn(client, 'apiRequest').mockResolvedValue({ kind: 'ok', data: {} })
 }
 
-describe('apps — read endpoints', () => {
+describe('apps: read endpoints', () => {
   it('it lists the installed ones through `apps/list`, with the cluster node', async () => {
     // upstream sends `node` here too (zone.js:4440, when loading the record
     // modal's app names). With a single instance it goes empty.
@@ -57,7 +57,7 @@ describe('apps — read endpoints', () => {
   })
 })
 
-describe('apps — write endpoints', () => {
+describe('apps: write endpoints', () => {
   it('it installs from the store with name and url', async () => {
     const spy = makeSpy()
     await downloadAndInstall('t', 'NO DATA', 'https://x/y.zip')
@@ -92,7 +92,7 @@ describe('apps — write endpoints', () => {
 Multipart upload. The client does not support it yet, so what is checked here is
 only what CAN be checked: the path and the shape of the FormData.
 */
-describe('apps — zip upload', () => {
+describe('apps: zip upload', () => {
   it('it builds the install request with the name in the path and the zip in the form', () => {
     const file = new File(['zip'], 'app.zip')
     const req = buildUpload('apps/install', 'NO DATA', file)

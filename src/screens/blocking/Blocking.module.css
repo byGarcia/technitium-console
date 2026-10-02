@@ -39,8 +39,8 @@ second frame, with rounded corners showing under the panel's header. Written und
 */
 .stack .inPanel { border: 0; border-radius: 0; box-shadow: none; }
 
-/* A panel without a title whose first child brings its own air —the filter bar, a
-   table—: the padding ui/Panel adds for a headerless body would be a band above it. */
+/* A panel without a title whose first child brings its own air (the filter bar, a
+   table): the padding ui/Panel adds for a headerless body would be a band above it. */
 .stack .flush { padding-top: 0; }
 
 /* `--bp-index`: a custom property cannot go inside a media query, so its value is written. */

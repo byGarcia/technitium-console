@@ -3,8 +3,8 @@ import { THEME_CREDIT, FOOTER } from '../app/footer'
 import styles from './FooterLinks.module.css'
 
 /**
- * Upstream's footer links, and beneath them the theme credit —the only thing this
- * console adds here—. See `app/footer.ts` and the styles module.
+ * Upstream's footer links, and beneath them the theme credit (the only thing this
+ * console adds here). See `app/footer.ts` and the styles module.
  */
 export function FooterLinks({ className }: { className?: string }) {
   return (

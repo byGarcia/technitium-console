@@ -30,7 +30,7 @@ function server(users = [ADMIN_USER, NEW_USER], detail = USER_DETAIL) {
 
 const props = { token: 'tok', cluster: null, onNotice: vi.fn() }
 
-describe('Users — the table', () => {
+describe('Users: the table', () => {
   it('it draws type, 2FA, state and the two logins, with the total', async () => {
     server()
     render(<Users {...props} />)
@@ -107,7 +107,7 @@ describe('Users — the table', () => {
   })
 })
 
-describe('Users — enable and disable', () => {
+describe('Users: enable and disable', () => {
   it('ENABLING asks for no confirmation: it goes straight out', async () => {
     const spy = server([{ ...NEW_USER, disabled: true }])
     const onNotice = vi.fn()
@@ -191,7 +191,7 @@ describe('Users — enable and disable', () => {
   })
 })
 
-describe('Users — "Add User"', () => {
+describe('Users: "Add User"', () => {
   async function open() {
     server()
     const user = userEvent.setup()
@@ -237,7 +237,7 @@ describe('Users — "Add User"', () => {
   })
 })
 
-describe('Users — "Reset Password"', () => {
+describe('Users: "Reset Password"', () => {
   it('it validates in order and saves by POST with `newPass`', async () => {
     const spy = server([NEW_USER])
     const onNotice = vi.fn()
@@ -276,7 +276,7 @@ describe('Users — "Reset Password"', () => {
   })
 })
 
-describe('Users — the details modal', () => {
+describe('Users: the details modal', () => {
   it('it sends user, state and session timeout, and the display name if not SSO', async () => {
     const spy = server([NEW_USER])
     const onNotice = vi.fn()

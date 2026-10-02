@@ -14,8 +14,8 @@ deduced from the code:
      timeout and, if it fails, returns the list WITHOUT those three fields on any
      app.
 
-  2. `installedApp` / `updatedApp` —what install, update, downloadAndInstall and
-     downloadAndUpdate return— never bring them either: that `WriteAppAsJson` is
+  2. `installedApp` / `updatedApp` (what install, update, downloadAndInstall and
+     downloadAndUpdate return) never bring them either: that `WriteAppAsJson` is
      called without the catalog. Upstream redraws the row with that response, so
      after installing, the "Store Update" button disappears until the next reload
      of the list. Here the list is reloaded and that is that.
@@ -117,8 +117,7 @@ export function uninstallApp(token: string | null, name: string): Promise<ApiOut
 so as not to show a config that has not propagated yet (apps.js:460). Without a
 cluster it sends the empty string and the server ignores it
 (DnsWebService.cs:2367-2370). The primary's name comes from
-`sessionData.info.clusterNodes`, which this console does not expose yet; it
-arrives with the cluster phase.
+`sessionData.info.clusterNodes`, which this console does not expose yet.
 */
 export function getAppConfig(
   token: string | null,

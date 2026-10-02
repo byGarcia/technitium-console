@@ -1,14 +1,14 @@
 /*
 In Apps, a failure is not drawn as "there are no apps".
 
-This screen **does not keep the previous data** on failure —`setApps([])`— so it
+This screen **does not keep the previous data** on failure (`setApps([])`), so it
 does not carry the other collections' stale strip: inheriting the archetype's look
-is not inheriting behaviour it does not have. What it does inherit is the phase 1
+is not inheriting behaviour it does not have. What it does inherit is the design
 rule: *dashed = empty, solid = error, and they are not swapped*.
 
 And here it mattered more than in the others. The gap said "No apps installed"
 **and offered to open the store**: it not only asserted something it did not know
-—there may be ten installed and the call may have fallen over— it invited you to
+(there may be ten installed and the call may have fallen over), it invited you to
 act on that false premise.
 */
 import { render, screen } from '@testing-library/react'
@@ -59,7 +59,7 @@ describe('Apps with no apps, and Apps that could not load', () => {
 
   /*
   And on loading correctly again, the failure is cleared. Without this, a correct
-  reload would go on showing the error gap over a list that did arrive —the
+  reload would go on showing the error gap over a list that did arrive: the
   control saying one thing and the thing controlled another.
   */
   it('on loading correctly again, the failure gap goes away', async () => {

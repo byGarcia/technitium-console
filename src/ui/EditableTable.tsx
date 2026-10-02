@@ -8,7 +8,7 @@ static routes, the SSO group maps, a section's permissions.
 It is a different piece from the data table (`ui/Table`) and it must be: that one
 is a screen's main object, with its panel and its border; this one lives INSIDE a
 panel, up against its fields, and that is why it goes without a box and tighter.
-What they share —the small-caps column label— comes from the same tokens.
+What they share (the small-caps column label) comes from the same tokens.
 
 It exists as a component for the same reason as the other one: the scaffolding was
 written five times. Three modules also defined their own class with the same values

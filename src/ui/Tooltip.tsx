@@ -6,20 +6,20 @@ import styles from './Tooltip.module.css'
 /*
 The label that appears beside something that already has a name.
 
-Phase 2.2 justified it because TWO phase-1 rules depend on it and there was
+It exists because TWO of the console's design rules depend on it and there was
 nothing in `ui/`: the 60 px rail shows only icons, and without the label on hover
 it is twelve pictures with no names; and the padlock on a disabled control has to
-say WHICH permission is missing —`Requires Cache: Delete`— and not merely that one
+say WHICH permission is missing (`Requires Cache: Delete`) and not merely that one
 is.
 
 ## The three conditions, which are not decoration
 
-`DESIGN.md` states them and they are what the tests below hold:
+They are design rules, and they are what the tests below hold:
 
   · **It never replaces the accessible name.** What it adds is
     `aria-describedby`, which DESCRIBES; the name goes on the trigger and stays
     there. A tooltip that carried the name would make the control nameless the
-    moment the pointer left — and for anyone who never uses a pointer, always.
+    moment the pointer left (and, for anyone who never uses a pointer, always).
   · **Focus and pointer, not just pointer.** A rail that only answers the mouse is
     a rail that does not work with a keyboard. `onFocus`/`onBlur` are React
     synthetic events and they BUBBLE, so putting them on the wrapper catches the
@@ -35,7 +35,7 @@ They were found in review, before this was wired to anything:
   · **It clobbered an existing `aria-describedby`.** Cloning with the bubble's id
     threw away whatever the trigger already had; a control described by its own
     help text lost that description the moment you pointed at it. It now
-    CONCATENATES —that attribute is a space-separated id list, and always was—
+    CONCATENATES (that attribute is a space-separated id list, and always was)
     and the original comes back untouched on close.
   · **Pointer and focus did not compose.** They were one boolean, so leaving with
     the mouse closed a bubble the keyboard still had open, and blurring closed one
@@ -50,8 +50,8 @@ They were found in review, before this was wired to anything:
 
 The same reason as `ui/Menu` and `ui/Select`, and it is not a preference: an
 absolutely positioned bubble gets clipped by any ancestor with `overflow`, and in
-this console there are two on the way —the actions group, which hides its corners,
-and the table wrapper, which scrolls horizontally—. Measured from the trigger's
+this console there are two on the way (the actions group, which hides its corners,
+and the table wrapper, which scrolls horizontally). Measured from the trigger's
 rect and painted fixed, nothing can clip it.
 
 It closes on Escape, on blur and on pointer-out; it does not need to close on an
@@ -86,7 +86,7 @@ export function Tooltip({
   /*
   Two passes, and they are needed: to place the bubble you have to know how big it
   is, and to measure it you have to have drawn it. It is drawn with no position
-  —invisible, so it does not jump— and placed as soon as it is measured.
+  (invisible, so it does not jump) and placed as soon as it is measured.
   */
   useLayoutEffect(() => {
     if (!open || !wrap.current || !bubble.current) return

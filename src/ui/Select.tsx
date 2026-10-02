@@ -16,8 +16,8 @@ import styles from './Select.module.css'
 The dropdown, built here.
 
 It used to be the operating system's `<select>` with a chevron painted on top:
-the closed box almost passed, but on opening it the system list appeared —the
-OS's font, size, colours and corners— and the console changed appearance
+the closed box almost passed, but on opening it the system list appeared (the
+OS's font, size, colours and corners) and the console changed appearance
 depending on the machine. And that is why it "looked very much the same": half
 the control was not ours.
 
@@ -31,7 +31,7 @@ It is rebuilt as a listbox following the ARIA specification's rules:
     field and its label
 
 The list is `position: fixed` computed from the trigger, not absolute: otherwise,
-inside a modal —which has `overflow: auto`— it would be clipped. For the same
+inside a modal (which has `overflow: auto`) it would be clipped. For the same
 reason it closes on scroll, which is what the native `select` does.
 */
 
@@ -49,7 +49,7 @@ const MARGIN = 8
 The options are read from the `<option>` children, as in the element it replaces.
 It could have taken an array and forced a rewrite of the twenty-five places that
 use it, but then the change would stop being design-only: each of those places is
-a list with its own logic —TSIG keys, catalogs, record types, DNSSEC algorithms—
+a list with its own logic (TSIG keys, catalogs, record types, DNSSEC algorithms),
 and rewriting it is an opportunity to break it.
 */
 function optionsFromChildren(children: ReactNode): Option[] {
@@ -254,7 +254,7 @@ export function Select({
         onKeyDown={onKeyDown}
       >
         {/*
-        An option with no label —a filter's "any"— is drawn with a dash, just as
+        An option with no label (a filter's "any") is drawn with a dash, just as
         it is inside the list. Completely empty, the control reads as a broken box
         rather than as "nothing is selected".
         */}

@@ -62,11 +62,11 @@ destructive verb that repeats once per item lives (`ui/Menu`). Opening it is par
 of the action now, so the tests open it.
 */
 async function openMenu(name: string) {
-  await userEvent.click(card(name).getByRole('button', { name: `Actions — ${name}` }))
+  await userEvent.click(card(name).getByRole('button', { name: `Actions: ${name}` }))
   return within(await screen.findByRole('menu'))
 }
 
-describe('Apps — installed list', () => {
+describe('Apps: installed list', () => {
   /*
   The second sort this screen had lost. Upstream's installed list is a table whose
   `Installed Apps` header sorts it; this is a card grid, so the affordance is not
@@ -131,7 +131,7 @@ describe('Apps — installed list', () => {
     ).not.toBeInTheDocument()
   })
 
-  /* apps.js:129-132 — "Update" (your own zip) and "Store Update" are two
+  /* apps.js:129-132. "Update" (your own zip) and "Store Update" are two
      different actions, not two names for the same one. */
   /*
   Two visible verbs and one in the menu. The split is not cosmetic: `Config` and
@@ -184,7 +184,7 @@ describe('Apps — installed list', () => {
   })
 })
 
-describe('Apps — uninstalling', () => {
+describe('Apps: uninstalling', () => {
   /*
   The confirmation is the console's dialog, not the browser's native
   `confirm()`: uninstalling an app was one of the three steps that still opened
@@ -226,7 +226,7 @@ describe('Apps — uninstalling', () => {
   })
 })
 
-describe('Apps — Store Update from the card', () => {
+describe('Apps: Store Update from the card', () => {
   it('it updates with the name and url of the app and alerts with the literal text', async () => {
     withApps([WITH_UPDATE])
     const spy = vi
@@ -246,7 +246,7 @@ describe('Apps — Store Update from the card', () => {
   })
 })
 
-describe('Apps — config of the app', () => {
+describe('Apps: config of the app', () => {
   it('it reads the config from the primary node and opens it in a text editor', async () => {
     withApps([UP_TO_DATE])
     const spy = vi.spyOn(api, 'getAppConfig').mockResolvedValue({
@@ -302,7 +302,7 @@ describe('Apps — config of the app', () => {
   })
 })
 
-describe('Apps — install from file', () => {
+describe('Apps: install from file', () => {
   it('it requires the name BEFORE the file, with the literal texts', async () => {
     withApps([])
     withStore([])
@@ -313,7 +313,7 @@ describe('Apps — install from file', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Install' }))
     expect(await screen.findByText('Please enter an application name.')).toBeInTheDocument()
 
-    await userEvent.type(screen.getByLabelText('App Name'), 'Mía')
+    await userEvent.type(screen.getByLabelText('App Name'), 'Mine')
     await userEvent.click(screen.getByRole('button', { name: 'Install' }))
     expect(
       await screen.findByText('Please select an application zip file to install.'),
@@ -328,16 +328,16 @@ describe('Apps — install from file', () => {
     await screen.findByText('No apps installed')
 
     await userEvent.click(screen.getByRole('button', { name: 'Install from file' }))
-    await userEvent.type(await screen.findByLabelText('App Name'), 'Mía')
+    await userEvent.type(await screen.findByLabelText('App Name'), 'Mine')
     await userEvent.upload(screen.getByLabelText('App Zip File'), new File(['x'], 'a.zip'))
     await userEvent.click(screen.getByRole('button', { name: 'Install' }))
 
-    expect(spy.mock.calls[0][1]).toBe('Mía')
+    expect(spy.mock.calls[0][1]).toBe('Mine')
     expect((spy.mock.calls[0][2] as File).name).toBe('a.zip')
   })
 })
 
-describe('Apps — update from file', () => {
+describe('Apps: update from file', () => {
   it('it comes with the name filled in and unchangeable, and requires the file', async () => {
     withApps([UP_TO_DATE])
     const spy = vi.spyOn(api, 'updateApp')
@@ -383,11 +383,11 @@ async function openStore() {
   return await screen.findByText('DNS App Store')
 }
 
-describe('Apps — the store', () => {
+describe('Apps: the store', () => {
   /*
   Upstream's store header is a sort link (index.html:6166) and this screen had
   dropped it. `check-parity-controls.mjs` never saw the loss: it counts
-  destinations, helps and examples, and a sort affordance is none of those — the
+  destinations, helps and examples, and a sort affordance is none of those: the
   same blind spot About turned up with `Disable Update Notification`.
 
   The API already returns the catalogue by name, so what the control does is turn

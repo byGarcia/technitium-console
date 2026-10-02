@@ -1,10 +1,10 @@
 /*
 The `Settings` sections: their count and the order of their notices.
 
-Two of the six decisions phase 2 deferred to this screen.
+Two decisions of the dense-form design for this screen.
 
-**The count is counted, not written.** Pilot 3 puts on every label how many
-controls the section has, and its ten figures add up to 39 —the screen's total— so
+**The count is counted, not written.** The design puts on every label how many
+controls the section has, and its ten figures add up to 39 (the screen's total), so
 the drawing checks itself. That property only survives if the number comes from
 the content: ten hand-written numbers part company with the content on the first
 control anyone adds, and they do it silently.
@@ -75,7 +75,7 @@ describe('the order of the notices', () => {
     First that all three are THERE, and only then the order.
 
     Without this check the test was worthless: if the warning is not drawn,
-    `indexOf` returns **-1**, which is less than any position — so "it comes
+    `indexOf` returns **-1**, which is less than any position, so "it comes
     before" stayed true with the warning absent. Proven by removing the render
     and watching it pass green.
     */

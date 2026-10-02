@@ -18,8 +18,8 @@ Five things to keep in front of you:
      also a secondary.
 
   3. **The permissions are asymmetric and do not follow the verb.** Nearly
-     everything asks for `Administration.canDelete` —including `init`, `initJoin`
-     and `promote`—, but `setOptions`, `resync`, `updatePrimary` and
+     everything asks for `Administration.canDelete` (including `init`, `initJoin`
+     and `promote`), but `setOptions`, `resync`, `updatePrimary` and
      `updateIpAddress` ask for `canModify`, and `state` asks for `canView`.
      Looked at one by one in WebServiceClusterApi.cs.
 

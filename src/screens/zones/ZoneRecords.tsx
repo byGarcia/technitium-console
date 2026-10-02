@@ -77,7 +77,7 @@ export interface ZoneRecordsProps {
   /*
   The expiry TTL left over in the record modal. It is NOT a whim:
   `updateRecordState` reads it from the modal's field instead of the row, so
-  disabling a record sends whatever was left there from last time —or empty if
+  disabling a record sends whatever was left there from last time, or empty if
   the modal has not been opened. It is a bug of upstream's and it is replicated;
   see CONVENTIONS.md.
   */

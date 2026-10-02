@@ -50,7 +50,7 @@ const SCOPE_REAL: DhcpScope = {
   ignoreClientIdentifierOption: true,
 }
 
-describe('api/dhcp — leases', () => {
+describe('api/dhcp: leases', () => {
   it('leases/list asks for the node and returns the list', async () => {
     const spy = vi
       .spyOn(client, 'apiRequest')
@@ -64,7 +64,7 @@ describe('api/dhcp — leases', () => {
   })
 
   /*
-  This test claimed the opposite —"returns an empty list if the server fails"—
+  This test claimed the opposite ("returns an empty list if the server fails")
   and was pinning the bug in place: an empty list and a fallen call draw the
   same, so the screen said "No Lease Found" when what had happened was that
   there was no response. Now the failure rises as it is, with its message, and it
@@ -98,7 +98,7 @@ describe('api/dhcp — leases', () => {
   })
 })
 
-describe('api/dhcp — scopes', () => {
+describe('api/dhcp: scopes', () => {
   it('scopes/list asks for the node and returns the list', async () => {
     const spy = vi
       .spyOn(client, 'apiRequest')
@@ -111,7 +111,7 @@ describe('api/dhcp — scopes', () => {
   })
 
   /*
-  This test claimed the opposite —"returns an empty list if the server fails"—
+  This test claimed the opposite ("returns an empty list if the server fails")
   and was pinning the bug in place: an empty list and a fallen call draw the
   same, so the screen said "No Scope Found" when what had happened was that
   there was no response. Now the failure rises as it is, with its message, and it

@@ -7,10 +7,10 @@ import { Button } from './Button'
 /*
 What jsdom can and cannot answer here, said up front so nobody reads more into
 these than there is: there is no layout, so `getBoundingClientRect()` returns
-zeros and WHERE the bubble lands is not asserted — that is measured in the
+zeros and WHERE the bubble lands is not asserted; that is measured in the
 browser. What it answers is everything that matters for it not to be a trap: that
 it opens by pointer AND by keyboard, that Escape closes it, that it is associated
-by description, and — the one that would make it harmful — that it never becomes
+by description, and (the one that would make it harmful) that it never becomes
 the trigger's name.
 */
 function Rail() {
@@ -89,7 +89,7 @@ describe('Tooltip', () => {
 
   /*
   THE ONE THAT MATTERS. A tooltip carrying the name would leave the control
-  nameless as soon as the pointer left —and for whoever uses no pointer, always.
+  nameless as soon as the pointer left (and, for whoever uses no pointer, always).
   So the accessible name has to be the same with the bubble open and closed, and
   the association has to be `describedby` and never `labelledby`.
   */
@@ -123,7 +123,7 @@ describe('Tooltip', () => {
 
   /*
   1. It overwrote whatever `aria-describedby` the trigger already had. A control
-  described by its own help lost that description the moment you pointed at it —
+  described by its own help lost that description the moment you pointed at it,
   and the attribute is a LIST of ids, not a slot for one.
   */
   it('it concatenates an existing `aria-describedby` instead of overwriting it', async () => {

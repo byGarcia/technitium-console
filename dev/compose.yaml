@@ -1,8 +1,9 @@
-# technitium-ui development harness. This is NOT upstream's production compose
-# (that one is ../docker-compose.yml and is left alone).
+# technitium-console development harness. This is NOT a production compose: for
+# running the console in Docker, see README.md, "Docker".
 #
-#   dev  -> official image + our www/ mounted on top   -> 127.0.0.1:5380
-#   ref  -> official image untouched (upstream console) -> 127.0.0.1:5381
+#   dev   -> official image + our www/ mounted on top   -> 127.0.0.1:5380
+#   ref   -> official image untouched (upstream console) -> 127.0.0.1:5381
+#   node2 -> official image + our www/, a second node    -> 127.0.0.1:5382
 #
 # No port 53 (systemd-resolved holds it on WSL) and no DHCP: only the web
 # console is exercised here.
@@ -35,22 +36,22 @@ services:
   # Only for reviewing the 9 Cluster dialogs, which without a second node cannot
   # even be opened. `ref` is NOT used for this: joining it to a cluster syncs its
   # config with the primary and destroys its value as the upstream reference.
-  nodo2:
-    container_name: technitium-ui-nodo2
+  node2:
+    container_name: technitium-ui-node2
     image: docker.io/technitium/dns-server:latest
     ports:
       - "127.0.0.1:5382:5380/tcp"
     environment:
-      - DNS_SERVER_DOMAIN=nodo2.technitium-ui.test
+      - DNS_SERVER_DOMAIN=node2.technitium-ui.test
       - DNS_SERVER_ADMIN_PASSWORD=technitium-ui-dev
     volumes:
       # With the new console too: the "Promote To Primary" and "Edit Node"
       # dialogs of the primary ONLY exist from a secondary's console.
       - ../dist:/opt/technitium/dns/www:ro
-      - nodo2-config:/etc/dns
+      - node2-config:/etc/dns
     restart: unless-stopped
 
 volumes:
   dev-config:
   ref-config:
-  nodo2-config:
+  node2-config:

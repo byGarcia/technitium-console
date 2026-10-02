@@ -48,7 +48,7 @@ npm run typecheck    # tsc -b, NOT `npx tsc --noEmit`, which checks nothing here
 npm run lint
 npm test
 npm run build
-node dev/check-language.mjs      # src/ is English: names, comments, tests
+node dev/check-language.mjs      # the repository is English: names, comments, tests, docs
 node dev/check-colour-tokens.mjs # every colour is a token, declared in a theme block
 node dev/css-dead.mjs            # dead classes, unresolved composes, classes that do not exist
 node dev/check-parity-sort.mjs   # upstream's sortable columns against ours
@@ -70,7 +70,8 @@ the next commit is the tool that finds the rest of them. If you fix one dead sor
 interesting question is how many others there are.
 
 **It says what it did not do.** A drawing, a plan or an upstream behaviour you decided *not* to
-follow is worth writing down with the reason. Half the useful documentation in `docs/` is that.
+follow is worth writing down with the reason, in the comment next to the code it concerns, or in
+[CONVENTIONS.md](CONVENTIONS.md) when it is an upstream behaviour or a deliberate deviation.
 
 **Its comments explain why.** Not what the code does, but what was tried, what broke, what the
 numbers were. If a value was chosen by measurement, the measurement goes in the comment.
@@ -80,7 +81,8 @@ numbers were. If a value was chosen by measurement, the measurement goes in the 
 Vitest and Testing Library. Query by what a person sees (the label, the role, the text) and not by
 a class name, because a class name is exactly what a redesign changes.
 
-Test descriptions are English, like everything else in `src/`, and there is a gate that enforces it.
+Test descriptions are English, like everything else in the repository, and there is a gate that
+enforces it.
 
 ## Style
 

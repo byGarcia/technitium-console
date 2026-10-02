@@ -56,7 +56,7 @@ describe('OTP panel', () => {
     })
     await user.type(screen.getByLabelText('OTP'), '123456')
     await act(async () => { vi.advanceTimersByTime(31_000) })
-    // After success the component stays mounted —the parent replaces it— so what
+    // After success the component stays mounted (the parent replaces it), so what
     // gets checked is that the timer did NOT fire: the panel is still open with
     // its value and the password is still disabled. Had the timer gone off,
     // both would have been reverted.

@@ -8,7 +8,7 @@ Everything upstream validates before saving is in `serializeTableData`
 (common.js:282-324). There is no other client-side check: the rest is rejected by
 the server. That function is replicated here as it stands, including:
 
-  · the ORDER — cell by cell, row by row, and the five tables in the order
+  · the ORDER: cell by cell, row by row, and the five tables in the order
     `saveDhcpScope` serialises them: static routes, vendor information, generic
     options, exclusions and reservations (dhcp.js:525-547). The two text lists
     read in between (CAPWAP and TFTP) validate nothing;

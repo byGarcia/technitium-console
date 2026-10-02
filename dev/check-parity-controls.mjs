@@ -2,14 +2,14 @@
 Have we dropped any of upstream's destinations?
 
 The review plan said "open the same screen in `technitium-ui-ref` and compare by
-eye". Things slip past the eye — and they did, big ones: the About panel had lost
+eye". Things slip past the eye, and they did, big ones: the About panel had lost
 eight of its nine links, and the whole `body` footer, with the author's support
 and donation addresses inside it.
 
 This does it by list, and without a browser: upstream's console is a single
 `index.html` with ALL its panels in the markup, so its destinations are read from
-the HTML; ours are read from the application code. No new dependencies —putting
-Playwright in `package.json` would show up in the pull request diff— and
+the HTML; ours are read from the application code. No new dependencies (putting
+Playwright in `package.json` would show up in the pull request diff), and
 therefore runnable anywhere with the reference console up.
 
     node dev/check-parity-controls.mjs
@@ -21,8 +21,8 @@ What it does NOT answer, worth having in front of you before believing a green:
   appears in two dialogs and falls out of one, this stays green. Verified: the
   DNSKEY TTL text was deliberately removed from "Sign Zone" and it said nothing,
   because the same text lives in "DNSSEC Properties". It bites on what exists in
-  only one place, which is how things actually get lost —the About panel lost
-  eight links and none of them was anywhere else—.
+  only one place, which is how things actually get lost: the About panel lost
+  eight links and none of them was anywhere else.
 - Whether a destination present in both points to the same thing from the
   equivalent screen.
 - Whether a button that exists in both does the same thing. For behaviour there
@@ -67,7 +67,7 @@ The source WITHOUT comments.
 
 A comment is not interface: nobody reads it on screen. While they were in Spanish
 it made no difference, because they could not match an English sentence from
-upstream; once translated to English it stopped making no difference — a comment
+upstream; once translated to English it stopped making no difference: a comment
 quoting the help text it explains would make a REALLY missing help text match,
 and this check would go green for the opposite reason to the one it exists for.
 
@@ -103,13 +103,13 @@ for (const m of html.matchAll(/href="((?:https?:|mailto:)[^"]+)"/g)) {
 /*
 The application's text, reduced to words.
 
-Comparing markup does not work here. JSX splits sentences —`Add{' '}<code>!</code>
-character`— and many explanations travel as an ATTRIBUTE (`help="The duration for
+Comparing markup does not work here. JSX splits sentences (`Add{' '}<code>!</code>
+character`) and many explanations travel as an ATTRIBUTE (`help="The duration for
 which…"`), so stripping the tags to clean up takes with it the very text you came
 looking for. Both produced false positives: the first accused the ACL text of
 being lost, the second three more that had been in place for months.
 
-Reducing both sides to bare words —no punctuation, no case, no symbols— removes
+Reducing both sides to bare words (no punctuation, no case, no symbols) removes
 all of that difference. It adds noise (class names, attributes), but noise can
 only produce a false NEGATIVE across eight consecutive words, and that does not
 happen.
@@ -123,8 +123,8 @@ const asWords = (t) =>
     .trim() +
   ' '
 
-/* JSX writes upstream's inline markup as markup too —`bind to <code>[::]</code>
-   local`— and the tag names would sit between the words as `code code`. Only
+/* JSX writes upstream's inline markup as markup too (`bind to <code>[::]</code>
+   local`), and the tag names would sit between the words as `code code`. Only
    the attribute-free inline tags are dropped: a tag WITH attributes may be
    carrying the very `help="…"` being looked for. Links are the exception: their
    attributes are addresses, never explanations. */
@@ -133,7 +133,7 @@ const prose = asWords(
     .replace(/<\/?(?:code|b|i|em|strong|kbd|br\s*\/?)>/g, ' ')
     .replace(/<\/?(?:Link|External|a)\b[^>]*>/g, ' ')
     .replace(/\{' '\}/g, ' ')
-    // A bare JSX expression —`{hosts.doh}`— is a value filled at runtime, not
+    // A bare JSX expression (`{hosts.doh}`) is a value filled at runtime, not
     // prose; its name would otherwise sit between the words. Upstream's side
     // drops its runtime labels the same way (see NOTES).
     .replace(/\{[A-Za-z_$][\w.$]*\}/g, ' '),
@@ -207,8 +207,8 @@ Without them the field does not explain what it expects.
 It compares by VALUE against the whole source, with the same limitation as the
 other two checks and for the same reason: working out which component each field
 ends up in would require understanding the JSX. That lets through the case where
-the example is present but on another field —it happened with "confirm password",
-which existed in "Add User" and was missing from "Change Password"— so a value
+the example is present but on another field (it happened with "confirm password",
+which existed in "Add User" and was missing from "Change Password"), so a value
 repeated across several fields has to be looked at by eye. What it does catch,
 and what was needed, is the wholesale loss.
 */
@@ -297,8 +297,8 @@ console.log(
 And the short texts of a control: a radio's option, a modal's title, an entry of
 the account menu.
 
-None of the passes above reads them —they are neither links, nor help, nor
-examples, nor notes— so a whole dialog could go missing and every one of them
+None of the passes above reads them (they are neither links, nor help, nor
+examples, nor notes), so a whole dialog could go missing and every one of them
 stay green. It is exactly what happened to `Change Theme`: absent by decision
 until 2026-10-01, and nothing here could have told whether it came back whole.
 They are compared as whole runs of words, against our source without comments.
@@ -332,14 +332,14 @@ console.log(
 And the other direction, which none of the checks above can see: a field this
 console still draws after upstream REMOVED it. v15.5 dropped Auto Prefetch; its
 two fields stayed here, still required, and Settings could not be saved at all
-against the new server — with every parity check green, because every check
+against the new server, with every parity check green, because every check
 asked "is upstream's text here?" and never "is our text still upstream's?".
 
 Every `label="…"` in the source must exist, word for word, somewhere in
 upstream's page.
 */
-/* Upstream builds part of its interface from JavaScript —row menus, the Apps
-   buttons, the DHCP and Logs tab strips—, so its scripts are read too. */
+/* Upstream builds part of its interface from JavaScript (row menus, the Apps
+   buttons, the DHCP and Logs tab strips), so its scripts are read too. */
 const scripts = await Promise.all(
   [...html.matchAll(/<script src="(js\/[^"?]+)/g)].map((m) =>
     fetch(`${REF}/${m[1]}`).then((r) => (r.ok ? r.text() : '')),

@@ -1,26 +1,26 @@
 /*
-Los siete colores de fila de Query Logs, medidos donde de verdad se usan.
+The seven Query Logs row colours, measured where they are really used.
 
-Existe porque `dev/palette-distance.mjs` mide la paleta de SERIES —líneas y chips a
-color pleno— y el código de color de las filas es otra cosa: el mismo token puesto
-como fondo translúcido detrás de texto. La reconciliación del arquetipo herramienta
-lo demostró: con los siete tokens de serie, el chip separa —0 de 21 pares por
-debajo del umbral— y **la fila no** —5 de 21—. Medir una superficie y decidir sobre
-la otra es el error que este fichero impide.
+It exists because `dev/palette-distance.mjs` measures the SERIES palette (lines
+and chips at full colour) and the row colour code is something else: the same
+token laid as a translucent background behind text. Measuring both proved it:
+with the seven series tokens, the chip separates (0 of 21 pairs below the
+threshold) and **the row does not** (5 of 21). Measuring one surface and deciding
+about the other is the mistake this file prevents.
 
-Las tres comprobaciones, y las tres tienen que pasar a la vez:
+The three checks, and all three have to pass at once:
 
-  · ΔE00 entre pares como FONDO, a la opacidad real, sobre el panel.
-  · Contraste del texto de la celda sobre el fondo más claro — AA pide 4,5:1.
-  · Contraste de la LÍNEA sobre el panel — WCAG 1.4.11 pide 3:1 para un objeto
-    gráfico no textual, y es la que tumbó el primer retoque propuesto: oscurecer el
-    cian arreglaba la deuteranopia y dejaba la línea en 2,35:1.
+  · ΔE00 between pairs as a BACKGROUND, at the real opacity, over the panel.
+  · Contrast of the cell text over the lightest background: AA asks for 4.5:1.
+  · Contrast of the LINE over the panel: WCAG 1.4.11 asks for 3:1 for a non-text
+    graphical object, and it is the one that sank the first proposed tweak:
+    darkening the cyan fixed deuteranopia and left the line at 2.35:1.
 
     node dev/row-colours.mjs
 
-Medido el 2026-09-03. El valor que pasa las tres es `tok('ch-refuse')` (teal-600): hay que
-mover el TONO además de la claridad, porque en la familia cian no hay ninguno que
-cumpla las tres.
+Measured on 2026-09-03. The value that passes all three is `tok('ch-refuse')`
+(teal-600): the HUE has to move as well as the lightness, because no cyan passes
+all three.
 */
 import { readFileSync } from 'node:fs'
 const srgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
@@ -135,23 +135,23 @@ const label = (k) => NAME[k] ?? k
 
 
 /*
-Los siete se LEEN de `tokens.css`, no se escriben aquí.
+The seven are READ from `tokens.css`, not written here.
 
-Escritos a mano, esta herramienta diría una cosa y el producto pintaría otra en
-cuanto alguien tocara un token — y es justo lo que pasó durante el retoque de
-`--ch-refuse`: la primera versión llevaba el valor a mano y seguía informando del
-viejo después de cambiarlo. Una herramienta de deriva que puede derivar no sirve.
+Written by hand, this tool would say one thing and the product would paint another
+as soon as someone touched a token, and that is exactly what happened during the
+`--ch-refuse` tweak: the first version carried the value by hand and kept
+reporting the old one after it changed. A drift tool that can drift is no use.
 */
 const CSS = readFileSync(new URL('../src/theme/tokens.css', import.meta.url), 'utf8')
 const tok = (n) => {
   const m = new RegExp(`--${n}:\\s*(#[0-9a-fA-F]{6})`).exec(CSS)
-  if (m == null) throw new Error(`falta el token --${n} en tokens.css`)
+  if (m == null) throw new Error(`token --${n} is missing from tokens.css`)
   return m[1].toLowerCase()
 }
 
 const PAN = tok('pan')
 const INK = tok('ink')
-const mez = (h, a) => '#' + [1, 3, 5].map((i) =>
+const mix = (h, a) => '#' + [1, 3, 5].map((i) =>
   Math.round(parseInt(h.slice(i, i + 2), 16) * a + parseInt(PAN.slice(i, i + 2), 16) * (1 - a))
     .toString(16).padStart(2, '0')).join('')
 const lum = (h) => {
@@ -161,49 +161,49 @@ const lum = (h) => {
 }
 const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05) }
 
-/* Los siete del código de color de Query Logs, y las cuatro series con las que
-   `Refused` comparte la gráfica de líneas del Dashboard. */
-const FILA = {
+/* The seven of the Query Logs colour code, and the four series `Refused` shares
+   the Dashboard line chart with. */
+const ROW = {
   'Server Failure': tok('ch-fail'), 'Blocked': tok('ch-block'), 'NX Domain': tok('ch-nx'),
   'Refused': tok('ch-refuse'), 'Authoritative': tok('ch-auth'), 'Recursive': tok('ch-rec'),
   'Cached': tok('ch-cache'),
 }
 const SERIES = {
-  ...FILA, 'Total': tok('ch-total'), 'No Error': tok('ch-ok'),
+  ...ROW, 'Total': tok('ch-total'), 'No Error': tok('ch-ok'),
   'Dropped': tok('ch-drop'), 'Clients': tok('ch-clients'),
 }
-const ALFA = 0.30
-const ks = Object.keys(FILA)
+const ALPHA = 0.30
+const ks = Object.keys(ROW)
 
-console.log('tokens leídos de tokens.css:', JSON.stringify(FILA))
+console.log('tokens read from tokens.css:', JSON.stringify(ROW))
 
-console.log(`\n== FONDO DE FILA al ${ALFA * 100} % sobre ${PAN} ==`)
-const pares = []
+console.log(`\n== ROW BACKGROUND at ${ALPHA * 100} % over ${PAN} ==`)
+const pairs = []
 for (let i = 0; i < ks.length; i++) for (let j = i + 1; j < ks.length; j++)
-  pares.push([deltaE00(mez(FILA[ks[i]], ALFA), mez(FILA[ks[j]], ALFA)), ks[i], ks[j]])
-pares.sort((a, b) => a[0] - b[0])
-const malos = pares.filter((p) => p[0] < 10)
-for (const [d, a, b] of pares.slice(0, 6))
-  console.log(`   ${d.toFixed(1).padStart(5)}  ${d < 10 ? 'COLISIÓN ' : 'en riesgo'}  ${a} / ${b}`)
-console.log(`   --> ${malos.length} de ${pares.length} por debajo del umbral de colisión (10)`)
+  pairs.push([deltaE00(mix(ROW[ks[i]], ALPHA), mix(ROW[ks[j]], ALPHA)), ks[i], ks[j]])
+pairs.sort((a, b) => a[0] - b[0])
+const bad = pairs.filter((p) => p[0] < 10)
+for (const [d, a, b] of pairs.slice(0, 6))
+  console.log(`   ${d.toFixed(1).padStart(5)}  ${d < 10 ? 'COLLISION' : 'at risk  '}  ${a} / ${b}`)
+console.log(`   --> ${bad.length} of ${pairs.length} below the collision threshold (10)`)
 
-const peorTexto = Math.min(...ks.map((k) => ratio(INK, mez(FILA[k], ALFA))))
-console.log(`\n== TEXTO de la celda sobre el fondo más claro ==`)
-console.log(`   ${peorTexto.toFixed(1)}:1  ${peorTexto >= 4.5 ? 'ok (AA)' : 'POR DEBAJO de 4.5'}`)
+const worstText = Math.min(...ks.map((k) => ratio(INK, mix(ROW[k], ALPHA))))
+console.log(`\n== Cell TEXT over the lightest background ==`)
+console.log(`   ${worstText.toFixed(1)}:1  ${worstText >= 4.5 ? 'ok (AA)' : 'BELOW 4.5'}`)
 
-console.log(`\n== LÍNEA sobre el panel — WCAG 1.4.11 pide 3:1 ==`)
-for (const [n, h] of Object.entries(FILA)) {
+console.log(`\n== LINE over the panel: WCAG 1.4.11 asks for 3:1 ==`)
+for (const [n, h] of Object.entries(ROW)) {
   const c = ratio(h, PAN)
-  console.log(`   ${n.padEnd(15)} ${c.toFixed(2).padStart(5)}:1  ${c >= 3 ? 'ok' : 'POR DEBAJO'}`)
+  console.log(`   ${n.padEnd(15)} ${c.toFixed(2).padStart(5)}:1  ${c >= 3 ? 'ok' : 'BELOW'}`)
 }
 
-console.log(`\n== LAS ONCE SERIES, por visión, peor par de cada una con Refused ==`)
+console.log(`\n== THE ELEVEN SERIES, by vision, worst pair of each with Refused ==`)
 for (const v of ['normal', 'protanopia', 'deuteranopia']) {
   const r = Object.entries(SERIES).filter(([n]) => n !== 'Refused').map(([n, h]) => {
-    const A = v === 'normal' ? FILA['Refused'] : simulate(FILA['Refused'], v)
+    const A = v === 'normal' ? ROW['Refused'] : simulate(ROW['Refused'], v)
     const B = v === 'normal' ? h : simulate(h, v)
     return [deltaE00(A, B), n]
   }).sort((a, b) => a[0] - b[0])
   const [d, n] = r[0]
-  console.log(`   ${v.padEnd(13)} peor: ${n} ${d.toFixed(1)}  ${d < 10 ? 'COLISIÓN' : d < 15 ? 'en riesgo' : 'separa'}`)
+  console.log(`   ${v.padEnd(13)} worst: ${n} ${d.toFixed(1)}  ${d < 10 ? 'COLLISION' : d < 15 ? 'at risk' : 'separates'}`)
 }

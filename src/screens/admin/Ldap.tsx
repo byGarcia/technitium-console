@@ -39,8 +39,8 @@ What the server does, and it governs this form (WebServiceAuthApi.cs:462-2164):
      `SetLdapConfig` ignores that exact value (line 2101), so the field is filled
      with the mask and sent back as it is. `ldap/test` swaps the mask for the
      stored password (line 2159).
-  3. **Five strings arrive `null` on a fresh install** —server, bind username,
-     search base, filter and group attribute—: jQuery's `.val(null)` draws them
+  3. **Five strings arrive `null` on a fresh install** (server, bind username,
+     search base, filter and group attribute): jQuery's `.val(null)` draws them
      empty, and so does this.
   4. **An empty group map travels as the string `"false"`** (auth.js:2492-2493).
 
@@ -133,7 +133,7 @@ export function Ldap({ tabs, token, onNotice }: Props) {
     setServer(c.ldapServer ?? '')
     setPort(String(c.ldapPort))
     setSslOption(radioFor(c.ldapSslOption))
-    // auth.js:2424 — the server's value, not the radio.
+    // The server's value, not the radio (auth.js:2424).
     setIgnoreSslDisabled(c.ldapSslOption === 'None')
     setIgnoreSsl(c.ldapIgnoreSslErrors)
     setBindUsername(c.ldapBindUsername ?? '')
@@ -164,7 +164,7 @@ export function Ldap({ tabs, token, onNotice }: Props) {
     void load()
   }, [load])
 
-  /* auth.js:212-216 — the radio's `change` handler. */
+  /* The radio's `change` handler (auth.js:212-216). */
   function chooseSsl(v: string) {
     setSslOption(v)
     setIgnoreSslDisabled(v === 'None')
@@ -278,7 +278,7 @@ export function Ldap({ tabs, token, onNotice }: Props) {
       The dense form of `Sso.tsx`, block for block. Upstream puts its two
       `Warning!` at the very end with the notes; the console's rule is `Warning!`
       before the controls and `Note!` after, so they head the first block, which
-      is also the block that holds "Ignore SSL Certificate Errors" — the control
+      is also the block that holds "Ignore SSL Certificate Errors", the control
       the first of them is about.
       */}
       <div>
@@ -513,7 +513,7 @@ export function Ldap({ tabs, token, onNotice }: Props) {
               </EditableTable>
               <div>
                 {/* `addAdminLdapGroupMapRow('', '')`: no option matches `''`, so
-                    the browser shows the first one — which is what travels. */}
+                    the browser shows the first one, which is what travels. */}
                 <Button
                   onClick={() =>
                     setGroupMap((list) => [

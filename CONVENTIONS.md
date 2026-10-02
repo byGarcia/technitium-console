@@ -430,8 +430,8 @@ Write down here whatever you find. What is already known:
 
 ## Tests
 
-- `npm test`: vitest. **Do not run `npm run build`** if other agents are
-  working: it writes into `dist/` and you would step on each other.
+- `npm test`: vitest. **Do not run `npm run build`** if someone else is
+  working in the same checkout: it writes into `dist/` and you would step on each other.
 - Every screen needs tests for: **the literal alert texts**, the **validation
   order**, which endpoint is called and with what body, and the behaviour with
   empty data.
@@ -459,9 +459,9 @@ written down**. If you find a fifth, do not introduce it on your own: report it.
    overwritten, and the dialog shows no radio checked until the user picks. It is
    still the only one that *removes* something. The rules are in
    `src/theme/theme.ts`.
-2. **The Blocking section** (`src/screens/blocking/`, spec
-   `docs/2026-10-01-blocking-section-spec.md`). It replaces Allowed and Blocked
-   with Overview, Rules and Lists, as AdGuard Home and Pi-hole organise blocking.
+2. **The Blocking section** (`src/screens/blocking/`; what it offers is listed
+   in the CHANGELOG, v1.2.0). It replaces Allowed and Blocked
+   with Overview, Rules and Lists.
    It is the only one that *adds* a screen. It stays inside four limits, and a
    change that crosses one is a bug:
    - **only endpoints the server already has**, and only ones upstream's console

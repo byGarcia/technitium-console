@@ -14,8 +14,8 @@
 # console.
 #
 # The two mode B cases are not skipped by decree. The probe asks the image
-# whether it honours DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH — the same
-# measurement the installer itself has to make — and runs them when it does.
+# whether it honours DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH (the same
+# measurement the installer itself has to make) and runs them when it does.
 # Point IMAGE at such a build and they run with no edit here.
 #
 # Exit code is the number of cases that failed, which is what makes this a gate
@@ -77,7 +77,7 @@ case_run() {
     -v "$WORK":/w:ro "$IMAGE" /w/case.sh >"$WORK/out" 2>&1
 }
 
-printf '\n  installer contract — measured against %s\n\n' "$IMAGE"
+printf '\n  installer contract, measured against %s\n\n' "$IMAGE"
 
 # --------------------------------------------------------------- C1 · fresh
 case_run <<'EOF'
@@ -219,7 +219,7 @@ stop_server
 
 # ------------------------------------------ C12/C13 · the environment variable
 #
-# Whether these two run is not a decision, it is a measurement — the same one W3
+# Whether these two run is not a decision, it is a measurement, the same one W3
 # asks the installer to make. Start the image with the variable pointing at a
 # folder that already holds a file of ours, and ask the web service for it. The
 # folder has to exist *before* the server starts, or a server that does honour
@@ -257,7 +257,7 @@ if [ "$CAPABLE" = "yes" ]; then
   # it exists nowhere else, so only the uninstall can bring it home.
   in_server "printf '[{\"name\":\"after\"}]\n' > /side/json/quick-forwarders-list-custom.json"
   # The folder is a bind mount here, as in the README's Docker layout: the
-  # uninstall has to finish on it, not stop at the mount point (2026-09-30 —
+  # uninstall has to finish on it, not stop at the mount point (on 2026-09-30
   # it did, and this case did not look at the exit code).
   in_server "sh /w/install.sh --uninstall --yes" || c13=1
   in_server '[ -z "$(ls -A /side)" ]' || c13=1
@@ -515,7 +515,7 @@ verdict "C23" $? "a look-alike process, a linked www or two servers are not take
 # -------------------------------- C24 · A8, uninstall acts on what it recorded
 #
 # Mode B, with a server started by hand so it can be restarted without the
-# variable in the same container — the audit's case: the variable is removed,
+# variable in the same container. This is the audit's case: the variable is removed,
 # the server restarted, and only then is --uninstall run. That needs a server
 # that honours the variable (CAPABLE). The last step does not: a mode B record
 # is also what --into-volume writes, on any server, so it runs on every image.
@@ -606,7 +606,7 @@ verdict "C25" $? "a download that does not match the release's .sha256 is refuse
 
 # ------------------------------------------------- Docker: the init image (D1–D4)
 #
-# The layout README.md gives Docker users (docs/2026-10-01-docker-install-spec.md):
+# The layout README.md gives Docker users (the contract's §3, "Docker", D1 to D4):
 # an init container off our image copies the console into a volume, and the
 # official server mounts it read-only with the variable pointing at it. The
 # image is built here from dist/ with the same three files CI puts in it from a
@@ -618,7 +618,7 @@ INIT_IMAGE="technitium-console-init:probe-$$"
 PROJECT="installer-probe-$$"
 dc() { docker compose -p "$PROJECT" -f "$WORK/compose.yaml" "$@"; }
 
-build_init() { # [marker] — the image, with probe-marker.txt in its tarball if given
+build_init() { # [marker]: the image, with probe-marker.txt in its tarball if given
   rm -rf "$WORK/img"; mkdir -p "$WORK/img/dist"
   cp -a "$ROOT/dist/." "$WORK/img/dist/"
   [ -z "${1:-}" ] || printf '%s\n' "$1" > "$WORK/img/dist/probe-marker.txt"
@@ -631,9 +631,9 @@ build_init() { # [marker] — the image, with probe-marker.txt in its tarball if
 }
 
 compose_file() { # where the console lives: the volume, or a folder on this host
-  # [the init's /target, when it is not the same — a mistake C29 makes on purpose]
+  # [the init's /target, when it is not the same, a mistake C29 makes on purpose]
   cat > "$WORK/compose.yaml" <<EOF
-# The block in README.md, «Docker» — they change together. Only the two image
+# The block in README.md, "Docker": they change together. Only the two image
 # names, a published port and the admin password are the probe's own.
 services:
   dns-server:
@@ -660,7 +660,7 @@ EOF
 }
 
 base() { printf 'http://127.0.0.1:%s' "$(dc port dns-server 5380 2>/dev/null | sed 's/.*://')"; }
-served() { # path — the init and the server start side by side, so it waits
+served() { # path: the init and the server start side by side, so it waits
   i=0
   while [ "$i" -lt 60 ]; do
     curl -sf -o /dev/null "$(base)/$1" && return 0
@@ -672,7 +672,7 @@ init_exit() { docker wait "$(dc ps -a -q technitium-console)" 2>/dev/null; }
 started_at() { docker inspect -f '{{.State.StartedAt}}' "$(dc ps -q dns-server)" 2>/dev/null; }
 in_volume() { docker run --rm -v "${PROJECT}_technitium-console:/v" busybox:stable sh -c "$1"; }
 in_config() { docker run --rm -v "${PROJECT}_config:/v" busybox:stable sh -c "$1"; }
-section() { # container — its part of what the Docker branch printed
+section() { # container: its part of what the Docker branch printed
   awk -v n="$1" '/^  container /{ on = ($2 == n) } on' "$WORK/out"
 }
 host() { # install.sh as `curl … | sudo sh` runs it on a Docker host: from stdin, $0 is "sh"

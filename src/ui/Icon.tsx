@@ -3,7 +3,7 @@ import type { ReactElement, SVGProps } from 'react'
 /*
 The console's icon set, drawn here.
 
-They used to be Unicode characters —`▣ ◆ ○ ✓ ⊘ ⊞ ⌕ ⚙ ▤ ☺ ≡ ⓘ`— and that has two
+They used to be Unicode characters (`▣ ◆ ○ ✓ ⊘ ⊞ ⌕ ⚙ ▤ ☺ ≡ ⓘ`), and that has two
 and a half problems: every operating system paints them with its own font, so the
 console changed appearance depending on the machine; they share neither stroke
 weight nor grid, because they are not a set but twelve loose symbols from
@@ -133,9 +133,9 @@ const PATHS: Record<IconName, ReactElement> = {
     </>
   ),
   /*
-The notice triangle. It is the only icon phase 2 adds to the set, and it is drawn
+The notice triangle. It was the only icon the design pass added to the set, and it is drawn
 with the same grid and the same stroke as the other twenty-seven. Its inside
-repeats the language of `about` —stem and dot— because they are the same idea seen
+repeats the language of `about` (stem and dot) because they are the same idea seen
 two ways, and `about` is the circle that belongs to the `Note!`.
   */
   warning: (
@@ -146,8 +146,8 @@ two ways, and `about` is the circle that belongs to the `Note!`.
     </>
   ),
   /*
-The padlock. It is the second word of the two-word vocabulary phase 1 fixed
-—"amber = you can, padlock = you cannot"— and it was not drawn: the set had the
+The padlock. It is the second word of the console's two-word vocabulary
+("amber = you can, padlock = you cannot"), and it was not drawn: the set had the
 notice triangle but not this.
 
 Same closed body and same arc as the rest: a grid of 24 and a stroke of

@@ -5,8 +5,8 @@ Pick one of a handful of values, with all of them in view. See the styles module
 for why it exists.
 
 `asTabs` changes the semantics, not the look: a tab group governs a panel and
-is announced with `role="tab"` and `aria-selected`; a group of options —the
-Dashboard's period— are state buttons and are announced with `aria-pressed`. They
+is announced with `role="tab"` and `aria-selected`; a group of options (the
+Dashboard's period) are state buttons and are announced with `aria-pressed`. They
 look alike and are not the same thing, so the caller decides.
 */
 export function Segmented<T extends string>({

@@ -31,14 +31,14 @@ function Link({
 /*
 There is no update panel here, and there was one.
 
-It had a `Check for Update` button and four sentences —«No update available. You
-are running the latest version.», «Update notifications are turned off for this
-server.», «Unable to check for updates.» and the button's own label— and **none of
+It had a `Check for Update` button and four sentences ("No update available. You
+are running the latest version.", "Update notifications are turned off for this
+server.", "Unable to check for updates." and the button's own label) and **none of
 the four exists upstream**: not in its `index.html`, not in its `main.js`.
-Checked against the `ref` instance on 2026-09-04, contracting this screen.
+Checked against the `ref` instance on 2026-09-04.
 
-Upstream checks once, on login, and says so in the chrome —a link that is visible
-from all twelve screens— and nowhere else. This console does the same, in
+Upstream checks once, on login, and says so in the chrome (a link that is visible
+from all twelve screens) and nowhere else. This console does the same, in
 `app/Versions`, where the notice rides on the version it is about. A second,
 forced check on the one screen nobody visits was duplicating that notice with
 four literals the product does not say.

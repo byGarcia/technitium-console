@@ -4,7 +4,7 @@ Raw output, and the three things it can lose.
 All three are checked against the CSS and not against the render, because jsdom
 does not apply CSS modules: `white-space` and `max-height` do not exist there.
 Skipping them for that reason would leave exactly what this primitive comes to
-decide without a guard — and it is the same reason `dev/master-switch-signal.test.mjs`
+decide without a guard, and it is the same reason `dev/master-switch-signal.test.mjs`
 exists. What IS checked against the render is what the DOM does have: the
 accessible name and the focus.
 */

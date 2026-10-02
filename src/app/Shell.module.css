@@ -1,6 +1,5 @@
-/* Side panel with nested sub-items. Decided by measuring (see design document
-   09-navegacion): 72 px of chrome against 163 with tabs on top, and the second
-   row of stacked tabs disappears. */
+/* Side panel with nested sub-items. Decided by measuring: 72 px of chrome
+   against 163 with tabs on top, and the second row of stacked tabs disappears. */
 .shell { min-height:100vh; background:var(--bg); color:var(--ink); display:grid; grid-template-columns:216px 1fr; align-items:start; }
 .side { background:var(--pan); border-right:1px solid var(--line); align-self:stretch; position:sticky; top:0; height:100vh; overflow:auto; display:flex; flex-direction:column; }
 .sbrand { display:flex; align-items:center; gap: var(--s-6); padding: 0 var(--s-10); height:52px; border-bottom:1px solid var(--line); font-weight: 600; letter-spacing:-.01em; color:var(--ink); }
@@ -39,7 +38,7 @@ Administration) and what gets consulted (Logs, About).
 The header ONLY exists on a narrow screen.
 
 It carried the server's domain and the account menu, both stuck to the right
-edge: 1224×52 with 78 % of the width empty —952 px out of 1224— and pushing every
+edge: 1224×52 with 78 % of the width empty (952 px out of 1224) and pushing every
 section's title down to `y=76`. Its two tenants now live at the foot of the side
 panel, which had 377 px free (42 % of its height). On narrow screens it is
 needed, because the side panel is a closed drawer and its trigger has to be
@@ -81,7 +80,7 @@ looking at it from a phone when something has stopped resolving.
 }
 
 /* The padding goes here and not inside the media query: without declaring it,
-   the browser puts in its own —1px 6px— and that is a value we did not choose. */
+   the browser puts in its own (1px 6px), and that is a value we did not choose. */
 .hamburger { padding: 0; }
 
 @media (max-width: 900px) {
@@ -151,9 +150,9 @@ looking at it from a phone when something has stopped resolving.
 
 /*
 The chrome slot: where a screen can put a control that reframes everything below
-it — today only the Dashboard's node selector.
+it: today only the Dashboard's node selector.
 
-It goes above the content and on the left, which is the position the phase 3
+It goes above the content and on the left, which is the position the Dashboard
 design gives it relative to what is below. NOT in a top bar: this console has no
 top bar when wide, and removing it was a measured decision (see above). Reviving
 it to hang a control off would be undoing that in order to follow a drawing.

@@ -38,7 +38,7 @@ The colour now comes from the same map the charts read, keyed by the same label.
 const METRICS: { k: keyof Stats; label: string; pct?: boolean }[] = [
   /*
   The total carries no percentage. Upstream writes a fixed "100%" there in the
-  markup —`main.js` never updates it— which is decoration: the percentage of a
+  markup (`main.js` never updates it), which is decoration: the percentage of a
   total over itself says nothing. Really calculated, with the server freshly
   started it came out as "0%" under "Total Queries", which on top of informing
   nothing is confusing. The rule that stands is the one the clients tile already
@@ -61,17 +61,18 @@ const METRICS: { k: keyof Stats; label: string; pct?: boolean }[] = [
 /*
 The eleven, split up: TWO totals and NINE in three families of three.
 
-It is the split phase 3 decided, and it is about reading rather than placement.
-The two totals —queries and clients— **share their unit with nothing**: one
+It is the split the Dashboard design decided, and it is about reading rather than
+placement.
+The two totals (queries and clients) **share their unit with nothing**: one
 counts questions and the other counts who asked them, so putting them in the same
 grid as the rest invites a comparison that cannot be made. And neither carries a
 percentage, which is the other thing that sets them apart.
 
 The nine are parts of the total, and each row is a different question:
 
-  · **how it ended**   — `No Error`, `Server Failure`, `NX Domain`
-  · **why it was turned down** — `Refused`, `Blocked`, `Dropped`
-  · **where it came from** — `Authoritative`, `Recursive`, `Cached`
+  · **how it ended**: `No Error`, `Server Failure`, `NX Domain`
+  · **why it was turned down**: `Refused`, `Blocked`, `Dropped`
+  · **where it came from**: `Authoritative`, `Recursive`, `Cached`
 
 The order is NOT the one in `METRICS`, and it does not matter: `tokenForLabel`
 assigns the colour **by label** and only falls back to position for labels it does
@@ -120,7 +121,7 @@ same room and says nothing. It says there is no data instead.
 It returns a TYPE GUARD rather than a plain `boolean`: asking it whether there is
 data is precisely what proves the chart exists, so the compiler ought to hear
 about it. Without that, `Split` had to accept `ChartData | undefined` and passed
-it straight back to `Chart`, which does demand it — and the `undefined` went on
+it straight back to `Chart`, which does demand it, and the `undefined` went on
 slipping in through the side door.
 */
 export function hasData(d?: ChartData): d is ChartData {
@@ -131,9 +132,9 @@ export function hasData(d?: ChartData): d is ChartData {
 /*
 A doughnut chart, with its legend outside the canvas.
 
-Its entry is a LABEL and not a series —a doughnut has one dataset and as many
-slices as `labels`— and its figure is the **percentage** of that chart's own
-total. It is what the delivery draws and what the in-canvas legend could not say:
+Its entry is a LABEL and not a series (a doughnut has one dataset and as many
+slices as `labels`), and its figure is the **percentage** of that chart's own
+total. It is what the design draws and what the in-canvas legend could not say:
 there, only the name fitted.
 
 The percentage is worked out here and does not come from the server. It is
@@ -146,7 +147,7 @@ function Split({ title, data, failure }: { title: string; data?: ChartData; fail
   `data` may NOT arrive, and the first version of this did not allow for it: it
   worked out the percentages before the `hasData` below and took the whole screen
   down with a `Cannot read properties of undefined`. The previous code was safe by
-  accident —it asked `hasData(data)` first, and that one does accept `undefined`.
+  accident: it asked `hasData(data)` first, and that one does accept `undefined`.
 
   The suite found it, not a reading: six session tests that have nothing to do
   with the Dashboard fell over at once, because a component that throws takes down
@@ -163,7 +164,7 @@ function Split({ title, data, failure }: { title: string; data?: ChartData; fail
     <Panel title={title} className={styles.panel}>
       <Body>
         {hasData(data) ? (
-          /* Ring on the left, legend on the right — the drawing's shape. */
+          /* Ring on the left, legend on the right: the drawing's shape. */
           <div className={styles.split}>
             <Chart
               type="doughnut"
@@ -243,18 +244,18 @@ function Top({
 }
 
 /*
-The legend, in HTML and not inside the canvas — and the same one for all four
+The legend, in HTML and not inside the canvas, and the same one for all four
 charts.
 
 Chart.js drew it inside the `<canvas>`, and that costs two things you only see by
-measuring: **no tool can read it** —neither the screen contract nor a screen
-reader— and the figure that makes it useful does not fit in it: the count on the
+measuring: **no tool can read it** (neither a DOM-reading test tool nor a screen
+reader), and the figure that makes it useful does not fit in it: the count on the
 line chart, the percentage on the doughnuts.
 
 What does NOT change is the interaction: **clicking an entry hides it**, which is
-what the stock `onClick` did and what the contract protects. Here it is a
-`<button>` with `aria-pressed`, so it is also reachable by keyboard and announced
-— inside the canvas it was neither.
+what the stock `onClick` did and what has to be kept. Here it is a
+`<button>` with `aria-pressed`, so it is also reachable by keyboard and announced;
+inside the canvas it was neither.
 */
 function Legend({
   entries,
@@ -306,14 +307,14 @@ function Line({ data }: { data: ChartData }) {
 /*
 A region's gap: empty or failure, and **never the same drawing**.
 
-It is the phase 1 rule that matters most on this screen: *dashed = empty, solid =
-error, and they are never swapped*. Here it is not decoration — a failure drawn as
+It is the design rule that matters most on this screen: *dashed = empty, solid =
+error, and they are never swapped*. Here it is not decoration: a failure drawn as
 "no queries for this period" tells whoever administers a DNS that their server is
 receiving no traffic, which is the most expensive lie in the console and the
 easiest to believe, because it looks exactly like a normal answer.
 
 The failure sentence is ONE and the same in all three regions on purpose: the
-detail —what failed and when the last good data was— travels in the notice at the
+detail (what failed and when the last good data was) travels in the notice at the
 top, which appears once. Repeating it per panel would say the same thing three
 times and compete with it.
 */
@@ -327,7 +328,7 @@ Which legend entries are switched off, and **they reset when new data arrives**.
 
 The second half is not a convenience: without it, changing period or node rebuilds
 the chart and the series come back on, but the button would stay at
-`aria-pressed="false"` — the control saying one thing and the thing controlled
+`aria-pressed="false"`, the control saying one thing and the thing controlled
 saying another. It would also change today's behaviour: Chart.js's stock legend
 loses its state on every rebuild, so keeping it would be inventing a memory the
 console does not have.
@@ -363,8 +364,8 @@ function Figure({ className, text }: { className: string; text: string }) {
 
 /*
 One card. It is pulled out into its own component because it is now drawn from two
-places —the two totals and the nine— and keeping it duplicated is how one of the
-two copies ends up without the `—` or without the percentage.
+places (the two totals and the nine), and keeping it duplicated is how one of the
+two copies ends up without the empty-value dash or without the percentage.
 
 `hero` is size only: `Total Queries` is the figure that gets read first.
 
@@ -412,10 +413,9 @@ export function Dashboard({
 
   Corrected on 2026-09-03: this comment used to say "the other eight selectors do
   neither", and that is false. **`Settings` does both as well**, with its own key
-  `settingsClusterNode` — its own file says so: "one of only TWO screens that
+  `settingsClusterNode`; its own file says so: "one of only TWO screens that
   offer the aggregate and remember the choice". There are two, not one, and that
-  is exactly why the selector cannot be made global: each has its own memory. See
-  spec F10.
+  is exactly why the selector cannot be made global: each has its own memory.
   */
   const [node, setNode] = useState<string>(
     () => localStorage.getItem('dashboardClusterNode') || AGGREGATE,
@@ -433,8 +433,8 @@ export function Dashboard({
   Without that distinction a failure was drawn like a quiet server: eleven cards
   at zero and the panels saying "no queries for this period", which is exactly
   what a DNS that has received nothing shows. `Dashboard.tsx` already denounced it
-  in a comment —"the screen was answering falsely about the one thing people come
-  here to look at"— and fixed it for the cards only, which now show `—`. The
+  in a comment ("the screen was answering falsely about the one thing people come
+  here to look at") and fixed it for the cards only, which now show the empty-value dash. The
   panels went on lying.
   */
   const [failure, setFailure] = useState(false)
@@ -487,8 +487,8 @@ export function Dashboard({
   /*
   The range message goes NEXT TO ITS FIELD, not to the notice at the top.
 
-  Phase 1 decided it —"the validation error goes next to its field, and never in
-  two places at once"— and until now it came out in the `Notifier`, half a screen
+  It is a design rule (the validation error goes next to its field, and never in
+  two places at once), and until now it came out in the `Notifier`, half a screen
   away from the field that caused it.
 
   What does NOT change is how many or when: `whatIsMissing` returns **one**, the
@@ -514,7 +514,7 @@ export function Dashboard({
       The period bar goes UNDER the title and to the left, which is where the
       accepted drawing puts it. It was built into the header's `actions`, which
       pushes it to the right-hand end of the title row: that reads as "an action on
-      this screen" —like `Add Zone` or `Flush Cache`— and it is not one. It
+      this screen" (like `Add Zone` or `Flush Cache`) and it is not one. It
       reframes every figure below, the same reason the node selector went up to the
       chrome slot.
       */}
@@ -568,8 +568,8 @@ export function Dashboard({
       reading them wrong. Next to the period selector it looked like one more
       filter.
 
-      It draws nothing when there is no cluster —`ClusterNodeSelect` returns `null`
-      without `clusterInitialized`— so on a single-server install the slot stays
+      It draws nothing when there is no cluster (`ClusterNodeSelect` returns `null`
+      without `clusterInitialized`), so on a single-server install the slot stays
       empty and takes up nothing.
       */}
       <InChrome>
@@ -586,8 +586,8 @@ export function Dashboard({
 
       {/*
       `data-testid="metrics"` wraps all eleven and not each group: it is the hook
-      `dev/screen-contract.mjs` counts them with, and eleven cards split across two
-      boxes are still eleven cards.
+      the tests count them with (`Dashboard.test.tsx`), and eleven cards split
+      across two boxes are still eleven cards.
       */}
       <div className={styles.tiles} data-testid="metrics">
         <div className={styles.tot}>
@@ -609,8 +609,8 @@ export function Dashboard({
 
       It was built as a 310 px right rail holding `Server`, the three doughnuts
       and `Top Clients` stacked, with only two panels on the left. Nothing recorded
-      the change and the contract does not fix the layout, so it was not a decision
-      — it was a drift. What it cost is visible at 1440: the doughnuts had 310 px
+      the change and nothing fixed the layout, so it was not a decision;
+      it was a drift. What it cost is visible at 1440: the doughnuts had 310 px
       to live in, so they came out as a huge centred ring with the legend
       underneath, `Server` lost its third column, `Top Clients` left the group it
       belongs to, and half the canvas below was empty.

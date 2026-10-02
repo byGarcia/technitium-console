@@ -14,16 +14,16 @@ A replica of `showCreateMyApiTokenModal()` / `createMyApiToken()`
 the dialog Administration › Sessions shares.
 
 Once the token is created upstream HIDES the form and the Create button and shows
-the output instead —username, token name and the token— with the warning that it
+the output instead (username, token name and the token), with the warning that it
 will not be shown again. Until 2026-09-30 this one left the form in place with
 the token under it, and neither dialog carried the two warnings.
 */
 
-/** index.html:3807 — under the form. */
+/** index.html:3807, under the form. */
 export const TOKEN_PRIVILEGES =
   "The token allows access to API calls with the same privileges as that of the user account. Thus its recommended to create a separate user account with limited permissions as required by the specific task that the token will be used for. The token cannot be used to change the user's password, or update the user profile details."
 
-/** index.html:3834 — under the output. */
+/** index.html:3834, under the output. */
 export const TOKEN_SHOWN_ONCE =
   'The token value above will not be displayed later. You must copy the token value immediately and save it for later use.'
 

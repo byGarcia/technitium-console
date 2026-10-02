@@ -2,8 +2,8 @@
   min-height: 100vh;
   display: grid;
   place-items: center;
-  /* `align-content` as well as `place-items`: with two children —the card and
-     the footer— the rows split the height and each ends up centred in ITS half,
+  /* `align-content` as well as `place-items`: with two children (the card and
+     the footer), the rows split the height and each ends up centred in ITS half,
      which left 258 px between them. This way the group is centred and the space
      is set by the `gap`. */
   align-content: center;
@@ -19,7 +19,7 @@
 /*
 The mark is now an `<h1>`, so what the browser gives it for being one has to be
 taken back off: an `h1` brings its own size and margins, and without this the
-screen grew all at once. The look does not change — the element does, which is
+screen grew all at once. The look does not change; the element does, which is
 what was missing: it was the only screen in the console with no heading at all.
 */
 .brand {

@@ -7,13 +7,13 @@ import styles from './Dashboard.module.css'
 
 /*
 `modalTopStats` (main.js:2879). It is what sits behind the Dashboard's three
-"More" buttons: the long list —1000 entries— of the top that was being seen
+"More" buttons: the long list (1000 entries) of the top that was being seen
 trimmed to five.
 
-It was missing entirely: the three buttons were in place and did nothing. The
-phase 10 inventory sweep uncovered it.
+It was missing entirely: the three buttons were in place and did nothing. An
+inventory sweep of upstream's modals uncovered it.
 
-The title carries the limit inside it —"Top 1000 Clients"— and that is not
+The title carries the limit inside it ("Top 1000 Clients"), and that is not
 decorative: it says how many were asked for, which is different from how many
 there are.
 

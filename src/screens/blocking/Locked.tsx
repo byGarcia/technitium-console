@@ -8,8 +8,8 @@ import { requiresText, type Need } from './permissions'
 import shared from './Blocking.module.css'
 
 /*
-The padlock of the Blocking section, written once. DESIGN.md's rule: what the
-session may not see or do keeps its place and says which permission is missing.
+The padlock of the Blocking section, written once. The console's design rule: what
+the session may not see or do keeps its place and says which permission is missing.
 */
 
 /*
@@ -42,7 +42,7 @@ export function Locked({ title, need }: { title: string; need: Need }) {
 
 /*
 A menu entry whose permission is missing: it stays, disabled, and explains itself
-the way `PermissionButton` does —padlock plus the `Tooltip` with `Requires X: Y`—,
+the way `PermissionButton` does (padlock plus the `Tooltip` with `Requires X: Y`),
 not with a native `title`: that is the one pattern the console has for "you
 cannot", and a menu item is no exception. A verb that vanishes is a verb nobody
 knows exists. Used by the top tables' row menus and by Rules' foot menus.

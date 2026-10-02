@@ -80,7 +80,7 @@ describe('SessionProvider', () => {
 
   it('when the stored token fails for any reason, it is removed as upstream does', async () => {
     // auth.js:65-67 falls to showPageLogin, which removes the token (main.js:28),
-    // whatever the failure was — not only an invalid token.
+    // whatever the failure was, not only an invalid token.
     localStorage.setItem('token', 'stale')
     vi.spyOn(client, 'apiRequest').mockResolvedValue({ kind: 'error', message: 'boom' })
     mount()
@@ -158,8 +158,8 @@ describe('SessionProvider', () => {
   The side panel declared itself a `tablist` and was not one.
 
   It came from when the console had no addresses: twelve `role="tab"` over a
-  single panel. With real routes that stopped being true —the ARIA guidance says
-  that if activating the element leads to another URL it is a link— and on top of
+  single panel. With real routes that stopped being true (the ARIA guidance says
+  that if activating the element leads to another URL it is a link), and on top of
   that the sub-sections hung inside the `tablist` as loose buttons, a child that
   role does not allow. These two cases pin the opposite: links with a real
   destination, all of them reachable with the tab key, and a single
@@ -187,8 +187,8 @@ describe('SessionProvider', () => {
   /*
   Corrected on 2026-09-07, when the sub-navigation left the sidebar for a bar under
   the title (`ui/SubTabs`). What claims to be the page is now TWO things and they
-  are not in competition: the section in the sidebar —because that is where you
-  are— and the active tab in the bar. The old shape had the section deliberately
+  are not in competition: the section in the sidebar (because that is where you
+  are) and the active tab in the bar. The old shape had the section deliberately
   NOT marked so the sub-link could be; with the sub-links gone, not marking the
   section would leave the sidebar with nothing current at all.
   */
@@ -231,7 +231,7 @@ describe('SessionProvider', () => {
     "back" button would be trapped: every press would return to the same place.
 
     The method is spied on and not `history.length`, which in jsdom does not
-    budge even with `pushState` —counting it gave a green with the bug inside.
+    budge even with `pushState`; counting it gave a green with the bug inside.
     */
     const push2 = vi.spyOn(window.history, 'pushState')
     window.history.replaceState(null, '', '/settings/')
@@ -261,8 +261,8 @@ describe('SessionProvider', () => {
 
   Before, nobody did: every screen showed "Invalid token or session expired." and
   the console stayed standing, with every action failing one after another and no
-  way back in short of reloading blindly. Upstream calls `showPageLogin()` —it
-  clears the token and shows the login— in the sixty-four calls that declare the
+  way back in short of reloading blindly. Upstream calls `showPageLogin()` (it
+  clears the token and shows the login) in the sixty-four calls that declare the
   handler, and in the ones that do not, it falls through to the
   `window.location = "/"` of `common.js:147`.
 
@@ -338,10 +338,10 @@ describe('SessionProvider', () => {
   })
 
   /*
-  Silencing the update notice, restored on 2026-09-04 while contracting About.
+  Silencing the update notice, restored on 2026-09-04 while checking About against upstream.
 
-  The preference was READ —`checkForUpdate` refuses to call the endpoint while it
-  is on— and nothing could write it, so this console had a branch of its own that
+  The preference was READ (`checkForUpdate` refuses to call the endpoint while it
+  is on) and nothing could write it, so this console had a branch of its own that
   no user could reach and no way to stop being told about updates. Upstream puts
   the pair in the account menu (`index.html:72-73`).
   */

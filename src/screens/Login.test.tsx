@@ -30,7 +30,7 @@ describe('Login', () => {
   /*
   Upstream has these five links in a `div#footer` hanging off the `body`, so
   they show on its login screen too. Here there were none, and two of them
-  —technitium.com and dnsclient.net— appeared on no other screen of the console.
+  (technitium.com and dnsclient.net) appeared on no other screen of the console.
   */
   it('it shows the upstream footer, which appears on its login too', async () => {
     render(<Login onSuccess={() => {}} />)
@@ -161,7 +161,7 @@ describe('Login', () => {
 
 describe('Forgot Password?', () => {
   it('the link opens the modal, which explains the only procedure there is', async () => {
-    // It was missing entirely until the phase 10 inventory sweep: it was the only
+    // It was missing entirely until an inventory sweep of upstream's modals: it was the only
     // one of upstream's 40 modals with no counterpart.
     const user = userEvent.setup()
     vi.spyOn(status, 'getStatus').mockResolvedValue(null as never)

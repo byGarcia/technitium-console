@@ -40,7 +40,7 @@ IMAGE_REF="ghcr.io/bygarcia/technitium-console"
 ONE_LINER="curl -sSL https://raw.githubusercontent.com/$REPO/main/install.sh | sudo sh -s --"
 CONSOLE_DIR="/opt/technitium-console"
 # The init's record, at the root of its volume, that the volume is the console's
-# (contract, «Docker»). Its own state lives in its container's layer and goes
+# (contract, "Docker"). Its own state lives in its container's layer and goes
 # with it; this does not.
 MARKER=".technitium-console"
 
@@ -130,7 +130,7 @@ resolve_path() { # absolute, every link resolved, even where its tail does not e
   rp="$(cd "$rp" && pwd -P)"
   printf '%s%s' "${rp%/}" "$rp_tail"
 }
-# --into-volume is the Docker image's mode (README, «Docker»): a volume shared
+# --into-volume is the Docker image's mode (README, "Docker"): a volume shared
 # with the DNS server's container, the release tarball the image carries, and
 # nothing to look for. The server may not even be up yet, and it must not have
 # to be (contract D1). The version is the image's tag and the way out is taking

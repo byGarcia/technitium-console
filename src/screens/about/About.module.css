@@ -19,7 +19,7 @@ and that is how a header ended up 21 px shorter than its card.
 A link INSIDE a sentence is exempt from the minimum target size (WCAG 2.2,
 "inline"), but these five are not: the four titles and the "Donate Now!" are
 standalone destinations, and they were 14 px tall. They are given a box of their
-own up to 24 px without touching the text's rhythm —the padding goes inside the
+own up to 24 px without touching the text's rhythm: the padding goes inside the
 line they already occupied.
 */
 .prose h4 a,

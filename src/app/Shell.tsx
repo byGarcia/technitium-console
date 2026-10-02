@@ -117,7 +117,7 @@ export function Shell({
   and not write: `checkForUpdate` already refused to call the endpoint while the
   preference was on, but nothing could ever turn it on, so the branch was
   unreachable and the user had no way to stop being told. Restored on 2026-09-04,
-  contracting About.
+  checking About against upstream.
 
   It is a per-browser preference and not a server setting, which is why it lives
   in `localStorage` and why silencing it on your laptop does not silence it
@@ -127,7 +127,7 @@ export function Shell({
   const [askSilence, setAskSilence] = useState(false)
   const [chromeNotice, setChromeNotice] = useState<Notice | null>(null)
   /*
-  Once hidden in a session, the mark does not come back — and that is upstream's
+  Once hidden in a session, the mark does not come back, and that is upstream's
   behaviour, not an oversight of ours: `disableUpdateNotification` calls
   `$("#lnkUpdateAvailable").hide()` and `enableUpdateNotification` never shows it
   again. You get the notice back by logging in again. Replicated as it stands, the
@@ -172,7 +172,7 @@ export function Shell({
   const [serverInfo, setServerInfo] = useState<ServerInfo | null>(null)
   const info = session.info && serverInfo ? { ...session.info, ...serverInfo } : session.info
 
-  // main.js — the document title carries the server domain and the version.
+  // main.js: the document title carries the server domain and the version.
   const title = info ? `${info.dnsServerDomain} - Technitium DNS Server v${info.version}` : null
   useEffect(() => {
     if (title != null) document.title = title
@@ -184,9 +184,9 @@ export function Shell({
   The effective sub. A section with sub-sections is ALWAYS in one of them, so
   `null` means "the first one".
 
-  It is resolved here and not in each branch —there were five loose
+  It is resolved here and not in each branch (there were five loose
   `sub ?? 'General'`, and the sidebar repeated the same workaround to decide what
-  to mark— because a rule spread around is precisely the one that goes out of
+  to mark) because a rule spread around is precisely the one that goes out of
   sync: the menu said "General" and the address bar said `/settings/`, which is
   half a page.
   */
@@ -220,7 +220,7 @@ export function Shell({
         return
       }
       /*
-      A half address —`/settings/`, with no sub— is completed here and not in the
+      A half address (`/settings/`, with no sub) is completed here and not in the
       effect that writes the route: on going "back" the state does not change
       (`sub` was already `null`), so that effect does not run again and the bar was
       left saying half a page.
@@ -262,15 +262,15 @@ export function Shell({
 
           It was declared as tabs when the console had no addresses: twelve
           `role="tab"` over a single panel. Once it gained real routes
-          (`app/route.ts`) the description stopped being true —the ARIA guidance is
+          (`app/route.ts`) the description stopped being true (the ARIA guidance is
           explicit: if activating the element leads to another URL, it is a link,
-          not a tab— and on top of that the sub-sections hung INSIDE the `tablist`
+          not a tab), and on top of that the sub-sections hung INSIDE the `tablist`
           as loose buttons, which is a child that role does not allow. It announced
           "tab 3 of 12" and navigated.
 
           Now they are links with real `href`s: they open in a new tab, they are
           copied and bookmarked. The plain click is intercepted by the application
-          —there is no reload—; the modifier click is passed through to the
+          (there is no reload); the modifier click is passed through to the
           browser, which is what the routes existing as files is for. The active
           section is marked with `data-active` (that is visual state) and
           `aria-current="page"` is reserved for ONE thing: the page you are on,
@@ -302,11 +302,11 @@ export function Shell({
                       {sec.label}
                     </a>
                     {/*
-                    The sub-items are NOT here any more. The three accepted
-                    deliveries put a section's sub-navigation under its title, and
-                    pilot 3 reasons it: nested here, nine panes run out of room the
-                    moment the rail drops to 60 px. What the sidebar gets back is
-                    its own shape — twelve entries, always the same twelve, instead
+                    The sub-items are NOT here any more. The design puts a
+                    section's sub-navigation under its title, for a reason:
+                    nested here, nine panes run out of room the moment the rail
+                    drops to 60 px. What the sidebar gets back is
+                    its own shape: twelve entries, always the same twelve, instead
                     of fourteen, eighteen or twenty-one depending on where you are.
                     See `ui/SubTabs`.
                     */}
@@ -325,7 +325,7 @@ export function Shell({
           Upstream has them in a `div#footer` hanging off the `body`, so they are
           visible on ALL its screens, the login one included: Technitium, Blog,
           Donate, DNS Client and GitHub. There were none here, and two of them
-          —technitium.com and dnsclient.net— appeared nowhere else in the console:
+          (technitium.com and dnsclient.net) appeared nowhere else in the console:
           they had been lost entirely.
 
           "About" is not repeated because in this redesign it is a sidebar section,
@@ -350,7 +350,7 @@ export function Shell({
                 </button>
                 {/* main.js:71-87 (v15.5.1) switches on `sessionData.type`:
                     `RemoteSSO` hides both, `RemoteLDAP` hides only the password
-                    —the directory owns it, the 2FA is still this server's— and
+                    (the directory owns it, the 2FA is still this server's) and
                     `Local` or anything else shows both. */}
                 {session.type !== 'RemoteSSO' && session.type !== 'RemoteLDAP' && (
                   <button type="button" onClick={() => { close(); open('password') }}>
@@ -365,7 +365,7 @@ export function Shell({
                 <button type="button" onClick={() => { close(); open('token') }}>
                   Create API Token
                 </button>
-                {/* index.html:71 — after the account's own entries, before the
+                {/* index.html:71: after the account's own entries, before the
                     update notification. */}
                 <button type="button" onClick={() => { close(); open('theme') }}>
                   Change Theme
@@ -397,7 +397,7 @@ export function Shell({
         {/*
         On a WIDE screen there is no header: it only carried the server domain and
         the account menu, both pinned to the right edge, and it measured 1224×52
-        with 78 % of the width empty —952 px out of 1224— pushing every section's
+        with 78 % of the width empty (952 px out of 1224), pushing every section's
         title down to `y=76`. Both things move down to the foot of the sidebar,
         which had 377 px free, 42 % of its height.
 
@@ -424,7 +424,7 @@ export function Shell({
         <main className={styles.body} id="panel-section">
         {/*
       The chrome slot: the chrome provides the PLACE, the screen provides the
-      control. See `ChromeSlot.tsx` — the node selector belongs to each screen,
+      control. See `ChromeSlot.tsx`: the node selector belongs to each screen,
       with its memory and its options, and none of them hears about the others.
 
       It stays empty while nobody uses it, and then it takes up nothing: it is a
@@ -494,7 +494,7 @@ export function Shell({
              inside Administration, only the whole section (main.js:165). */
           <Admin token={session.token} sub={currentSub ?? 'Sessions'} onSubChange={setSub} />
         ) : current?.id === 'settings' ? (
-          /* main.js:906-930 — three different permissions in a single bar:
+          /* main.js:906-930: three different permissions in a single bar:
              saving requires Settings.canModify, flushing the cache
              Cache.canDelete, and backup/restore Settings.canDelete. */
           <Settings

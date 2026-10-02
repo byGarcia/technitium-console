@@ -22,7 +22,7 @@ Chart.js is used, not hand-written SVG, for two behavioural reasons:
 
 What this file does beyond drawing is repaint. The server ships its own colours
 inside the data and they are this console's business to replace; see `palette.ts`.
-Everything else it sends —values, labels, series— is passed through untouched.
+Everything else it sends (values, labels, series) is passed through untouched.
 */
 
 /** A fill that fades out downwards. Needs the canvas, so it is built at draw time. */
@@ -206,7 +206,7 @@ export function Chart({
   }, [type, data, height, separateLegend, legendOrder, theme])
 
   /*
-  Switching off and on, in its own effect — and **what is switched off is not the
+  Switching off and on, in its own effect, and **what is switched off is not the
   same thing in the two charts**.
 
   In the line chart each series is a DATASET with its name, so it is switched off
@@ -216,8 +216,8 @@ export function Chart({
   would have switched off the whole chart on pressing one slice.
 
   It is kept apart from the effect that builds, on purpose: put in there, every
-  click would have destroyed and rebuilt the canvas —`data` is in its
-  dependencies— and you would see a flicker instead of a line disappearing.
+  click would have destroyed and rebuilt the canvas (`data` is in its
+  dependencies), and you would see a flicker instead of a line disappearing.
 
   **And it depends on `data`.** Without that, when new data arrives Chart.js
   rebuilds the chart from scratch, the visibility is lost and the button goes on

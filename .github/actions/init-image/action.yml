@@ -1,4 +1,4 @@
-# The init image for Docker (README, «Docker»): busybox, the install.sh of the
+# The init image for Docker (README, "Docker"): busybox, the install.sh of the
 # checked-out commit and a console tarball, checked against its own .sha256
 # before building and again inside every platform after pushing (contract D4).
 # Only then do the moving tags (`floating`) point at it, so a failed check

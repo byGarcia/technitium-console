@@ -5,8 +5,8 @@ import styles from './External.module.css'
 The links that lead out of the console.
 
 They are here and not scattered because a review found they had been going missing
-one at a time: upstream's sentence stayed and the destination disappeared —"read
-the change log" with no change log, "Use ZONEMD to Validate Zone" with no RFC—.
+one at a time: upstream's sentence stayed and the destination disappeared ("read
+the change log" with no change log, "Use ZONEMD to Validate Zone" with no RFC).
 With a single place where they are written, `dev/check-parity-controls.mjs` can
 verify by list that none is missing.
 

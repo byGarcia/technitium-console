@@ -16,9 +16,9 @@ nothing to check; the column renders, so no test that looks for the header fails
 and no gate reads the pair.
 
 It was found on 2026-09-07 in the Edit Permissions modal, where `field="nombre"`
-had been left behind by the English sweep of 2026-08-31 —the sweep renamed the
+had been left behind by the English sweep of 2026-08-31 (the sweep renamed the
 `Keys` object's key and not the string inside the attribute, because a string in
-double quotes is where you put data, not identifiers—. The column had been dead
+double quotes is where you put data, not identifiers). The column had been dead
 for a week with every gate green.
 
 ## How it measures
@@ -80,7 +80,7 @@ for (const file of walk(SRC)) {
   for (const f of new Set(fields)) {
     if (!keys.has(f)) {
       findings.push(
-        `${path.relative(SRC, file)}: field="${f}" names no key — that column does not sort. Keys: ${[...keys].join(', ')}`,
+        `${path.relative(SRC, file)}: field="${f}" names no key, so that column does not sort. Keys: ${[...keys].join(', ')}`,
       )
     }
   }

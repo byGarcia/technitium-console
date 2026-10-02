@@ -28,8 +28,8 @@ export function Panel({
   /*
   With no title, the panel just groups: no label is invented for it.
 
-  It takes a node and not only a string because some titles carry formatting —the
-  log viewer puts the file name in monospace— and a component that only accepts
+  It takes a node and not only a string because some titles carry formatting (the
+  log viewer puts the file name in monospace), and a component that only accepts
   plain text forces the screen to skip it and replicate the markup, which is
   exactly what this exists to avoid.
   */
@@ -38,7 +38,7 @@ export function Panel({
   actions?: ReactNode
   /*
   Announce the panel as a named GROUP. Only where it really does group related
-  controls —the Settings and DHCP blocks, which are what used to be a `fieldset`—;
+  controls (the Settings and DHCP blocks, which are what used to be a `fieldset`);
   not on a panel containing a chart or a table, where the `h2` already provides
   the structure and the role is redundant.
 
@@ -75,8 +75,8 @@ The panel body: the padding that separates the content from its edges.
 
 It goes as a component and not as a class each screen composes, for the same
 reason as the panel: what is shared is the PIECE, not a loose rule. It is optional
-because some panels have content that reaches the edges on purpose —the Settings
-blocks, whose rows bring their own padding, and the tables—.
+because some panels have content that reaches the edges on purpose (the Settings
+blocks, whose rows bring their own padding, and the tables).
 
 `className` is for the variants that do exist: the log viewer tightens its list
 and the Dashboard's "Top" panel trims the air above.

@@ -8,7 +8,7 @@ to touch a record you have to **identify it by its content**. The server hands
 out no identifiers; it is sent the record's full rdata exactly as it stands today
 and it looks up which one it is. That means delete, disable and edit all have to
 rebuild those parameters from the record already on screen, and that rebuilding
-is the most delicate part of the phase.
+is the most delicate part of zone management.
 
 A replica of zone.js:4707 (add), 5584 (update), 6225 (updateRecordState) and
 6400 (delete).
@@ -19,7 +19,7 @@ Four things that come as a surprise and belong to upstream:
      parameter that travels in the query.
 
   2. **`delete` has no case for CNAME, DNAME, SOA or APP.** All four fall to the
-     `default`, which only sends `rdata` if it exists — and it exists for none of
+     `default`, which only sends `rdata` if it exists, and it exists for none of
      them. That is: for those types the server receives zone+domain+type and
      nothing else. It is not an oversight of ours; that is how it is in
      zone.js:6420-6510.
@@ -135,7 +135,7 @@ const s = (v: unknown): string => (v == null ? '' : String(v))
 
 /**
  * `svcParams` travels flattened as `key|value|key|value`, and an empty list
- * travels as the string `"false"` — which is what comes out of concatenating the
+ * travels as the string `"false"`, which is what comes out of concatenating the
  * boolean upstream reduces it to (zone.js:5990-6002).
  */
 export function flattenSvcParams(params: unknown): string {
@@ -356,7 +356,7 @@ export function deletionBody(zone: string, record: ResourceRecord): Record<strin
 
 /**
  * The body of the `records/update` that only changes the state. It resends the
- * whole record —ttl, comments and expiry included— with `disable` set.
+ * whole record (ttl, comments and expiry included) with `disable` set.
  * `newDomain` is not sent: the name does not change (zone.js:6225-6390).
  */
 export function stateChangeBody(

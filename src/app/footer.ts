@@ -4,11 +4,11 @@ Upstream's footer links.
 They live in a `div#footer` hanging directly off the `body` (not off `#pageLogin`
 nor `#pageMain`), so in upstream they are visible on EVERY screen: the login one
 and the whole console. Here they were missing entirely, and two of them
-—`technitium.com` and `dnsclient.net`— appeared nowhere else, so they had been lost
+(`technitium.com` and `dnsclient.net`) appeared nowhere else, so they had been lost
 from the product.
 
-The list lives in a module of its own because two different places paint it —the
-sidebar and the login screen— and a repeated list of links is a list that ends up
+The list lives in a module of its own because two different places paint it (the
+sidebar and the login screen), and a repeated list of links is a list that ends up
 half-updated as soon as somebody touches one.
 
 "About" is not there: in upstream it is the footer's sixth link and here it is a

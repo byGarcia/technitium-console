@@ -33,8 +33,8 @@ import { Notifier } from '../../ui/Notifier'
 /*
 `refreshAdminUsers` and the row's seven actions (auth.js:1083-1698).
 
-Five of those seven actions —saving the modal, enabling, disabling, clearing the
-2FA and resetting the password— go out through the SAME `admin/users/set`
+Five of those seven actions (saving the modal, enabling, disabling, clearing the
+2FA and resetting the password) go out through the SAME `admin/users/set`
 endpoint, because the server only touches the fields that arrive. The sixth and
 seventh are `admin/users/create` and `admin/users/delete`.
 
@@ -50,7 +50,7 @@ Two asymmetries of upstream's that are replicated as they are:
 `getAdminUsersRowHtml` (auth.js:1148-1174): the user type label and the 2FA
 status. `RemoteSSO` is "Remote/SSO" and "SSO Managed"; `RemoteLDAP` is
 "Remote/LDAP" with its own 2FA status; `Local` and ANYTHING ELSE fall to the
-`default:`, which writes `user.type` itself as the label — "Local" reads "Local"
+`default:`, which writes `user.type` itself as the label: "Local" reads "Local"
 because that is what the server sends.
 */
 function userType(u: AdminUser): string {
@@ -204,7 +204,7 @@ export function Users({ tabs, token, cluster, onNotice }: Props) {
                 {/* `Type`, `2FA Status` and `Status` are the three columns that
                     say what a user IS, and they were reading as three different
                     kinds of thing: two pills and one bare word. The word does not
-                    change — `Remote/SSO` is upstream's, `SSO Managed` in the next
+                    change: `Remote/SSO` is upstream's, `SSO Managed` in the next
                     column is its sibling, so it takes the same `info` tone, and
                     `Remote/LDAP` is the other remote user, so it takes it too. */}
                 <td>
@@ -233,8 +233,8 @@ export function Users({ tabs, token, cluster, onNotice }: Props) {
                 {/*
                 Upstream formats the date without checking whether it is .NET's
                 minimum (auth.js:1141), so for a user who has never logged in it
-                shows "0000-12-31 23:45:16 from 0.0.0.0" —year zero, because it
-                converts to local time a date older than time zones— and an
+                shows "0000-12-31 23:45:16 from 0.0.0.0" (year zero, because it
+                converts to local time a date older than time zones) and an
                 address that does not exist. That is not a datum: it is a
                 sentinel value leaking onto the screen. It says "Never", which is
                 what it means, just as was done with the DNSSEC column.

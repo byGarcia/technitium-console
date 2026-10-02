@@ -249,7 +249,7 @@ export function ScopeForm({
           onChange={(v) => set({ routerAddress: v })}
           help="The default gateway IP address to be used by the clients. (Option 3)"
         />
-        {/* index.html:2708-2722 — a single "DNS Servers" label for the whole
+        {/* index.html:2708-2722. A single "DNS Servers" label for the whole
             row: it governs the text area, and the checkbox carries its own. */}
         <Row label="DNS Servers" help="The DNS Server IP addresses to be used by the clients. (Option 6)">
           {(id) => (

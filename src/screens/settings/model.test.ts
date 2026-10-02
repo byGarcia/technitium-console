@@ -92,7 +92,7 @@ describe('enabled', () => {
   })
 })
 
-describe('buildBody — validation order of saveDnsSettings', () => {
+describe('buildBody: validation order of saveDnsSettings', () => {
   const cases: [string, Record<string, unknown>, string][] = [
     ['dnsServerDomain', { dnsServerDomain: '' }, 'Please enter server domain name.'],
     ['ECS IPv4', { eDnsClientSubnetIPv4PrefixLength: '' }, 'Please enter EDNS Client Subnet IPv4 prefix length.'],
@@ -203,7 +203,7 @@ describe('buildBody — validation order of saveDnsSettings', () => {
   })
 })
 
-describe('buildBody — body of settings/set', () => {
+describe('buildBody: body of settings/set', () => {
   it('empty lists travel as the string \"false\"', () => {
     const b = body()
     expect(b.zoneTransferAllowedNetworks).toBe('false')
@@ -326,7 +326,7 @@ const CLUSTER_KEYS = [
   'forwarderConcurrency',
 ]
 
-describe('buildBody — node scope of saveDnsSettings (main.js:1639-1644)', () => {
+describe('buildBody: node scope of saveDnsSettings (main.js:1639-1644)', () => {
   const build = (node: string, partial: Partial<ReturnType<typeof base>> = {}) =>
     buildBody({ ...base(), ...partial }, node)
 

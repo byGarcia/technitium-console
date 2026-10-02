@@ -7,7 +7,7 @@ these charts that is entirely this console's business: the numbers, the labels
 and the series are the server's and are not touched.
 
 The mapping is by LABEL and not by position. The server does not promise an
-order —a deployment with no blocking sends fewer series— and painting by index
+order (a deployment with no blocking sends fewer series), and painting by index
 would mean "Server Failure" changing colour depending on what else happened to
 be measured that hour.
 */
@@ -33,14 +33,14 @@ const SEMANTIC: Record<string, string> = {
   Clients: '--ch-clients',
 }
 
-/** Open sets —record types, transport protocols— get position, not meaning. */
+/** Open sets (record types, transport protocols) get position, not meaning. */
 const CYCLE = ['--ch-1', '--ch-2', '--ch-3', '--ch-4', '--ch-5', '--ch-6', '--ch-7', '--ch-8']
 
 /**
  * The custom property a series is painted with, by name and failing that by
  * position. Returned as the token and not as the value so that the stat tiles
  * can use it directly in CSS: the label's colour has to be the same in the tile
- * and in the chart, and it was not —"Authoritative" was olive up in the tile and
+ * and in the chart, and it was not: "Authoritative" was olive up in the tile and
  * sky blue down in the chart, on the same screen.
  */
 export function tokenForLabel(label: string, index: number): string {
@@ -48,8 +48,8 @@ export function tokenForLabel(label: string, index: number): string {
 }
 
 /*
-No colour fallback here, on purpose. The tokens are always there —`tokens.css`
-goes into the same bundle as this file, through `ThemeProvider`— so a fallback
+No colour fallback here, on purpose. The tokens are always there (`tokens.css`
+goes into the same bundle as this file, through `ThemeProvider`), so a fallback
 never painted anything. What it did was keep a second, unchecked copy of the dark
 palette here, which any other theme would have silently disagreed with.
 */

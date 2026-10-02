@@ -58,7 +58,7 @@ A body that is really the server's error.
 
 Upstream returns it as TEXT through the same endpoint as the file, so there is no
 way to tell it apart by the transport: it is told apart by its shape. What arrives
-is the API's error JSON —`{"status":"error", ...}`— and a log file never starts
+is the API's error JSON (`{"status":"error", ...}`), and a log file never starts
 with a brace.
 
 It is checked at the START and not by looking for `"error"` inside, because a log
@@ -193,7 +193,7 @@ export function ViewLogs({
           Two destructive verbs asking for permissions from DIFFERENT SECTIONS,
           and one condition that is not a permission.
 
-          `Delete All Logs` only exists when there are files (`logs.js:121`) —
+          `Delete All Logs` only exists when there are files (`logs.js:121`);
           that is its object not being there, not a missing permission, so there it
           does disappear: "disabled, never hidden" is about who you are, not about
           whether there is anything to delete. `Delete All Stats` is offered ALWAYS
@@ -201,8 +201,8 @@ export function ViewLogs({
 
           And the stats one asks for `Dashboard.canDelete`, from another screen: it
           deletes the Dashboard's statistics, not the logs. It is one of the three
-          variants the phase 0 table marks as "does not ask for the permission of
-          the screen whose name it carries".
+          controls, among the nine compared with upstream, that "does not ask for
+          the permission of the screen whose name it carries".
           */}
           {files.length > 0 && (
             <PermissionButton

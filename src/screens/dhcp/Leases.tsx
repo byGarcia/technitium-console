@@ -68,8 +68,8 @@ export function Leases({ tabs, token, node = '', canModify = true, canDelete = t
   /*
   Whether the last load failed.
 
-  The data is thrown away, as it was before —this screen does not keep the
-  previous one— so there is nothing here to "go stale" and it does not carry the
+  The data is thrown away, as it was before (this screen does not keep the
+  previous one), so there is nothing here to "go stale" and it does not carry the
   other collections' strip: inheriting the archetype's look is not inheriting
   behaviour it does not have.
 
@@ -127,7 +127,7 @@ export function Leases({ tabs, token, node = '', canModify = true, canDelete = t
 
     if (outcome.kind !== 'ok') return
 
-    // dhcp.js:104-109 — only the row's tag changes; nothing is reloaded.
+    // dhcp.js:104-109. Only the row's tag changes; nothing is reloaded.
     const blank = type === 'reserve' ? 'Reserved' : 'Dynamic'
     setLeases((prev) => prev?.map((l, j) => (j === i ? { ...l, type: blank } : l)) ?? prev)
     setNotice(
@@ -218,7 +218,7 @@ export function Leases({ tabs, token, node = '', canModify = true, canDelete = t
             <td className={styles.date}>{minuteStamp(l.leaseExpires)}</td>
             <td className={tbl.actionsCell}>
               <div className={tbl.actions}>
-                {/* dhcp.js:63-64 — which of the two conversions is offered
+                {/* dhcp.js:63-64. Which of the two conversions is offered
                     depends on the lease's current type. */}
                 {canModify && (
                   <RowAction
@@ -256,8 +256,8 @@ export function Leases({ tabs, token, node = '', canModify = true, canDelete = t
 
       <div className={styles.total}>
         {/* The footer is the count and nothing else. When there are no rows,
-            the one that says so is the table itself —with its centred row, like
-            the rest of the console and like upstream (`dhcp.js:74`)—; here it was
+            the one that says so is the table itself, with its centred row, like
+            the rest of the console and like upstream (`dhcp.js:74`); here it was
             left floating outside the panel, under a table with a blank body. */}
         <span>{`Total Leases: ${leases.length}`}</span>
       </div>
@@ -279,7 +279,7 @@ export function Leases({ tabs, token, node = '', canModify = true, canDelete = t
         onConfirm={() => confirm && void convert(confirm.i, confirm.type)}
       />
 
-      {/* index.html:6587-6617 — the complete "Remove Lease?" modal, with its two
+      {/* index.html:6587-6617. The complete "Remove Lease?" modal, with its two
           warnings, its recommendation and its list of alternatives. */}
       <Dialog
         open={discard !== null}

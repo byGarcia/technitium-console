@@ -29,7 +29,7 @@ Settings > Blocking (index.html:2066-2190).
 
 This is where the screen's only cascading enablement rule lives
 (`updateBlockingState`, main.js:2405 in v15.5.1): with "Enable Blocking"
-unchecked, the sub-tab's controls go off — Blocking Answer TTL included since
+unchecked, the sub-tab's controls go off, Blocking Answer TTL included since
 v15.5, and Block List Update Interval no longer.
 
 "Update Now" is not part of that rule any more. v15.5 took it out of
@@ -45,7 +45,7 @@ export interface BlockingExtra {
   blockListNextUpdatedOn?: string | null
   onTemporaryDisable: () => void
   onUpdateNow: () => void
-  /** The loaded `blockListUrls` was not null — what enables "Update Now". */
+  /** The loaded `blockListUrls` was not null, which is what enables "Update Now". */
   hasSavedBlockLists: boolean
   busy?: boolean
 }
@@ -61,7 +61,7 @@ export function Blocking({ f, set, en, extra }: PaneProps & { extra: BlockingExt
   /*
   The known block lists, offered beside the field they fill. Upstream's control
   (`index.html:2156`), which this console had lost while keeping the help text
-  that describes it. See spec F8.
+  that describes it.
   */
   const [quick, setQuick] = useState<QuickEntry[]>([])
   useEffect(() => {

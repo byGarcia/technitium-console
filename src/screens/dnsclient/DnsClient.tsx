@@ -29,12 +29,12 @@ export function DnsClient({
   clusterInitialised = false,
 }: {
   token: string | null
-  /** The cluster nodes, for the node selector. Spec F10. */
+  /** The cluster nodes, for the node selector. */
   nodes?: { name: string; type: string }[]
   clusterInitialised?: boolean
 }) {
   /* Upstream mounts one here (`optDnsClientClusterNode`), no aggregate, no
-     persistence. Spec F10. */
+     persistence. */
   const [clusterNode, setClusterNode] = useState<string>('')
 
   const [server, setServer] = useState('This Server {this-server}')
@@ -43,7 +43,6 @@ export function DnsClient({
   The known name servers. Upstream attaches a dropdown to this field
   (`index.html:840-846`, filled by `dnsclient.js:78`) and this console kept the
   field and lost the list. The field stays free text: the list only fills it.
-  See spec F8.
   */
   const [servers, setServers] = useState<string[]>([])
   useEffect(() => {
@@ -64,8 +63,8 @@ export function DnsClient({
   /*
   The raw responses of each hop of the resolution.
 
-  Upstream shows them in the second panel of its accordion —"Raw Responses (N)",
-  collapsed and hidden if there are none (`dnsclient.js:178-194`)— and here it was
+  Upstream shows them in the second panel of its accordion ("Raw Responses (N)",
+  collapsed and hidden if there are none (`dnsclient.js:178-194`), and here it was
   missing entirely: the API type already declared `rawResponses`, but nobody drew
   it. It is what lets you see what each server answered along the way when a
   recursive query goes wrong, which is exactly when this screen gets opened.
@@ -137,8 +136,8 @@ export function DnsClient({
       <Notifier notice={alert} onClose={() => setAlert(null)} />
 
       {/*
-      The query bar used labels made by hand with inline `style` —`fontSize: 11`,
-      `gap: 5`, `marginBottom: 1`— instead of the system's fields. They were six
+      The query bar used labels made by hand with inline `style` (`fontSize: 11`,
+      `gap: 5`, `marginBottom: 1`) instead of the system's fields. They were six
       values off the scale on a single screen, and that is why the "Type" and
       "DNS-over-" labels did not match the ones next to them.
       */}

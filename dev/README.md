@@ -7,13 +7,13 @@ without touching any real DNS server.
 |---|---|---|
 | `dev` | http://127.0.0.1:5380 | `dist/` mounted from the repo |
 | `ref` | http://127.0.0.1:5381 | the `www` from the official image, untouched |
-| `nodo2` | http://127.0.0.1:5382 | `dist/` too: the second node of the cluster |
+| `node2` | http://127.0.0.1:5382 | `dist/` too: the second node of the cluster |
 
 User `admin`, password `technitium-ui-dev` on all three.
 
-`nodo2` mounts the same build as `dev` on purpose: it is the only way to see a
+`node2` mounts the same build as `dev` on purpose: it is the only way to see a
 screen **from the other side of a cluster**, and that is where half of `Cluster`'s
-contract lives.
+behaviour lives.
 
 ## The installer has its own bench
 
@@ -41,17 +41,17 @@ in this file's history (`git log -p dev/README.md`); it is not needed any more.
 
 ## The cluster is DOWN: it was up on purpose, and it did its job
 
-`dev` and `nodo2` formed a real two-node cluster: domain `cluster.test`, `dev`
-primary and `nodo2` secondary from 2026-09-04 until Administration was built.
+`dev` and `node2` formed a real two-node cluster: domain `cluster.test`, `dev`
+primary and `node2` secondary from 2026-09-04 until Administration was built.
 
-**It was not incidental.** `screens/admin/Cluster.tsx` is 1.629 lines, the largest
-screen in the console, and without a cluster the harness only ever shows «Cluster
-Not Initialized» and two buttons. Contracting that would have been contracting its
-empty state. With it, the screen was read **from both sides**: and that is how the
+**It was not incidental.** `screens/admin/Cluster.tsx` is 1,629 lines, the largest
+screen in the console, and without a cluster the harness only ever shows "Cluster
+Not Initialized" and two buttons. Building against that would have meant building
+only its empty state. With it, the screen was read **from both sides**: and that is how the
 `Edit Node` rule turned out to depend on *who is looking*, not on the row:
 
 ```
-esPrimario ? state === 'Self' : state === 'Self' || type === 'Primary'
+isPrimary ? n.state === 'Self' : n.state === 'Self' || n.type === 'Primary'
 ```
 
 ### Taken down on 2026-09-04, and how
@@ -83,9 +83,8 @@ once there are no secondaries, which is exactly why step 1 goes first. Doing it
 this way is the only end-to-end exercise those two endpoints have had against a
 real cluster.
 
-The harness is back to what `docs/baseline/README.md` describes: **six zones on
-`dev`, no cluster**, the three containers up and the server domains back to `dev`
-and `nodo2`.
+The harness is back to its usual state: **six zones on `dev`, no cluster**, the
+three containers up and the server domains back to `dev` and `node2`.
 
 ```bash
 # how it was created, if it ever has to be rebuilt
@@ -140,4 +139,4 @@ built on Windows.
 
 Without normalising, two files with identical content come out different by one
 byte per line: in `index.html` that is 7,426 bytes of difference out of 619,718.
-Found when running the first parity check of phase 0.
+Found when running the first parity check.

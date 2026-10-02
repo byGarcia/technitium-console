@@ -1,7 +1,7 @@
 .caption { font-size: var(--t-2); color: var(--mute); font-weight: 550; margin-bottom: var(--s-3); }
 
 /*
-The "Member Of" one has ONE column —the group's name— and it stretched to 831 px
+The "Member Of" one has ONE column (the group's name), and it stretched to 831 px
 for a datum of 82. The dialog is wide because of its sessions table, which does
 need it; this one has no reason to go along. Upstream does not stretch it either:
 it puts it in a `col-sm-7`.

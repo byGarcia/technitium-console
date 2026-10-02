@@ -9,8 +9,8 @@ here is not a list of tokens but a list of PAIRS, each one a place the console
 really puts that colour on that ground. The pairs were read from the stylesheets
 (`grep var(--token)` in `src/`), and each says where.
 
-A surface may be a token, or a token under a translucent one —the hover veils,
-the Query Logs row colours— composed the way the browser composes them: in sRGB,
+A surface may be a token, or a token under a translucent one (the hover veils,
+the Query Logs row colours), composed the way the browser composes them: in sRGB,
 source over. `color-mix(in srgb, X 30%, transparent)` is X at alpha 0.3.
 
 Thresholds, WCAG 2.2:
@@ -19,8 +19,8 @@ Thresholds, WCAG 2.2:
   3    a non-text object a user needs to see (1.4.11): a field's border, the focus
        ring, a checkbox's box, a switch's knob, a tick on its fill.
 
-What it does not measure: the chart series —`dev/palette-distance.mjs` does, as
-pairs that share a chart— and decorative dividers (`--line`, `--line2`), which
+What it does not measure: the chart series (`dev/palette-distance.mjs` does, as
+pairs that share a chart) and decorative dividers (`--line`, `--line2`), which
 1.4.11 does not ask anything of: a panel is still a panel without its border.
 
 Exit code: 1 when a pair in the LIGHT theme is under its threshold. Dark is
@@ -168,7 +168,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   let lightFails = 0
   for (const theme of ['light', 'dark']) {
     const rows = measure(themes[theme])
-    console.log(`\n${'='.repeat(78)}\n${theme.toUpperCase()}${theme === 'dark' ? ' — measured, not gated' : ''}\n${'='.repeat(78)}`)
+    console.log(`\n${'='.repeat(78)}\n${theme.toUpperCase()}${theme === 'dark' ? ': measured, not gated' : ''}\n${'='.repeat(78)}`)
     for (const p of PAIRS) {
       const mine = rows.filter((r) => r.fg === p.fg && r.where === p.where)
       const worst = mine.reduce((a, b) => (b.ratio < a.ratio ? b : a))

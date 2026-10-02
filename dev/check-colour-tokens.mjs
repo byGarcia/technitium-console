@@ -2,7 +2,7 @@
  * The guard that keeps every colour in `src/theme/tokens.css`.
  *
  * `CONVENTIONS.md` has said "colours always by token, not one `#hex` outside
- * `tokens.css`" since the first phase, and on 2026-10-01 there were 44 colour
+ * `tokens.css`" from the start, and on 2026-10-01 there were 44 colour
  * literals outside it, in 14 files: the hover border of a button, the veil behind
  * a dialog, the shine on a ticked checkbox, eight fallbacks for the chart palette.
  * None of them was wrong for the one theme the console had. Every one of them is
@@ -10,7 +10,7 @@
  * preference the day a light theme was decided. This is what measures it.
  *
  * It looks at the `.css`, `.ts` and `.tsx` files in `src/`, with their comments
- * stripped —a comment that quotes a value is quoting, not painting— and finds:
+ * stripped (a comment that quotes a value is quoting, not painting), and finds:
  *
  *  - `#hex`, 3, 4, 6 or 8 digits, and its URL-encoded form `%23hex`, which is how
  *    a colour hides inside an inline SVG in a `data:` URI.
@@ -28,7 +28,7 @@
  * dark value on a light page without anything else noticing.
  *
  * `color-scheme` follows the same rule, because it is colour too: it decides the
- * browser's own parts —scrollbars, date pickers, form controls—, and an element
+ * browser's own parts (scrollbars, date pickers, form controls), and an element
  * that pins it draws them dark on a light page or the other way round. So a
  * `color-scheme` declaration is only allowed in a theme block of `tokens.css`;
  * anywhere else, a stylesheet declaration of it, or an inline style that sets it
@@ -107,7 +107,7 @@ const SCHEME_TS = /(?<![\w$-])colorScheme\s*[:=]\s*(['"`])[^'"`]*\1|setProperty\
 /*
 Comments out, everything else in place: each comment character becomes a space
 and each newline stays, so a finding keeps its line number. Strings are walked
-so that a `//` inside one —`http://www.w3.org/2000/svg` in every inline SVG— is
+so that a `//` inside one (`http://www.w3.org/2000/svg` in every inline SVG) is
 not taken for a comment. `'` and `"` cannot span a line, so a quote inside a
 regex literal can derail at most the rest of its own line.
 */
@@ -196,7 +196,7 @@ function blocks(code) {
 /*
 What each theme block declares, as `{ dark, light }`, each a `Map` from the
 property (`--bg`, `color-scheme`) to its value as written. Shared with the tools
-that measure a theme —`palette-distance.mjs`, `theme-contrast.mjs`— so the three
+that measure a theme (`palette-distance.mjs`, `theme-contrast.mjs`), so the three
 read the file the same way.
 */
 export function themeTokens(text) {

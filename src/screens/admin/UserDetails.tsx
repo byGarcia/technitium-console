@@ -140,7 +140,7 @@ export function UserDetails({ open, username, token, cluster, onClose, onSaved, 
   async function save() {
     if (detail == null || username == null) return
 
-    // "if (sessionTimeoutSeconds === "") sessionTimeoutSeconds = 1800" — it is
+    // "if (sessionTimeoutSeconds === "") sessionTimeoutSeconds = 1800": it is
     // the modal's only field with a default value (auth.js:1424).
     const seconds = timeout === '' ? '1800' : timeout
 
@@ -171,7 +171,7 @@ export function UserDetails({ open, username, token, cluster, onClose, onSaved, 
 
   async function deleteSession(s: AdminSession) {
     setPendingDelete(null)
-    // auth.js:1382 — here the `node` travels ONLY if the session is an API token.
+    // auth.js:1382. Here the `node` travels ONLY if the session is an API token.
     // The Sessions tab always sends it; this modal does not.
     const node = s.type === 'ApiToken' ? primaryNodeName(cluster) : undefined
     const outcome = await deleteAdminSession(token, s.partialToken, node)

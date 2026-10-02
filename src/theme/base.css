@@ -9,7 +9,7 @@ inside `www/`. They go in `public/fonts/`, with their licence beside them.
 
 **Archivo** for the text and **IBM Plex Mono** for the data, 65 KB across the
 three files. Inter and Geist were ruled out on purpose: both are excellent and both
-are everywhere —Inter is NetBird's, Geist is Vercel's— so they would have been
+are everywhere (Inter is NetBird's, Geist is Vercel's), so they would have been
 swapping one borrowed typeface for another.
 
 The monospace is not decoration: domains, addresses, serials and TTLs are half of
@@ -56,13 +56,13 @@ is 11.5 px: a gap that is not on the spacing scale and that showed up in all fou
 body paragraphs. The gap is set by whoever composes, not by the browser.
 */
 p { margin: 0; }
-/* Two consecutive paragraphs do need separating —there are some in Blocking and
-   in About— but with the scale, not with the browser's em. */
+/* Two consecutive paragraphs do need separating (there are some in Blocking and
+   in About), but with the scale, not with the browser's em. */
 p + p { margin-top: var(--s-7); }
 
 /*
 The body runs at 400 with slightly open tracking. It used to run at weights of 650
-and 700 almost everywhere, and that —more than anything else— is what made the
+and 700 almost everywhere, and that, more than anything else, is what made the
 console read as dense and utilitarian instead of calm. Hierarchy comes from size
 and colour, which is what is read out of the corner of the eye; weight is reserved
 for whatever really rules its own line.
@@ -252,7 +252,7 @@ input[type='checkbox']:disabled,
 input[type='radio']:disabled { opacity: 0.45; cursor: default; box-shadow: none; }
 
 /*
-The fields that do not go through `ui/Field` —the Settings textareas above all—
+The fields that do not go through `ui/Field` (the Settings textareas above all)
 get the same hole and the same lift on focus. Otherwise two ideas of what a field
 is would live side by side on the same screen.
 */

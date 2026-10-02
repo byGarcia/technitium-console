@@ -4,11 +4,11 @@ import styles from './Tag.module.css'
 /*
 A pill says ONE state. The five tones and what they mean:
 
-  · neutral — a classification fact that is neither good nor bad: `Primary`, `IPv4`
-  · ok     — the desirable state: `Enabled`, `Online`
-  · warn   — something wants attention but works: `Updating`, `Expiring`
-  · dan    — it is broken or switched off: `Disabled`, `Expired`
-  · info   — an active feature that is not a judgement: `DNSSEC`
+  · neutral: a classification fact that is neither good nor bad (`Primary`, `IPv4`)
+  · ok:      the desirable state (`Enabled`, `Online`)
+  · warn:    something wants attention but works (`Updating`, `Expiring`)
+  · dan:     it is broken or switched off (`Disabled`, `Expired`)
+  · info:    an active feature that is not a judgement (`DNSSEC`)
 
 No pill is painted outside this: counts go in the bar above the table, not in a
 capsule with this same look.
@@ -16,8 +16,8 @@ capsule with this same look.
 
 /*
 `acc` is the sixth and the youngest: the pill that **names the master switch** of
-a control that is off. The phase 1 vocabulary gives it the amber because "amber =
-you can": that is off and **you** can switch it on, which is the opposite of the
+a control that is off. The console's two-word vocabulary gives it the amber
+because "amber = you can": that is off and **you** can switch it on, which is the opposite of the
 padlock. `warn` would not do because it means "careful", and using it here would
 confuse "be careful" with "this is yours to change".
 

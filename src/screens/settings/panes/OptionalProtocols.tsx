@@ -16,7 +16,8 @@ load, `loadDnsSettings` disables it if `enableDnsOverHttps` is off
 (main.js:1318), but no `click` handler ever re-evaluates it when `Enable
 DNS-over-HTTPS` gets checked, so until the page is reloaded it stays off. Here
 the rule is derived from state and therefore DOES update itself; it is the only
-observable difference and it is noted in the phase's report.
+observable difference, and it is listed in CONVENTIONS.md as deliberate
+deviation 4.
 */
 /*
 The addresses in the third note and the header in the fourth are filled from the

@@ -25,7 +25,7 @@ function makeSpy() {
     .mockResolvedValue({ kind: 'ok', data: { response: {}, server: 's' } })
 }
 
-describe('cluster — state', () => {
+describe('cluster: state', () => {
   it('with no options it sends no parameter', async () => {
     const spy = makeSpy()
     await getClusterState('tok')
@@ -42,7 +42,7 @@ describe('cluster — state', () => {
   })
 })
 
-describe('cluster — initialisation', () => {
+describe('cluster: initialisation', () => {
   it('`init` sends no `node`: the cluster is created on this server', async () => {
     const spy = makeSpy()
     await initCluster('tok', 'mycluster.tld', '10.0.0.1,10.0.0.2')
@@ -69,7 +69,7 @@ describe('cluster — initialisation', () => {
   })
 })
 
-describe('cluster — actions on nodes', () => {
+describe('cluster: actions on nodes', () => {
   it('each action goes to its endpoint with its node', async () => {
     const spy = makeSpy()
     await updateIpAddress('tok', '10.0.0.9', 'ns1')

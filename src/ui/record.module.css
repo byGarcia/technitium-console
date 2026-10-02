@@ -1,6 +1,6 @@
 /*
-The cells of a DNS records table. Zones uses them —a zone's records— and the
-lists screens too —the Allowed and Blocked entries— which are the same table
+The cells of a DNS records table. Zones uses them (a zone's records) and the
+lists screens too (the Allowed and Blocked entries), which are the same table
 looking at two different places, and each had them written twice.
 
 They are cells and not components because the markup changes (a `<td>`, a `<dd>`,

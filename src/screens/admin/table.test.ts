@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { addToList, addToTable } from './table'
 
-describe('addToList — the "Add User" / "Add Group" dropdowns', () => {
+describe('addToList: the "Add User" / "Add Group" dropdowns', () => {
   it('"blank" touches nothing', () => {
     expect(addToList('Ops\n', 'blank')).toBe('Ops\n')
   })
@@ -24,7 +24,7 @@ describe('addToList — the "Add User" / "Add Group" dropdowns', () => {
   })
 })
 
-describe('addToTable — the dropdowns of the permissions modal', () => {
+describe('addToTable: the dropdowns of the permissions modal', () => {
   const blank = (name: string) => ({ name, canView: false })
 
   it('"blank" touches nothing and "none" empties the table', () => {

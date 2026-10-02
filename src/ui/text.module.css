@@ -2,7 +2,7 @@
 The console's text primitives.
 
 They are not components: they are treatments that appear inside the prose of many
-screens —a muted suffix, an intro paragraph, an inline `<code>`— and which
+screens (a muted suffix, an intro paragraph, an inline `<code>`) and which
 therefore have no element of their own to live in. Each screen used to rewrite
 them, and the copying showed: the monospacing in "My Profile" had lost its tabular
 figures and was one step smaller than everywhere else, and the "Forgot Password"
@@ -60,9 +60,9 @@ not on the `<code>`, because what writes it is the prose: `{'…'} <code>x</code
 /*
 The muted monospace annotation. There are two sizes and the difference is real,
 so both get named instead of being merged: `.annotation` is content you have to be
-able to read —the server domain, an app class path, a session's user agent—;
-`.annotationQuiet` accompanies something else and must not compete with it —a
-tile's unit, a file's size—.
+able to read (the server domain, an app class path, a session's user agent);
+`.annotationQuiet` accompanies something else and must not compete with it (a
+tile's unit, a file's size).
 
 They were written across six modules, with the two sizes handed out at random.
 */
@@ -89,14 +89,14 @@ They were written across six modules, with the two sizes handed out at random.
 The name that is only for whoever cannot see the screen.
 
 It was born in `Matrix.module.css` for the permission cells, with a note saying
-«it goes here because this is its only user; the day a second one appears it
-moves». That day is this one: the update dialog needs it to say which of its two
+"it goes here because this is its only user; the day a second one appears it
+moves". That day is this one: the update dialog needs it to say which of its two
 version numbers is which.
 
 `position: absolute` and `clip-path`, and the caveat that cost a measured defect:
 **`clip-path` clips the PAINTING, not the layout**. With no positioned ancestor
 the containing block is the page, so whoever uses it inside something that scrolls
-has to give that container `position: relative` — or the hidden text pushes the
+has to give that container `position: relative`, or the hidden text pushes the
 page sideways. Measured at 390 on `/admin/permissions/`: 948 px of horizontal
 scroll with every visible element inside 390.
 */

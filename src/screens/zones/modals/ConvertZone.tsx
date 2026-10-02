@@ -14,7 +14,7 @@ import { Notifier } from '../../../ui/Notifier'
 
 **There are three destinations, not seven**: Primary, Forwarder and Catalog. And
 which of them are enabled and which comes selected depends on the source type,
-through a table that follows from nothing — for example, a Primary can only go to
+through a table that follows from nothing. For example, a Primary can only go to
 Forwarder, and a Secondary Catalog only to Catalog. It is copied whole.
 
 This screen's mockup drew "Secondary / Forwarder / Catalog": Secondary is not a

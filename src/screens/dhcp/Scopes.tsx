@@ -68,8 +68,8 @@ export function Scopes({ tabs, token, node = '', canModify = true, canDelete = t
   /*
   Whether the last load failed.
 
-  The data is thrown away, as it was before —this screen does not keep the
-  previous one— so there is nothing here to "go stale" and it does not carry the
+  The data is thrown away, as it was before (this screen does not keep the
+  previous one), so there is nothing here to "go stale" and it does not carry the
   other collections' strip: inheriting the archetype's look is not inheriting
   behaviour it does not have.
 
@@ -167,7 +167,7 @@ export function Scopes({ tabs, token, node = '', canModify = true, canDelete = t
     const outcome = await deleteScope(token, name, node)
     setBusy(false)
     if (outcome.kind !== 'ok') return
-    // dhcp.js:662 — it removes the row; it does not ask for the list again.
+    // dhcp.js:662. It removes the row; it does not ask for the list again.
     setScopes((prev) => prev?.filter((s) => s.name !== name) ?? prev)
     setNotice({
       type: 'success',
@@ -277,7 +277,7 @@ export function Scopes({ tabs, token, node = '', canModify = true, canDelete = t
                   onClick={() => void edit(s.name)}
                 />
                 {canModify && (
-                  /* dhcp.js:615 — enabling asks nothing; disabling does. */
+                  /* dhcp.js:615. Enabling asks nothing; disabling does. */
                   <RowAction
                     icon="power"
                     name={s.enabled ? 'Disable Scope' : 'Enable Scope'}
@@ -311,8 +311,8 @@ export function Scopes({ tabs, token, node = '', canModify = true, canDelete = t
 
       <div className={styles.total}>
         {/* The footer is the count and nothing else. When there are no rows,
-            the one that says so is the table itself —with its centred row, like
-            the rest of the console and like upstream (`dhcp.js:74`)—; here it was
+            the one that says so is the table itself, with its centred row, like
+            the rest of the console and like upstream (`dhcp.js:74`); here it was
             left floating outside the panel, under a table with a blank body. */}
         <span>{`Total Scopes: ${scopes.length}`}</span>
       </div>

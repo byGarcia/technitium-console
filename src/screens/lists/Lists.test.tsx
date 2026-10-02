@@ -207,8 +207,8 @@ describe('Cache', () => {
 
 /*
 Allowed and Blocked are no longer sections: their tree lives `embedded` inside
-Blocking's Rules tab, and the verbs of their old header —Allow, Block, Flush,
-Export— moved to Rules' add bar and foot, where `AddDomainBar.test.tsx` and
+Blocking's Rules tab, and the verbs of their old header (Allow, Block, Flush,
+Export) moved to Rules' add bar and foot, where `AddDomainBar.test.tsx` and
 `Rules.test.tsx` hold their literals. What stays here is what stayed in this
 component: the node's Delete, and the Import dialog Rules borrows.
 */

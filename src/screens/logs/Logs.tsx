@@ -22,7 +22,7 @@ export const SUB_TABS = ['View Logs', 'Query Logs'] as const
 export type SubTab = (typeof SUB_TABS)[number]
 
 export interface LogsProps {
-  /** The cluster nodes, for the node selector. Spec F10. */
+  /** The cluster nodes, for the node selector. */
   nodes?: { name: string; type: string }[]
   clusterInitialised?: boolean
 
@@ -49,7 +49,7 @@ export function Logs({
   canDeleteStats = true,
 }: LogsProps) {
   /* Which node this screen reads. Upstream mounts a selector here
-     and the parameter was already travelling empty; spec F10. */
+     and the parameter was already travelling empty. */
   const [node, setNode] = useState<string>(() => '')
   const requested = (sub ?? 'View Logs') as SubTab
   const active: SubTab = SUB_TABS.includes(requested) ? requested : 'View Logs'
@@ -72,7 +72,7 @@ export function Logs({
     <>
       {/* Upstream mounts one here (`optDhcpClusterNode` / `optLogsClusterNode`).
           It draws nothing without a cluster, so it costs a single-server install
-          nothing. Spec F10. */}
+          nothing. */}
       <ClusterNodeSelect
         nodes={nodes}
         initialised={clusterInitialised}

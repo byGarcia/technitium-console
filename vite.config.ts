@@ -26,14 +26,14 @@ function staticRoutes(): Plugin {
   return {
     name: 'static-routes',
     enforce: 'post',
-    generateBundle(_opciones, paquete) {
-      const indice = paquete['index.html']
-      if (indice == null || indice.type !== 'asset') return
+    generateBundle(_options, bundle) {
+      const index = bundle['index.html']
+      if (index == null || index.type !== 'asset') return
 
       for (const route of STATIC_ROUTES) {
-        const saltos = '../'.repeat(route.split('/').length)
-        const html = String(indice.source)
-          .replace(/(href|src)="\.\//g, `$1="${saltos}`)
+        const hops = '../'.repeat(route.split('/').length)
+        const html = String(index.source)
+          .replace(/(href|src)="\.\//g, `$1="${hops}`)
           .replace('<head>', `<head>\n    <meta name="route" content="${route}" />`)
 
         this.emitFile({ type: 'asset', fileName: `${route}/index.html`, source: html })
@@ -55,41 +55,41 @@ const version = JSON.parse(readFileSync(new URL('./package.json', import.meta.ur
 export default defineConfig(({ mode }) => ({
   define: { __CONSOLE_VERSION__: JSON.stringify(version) },
   /*
-  El servidor de desarrollo, sólo para trabajar: `vite` no sirve la API, así que
-  sin esto la consola arranca y no puede hablar con nadie.
+  The development server, for working only: `vite` does not serve the API, so
+  without this the console starts and cannot talk to anyone.
 
-  Reenvía `/api` al contenedor `dev` del harness (`dev/compose.yaml`, :5380). Lo
-  que compra es HMR: el cambio entra sin recargar y **la sesión no se pierde**,
-  que es lo que hacía que cada retoque costase un login a mano.
+  It forwards `/api` to the harness's `dev` container (`dev/compose.yaml`, :5380).
+  What it buys is HMR: a change goes in without a reload and **the session is not
+  lost**, which is what made every tweak cost a login by hand.
 
-  No afecta a lo construido: `vite build` no mira `server`. El destino se puede
-  cambiar con `DNS=` para apuntar a otra instancia del harness.
+  It does not affect the build: `vite build` does not read `server`. The target
+  can be changed with `DNS=` to point at another instance of the harness.
   */
   server: {
     proxy: {
       /*
-      El patrón lleva `.*` delante por una razón concreta: en desarrollo la
-      consola NO pide `/api/…`, pide `/dashboard/api/…`.
+      The pattern starts with `.*` for a concrete reason: in development the
+      console does NOT ask for `/api/…`, it asks for `/dashboard/api/…`.
 
-      Y lleva la exclusión de `src/`, `@` y `node_modules/` por otra: sin ella se
-      tragaba `/src/api/client.ts` (el módulo que sirve el propio Vite) y lo
-      reenviaba al servidor DNS, que devolvía JSON. El navegador rechazaba el
-      módulo por MIME y la consola no arrancaba.
+      And it excludes `src/`, `@` and `node_modules/` for another: without that it
+      swallowed `/src/api/client.ts` (the module Vite itself serves) and
+      forwarded it to the DNS server, which answered with JSON. The browser
+      rejected the module by MIME type and the console did not start.
 
-      `app/base.ts` calcula su raíz restándole al `pathname` los segmentos que
-      declara el `<meta name="route">`, y ese meta **lo inyecta el plugin al
-      construir**: en `vite dev` no existe, así que la raíz acaba siendo la ruta
-      actual. Con un proxy de `/api` a secas la sesión no se restauraba nunca y
-      la consola se quedaba en el login, mientras un `fetch('/api/…')` a mano
-      funcionaba, que es lo que despistaba.
+      `app/base.ts` works out its root by taking off the `pathname` the segments
+      declared by `<meta name="route">`, and that meta **is injected by the plugin
+      at build time**: under `vite dev` it does not exist, so the root ends up
+      being the current path. With a bare `/api` proxy the session was never
+      restored and the console stayed on the login, while a hand-made
+      `fetch('/api/…')` worked, which is what made it confusing.
       */
-      /* La consola servida desde la raíz, que es como se trabaja en dev, pide
-         `/api/…` a secas. Ésta es esa. */
+      /* The console served from the root, which is how dev works, asks for a
+         bare `/api/…`. This is that one. */
       '/api/': {
         target: process.env.DNS ?? 'http://127.0.0.1:5380',
         changeOrigin: true,
       },
-      /* Y ésta, la de una ruta profunda abierta directamente. */
+      /* And this one, for a deep route opened directly. */
       '^/(?!src/|@|node_modules/).*/api/': {
         target: process.env.DNS ?? 'http://127.0.0.1:5380',
         changeOrigin: true,

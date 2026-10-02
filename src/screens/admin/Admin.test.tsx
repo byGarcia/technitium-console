@@ -35,10 +35,10 @@ function server(cluster = CLUSTER_NOT_INITIALISED) {
 
 /*
 The sub-navigation moved on 2026-09-07: it was the Shell's side panel and it is now
-a bar under the title (`ui/SubTabs`), which is what the accepted delivery draws. So
+a bar under the title (`ui/SubTabs`), which is what the design draws. So
 the title is the SECTION and the active screen is the tab marked as the page.
 */
-describe('Admin — the sub-navigation is a bar under the title', () => {
+describe('Admin: the sub-navigation is a bar under the title', () => {
   it('with no `sub` it starts on Sessions, just like upstream', async () => {
     server()
     render(<Admin token="tok" />)
@@ -114,7 +114,7 @@ describe('Admin — the sub-navigation is a bar under the title', () => {
 
   `updateClusterNodeDropDown` (cluster.js:1026) selects `dnsServerDomain` when
   nothing has been chosen; ours left the value empty and the control came up
-  showing the "—" placeholder while the table under it listed two nodes. Seen on
+  showing the empty-value dash while the table under it listed two nodes. Seen on
   the harness with the real two-node cluster up.
   */
   it('the node selector starts on THIS server, as upstream does', async () => {

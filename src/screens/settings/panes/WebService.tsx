@@ -9,7 +9,7 @@ Upstream draws it in a single `div.well`; here it is split into titled blocks
 without moving a single field or changing their order.
 */
 export function WebService({ f, set, en, loaded }: PaneProps & { loaded: DnsSettings }) {
-  // main.js:1303-1304 — the reverse proxy note names the LOADED header, not the
+  // main.js:1303-1304. The reverse proxy note names the LOADED header, not the
   // one being typed.
   const realIpHeader = loaded.webServiceRealIpHeader
   return (

@@ -2,8 +2,8 @@ import type { ReactNode } from 'react'
 import styles from './Check.module.css'
 
 /*
-The checkbox with its label and help. It was written three times —Settings, DHCP
-and Administration— byte for byte identical apart from the styles module.
+The checkbox with its label and help. It was written three times (Settings, DHCP
+and Administration), byte for byte identical apart from the styles module.
 
 And it brings the **switch**, which is the only gesture of its own this console has
 allowed itself. A yes/no setting is not the same as ticking a table row: the first

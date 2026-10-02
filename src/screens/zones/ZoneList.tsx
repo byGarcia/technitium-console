@@ -99,8 +99,8 @@ export function ZoneList({
   const [zones, setZones] = useState<Zone[]>([])
   /*
   Whether the first load has come back at all. `zones` starts as an empty array,
-  so without this the wait was drawn exactly like a server with no zones —"1-0 (0)
-  of 0 zones" and an empty table— which is the same lie the failure state was
+  so without this the wait was drawn exactly like a server with no zones: "1-0 (0)
+  of 0 zones" and an empty table, which is the same lie the failure state was
   fixed for on this screen. Measured on 2026-09-07 with the state matrix.
   */
   const [loaded, setLoaded] = useState(false)
@@ -109,17 +109,16 @@ export function ZoneList({
   const [totalZones, setTotalZones] = useState(0)
   const [busy, setBusy] = useState(false)
   /*
-  The stale-data mark, which is decision 6 of pilot 2 and the gap pilot 1 did not
-  have.
+  The stale-data mark, a decision of the Zones design.
 
-  When a refresh failed this screen ALREADY kept the previous zones —see the
-  `return` in `load`— and that is right: throwing them away would leave the user
+  When a refresh failed this screen ALREADY kept the previous zones (see the
+  `return` in `load`), and that is right: throwing them away would leave the user
   with nothing over a network error. What was missing is **saying so**. Without
   the mark, a ten-minute-old list reads exactly like a one-second-old one, and in
   a DNS console that means believing a state that no longer exists.
 
   It stores WHEN the last data was good, not just that there was some: the time is
-  the useful half of the notice —"from a minute ago" and "from an hour ago" are
+  the useful half of the notice: "from a minute ago" and "from an hour ago" are
   answered differently.
   */
   const [lastGood, setLastGood] = useState<string | null>(null)
@@ -156,8 +155,8 @@ export function ZoneList({
           since when and offers to retry. The notice at the top keeps quiet: if
           both fired, the same failure would appear twice and the user would have
           to decide which of the two messages to read.
-        · **With no previous data** there is nothing to go stale —marking it would
-          promise an earlier list that does not exist— so it is a plain error and
+        · **With no previous data** there is nothing to go stale (marking it would
+          promise an earlier list that does not exist), so it is a plain error and
           the notice reports it, which is what carries the server's message.
         */
         const hadData = lastGood != null
@@ -425,11 +424,11 @@ export function ZoneList({
       The stale-data strip. It goes ABOVE the table and not inside it: what has
       gone stale is the whole list, not a row.
 
-      The literals are the same ones the phase 3 delivery uses on the Dashboard
-      —`Last good data: …` and `Retry`— on purpose: it is the SAME object on two
-      screens, and phase 1 says the same thing is drawn the same way everywhere.
-      Pilot 2 fixes that the strip carries the time and the `Retry`, but not its
-      wording; inventing a second one here is how two consoles end up inside one.
+      The literals are the same ones the Dashboard design uses
+      (`Last good data: …` and `Retry`) on purpose: it is the SAME object on two
+      screens, and the design rule is that the same thing is drawn the same way
+      everywhere. The Zones design fixes that the strip carries the time and the
+      `Retry`, but not its wording; inventing a second one here is how two consoles end up inside one.
       */}
       {stale && <StaleData since={lastGood} onRetry={() => void load(pageNumber)} />}
 
@@ -441,7 +440,7 @@ export function ZoneList({
       The selection bar: what is selected, and the verb that acts on it.
 
       `Delete Zones` used to live in the header, next to `Add Zone`, and the
-      accepted pilot 2 reconciliation moved it here and said why: **the button
+      Zones design moved it here and said why: **the button
       lives glued to the number that says how much it acts on**. Up there it read
       like a screen-level action, next to the one that creates a zone, and nothing
       said it worked on the ticked rows.
@@ -450,7 +449,7 @@ export function ZoneList({
       the drawing shows in its loading artboard: with nothing ticked, upstream
       answers a click with `Please select one or more zones to delete.`, and that
       is behaviour, not decoration. A bar that only appeared with a selection would
-      take that path off the screen — the drawing does not get to remove an
+      take that path off the screen; the drawing does not get to remove an
       upstream answer.
 
       The select-all checkbox is NOT repeated here. The drawing has one in the bar

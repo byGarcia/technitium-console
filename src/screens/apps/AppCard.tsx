@@ -38,7 +38,7 @@ export function AppCard({
           <h2>{app.name}</h2>
           {/*
           The version, and the update when there is one. It used to read
-          `v11.1 · installed` — and "installed" is true of every card in this
+          `v11.1 · installed`, and "installed" is true of every card in this
           list, so it was a word spending a line to say nothing. What replaces it
           is nothing: the version alone, and the update beside it when it exists.
           */}
@@ -67,7 +67,7 @@ export function AppCard({
                 ))}
               </div>
               <p className={styles.classDesc}>{d.description}</p>
-              {/* apps.js:82 — the template is only shown for the classes that
+              {/* apps.js:82. The template is only shown for the classes that
                   serve APP records, which are the ones that bring it. */}
               {d.isAppRecordRequestHandler && d.recordDataTemplate != null && (
                 <>
@@ -97,14 +97,14 @@ export function AppCard({
         preference: `ui/Menu` says destructive things live there because an
         action that repeats once per item cannot be a loose button next to the
         harmless ones, and `ui/Button` says the FILLED danger is not for a
-        repeated row —"a red block per row turns the table into an alarm"—.
+        repeated row ("a red block per row turns the table into an alarm").
 
         This grid is a row list: four cards at 1440 meant four filled red blocks
         abreast, and one more for every app installed. Zones, Users, Groups,
         Sessions and Cluster all put their destructive verb in the menu; this was
         the one place that did not.
         */}
-        <Menu label={`Actions — ${app.name}`}>
+        <Menu label={`Actions: ${app.name}`}>
           {(close) => (
             <Button
               variant="danger"

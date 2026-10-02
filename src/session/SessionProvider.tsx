@@ -72,7 +72,7 @@ export function SessionProvider() {
     })
   }, [])
 
-  // auth.js:299-312 — the session is cleared whether the call succeeds or fails.
+  // auth.js:299-312: the session is cleared whether the call succeeds or fails.
   const onLogout = useCallback(async () => {
     const token = localStorage.getItem('token')
     await apiRequest('user/logout', { token })

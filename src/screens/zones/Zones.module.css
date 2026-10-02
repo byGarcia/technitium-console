@@ -56,7 +56,7 @@
 /* The two zone-file editors do not wrap (`white-space: nowrap` on
    `txtEditZoneFileText` and `txtImportZoneText`, index.html:5098 and 5186 in
    v15.5.1): a zone file is read by columns. Measured in Chromium, a textarea
-   keeps its spaces with `nowrap` —same scroll width as `pre`— so it is copied
+   keeps its spaces with `nowrap` (same scroll width as `pre`), so it is copied
    as is. */
 .noWrap { white-space: nowrap; }
 
@@ -67,8 +67,8 @@
 /*
 Stale data: the list is still there, and **you can see it is no longer current**.
 
-It is decision 6 of pilot 2 and rule 3 of phase 1 —"old data must not look like
-new data". The three pieces go together and none is spare:
+It is a decision of the Zones design and a design rule: "old data must not look
+like new data". The three pieces go together and none is spare:
 
   · `--dim` over the rows: they are there, they read, and they are not current. It
     is the same token the Dashboard dims a switched-off series with.
@@ -85,7 +85,7 @@ What is stale is the data, not the table.
 /*
 The selection bar: the count on the left, the verb that acts on it on the right.
 
-It is the count bar's geometry —the same padding and the same muted type— with the
+It is the count bar's geometry (the same padding and the same muted type), with the
 button at the other end. It is not a `Panel`: a bar with a border and a background
 would read as a region of the screen, and this is a strip between the filter and
 the table.

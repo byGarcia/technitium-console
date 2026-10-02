@@ -5,8 +5,8 @@ import { Field } from './Field'
 Which cluster node a screen is looking at.
 
 Upstream puts one of these on ten surfaces (`cluster.js`,
-`updateAllClusterNodeDropDowns`) and this console had it on none of them: spec
-F10. It is not decoration — the server proxies the whole request to the chosen
+`updateAllClusterNodeDropDowns`) and this console had it on none of them. It
+is not decoration: the server proxies the whole request to the chosen
 node (`DnsWebService.cs:2378`), so without it a console can only ever show the
 node it happens to be served from.
 
@@ -14,7 +14,7 @@ Three rules, all upstream's:
 
   · It exists only when the server says `clusterInitialized`. On a single-server
     install there is nothing to choose and nothing is drawn.
-  · Two of the ten —Dashboard and Settings— also offer **Cluster**, the aggregate,
+  · Two of the ten (Dashboard and Settings) also offer **Cluster**, the aggregate,
     and it is their default. The other eight start on this server.
   · A node is listed as `name (type)`, with the type lowercased.
 */

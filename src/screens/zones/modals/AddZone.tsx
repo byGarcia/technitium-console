@@ -157,7 +157,7 @@ export function AddZone({
               {/*
               `.chk` is `display:flex`, so every child of the label is an item:
               without this `span` the link and the brackets split into three boxes
-              —"Secondary ROOT Zone ( RFC 8806 )"— and the link stopped being
+              ("Secondary ROOT Zone ( RFC 8806 )"), and the link stopped being
               inside a sentence, which is what grants it the target-size
               exception. Wrapped, it is text again.
               */}

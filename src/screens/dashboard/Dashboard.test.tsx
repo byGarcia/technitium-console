@@ -24,7 +24,7 @@ const data = {
 }
 
 describe('percentage', () => {
-  // main.js:2652-2676 — `toFixed(2)`, with a dot, no locale and two decimals.
+  // `toFixed(2)`, with a dot, no locale and two decimals (main.js:2652-2676).
   it('two decimals and a dot, like upstream', () => {
     expect(percentage(41008, 48312)).toBe('84.88%')
     expect(percentage(36, 48312)).toBe('0.07%')

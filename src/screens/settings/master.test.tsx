@@ -1,12 +1,12 @@
 /*
- The master-switch signal, which pilot 3 closed and phase 2 deferred to this screen.
+ The master-switch signal, as the dense-form design settled it for this screen.
 
- It comes in THREE pieces and none is spare: an amber edge on the row's side —seen
- without reading—, opacity, which already comes with the control's `disabled`, and
+ It comes in THREE pieces and none is spare: an amber edge on the row's side (seen
+ without reading), opacity, which already comes with the control's `disabled`, and
  **a pill that NAMES the switch**. Without the third, "this is off" makes you hunt
  the whole screen for the switch that turned it off; `General` has ten sections.
 
- Amber and not a padlock, which is the two-word distinction of phase 1: *amber =
+ Amber and not a padlock, which is the console's two-word distinction: *amber =
  you can*. The user can switch this on themselves. A permission, they cannot.
 */
 import { render, screen, within } from '@testing-library/react'
@@ -53,8 +53,8 @@ describe('a row switched off by its master', () => {
 
  The first version put the pill INSIDE the `<label>`, and the field's accessible
  name became "ECS IPv4 Prefix Length**Needs Enable EDNS Client Subnet**": the
- control stopped being findable by its own label. It is what phase 1 forbids for
- the tooltip —"it never replaces the accessible name"— happening with the pill.
+ control stopped being findable by its own label. It is what the design rules forbid
+ for the tooltip ("it never replaces the accessible name") happening with the pill.
 
  And it did not fire because the test next door only looked at the case WITHOUT a
  master: a test that exercises the good branch says nothing about the bad one.

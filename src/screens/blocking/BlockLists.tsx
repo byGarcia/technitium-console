@@ -47,7 +47,7 @@ every alert of the update and the save. Everything else is OURS:
 
 No node selector: `blockListUrls` is a CLUSTER-WIDE parameter (`nodeScope`,
 settings/model.ts:514), so it is read and saved on the cluster when there is one and
-on this server when there is not — what Settings does with the aggregate.
+on this server when there is not, which is what Settings does with the aggregate.
 
 Changes are KEPT until Save, as upstream's Save Settings keeps the textarea:
 `Quick Add > None` empties every list, and saving on each click would make that one
@@ -75,17 +75,16 @@ const COUNTS_FAILED = 'Could not read the counts.'
 
 /*
 After a Save or an Update Now the server reloads the lists in the background, and
-the counts change when it has finished, not at once (spec, the section on what
-refreshes, «Qué se refresca»). Until then both figures say "Updating…" (OURS).
+the counts change when it has finished, not at once. Until then both figures say "Updating…" (OURS).
 
 How the end is told, from the server (v15.5.1): `blockListNextUpdatedOn` is the last
 SUCCESSFUL update plus the interval (WebServiceSettingsApi.cs:384), and the last update
 only moves when a download ends well (BlockListZoneManager.cs:674-692). While it
-reloads, then, the server keeps answering the OLD date —a future one, so "Updating
-Now" is no signal—. The value is captured when the action is taken (Save: from its
+reloads, then, the server keeps answering the OLD date (a future one, so "Updating
+Now" is no signal). The value is captured when the action is taken (Save: from its
 own answer; Update Now: read just before the call) and the settings are read every
 POLL_MS until it differs; then the counts are read once more. POLL_LIMIT_MS bounds the
-wait —a download that fails never moves the date— and at the limit the counts are read
+wait (a download that fails never moves the date), and at the limit the counts are read
 anyway. A second Save or Update Now while waiting captures again and starts the limit
 again.
 */
@@ -98,9 +97,9 @@ const POLL_LIMIT_MS = 120_000
 type Reload = { from: string | null }
 
 /*
-Whether a Save makes the server reload. Only when the set of lines changed —its
+Whether a Save makes the server reload. Only when the set of lines changed, by its
 `HasSameItems` (TechnitiumLibrary CollectionExtensions.cs: same count, every item of
-the one in the other, order aside; BlockListZoneManager.cs:512-523)— and there is
+the one in the other, order aside; BlockListZoneManager.cs:512-523), and there is
 something to reload with a timer to do it: with no lines the server flushes the zones
 there and then (`Flush()`, :527), and with the interval at 0 it reloads nothing.
 */
@@ -111,8 +110,8 @@ function sameItems(a: readonly string[], b: readonly string[]): boolean {
 /*
 How many lines the save would change. A line is identified by its URL (a comment by
 its text), so switching a list off is ONE change and not the removal of one line
-plus the addition of another. Lines that only moved —removed and added back, which
-puts them last— still count as one change: the order is saved too.
+plus the addition of another. Lines that only moved (removed and added back, which
+puts them last) still count as one change: the order is saved too.
 */
 function pendingChanges(saved: ListLine[], lines: ListLine[]): number {
   const byKey = new Map<string, [string[], string[]]>()
@@ -339,7 +338,7 @@ export function BlockLists({
     const ok = await forceUpdateBlockLists(token)
     setBusy(false)
     if (!ok) return
-    // main.js:2356 — the label becomes "Updating Now" without reloading the settings.
+    // main.js:2356. The label becomes "Updating Now" without reloading the settings.
     setNext(new Date(0).toISOString())
     setNotice({ type: 'success', title: 'Updating Block List!', text: 'Block list update was triggered successfully.' })
     setReloading({ from })

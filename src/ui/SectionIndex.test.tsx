@@ -63,7 +63,7 @@ describe('SectionIndex', () => {
   /*
  It does not select. If an `aria-selected`, an `aria-pressed` or a `role="tab"`
  ever appeared here, this would be `Segmented` under another name, which is
- exactly what pilot 3 warned against.
+ exactly what the design warned against.
   */
   it('it announces no selection of any kind', () => {
     const { container } = render(<SectionIndex sections={SECTIONS} active="rate-limiting" />)
@@ -95,8 +95,8 @@ describe('SectionIndex', () => {
 
   /*
  Native navigation: they are links, so the tab key walks them in order without
- anyone setting a `tabIndex`. It is checked because the alternative —buttons with
- an `onClick` that scrolls— would have had to be reimplemented.
+ anyone setting a `tabIndex`. It is checked because the alternative (buttons with
+ an `onClick` that scrolls) would have had to be reimplemented.
   */
   it('the tab key walks them in order, with no tabIndex of their own', async () => {
     const user = userEvent.setup()
@@ -131,7 +131,7 @@ describe('SectionIndex', () => {
   })
 
   /*
- Watching the scroll belongs to PHASE 3.
+ Watching the scroll belongs to the SCREEN, not to this primitive.
 
  `active` comes in as a prop and who works it out is screen wiring. This exists so
  that wiring does not creep in here over time: if it ever does,

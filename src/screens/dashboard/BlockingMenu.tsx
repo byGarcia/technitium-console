@@ -11,7 +11,7 @@ The Dashboard's "Blocking" menu.
 Upstream puts it in the header of "Top Blocked Domains"
 (`btnDashboardBlockingOptions`, index.html) and here it was missing: turning
 blocking off for a while from the Dashboard is one of the things most often done
-in this console —the typical case is a page not loading because of a list— and it
+in this console (the typical case is a page not loading because of a list), and it
 forced a trip to Settings › Blocking to find it.
 
 Two behavioural details copied as they are:

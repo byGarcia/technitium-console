@@ -53,8 +53,8 @@ describe('About', () => {
   The update panel is gone, and this is the case that keeps it gone.
 
   It carried a `Check for Update` button and four sentences, and **not one of the
-  four exists upstream** — checked against the `ref` instance on 2026-09-04, while
-  contracting this screen. Upstream checks once on login and says so in the
+  four exists upstream**: checked against the `ref` instance on 2026-09-04.
+  Upstream checks once on login and says so in the
   chrome, visible from all twelve screens; a second forced check here was
   duplicating that notice with literals the product does not say.
   */
@@ -80,12 +80,12 @@ describe('About', () => {
   /*
   With the update panel gone this screen asks the server for NOTHING: everything
   it draws comes from the session the chrome already has. So it has no loading and
-  no failure state, and its only variation is whether that session carried `info`
-  — which is said, never faked.
+  no failure state, and its only variation is whether that session carried `info`,
+  which is said, never faked.
   */
   it('says nothing it does not know when the session brought no info', () => {
     render(<About />)
-    expect(screen.getByText('Version —')).toBeInTheDocument()
+    expect(screen.getByText('Version \u2014')).toBeInTheDocument()
     expect(screen.getAllByText('—').length).toBeGreaterThan(0)
   })
 })

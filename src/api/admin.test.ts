@@ -34,7 +34,7 @@ function makeSpy() {
     .mockResolvedValue({ kind: 'ok', data: { response: {}, server: 's' } })
 }
 
-describe('admin — sessions', () => {
+describe('admin: sessions', () => {
   it('lists sending the cluster node', async () => {
     const spy = makeSpy()
     await listSessions('tok', 'ns1.test')
@@ -81,7 +81,7 @@ describe('admin — sessions', () => {
   })
 })
 
-describe('admin — users', () => {
+describe('admin: users', () => {
   it('lists with no parameters', async () => {
     const spy = makeSpy()
     await listUsers('tok')
@@ -133,7 +133,7 @@ describe('admin — users', () => {
   })
 })
 
-describe('admin — groups', () => {
+describe('admin: groups', () => {
   it('lists, creates, reads and deletes', async () => {
     const spy = makeSpy()
     await listGroups('tok')
@@ -176,7 +176,7 @@ describe('admin — groups', () => {
   })
 })
 
-describe('admin — permissions', () => {
+describe('admin: permissions', () => {
   it('reads asking for users and groups', async () => {
     const spy = makeSpy()
     await getPermission('tok', 'Zones')
@@ -202,7 +202,7 @@ describe('admin — permissions', () => {
   })
 })
 
-describe('admin — SSO', () => {
+describe('admin: SSO', () => {
   it('reads asking for the local groups', async () => {
     const spy = makeSpy()
     await getSsoConfig('tok')
@@ -223,7 +223,7 @@ describe('admin — SSO', () => {
   })
 })
 
-describe('admin — LDAP', () => {
+describe('admin: LDAP', () => {
   it('reads asking for the local groups', async () => {
     const spy = makeSpy()
     await getLdapConfig('tok')

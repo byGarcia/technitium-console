@@ -6,8 +6,8 @@ The domain tree.
 
 Upstream draws a FLAT LIST: `[refresh]`, `[up]` and the node's children
 (other-zones.js:120-137). Here it is drawn as a tree, which is the same thing put
-another way: the root, the current node's chain of ancestors —each of them being
-its child's `[up]`— and below them the children the server returns.
+another way: the root, the current node's chain of ancestors (each of them being
+its child's `[up]`), and below them the children the server returns.
 
 `zones` already brings FULL domain names, so the labels are printed as they come
 and navigating is handing the server the string you can see.

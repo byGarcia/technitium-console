@@ -5,8 +5,8 @@ import { localiseLabels } from './chart-labels'
 The three endpoints of the `dashboard` family.
 
 The response of `stats/get` comes wrapped in `response` and brings FOUR chart
-sets, not two: the main line one and three breakdowns —response type, query type
-and protocol. Verified against v15.4.
+sets, not two: the main line one and three breakdowns (response type, query type
+and protocol). Verified against v15.4.
 */
 
 export const RANGES = ['LastHour', 'LastDay', 'LastWeek', 'LastMonth', 'LastYear', 'Custom'] as const
@@ -80,7 +80,7 @@ export async function getDashboardStats(
   type: Range = 'LastHour',
   range?: { start: string; end: string },
   /* Which cluster node answers. The server proxies centrally, so it is the same
-     parameter on every call; see spec F10. */
+     parameter on every call (`ui/ClusterNodeSelect`). */
   node?: string,
 ): Promise<ApiOutcome<DashboardStats>> {
   /* `utc=true` as main.js:2619 sends it: the main chart comes labelled with UTC
@@ -96,9 +96,9 @@ export async function getDashboardStats(
 
   With `null` the Dashboard could not tell "the server has served no queries"
   apart from "the call fell over", and both were drawn the same: eleven tiles at
-  zero and "No queries for this period.". It is the console's worst lie —whoever
+  zero and "No queries for this period.". It is the console's worst lie (whoever
   administers a DNS and reads that concludes their server is receiving no
-  traffic— and the easiest to believe, because it looks exactly like a normal
+  traffic) and the easiest to believe, because it looks exactly like a normal
   response.
   */
   if (outcome.kind !== 'ok') return outcome

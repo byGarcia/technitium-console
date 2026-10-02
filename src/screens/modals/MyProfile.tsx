@@ -26,7 +26,7 @@ Since v15.5 everything hangs off `type` (auth.js:684-703), not off the obsolete
 `isSsoUser`:
 
   · `RemoteSSO`: name locked, "Remote/SSO", 2FA "SSO Managed".
-  · `RemoteLDAP`: name locked, "Remote/LDAP", 2FA Enabled/Disabled — the
+  · `RemoteLDAP`: name locked, "Remote/LDAP", 2FA Enabled/Disabled; the
     directory checks the password, this server still checks the 2FA.
   · `Local` and anything else: name editable, and the label is `type` AS IT
     ARRIVES. Upstream's `default:` writes the raw value, so for a local user it
@@ -100,7 +100,7 @@ export function MyProfile({
   }, [open, token, reloadKey])
 
   /*
-  auth.js:795-838 — before deleting a session upstream asks for confirmation
+  auth.js:795-838. Before deleting a session upstream asks for confirmation
   with this exact text, and the success message is literal too.
 
   The confirmation is `ui/Confirm`, the same one "Administration > Sessions"
@@ -141,7 +141,7 @@ export function MyProfile({
 
   async function save() {
     if (!profile) return
-    // auth.js:787-789 — an empty timeout travels as 1800, as in User Details.
+    // auth.js:787-789. An empty timeout travels as 1800, as in User Details.
     const body: Record<string, string> = { sessionTimeoutSeconds: timeout === '' ? '1800' : timeout }
     if (!remote) body.displayName = displayName
 
@@ -153,13 +153,13 @@ export function MyProfile({
     setBusy(false)
 
     /*
-    auth.js:803-811 — on success upstream HIDES the modal and then calls
+    auth.js:803-811. On success upstream HIDES the modal and then calls
     `showAlert` with no placeholder, so the alert lands on the page, not in the
     dialog. A failure keeps the dialog open with the alert inside it
     (`objAlertPlaceholder: divMyProfileAlert`, line 820).
     */
     if (outcome.kind === 'ok') {
-      // auth.js:804 — the menu takes the name the SERVER returns, not the field's.
+      // auth.js:804. The menu takes the name the SERVER returns, not the field's.
       onSaved?.(outcome.data.response?.displayName ?? displayName)
       onOpenChange(false)
       onNotice?.({
@@ -189,7 +189,7 @@ export function MyProfile({
       <Notifier notice={alert} onClose={() => setAlert(null)} />
       <LabeledInput label="Username" value={profile?.username ?? ''} readOnly />
       <LabeledInput label="User Type" value={userType} readOnly />
-      {/* auth.js:684-703 — on an SSO user the 2FA is not this console's business. */}
+      {/* auth.js:684-703. On an SSO user the 2FA is not this console's business. */}
       <LabeledInput label="2FA Status" value={totpStatus} readOnly />
       <LabeledInput
         label="Display Name"

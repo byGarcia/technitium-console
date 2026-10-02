@@ -127,8 +127,8 @@ describe('zone list', () => {
     draw()
     await screen.findByRole('button', { name: 'casa.test' })
 
-    // In a row —one of two hundred and forty, with "Disable" next to it and no
-    // undo anywhere— delete cannot sit one careless click away.
+    // In a row (one of two hundred and forty, with "Disable" next to it and no
+    // undo anywhere), delete cannot sit one careless click away.
     expect(screen.queryByRole('button', { name: 'Delete Zone' })).toBeNull()
 
     await user.click(screen.getByRole('button', { name: 'Actions for casa.test' }))

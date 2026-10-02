@@ -11,15 +11,15 @@ The "are you sure?" step.
 Upstream solves it with a native `confirm()`; the text and the step are the same,
 because you still need to confirm before the request goes out.
 
-It was written six times: once as a component inside Administration —from where
+It was written six times: once as a component inside Administration (from where
 the Dashboard, Zones and the lists screens imported it, none of which have
-anything to do with Administration— another as a component inside Settings, and
+anything to do with Administration), another as a component inside Settings, and
 four times bare with `Dialog` + one button + `close="Cancel"` +
 `size="compact"` in Logs, DHCP and again Zones and the lists. This console has
 no undo anywhere, so the place where six versions are least welcome is precisely
 this one.
 
-Of the six, two —Zones and the lists— kept the "busy" flag and the closing INSIDE
+Of the six, two (Zones and the lists) kept the "busy" flag and the closing INSIDE
 the dialog, and the other four asked each call site for them. The first form is
 better and no second API is needed to have it: if `onConfirm` returns a promise,
 this component disables the button while it runs and closes when it settles.
@@ -76,7 +76,7 @@ export function Confirm({
       close="Cancel"
       size="compact"
     >
-      {/* `pre-wrap`: there are multi-line confirmations —the Zones ones— and
+      {/* `pre-wrap`: there are multi-line confirmations (the Zones ones), and
           without this they read as one run-on paragraph on one screen and not on
           another. */}
       <div className={text.paragraph} style={{ whiteSpace: 'pre-wrap' }}>
@@ -93,7 +93,7 @@ Why it is not a prop of `Confirm`, which is where the design placed it: none of
 the four dialogs that carry one IS a `Confirm`. They keep upstream's `Close`
 rather than `Cancel`, they carry two paragraphs instead of one line, and they end
 with their own `Note!`. `Confirm`'s own header already says it does not cover that
-shape —it says so about "Remove Lease?"— and adding a slot to it that no `Confirm`
+shape (it says so about "Remove Lease?"), and adding a slot to it that no `Confirm`
 would ever use is a prop written for a drawing rather than for a call site.
 
 So the slot is this block, and the four dialogs place it where the design put it:

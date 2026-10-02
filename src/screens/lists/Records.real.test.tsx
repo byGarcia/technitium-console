@@ -6,7 +6,7 @@ import type { ListNode, DnsRecord } from '../../api/zonelists'
 import sample from './real-sample.json'
 
 /*
-The test that holds up the whole phase.
+The test that holds up the whole records table.
 
 Upstream dumps the entire JSON inside a `<pre>`; we draw it as a table. That is
 only legitimate if NOT a single field is lost along the way, and that cannot be

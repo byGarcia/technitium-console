@@ -60,8 +60,8 @@ is not an opinion.
 
 Parity is measured, not asserted. `dev/` brings up **two instances of the official Technitium image
 side by side** (one serving this console, one untouched) and compares them: the controls on each
-screen, the state the server is left in after real actions, the widths at which something overflows,
-the sortable columns, the help texts, the dialogs one by one.
+screen, the state the server is left in after real actions, the sortable columns, the help texts,
+the dialogs one by one.
 
 The tools live in the repository and fail with a non-zero exit code, which is the only reason to
 trust them. Each one was proved by breaking something on purpose and watching it complain.

@@ -246,7 +246,7 @@ describe('My Profile', () => {
     await screen.findByDisplayValue('Administrator')
     expect(screen.getByLabelText('User Type')).toHaveValue('Local')
     expect(screen.getByLabelText('Display Name')).toBeEnabled()
-    // auth.js:678-687 — the record lists the groups and their total; it had been lost.
+    // auth.js:678-687. The record lists the groups and their total; it had been lost.
     expect(screen.getByLabelText('2FA Status')).toHaveValue('Disabled')
     expect(screen.getByText('Total Groups: 2')).toBeInTheDocument()
     expect(screen.getByText('Administrators')).toBeInTheDocument()
@@ -338,7 +338,7 @@ describe('My Profile', () => {
   })
 })
 
-describe('My Profile — active sessions', () => {
+describe('My Profile: active sessions', () => {
   const withSessions = ok({
     status: 'ok',
     response: {

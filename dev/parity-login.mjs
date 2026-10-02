@@ -1,43 +1,43 @@
 import { chromium } from 'playwright'
 const b = await chromium.launch()
 
-async function nueva(p) {
+async function ours(p) {
   await p.goto('http://127.0.0.1:5380/', { waitUntil: 'networkidle' })
   const r = {}
   await p.getByRole('button', { name: 'Login' }).click()
   await p.waitForTimeout(400)
-  r.sinUsuario = (await p.locator('[role=alert]').innerText()).replace(/\s+/g, ' ').trim()
+  r.noUser = (await p.locator('[role=alert]').innerText()).replace(/\s+/g, ' ').trim()
   await p.getByLabel('Username').fill('admin')
   await p.getByRole('button', { name: 'Login' }).click()
   await p.waitForTimeout(400)
-  r.sinPass = (await p.locator('[role=alert]').innerText()).replace(/\s+/g, ' ').trim()
-  await p.getByLabel('Password').fill('incorrecta')
+  r.noPass = (await p.locator('[role=alert]').innerText()).replace(/\s+/g, ' ').trim()
+  await p.getByLabel('Password').fill('wrong-password')
   await p.getByRole('button', { name: 'Login' }).click()
   await p.waitForTimeout(2000)
-  r.malas = (await p.locator('[role=alert]').innerText()).replace(/\s+/g, ' ').trim()
+  r.wrong = (await p.locator('[role=alert]').innerText()).replace(/\s+/g, ' ').trim()
   return r
 }
 
-async function vieja(p) {
+async function stock(p) {
   await p.goto('http://127.0.0.1:5381/', { waitUntil: 'networkidle' })
   const r = {}
-  const alerta = async () => (await p.locator('#divAlert, .alert').first().innerText()).replace(/\s+/g,' ').trim()
-  await p.click('#btnLogin'); await p.waitForTimeout(400); r.sinUsuario = await alerta()
-  await p.fill('#txtUser', 'admin'); await p.click('#btnLogin'); await p.waitForTimeout(400); r.sinPass = await alerta()
-  await p.fill('#txtPass', 'incorrecta'); await p.click('#btnLogin'); await p.waitForTimeout(2000); r.malas = await alerta()
+  const alert = async () => (await p.locator('#divAlert, .alert').first().innerText()).replace(/\s+/g,' ').trim()
+  await p.click('#btnLogin'); await p.waitForTimeout(400); r.noUser = await alert()
+  await p.fill('#txtUser', 'admin'); await p.click('#btnLogin'); await p.waitForTimeout(400); r.noPass = await alert()
+  await p.fill('#txtPass', 'wrong-password'); await p.click('#btnLogin'); await p.waitForTimeout(2000); r.wrong = await alert()
   return r
 }
 
-const p1 = await b.newPage(); const n = await nueva(p1)
-const p2 = await b.newPage(); const v = await vieja(p2)
+const p1 = await b.newPage(); const n = await ours(p1)
+const p2 = await b.newPage(); const s = await stock(p2)
 
 let ok = true
-for (const k of ['sinUsuario', 'sinPass', 'malas']) {
-  const igual = n[k] === v[k]
-  if (!igual) ok = false
-  console.log(`${igual ? 'IGUAL  ' : 'DISTINTO'} ${k}`)
-  console.log(`   nueva: ${n[k]}`)
-  console.log(`   vieja: ${v[k]}`)
+for (const k of ['noUser', 'noPass', 'wrong']) {
+  const same = n[k] === s[k]
+  if (!same) ok = false
+  console.log(`${same ? 'SAME     ' : 'DIFFERENT'} ${k}`)
+  console.log(`   ours:  ${n[k]}`)
+  console.log(`   stock: ${s[k]}`)
 }
-console.log(ok ? '\n=> PARIDAD DE MENSAJES: OK' : '\n=> HAY DIVERGENCIAS')
+console.log(ok ? '\n=> MESSAGE PARITY: OK' : '\n=> THERE ARE DIVERGENCES')
 await b.close()

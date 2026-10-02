@@ -1,5 +1,5 @@
 /*
-The `Queries` legend — and above all its interaction.
+The `Queries` legend, and above all its interaction.
 
 Chart.js drew it INSIDE the canvas, and its stock `onClick` switched the series
 off. Moving it out to HTML means reimplementing that interaction, so it is exactly
@@ -7,7 +7,7 @@ the one that can be lost without anything saying so. Inside the canvas it could
 not be checked; outside it can, and that is what this file is about.
 
 It lives in a file APART from `Dashboard.test.tsx`, and not on a whim: `vi.mock`
-is whole-module, so doubling `./Chart` there broke "it draws all FOUR charts" —the
+is whole-module, so doubling `./Chart` there broke "it draws all FOUR charts": the
 four canvases became four doubles with the same `data-testid`. A double that makes
 the test next door fail is badly placed, not badly written.
 */
@@ -117,7 +117,7 @@ describe('the Queries legend', () => {
 The DOUGHNUT ones, which is where the first attempt left two things behind.
 
 Only `Queries` had the legend; the three doughnuts still carried theirs inside the
-canvas, even though the delivery shows their percentages outside. And what is
+canvas, even though the design shows their percentages outside. And what is
 switched off there is not a series but a POINT: a doughnut has one dataset and as
 many slices as labels, so treating them alike would have switched off the whole
 chart on pressing one slice.
@@ -156,7 +156,7 @@ describe('the doughnut charts legend', () => {
 })
 
 /*
-And the refresh after hiding — tested on a DOUGHNUT chart, and the why matters
+And the refresh after hiding, tested on a DOUGHNUT chart, and the why matters
 more than the test.
 
 Written first against the line chart, **the test passed just the same with the
@@ -166,7 +166,7 @@ its state dies with it. There the reset is redundant and the test proved nothing
 `Split` does not unmount: it depends only on `data`, which keeps the old value
 while the new one arrives. So that is where the reset does the work, and where
 removing it shows: without it the button would stay at `aria-pressed="false"`
-while the slice has come back — the control and the thing controlled disagreeing.
+while the slice has come back: the control and the thing controlled disagreeing.
 
 Keeping it was no good either: Chart.js's stock legend loses its state on every
 rebuild, so remembering it would be inventing a memory the console does not have.

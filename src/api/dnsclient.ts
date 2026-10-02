@@ -2,7 +2,7 @@ import { apiRequest, type ApiOutcome } from './client'
 
 /*
 `api/dnsClient/resolve` (dnsclient.js:166). The same endpoint resolves and, with
-`import=true`, also imports the resolved records into this server — which is why
+`import=true`, also imports the resolved records into this server, which is why
 the "Resolve" and "Import" buttons share a call.
 */
 

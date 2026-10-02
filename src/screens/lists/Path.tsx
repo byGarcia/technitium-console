@@ -11,7 +11,7 @@ looking at hangs off, and this screen is a tree.
 ## Why it does not navigate
 
 Because navigating is the tree's job. A second clickable path would be a second
-way to do the same thing —behaviour upstream does not have— and this round is
+way to do the same thing (behaviour upstream does not have), and this round is
 design only. So it is a paragraph and not a list of links: nothing here is
 focusable, and the separators are hidden from the screen reader, which reads the
 domains and not the chevrons.

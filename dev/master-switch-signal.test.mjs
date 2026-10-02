@@ -1,86 +1,87 @@
 /*
-Las dos guardas de la señal del interruptor maestro que se comprueban sobre el
-CÓDIGO FUENTE, no sobre un render.
+The two guards of the master-switch signal that are checked against the SOURCE
+CODE, not against a render.
 
-Viven aquí y no junto a `maestro.test.tsx` por una razón mecánica: leen ficheros,
-y todo lo que hay bajo `src/` compila con `types: ["vite/client"]` — sin los tipos
-de node—, así que un `node:fs` ahí adentro pasa la suite y **rompe el build**. Fue
-exactamente lo que pasó: 1039 pruebas en verde y `tsc -b` en rojo con cuatro
-errores. Es el mismo agujero de la vez que el `grep -cE "^error"` decía «build 0»
-mientras el build fallaba, y por eso el portón se mira por código de salida.
+They live here and not next to `master.test.tsx` for a mechanical reason: they
+read files, and everything under `src/` compiles with `types: ["vite/client"]`
+(without node's types), so a `node:fs` in there passes the suite and **breaks the
+build**. That is exactly what happened: 1039 tests green and `tsc -b` red with four
+errors. It is the same hole as the time `grep -cE "^error"` said "build 0" while
+the build was failing, and that is why the gate is read by its exit code.
 
-Lo que comprueban tampoco es de render: jsdom no aplica los módulos CSS y no hay
-pantalla donde ver ninguna de las dos cosas.
+What they check is not a render matter either: jsdom does not apply CSS modules and
+there is no screen on which to see either of the two things.
 */
 import { describe, expect, it } from 'vitest'
 import { readFileSync, readdirSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-const aqui = dirname(fileURLToPath(import.meta.url))
-const src = resolve(aqui, '../src')
+const here = dirname(fileURLToPath(import.meta.url))
+const src = resolve(here, '../src')
 
 /*
-El filete no puede ocupar retícula.
+The rule mark must not take grid space.
 
-Con `border-left: 2px solid var(--acc)` las cinco filas dependientes de
-`/settings/general/` medían `210px 540px 360px` contra el `210px 542px 360px` de
-las otras 34: el borde se come dos píxeles de la caja y **desplaza el control**.
-En un formulario denso eso es una columna que deja de estar alineada, y lo cazó
-`dev/uniformity.js` como una tercera firma de `reticula-panel` que sólo existía en
-esa ruta. Una señal de estado no puede mover el contenido que señala.
+With `border-left: 2px solid var(--acc)` the five dependent rows of
+`/settings/general/` measured `210px 540px 360px` against the `210px 542px 360px`
+of the other 34: the border eats two pixels of the box and **shifts the control**.
+In a dense form that is a column that stops being aligned, and `dev/uniformity.js`
+caught it as a third `grid-panel` signature that existed only on that route. A
+state signal must not move the content it marks.
 */
-describe('el filete del maestro no desplaza la retícula', () => {
+describe('the master rule mark does not shift the grid', () => {
   const css = readFileSync(resolve(src, 'ui/Form.module.css'), 'utf8')
-  const regla = /\.dependent\s*\{([^}]*)\}/.exec(css)?.[1] ?? ''
+  const rule = /\.dependent\s*\{([^}]*)\}/.exec(css)?.[1] ?? ''
 
-  it('existe la regla y pinta el filete ámbar', () => {
-    expect(regla).toMatch(/var\(--acc(-ink)?\)/)
+  it('the rule exists and paints the amber mark', () => {
+    expect(rule).toMatch(/var\(--acc(-ink)?\)/)
   })
 
-  it('y lo pinta con sombra interior, no con un borde que ocupe caja', () => {
-    expect(regla).toMatch(/box-shadow:\s*inset/)
-    expect(regla).not.toMatch(/border/)
-    expect(regla).not.toMatch(/padding/)
+  it('and paints it with an inset shadow, not with a border that takes box space', () => {
+    expect(rule).toMatch(/box-shadow:\s*inset/)
+    expect(rule).not.toMatch(/border/)
+    expect(rule).not.toMatch(/padding/)
   })
 })
 
 /*
-La pastilla ámbar y la pastilla `warn` no pueden coincidir en una pantalla.
+The amber pill and the `warn` pill must never meet on one screen.
 
-Medido el 2026-09-03 con la función de `dev/palette-distance.mjs`: contra `warn`,
-el tono `acc` da ΔE00 **8,8** en el texto, **8,9** en el borde y **0,0** en el
-fondo. El umbral de colisión de esa misma herramienta es 10, así que por el
-criterio del proyecto **son el mismo color**. Y debe serlo: la pastilla acompaña
-al filete ámbar de la fila y las dos son UNA señal; darle otro ámbar la partiría.
+Measured on 2026-09-03 with the function in `dev/palette-distance.mjs`: against
+`warn`, the `acc` tone gives ΔE00 **8.8** on the text, **8.9** on the border and
+**0.0** on the background. That same tool's collision threshold is 10, so by the
+project's own criterion **they are the same colour**. And it has to be: the pill
+goes with the amber mark of the row and the two are ONE signal; giving it another
+amber would split it.
 
-Que eso no cueste nada depende de un hecho, no de suerte: hoy las dos familias no
-se cruzan —las siete `warn` viven en cluster, sesiones, apps y zonas; la `acc`,
-sólo en los formularios de `Settings`—. Si algún día una pantalla pintara las dos,
-el usuario vería dos pastillas idénticas queriendo decir «puedes» y «cuidado».
+That this costs nothing depends on a fact, not on luck: today the two families do
+not meet (the seven `warn` pills live in cluster, sessions, apps and zones; the
+`acc` one only in the `Settings` forms). If a screen ever painted both, the user
+would see two identical pills meaning "you can" and "careful".
 */
-describe('el ámbar de «puedes» no se cruza con el de «cuidado»', () => {
-  const ficheros = (patron) => {
-    const encontrados = []
-    const recorrer = (dir) => {
+describe('the amber of "you can" never meets the amber of "careful"', () => {
+  const files = (pattern) => {
+    const found = []
+    const walk = (dir) => {
       for (const e of readdirSync(dir, { withFileTypes: true })) {
-        const ruta = resolve(dir, e.name)
-        if (e.isDirectory()) recorrer(ruta)
+        const p = resolve(dir, e.name)
+        if (e.isDirectory()) walk(p)
         else if (e.name.endsWith('.tsx') && !e.name.includes('.test.')) {
-          if (patron.test(readFileSync(ruta, 'utf8'))) encontrados.push(ruta.slice(src.length + 1))
+          if (pattern.test(readFileSync(p, 'utf8'))) found.push(p.slice(src.length + 1))
         }
       }
     }
-    recorrer(src)
-    return encontrados.sort()
+    walk(src)
+    return found.sort()
   }
 
-  it('ningún fichero pinta las dos', () => {
-    const conAcc = ficheros(/dependsOn=|tone="acc"/)
-    const conWarn = ficheros(/tone="warn"/)
+  it('no file paints both', () => {
+    const withAcc = files(/dependsOn=|tone="acc"/)
+    const withWarn = files(/tone="warn"/)
 
-    expect(conAcc.length).toBeGreaterThan(0)
-    expect(conWarn.length).toBeGreaterThan(0)
-    expect(conAcc.filter((f) => conWarn.includes(f))).toEqual([])
+    expect(withAcc.length).toBeGreaterThan(0)
+    expect(withWarn.length).toBeGreaterThan(0)
+    expect(withAcc.filter((f) => withWarn.includes(f))).toEqual([])
   })
 })

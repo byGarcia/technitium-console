@@ -1,8 +1,8 @@
 /*
 Stale data: the list is still there and you can see it is no longer current.
 
-It is decision 6 of pilot 2 —"the best thing in the pilot", the case pilot 1 did
-not have— and rule 3 of phase 1: *old data never looks like new data*.
+It is a decision of the Zones design, and the console's design rule: *old data
+never looks like new data*.
 
 What was there already kept the zones when a refresh failed, and that is right:
 throwing them away would leave the user with nothing over a network error. What
@@ -131,8 +131,8 @@ describe('stale data', () => {
 /*
 A failure is reported ONCE.
 
-With previous data the strip reports it —and it also says since when and offers a
-retry— and the notice at the top keeps quiet. If both fired, the same failure
+With previous data the strip reports it (and it also says since when and offers a
+retry), and the notice at the top keeps quiet. If both fired, the same failure
 would appear twice and you would have to decide which to read. With no previous
 data it is the other way round: there is nothing to go stale, so the notice
 speaks, carrying the server's message.

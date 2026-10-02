@@ -13,13 +13,13 @@ import { Notifier } from '../../../ui/Notifier'
 /*
 `modalEditPermissions` for a zone (zone.js:2544 and 2616).
 
-Two tables identical in appearance —users and groups— with the catch that **the
+Two tables identical in appearance (users and groups), with the catch that **the
 subject's name is called something different in each**: `username` in users and
 `name` in groups. Here they are normalised to `name` on the way in and
 serialised back the same on the way out, which is all the server sees.
 
-The "add" dropdown carries two phantom entries from upstream —an empty one and
-one that says "None"— that add nobody. They are kept.
+The "add" dropdown carries two phantom entries from upstream (an empty one and
+one that says "None") that add nobody. They are kept.
 */
 
 interface Row {

@@ -1,5 +1,5 @@
 /*
-The ways the console writes a date, replicated from moment.js —which is what
+The ways the console writes a date, replicated from moment.js, which is what
 upstream uses and what the new console no longer loads.
 
   · `moment(x).local().format("YYYY-MM-DD HH:mm:ss")` in Sessions, Users, a

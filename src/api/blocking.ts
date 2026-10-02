@@ -50,7 +50,7 @@ export async function readRuleExport(
   }
 
   /*
-  Anything else that is not a 2xx —a reverse proxy's 502 page, a 404 page— is not
+  Anything else that is not a 2xx (a reverse proxy's 502 page, a 404 page) is not
   a list. common.js:186-193 reports it as jQuery does: `textStatus - errorThrown`,
   i.e. `error - <status text>`, and upstream's own sentence when the status text
   is empty.

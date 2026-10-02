@@ -7,8 +7,8 @@ import { BlockLists } from './BlockLists'
 import type { Permissions } from './permissions'
 
 /*
-The Blocking section, OURS: it replaces Allowed and Blocked with three tabs, as
-AdGuard Home and Pi-hole organise blocking. It is the second deliberate exception to
+The Blocking section, OURS: it replaces Allowed and Blocked with three tabs,
+Overview, Rules and Lists. It is the second deliberate exception to
 "design only, zero functionality", inside the four limits written in CONVENTIONS.md.
 The section and tab names (`Blocking`, `Overview`, `Rules`, `Lists`) and the tab
 list's label `Blocking sections` are OURS.
@@ -52,7 +52,7 @@ export function Blocking({
 
   /*
   And out of the section. Leaving Blocking from the sidebar, the Shell writes the
-  new route with whatever search the bar holds — `/zones/?rule=blocked`, and back
+  new route with whatever search the bar holds: `/zones/?rule=blocked`, and back
   to Rules with the filter still on. This cleanup runs first: React runs the
   cleanups of an unmounted tree before the effects of the tree that stays, and
   the Shell's `writeRoute` is one of those.

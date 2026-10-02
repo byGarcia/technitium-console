@@ -26,7 +26,7 @@ one thing on one screen and another on the next.
 
 /*
 The code chip: a record type (`A`, `SOA`), an app's class. It is not a state pill
-—it judges nothing— so it is neither round nor coloured.
+(it judges nothing), so it is neither round nor coloured.
 */
 .chip {
   display: inline-block;

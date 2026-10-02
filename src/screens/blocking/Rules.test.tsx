@@ -198,8 +198,8 @@ describe('Rules', () => {
     expect(read).toHaveBeenCalledTimes(4)
   })
 
-  /* M3: one screen, one alert slot. The tree's Delete reports at the top of the
-     page, where the table's Delete reports — before the add bar, not inside the panel. */
+  /* One screen, one alert slot. The tree's Delete reports at the top of the
+     page, where the table's Delete reports: before the add bar, not inside the panel. */
   it('a Delete in the tree reports through the notifier of the page', async () => {
     exports(['ads.test'], [])
     vi.spyOn(zonelists, 'listNode').mockResolvedValue({
@@ -218,7 +218,7 @@ describe('Rules', () => {
     expect(said[0].compareDocumentPosition(bar) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 
-  /* I1: every read after a change comes from the primary node, where the change was
+  /* Every read after a change comes from the primary node, where the change was
      made; the first read stays on the connected node. */
   it('after a Delete the table is read from the primary node', async () => {
     const read = exports(['ads.example.com'], [])
@@ -245,7 +245,7 @@ describe('Rules', () => {
     expect(read).toHaveBeenLastCalledWith('allowed', 'T', 'dev.cluster.test')
   })
 
-  /* I2: with the tree open, a Block or Allow remounts it at the added domain, read from
+  /* With the tree open, a Block or Allow remounts it at the added domain, read from
      the primary, as upstream's blockZone/allowZone do (other-zones.js:350, 185). */
   it('a Block with the tree open takes the tree to the added domain, from the primary', async () => {
     exports([], [])
@@ -275,7 +275,7 @@ describe('Rules', () => {
     expect(screen.getByRole('button', { name: 'Allowed' })).toHaveAttribute('aria-pressed', 'true')
   })
 
-  /* M4: an older read that answers last must not land over a newer one. */
+  /* An older read that answers last must not land over a newer one. */
   it('a slow earlier read does not overwrite a later one', async () => {
     const answers: Array<(v: { kind: 'ok'; data: string[] }) => void> = []
     vi.spyOn(blocking, 'readRuleExport').mockImplementation(
@@ -302,7 +302,7 @@ describe('Rules', () => {
     expect(screen.queryByText('No rules')).toBeNull()
   })
 
-  /* M2: once the notice is dismissed the slot still says what happened, and offers
+  /* Once the notice is dismissed the slot still says what happened, and offers
      to read again, as the blocking state does (StatusPanel). */
   it('a failed first read leaves Failure and Retry in the table slot', async () => {
     const read = vi.spyOn(blocking, 'readRuleExport').mockResolvedValue({ kind: 'error', message: 'Access was denied.' })

@@ -3,8 +3,8 @@ Regression tests for the uniformity tool.
 
 It had none, and that is why `_sinFilas_` survived the August translation to
 English for weeks: the class the filter looked for stopped existing, and nothing
-said so until the phase-2 baseline was taken and `/dhcp/leases/` — an empty table
-on a fresh harness — handed over its "No Lease Found" cell as the density sample
+said so until a baseline was taken and `/dhcp/leases/` (an empty table on a
+fresh harness) handed over its "No Lease Found" cell as the density sample
 and produced a FOURTH table signature that does not exist.
 
 A tool that measures drift and is not itself measured is a tool that will drift.
@@ -24,141 +24,141 @@ function table(rows) {
   return main
 }
 
-const CON_FILAS = '<tr><td class="_celda_abc" style="padding:9px 10px">casa.test</td></tr>'
+const WITH_ROWS = '<tr><td class="_cell_abc" style="padding:9px 10px">home.test</td></tr>'
 /* The empty row. The class carries its hash suffix exactly as CSS modules emit
    it, because that is what the filter has to survive. */
-const SIN_FILAS = '<tr><td class="_noRows_1arwr" style="padding:24px 10px">No Lease Found</td></tr>'
+const NO_ROWS = '<tr><td class="_noRows_1arwr" style="padding:24px 10px">No Lease Found</td></tr>'
 
-describe('la fila vacía no es una muestra de densidad', () => {
+describe('the empty row is not a density sample', () => {
   beforeEach(() => document.body.replaceChildren())
 
   /*
   THE ONE THIS FILE EXISTS FOR, and its contract changed on 2026-09-07: an empty
-  table used to sign `td —`, and `td —` is not "nothing" — it is a signature of
-  its own, and `/dhcp/leases/` on a fresh harness handed it over as a third table
-  look for months. A table with no data cell now contributes NO signature at all.
+  table used to sign with a placeholder where the cell padding goes, and that is
+  not "nothing": it is a signature of its own, and `/dhcp/leases/` on a fresh
+  harness handed it over as a third table look for months. A table with no data cell now contributes NO signature at all.
 
   The other half of the guard stays the same: if the `_noRows_` filter ever stops
   recognising the class, the padding of the empty row leaks in and invents one.
   */
-  it('una tabla vacía no aporta ninguna firma, ni siquiera «td —»', () => {
-    table(SIN_FILAS)
-    expect(screenSignatures().tabla).toBeUndefined()
+  it('an empty table contributes no signature, not even one with a placeholder cell', () => {
+    table(NO_ROWS)
+    expect(screenSignatures().table).toBeUndefined()
   })
 
-  it('una tabla con filas sí aporta la suya', () => {
-    table(CON_FILAS)
-    expect(screenSignatures().tabla[0]).toContain('td 9px 10px')
+  it('a table with rows does contribute its own', () => {
+    table(WITH_ROWS)
+    expect(screenSignatures().table[0]).toContain('td 9px 10px')
   })
 
-  /* La mezcla, que es el caso de `/dhcp/leases/` cuando SÍ tiene arrendamientos:
-     la celda buena está detrás de la vacía y no puede ganarle. */
-  it('con las dos, gana la celda de datos y no la vacía', () => {
-    table(SIN_FILAS + CON_FILAS)
-    const [firma] = screenSignatures().tabla
-    expect(firma).toContain('td 9px 10px')
-    expect(firma).not.toContain('24px')
+  /* The mix, which is the case of `/dhcp/leases/` when it DOES have leases: the
+     good cell sits behind the empty one and must not lose to it. */
+  it('with both, the data cell wins and not the empty one', () => {
+    table(NO_ROWS + WITH_ROWS)
+    const [signature] = screenSignatures().table
+    expect(signature).toContain('td 9px 10px')
+    expect(signature).not.toContain('24px')
   })
 
   /*
-  Y la prueba que de verdad cierra el agujero: la clase se lee del CÓDIGO, no de
-  esta constante. Si alguien vuelve a renombrarla —como pasó al traducir— esto se
-  cae aquí y no en una foto base tomada seis semanas después.
+  And the test that really closes the hole: the class is read from the CODE, not
+  from this constant. If someone renames it again (as happened in the
+  translation), this fails here and not in a baseline taken six weeks later.
   */
-  it('la clase que salta el filtro es la que el código usa hoy', async () => {
-    /* Desde la raíz del proyecto y no desde `import.meta.url`: bajo jsdom esa URL
-       no es `file:` y `fileURLToPath` revienta. */
+  it('the class the filter skips is the one the code uses today', async () => {
+    /* From the project root and not from `import.meta.url`: under jsdom that URL
+       is not `file:` and `fileURLToPath` throws. */
     const { readFileSync } = await import('node:fs')
     const { join } = await import('node:path')
-    const raiz = process.cwd()
-    const tabla = readFileSync(join(raiz, 'src/ui/Table.tsx'), 'utf8')
-    const herramienta = readFileSync(join(raiz, 'dev/uniformity.js'), 'utf8')
+    const root = process.cwd()
+    const tableSource = readFileSync(join(root, 'src/ui/Table.tsx'), 'utf8')
+    const tool = readFileSync(join(root, 'dev/uniformity.js'), 'utf8')
 
-    const clase = tabla.match(/className=\{styles\.(\w*[Nn]o[Rr]ows\w*)\}/)?.[1]
-    expect(clase, 'Table.tsx ya no pinta una clase de fila vacía reconocible').toBeTruthy()
+    const cls = tableSource.match(/className=\{styles\.(\w*[Nn]o[Rr]ows\w*)\}/)?.[1]
+    expect(cls, 'Table.tsx no longer paints a recognisable empty-row class').toBeTruthy()
 
     /*
-    Contra la LÍNEA DEL FILTRO, no contra el fichero entero. La primera versión de
-    esta prueba miraba todo `uniformity.js` y pasaba aunque el filtro estuviera
-    roto, porque el nombre bueno aparecía en un comentario. Una prueba que se
-    satisface con un comentario no prueba nada — y la única razón de que se viera
-    es que se probó en negativo.
+    Against the FILTER LINE, not against the whole file. The first version of this
+    test looked at all of `uniformity.js` and passed even with the filter broken,
+    because the right name appeared in a comment. A test that a comment can satisfy
+    proves nothing, and the only reason it was noticed is that it was tested in
+    the negative.
     */
-    const filtro = herramienta.match(/const td = .*\n?.*!\/(\S+?)\/\.test/)?.[1]
-      ?? herramienta.split('\n').find((l) => l.includes('.find((c) =>'))
+    const filter = tool.match(/const td = .*\n?.*!\/(\S+?)\/\.test/)?.[1]
+      ?? tool.split('\n').find((l) => l.includes('.find((c) =>'))
     expect(
-      filtro,
-      `el filtro de fila vacía no salta la clase que Table.tsx usa hoy («${clase}»)`,
-    ).toContain(`_${clase}_`)
+      filter,
+      `the empty-row filter does not skip the class Table.tsx uses today ("${cls}")`,
+    ).toContain(`_${cls}_`)
   })
 })
 
-describe('merge agrupa por familia sin perder de qué ruta viene cada firma', () => {
-  it('junta la misma firma de dos rutas y las nombra', () => {
-    const informe = merge([
-      { ruta: '/zones/', firmas: { tabla: ['A'] } },
-      { ruta: '/cache/', firmas: { tabla: ['A'] } },
-      { ruta: '/dhcp/leases/', firmas: { tabla: ['B'] } },
+describe('merge groups by family without losing which route each signature comes from', () => {
+  it('joins the same signature from two routes and names them', () => {
+    const report = merge([
+      { route: '/zones/', signatures: { table: ['A'] } },
+      { route: '/cache/', signatures: { table: ['A'] } },
+      { route: '/dhcp/leases/', signatures: { table: ['B'] } },
     ])
-    const t = informe.find((f) => f.familia === 'tabla')
-    expect(t.cuantas).toBe(2)
-    expect(t.firmas).toContain('A  →  /zones/, /cache/')
-    expect(t.firmas).toContain('B  →  /dhcp/leases/')
+    const t = report.find((f) => f.family === 'table')
+    expect(t.count).toBe(2)
+    expect(t.signatures).toContain('A  →  /zones/, /cache/')
+    expect(t.signatures).toContain('B  →  /dhcp/leases/')
   })
 })
 
 /*
-La ampliación de la fase 2: portales y avisos por tipo.
+Portals, and alerts split by type.
 
-Dos agujeros a la vez. `Dialog` monta por portal, fuera de `<main>`, así que
-durante toda la fase 1 esta herramienta **no vio ni un contenido de diálogo** —y el
-piloto 2 decidió el sistema modal entero—. Y la familia `aviso` medía
-`borderRadius | inset`, con lo que se podía pasar un aviso de relleno a contorno
-**sin que ninguna familia se moviera**: justo la decisión que la fase 2 tiene que
-tomar era invisible para la guardia que debía protegerla.
+Two holes at once. `Dialog` mounts through a portal, outside `<main>`, so for a
+long time this tool **did not see a single piece of dialog content**, while the
+whole modal system was being decided. And the alert family measured
+`borderRadius | inset`, so an alert could go from filled to outlined **without any
+family moving**: exactly the decision that had to be taken was invisible to the
+guard meant to protect it.
 */
-function alerta({ tipo, fondo, icono = false, enDialogo = false }) {
+function alert({ type, background, icon = false, inDialog = false }) {
   const main = document.createElement('main')
-  const caja = `<div class="_alert_x _${tipo}_y" style="background:${fondo};border-radius:8px">
-      ${icono ? '<svg aria-hidden="true"></svg>' : ''}<b>${tipo}!</b> texto
+  const box = `<div class="_alert_x _${type}_y" style="background:${background};border-radius:8px">
+      ${icon ? '<svg aria-hidden="true"></svg>' : ''}<b>${type}!</b> text
     </div>`
-  if (enDialogo) {
+  if (inDialog) {
     main.innerHTML = ''
     const d = document.createElement('div')
     d.setAttribute('role', 'dialog')
-    d.innerHTML = caja
+    d.innerHTML = box
     document.body.replaceChildren(main, d)
   } else {
-    main.innerHTML = caja
+    main.innerHTML = box
     document.body.replaceChildren(main)
   }
 }
 
-describe('la guardia ve los portales y separa los avisos por tipo', () => {
+describe('the guard sees portals and splits alerts by type', () => {
   beforeEach(() => document.body.replaceChildren())
 
   /*
-  LA INVARIANTE. Ampliar la herramienta no puede mover lo que ya se midió: la foto
-  base se tomó sin ningún diálogo abierto, y tiene que seguir valiendo.
+  THE INVARIANT. Widening the tool must not move what was already measured: the
+  baseline was taken with no dialog open, and it has to stay valid.
   */
-  it('sin diálogo abierto sólo mira <main>, como antes', () => {
+  it('with no dialog open it only looks at <main>, as before', () => {
     const main = document.createElement('main')
     main.innerHTML = '<div class="_alert_x _info_y" style="background:#123">a</div>'
-    const fuera = document.createElement('div')
-    fuera.innerHTML = '<div class="_alert_x _warning_y" style="background:#456">b</div>'
-    document.body.replaceChildren(main, fuera)
+    const outside = document.createElement('div')
+    outside.innerHTML = '<div class="_alert_x _warning_y" style="background:#456">b</div>'
+    document.body.replaceChildren(main, outside)
 
     const f = screenSignatures()
-    expect(Object.keys(f)).toContain('aviso-info')
-    expect(Object.keys(f)).not.toContain('aviso-warning')
+    expect(Object.keys(f)).toContain('notice-info')
+    expect(Object.keys(f)).not.toContain('notice-warning')
   })
 
-  it('un aviso dentro de un diálogo YA se mide', () => {
-    alerta({ tipo: 'warning', fondo: '#456', enDialogo: true })
-    expect(screenSignatures()['aviso-warning']).toHaveLength(1)
+  it('an alert inside a dialog IS measured now', () => {
+    alert({ type: 'warning', background: '#456', inDialog: true })
+    expect(screenSignatures()['notice-warning']).toHaveLength(1)
   })
 
-  it('info y warning caen en familias distintas, no en una sola', () => {
+  it('info and warning land in different families, not in one', () => {
     const main = document.createElement('main')
     main.innerHTML =
       '<div class="_alert_x _info_y" style="background:#123">a</div>' +
@@ -166,102 +166,103 @@ describe('la guardia ve los portales y separa los avisos por tipo', () => {
     document.body.replaceChildren(main)
 
     const f = screenSignatures()
-    expect(f['aviso-info']).toHaveLength(1)
-    expect(f['aviso-warning']).toHaveLength(1)
-    expect(f.aviso).toBeUndefined()
+    expect(f['notice-info']).toHaveLength(1)
+    expect(f['notice-warning']).toHaveLength(1)
+    expect(f.notice).toBeUndefined()
   })
 
-  /* La medida que faltaba: con la firma anterior se podía pasar de relleno a
-     contorno sin que nada se moviera. */
-  it('distingue relleno de contorno', () => {
-    alerta({ tipo: 'info', fondo: '#123' })
-    expect(screenSignatures()['aviso-info'][0]).toContain('relleno')
+  /* The measure that was missing: with the old signature an alert could go from
+     filled to outlined without anything moving. */
+  it('tells filled from outlined', () => {
+    alert({ type: 'info', background: '#123' })
+    expect(screenSignatures()['notice-info'][0]).toContain('filled')
 
-    alerta({ tipo: 'info', fondo: 'transparent' })
-    expect(screenSignatures()['aviso-info'][0]).toContain('contorno')
+    alert({ type: 'info', background: 'transparent' })
+    expect(screenSignatures()['notice-info'][0]).toContain('outlined')
   })
 
-  /* El tope de ancho: la tercera cosa que la firma no veía. Sin esto,
-     `--notice-max` se podría aplicar —o dejar de aplicar— sin que nada se moviera. */
-  it('la firma incluye el ancho pintado', () => {
+  /* The width cap: the third thing the signature did not see. Without this,
+     `--notice-max` could be applied (or stop being applied) without anything
+     moving. */
+  it('the signature includes the painted width', () => {
     const main = document.createElement('main')
     main.innerHTML = '<div class="_alert_x _info_y" style="background:#123;max-width:880px">a</div>'
     document.body.replaceChildren(main)
-    /* jsdom no hace layout, así que el ancho sale 0: lo que esta prueba fija es
-       que la firma LLEVA el ancho, no cuánto mide. El número se comprueba en el
-       barrido, contra la página real y a 1440. */
-    expect(screenSignatures()['aviso-info'][0]).toMatch(/ancho \d+px/)
+    /* jsdom does no layout, so the width comes out as 0: what this test pins is
+       that the signature CARRIES the width, not how much it measures. The number
+       is checked in the sweep, against the real page and at 1440. */
+    expect(screenSignatures()['notice-info'][0]).toMatch(/width \d+px/)
 
     main.innerHTML = '<div class="_alert_x _info_y" style="background:#123">a</div>'
     document.body.replaceChildren(main)
-    expect(screenSignatures()['aviso-info'][0]).toMatch(/ancho \d+px/)
+    expect(screenSignatures()['notice-info'][0]).toMatch(/width \d+px/)
   })
 
-  it('y detecta el icono', () => {
-    alerta({ tipo: 'warning', fondo: '#456', icono: true })
-    expect(screenSignatures()['aviso-warning'][0]).toContain('con-icono')
+  it('and detects the icon', () => {
+    alert({ type: 'warning', background: '#456', icon: true })
+    expect(screenSignatures()['notice-warning'][0]).toContain('with-icon')
 
-    alerta({ tipo: 'warning', fondo: '#456', icono: false })
-    expect(screenSignatures()['aviso-warning'][0]).toContain('sin-icono')
+    alert({ type: 'warning', background: '#456', icon: false })
+    expect(screenSignatures()['notice-warning'][0]).toContain('no-icon')
   })
 })
 
 /*
-Las dos familias del bloque de anchos de control. Miden lo RENDERIZADO —no lo
-declarado— porque es la lección que ya costó dos correcciones en un mismo día: el
-tope de los avisos vivía en el contenedor, y el relleno lo decidía el orden del
-bundle. Mirar la declaración habría dado verde las dos veces.
+The two control-width families. They measure what is RENDERED (not what is
+declared) because that is the lesson that already cost two corrections in a single
+day: the alerts' cap lived on the container, and the fill was decided by the order
+of the bundle. Looking at the declaration would have come out green both times.
 */
-describe('anchos de control', () => {
+describe('control widths', () => {
   beforeEach(() => document.body.replaceChildren())
 
-  const conCampos = (html) => {
+  const withFields = (html) => {
     const main = document.createElement('main')
     main.innerHTML = html
     document.body.replaceChildren(main)
   }
 
-  /* El campo numérico de un FORMULARIO y el de una CELDA son dos objetos: el
-     primero tiene el ancho que le da la retícula de su rótulo y el segundo llena
-     su columna. Juntos daban 104 px y 151 px en Settings y parecían deriva. */
-  it('separa el campo numérico de formulario del de celda, y no mide los de texto', () => {
-    conCampos('<input type="number"><input type="text">')
+  /* The numeric field of a FORM and that of a CELL are two objects: the first has
+     the width its label's grid gives it and the second fills its column. Together
+     they gave 104 px and 151 px in Settings and looked like drift. */
+  it('separates the form numeric field from the cell one, and does not measure text fields', () => {
+    withFields('<input type="number"><input type="text">')
     const f = screenSignatures()
-    expect(f['campo-num-ancho-form']).toHaveLength(1)
-    expect(f['campo-num-ancho-form'][0]).toMatch(/^\d+px$/)
-    expect(f['campo-num-ancho-celda']).toBeUndefined()
+    expect(f['field-num-width-form']).toHaveLength(1)
+    expect(f['field-num-width-form'][0]).toMatch(/^\d+px$/)
+    expect(f['field-num-width-cell']).toBeUndefined()
   })
 
-  it('el numérico dentro de una celda cae en la otra familia', () => {
-    conCampos('<table><tbody><tr><td><input type="number"></td></tr></tbody></table>')
+  it('the numeric field inside a cell lands in the other family', () => {
+    withFields('<table><tbody><tr><td><input type="number"></td></tr></tbody></table>')
     const f = screenSignatures()
-    expect(f['campo-num-ancho-celda']).toHaveLength(1)
-    expect(f['campo-num-ancho-form']).toBeUndefined()
+    expect(f['field-num-width-cell']).toHaveLength(1)
+    expect(f['field-num-width-form']).toBeUndefined()
   })
 
-  /* La altura de un área es `rows` por la línea más el marco, así que medir la
-     altura convertía en deriva que alguien pidiera cinco filas en vez de tres.
-     Lo que se mide es la fórmula, y `rows` desaparece. */
-  it('mide la fórmula del área de texto y no su altura', () => {
-    conCampos('<textarea rows="3"></textarea><textarea rows="5"></textarea>')
-    const f = screenSignatures()['campo-area-alto']
+  /* A textarea's height is `rows` times the line plus the frame, so measuring the
+     height turned somebody asking for five rows instead of three into drift. What
+     is measured is the formula, and `rows` drops out. */
+  it('measures the textarea formula and not its height', () => {
+    withFields('<textarea rows="3"></textarea><textarea rows="5"></textarea>')
+    const f = screenSignatures()['field-area-height']
     expect(f).toHaveLength(1)
     expect(f[0]).toMatch(/^line .* \+ frame \d+px$/)
   })
 })
 
 /*
-La retícula de la fila, panel y modal APARTE.
+The row grid, panel and modal APART.
 
-`Form` distingue los dos a propósito —210 px en el formulario denso, 180 en el
-espacio reducido del diálogo— y está escrito en `Form.module.css:23`. La auditoría
-2.1 lo llamó deriva desde un grep, sin abrir el fichero, y hubo que corregirlo.
-Medirlos juntos habría dejado esa confusión metida en el instrumento.
+`Form` tells the two apart on purpose (210 px in the dense form, 180 in the tighter
+space of the dialog) and it says so in `ui/Form.module.css`. An earlier audit
+called it drift from a grep, without opening the file, and it had to be corrected.
+Measuring them together would have built that confusion into the instrument.
 */
-describe('la retícula de la fila se mide por contexto', () => {
+describe('the row grid is measured by context', () => {
   beforeEach(() => document.body.replaceChildren())
 
-  it('separa la fila de panel de la de modal', () => {
+  it('separates the panel row from the modal one', () => {
     const main = document.createElement('main')
     main.innerHTML =
       '<div class="_row_a" style="grid-template-columns:210px 1fr">' +
@@ -271,13 +272,14 @@ describe('la retícula de la fila se mide por contexto', () => {
     document.body.replaceChildren(main)
 
     const f = screenSignatures()
-    expect(f['reticula-panel']).toHaveLength(1)
-    expect(f['reticula-modal']).toHaveLength(1)
+    expect(f['grid-panel']).toHaveLength(1)
+    expect(f['grid-modal']).toHaveLength(1)
   })
 
-  /* `_mrow_` contiene la subcadena `row`: si se preguntara al revés, toda fila de
-     modal se contaría como de panel y las dos familias se mezclarían. */
-  it('no confunde una fila de modal con una de panel', () => {
+  /* `_mrow_` contains the substring `row`: if the question were asked the other way
+     round, every modal row would count as a panel row and the two families would
+     mix. */
+  it('does not mistake a modal row for a panel row', () => {
     const main = document.createElement('main')
     main.innerHTML =
       '<div class="_mrow_b" style="grid-template-columns:180px 1fr">' +
@@ -285,19 +287,19 @@ describe('la retícula de la fila se mide por contexto', () => {
     document.body.replaceChildren(main)
 
     const f = screenSignatures()
-    expect(f['reticula-modal']).toHaveLength(1)
-    expect(f['reticula-panel']).toBeUndefined()
+    expect(f['grid-modal']).toHaveLength(1)
+    expect(f['grid-panel']).toBeUndefined()
   })
 
   /*
-  Y el `.row` de OTRO módulo no es una fila de formulario.
+  And the `.row` of ANOTHER module is not a form row.
 
-  Medido en la consola: Cache, Allowed, Blocked y View Logs tienen su propio
-  `.row`, que no es una retícula, y la familia salía con una firma `none` que no
-  es la retícula de ningún formulario. Lo que separa a los dos es el rótulo, que
-  toda fila de `Form` pinta como hijo directo.
+  Measured in the console: Cache, Allowed, Blocked and View Logs have their own
+  `.row`, which is not a grid, and the family came out with a `none` signature
+  that is no form's grid. What tells the two apart is the label, which every
+  `Form` row paints as a direct child.
   */
-  it('ignora el `.row` de otro módulo, que no es una fila de formulario', () => {
+  it("ignores another module's `.row`, which is not a form row", () => {
     const main = document.createElement('main')
     main.innerHTML =
       '<div class="_row_a" style="grid-template-columns:210px 1fr">' +
@@ -306,6 +308,6 @@ describe('la retícula de la fila se mide por contexto', () => {
     document.body.replaceChildren(main)
 
     const f = screenSignatures()
-    expect(f['reticula-panel']).toEqual(['210px 1fr'])
+    expect(f['grid-panel']).toEqual(['210px 1fr'])
   })
 })

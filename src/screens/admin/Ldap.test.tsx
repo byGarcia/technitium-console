@@ -41,7 +41,7 @@ const CONFIGURED = {
   ldapGroupAttribute: 'memberOf',
 }
 
-describe('LDAP — load', () => {
+describe('LDAP: load', () => {
   it('the five null strings of a fresh install are drawn empty, not as "null"', async () => {
     server()
     render(<Ldap {...props} />)
@@ -101,7 +101,7 @@ describe('LDAP — load', () => {
   })
 })
 
-describe('LDAP — enable rules, on load and on change', () => {
+describe('LDAP: enable rules, on load and on change', () => {
   it('Ignore SSL is disabled with None and enabled with StartTLS or LDAPS', async () => {
     server()
     const user = userEvent.setup()
@@ -144,7 +144,7 @@ describe('LDAP — enable rules, on load and on change', () => {
   })
 })
 
-describe('LDAP — save validation, in upstream order', () => {
+describe('LDAP: save validation, in upstream order', () => {
   it('with LDAP off everything can be saved empty', async () => {
     const spy = server({ ldapPort: 389 })
     const user = userEvent.setup()
@@ -215,7 +215,7 @@ describe('LDAP — save validation, in upstream order', () => {
   })
 })
 
-describe('LDAP — the Ignore SSL confirmation', () => {
+describe('LDAP: the Ignore SSL confirmation', () => {
   const TEXT =
     'WARNING! The Ignore SSL Certificate Errors option must not be enabled for production environment. \n\nAre you sure you want to proceed with ignoring SSL certificate errors?'
 
@@ -258,7 +258,7 @@ describe('LDAP — the Ignore SSL confirmation', () => {
   })
 })
 
-describe('LDAP — the save', () => {
+describe('LDAP: the save', () => {
   it('sends the thirteen fields, with an empty group map as the string "false"', async () => {
     const spy = server()
     const user = userEvent.setup()
@@ -357,7 +357,7 @@ describe('LDAP — the save', () => {
   })
 })
 
-describe('LDAP — Test Connection', () => {
+describe('LDAP: Test Connection', () => {
   it('validates server and port even with LDAP OFF (auth.js:2526-2541)', async () => {
     const onNotice = vi.fn()
     const spy = server()
@@ -436,7 +436,7 @@ describe('LDAP — Test Connection', () => {
   })
 })
 
-describe('LDAP — the dense form', () => {
+describe('LDAP: the dense form', () => {
   it('is three blocks titled with upstream labels, two `Warning!` before and seven `Note!` after', async () => {
     server()
     render(<Ldap {...props} />)

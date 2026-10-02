@@ -1,6 +1,6 @@
 /*
 Two sizes and three variants, and nothing else. Row actions used to use `.ib`
-—defined three times, with three different disabled opacities— on nine screens
+(defined three times, with three different disabled opacities) on nine screens
 and the normal `Button` in DHCP, so the same action looked two different ways
 depending on the table.
 */
@@ -40,14 +40,14 @@ depending on the table.
 
 /*
 Only for the small one WITHOUT a variant. `.sm:hover` is a class plus a
-pseudo-class, so it beat `.primary` —a class alone— and a small primary got
+pseudo-class, so it beat `.primary` (a class alone) and a small primary got
 lighter on hover: `--ink` text over the amber, 1.69:1. It was not seen until the
 console had its first `size="sm" variant="primary"`, on the "Show" of the
 Dashboard's custom range.
 */
 .sm:not(.primary):not(.danger):hover:not(:disabled) { color: var(--ink); }
 
-/* A button that stays pressed —the "Glue" and "RRSIG" filters— says so with the
+/* A button that stays pressed (the "Glue" and "RRSIG" filters) says so with the
    accent colour, not only with `aria-pressed`. */
 .btn[aria-pressed='true'] { color: var(--acc-ink); border-color: var(--acc-ink); }
 
@@ -63,9 +63,9 @@ Dashboard's custom range.
 }
 
 /*
-The primary's hover LIGHTENED by 6 %, and over `--acc` that gives 1.108:1 —below
+The primary's hover LIGHTENED by 6 %, and over `--acc` that gives 1.108:1, below
 the 1.20 this console settled on when fixing `--hover`, and the same order of
-magnitude as that defect—. Lightening further does not fit: the red channel of
+magnitude as that defect. Lightening further does not fit: the red channel of
 `#f5a524` is already at 245 and saturates before reaching the threshold. It
 darkens instead, which is the only thing that gets there. And the
 `border-color: var(--acc)` goes, since that was what the button was already worth

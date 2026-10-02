@@ -1,8 +1,8 @@
 /*
 Cache, Allowed and Blocked: the domain-tree archetype.
 
-They inherited the COLLECTION archetype from Zones —one column, a filter bar, a
-table— without a round of their own, and it was the wrong shape: this is not a
+They inherited the COLLECTION archetype from Zones (one column, a filter bar, a
+table) without a round of their own, and it was the wrong shape: this is not a
 paginated collection, it is a tree. What that left on screen at 1440 was a small
 panel top-left with the tree in it and, next to it, an enormous box saying
 `0 records at <ROOT>`: most of the screen empty, and the object you came to look
@@ -33,13 +33,13 @@ inside itself rather than growing the page.
 /*
 2 · THE IDENTITY. Cache is what the server resolved and stored; Allowed and
 Blocked are the administrator's decisions. Three channels and no one of them
-alone: the icon —the same one the rail already gives each screen—, the second
+alone: the icon (the same one the rail already gives each screen), the second
 line, and the colour.
 
 The colour is NOT new: `--ch-cache` and `--ch-block` already mean "cached" and
 "blocked" in the Dashboard's chart and in the Logs rows, so using them here says
-the same thing with the same colour. `Allowed` has no series of its own —it is
-not an RCODE— and takes `--ch-ok`, which today means `NoError`; that one is an
+the same thing with the same colour. `Allowed` has no series of its own (it is
+not an RCODE) and takes `--ch-ok`, which today means `NoError`; that one is an
 extension, and it is the only colour decision of this round without a precedent.
 
 What it CANNOT take is the amber, which means "this is yours to change", or the
@@ -47,7 +47,7 @@ red, which means error and here already has two jobs.
 */
 /*
 `--kind` and NOT `--edge`, which is what this said first: `--edge` is already a
-token —the panel's inner highlight, `inset 0 1px 0 rgba(255,255,255,.055)`— and
+token (the panel's inner highlight, `inset 0 1px 0 rgba(255,255,255,.055)`), and
 setting it to a colour here quietly replaced the `box-shadow` of every panel on
 these three screens. Nothing on screen said so; `dev/uniformity.js` did, with
 `panel | no-shadow` on Cache, Allowed and Blocked against `shadow` on the other
@@ -129,7 +129,7 @@ that way.
 
 "You are here" is already said by `ui/list.module.css`, in amber, on every list
 in this console. Repainting it per screen would make one signal mean two things
-—which screen you are on, and which node is open— and it would do it by
+(which screen you are on, and which node is open), and it would do it by
 overriding a shared primitive from a local file, which is how two lists start
 looking different for no reason.
 
@@ -139,7 +139,7 @@ here.
 
 /*
 The count strips. They keep `ui/count.module.css`'s typography and its flex
-layout —they are the same object as Zones'— and gain the panel's own rule and
+layout (they are the same object as Zones') and gain the panel's own rule and
 step, because here they sit INSIDE the panel instead of floating above a table.
 */
 .count {
@@ -172,8 +172,8 @@ step, because here they sit INSIDE the panel instead of floating above a table.
 /*
 Below 860 the two columns stop fitting. NEITHER side is hidden: they stack, the
 tree first because it is the main object and because it is where what you are
-about to read comes from, and the tree's panel stops stretching —it gets a cap
-and scrolls inside— so the records are not always below the fold.
+about to read comes from, and the tree's panel stops stretching (it gets a cap
+and scrolls inside), so the records are not always below the fold.
 */
 @media (max-width: 860px) {
   .split { grid-template-columns: minmax(0, 1fr); gap: var(--s-8); }

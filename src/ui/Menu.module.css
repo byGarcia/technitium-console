@@ -23,7 +23,7 @@
 .menuList { position:fixed; overflow-y:auto; z-index: var(--layer-float); min-width:170px; padding: var(--s-3); background:var(--pan); border:1px solid var(--line); border-radius: var(--r-3); box-shadow: var(--e-2), var(--edge); display:flex; flex-direction:column; }
 .sep { height:1px; margin: var(--s-2) var(--s-3); background:var(--line); }
 .menuList button { text-align:left; border:0; background:transparent; color:var(--mute); /* Longhands and not the `font:` shorthand: `inherit` is not valid as a
-     component of a shorthand —only as the whole value— so the declaration was
+     component of a shorthand (only as the whole value), so the declaration was
      invalid and the browser dropped it. The menu items had always carried the
      browser's default size and weight (13 px) instead of the console's. */
   font-family: inherit;
@@ -39,14 +39,14 @@ Destructive things get marked, and here they were not.
 
 `Menu.tsx` says "destructive things go in here" and `ui/Table.module.css` says
 "delete keeps its colour". The fact fell between the two sentences: all SEVEN
-delete actions in the console —Delete Zone, Remove Lease, Delete Scope, Delete
-Session, Delete User, Delete Group, Remove Node— were painted the same grey as
+delete actions in the console (Delete Zone, Remove Lease, Delete Scope, Delete
+Session, Delete User, Delete Group, Remove Node) were painted the same grey as
 "Export Zone". And in four of the six menus the destructive one is the ONLY
 option: you opened a menu whose entire content was an action with no undo, without
 a single signal that it was one.
 
 It goes red and not amber for a measured reason, not a taste one: `--warn` is
-`rgb(251,191,36)` and `--acc` is `rgb(245,165,36)` —both are the same amber— so an
+`rgb(251,191,36)` and `--acc` is `rgb(245,165,36)` (both are the same amber), so an
 orange option would read as the accent colour, which in this console means "this
 is the recommended action". Exactly the opposite. `--dan` gives 6.19:1 over the
 menu background.

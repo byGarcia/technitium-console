@@ -145,7 +145,7 @@ describe('multipart uploads', () => {
 describe('the cluster node parameter', () => {
   /*
   The server reads `node` centrally and proxies the request, so every call can
-  carry it. Spec F10: eight screens offer the choice upstream and none did here.
+  carry it. Eight screens offer the choice upstream and none did here.
   */
   it('travels in the query when a node is chosen', async () => {
     const spy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(

@@ -26,7 +26,7 @@ async function mount(props: Record<string, unknown> = {}) {
   return r
 }
 
-describe('Settings — loading', () => {
+describe('Settings: loading', () => {
   it('it draws General by default with the real values from the server', async () => {
     server()
     await mount()
@@ -69,7 +69,7 @@ describe('Settings — loading', () => {
   })
 })
 
-describe('Settings — saving', () => {
+describe('Settings: saving', () => {
   it('it sends settings/set by POST with the fields of the nine sub-tabs', async () => {
     const spy = server()
     await mount({ sub: 'Logging' })
@@ -146,7 +146,7 @@ describe('Settings — saving', () => {
   })
 })
 
-describe('Settings — Blocking', () => {
+describe('Settings: Blocking', () => {
   it('with no date, the labels are \"Not Set\" and \"Not Scheduled\"', async () => {
     server()
     await mount({ sub: 'Blocking' })
@@ -233,7 +233,7 @@ describe('Settings — Blocking', () => {
     expect(
       screen.getByText('Blocking was successfully disabled temporarily for 15 minute(s).'),
     ).toBeInTheDocument()
-    // main.js:2393 — success also unchecks "Enable Blocking".
+    // main.js:2393. Success also unchecks "Enable Blocking".
     expect(screen.getByLabelText('Enable Blocking')).not.toBeChecked()
   })
 
@@ -256,7 +256,7 @@ describe('Settings — Blocking', () => {
   })
 })
 
-describe('Settings — action bar', () => {
+describe('Settings: action bar', () => {
   it('\"Flush Cache\" confirms and calls cache/flush with its literal alert', async () => {
     const spy = server()
     await mount()
@@ -273,7 +273,7 @@ describe('Settings — action bar', () => {
  Corrected on 2026-09-03: this test asserted THE DEFECT.
 
  It said that without the permission the button "is not in the document", and that
- is exactly what rule 2 of phase 1 forbids: *disabled, never hidden*. A control
+ is exactly what the console's design rule forbids: *disabled, never hidden*. A control
  that disappears depending on who is looking changes the shape of the screen and
  leaves nobody able to tell the action exists and a permission is missing.
 
@@ -301,30 +301,29 @@ describe('Settings — action bar', () => {
  The mouse goes over the WRAPPER and not over the button, because that is what
  happens for real: a `<button disabled>` receives no pointer events in any
  browser, so the trigger has to be the `<span>` outside. Hovering the button would
- leave the test green through a path that does not exist in the browser — checked
+ leave the test green through a path that does not exist in the browser; this was checked
  by hand on 2026-09-03 with a user with no permissions.
     */
     const button = screen.getByRole('button', { name: /Flush Cache/ })
     await user.hover(button.parentElement!)
 
     /* `Cache: Delete` and not `Settings`: of the three permissions these four
-       verbs ask for, this is the one from ANOTHER screen — one of the three
-       variants `docs/phase0-upstream-diff.md` marks that way among the nine it
-       censuses. */
+       verbs ask for, this is the one from ANOTHER screen: one of three such
+       controls among the nine compared with upstream. */
     expect(await screen.findByText('Requires Cache: Delete')).toBeInTheDocument()
   })
 
   /*
  With a timeout of its own, and not on a whim: this test does THIRTEEN `userEvent`
- interactions —it opens the dialog and unticks the twelve checkboxes— and each one
+ interactions (it opens the dialog and unticks the twelve checkboxes), and each one
  goes through `act()`. On its own the whole file takes 5.9 s against a five-second
  per-test cap, so this one lived right on the edge: it passed or not depending on
  how the files were shared out between workers, and adding a test in any other
  file was enough to tip it.
 
- Checked that it predates phase 2: reverting `src/` to `HEAD` behaves exactly the
- same. It is not sped up here because the thirteen interactions are the scenario
- —"a backup with nothing ticked"— and trimming them would be testing something else.
+ Checked that it is not a regression of the redesign: reverting `src/` to `HEAD`
+ behaved exactly the same. It is not sped up here because the thirteen interactions are the scenario
+ ("a backup with nothing ticked"), and trimming them would be testing something else.
   */
   it('a backup with nothing checked alerts with the literal text', { timeout: 15000 }, async () => {
     server()
@@ -359,7 +358,7 @@ describe('Settings — action bar', () => {
   })
 })
 
-describe('Settings — enablement rules of the remaining sub-tabs', () => {
+describe('Settings: enablement rules of the remaining sub-tabs', () => {
   it('the recursion ACL can only be edited with the fourth option', async () => {
     server()
     await mount({ sub: 'Recursion' })
@@ -410,11 +409,11 @@ describe('Settings — enablement rules of the remaining sub-tabs', () => {
 /*
 Which node the screen talks to. Upstream's selector (cluster.js:1021-1050) is
 HIDDEN on a standalone server and holds the empty `<option>`, so there the load is
-`settings/get?node=` and the save starts `node=&…` with every block — checked on
+`settings/get?node=` and the save starts `node=&…` with every block, as checked on
 the stock v15.5.1 console of the harness. `cluster` only exists once the cluster
 is initialised, and it is the default there.
 */
-describe('Settings — node scope', () => {
+describe('Settings: node scope', () => {
   const NODES = [
     { name: 'node1.cluster.test', type: 'Primary' },
     { name: 'node2.cluster.test', type: 'Secondary' },
@@ -518,7 +517,7 @@ web console's new address 2.5 s later (main.js:2217, 3188, 2293-2334) unless the
 last load detected a reverse proxy (main.js:918, 2275). jsdom serves the tests at
 http://localhost:3000/.
 */
-describe('Settings — web console redirection', () => {
+describe('Settings: web console redirection', () => {
   function serverWith(
     load: Record<string, unknown>,
     saved: Record<string, unknown>,
@@ -570,7 +569,7 @@ describe('Settings — web console redirection', () => {
   it('a reverse proxy detected on load does not redirect', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
     const open = vi.spyOn(window, 'open').mockImplementation(() => null)
-    // Served at :3000 while the web service listens on :5380 — a proxy in between.
+    // Served at :3000 while the web service listens on :5380, so there is a proxy in between.
     serverWith({ webServiceHttpPort: 5380 }, { webServiceHttpPort: 9000 })
     const user = userEvent.setup({ delay: null, advanceTimers: vi.advanceTimersByTime })
     render(<Settings token="tok" serverDomain="ref.technitium-ui.test" />)
@@ -624,7 +623,7 @@ fills them from the LOADED settings (main.js:1369-1372): typing a new port does
 not change them until the next load. Same for the real-IP header of both notes
 (main.js:1303-1304 and 1356-1357).
 */
-describe('Settings — addresses in the notes come from the loaded settings', () => {
+describe('Settings: addresses in the notes come from the loaded settings', () => {
   it('DoH, DoT, DoQ and DoH(S) follow the loaded ports', async () => {
     server({ dnsOverHttpPort: 8053, dnsOverTlsPort: 8853, dnsOverQuicPort: 9853, dnsOverHttpsPort: 8443 })
     await mount({ sub: 'Optional Protocols' })

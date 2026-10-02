@@ -37,7 +37,7 @@ for (const name of ['localStorage', 'sessionStorage'] as const) {
 /*
 `IntersectionObserver` in the test environment.
 
-jsdom does not implement it, and from phase 3 onwards the console does use it:
+jsdom does not implement it, and the console does use it:
 `Administration > Permissions` works out which of its eleven sections you are
 looking at so its index can say so. Without this stub, mounting that screen throws
 before a single assertion runs.

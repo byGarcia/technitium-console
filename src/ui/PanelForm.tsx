@@ -24,8 +24,8 @@ taxonomies.
 /*
 The title is optional on purpose.
 
-Five panels repeated their own name as the legend of the first block —TSIG,
-Recursion, Blocking, Logging and SSO— and in three of them it was the ONLY
+Five panels repeated their own name as the legend of the first block (TSIG,
+Recursion, Blocking, Logging and SSO), and in three of them it was the ONLY
 legend, so it grouped nothing: it just repeated. In SSO it got said four times in
 a row before the first control. Without `title` the panel still groups: what
 disappears is the echo.
@@ -34,20 +34,20 @@ disappears is the echo.
 `notices` is where the `Warning!` goes, and it goes BEFORE the controls on
 purpose.
 
-It is the pilot 3 rule: **`Warning!` before, `Note!` after**. One can change your
+It is the dense-form rule: **`Warning!` before, `Note!` after**. One can change your
 decision and the other explains it, so reading the warning after having touched
 the control arrives late by definition.
 
 Before this, all forty `Settings` notices went BELOW, the seven `Warning!`
 included. Now the seven are in this slot and the thirty-three `Note!` are still
 below, and that is checked: `dev/master-switch-signal.test.mjs` does not look at
-it, but the 2026-09-03 sweep walked the four panes that have a warning —`general`,
-`blocking`, `logging` and `recursion`— and measured that every `Warning!` ends up
+it, but the 2026-09-03 sweep walked the four panes that have a warning (`general`,
+`blocking`, `logging` and `recursion`) and measured that every `Warning!` ends up
 above the first control of its block, at all four widths.
 
 It is a prop of the block and not a convention each pane has to remember: whoever
 places it decides the position, and a rule that depends on remembering gets
-forgotten — eleven of twelve call sites proved it with `role="menuitem"`.
+forgotten: eleven of twelve call sites proved it with `role="menuitem"`.
 */
 export function Block({
   title,
@@ -62,16 +62,16 @@ export function Block({
   /*
   The section count, COUNTED and not written by hand.
 
-  Pilot 3 puts on every section label how many controls it has, and its ten
-  figures add up to 39 —the screen's total— so the drawing checks itself. That
+  The dense-form design puts on every section label how many controls it has,
+  and its ten figures add up to 39 (the screen's total), so the drawing checks itself. That
   property only survives if the number comes from the content: ten hand-written
   numbers part company with the content on the first control anyone adds, and they
   do it silently.
 
   It is counted from the DOM and not from React's `children` because a section
-  mixes rows of several kinds —`TextRow`, `AreaRow`, `GroupRow`, `EditableList`—
+  mixes rows of several kinds (`TextRow`, `AreaRow`, `GroupRow`, `EditableList`),
   and some carry more than one control inside. What has to be counted is what the
-  user sees, which is exactly what the screen contract counts.
+  user sees.
   */
   const box = useRef<HTMLDivElement>(null)
   const [howMany, setHowMany] = useState<number | null>(null)
@@ -82,21 +82,18 @@ export function Block({
     The cells of an editable list do NOT count.
 
     Measured: counting them, `Rate Limiting` said **18** and the ten added up to
-    54. The pilot says 39, and the difference is exactly the **15 cells of the two
-    QPM lists**. And the pilot is right: a row cell is **server data** —with
-    another configuration they are other rows and another number— so counting them
+    54. The design says 39, and the difference is exactly the **15 cells of the two
+    QPM lists**. And the design is right: a row cell is **server data** (with
+    another configuration they are other rows and another number), so counting them
     turns the section count into a volatile figure instead of a property of the
-    screen.
-
-    It is the same distinction the phase 3 contract already made: 39 comparable
-    controls and 15 data cells, and the contract separated them on purpose.
+    screen: 39 comparable controls and 15 data cells, kept apart on purpose.
     */
     const controls = [...root.querySelectorAll('input, select, textarea, [role="combobox"]')]
     const n = controls.filter((c) => c.closest('table') == null).length
     setHowMany(n > 0 ? n : null)
     /* No dependency array, and on purpose: what has to be counted is the DOM as
        already drawn, and it changes for reasons that are not props of this block
-       —a row appearing because its master switches on, a list growing. It settles
+       (a row appearing because its master switches on, a list growing). It settles
        because `setHowMany` with the same value does not re-render. */
   })
 
@@ -139,10 +136,10 @@ export function TextRow({
   Upstream pins the numeric ones at 80-100 px and leaves the text ones wide.
 
   **No default value here**: when nothing is said, `--ctrl-num` rules, which is
-  where phase 1 wrote down the width of a numeric field. The default used to be a
+  where the design system writes down the width of a numeric field. The default used to be a
   literal `100` on this line, so the token existed and governed nothing.
 
-  The explicit widths the console already has —80, 125, 200, 38, 28— still win
+  The explicit widths the console already has (80, 125, 200, 38, 28) still win
   over the token: they are per-field decisions and not drift. */
   width?: number | 'wide'
   disabled?: boolean
@@ -270,7 +267,7 @@ export function Notices({ children }: { children: ReactNode }) {
 /*
 Upstream's alerts are `<p><b>Note!</b> …</p>` in bold, inline. Here they become
 a coloured block: `Warning!` amber, `Note!` blue. They always go inside a
-`Notices`, which is what supplies the inset — when the alert supplied it itself on
+`Notices`, which is what supplies the inset. When the alert supplied it itself on
 one screen and not the other, the same "Note!" came out indented in DHCP and flush
 in Settings.
 */
@@ -331,7 +328,7 @@ an `id`. The declarative one wins, with an escape hatch (`render`) for the singl
 cell that is not a text field.
 
 The accessible name is `"<table> <row> <column>"`. It is unique by construction;
-the other scheme —`"<column> <row>"`— forced you to disambiguate the columns by
+the other scheme (`"<column> <row>"`) forced you to disambiguate the columns by
 hand, and out of that came an `aria-label` of "IPv4 UDP Limit" over a header that
 said "UDP Limit".
 
@@ -362,7 +359,7 @@ export function EditableList<T extends Record<string, string>>({
     /*
     The help travels through `GroupRow` and is not drawn here underneath.
 
-    Pilot 3 asks for all 41 in the third column, and the two belonging to the
+    The dense-form design asks for all 41 in the third column, and the two belonging to the
     lists ARE two of those 41. Drawn inside the group they ended up under the
     table while the other thirty-nine were beside it: the same help in two places
     on one screen.

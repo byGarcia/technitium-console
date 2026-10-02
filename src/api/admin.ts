@@ -2,7 +2,7 @@ import { apiRequest, type ApiOutcome } from './client'
 
 /*
 The `admin` family without the cluster: sessions, users, groups, permissions,
-SSO and LDAP. Twenty-one endpoints, all of them in `auth.js`. The cluster —twelve more—
+SSO and LDAP. Twenty-one endpoints, all of them in `auth.js`. The cluster (twelve more)
 lives in `admin-cluster.ts` because it is another screen and another upstream
 file.
 
@@ -256,8 +256,8 @@ export function getUser(
 /*
 `admin/users/set` is a partial endpoint: the server only touches what arrives
 (`TryGetQueryOrForm`, WebServiceAuthApi.cs:1065-1225). Upstream leans on that for
-five different actions through the same endpoint —save the modal, enable,
-disable, clear the 2FA and reset the password— sending only the fields of that
+five different actions through the same endpoint (save the modal, enable,
+disable, clear the 2FA and reset the password), sending only the fields of that
 action each time. Hence the open body here.
 */
 export function setUser(
@@ -346,7 +346,7 @@ export function getPermission(
 
 /*
 `saveSectionPermissions` (auth.js:2114). Both tables travel serialised with `|`
-as the ONLY separator —between columns as well as between rows—, which is what
+as the ONLY separator (between columns as well as between rows), which is what
 `serializeTableData` does (common.js:282). And the `node` is NOT the node chosen
 on the screen: it is always the cluster's PRIMARY node, or an empty string if
 there is no cluster.

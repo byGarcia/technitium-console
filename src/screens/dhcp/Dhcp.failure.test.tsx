@@ -1,12 +1,12 @@
 /*
 In DHCP, a failure does not draw the empty table.
 
-`Leases` and `Scopes` already SAID the failure —they raise the notice with the
-server's message, and their code documents it— but the table went on drawing its
+`Leases` and `Scopes` already SAID the failure (they raise the notice with the
+server's message, and their code documents it), but the table went on drawing its
 empty row: "No Lease Found" while the notice said the call had fallen over. Of the
 two, the one believed is the table: it is what the user is looking at.
 
-Neither of them keeps the previous data —`setLeases([])`, `setScopes([])`— so they
+Neither of them keeps the previous data (`setLeases([])`, `setScopes([])`), so they
 do not carry the other collections' stale strip: inheriting the archetype's look
 is not inheriting behaviour they do not have.
 

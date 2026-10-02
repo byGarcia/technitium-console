@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Alert } from './Alert'
 import { Note, Warning } from './PanelForm'
 
-/* common.js:213-217 — only success alerts dismiss themselves, and after 5 s. */
+/* common.js:213-217: only success alerts dismiss themselves, and after 5 s. */
 
 afterEach(() => vi.useRealTimers())
 
@@ -54,8 +54,8 @@ describe('self-dismissal of the alert', () => {
 The difference between `Note!` and `Warning!`, and why it is tested here and not
 in `PanelForm`.
 
-They are drawn by TWO routes —42 notices through the form kit's `Note`/`Warning`
-and 36 with `<Alert>` directly in the modals— so the treatment has to live where
+They are drawn by TWO routes (42 notices through the form kit's `Note`/`Warning`
+and 36 with `<Alert>` directly in the modals), so the treatment has to live where
 the two share code. These tests fix exactly that: that both routes come out the
 same.
 
@@ -123,7 +123,7 @@ describe('Note! against Warning!', () => {
   /*
   THE ONE THAT MATTERS: the two routes have to give the same thing. If `PanelForm`
   went back to treating its notices on its own, the same `Note!` would weigh
-  differently in a panel and in a modal — which is the defect `Alert.module.css`'s
+  differently in a panel and in a modal, which is the defect `Alert.module.css`'s
   header records having already fixed once.
   */
   it('the PanelForm route and the direct Alert route draw the same', () => {

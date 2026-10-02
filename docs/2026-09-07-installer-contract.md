@@ -15,10 +15,10 @@ something no installer can deliver, and **implemented the same day**.
 cases have been seen passing.** Nineteen of them against the official image, and
 the two mode B cases against a server built from the fork branch that carries the
 variable: because until that branch is merged, that is the only server there is
-that honours it. Building one takes four commands and they are written down in
+that honours it. Building one took four commands; they are in the history of
 `dev/README.md`. Those numbers come out of the probe, not out of this paragraph.
 
-> **2026-09-30.** The security audit of that day (`docs/2026-09-30-audit-v15.5.md`)
+> **2026-09-30.** The security audit of that day
 > found three ways the installer could remove what is not a console. They are
 > now clauses W6, W7 and A8, with a fourth, I1, for the download itself: twenty-five
 > clauses and twenty-five cases. Measured against `technitium/dns-server:latest`
@@ -26,9 +26,9 @@ that honours it. Building one takes four commands and they are written down in
 > (C15). C22 to C25 were first seen failing against the `install.sh` of `HEAD`.
 
 > **2026-10-01.** Docker gets an install path of its own: an init image that
-> copies the console into a volume the official server mounts
-> (`docs/2026-10-01-docker-install-spec.md`). Four clauses for it, D1 to D4;
-> amendments to W6, A6 and I1, W4 giving way inside the image (§3, «Docker»)
+> copies the console into a volume the official server mounts (README.md,
+> "Docker"). Four clauses for it, D1 to D4;
+> amendments to W6, A6 and I1, W4 giving way inside the image (§3, "Docker")
 > and the Docker host's steps in §4; and five cases, C26 to C30, with C11, C17
 > and C22 extended: thirty cases.
 > Measured against `technitium/dns-server:latest` (v15.5.1): **29 met, 0 not met,
@@ -426,7 +426,7 @@ the three.
   `✓` is not C8's alone for this half: C26 finds nothing in the volume but the
   console and the marker, and the marker not served, and C29 finds not even
   the marker after an init that was refused; measured on 2026-10-01. Why the
-  marker is there is in «Docker», below.
+  marker is there is in "Docker", below.
 - **A7 ✓** (C19) When the version recorded with the backup and the running one
   differ, the backup is the console of another server: `--uninstall` **stops**,
   names both versions, and does nothing. Restoring it anyway takes a flag of its

@@ -25,8 +25,8 @@ Four things copied from upstream on purpose:
   · **"Overwrite SOA Serial" goes back to unchecked on every opening**
     (zone.js:1244); the editor's text is NOT cleared. Upstream only overwrites
     it when the read succeeds, so after a failed read the textarea still holds
-    whatever the previous opening left there, and "Save" —which is never
-    disabled— would send it. It is replicated: clearing it would send an empty
+    whatever the previous opening left there, and "Save" (which is never
+    disabled) would send it. It is replicated: clearing it would send an empty
     file instead, which with `overwriteZone=true` leaves the zone with its SOA
     alone.
   · **On success it reloads the zone only if the zone view is open**

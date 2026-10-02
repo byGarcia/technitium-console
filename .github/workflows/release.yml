@@ -142,7 +142,7 @@ jobs:
           prerelease: ${{ steps.notes.outputs.prerelease }}
           make_latest: ${{ steps.notes.outputs.prerelease == 'true' && 'false' || '' }}
 
-  # The init image for Docker (README, «Docker»), from the tarball the job
+  # The init image for Docker (README, "Docker"), from the tarball the job
   # above has just published: X.Y.Z is pushed and checked in every platform
   # (contract D4), and only then do X.Y and latest move, decided in that same
   # step from the tags as they are then, so a re-run of this job alone never

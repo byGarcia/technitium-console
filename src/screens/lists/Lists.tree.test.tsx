@@ -37,7 +37,7 @@ const NS = {
 }
 
 describe('the path says where you are', () => {
-  /* Problem 3 of the contract: the current node used to appear only inside
+  /* The third problem: the current node used to appear only inside
      `N records at <node>`, with no chain, so on a three-level tree there was no
      telling what it hung off. */
   it('it writes the whole chain, root first and the open node last', async () => {
@@ -95,8 +95,8 @@ describe('cache and policy are told apart', () => {
 
 describe('Delete weighs what it costs', () => {
   /*
-  Problem 4, and the contract had it backwards: it said `Delete` and `Flush` were
-  the same red pill. They were not — `Flush` already carried `variant="danger"`
+  The fourth problem, and the design brief had it backwards: it said `Delete` and `Flush` were
+  the same red pill. They were not: `Flush` already carried `variant="danger"`
   and `Delete` carried NO variant at all, so the destructive verb in the bar was
   drawn as a plain grey button while the one beside it was a filled red block.
   */
@@ -136,8 +136,8 @@ describe('loading is not emptiness, on either side', () => {
   })
 
   /*
-  Two holes, one wait. The eye needs a placeholder in each —that is what says the
-  content is coming and not gone— and the ear needs one: two `role="status"` for
+  Two holes, one wait. The eye needs a placeholder in each (that is what says the
+  content is coming and not gone), and the ear needs one: two `role="status"` for
   the same request read it out twice.
   */
   it('both holes show a placeholder and only one of them announces it', async () => {

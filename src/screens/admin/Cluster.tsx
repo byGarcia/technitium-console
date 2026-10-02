@@ -508,7 +508,7 @@ export function Cluster({ tabs, token, cluster, node: controlledNode, onNodeChan
 
 /*
 The date and how long ago it was. It is `ui/SessionCells`'s `LastSeenCell`, which
-is what the three sessions tables already use for the same pair — this file had a
+is what the three sessions tables already use for the same pair. This file had a
 copy of it, and the copy was broken: its second line named `styles.meta`, a class
 `Admin.module.css` does not declare, so the "(x ago)" rendered with no class at
 all. Found on 2026-09-07 by `dev/css-dead.mjs` once it looked in that direction.
@@ -925,7 +925,7 @@ function JoinCluster({
             )}
           </MRow>
 
-          {/* It went with `frm.rowCtl` —the column of a PAGE row— inside a
+          {/* It went with `frm.rowCtl` (the column of a PAGE row) inside a
               modal, which is the same oversight `MRow` had. */}
           <GroupRow modal label="Certificate Validation">
             <Radios

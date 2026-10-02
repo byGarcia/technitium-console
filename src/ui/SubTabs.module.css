@@ -2,7 +2,7 @@
 The sub-navigation bar. An underline and not a filled pill, and the difference is
 the same one `SectionIndex` makes: `Segmented` fills with amber because there you
 have chosen a value and the others have stopped applying. Here the others are
-still there — they are other screens of the same section — so the active one is
+still there (they are other screens of the same section), so the active one is
 marked with an edge and the rest read as ordinary links.
 */
 .bar {
@@ -12,7 +12,7 @@ marked with an edge and the rest read as ordinary links.
   /* The rule under the tabs is an inset shadow and not a border, so the active
      tab's edge can sit on it without leaving the box. With a border, each tab had
      to reach 1 px past the content box (`margin-bottom: -1px`) to cover it, and
-     inside `overflow-x: auto` —which makes `overflow-y` auto too— that pixel was
+     inside `overflow-x: auto` (which makes `overflow-y` auto too) that pixel was
      overflow: Chromium on Linux drew a 15 px vertical scrollbar beside the tabs of
      every section. The children paint over their parent's shadow, so the active
      edge still covers the rule. */

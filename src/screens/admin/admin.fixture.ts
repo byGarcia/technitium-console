@@ -19,7 +19,7 @@ the cluster is not initialised.
 The users and the LDAP config were re-read from a v15.5.1 instance on 2026-09-30:
 `type` arrived with that release, `remotelyManagedGroups` replaced
 `ssoManagedGroups`, and a `RemoteSSO` user carries no `totpEnabled` at all
-(WebServiceAuthApi.cs:140-146) — which is why `SSO_USER` below does not either.
+(WebServiceAuthApi.cs:140-146), which is why `SSO_USER` below does not either.
 */
 
 export const ADMIN_SESSION: AdminSession = {

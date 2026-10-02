@@ -49,8 +49,8 @@ Five upstream behaviours that are contract and not preferences:
      the last one. Checked against a v15.4 instance.
 
 What is NOT here: each row's menu ("Query DNS Server", "Allow Domain" / "Block
-Domain", logs.js:539-552). Its three actions live on other screens —DNS Client
-and Allowed/Blocked— and there is no way to invoke them from here without
+Domain", logs.js:539-552). Its three actions live on other screens (DNS Client
+and Allowed/Blocked), and there is no way to invoke them from here without
 touching the Shell. It is noted as an integration gap, not half-solved.
 */
 
@@ -121,7 +121,7 @@ The seven legend entries, in the SAME file as `rowClass` and on purpose.
 
 They are two lists that have to say the same thing: the one that paints and the
 one that explains. If they live apart, the first time somebody adds a colour the
-legend falls short and nobody notices — which is exactly how this screen came to
+legend falls short and nobody notices, which is exactly how this screen came to
 have seven colours and no legend.
 
 The condition is written the way `rowClass` evaluates it, not the way it sounds
@@ -168,8 +168,8 @@ export function statusText(p: QueryLogPage): string {
 
 /*
 The ten pages centred on the current one. It was a letter-for-letter copy of
-`lib/pagination.ts` —that one cited `zone.js:880-905` and this one
-`logs.js:571-586`, two places in upstream doing the same thing— with tests of its
+`lib/pagination.ts` (that one cited `zone.js:880-905` and this one
+`logs.js:571-586`, two places in upstream doing the same thing), with tests of its
 own. The name is kept because this screen's tests use it.
 */
 export function pageRange(pageNumber: number, totalPages: number): number[] {
@@ -212,7 +212,7 @@ export function QueryLogs({ tabs, token, node = '' }: QueryLogsProps) {
       if (outcome.kind !== 'ok') {
         /*
         Without this, a failure here left the "Source App Name" dropdown at
-        "—", which is the same thing a server with no logging app installed
+        the empty-value dash, which is the same thing a server with no logging app installed
         shows. And there is no way out of that: with no app there is no query to
         run, so the screen sat dead without saying why.
         */
@@ -233,7 +233,7 @@ export function QueryLogs({ tabs, token, node = '' }: QueryLogsProps) {
   const appClasses = apps?.find((a) => a.name === f.appName)?.classPaths ?? []
 
   const params = useCallback((filters: Filters, pageNumber: string): QueryLogsParams => {
-    // logs.js:405 — fewer than 1 entry per page falls to 10.
+    // logs.js:405. Fewer than 1 entry per page falls to 10.
     const n = Number(filters.entriesPerPage)
     const entriesPerPage = String(n < 1 || Number.isNaN(n) ? 10 : n)
 
@@ -260,7 +260,7 @@ export function QueryLogs({ tabs, token, node = '' }: QueryLogsProps) {
     async (pageNumber: string, live: boolean) => {
       const filters = filtersRef.current
 
-      // logs.js:389-401 — the app and the class, in that order.
+      // The app and the class, in that order (logs.js:389-401).
       if (filters.appName === '') {
         setNotice({
           type: 'warning',
@@ -280,7 +280,7 @@ export function QueryLogs({ tabs, token, node = '' }: QueryLogsProps) {
         return
       }
 
-      // logs.js:407-424 — "From" before "To", and only if the browser says
+      // logs.js:407-424. "From" before "To", and only if the browser says
       // what was typed is not a date.
       if (since.current?.validity.badInput === true) {
         setNotice({
@@ -322,7 +322,7 @@ export function QueryLogs({ tabs, token, node = '' }: QueryLogsProps) {
     queryRef.current = query
   }, [query])
 
-  /* logs.js:610 — while "Live Update" is checked, it repeats every 2 s. */
+  /* logs.js:610. While "Live Update" is checked, it repeats every 2 s. */
   useEffect(() => {
     if (!live) return
     let cancelled = false
@@ -346,7 +346,7 @@ export function QueryLogs({ tabs, token, node = '' }: QueryLogsProps) {
   }
 
   function changeApp(name: string) {
-    // logs.js:21 — on changing app its classes reload and the first is taken.
+    // logs.js:21. On changing app its classes reload and the first is taken.
     const classes = apps?.find((a) => a.name === name)?.classPaths ?? []
     set({ appName: name, classPath: classes[0] ?? '' })
   }
@@ -358,7 +358,7 @@ export function QueryLogs({ tabs, token, node = '' }: QueryLogsProps) {
 
   function toggleLive(checked: boolean) {
     if (checked) {
-      // logs.js:34-42 — pins page and order, and empties the date range.
+      // logs.js:34-42. Pins page and order, and empties the date range.
       set({ pageNumber: '1', descendingOrder: 'true', start: '', end: '' })
       setLive(true)
       return
@@ -368,7 +368,7 @@ export function QueryLogs({ tabs, token, node = '' }: QueryLogsProps) {
   }
 
   async function runExport() {
-    // logs.js:612-625 — the app alert does NOT carry "from the Apps section." and
+    // logs.js:612-625. The app alert does NOT carry "from the Apps section." and
     // the dates are not checked here.
     if (f.appName === '') {
       setNotice({
@@ -471,8 +471,8 @@ export function QueryLogs({ tabs, token, node = '' }: QueryLogsProps) {
           {/*
           The MODE group: the switch and the FOUR fields it turns off, together.
 
-          They used to be spread about —`From`, `To` and `Order` in "Period", and
-          `Page Number` at the end of "Response"— so the off signal jumped from one
+          They used to be spread about (`From`, `To` and `Order` in "Period", and
+          `Page Number` at the end of "Response"), so the off signal jumped from one
           group to another and had to be repeated. Together, the edge runs down
           them once and **one** pill is enough for all four, which is the
           `Settings` master-switch rule.
@@ -488,8 +488,8 @@ export function QueryLogs({ tabs, token, node = '' }: QueryLogsProps) {
               The pill carries the OPPOSITE POLARITY to the one in `Settings`.
 
               There it says `Needs {switch}`: "turn it on and this becomes active".
-              Here the truth is the reverse —they are off because `Live Update` is
-              ON— and `Needs Live Update` would say exactly the opposite of how to
+              Here the truth is the reverse (they are off because `Live Update` is
+              ON), and `Needs Live Update` would say exactly the opposite of how to
               get them back. A control that lies about how to recover it is worse
               than a control with no signal at all.
 
@@ -503,7 +503,7 @@ export function QueryLogs({ tabs, token, node = '' }: QueryLogsProps) {
               {/*
               Not wrapped in `.field`, and `dev/uniformity.js` caught this.
 
-              Put inside, `.field label` changed its label to 11 px and grey —the
+              Put inside, `.field label` changed its label to 11 px and grey: the
               `settings-checkbox` family went from ONE signature to two, and the
               second existed only on this route. A checkbox **is** its own label;
               `.field` is for a control that carries a separate label above it.
@@ -654,7 +654,7 @@ export function QueryLogs({ tabs, token, node = '' }: QueryLogsProps) {
 
           {/* On its own, and not in "Response", because it is not a search
               criterion: it is how many rows fit. And it is the only control on
-              this screen that survives a `Reset` — it is re-read from
+              this screen that survives a `Reset`: it is re-read from
               `localStorage`. */}
           <div className={styles.frow}>
             <div className={styles.frowLabel}>Paging</div>
@@ -682,7 +682,7 @@ export function QueryLogs({ tabs, token, node = '' }: QueryLogsProps) {
         <>
           <div className={styles.count}>
             <span>{statusText(page)}</span>
-            {/* logs.js:589 — "Last" is asked for with -1; the server resolves it. */}
+            {/* logs.js:589. "Last" is asked for with -1; the server resolves it. */}
             <Pagination
               window={pageWindow(page.pageNumber, page.totalPages)}
               current={page.pageNumber}
@@ -732,7 +732,7 @@ export function QueryLogs({ tabs, token, node = '' }: QueryLogsProps) {
                   )}
                 </td>
                 <td>{e.rcode}</td>
-                {/* logs.js:518 — the root is written with a dot. */}
+                {/* logs.js:518. The root is written with a dot. */}
                 <td className={`${styles.mono} ${styles.breakUp}`}>
                   {e.qname === '' ? '.' : (e.qname ?? '')}
                 </td>

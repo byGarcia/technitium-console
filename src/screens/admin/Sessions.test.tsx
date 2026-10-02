@@ -37,7 +37,7 @@ function server(overrides: Record<string, unknown> = {}, server = 'ref.technitiu
 
 const props = { token: 'tok', cluster: null, onNotice: vi.fn() }
 
-describe('Sessions — the table', () => {
+describe('Sessions: the table', () => {
   it('it draws each session with its partial token, its type and the total', async () => {
     server()
     render(<Sessions {...props} />)
@@ -81,7 +81,7 @@ describe('Sessions — the table', () => {
   })
 })
 
-describe('Sessions — "Create Token"', () => {
+describe('Sessions: "Create Token"', () => {
   it('it shows when there is no cluster', async () => {
     server()
     render(<Sessions {...props} />)
@@ -131,7 +131,7 @@ describe('Sessions — "Create Token"', () => {
   })
 })
 
-describe('Sessions — deleting a session', () => {
+describe('Sessions: deleting a session', () => {
   it('it asks for confirmation with the partial token in the text', async () => {
     const spy = server()
     const user = userEvent.setup()
@@ -194,7 +194,7 @@ describe('Sessions — deleting a session', () => {
   })
 })
 
-describe('Sessions — the row that is mine', () => {
+describe('Sessions: the row that is mine', () => {
   it('washes my own session row, and only that one', async () => {
     server()
     render(<Sessions {...props} />)

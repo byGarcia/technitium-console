@@ -5,7 +5,7 @@ import { openDownload } from './user'
 The three domain lists that are NOT authoritative zones: `cache`, `allowed` and
 `blocked`. Fifteen endpoints, all of them in `other-zones.js`.
 
-All three are navigated the same way —a tree of domains, one node at a time— and
+All three are navigated the same way (a tree of domains, one node at a time) and
 their three `list` endpoints return the same envelope: `domain`, `domainIdn`,
 `zones` and `records`. That is why they share a module and share a screen.
 
@@ -102,7 +102,7 @@ export interface ListNode {
 
 /*
 `getParentDomain` (other-zones.js:80-94). Returns "" for a single-label domain
-—the parent is the root— and `null` only for the root, which is what hides the
+(the parent is the root) and `null` only for the root, which is what hides the
 [up] link in upstream.
 */
 export function parentDomain(domain: string | null | undefined): string | null {

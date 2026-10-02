@@ -7,8 +7,8 @@ import { BlockLists } from './BlockLists'
 /*
 The Lists tab fed with the harness's real `settings/get` and `dashboard/stats/get`
 (`test/real-blocking.ts`) and the real built-in Quick Add catalog. The harness's
-`blockListUrls` carries every row kind of the grammar at once —a comment, a URL in
-the catalog, an enabled `file://` list, a `#`-disabled one and a `!` allow list—, so
+`blockListUrls` carries every row kind of the grammar at once (a comment, a URL in
+the catalog, an enabled `file://` list, a `#`-disabled one and a `!` allow list), so
 each is checked as the server sent it.
 */
 

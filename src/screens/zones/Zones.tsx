@@ -47,7 +47,7 @@ type ModalId =
   | 'record'
 
 export interface ZonesProps {
-  /** The cluster nodes, for the node selector. Spec F10. */
+  /** The cluster nodes, for the node selector. */
   nodes?: { name: string; type: string }[]
   clusterInitialised?: boolean
 
@@ -70,7 +70,7 @@ export function Zones({
   dnssecValidation = false,
 }: ZonesProps) {
   /* Upstream mounts a selector here (`optZonesClusterNode`) with no aggregate
-     and no persistence; the parameter was already travelling. Spec F10. */
+     and no persistence; the parameter was already travelling. */
   const [node, setNode] = useState<string>('')
   const [open, setOpen] = useState<string | null>(null)
   const [notice, setNotice] = useState<Notice | null>(null)
@@ -130,7 +130,7 @@ export function Zones({
 
       {/* Draws nothing without a cluster. Upstream has one for the list and a
           second for the records view (`optEditZoneClusterNode`); both read the
-          same state here, since it is the same question. Spec F10. */}
+          same state here, since it is the same question. */}
       <ClusterNodeSelect
         nodes={nodes}
         initialised={clusterInitialised}

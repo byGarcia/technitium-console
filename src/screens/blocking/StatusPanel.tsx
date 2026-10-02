@@ -16,7 +16,7 @@ import styles from './Overview.module.css'
 
 /*
 Whether blocking is on, and the control to change it. The block and its sentences are
-OURS (AdGuard shows when protection comes back; upstream only has the menu), and so
+OURS (it says when blocking comes back; upstream only has the menu), and so
 is the trigger's `Disable` / `Enable` (upstream's button says "Blocking"); the menu
 and its eight durations are upstream's, reused whole from the Dashboard
 (`BlockingMenu`, main.js:2429). It reads and writes on the node the console is
@@ -24,7 +24,7 @@ connected to, as that menu does.
 
 Three things the block owes the rules rather than the menu:
 
-- A read that fails says so with `Failure` and a `Retry` (DESIGN.md: continuous =
+- A read that fails says so with `Failure` and a `Retry` (the design rule: continuous =
   error), instead of leaving "Loading…" on screen forever.
 - A pause ends on the server by itself, so the block reads again when it should
   have ended: otherwise it would keep saying "paused" for as long as the screen is
@@ -32,7 +32,7 @@ Three things the block owes the rules rather than the menu:
   (BlockListZoneManager.cs:993-995), so reading a second after `till` finds
   blocking back on; the second also absorbs a small clock skew.
 - The amber of "paused" says "yours to change". Without `Settings.canModify` it is
-  not, and DESIGN.md says the padlock wins: the mark goes neutral.
+  not, and the design rule is that the padlock wins: the mark goes neutral.
 */
 
 /** How long after `till` to read again. See above. */
@@ -44,8 +44,8 @@ const MAX_TIMEOUT_MS = 2_147_483_647
 
 /*
 When a pause ends, as the pill says it: the hour alone when that is today, the date as
-well when it is not —a three-hour pause at 23:00 ends tomorrow, and "Until 01:30"
-alone would read as earlier today—. OURS, as the block is.
+well when it is not (a three-hour pause at 23:00 ends tomorrow, and "Until 01:30"
+alone would read as earlier today). OURS, as the block is.
 */
 function untilText(till: string, now: Date = new Date()): string {
   const stamp = minuteStamp(till)
@@ -136,7 +136,7 @@ export function StatusPanel({
                     : 'Blocking is disabled'}
                 {/* The state as a pill, as the drawing has it. Paused, the amber says
                     "yours to lift": without Settings.canModify it is neutral, because
-                    the padlock wins (DESIGN.md). */}
+                    the padlock wins. */}
                 {state.kind === 'on' && <Tag tone="ok">Active</Tag>}
                 {state.kind === 'paused' &&
                   (modifyNeed == null ? (

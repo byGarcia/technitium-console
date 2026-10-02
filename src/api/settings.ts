@@ -12,8 +12,8 @@ The `settings` family. Six endpoints come from the old console:
 
 The screen's seventh control, "Flush Cache", is NOT of this family: it calls
 `cache/flush` (other-zones.js:20). It is declared here because the Settings
-action bar is its only consumer until phase 5 arrives with `src/api/cache.ts`;
-once that exists, it moves there.
+action bar was its first consumer. The Cache screen calls its own copy, in
+`api/zonelists.ts`.
 
 Three things checked against a v15.4 instance that are NOT deducible from the code:
 
@@ -59,13 +59,13 @@ export interface DnsSettings {
   clusterInitialized?: boolean
   clusterNodes?: string[]
 
-  // General — local parameters
+  // General: local parameters
   dnsServerDomain: string
   dnsServerLocalEndPoints: string[] | null
   dnsServerIPv4SourceAddresses: string[] | null
   dnsServerIPv6SourceAddresses: string[] | null
 
-  // General — zone default values
+  // General: zone default values
   defaultRecordTtl: number
   defaultNsRecordTtl: number
   defaultSoaRecordTtl: number
@@ -76,17 +76,17 @@ export interface DnsSettings {
   zoneTransferAllowedNetworks: string[]
   notifyAllowedNetworks: string[]
 
-  // General — software update
+  // General: software update
   dnsServerEnableCheckForUpdate: boolean
   dnsAppsEnableAutomaticUpdate: boolean
 
-  // General — IPv6 and socket pool
+  // General: IPv6 and socket pool
   ipv6Mode: string
   preferIPv6: boolean
   enableUdpSocketPool: boolean
   socketPoolExcludedPorts: number[]
 
-  // General — EDNS, DNSSEC and ECS
+  // General: EDNS, DNSSEC and ECS
   udpPayloadSize: number
   dnssecValidation: boolean
   eDnsClientSubnet: boolean
@@ -95,14 +95,14 @@ export interface DnsSettings {
   eDnsClientSubnetIpv4Override: string | null
   eDnsClientSubnetIpv6Override: string | null
 
-  // General — queries-per-minute limit
+  // General: queries-per-minute limit
   qpmPrefixLimitsIPv4: QpmPrefixLimit[]
   qpmPrefixLimitsIPv6: QpmPrefixLimit[]
   qpmLimitSampleMinutes: number
   qpmLimitUdpTruncationPercentage: number
   qpmLimitBypassList: string[]
 
-  // General — advanced options
+  // General: advanced options
   clientTimeout: number
   tcpSendTimeout: number
   tcpReceiveTimeout: number
@@ -245,7 +245,7 @@ export async function getSettings(
 
 /*
 The envelope of `settings/set` and `settings/restore`. `server` is the domain of
-the server that ANSWERED —the chosen node's when the request was proxied— and it
+the server that ANSWERED (the chosen node's when the request was proxied) and it
 sits next to `status`, outside `response` (DnsWebService.cs:2478). Upstream
 compares it with the session's domain before following the web console to a new
 address (main.js:2216, 3187).

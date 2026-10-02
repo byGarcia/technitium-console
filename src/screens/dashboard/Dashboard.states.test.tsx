@@ -1,12 +1,13 @@
 /*
-The Dashboard's states, by REGION — and above all that a failure does not disguise
+The Dashboard's states, by REGION, and above all that a failure does not disguise
 itself as empty.
 
-It is the phase 1 rule that weighs most on this screen, and not for aesthetics: a
+It is the design rule that weighs most on this screen (dashed = empty, solid =
+error), and not for aesthetics: a
 failure drawn as "No queries for this period." tells whoever administers a DNS
 that their server is receiving no traffic. `Dashboard.tsx` already denounced it
-—"the screen was answering falsely about the one thing people come here to look
-at"— and had only fixed it for the eleven cards, which show `—`; the panels went
+("the screen was answering falsely about the one thing people come here to look
+at") and had only fixed it for the eleven cards, which show the empty-value dash; the panels went
 on lying.
 */
 import { describe, expect, it, vi, afterEach } from 'vitest'
@@ -106,8 +107,8 @@ The custom range: one message at a time, next to its field, and on pressing `Sho
 
 Three different things, and all three can be lost separately:
 
-  · **next to its field** was decided by phase 1 —"and never in two places at
-    once"—; until now it came out in the notice at the top, half a screen from the
+  · **next to its field** is a design rule ("and never in two places at
+    once"); until now it came out in the notice at the top, half a screen from the
     field;
   · **one at a time and in order** is what `whatIsMissing` does: it returns the
     start one, and only when that is filled in, the end one;

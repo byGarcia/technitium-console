@@ -220,7 +220,7 @@ describe('BlockLists', () => {
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
 
-  /* M2: as every other tab, a read that fails with nothing on screen says the
+  /* As every other tab, a read that fails with nothing on screen says the
      server's own message, in the notice. */
   it('a failed read says the server message in the notice', async () => {
     vi.spyOn(dashboard, 'getDashboardStats').mockResolvedValue({ kind: 'error', message: 'n/a' })
@@ -247,7 +247,7 @@ describe('BlockLists', () => {
   })
 
   /*
-  Spec, the section on what refreshes, «Qué se refresca»: Block List Domains changes
+  Block List Domains changes
   when the server finishes reloading, not at once, and the figure says so. What the
   real server (v15.5.1) gives to tell: `blockListNextUpdatedOn` is the last SUCCESSFUL
   update plus the interval

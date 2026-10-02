@@ -1,7 +1,7 @@
 /*
 Which of the API endpoints the stock console calls does this one call too?
 
-The README carried a figure for it —"114 of 114"— that no script produced, and a
+The README carried a figure for it ("114 of 114") that no script produced, and a
 figure nobody can reproduce is an opinion. This produces it.
 
 Upstream's side is every `"api/…"` literal in its `www/js/*.js` at the release
@@ -79,6 +79,6 @@ for (const w of byWildcard) console.log(`  WILDCARD  ${w}`)
 for (const m of missing) console.log(`  MISSING   ${m}`)
 console.log(
   `\nENDPOINTS (${REF}): ${theirs.size - missing.length} of ${theirs.size} covered` +
-    (byWildcard.length ? `, ${byWildcard.length} of them only through a wildcard — check those by eye.` : '.'),
+    (byWildcard.length ? `, ${byWildcard.length} of them only through a wildcard; check those by eye.` : '.'),
 )
 process.exit(Math.min(missing.length, 250))

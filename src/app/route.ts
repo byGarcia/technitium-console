@@ -5,7 +5,7 @@ The console's route, in the real address bar.
 
 Upstream has none: its tabs are Bootstrap 3's, which call `preventDefault()` and
 never touch the URL, so reloading always returns to the Dashboard. This is
-therefore an ADDITION of ours and not recovered parity — it is stated here because
+therefore an ADDITION of ours and not recovered parity. It is stated here because
 the project's governing constraint is "design only, zero functionality" and whoever
 reads the diff should know which of the two they are looking at.
 
@@ -61,8 +61,8 @@ export function toTrail({ section, sub }: Route): string {
 }
 
 /**
- * Writes the route. `replaceEntry` for the boot normalisation —which is not a
- * navigation and must not leave a history entry— and pushing for what the user
+ * Writes the route. `replaceEntry` for the boot normalisation (which is not a
+ * navigation and must not leave a history entry) and pushing for what the user
  * does, so the back button walks the sections instead of taking them out of the
  * console.
  *
@@ -98,7 +98,7 @@ export function translateLegacyRoute(): boolean {
 
 /**
  * A click the browser should handle itself: another button, or with a modifier
- * —open in a new tab, in a window, download— or one something else already took.
+ * (open in a new tab, in a window, download), or one something else already took.
  * Intercepting them would turn a real link into a button in disguise. The sidebar,
  * the sub-tabs and `ui/RouteLink` all ask this same question.
  */
@@ -116,7 +116,7 @@ export function plainClick(e: {
 /**
  * Goes to another section from inside a screen, without reloading the console.
  *
- * The route is pushed —it is something the user did, so the back button returns—
+ * The route is pushed (it is something the user did, so the back button returns)
  * and then announced with the same `popstate` the back button fires. The Shell
  * already follows that event (it reads the bar and moves to what it says), so a
  * screen needs no handle on the Shell's state to send the user elsewhere.

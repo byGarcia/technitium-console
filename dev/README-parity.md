@@ -27,9 +27,9 @@ container.
 
 ## `check-parity.sh`: only for the preserved files
 
-Compares the content of a path between the two instances. Since phase 0 the
-console is ours, so **for `/` it reports `DIFFERENT` and that is the point of the
-project**. It still serves for what the build preserves untouched:
+Compares the content of a path between the two instances. The console is ours,
+so **for `/` it reports `DIFFERENT` and that is the point of the project**. It
+still serves for what the build preserves untouched:
 
 ```bash
 ./check-parity.sh /robots.txt   # IDENTICAL

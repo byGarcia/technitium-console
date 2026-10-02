@@ -5,7 +5,7 @@ import { noticeFromFailure } from './notice'
 The translation of an API failure into an alert was written thirty-six times,
 with three different fallbacks for when the server sends no message: "Unknown
 error." in Administration, an empty string in DHCP and in Apps, and NOTHING in
-the other thirty —that is, a red box with its title and a blank body. `message`
+the other thirty, that is, a red box with its title and a blank body. `message`
 is optional in `ApiOutcome`, so all three were reachable.
 */
 describe('noticeFromFailure', () => {

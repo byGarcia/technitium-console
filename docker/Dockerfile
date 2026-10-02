@@ -1,4 +1,4 @@
-# The init image of technitium-console (README, «Docker»). It copies the console
+# The init image of technitium-console (README, "Docker"). It copies the console
 # into the volume mounted at /target and exits; the official DNS server mounts
 # the same volume read-only and serves it.
 #

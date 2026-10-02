@@ -1,6 +1,6 @@
 /*
-The cells of a sessions table. There are three tables —all sessions, one user's
-and my own— and all three paint the same thing: which session it is, when it was
+The cells of a sessions table. There are three tables (all sessions, one user's
+and my own) and all three paint the same thing: which session it is, when it was
 last seen, from where and with what.
 
 Two of them shared a component; the third, "My Profile", was written by hand, and

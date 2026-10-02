@@ -1,7 +1,7 @@
 /*
 The same thing in Zones, where the collection archetype was defined.
 
-Zones had its own design round —pilot 2— and this still got through: `zones`
+Zones had its own design round and this still got through: `zones`
 starts as an empty array, so the wait drew "1-0 (0) of 0 zones" and an empty
 table, which is what a server with no zones draws. A round that validated a
 surface did not validate this state, which is the argument for the matrix.

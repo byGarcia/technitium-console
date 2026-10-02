@@ -13,8 +13,8 @@ export { noticeFromFailure } from '../../lib/notice'
 
 
 /*
-`MRow` is `ui/Form`'s row in its modal variant. It was a third copy —the other
-two lived in the Settings and DHCP parts— and on top of that it had a bug of its
+`MRow` is `ui/Form`'s row in its modal variant. It was a third copy (the other
+two lived in the Settings and DHCP parts), and on top of that it had a bug of its
 own: it used `frm.rowCtl` instead of `frm.mrowCtl`, so an Administration modal's
 control was laid out with the rules of a page row.
 */

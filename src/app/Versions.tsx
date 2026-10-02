@@ -11,8 +11,8 @@ What is running, and whether there is anything newer.
 
 Two facts that used to be scattered: the server's version lived only on the
 About screen, this console's version lived nowhere at all, and the update notice
-—which upstream shows from EVERY screen (`index.html:141`, in the panel heading,
-outside the tab panes)— was not shown anywhere. The check existed in
+(which upstream shows from EVERY screen: `index.html:141`, in the panel heading,
+outside the tab panes) was not shown anywhere. The check existed in
 `api/user.ts` and the only thing it drove was one line inside About.
 
 Putting the mark on the version it concerns is not decoration: the DNS server
@@ -54,7 +54,7 @@ export function Versions({ token, serverVersion, domain, markHidden = false }: {
     }
   }, [token])
 
-  /* main.js — when the feed sends no title, upstream writes this one itself. */
+  /* main.js: when the feed sends no title, upstream writes this one itself. */
   const title = info?.updateTitle ?? 'New Update Available!'
 
   return (
@@ -96,14 +96,14 @@ export function Versions({ token, serverVersion, domain, markHidden = false }: {
         <Dialog open={open} onOpenChange={setOpen} title={title} size="compact">
           {/*
           The two numbers keep the arrow, and get back the two names upstream
-          writes beside them —`Current Version:` and `Update Version:`—.
+          writes beside them: `Current Version:` and `Update Version:`.
 
-          Found contracting About, 2026-09-04: the arrow says which is which to
-          the eye and to nobody else. Read aloud it was «15.4 → 16.0», two numbers
+          Found checking About against upstream, 2026-09-04: the arrow says which
+          is which to the eye and to nobody else. Read aloud it was "15.4 → 16.0", two numbers
           with no way to tell the one you are running from the one you are being
-          offered — and this is the dialog whose whole job is that distinction.
+          offered, and this is the dialog whose whole job is that distinction.
           The names go hidden rather than drawn so the comparison keeps the shape
-          the chrome round decided.
+          the chrome design decided.
           */}
           {info.currentVersion && info.updateVersion && (
             <div className={styles.jump}>
@@ -126,7 +126,7 @@ export function Versions({ token, serverVersion, domain, markHidden = false }: {
             {info.downloadLink && <External href={info.downloadLink}>Download Now!</External>}
             {info.instructionsLink && <External href={info.instructionsLink}>Update Instructions</External>}
             {/* `Read Change Logs`, which is what upstream calls it. It said
-                `Change Log`: a literal reworded, caught contracting About. */}
+                `Change Log`: a literal reworded, caught checking About against upstream. */}
             {info.changeLogLink && <External href={info.changeLogLink}>Read Change Logs</External>}
           </div>
 

@@ -1,7 +1,7 @@
 /*
 The Dashboard's custom range.
 
-`Custom` was a dead button: it marked itself as pressed, the tiles stayed at "—"
+`Custom` was a dead button: it marked itself as pressed, the tiles stayed at the empty-value dash
 and nowhere did it appear where to put the dates. The API layer already accepted
 `{start, end}` from the beginning; what was missing was asking for them.
 
@@ -11,8 +11,8 @@ this with a rule worth testing: **how a date is turned into an instant**.
 Upstream (`main.js:2604-2612`) does something that looks like an oversight and is
 not: if the range fits in seven days or fewer, it reads the dates in the
 browser's LOCAL zone; if it is longer, in UTC. The reason is that under a week
-the server returns statistics by the hour —and hours have to line up with the
-clock of whoever is looking— and above that it returns them by day, which the
+the server returns statistics by the hour (and hours have to line up with the
+clock of whoever is looking), and above that it returns them by day, which the
 server groups in UTC. Reading it all the same way would shift one of the two
 views.
 */

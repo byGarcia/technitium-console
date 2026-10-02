@@ -3,8 +3,8 @@ Which of upstream's sortable columns are still sortable here.
 
 ## Why this file exists
 
-`check-parity-controls.mjs` counts three things —destinations, help texts and
-examples— and it has been green throughout. A sortable column header is none of
+`check-parity-controls.mjs` counts three things (destinations, help texts and
+examples), and it has been green throughout. A sortable column header is none of
 the three, so it walks straight past it, and that blind spot has now cost twice:
 
   · About (2026-09-04): the three links of the update modal were `href="#"` filled
@@ -25,7 +25,7 @@ sort affordances that are not table headers.
 
 The comparison is per TABLE and by count, not by column name: upstream's labels
 live in the HTML and ours in TSX, and matching them by string would be a second
-inventory to keep in sync — which is the thing that rots.
+inventory to keep in sync, which is the thing that rots.
 
 Every gap must be DECLARED below with its reason. An undeclared gap is a finding;
 a declared one that has closed is also a finding, because a reason nobody needs
@@ -71,7 +71,7 @@ const MAP = [
 ]
 
 if (!fs.existsSync(UPSTREAM)) {
-  console.log(`\n  upstream not found at ${UPSTREAM} — nothing measured.\n`)
+  console.log(`\n  upstream not found at ${UPSTREAM}: nothing measured.\n`)
   process.exit(0)
 }
 
@@ -95,10 +95,10 @@ for (const row of MAP) {
   }
   const gap = theirs - row.ours
   if (gap > 0 && row.gap == null) {
-    findings.push(`${row.id} (${row.file}): upstream sorts ${theirs} columns, this console ${row.ours} — ${gap} undeclared`)
+    findings.push(`${row.id} (${row.file}): upstream sorts ${theirs} columns, this console ${row.ours}, ${gap} undeclared`)
   }
   if (gap <= 0 && row.gap != null) {
-    findings.push(`${row.id}: the gap is declared and no longer exists — remove the reason`)
+    findings.push(`${row.id}: the gap is declared and no longer exists: remove the reason`)
   }
 }
 

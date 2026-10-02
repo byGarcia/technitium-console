@@ -88,9 +88,9 @@ describe('Versions', () => {
   })
 
   /*
-  Three literals that were missing or reworded, found contracting About on
-  2026-09-04 — the update flow had never been walked against upstream item by
-  item, because the chrome round contracted the chrome and not this dialog.
+  Three literals that were missing or reworded, found checking About against
+  upstream on 2026-09-04: the update flow had never been walked against upstream
+  item by item, because the earlier check covered the chrome and not this dialog.
   */
   it('names each of the two versions, which the arrow only says to the eye', async () => {
     withUpdate({ currentVersion: '15.4', updateVersion: '16.0' })

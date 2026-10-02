@@ -36,7 +36,7 @@ function server(groups = GROUPS, detail?: Record<string, unknown>) {
 
 const props = { token: 'tok', onNotice: vi.fn() }
 
-describe('Groups — the table', () => {
+describe('Groups: the table', () => {
   it('it draws name, description and the total', async () => {
     server()
     render(<Groups {...props} />)
@@ -70,7 +70,7 @@ describe('Groups — the table', () => {
   })
 })
 
-describe('Groups — "Add Group"', () => {
+describe('Groups: "Add Group"', () => {
   it('it requires the name and nothing else', async () => {
     const spy = server()
     const user = userEvent.setup()
@@ -106,7 +106,7 @@ describe('Groups — "Add Group"', () => {
   })
 })
 
-describe('Groups — the details modal', () => {
+describe('Groups: the details modal', () => {
   it('it saves cleaned members and WITHOUT `newGroup` if the name did not change', async () => {
     const spy = server()
     const onNotice = vi.fn()

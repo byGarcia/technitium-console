@@ -29,8 +29,8 @@ consumes are noted in `src/api/admin.ts` and `src/api/admin-cluster.ts`.
 
 About the cluster: upstream reads `clusterInitialized` and `clusterNodes` from
 `sessionData.info`, which arrives on login. The session the Shell hands out does
-not expose them, so here they are asked for once with `admin/cluster/state` —the
-same datum, and allowed with the same `canView` needed to see the section— and
+not expose them, so here they are asked for once with `admin/cluster/state` (the
+same datum, and allowed with the same `canView` needed to see the section) and
 shared with the seven sub-tabs. The Cluster sub-tab refreshes it every time it
 changes, just as `reloadAdminClusterView` does.
 */
@@ -59,7 +59,7 @@ export function Admin({ token, sub, onSubChange }: AdminProps) {
   /*
   Upstream mounts two selectors in this section, `optAdminSessionsClusterNode`
   and `optAdminClusterNode`. One state serves both: it is the same question asked
-  from two sub-tabs. No aggregate, no persistence. Spec F10.
+  from two sub-tabs. No aggregate, no persistence.
 
   The nodes come from this screen's own `getClusterState` rather than from the
   session, because it already loads them. The control itself stays in the header
@@ -80,13 +80,13 @@ export function Admin({ token, sub, onSubChange }: AdminProps) {
       `updateClusterNodeDropDown` (cluster.js:1026) selects `dnsServerDomain` when
       nothing has been chosen, and falls back to the first node if that name is not
       in the list. Ours left the value empty, so the control came up showing the
-      "—" placeholder: a dropdown that names no node while the table under it lists
+      empty-value dash: a dropdown that names no node while the table under it lists
       two. Measured on the harness with the two-node cluster up, `Sessions` and
       `Cluster` both showed it.
 
       The value that travels also becomes upstream's: it sent the node's name where
       we sent the empty string. The server treats both as this node, so nothing
-      changes about which server answers — what changes is that the request now
+      changes about which server answers; what changes is that the request now
       says which one it means.
       */
       setNode((current) => {

@@ -20,18 +20,18 @@
 Permissions: the concession map and its index on top, then one card per section
 with its two tables side by side.
 
-The rows themselves are no longer here. They were a CSS grid —`.prow`, `.phd`,
-`.pchk`— which is exactly what `contract()` reported on 2026-09-04: `tables: []`
-with 84 cells inside it. They are `ui/Matrix` now, which is a real table with both
+The rows themselves are no longer here. They were a CSS grid (`.prow`, `.phd`,
+`.pchk`), which is exactly why a structural read of the DOM on 2026-09-04 found
+no table with 84 cells inside it. They are `ui/Matrix` now, which is a real table with both
 axes; what stays here is only the LAYOUT, which is what belongs to a screen.
 */
 
 /*
 The index runs beside the whole screen, and it is the narrow column.
 
-`--index-col` is pilot 3's column and this is its first wiring. Below
-`--bp-index` the index becomes a horizontal strip on its own —that behaviour
-lives inside `ui/SectionIndex`— so here it only has to stop being a column, and
+`--index-col` is the dense form's index column and this is its first wiring. Below
+`--bp-index` the index becomes a horizontal strip on its own (that behaviour
+lives inside `ui/SectionIndex`), so here it only has to stop being a column, and
 it goes FIRST so the strip lands above what it indexes and not under it.
 */
 .withIndex {

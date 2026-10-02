@@ -43,13 +43,13 @@ one wins, which is what was drawn and what is seen on the first pass.
 
 /*
 The `Note!` goes OUTLINED and the rest filled, and that is the only difference in
-treatment phase 2 introduces here.
+treatment this file adds.
 
 This file's header says a notice is filled, and that is still true for the three
 that ask for attention. That decision solved something else: that the SAME notice
 weighed differently on two screens. This one separates two DIFFERENT notices on
-one screen, which is the one pilot 3 asked for and the one that does not exist
-today — measured: `notice-info` and `notice-warning` gave the same signature,
+one screen, which is the one the dense-form design asked for and the one that did not exist
+today. Measured: `notice-info` and `notice-warning` gave the same signature,
 `filled | no-icon | 8px | 15px from the panel`.
 
 Only the `info` steps back, because it is the only one that explains rather than
@@ -73,7 +73,7 @@ Two classes and not one, and the reason matters more than the rule.
 
 The first version wrote `.info { background: transparent }` and **did nothing**.
 `composes` does not copy declarations: it adds the tone's class to the element, so
-there are two rules of ONE class each —this one and `tones.module.css`'s— with the
+there are two rules of ONE class each (this one and `tones.module.css`'s) with the
 same specificity, and the one the bundle emits later wins. It emitted the tone's:
 
     ._info_7n07s_40{background:0 0}
@@ -83,7 +83,7 @@ With `.alert.info` it is two classes against one and the order stops deciding.
 
 And what really has to be remembered: **the sweep caught this, not the review**.
 It was seen because the `notice-<type>` family now takes the fill in; with the
-previous signature —`borderRadius | inset`— this change would have come out green
+previous signature (`borderRadius | inset`) this change would have come out green
 while being a no-op.
 */
 
@@ -99,7 +99,7 @@ floats in the middle of the paragraph.
 
 /*
 The air an alert leaves beneath it. It was written across eleven modules under
-three names —`.notice`, `.noticeGap` and `.alertSlot`— and produced four
+three names (`.notice`, `.noticeGap` and `.alertSlot`) and produced four
 distances: 24 px in Zones and its modals, the lists screens, Administration, the
 Dashboard, DNS Client and Apps; 14 in DHCP, in Logs and on login; and 12 in the
 four account modals, where the alert sat loose and kept the container's `gap`.

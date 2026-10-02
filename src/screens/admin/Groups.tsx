@@ -345,8 +345,8 @@ function GroupDetail({
       open
       onOpenChange={(o) => !o && onClose()}
       title="Group Details"
-      /* 880 because of the list it carries inside, not because of its two fields
-         — the same reason `User Details` is 880. At 560 the members list and its
+      /* 880 because of the list it carries inside, not because of its two fields.
+         It is the same reason `User Details` is 880. At 560 the members list and its
          `Add User` shared a column half the width of the names in it. */
       size="wide"
       actions={

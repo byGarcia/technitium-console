@@ -13,7 +13,7 @@ in v15.5.1) and of `modalChangePassword` (index.html:3849-3900).
 
 The ORDER of the validations is contract, just like the texts: upstream checks
 the current password first, then the new one, then the confirmation, then that
-they match, and only then the OTP —and the OTP only if the user has 2FA on.
+they match, and only then the OTP, and the OTP only if the user has 2FA on.
 
 On success upstream CLOSES the dialog and speaks on the page; the alert does not
 stay inside a dialog that is no longer needed. Brought in line on 2026-09-30,

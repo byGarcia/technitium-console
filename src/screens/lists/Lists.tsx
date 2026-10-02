@@ -33,7 +33,7 @@ Cache, Allowed and Blocked. A single screen because in upstream they are three
 copies of the same code (`refreshCachedZonesList`, `refreshAllowedZonesList` and
 `refreshBlockedZonesList` are the same function three times, other-zones.js).
 
-What really changes between the three are the TEXTS —and they are not
+What really changes between the three are the TEXTS, and they are not
 interchangeable: deleting in Allowed says "Domain 'x' was deleted from Allowed
 Zone successfully." and deleting in Blocked says "Blocked zone 'x' was deleted
 successfully.". That is why each sentence is written out whole in its place
@@ -65,8 +65,8 @@ the sort on any of the three. It is here because the three screens are one
 component and, without it, the only thing separating "what the server resolved"
 from "what you decided" is a title.
 
-English, like every other addition of ours on this screen —`Domain`, `No records
-at this node`, `Could not refresh.`— because the console's interface is English:
+English, like every other addition of ours on this screen (`Domain`, `No records
+at this node`, `Could not refresh.`), because the console's interface is English:
 upstream's literals set the language and ours follow it.
 */
 const SUBTITLE: Record<List, string> = {
@@ -244,8 +244,9 @@ export function Lists({
      to tell "failed" from "still loading", so it is said apart. */
   const [failedOutside, setFailedOutside] = useState(false)
   /*
-  Stale data. The same gap Zones had, and the same phase 1 rule: the previous list
-  stays —throwing it away would leave the user with nothing over a network error—
+  Stale data. The same gap Zones had, and the same design rule (old data never
+  looks like new data): the previous list
+  stays (throwing it away would leave the user with nothing over a network error),
   but it has to be said that it is no longer current.
   */
   const [lastGood, setLastGood] = useState<string | null>(null)
@@ -253,7 +254,7 @@ export function Lists({
   `load` reads whether there was earlier data, and it is also what sets it. Read
   as state, `lastGood` had to be one of `load`'s dependencies: every successful
   load made a new `load`, the mount effect ran it again from the root, and the
-  screen asked `cache/list` for the root hundreds of times a second — and snapped
+  screen asked `cache/list` for the root hundreds of times a second, and snapped
   back to the root whenever a node was opened. It is read through a ref instead,
   so `load` only changes with the list and the token (found 2026-09-30).
   */
@@ -290,14 +291,14 @@ export function Lists({
       }
       /*
       Upstream's error handler leaves the list where it was and draws the server's
-      errorMessage; the same here — and **it also says the data has gone stale**,
+      errorMessage; the same here, and **it also says the data has gone stale**,
       which is what was missing.
 
       The same split as Zones and for the same reason: with previous data the
       strip reports it, saying since when and offering a retry, and the notice
       keeps quiet so the same failure is not reported twice; with no previous data
-      there is nothing to go stale —marking it would promise an earlier tree that
-      does not exist— so the notice speaks, carrying the server's message.
+      there is nothing to go stale (marking it would promise an earlier tree that
+      does not exist), so the notice speaks, carrying the server's message.
       */
       if (!hadData.current) {
         if (host.current != null) setFailedOutside(true)
@@ -337,7 +338,7 @@ export function Lists({
   }
 
   /* The first load, still in flight: `node` is null and nothing failed. A load
-     that FAILED leaves `node` null too, but it sets the notice — and then this is
+     that FAILED leaves `node` null too, but it sets the notice, and then this is
      not loading, it is a failure with nothing behind it. */
   const loading = node == null && notice == null && !failedOutside
 
@@ -395,7 +396,7 @@ export function Lists({
   // ---- Allowed and Blocked actions ----------------------------------------
   /* Only Delete is left here. Allowed and Blocked are no longer sections: this
      component draws them only inside Blocking's Rules tab, which owns the verbs
-     of their old header —Allow, Block, Import, Export and Flush— in its add bar
+     of their old header (Allow, Block, Import, Export and Flush) in its add bar
      and its foot. The tree's field still browses on Enter. */
 
   function askDeleteDomain() {
@@ -465,7 +466,7 @@ export function Lists({
           <section className={styles.column} aria-label="Domain tree">
             <div className={styles.browse}>
               {/* The field is called "Domain" and the button "Browse". Upstream puts
-                  no label here —only the `placeholder`— so this one is an
+                  no label here (only the `placeholder`), so this one is an
                   addition of ours and can be called whatever suits; what it
                   cannot be called is the same as the button next to it, which
                   does carry upstream's literal. Embedded under another "Domain"
@@ -486,7 +487,7 @@ export function Lists({
               </Field>
               {/* "Browse" and not "Go": it is upstream's literal on all three list
                   screens (Cache, Allowed and Blocked), and it also says better
-                  what it does —it takes you to that point of the tree, it sends
+                  what it does: it takes you to that point of the tree, it sends
                   nothing. */}
               <Button variant="primary" onClick={() => navigate(field)}>
                 Browse
@@ -495,7 +496,7 @@ export function Lists({
             {/*
             Still loading is NOT the same as empty, and until 2026-09-07 it was
             drawn the same: `node` starts null, so the first load showed "0 zones"
-            and an empty tree — the same picture a genuinely empty list shows. It is
+            and an empty tree, the same picture a genuinely empty list shows. It is
             the same defect that was fixed for the failure state on this very
             screen, in the state it had not been measured in.
 
@@ -531,7 +532,7 @@ export function Lists({
             the administrator's decisions. Three screens, one component, and until
             this round nothing on them said which was which.
 
-            The icon and the second line are OURS —upstream has neither— and they
+            The icon and the second line are OURS (upstream has neither), and they
             are the two channels that do not depend on the colour, which is the
             rule `theme/tokens.css` already applies to itself in the seven
             conditions of Logs: colour reinforces, it is never the only channel.
@@ -567,7 +568,7 @@ export function Lists({
                   `variant="danger"`, which it did not carry: deleting a node is
                   destructive and was drawn as a plain grey button, while `Flush`
                   next to it was already the filled red one. Same primitive, two
-                  weights — the row-sized danger is red text that fills on hover,
+                  weights: the row-sized danger is red text that fills on hover,
                   precisely so a destructive verb in a bar does not shout.
                   */}
                   {mayDelete && (

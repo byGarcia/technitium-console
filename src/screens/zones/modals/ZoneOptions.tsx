@@ -42,7 +42,7 @@ saved.
 
 And for that very reason, if the validation fails on a tab that is not in front,
 it jumps to it: it is the same deliberate deviation decided in Settings, and for
-the same reason — with one panel mounted at a time, without the jump the alert
+the same reason: with one panel mounted at a time, without the jump the alert
 would be impossible to resolve.
 */
 

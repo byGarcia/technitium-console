@@ -30,23 +30,23 @@ import shared from './Blocking.module.css'
 import styles from './Rules.module.css'
 
 /*
-The Rules tab: the administrator's own blocked and allowed domains in one flat table,
-as Pi-hole's Domains page draws them. The table is OURS —and so are its words:
+The Rules tab: the administrator's own blocked and allowed domains in one flat table.
+The table is OURS, and so are its words:
 the title `Rules`; the filter `All` and the counts beside each filter; `Rule` (column
 and the filter group's label); the `Domain` column; `Filter domains`, `No rules`,
 `No rules match this filter`, `1 rule` / `N rules`; `View`, `List` / `Tree` and the
 `Tree` selector's label; `Browse domain`; the `Delete <domain>` labels; the menu
 entries `Blocked zones` / `Allowed zones`; `Could not read the rules.` and its
 `Retry`; and the titles of the Delete and Flush confirmations, which upstream asks
-with a bare `confirm()`—. The names `Blocked` and
+with a bare `confirm()`. The names `Blocked` and
 `Allowed` are upstream's tabs, and every verb is upstream's, with its sentences
 (other-zones.js). The three verbs of the
 foot do NOT behave alike, so they are not made alike: Import opens its dialog,
 Export downloads at once with a single-use token, Flush asks first.
 
 `Tree` mounts the tree that exists today, so nothing upstream has is lost. It
-reports through this page's notifier, and every change —from the table, the foot,
-the add bar or the tree itself— reads the table again from the primary node and
+reports through this page's notifier, and every change (from the table, the foot,
+the add bar or the tree itself) reads the table again from the primary node and
 remounts the tree from there. A Block or Allow opens the tree at the added domain,
 as upstream's blockZone/allowZone do; because this one bar serves both lists, the
 tree also turns to the list the domain went into (ours: upstream's verbs live on
@@ -70,7 +70,7 @@ export function Rules({
 }) {
   const viewBlocked = missing(permissions, 'Blocked.canView') == null
   const viewAllowed = missing(permissions, 'Allowed.canView') == null
-  /* Neither list can be read: there is nothing to count, so nothing is counted —
+  /* Neither list can be read: there is nothing to count, so nothing is counted;
      the table slot carries the padlock instead of zeros nobody read. */
   const viewNone = !viewBlocked && !viewAllowed
 
@@ -84,7 +84,7 @@ export function Rules({
   const [lastGood, setLastGood] = useState<string | null>(null)
   const hadData = useRef(false)
   /* A filter on a list the session cannot view would open locked, pressed, over an
-     empty table — `/allowed/` for someone who may only see Blocked. It opens on All. */
+     empty table: `/allowed/` for someone who may only see Blocked. It opens on All. */
   const [filter, setFilter] = useState<RuleFilter>(() => {
     const asked = readRuleParam(window.location.search)
     const may = asked === 'all' || (asked === 'blocked' ? viewBlocked : viewAllowed)
@@ -95,8 +95,8 @@ export function Rules({
   const [view, setView] = useState<'list' | 'tree'>('list')
   const [treeList, setTreeList] = useState<DomainList>(viewBlocked ? 'blocked' : 'allowed')
   /* Bumped after Block, Allow, Delete, Import and Flush: the open tree is mounted
-     again so it reads the lists as they are now — from the primary node, as every
-     read after a change does (spec, the section on the cluster, «Clúster»). Choosing
+     again so it reads the lists as they are now, from the primary node, as every
+     read after a change does in this section. Choosing
      another list or view is a fresh read again, from the connected node. */
   const [generation, setGeneration] = useState(0)
   const [afterChange, setAfterChange] = useState(false)
@@ -497,7 +497,7 @@ export function Rules({
       </div>
 
       {/* The action's promise goes back to `Confirm`, which keeps the dialog busy
-          while it runs and closes it when it settles — as the lists screens do. */}
+          while it runs and closes it when it settles, as the lists screens do. */}
       <Confirm
         open={confirmation !== null}
         title={confirmation?.title ?? ''}

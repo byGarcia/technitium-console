@@ -48,15 +48,15 @@ paddings, a `<b>` that was sometimes there) and three of loading.
 
 /*
 Failure. It used to reuse `.loading` exactly, so **the data never arrived and the
-data is on its way looked identical** — same muted centred line, no border. On a
+data is on its way looked identical**: same muted centred line, no border. On a
 screen you have just opened that is the difference between waiting and retrying.
 
-Phase 1 settles it in one line: **dashed = empty, continuous = error, and they are
+The design rule settles it in one line: **dashed = empty, continuous = error, and they are
 never swapped**. So this is the only one of the three with a solid border, and it
 is `--dan`; the empty box keeps the dashed one and loading keeps none.
 
 `--dim` deliberately does NOT appear here. It means "this is here, readable, and
-not current" — the previous data while a refresh is in flight. A failure slot has
+not current": the previous data while a refresh is in flight. A failure slot has
 no previous data in it: dimming it would say something that is not true.
 
 The background and the text are COMPOSED from the shared tone and not written

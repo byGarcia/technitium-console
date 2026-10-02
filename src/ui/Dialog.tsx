@@ -38,13 +38,13 @@ export function Dialog({
   /**
    * The size, decided by the CONTENT and not by taste:
    *
-   * · `compact` — a question and two buttons. The longest confirmation literal
+   * · `compact`: a question and two buttons. The longest confirmation literal
    *   in the console measures 405 px in the real typeface, so at 440 they all fit
    *   on one line. Upstream does not have this size because its confirmations are
    *   the browser's `confirm()`.
-   * · `form` — fields with their labels. The ones upstream leaves at 600.
-   * · `medium` — long forms and narrow tables. Upstream's 750-800.
-   * · `wide` — real tables. Upstream's 940.
+   * · `form`: fields with their labels. The ones upstream leaves at 600.
+   * · `medium`: long forms and narrow tables. Upstream's 750-800.
+   * · `wide`: real tables. Upstream's 940.
    *
    * The steps are upstream's, which did decide modal by modal; the figures are
    * lower because our typography runs tighter.

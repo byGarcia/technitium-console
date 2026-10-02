@@ -27,8 +27,8 @@ replicated.
 export function ProxyForwarders({ f, set, en }: PaneProps) {
   /*
   The known forwarders, offered beside the field they fill. Upstream's control
-  (`index.html:2264`), which this console had lost entirely — the help text below
-  still points at a "Quick Select list" that was not there. See spec F8.
+  (`index.html:2264`), which this console had lost entirely; the help text below
+  still points at a "Quick Select list" that was not there.
   */
   const [quick, setQuick] = useState<QuickForwarder[]>([])
   useEffect(() => {

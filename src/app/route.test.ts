@@ -258,7 +258,7 @@ themselves.
 
 And that joint really did break. On renaming `ruta` to `route`, `vite.config.ts`
 started emitting `<meta name="route">` while `app/base.ts` kept looking for
-`meta[name="ruta"]` —inside a string, which is exactly where a rename does not
+`meta[name="ruta"]`, inside a string, which is exactly where a rename does not
 reach. The result: the root fell back to the whole `pathname` and from
 `/dhcp/scopes/` the console asked for `/dhcp/scopes/api/status`. A 404 on 31 of
 the 32 routes, with typecheck, lint and 821 tests all green.

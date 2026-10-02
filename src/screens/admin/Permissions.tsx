@@ -80,8 +80,8 @@ export function Permissions({ tabs, token, cluster, onNotice }: Props) {
   /*
   Which of the eleven you are looking at, for the index.
 
-  `ui/SectionIndex` deliberately does not observe the scroll —"who works out the
-  active one is screen wiring, and it belongs to phase 3"— so here it is, and this
+  `ui/SectionIndex` deliberately does not observe the scroll (working out the
+  active one is screen wiring, not the primitive's job), so here it is, and this
   is the first screen to wire it. An index with no current entry is half a
   primitive: it can take you somewhere but not tell you where you are.
   */
@@ -110,7 +110,7 @@ export function Permissions({ tabs, token, cluster, onNotice }: Props) {
   The concession map: the subjects down the side, the eleven sections across.
 
   It exists because eleven stacked panels compare nothing, and comparing is what
-  this screen is for — "can DNS Administrators delete in Zones and not in Cache"
+  this screen is for: "can DNS Administrators delete in Zones and not in Cache"
   has no answer without scrolling two and a half thousand pixels and remembering.
   The eleven sections stay below, whole and never folded; what changes is that the
   wall stops being the only way through.
@@ -140,7 +140,7 @@ export function Permissions({ tabs, token, cluster, onNotice }: Props) {
       No entry at all is NOT the same as an entry that grants nothing, and the
       two are drawn differently: an empty cell against three empty boxes. The
       distinction is free to draw and needs no word; where it is told in full is
-      the eleven sections below, which are unchanged — a subject with no entry
+      the eleven sections below, which are unchanged; a subject with no entry
       simply has no row there.
       */
       if (entry == null) return <td key={s.section} />
@@ -170,7 +170,7 @@ export function Permissions({ tabs, token, cluster, onNotice }: Props) {
         <>
           {/*
           The index sits beside the WHOLE screen and not beside the map: it is
-          pilot 3's column, and what it indexes is the eleven sections below.
+          the dense form's index column, and what it indexes is the eleven sections below.
           Beside the map alone it left a hole as tall as its eleven entries.
           */}
           <div className={styles.withIndex}>
@@ -441,8 +441,8 @@ function EditPermissions({
       title={`Edit Permissions - ${section}`}
       /*
       The SAME dialog opened from a zone already went wide, and from here it went
-      to 560: two widths for the same thing. It is not that it was cramped —the
-      table shrinks and fits in all three sizes, measured— it is that its two
+      to 560: two widths for the same thing. It is not that it was cramped (the
+      table shrinks and fits in all three sizes, measured); it is that its two
       entrances had to look the same. It goes with the title fix, which had also
       drifted between the two.
 

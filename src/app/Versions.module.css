@@ -56,7 +56,7 @@ it here: an update to the DNS server and an update to this console are not the
 same news, and a notice floating on its own could not say which one it meant.
 
 Amber and not the red upstream uses: in this console red is what destroys
-—Delete Zones, Flush Cache— and an available update destroys nothing.
+(Delete Zones, Flush Cache) and an available update destroys nothing.
 */
 .mark {
   display: inline-flex;

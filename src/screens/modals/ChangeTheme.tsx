@@ -15,7 +15,7 @@ missing.
 
 Which radio is checked follows what is stored, as upstream reads `localStorage`
 on opening: Light and Dark their own, System for "system" and for anything it does
-not recognise. A stored "amber" —picked in the stock console— checks NONE: the
+not recognise. A stored "amber" (picked in the stock console) checks NONE: the
 page draws dark, but saying "Dark Theme" would claim a choice the user never made,
 and the value stays untouched until they pick one here.
 

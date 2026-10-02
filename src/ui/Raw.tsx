@@ -4,8 +4,8 @@ import styles from './Raw.module.css'
 /*
 Raw output: a block of text that is NOT interpreted.
 
-It is pattern 1 of the tool archetype. The two surfaces that show what the server
-returned verbatim use it —`DNS Client`'s JSON response and `View Logs`'s file—
+It is the first pattern of the tool screens. The two surfaces that show what the server
+returned verbatim use it (`DNS Client`'s JSON response and `View Logs`'s file),
 and it exists as a primitive because it was written TWICE, in
 `dnsclient/DnsClient.module.css` and in `logs/Logs.module.css`, and had already
 drifted: one capped at `460px` and the other at `60vh`.
@@ -51,9 +51,9 @@ export function Raw({
   height?: number
   /*
   `error` only for the case where **the server returns the error as text** and
-  there is nowhere else to put it —the `View Logs` viewer, `logs.js:170-172`. The
+  there is nowhere else to put it (the `View Logs` viewer, `logs.js:170-172`). The
   frame turns `--dan`: the error is framed, not disguised as data. It is the one
-  exception to phase 1's "solid = error", and that is why the frame IS solid.
+  exception to the design rule "solid = error", and that is why the frame IS solid.
   */
   tone?: 'normal' | 'error'
 }) {

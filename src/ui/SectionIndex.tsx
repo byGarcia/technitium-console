@@ -3,8 +3,8 @@ import styles from './SectionIndex.module.css'
 /*
 The section index of a long screen.
 
-`Segmented` looks like it and **is not**, and confusing the two is what pilot 3
-itself warned against —"the same shape in the same place would be two
+`Segmented` looks like it and **is not**, and confusing the two is what the design
+itself warned against: "the same shape in the same place would be two
 indistinguishable things". The difference is not one of appearance but of what
 happens to the screen:
 
@@ -28,9 +28,9 @@ Everything else follows from that without having to be decided:
 
 ## What it does NOT do, deliberately
 
-**It does not watch the scroll.** `active` comes in as a prop. Who works it out —an
-`IntersectionObserver`, the URL hash, the pane that draws it— is screen wiring and
-belongs to phase 3. Bringing it in here, the primitive would start having an
+**It does not watch the scroll.** `active` comes in as a prop. Who works it out (an
+`IntersectionObserver`, the URL hash, the pane that draws it) is screen wiring and
+belongs to the screen. Bringing it in here, the primitive would start having an
 opinion about its caller's DOM, and would stop being testable without mounting the
 whole screen.
 

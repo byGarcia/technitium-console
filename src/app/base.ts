@@ -3,7 +3,7 @@ Where the console hangs from.
 
 It cannot be assumed to be `/`: the server honours `X-Forwarded-Prefix` by mounting
 a `PathBase` (`DnsWebService.cs:1943-1945`), so behind a proxy the console can live
-at `/dns/`. And ever since the routes became real —`/settings/logging/`— relative
+at `/dns/`. And ever since the routes became real (`/settings/logging/`), relative
 paths do not work either: `api/status` from there requests
 `/settings/logging/api/status`, which is a 404. Verified in the browser before
 fixing it.
@@ -16,7 +16,7 @@ function compute(): string {
   const route = document.querySelector('meta[name="route"]')?.getAttribute('content')
   /*
   Repeated slashes are collapsed. The server serves the front page for `//`
-  too, and a root of `//` would turn every API call into `//api/…` — a
+  too, and a root of `//` would turn every API call into `//api/…`, a
   protocol-relative URL, i.e. the host `api`, with the session token in
   `Authorization`. Upstream never has this problem because it asks for `api/…`
   relative to the document (security audit 2026-09-30).
@@ -55,7 +55,7 @@ export function urlApi(trail: string): string {
 }
 
 /**
- * The same for a file from `public/` —the logo, the `loader.gif`s—. A relative
+ * The same for a file from `public/` (the logo, the `loader.gif`s). A relative
  * `src` also breaks from a two-level route: `img/logo.png` at
  * `/settings/logging/` requests `/settings/logging/img/logo.png`.
  */

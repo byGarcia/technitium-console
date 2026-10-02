@@ -23,7 +23,7 @@ Above the title goes a PATH, not a kicker:
     Leases
 
 The difference is not where it sits, it is what each thing is. A kicker is
-editorial decoration —tight muted small caps— and adds nothing; a path is
+editorial decoration (tight muted small caps) and adds nothing; a path is
 navigation, and it is needed here because some names collide: "Cache" is a
 top-level section AND a Settings sub-tab, and "General" or "Logging" say nothing
 on their own. That is why it goes in a `nav`, in normal case, and the `h1` remains
@@ -33,7 +33,7 @@ With no sub-tabs there is no path: the title is the section name, plain.
 
 ## Tags are STATE, not counts
 
-`labels` is for state pills —`Primary`, `Enabled`, `DNSSEC`—. Counts have their
+`labels` is for state pills (`Primary`, `Enabled`, `DNSSEC`). Counts have their
 place in the count bar above the table; putting them here with the same look as a
 state was another of the inconsistencies: the same pill meant a figure sometimes,
 a state other times and a setting others.
@@ -62,8 +62,8 @@ export function SectionHeader({
   /**
    * The section's sub-navigation, drawn UNDER the header row. It goes here and
    * not in the caller so that the four sections that have one put it in the same
-   * place: title, then tabs, then content, which is what the accepted deliveries
-   * draw for Administration and for Logs.
+   * place: title, then tabs, then content, which is what the design draws for
+   * Administration and for Logs.
    */
   tabs?: ReactNode
 }) {

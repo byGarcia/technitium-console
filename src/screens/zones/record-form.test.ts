@@ -54,7 +54,7 @@ describe('the 23 types of the dropdown', () => {
   })
 })
 
-describe('add — literal alert texts', () => {
+describe('add: literal alert texts', () => {
   it('A with no address', () => {
     expect(error(form({ type: 'A', name: 'www' })).text).toBe(
       'Please enter an IP address to add the record.',
@@ -96,7 +96,7 @@ describe('add — literal alert texts', () => {
   })
 })
 
-describe('add — values that fall to a default instead of erroring', () => {
+describe('add: values that fall to a default instead of erroring', () => {
   it('MX with no preference sends 1', () => {
     expect(body(form({ type: 'MX', name: 'x', mxExchange: 'mail.casa.test' })).preference).toBe('1')
   })
@@ -114,7 +114,7 @@ describe('add — values that fall to a default instead of erroring', () => {
   })
 })
 
-describe('add — the body', () => {
+describe('add: the body', () => {
   it('carries zone, domain, type, ttl, overwrite, comments and expiryTtl', () => {
     const b = body(form({ type: 'A', name: 'www', value: '10.0.0.1', ttl: '600', overwrite: true }))
     expect(b).toMatchObject({
@@ -134,7 +134,7 @@ describe('add — the body', () => {
     expect(body(form({ type: 'A', name: '', value: '10.0.0.1' })).domain).toBe('casa.test')
   })
 
-  it('TLSA with \"Full\" requires a complete PEM — only when adding', () => {
+  it('TLSA with \"Full\" requires a complete PEM, but only when adding', () => {
     const f = form({
       type: 'TLSA',
       name: '_443._tcp',
@@ -165,7 +165,7 @@ describe('add — the body', () => {
   })
 })
 
-describe('edit — sends the old value AND the new one', () => {
+describe('edit: sends the old value AND the new one', () => {
   const ctxOf = (original: ResourceRecord): RecordContext => ({
     zone: 'casa.test',
     mode: 'update',
@@ -254,7 +254,7 @@ describe('edit — sends the old value AND the new one', () => {
   })
 })
 
-describe('SOA — it is only edited, and validates seven fields in order', () => {
+describe('SOA: it is only edited, and validates seven fields in order', () => {
   const original = rec('SOA', {})
   const ctx: RecordContext = { zone: 'casa.test', mode: 'update', original, updateSvcbHints: false }
 

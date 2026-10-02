@@ -50,7 +50,7 @@ describe('the slot in the chrome', () => {
   })
 
   /*
-  And the slot stays EMPTY if nobody uses it — which is the case on seven of the
+  And the slot stays EMPTY if nobody uses it, which is the case on seven of the
   eight screens. Without this, they would all gain a blank space at the top.
   */
   it('the slot stays empty when no screen uses it', () => {

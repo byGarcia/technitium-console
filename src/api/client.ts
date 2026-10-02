@@ -36,8 +36,8 @@ export interface ApiOptions {
   can carry it and the individual APIs know nothing about it. `cluster` and the
   empty string mean "this one" and are not sent.
 
-  Upstream offers the choice on eight screens and remembers it per screen. See
-  spec F10.
+  Upstream offers the choice on eight screens and remembers it per screen
+  (`ui/ClusterNodeSelect`).
   */
   node?: string | null
   /*
@@ -66,8 +66,8 @@ interface Envelope {
 /*
 What to do when the server says the session is no longer valid.
 
-Upstream ALWAYS ends the session: `invalid-token` calls `showPageLogin()` —which
-clears the token and shows the login— in the sixty-four calls that declare it,
+Upstream ALWAYS ends the session: `invalid-token` calls `showPageLogin()` (which
+clears the token and shows the login) in the sixty-four calls that declare it,
 and in the ones that do not, it falls through to the `window.location = "/"` of
 `common.js:147`.
 
@@ -77,7 +77,7 @@ one after another; to get back in you had to know that a reload was due. Beyond
 being awkward, this is an administration console: it must not stay standing with
 a session the server has already rejected.
 
-It is solved in a single place —here— and not in the thirty screens, because the
+It is solved in a single place, here, and not in the thirty screens, because the
 rule is one: `SessionProvider` registers it, since it is the one that holds the
 session.
 */
@@ -149,7 +149,7 @@ export async function apiRequest<T = unknown>(
   /*
   common.js:182-196. A request that never gets an answer is jQuery's
   `textStatus === "error"` with an empty `errorThrown`, and upstream says so with
-  its own sentence; any other failure —an answer that is not JSON— is shown as
+  its own sentence; any other failure (an answer that is not JSON) is shown as
   jQuery's `textStatus - errorThrown`. The sentence had been replaced with one of
   this console's own until 2026-09-30.
   */

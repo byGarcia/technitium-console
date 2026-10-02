@@ -51,8 +51,8 @@ It is the same pair of colours saying something else: not "this one is yours" bu
 /*
 The focus ring, visible and with the same halo as a field.
 
-There is no global rule for the link —`base.css` only sets one on `select` and on
-`input[type=file]`— so without this the index would keep the browser's default
+There is no global rule for the link (`base.css` only sets one on `select` and on
+`input[type=file]`), so without this the index would keep the browser's default
 outline, which changes from one machine to another. It is exactly what the icon
 set already had to fix on its own.
 */
@@ -97,15 +97,15 @@ since iOS 13 and the property no longer does anything.
     one giving way.
 
     They go here and not in whoever uses it: the primitive has to survive being put
-    in a flex container, which is where it is going — beside the form.
+    in a flex container, which is where it is going: beside the form.
     */
     min-width: 0;
     max-width: 100%;
     /*
 3 px, which is exactly what the focus halo measures.
 
-turns `auto` as well —it is what the spec says when only one of the two stops
-being `visible`— so anything sticking out above or below is clipped. With 2 px it
+turns `auto` as well (it is what the CSS specification says when only one of the two stops
+being `visible`), so anything sticking out above or below is clipped. With 2 px it
 ate 1 px of the first item's halo when it took focus. A bitten halo is the only
 focus signal this
     */

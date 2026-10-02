@@ -4,7 +4,7 @@ import { apiRequest, type ApiOutcome } from './client'
 The 15 DNSSEC endpoints of the `zones` family: `sign`, `unsign`, `viewDS` and
 the 12 of `zones/dnssec/properties/*`. They are kept apart from zones.ts because
 they are a whole sub-system with a vocabulary of their own (keys, states,
-proofs of non-existence) and because together they are half the phase.
+proofs of non-existence) and because together they are half of zone management.
 
 A replica of zone.js:6539-7400.
 

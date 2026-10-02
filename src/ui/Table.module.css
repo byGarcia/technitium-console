@@ -8,7 +8,7 @@ table of them all and the one that needs it most to not lose your place.
 /*
 The table is ONE object, not a pile of loose rows on the background. In a DNS
 console the table is the product: it is where 90 % of the time is spent, so it
-is given a body —panel, border and corners— instead of being left floating.
+is given a body (panel, border and corners) instead of being left floating.
 */
 .wrap {
   overflow-x: auto;
@@ -52,7 +52,7 @@ The row that is THIS one: my own session in `Administration > Sessions`, this
 node in `Cluster`.
 
 Two tables need it and neither invents it: it is a wash in `--acc-bg`, and it is
-never the only channel — the session says `(current)` in its own cell and the node
+never the only channel: the session says `(current)` in its own cell and the node
 says `Self` in its `State` column. The colour is what lets you find the row
 without reading; the word is what says which row it is.
 
@@ -86,7 +86,7 @@ against the one on the row below, which is exactly what it is in a column for.
 The row's own name when it also opens its detail view.
 
 It was written twice and with opposite treatments: in Zones the name is the name
-—ink and bold— and turns `--acc` on hover; in the three Administration tables it
+(ink and bold) and turns `--acc` on hover; in the three Administration tables it
 was `--acc` ALREADY at rest. With two hundred and forty rows that is a whole
 column of amber, and the colour stops meaning "this is clickable" exactly where
 it had to mean it. Zones wins, which is also what `.entity` above describes.
@@ -133,8 +133,8 @@ The "there is nothing here" row. It was written with
 `style={{textAlign:'center'}}` in four places and with two more class names for
 the same rule.
 
-It goes as `td.noRows` and not as plain `.noRows` because `.table td` —one
-class and one type— beat it on specificity, so neither the colour nor the padding
+It goes as `td.noRows` and not as plain `.noRows` because `.table td` (one
+class and one type) beat it on specificity, so neither the colour nor the padding
 ever applied: the row came out with the data colour and the height of a normal
 cell. Only the centring showed, which is the one of the three rules that clashes
 with nothing.
@@ -154,7 +154,7 @@ with nothing.
   Aligned to the MIDDLE of the text and not to its baseline.
 
   An `inline-flex` sits on the baseline, and when there is only an icon inside
-  —the "Type" header in DHCP Leases, whose label is for screen readers only— the
+  (the "Type" header in DHCP Leases, whose label is for screen readers only), the
   line box grows underneath to make room for a descender that is not there. That
   header measured 33.77 px when the other six tables measured 33: the gap came
   from a character that is never written.
@@ -244,7 +244,7 @@ space and copes with one row having three actions and the next one five.
 /*
 `> *` is a DIRECT child, and the `⋮` menu trigger is not one: `ui/Menu` wraps it
 in a `div`. So the flattening passed it by and it kept the border, the 6 px
-radius, the solid background and the inset shadow of a loose button — one little
+radius, the solid background and the inset shadow of a loose button: one little
 rounded box per row, glued to a flat group. Measured in the same cell: "Zone
 Options" and "Disable Zone" with radius 0 and transparent background, and the
 `⋮` with radius 6 and `rgb(33,37,41)`.
@@ -278,14 +278,14 @@ Options" and "Disable Zone" with radius 0 and transparent background, and the
 
 /*
 Row buttons carry an ICON and not a label, and the reason is a measurement: the
-actions column was 239 px —the widest in the table, ahead of the zone name, which
-is 163— and its content was the same text repeated on every row. "Options",
+actions column was 239 px (the widest in the table, ahead of the zone name, which
+is 163) and its content was the same text repeated on every row. "Options",
 "Disable", "Delete", two hundred and forty times. That is not information: it is
 something you have to filter out in order to read the data.
 
 With an icon the column drops to ~100 px and the 140 left over go to the table.
-No action loses its name: it goes in `aria-label` —so the keyboard and the screen
-reader announce it just the same— and in `title`, which is the tooltip on hover.
+No action loses its name: it goes in `aria-label` (so the keyboard and the screen
+reader announce it just the same) and in `title`, which is the tooltip on hover.
 And the `⋮` menu carries EVERY action with its text, delete included, so no name
 lives only inside a drawing.
 */

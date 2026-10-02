@@ -6,8 +6,8 @@ import { Menu } from './Menu'
 /*
 For this piece, jsdom can only answer half: there is no layout, so
 `getBoundingClientRect()` returns zeros and there is no point asserting here that
-the menu flips when it does not fit —that is measured in the browser, with the
-window at 900 and at 560 px—. What it can answer is the behaviour, and in
+the menu flips when it does not fit (that is measured in the browser, with the
+window at 900 and at 560 px). What it can answer is the behaviour, and in
 particular the bug the flipping introduced: the handler that closes the menu on
 scroll is shared with `resize`, and there the `target` is `window`, which is not a
 node.

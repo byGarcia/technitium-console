@@ -1,7 +1,7 @@
 /*
 The console's tokens. **Upstream's themes, without Amber.**
 
-Upstream ships three —light, dark and amber— and a `Change Theme` modal to pick.
+Upstream ships three (light, dark and amber) and a `Change Theme` modal to pick.
 From 2026-08-25 this console drew only the dark one and had no modal; since
 2026-10-01 `Change Theme` is back with System, Light and Dark (`theme/theme.ts`).
 Amber is still not offered: deviation 1 in CONVENTIONS.md, the only deliberate
@@ -13,7 +13,7 @@ Until 2026-08-26 this file declared ONLY colour, and that absence was the
 mechanical cause of the drift between sections: with no declared scale, each
 module invented its own. The console got to 13 text sizes, 25 `padding` values, 13
 `gap` values and 9 radii, with the same ideas solved three different ways
-depending on which phase had built it.
+depending on which screen had built it.
 
 The scales below are NOT a redesign: they are the scale that already existed
 implicitly, measured by real usage frequency and then declared. The dominant
@@ -33,7 +33,7 @@ the plain `:root` below them.
 Every colour of the console is declared in this block and nowhere else, and that
 is measured: `npm run lint:colours` (`dev/check-colour-tokens.mjs`) fails on a
 colour literal, or a `color-scheme`, anywhere in `src/` outside the theme blocks.
-The non-colour scales —type, spacing, radii, layers, motion— are the same in
+The non-colour scales (type, spacing, radii, layers, motion) are the same in
 every theme and live in the plain `:root` further down.
 
 The dark theme is also the fallback: `:root` carries it, so the console is dark
@@ -49,14 +49,14 @@ before `data-theme` is set and with any value nobody declared.
   --pan2: #212529;
   /*
   THE SURFACE RAMP. In a dark interface elevation is NOT told by the shadow
-  —black on near-black is invisible— but by the surface RISING in light. The old
+  (black on near-black is invisible) but by the surface RISING in light. The old
   ramp lived entirely inside 1.03-1.10:1, i.e. below the threshold at which the
   eye separates two planes: a row's hover was 1.031 from the panel and a text
   field 1.029 from the page. That is why it looked flat no matter how much shadow
   was thrown at it; the shadow was treating the symptom.
 
-  Measured against the dark consoles that do have material —GitHub, Linear and
-  Vercel separate panel from raised by 1.09-1.14— the ramp:
+  Measured against the dark consoles that do have material (GitHub, Linear and
+  Vercel separate panel from raised by 1.09-1.14), the ramp:
 
     canvas → panel            1.09
     panel  → raised           1.11   (was 1.04)
@@ -92,8 +92,8 @@ before `data-theme` is set and with any value nobody declared.
   --acc: #f5a524;
   /*
   AMBER AS INK, and AMBER AS A FILL, are two tokens since 2026-10-01. `--acc` is
-  the fill —the primary button, the active rail entry, a ticked checkbox, the
-  pagination's current page— with `--on-acc` written on top. `--acc-ink` is
+  the fill (the primary button, the active rail entry, a ticked checkbox, the
+  pagination's current page) with `--on-acc` written on top. `--acc-ink` is
   amber DRAWN on a surface: a link, the current sub-tab and its underline, a
   sorted column's arrow, the focus ring, the master switch's edge, a field's
   border while it has the focus.
@@ -116,25 +116,24 @@ before `data-theme` is set and with any value nobody declared.
 
   /* Background and border for each state. They were written by hand across six
      modules, with two readings of `.tagInfo`: blue in Zones, amber in Apps. */
-  /* The code chip —a record type, an app's class— repeated these two values
+  /* The code chip (a record type, an app's class) repeated these two values
      across three modules, named `.ty` in two of them and `.cap` in the other. */
   --chip-bg: #1b2230;  --chip-fg: #b6c2d6;
 
   --ok-bg: #052e26;    --ok-bd: #065f46;
   --warn-bg: #2a1e05;  --warn-bd: #4a3609;
   /*
-  Amber as a TONE, not only as the accent colour — decided 2026-09-03, and it is
-  the answer to the question 2.1 left open for `Tag`.
+  Amber as a TONE, not only as the accent colour, decided 2026-09-03 for `Tag`.
 
-  It was needed because pilot 3 introduces a pill that **names the master switch**
-  of a control that is off, and the phase 1 vocabulary is explicit: "amber = you
-  can". None of the five existing tones says that: `warn` means "careful", and
+  It was needed because the dense-form design introduces a pill that **names the
+  master switch** of a control that is off, and the console's two-word vocabulary
+  is explicit: "amber = you can". None of the five existing tones says that: `warn` means "careful", and
   using it here would confuse "be careful" with "this is yours to change", which
   is the distinction that pill exists to make.
 
   **The separation is one of meaning, not of colour, and this is measured.**
-  Against `warn`: ΔE00 8.8 on the text, 8.9 on the border and 0.0 on the fill —the
-  same value, on purpose. The collision threshold in `dev/palette-distance.mjs` is
+  Against `warn`: ΔE00 8.8 on the text, 8.9 on the border and 0.0 on the fill (the
+  same value, on purpose). The collision threshold in `dev/palette-distance.mjs` is
   10, so by the project's own criterion **an `acc` pill and a `warn` pill are the
   same colour**. And they must be: the pill goes with the row's amber edge, and the
   two pieces are ONE signal; giving it another amber would split it in two.
@@ -153,15 +152,15 @@ before `data-theme` is set and with any value nobody declared.
   /*
   Chart colours.
 
-  The server sends its own —Bootstrap 3 at 50 % alpha: `rgb(92,184,92)` is that
-  framework's success green and `rgb(217,83,79)` its danger red— and the console
+  The server sends its own (Bootstrap 3 at 50 % alpha: `rgb(92,184,92)` is that
+  framework's success green and `rgb(217,83,79)` its danger red) and the console
   overrides them. They are the single loudest reason the dashboard read as a
   panel from another decade.
 
   The first block is semantic and the mapping is not free: a query that failed
   has to be the colour failure already is elsewhere in this console, or the chart
   contradicts the rest of the interface. `--ch-clients` takes the accent because
-  it is the only series measured in a different unit —clients, not queries— and
+  it is the only series measured in a different unit (clients, not queries) and
   that difference deserves to be visible.
 
   The second block is a plain cycle, for sets that are open: record types and
@@ -173,13 +172,13 @@ before `data-theme` is set and with any value nobody declared.
   ── The values changed on 2026-09-02, and they were measured ─────────────────
 
   `dev/palette-distance.mjs` runs CIEDE2000 between the pairs that SHARE A CHART
-  —pairs that never appear together do not compete— and repeats it through
+  (pairs that never appear together do not compete) and repeats it through
   protanopia and deuteranopia. It found two defects in the palette this file used
   to declare, and both are the kind that argument does not settle:
 
     · Recursive #a78bfa against Blocked #c084fc: ΔE00 5.5, in the same five-slice
-      Query Response Types doughnut. Visible in the baseline capture, where the
-      two read as one continuous arc. Recursive moves to orange and the ring's
+      Query Response Types doughnut. Visible in a screenshot of the Dashboard, where
+      the two read as one continuous arc. Recursive moves to orange and the ring's
       worst pair goes to 16.7.
     · The cycle collided with itself: #a78bfa against #818cf8, ΔE00 7.9, violet
       against indigo. The seventh becomes red.
@@ -187,13 +186,13 @@ before `data-theme` is set and with any value nobody declared.
   And one rule that comes out of the same measurement and is worth keeping:
   **no series may be the colour of any text token.** `--ch-total` was #cbd5e1,
   ΔE00 7.0 from `--ink`, so the total line read as the axis; it takes the blue the
-  design project had given it. `--ch-drop` stays #94a3b8 for the same reason —
+  design project had given it. `--ch-drop` stays #94a3b8 for the same reason:
   the design project had proposed #868e96, which IS `--faint` to the digit.
 
   What none of this fixes: with ELEVEN series in one chart no palette survives
   colour blindness. Hue cannot carry eleven categories. What makes that chart
-  readable is the pointer rule the design project settled —a vertical guide, and
-  the legend writing each series' value at that instant— and that is why it is
+  readable is the pointer rule the design project settled (a vertical guide, and
+  the legend writing each series' value at that instant), and that is why it is
   accessibility and not decoration.
   */
   --ch-total:  #60a5fa;
@@ -205,18 +204,18 @@ before `data-theme` is set and with any value nobody declared.
   measurement decided it, not taste.
 
   Against `--ch-auth` (#38bdf8), which shares the line chart with it: **ΔE00 6.5
-  under deuteranopia** — a collision by this project's threshold. That is: for
+  under deuteranopia**, a collision by this project's threshold. That is: for
   someone with deuteranopia, `Refused` and `Authoritative` were the same line. And
   at full colour they were not fine either: 11.6, "at risk".
 
-  The tool archetype uncovered it by taking these eleven tokens to another surface
-  —the Query Logs row background, translucent and behind text— where the pair fell
+  Query Logs uncovered it by taking these eleven tokens to another surface
+  (the Query Logs row background, translucent and behind text), where the pair fell
   to 3.9. But the defect did not belong to that screen: **it was already here**, and
   the new screen only put it where it could be seen.
 
   Why teal and not a darker cyan, which was the first thing tried: darkening fixes
   the deuteranopia and **puts the line out**. `#155e75` gave 2.35:1 against the
-  panel, below the 3:1 WCAG 1.4.11 asks of a non-text graphic object — and that
+  panel, below the 3:1 WCAG 1.4.11 asks of a non-text graphic object, and that
   check is what `dev/palette-distance.mjs` does. The whole cyan family was swept
   and **none of them meets all three at once**: `cyan-700` reaches 3.19:1 and
   leaves the row background at 7.8. The HUE has to move, not just the lightness.
@@ -234,7 +233,7 @@ before `data-theme` is set and with any value nobody declared.
     · worst deuteranopia pair  18.2
     · worst protanopia pair    11.1
 
-  `teal-700` (#0f766e) meets them too, but leaves the contrast at 3.13 — thirteen
+  `teal-700` (#0f766e) meets them too, but leaves the contrast at 3.13: thirteen
   hundredths above the floor, which is very little for a 2 px antialiased stroke.
   It is off the Tailwind scale on purpose; so is `--acc`.
 
@@ -254,7 +253,7 @@ before `data-theme` is set and with any value nobody declared.
     · `Cached` (#f472b6)        ΔE00 11.9 under protanopia, and **9.6** as a row background
 
   A 1.2 is the same colour. On the Dashboard line chart, for someone with
-  deuteranopia, `Blocked` and `Total` were **the same line** — and `Total` is the
+  deuteranopia, `Blocked` and `Total` were **the same line**, and `Total` is the
   reference series, the one that sets the scale. That light violet fell exactly in
   the band where blue and violet merge without red-green perception.
 
@@ -262,9 +261,9 @@ before `data-theme` is set and with any value nobody declared.
   one pair and left the other two, and this token was in three.
 
   Why `#a13ae8`, and not the scale's purple-600: the separation leans again on
-  LIGHTNESS —lowering it— and one has to stop before the line goes out.
+  LIGHTNESS (lowering it) and one has to stop before the line goes out.
   `purple-700` (#7e22ce) gives 2.45:1 against the panel, below the 3:1 of WCAG
-  1.4.11; `purple-600` (#9333ea) gives 3.18 —eighteen hundredths of margin, the
+  1.4.11; `purple-600` (#9333ea) gives 3.18: eighteen hundredths of margin, the
   same edge already rejected when choosing `--ch-refuse`.
 
   `#a13ae8`: line over the panel 3.49:1 · worst line pair 15.0 (`Total`, under
@@ -286,20 +285,20 @@ before `data-theme` is set and with any value nobody declared.
 
   One pair is still **below the threshold**, measured with `dev/row-colours.mjs`:
 
-    · `Server Failure` / `Cached` — **8.5** as a row background at 30 %
+    · `Server Failure` / `Cached`: **8.5** as a row background at 30 %
 
   **It is not a palette defect, and that is why no token is touched.** Measured as
   lines, at full colour, they separate under all three visions: 18.6 normal · 28.4
   protanopia · 25.7 deuteranopia. They only fail squeezed to 30 % over the panel,
   and no value fixes that: it is a property of **reusing eleven chart colours as
-  seven row backgrounds**, which is what this same file says a few lines above —
+  seven row backgrounds**, which is what this same file says a few lines above:
   "with ELEVEN series in one chart no palette survives colour blindness; hue cannot
   carry eleven categories".
 
   What it does force: **it cannot be claimed that the seven row colours are
   distinguishable from each other**. Six of the seven critical pairs separate; that
-  one does not. The colour code is a REINFORCEMENT and it stands on the phase 1
-  rule already in place —colour is never the only channel—: `RCODE` and
+  one does not. The colour code is a REINFORCEMENT and it stands on the design
+  rule already in place (colour is never the only channel): `RCODE` and
   `Response Type` are written in their cell, and the legend names the seven
   conditions. Whoever reads the screen can tell `Server Failure` from `Cached` **by
   reading**, which is how it has to work anyway.
@@ -356,8 +355,8 @@ before `data-theme` is set and with any value nobody declared.
   on things that float. Everything was flat panels with a 1 px border, and that is
   why it read as having no material.
 
-  Three heights and nothing more. Each shadow carries an offset AND a blur —a halo
-  with no offset is decoration, not depth— and goes in two layers: a short contact
+  Three heights and nothing more. Each shadow carries an offset AND a blur (a halo
+  with no offset is decoration, not depth) and goes in two layers: a short contact
   that settles the element and a diffuse one that lifts it off.
   */
   --e-1: 0 1px 2px rgba(0, 0, 0, 0.35), 0 8px 24px rgba(0, 0, 0, 0.22);
@@ -424,8 +423,8 @@ before `data-theme` is set and with any value nobody declared.
 
 Not the dark theme inverted: every value below was chosen for a white ground and
 measured there. `node dev/theme-contrast.mjs` composes every surface a token is
-drawn on —the hovers and the Query Logs row colours are translucent, so it lays
-them over their ground first— and fails if any light pair misses its threshold:
+drawn on (the hovers and the Query Logs row colours are translucent, so it lays
+them over their ground first) and fails if any light pair misses its threshold:
 4.5:1 for text, 3:1 for a control's edge (WCAG 1.4.11). On 2026-10-01: 87 of 87.
 The figures quoted in this block are that script's output.
 
@@ -441,7 +440,7 @@ wherever the attribute says `light`.
   THE SURFACE RAMP. On light, elevation is told the other way round: the canvas
   sits a step DARKER than the panels, and a panel rises by its border and a soft
   shadow, not by its own light. The greys are the same neutral the dark theme
-  chose —red and blue within three points, no blue cast— in the register of the
+  chose (red and blue within three points, no blue cast) in the register of the
   light consoles of GitHub, Linear and Vercel.
 
     canvas → panel            1.19   (dark 1.09)
@@ -468,7 +467,7 @@ wherever the attribute says `light`.
 
   `--faint-on-tint` is the response time inside a coloured Query Logs row. Those
   rows lay a series colour at 30 % over the panel, which on light darkens the
-  ground —in dark it lightens it—, and `--faint` dropped to 3.43-4.28:1 on all
+  ground (in dark it lightens it), and `--faint` dropped to 3.43-4.28:1 on all
   seven of them. One step darker it gives 4.67-5.83 on the seven and 8.02 on a
   plain row.
   */
@@ -484,8 +483,8 @@ wherever the attribute says `light`.
   gives 9.09:1. As a fill it is not asked to contrast with the panel (2.04:1): it
   is a solid mass of colour with its own ink, the way Technitium's site uses it.
 
-  Amber DRAWN on white —a link, the current sub-tab, the focus ring, a focused
-  field's border— is `--acc-ink`: the same hue taken down to `#8f5300`, 6.17:1 on
+  Amber DRAWN on white (a link, the current sub-tab, the focus ring, a focused
+  field's border) is `--acc-ink`: the same hue taken down to `#8f5300`, 6.17:1 on
   the panel and 4.89 at worst, so it serves as text and as a 3:1 line at once.
   The focus ring is drawn in it, which is why `--focus` in the shared `:root`
   points at `--acc-ink` and not at `--acc`.
@@ -495,8 +494,8 @@ wherever the attribute says `light`.
   --on-acc: #1a1205;
   /*
   STATES: a pastel ground, a saturated dark ink and a mid border. Each ink meets
-  4.5:1 on its own ground and on the panel —ok 4.91 / 5.48, warn 5.34 / 5.93,
-  dan 5.75 / 6.57, info 5.92 / 6.70— and the destructive button's `--on-dan`
+  4.5:1 on its own ground and on the panel (ok 4.91 / 5.48, warn 5.34 / 5.93,
+  dan 5.75 / 6.57, info 5.92 / 6.70) and the destructive button's `--on-dan`
   gives 6.98 on `--dan-fill`. The borders (1.7-2.0:1 on the panel) are a pill's
   outline, not its meaning: the word inside carries it, as in dark.
 
@@ -504,8 +503,8 @@ wherever the attribute says `light`.
   text, 6.2 on the border and 0.0 on the fill. Below 10, so the same colour by
   the project's criterion, and on purpose; they still never meet on a screen.
 
-  Danger stays tonal here too —a pale red fill with dark red ink, not a solid red
-  button— because the dark theme's `--dan-fill` is tonal and a destructive button
+  Danger stays tonal here too (a pale red fill with dark red ink, not a solid red
+  button) because the dark theme's `--dan-fill` is tonal and a destructive button
   should not become the loudest thing on the page only in light.
   */
   --ok: #047857;
@@ -536,10 +535,10 @@ wherever the attribute says `light`.
     · main line chart, normal vision: worst pair 15.9 (Total / Dropped); dark's
       is 10.5. Query Response Types 16.6. Blocking bars 48.3
     · no pair that shares a chart separates less in light than in dark, unless
-      it is already ≥ 15 in light — the script's regression check
+      it is already ≥ 15 in light: the script's regression check
 
   What it does not fix, as in dark: eleven series in one chart do not survive
-  colour blindness —Recursive / Clients is 3.3 under deuteranopia, dark's is 3.0—
+  colour blindness (Recursive / Clients is 3.3 under deuteranopia, dark's is 3.0),
   and the pointer guide with the legend's values is what carries that chart.
 
   `--ch-clients` cannot be the brand amber here as it is in dark: `#f5a524` is
@@ -578,7 +577,7 @@ wherever the attribute says `light`.
   /*
   The control lines. `--line-field` is a text field's and a select's border at
   rest: on light it is what tells a field from the panel, so it is held to 3:1
-  —3.72 on the panel, 3.11 on the canvas, 3.44 on a raised panel—, where dark
+  (3.72 on the panel, 3.11 on the canvas, 3.44 on a raised panel), where dark
   keeps it equal to `--line`. `--line-ctrl`, a checkbox's or a radio's box, is
   4.65. `--line-hover` (1.91) only has to move when the pointer arrives.
   */
@@ -594,14 +593,14 @@ wherever the attribute says `light`.
 
   White shines are invisible on white, so the ones on light surfaces are `none`
   (`--shine-btn`, `--shine-danger`) and the ones on the amber fill keep their
-  white, which still catches the light there. `--edge` stays a white top inset —it
-  sits inside `box-shadow` lists, so it cannot be `none`— and on light it reads as
+  white, which still catches the light there. `--edge` stays a white top inset (it
+  sits inside `box-shadow` lists, so it cannot be `none`) and on light it reads as
   a faint bevel on the raised controls. The text selection and the focus and
   hover halos stay brand amber, translucent: ink on the selection is 13.19:1.
 
   The glyphs: the chevron is `#66707a`, 4.83:1 on a field; the tick and the dash
   are `--on-acc` on the amber; the granted permission's tick is `--ok-bg`
-  (`#e7f6ee`) on the `--ok` green, 4.91:1 —in light the green is the dark one,
+  (`#e7f6ee`) on the `--ok` green, 4.91:1. In light the green is the dark one,
   so the tick turns pale.
   */
   --veil: rgba(26, 29, 33, 0.32);
@@ -651,8 +650,8 @@ wherever the attribute says `light`.
   A table's header row is the same height across the whole console.
 
   It is declared because otherwise the content sets it, and then every table comes
-  out a different height: Zones' measured 57 px —its "select all" checkbox drags a
-  40 px touch target along— and DHCP Leases' 34 against the 33 of the other five,
+  out a different height: Zones' measured 57 px (its "select all" checkbox drags a
+  40 px touch target along) and DHCP Leases' 34 against the 33 of the other five,
   without any label taking two lines.
 
   In a table, `height` on a cell is a MINIMUM: a header that genuinely needs two
@@ -694,7 +693,7 @@ wherever the attribute says `light`.
   /*
   A SCREEN'S VERTICAL RHYTHM. Three gaps, and no more.
 
-  Measured across all twelve, Zones had four different ones —16, 14, 9 and 12—
+  Measured across all twelve, Zones had four different ones (16, 14, 9 and 12)
   with no rule to explain them: each block had picked its own. That is what makes
   a screen read as disordered even when every value is on the scale.
 
@@ -711,7 +710,7 @@ wherever the attribute says `light`.
   /*
   The layers.
 
-  There were six loose `z-index` values —0, 5, 10, 20, 30 and 60— scattered across
+  There were six loose `z-index` values (0, 5, 10, 20, 30 and 60) scattered across
   four modules, with nowhere the order was recorded. And the dialog, which is the
   one thing that ALWAYS has to be above everything, declared none: that is why the
   sticky header, with its 5, painted over its top edge when the dialog was tall. It
@@ -748,39 +747,39 @@ wherever the attribute says `light`.
   --ctrl-track-h: 20px;
   --field-height: 34px;    /* minimum height of field, dropdown and button */
 
-  /* ── What the three pilots settled (phase 1.4, 2026-09-02) ──────────── */
+  /* ── What the design settled (2026-09-02) ───────────────────────────── */
   /*
-  Only what the pilots REPEATED. A value that appeared once stayed in its pilot;
-  a value that three different surfaces reached for on their own is a token,
-  because that is the definition of one.
+  Only what the designs of three different surfaces REPEATED. A value that appeared
+  once stayed on its surface; a value that three different surfaces reached for on
+  their own is a token, because that is the definition of one.
 
   The eleven series colours and the eight-colour cycle came in ahead of these, on
   purpose and for a reason written where they live.
   */
 
   /*
-  THE DIMMED STATE. `0.42`, and the three pilots arrived at it separately:
+  THE DIMMED STATE. `0.42`, and three surfaces arrived at it separately:
 
-    · pilot 1 — the previous data while a refresh is in flight
-    · pilot 2 — the dialog underneath when a `Confirm` opens over it, and the
-      rows of a table whose last refresh failed
-    · pilot 3 — the value of a control switched off by its master
+    · the Dashboard: the previous data while a refresh is in flight
+    · the Zones collection and its dialogs: the dialog underneath when a
+      `Confirm` opens over it, and the rows of a table whose last refresh failed
+    · the dense form: the value of a control switched off by its master
 
   Three surfaces, one number, one meaning: **it is here, it is readable, and it is
   not current or not yours to touch.** It is never used for "disabled by
-  permission" — that is the padlock, and confusing the two is exactly what pilot 3
-  was asked to fix.
+  permission": that is the padlock, and confusing the two is exactly what the
+  dense-form design was asked to fix.
   */
   --dim: 0.42;
 
   /*
   THE BREAKPOINTS, and an honest caveat.
 
-    1180  the full sidebar becomes a 60 px rail (pilots 1 and 2), and the help
-          column drops to a second line inside its row (pilot 3)
-     960  the section index becomes a strip of pills (pilot 3)
+    1180  the full sidebar becomes a 60 px rail, and the help column of a dense
+          form drops to a second line inside its row
+     960  the section index becomes a strip of pills
      560  everything stacks: help under its control, one column
-     390  the narrow target the three pilots draw
+     390  the narrow target the designs draw
 
   **`@media` cannot read a custom property.** These are declared so there is ONE
   list to read and one place to argue with, not because declaring them enforces
@@ -788,41 +787,41 @@ wherever the attribute says `light`.
 
   ── AND THEY ARE A TARGET, NOT AN INVENTORY (corrected 2026-09-03) ────────────
 
-  This block first said «no fifth breakpoint», which read as if four were what the
+  This block first said "no fifth breakpoint", which read as if four were what the
   console used. Measured, it was not. The count, kept current:
 
-      2026-09-03, before `--help-col` — EIGHT distinct values, and only 560 shared
+      2026-09-03, before `--help-col`: EIGHT distinct values, and only 560 shared
       with the list above:
 
           720 ×10   860 ×3   420 ×3   900 ×2   560 ×2   1080   1040   240
 
-      2026-09-03, after `--help-col` — NINE, and now two are shared:
+      2026-09-03, after `--help-col`: NINE, and now two are shared:
 
           720 ×10   860 ×3   560 ×3   420 ×3   900 ×2   1080   1040   1180   240
 
-      2026-09-03, after `SectionIndex` — TEN, and three of the four are real:
+      2026-09-03, after `SectionIndex`: TEN, and three of the four are real:
 
           720 ×10   860 ×3   560 ×3   420 ×3   900 ×2   960   1080   1040   1180   240
 
       `960` is `--bp-index`, and it entered with the primitive that needed it: the
       section index is the column that becomes a strip. Declared in `src/`, not yet
-      SHIPPED — nothing imports `SectionIndex` yet, so its stylesheet is shaken out
+      SHIPPED: nothing imports `SectionIndex` yet, so its stylesheet is shaken out
       of the bundle. Only `--bp-narrow` (390) still appears nowhere.
 
   What moved, and it is worth being exact because a count that goes UP is not
   obviously progress: `ui/Form` had ONE query at 720 that stacked the panel row
-  and the modal row together. Pilot 3 only decides the panel, so it was split —
-  the panel now steps at **1180** (help to a second line) and **560** (stacked),
-  the two values the pilot measured, and the modal keeps its **720**. One query
+  and the modal row together. The dense-form design only decides the panel, so it
+  was split: the panel now steps at **1180** (help to a second line) and **560**
+  (stacked), the two values that design measured, and the modal keeps its **720**. One query
   became three, and 1180 entered the stylesheets for the first time.
 
   So `--bp-rail`, `--bp-stack` and `--bp-index` are now real, and only
-  `--bp-narrow` (390) still appears in NO stylesheet — it is what the pilots
+  `--bp-narrow` (390) still appears in NO stylesheet: it is what the design
   decided, not what is built. And **720 is now MODAL debt** and nothing else: no
   dense form steps there any more, which was checked by measuring the panel grid
   at 721 and 720 and getting the same two columns.
 
-  These four remain the TARGET the three pilots converged on. The rule holds,
+  These four remain the TARGET the designs converged on. The rule holds,
   stated honestly: **a new breakpoint that is not one of these four has to be
   argued for**, and the ten that exist are debt with a number, not a licence.
   */
@@ -832,12 +831,12 @@ wherever the attribute says `light`.
   --bp-narrow: 390px;
 
   /*
-  THE MEASURES THE PILOTS FIXED, and each is a decision and not a preference.
+  THE MEASURES THE DESIGN FIXED, and each is a decision and not a preference.
 
-  `--help-col` is the one that carries pilot 3: a dense form's help does not go
+  `--help-col` is the one that carries the dense form: its help does not go
   under its control and does not fold, it goes in a third column. 360 px was
   measured against the 41 paragraphs of `Settings > General` **and not against
-  DHCP's**, which inherits the same kit — that is written down as open.
+  DHCP's**, which inherits the same kit. That is written down as open.
 
   `--ctrl-num` exists because a four-digit field was rendering 700 px wide, and
   that is what made the suffix behind it unreadable. A number field is as wide as
@@ -850,7 +849,7 @@ wherever the attribute says `light`.
   --area-min: 54px;      /* minimum height of a textarea */
 
   /*
-  ICON SIZES. Two, from pilot 1, and the difference is not decorative: in the
+  ICON SIZES. Two, from the Dashboard design, and the difference is not decorative: in the
   60 px rail the icon is the only thing left of the entry, so it grows.
   */
   --ico: 18px;       /* full sidebar, row actions, inline */

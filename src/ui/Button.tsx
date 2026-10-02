@@ -6,7 +6,7 @@ export type ButtonVariant = 'primary' | 'secondary' | 'danger'
 /*
 `size="sm"` is the button for a table row. It existed as `.ib` copied across three
 modules and did not exist in DHCP, which used the large button: the same action
-—"Edit"— looked different depending on which screen you were on.
+("Edit") looked different depending on which screen you were on.
 */
 export function Button({
   variant = 'secondary',

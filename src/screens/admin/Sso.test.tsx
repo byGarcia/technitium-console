@@ -29,7 +29,7 @@ const props = { token: 'tok', onNotice: vi.fn() }
 const body = (spy: ReturnType<typeof server>) =>
   spy.mock.calls.find((c) => c[0] === 'admin/sso/set')?.[1]?.body as Record<string, string>
 
-describe('SSO — load', () => {
+describe('SSO: load', () => {
   it('the Redirect URI hangs from the console root, not from the route of this screen', async () => {
     // Served at /dns/admin/sso/ behind a proxy prefix: upstream's one-page
     // console would be at /dns/, and that is what the provider must call back.
@@ -77,7 +77,7 @@ describe('SSO — load', () => {
   })
 })
 
-describe('SSO — "Allow Sign Up Only For Mapped Users" follows sign-up (v15.5.1)', () => {
+describe('SSO: "Allow Sign Up Only For Mapped Users" follows sign-up (v15.5.1)', () => {
   it('on load it is disabled when sign-up is off (auth.js:2253)', async () => {
     server({ ssoAllowSignup: false, ssoAllowSignupOnlyForMappedUsers: true })
     render(<Sso {...props} />)
@@ -116,7 +116,7 @@ describe('SSO — "Allow Sign Up Only For Mapped Users" follows sign-up (v15.5.1
   })
 })
 
-describe('SSO — validation', () => {
+describe('SSO: validation', () => {
   it('with SSO off everything can be saved empty', async () => {
     const spy = server()
     const user = userEvent.setup()
@@ -199,7 +199,7 @@ describe('SSO — validation', () => {
   })
 })
 
-describe('SSO — the send', () => {
+describe('SSO: the send', () => {
   it('the scopes travel joined by `|`', async () => {
     const spy = server()
     const user = userEvent.setup()
@@ -259,7 +259,7 @@ describe('SSO — the send', () => {
   })
 })
 
-describe('SSO — the two `http:` confirmations', () => {
+describe('SSO: the two `http:` confirmations', () => {
   it('an authority with `http:` asks for confirmation before saving', async () => {
     const spy = server({ ssoAuthority: 'http://id.test' })
     const user = userEvent.setup()
@@ -317,10 +317,11 @@ describe('SSO — the two `http:` confirmations', () => {
 })
 
 /*
-Phase 3's shape, and the reason each of these is a test: three of the four things
-this round moved on this screen are invisible in a screenshot of one width.
+The dense form's shape, and the reason each of these is a test: three of the four
+things the redesign moved on this screen are invisible in a screenshot of one
+width.
 */
-describe('SSO — pilot 3 dense form', () => {
+describe('SSO: dense form', () => {
   it('is four blocks, and their four titles are upstream own labels', async () => {
     server()
     render(<Sso {...props} />)
@@ -328,8 +329,8 @@ describe('SSO — pilot 3 dense form', () => {
     for (const title of ['SSO User Sign Up', 'Scopes', 'Group Map (Optional)']) {
       expect(screen.getByRole('heading', { name: title })).toBeInTheDocument()
     }
-    /* Once: the first block's title. It used to be twice —the screen title said
-       it too— and since 2026-09-07 the screen title is the section, `Administration`,
+    /* Once: the first block's title. It used to be twice (the screen title said
+       it too), and since 2026-09-07 the screen title is the section, `Administration`,
        with `SSO` in the bar underneath. Upstream's literal is still on the screen,
        which is what has to hold. */
     expect(screen.getAllByText('Single Sign-On (SSO)')).toHaveLength(1)
@@ -369,13 +370,13 @@ describe('SSO — pilot 3 dense form', () => {
   })
 
   /*
-  These two are upstream literals that `dev/censo-ayudas.mjs` does not see —they
-  carry markup and travel as JSX children rather than as a `help=` prop— so the
-  round's count of 27 is really 29. The delivery retired them from the drawing for
-  that reason, which was right for a drawing that cannot read the source; dropping
-  them from the product would be losing two helps.
+  These two are upstream literals that a count of `help=` props does not see
+  (they carry markup and travel as JSX children), so the count of 27 is really
+  29. The design drawing left them out for that reason, which was right for a
+  drawing that cannot read the source; dropping them from the product would be
+  losing two helps.
   */
-  it('keeps the two helps the census does not count', async () => {
+  it('keeps the two helps a count of help props does not see', async () => {
     server()
     render(<Sso {...props} />)
     await screen.findByLabelText('Authority (Issuer)')

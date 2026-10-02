@@ -135,14 +135,14 @@ export interface DhcpScope {
 /*
 Returns the whole outcome, not a list.
 
-It used to return `[]` when the server failed, and that looked prudent —"the
+It used to return `[]` when the server failed, and that looked prudent ("the
 screen does not blow up if the request falls over". It was the opposite: an empty
 list and a failure draw the same, so the screen said "No Lease Found" when what
 had happened was that the call never arrived. That is worse than an error,
 because nobody suspects a response that looks normal.
 
-By returning the `ApiOutcome` —as the list screens already did, and those did
-warn— the type forces the two apart, and the message the server sent is kept as
+By returning the `ApiOutcome` (as the list screens already did, and those did
+warn), the type forces the two apart, and the message the server sent is kept as
 well, which is what upstream shows.
 */
 /** `dhcp/leases/list` (dhcp.js:46). */

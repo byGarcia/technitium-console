@@ -88,11 +88,11 @@ describe('DNS Client', () => {
   })
 
   /*
- The DNSSEC checkbox moved to `ui/Check` in phase 2: it was an `<input>` with its
- own `.chk`, a third name for the same gesture and the only place in the console
- where it measured 34 px high. Nothing covered it, so migrating it was a change
- without a net — and the phase contract says every call site
-  keeps its accessible name and its behaviour.
+ The DNSSEC checkbox moved to `ui/Check` in the redesign: it was an `<input>` with
+ its own `.chk`, a third name for the same gesture and the only place in the
+ console where it measured 34 px high. Nothing covered it, so migrating it was a
+ change without a net, and every call site has to keep its accessible name and its
+ behaviour.
   */
   it('the DNSSEC checkbox keeps its accessible name and can be ticked', async () => {
     render(<DnsClient token="t" />)

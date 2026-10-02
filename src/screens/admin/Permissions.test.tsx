@@ -41,14 +41,14 @@ function server(sections = PERMISSIONS, detail: Record<string, unknown> = DETAIL
 
 const props = { token: 'tok', cluster: null, onNotice: vi.fn() }
 
-describe('Permissions — the list', () => {
+describe('Permissions: the list', () => {
   it('it draws one card per section with its two tables and the total', async () => {
     server()
     render(<Permissions {...props} />)
 
     /* The section's name is the panel's TITLE, not a button: it was an
-       orange link and did the same thing as the "Edit Permissions" next to it
-       —two controls for one action. Upstream does not link it either.
+       orange link and did the same thing as the "Edit Permissions" next to it:
+       two controls for one action. Upstream does not link it either.
 
        It is `getAllBy` and not `getBy` because the name now appears twice on the
        screen on purpose: once as this panel's title and once as a column of the
@@ -66,7 +66,7 @@ describe('Permissions — the list', () => {
   /*
   The map is the round's first decision: eleven stacked panels compare nothing,
   and comparing across sections is what this screen is for. It is a table like the
-  sections, only transposed — the sections across, one row per subject.
+  sections, only transposed: the sections across, one row per subject.
   */
   it('draws the concession map with the sections as its columns', async () => {
     server()
@@ -101,8 +101,8 @@ describe('Permissions — the list', () => {
   /*
   The one thing this round had to RESOLVE and not merely draw: a cell has a name
   written in the DOM, `{Section} · {Subject} · {Verb}`, and the grid it lives in
-  is a table with both axes. Before this the eleven sections were a CSS grid and
-  `contract()` reported `tables: []` with 84 cells inside.
+  is a table with both axes. Before this the eleven sections were a CSS grid, and a
+  structural read of the DOM found no table with 84 cells inside.
   */
   it('the list is read-only: its checkboxes are disabled', async () => {
     server()
@@ -136,7 +136,7 @@ describe('Permissions — the list', () => {
   })
 })
 
-describe('Permissions — the editing modal', () => {
+describe('Permissions: the editing modal', () => {
   async function open(cluster = null as never) {
     const spy = server()
     const user = userEvent.setup()

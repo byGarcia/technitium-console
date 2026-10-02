@@ -4,7 +4,7 @@ import { Matrix, MatrixCell, MatrixEmpty, MatrixGroup, MatrixMarks, MatrixRow } 
 import { ForceBlock } from './Confirm'
 
 /*
-What these check is the ONE thing this round had to resolve rather than merely
+What these check is the ONE thing this primitive had to resolve rather than merely
 draw: that a cell of the permissions matrix has a name written in the DOM, and
 that the grid is a table with both axes declared.
 

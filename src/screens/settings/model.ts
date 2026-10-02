@@ -5,8 +5,8 @@ import { serializeTable, type Cell } from '../../lib/table-serialise'
 The model of the Settings form.
 
 The old console has no model: it reads and writes the DOM. Here that DOM is
-replicated field by field —each `<input>` is a string, each `<textarea>` a string
-with newlines, each `<table>` a list of rows— so that the validation order and
+replicated field by field (each `<input>` is a string, each `<textarea>` a string
+with newlines, each `<table>` a list of rows), so that the validation order and
 the body that gets sent come out IDENTICAL to `saveDnsSettings`
 (main.js:1631-2236).
 
@@ -26,13 +26,13 @@ export interface QpmRow { prefix: string; udpLimit: string; tcpLimit: string }
 export interface TsigRow { keyName: string; sharedSecret: string; algorithmName: string }
 
 export interface SettingsForm {
-  // General — local parameters
+  // General: local parameters
   dnsServerDomain: string
   dnsServerLocalEndPoints: string
   dnsServerIPv4SourceAddresses: string
   dnsServerIPv6SourceAddresses: string
 
-  // General — default values
+  // General: default values
   defaultRecordTtl: string
   defaultNsRecordTtl: string
   defaultSoaRecordTtl: string
@@ -43,16 +43,16 @@ export interface SettingsForm {
   zoneTransferAllowedNetworks: string
   notifyAllowedNetworks: string
 
-  // General — update
+  // General: update
   dnsServerEnableCheckForUpdate: boolean
   dnsAppsEnableAutomaticUpdate: boolean
 
-  // General — IPv6 and socket pool
+  // General: IPv6 and socket pool
   ipv6Mode: string
   enableUdpSocketPool: boolean
   socketPoolExcludedPorts: string
 
-  // General — EDNS / DNSSEC / ECS
+  // General: EDNS / DNSSEC / ECS
   udpPayloadSize: string
   dnssecValidation: boolean
   eDnsClientSubnet: boolean
@@ -61,14 +61,14 @@ export interface SettingsForm {
   eDnsClientSubnetIpv4Override: string
   eDnsClientSubnetIpv6Override: string
 
-  // General — QPM
+  // General: QPM
   qpmPrefixLimitsIPv4: QpmRow[]
   qpmPrefixLimitsIPv6: QpmRow[]
   qpmLimitSampleMinutes: string
   qpmLimitUdpTruncationPercentage: string
   qpmLimitBypassList: string
 
-  // General — advanced
+  // General: advanced
   clientTimeout: string
   tcpSendTimeout: string
   tcpReceiveTimeout: string
@@ -333,7 +333,7 @@ export function formFromSettings(s: DnsSettings): SettingsForm {
 
     enableBlocking: s.enableBlocking,
     allowTxtBlockingReport: s.allowTxtBlockingReport,
-    // main.js:1455 — the minutes field empties on every load, it is not kept.
+    // main.js:1455. The minutes field empties on every load, it is not kept.
     temporaryDisableBlockingMinutes: '',
     blockingBypassList: listToText(s.blockingBypassList),
     blockingType: s.blockingType ?? 'AnyAddress',
@@ -342,7 +342,7 @@ export function formFromSettings(s: DnsSettings): SettingsForm {
     blockListUrls: listToText(s.blockListUrls),
     blockListUpdateIntervalHours: String(s.blockListUpdateIntervalHours ?? ''),
 
-    // main.js:1525 — the proxy type is compared lowercased and any
+    // main.js:1525. The proxy type is compared lowercased and any
     // an unknown value falls to "None".
     proxyType: proxyType(s.proxy?.type),
     proxyAddress: s.proxy?.address ?? '',
@@ -389,7 +389,7 @@ function proxyType(type: string | undefined): string {
    handlers in `$(function(){…})` (main.js:279-490). By deriving them from state
    instead of mutating them per event, the rule lives in one place and cannot
    fall out of sync, which is what happens to upstream today with
-   `chkEnableDnsOverHttp3` (see this phase's report).                         */
+   `chkEnableDnsOverHttp3` (CONVENTIONS.md, deliberate deviation 4).          */
 export function enabled(f: SettingsForm) {
   const tlsWeb = f.webServiceEnableTls || f.webServiceEnableTlsUnixSocket
   const reverseProxy =
@@ -482,7 +482,7 @@ The value upstream's `#optSettingsClusterNode` holds (cluster.js:1021-1050, call
 with `addClusterNode = true` and the node remembered under `settingsClusterNode`):
 
   · Cluster NOT initialised: the selector is hidden and holds one empty
-    `<option>`, so the value is `""` —whatever was remembered—. Checked on the
+    `<option>`, so the value is `""`, whatever was remembered. Checked on the
     stock v15.5.1 console: `settings/get?node=` and `settings/set` with `node=&…`.
   · Cluster initialised: the remembered node, `"cluster"` when nothing was
     remembered, and the first node when the remembered one is no longer listed.
@@ -502,9 +502,9 @@ export function selectedNode(
 Which blocks a save carries depends on the node chosen in the selector
 (main.js:1639-1644):
 
-  · `""` —a standalone server, where upstream's selector is hidden and holds the
-    empty `<option>` (cluster.js:1047-1049)— sends EVERYTHING.
-  · `"cluster"` —the aggregate— sends only the cluster-wide parameters.
+  · `""` (a standalone server, where upstream's selector is hidden and holds the
+    empty `<option>`, cluster.js:1047-1049) sends EVERYTHING.
+  · `"cluster"` (the aggregate) sends only the cluster-wide parameters.
   · a node name sends only that node's own parameters.
 
 The skipped blocks are skipped whole, VALIDATIONS INCLUDED: with a node chosen,
@@ -518,7 +518,7 @@ export function nodeScope(node: string): { cluster: boolean; node: boolean } {
 }
 
 export function buildBody(f: SettingsForm, node = ''): BodyResult {
-  // main.js:1644 — `node` is always the first parameter, even when empty.
+  // `node` is always the first parameter, even when empty (main.js:1644).
   const body: Record<string, string> = { node }
   const sanitised: Partial<SettingsForm> = {}
   const include = nodeScope(node)
@@ -852,7 +852,7 @@ export function buildBody(f: SettingsForm, node = ''): BodyResult {
         return missing('Please enter proxy server port.', 'Proxy & Forwarders', 'proxyPort')
       }
       const pb = cleanList(f.proxyBypassList)
-      // main.js:2137 — here empty is NOT "false", it is an empty string.
+      // main.js:2137. Here empty is NOT "false", it is an empty string.
       if (!(pb.length === 0 || pb === ',')) sanitised.proxyBypassList = pb.replace(/,/g, '\n')
 
       proxy.proxyAddress = f.proxyAddress

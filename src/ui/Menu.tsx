@@ -9,8 +9,8 @@ it is a button with a list that closes on an outside click or on Escape.
 
 It used to live inside Zones and now belongs to everyone, because the rule that
 orders row actions needs it on every table: **destructive things go in here**. A
-row cannot have a loose "Delete" next to a "Disable" —there are two hundred and
-forty rows and this console has no undo anywhere— so deleting costs you opening
+row cannot have a loose "Delete" next to a "Disable" (there are two hundred and
+forty rows and this console has no undo anywhere), so deleting costs you opening
 the menu. On a detail screen it does go outside: there you act on an object you
 are looking at.
 
@@ -19,11 +19,11 @@ into `package.json` for a twenty-line component, and the project's primitives ar
 deliberately few.
 
 And it is the ONLY menu. There was another one written by hand in the sidebar
-—the account one— with its own list, its own styles and its own state, and what
+(the account one) with its own list, its own styles and its own state, and what
 it had forgotten was everything you cannot see by looking at it open: it did not
 close on an outside click, nor on Escape, nor on scroll. Three behaviours already
-solved here. The difference that was real —it hangs upwards from the foot of the
-sidebar, aligned left, and its trigger is a wide row instead of a button— is the
+solved here. The difference that was real (it hangs upwards from the foot of the
+sidebar, aligned left, and its trigger is a wide row instead of a button) is the
 two parameters below.
 */
 
@@ -33,7 +33,7 @@ This is a real menu, and that is a contract rather than a label.
 `role="menu"` promises a keyboard: arrows that move between items, `Home`/`End`,
 one tab stop for the whole menu rather than one per item, and `Escape` that
 closes it from anywhere inside and gives the focus back to the trigger. It was
-carrying the role without any of that until 2026-09-07 — twelve call sites
+carrying the role without any of that until 2026-09-07: twelve call sites
 announcing a menu and handing over a pile of loose buttons.
 
 The pattern is implemented **here**, once, and not at the call sites: items are
@@ -45,8 +45,8 @@ consistent.
 Disabled items keep their button role on purpose: they are announced, they are
 not reachable, and skipping them in the arrow order is what the pattern asks for.
 
-Upstream declares no menu roles at all —its Bootstrap dropdown is a `<ul>` of
-links— so nothing here is owed to parity. It is owed to the role we chose.
+Upstream declares no menu roles at all (its Bootstrap dropdown is a `<ul>` of
+links), so nothing here is owed to parity. It is owed to the role we chose.
 */
 export function Menu({
   label,
@@ -82,9 +82,9 @@ export function Menu({
 
   /*
   The list is `position: fixed`, measured from the trigger, and NOT absolute
-  inside the row. Absolute did not work: two containers clipped it at once —the
+  inside the row. Absolute did not work, because two containers clipped it at once: the
   segmented actions group, which carries `overflow: hidden` for its corners, and
-  the table wrapper, which carries `overflow-x: auto`— so the menu opened and was
+  the table wrapper, which carries `overflow-x: auto`. So the menu opened and was
   not visible. It is the same reason `ui/Select` takes its list out fixed, and the
   same reason it closes on scroll.
   */
@@ -97,7 +97,7 @@ export function Menu({
   So if it does not fit below and there is more room above, it anchors by its
   bottom edge; and either way the available height is set as a cap, with the list
   scrolling inside. The second part is the belt: even if it fits on neither side
-  —a very short window— every option is still reachable.
+  (a very short window), every option is still reachable.
   */
   useLayoutEffect(() => {
     if (!open) { setBox(null); return }

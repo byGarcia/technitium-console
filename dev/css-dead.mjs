@@ -3,7 +3,7 @@ CSS rules written and never applied.
 
 This is the defect no test sees and no screenshot gives away: a class declared in
 a module that no component references. It happened with `.v`, `.p` and `.k` on
-the Dashboard tiles, which had gone unapplied since phase 1.
+the Dashboard tiles, which had gone unapplied since early in the redesign.
 
 It is static on purpose. Sweeping the DOM would produce false positives for
 everything living in a state the session never reached (a closed dialog, an empty
@@ -13,7 +13,7 @@ table, a hover).
 
 The first version treated any class as alive if its name appeared in ANY file
 under `src/`. Its comment claimed the only possible error was staying silent
-about a dead class, never inventing one, and that was true — but it stayed silent
+about a dead class, never inventing one, and that was true, but it stayed silent
 about many: `.fail` was declared in four modules and used in one, and the other
 three copies passed because the word existed in Settings. Unifying the panel-form
 kit surfaced half a dozen leftovers that way.
@@ -77,7 +77,7 @@ for (const [f, src] of code) {
   exposes.set(f, e)
 }
 
-/* Step 2: the indirect hop — `import { settingsStyles as styles } from '../parts'`. */
+/* Step 2: the indirect hop, as in `import { settingsStyles as styles } from '../parts'`. */
 for (const [f, src] of code) {
   for (const m of src.matchAll(/import\s*\{([^}]*)\}\s*from\s*['"](\.[^'"]*)['"]/g)) {
     const target = resolveImport(f, m[2])
@@ -92,7 +92,7 @@ for (const [f, src] of code) {
 }
 
 /*
-A module consumed with brackets —`styles[variant]`— can use any class, so it is
+A module consumed with brackets (`styles[variant]`) can use any class, so it is
 not judged. You have to look at the identifier EACH file imports its module
 under: the Dashboard calls a data object `s` and does `s[m.k]`, which has nothing
 to do with its styles.
@@ -119,8 +119,8 @@ for (const [f, src] of code) {
 
 /*
 Four places in a CSS file look like they declare a class and declare none: the
-comments (`.zt` lived in one), the contents of `url()` —where `www.w3.org` reads
-as `.w3`—, the `:global()` blocks, and the path of a `composes: … from '…'`,
+comments (`.zt` lived in one), the contents of `url()` (where `www.w3.org` reads
+as `.w3`), the `:global()` blocks, and the path of a `composes: … from '…'`,
 which ends in `.module.css` and would read as two classes, `.module` and `.css`.
 They are stripped before looking.
 */
@@ -167,7 +167,7 @@ for (const mod of modules) {
 
   if (unused.length) {
     dead += unused.length
-    console.log(`\n${mod.slice(ROOT.length + 1)}  —  ${consumers.get(mod).size} consumer(s)`)
+    console.log(`\n${mod.slice(ROOT.length + 1)}:  ${consumers.get(mod).size} consumer(s)`)
     for (const c of unused) {
       const line = css.split('\n').findIndex((l) => l.includes(`.${c}`)) + 1
       console.log(`  .${c}  (line ${line})`)
@@ -204,7 +204,7 @@ for (const [f, src] of code) {
     for (const m of prose.matchAll(new RegExp(`\\b${id}\\.(\\w+)`, 'g'))) {
       if (!declared.has(m[1])) {
         const line = prose.slice(0, m.index).split('\n').length
-        missing.push(`${f.slice(ROOT.length + 1)}:${line}  ${id}.${m[1]}  —  ${mod.slice(ROOT.length + 1)} declares no .${m[1]}`)
+        missing.push(`${f.slice(ROOT.length + 1)}:${line}  ${id}.${m[1]}:  ${mod.slice(ROOT.length + 1)} declares no .${m[1]}`)
       }
     }
   }
@@ -213,13 +213,13 @@ for (const [f, src] of code) {
 /*
 And the modules read with BRACKETS, which until now were simply "not judged".
 
-`styles[tone]` can name anything, so the reverse walk above cannot judge them —
+`styles[tone]` can name anything, so the reverse walk above cannot judge them,
 but the set of things it can name is not unknown: it is the string-literal union
 of the variable's own type, declared a few lines up in the same file. So each
 literal of that union is checked against the module.
 
-They are the five most-used primitives in the console —`Alert`, `Button`,
-`Dialog`, `Tag` and the three list screens— and a tone with no class is a warning
+They are the five most-used primitives in the console (`Alert`, `Button`,
+`Dialog`, `Tag` and the three list screens), and a tone with no class is a warning
 that silently loses its colour, on every screen at once. "Not judged" was the
 wrong answer for exactly the files that could do the most damage.
 
@@ -269,7 +269,7 @@ if (bracketFindings.length) {
 }
 
 if (missing.length) {
-  console.log('\nNamed but never declared — these elements render with no class:')
+  console.log('\nNamed but never declared; these elements render with no class:')
   for (const m of missing) console.log(`  ${m}`)
 }
 
@@ -282,7 +282,7 @@ if (unjudged.size) {
 /*
 Every `composes: X from './y.module.css'` has to resolve, and until 2026-09-07
 nothing checked it. A target that does not exist is ignored in silence: the build
-passes, the tests pass —jsdom stubs CSS modules— and the class simply arrives
+passes, the tests pass (jsdom stubs CSS modules), and the class simply arrives
 without the declarations it was composing.
 
 It happened that day. Renaming `rotulo.module.css` sent four `composes` to

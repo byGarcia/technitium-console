@@ -6,9 +6,9 @@ import { fileURLToPath } from 'node:url'
 /*
 Upstream is one page, so a relative path in its markup always resolves against
 the root. This console has real routes: a relative `sso/login` link drawn at
-`/dashboard/` goes to `/dashboard/sso/login`. It happened twice on 2026-09-30 —
-the SSO Redirect URI and the SSO login link, the second one found on the home
-server as a 404 — so every path in the markup has to hang from the root
+`/dashboard/` goes to `/dashboard/sso/login`. It happened twice on 2026-09-30
+(the SSO Redirect URI and the SSO login link, the second one found on the home
+server as a 404), so every path in the markup has to hang from the root
 (`publicUrl`, `urlApi`), and this is what keeps a literal one from coming back.
 
 It lives in `dev/` and not beside the code for the reason

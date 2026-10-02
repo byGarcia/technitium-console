@@ -3,7 +3,7 @@ Does the same thing look the same on every screen?
 
 The other tools in `dev/` look at one screen and answer whether it is right. This
 one looks at ALL of them and answers something different: whether the same object
-—a panel, a table header, a count— is painted the same everywhere.
+(a panel, a table header, a count) is painted the same everywhere.
 
 It was needed because the console was written screen by screen, and each one
 solved on its own what had already been solved next door. Measured before fixing
@@ -13,16 +13,16 @@ the count footer EIGHT times with four treatments. None of that is visible to a
 screen-by-screen review, because on each screen, taken alone, everything looks
 right.
 
-    await firmas()        groups each family by look and says how many there are
+    screenSignatures()    groups each family by look and says how many there are
 
 ## How to run it, and why it changed
 
 It used to say "paste it into the console". It now EXPORTS, which means it can no
-longer be pasted raw — and that is on purpose, for two reasons found on the same
+longer be pasted raw, and that is on purpose, for two reasons found on the same
 day:
 
-  · **Fidelity.** Taking the phase-2 baseline meant getting these 210 lines into
-    the page. Transcribing them into a `browser_evaluate` would have measured a
+  · **Fidelity.** Taking a baseline meant getting these lines into the page.
+    Transcribing them into a `browser_evaluate` would have measured a
     hand-copy of the tool instead of the tool. Serving the file untouched and
     importing it is the only way the photo is of THIS code.
   · **Testability.** A tool whose defects only show up in a browser is a tool
@@ -35,24 +35,25 @@ day:
 It still registers itself on `window` when it runs in a browser, so the call
 sites that expect `screenSignatures()` to be there keep working.
 
-The CONTROL families —text field, textarea, dropdown, checkbox, radio, alert—
+The CONTROL families (text field, textarea, dropdown, checkbox, radio, alert)
 were added later, and they are the ones that caught the last batch: the textarea
 was painted by hand on four screens, with radius 6 instead of 8 and without the
 inset shadow every other field carries. None of the earlier families saw it,
 because a textarea, alone on its screen, looks right.
 
-What it returns are GROUPS, not a verdict: two signatures can both be right —the
-data table and the editable one are two objects on purpose— and a single one can
+What it returns are GROUPS, not a verdict: two signatures can both be right (the
+data table and the editable one are two objects on purpose), and a single one can
 be wrong if it is ugly. What must not happen is that there are five without
 anyone having decided so.
 
-And you have to know how to read it. A signature ending in "td —" is not a
-different density: it is a table no cell sample could be taken from, so the same
-table appears twice. With today's data, `tabla: 4` is really two —the data one
-and the editable one— each with and without a sample.
+And you have to know how to read it. A signature with a placeholder where the
+cell padding goes is not a different density: it is a table no cell sample could
+be taken from, so the same table appears twice. That no longer happens: an empty table now contributes no
+signature at all (see the table family below), and the data table and the editable
+one are measured as two families, `table` and `table-editable`.
 
-Paste it into the browser console or pass it to `browser_evaluate`, screen by
-screen, accumulating the result.
+Import it in the browser console, or pass it to `browser_evaluate`, screen by
+screen, and accumulate the results with `merge()`.
 */
 
 const css = (e) => getComputedStyle(e)
@@ -60,25 +61,26 @@ const css = (e) => getComputedStyle(e)
 /** The visual signature of every family present on the current screen. */
 export function screenSignatures() {
   /*
-  Las raíces, en plural desde la fase 2: `<main>` **y todo diálogo abierto**.
+  The roots, plural: `<main>` **and every open dialog**.
 
-  `Dialog` monta por `RadixDialog.Portal`, o sea fuera de `main`, así que durante
-  toda la fase 1 esta herramienta **no vio ni un solo contenido de diálogo** —y el
-  piloto 2 decidió el sistema modal entero—. La familia `aviso` daba una firma y
-  parecía sana mientras los avisos de modal podían divergir sin que nada lo dijera.
+  `Dialog` mounts through `RadixDialog.Portal`, that is outside `main`, so for a
+  long time this tool **did not see a single piece of dialog content**, while the
+  whole modal system was being decided. The alert family gave one signature and
+  looked healthy while the alerts inside modals could drift without anything
+  saying so.
 
-  Cuando no hay diálogo abierto esto devuelve exactamente lo de antes, que era la
-  condición para no invalidar la foto base ya tomada.
+  With no dialog open this returns exactly what it returned before, which was the
+  condition for not invalidating a baseline already taken.
   */
   const roots = [
     document.querySelector('main'),
     ...document.querySelectorAll('[role=dialog], [role=alertdialog]'),
   ].filter(Boolean)
   if (roots.length === 0) roots.push(document.body)
-  /* Un `root` compuesto: se comporta como un nodo para lo que este fichero le
-     pide, que es buscar dentro. `querySelector` devuelve el primero de todas las
-     raíces —el título de la pantalla sigue siendo el de `main`, porque `main` va
-     primero en la lista. */
+  /* A composite `root`: it behaves like a node for what this file asks of it,
+     which is searching inside. `querySelector` returns the first hit across all
+     the roots, so the screen title is still the one in `main`, because `main`
+     goes first in the list. */
   const root = {
     querySelectorAll: (sel) => roots.flatMap((r) => [...r.querySelectorAll(sel)]),
     querySelector: (sel) => {
@@ -98,7 +100,7 @@ export function screenSignatures() {
   /* The bordered container: panel, block or form fieldset. */
   for (const c of root.querySelectorAll('[class*="_panel_"], [class*="_block_"]')) {
     const s = css(c)
-    const head = c.querySelector('[class*="_ph_"], [class*="_blockTitle_"], [class*="_cabecera_"]')
+    const head = c.querySelector('[class*="_ph_"], [class*="_blockTitle_"]')
     /* The title is not always an `h2`: in Permissions it is a `span` inside an
        `h4`, and in a `fieldset` it is the `legend` itself. */
     const t =
@@ -120,16 +122,16 @@ export function screenSignatures() {
     /* The sample cell, skipping the "there is nothing" row: its padding is its
        own, taller on purpose, and it came out as one more density. */
     /* `_noRows_`, and it used to say `_sinFilas_`. The August translation renamed
-       the class and this filter was not updated with it, so any EMPTY table —
-       `/dhcp/leases/` on a fresh harness— handed its "No Lease Found" cell over as
+       the class and this filter was not updated with it, so any EMPTY table
+       (`/dhcp/leases/` on a fresh harness) handed its "No Lease Found" cell over as
        the density sample and came out as a fourth table signature that does not
-       exist. Found while taking the phase-2 baseline, which is exactly what a
-       baseline is for. */
+       exist. Found while taking a baseline, which is exactly what a baseline is
+       for. */
     const td = [...t.querySelectorAll('tbody td')].find((c) => !/_noRows_/.test(c.className))
     if (!th) continue
     /*
-    An EMPTY table says nothing about cell density, and saying `td —` was not
-    "nothing": it was a third signature of its own, and it is what `/dhcp/leases/`
+    An EMPTY table says nothing about cell density, and a placeholder where the
+    cell padding goes was not "nothing": it was a third signature of its own, and it is what `/dhcp/leases/`
     handed over on a fresh harness for months. The `_noRows_` filter above was
     already right; what was missing was giving up when the filter leaves nothing.
     */
@@ -137,14 +139,14 @@ export function screenSignatures() {
     /*
     And the data table and the EDITABLE table are two objects, not one look of the
     same one. `ui/EditableTable` says so itself: "It is a different piece from the
-    data table and it must be — that one is a screen's main object, with its panel
+    data table and it must be: that one is a screen's main object, with its panel
     and its border; this one lives INSIDE a panel, up against its fields".
 
     Measuring them together is the mistake this file warns about elsewhere: a
     family that holds two objects cannot tell you that one of them has changed.
     Apart, each has one signature and either can drift on its own.
     */
-    const family = /_editable_/.test(t.className) ? 'tabla-editable' : 'tabla'
+    const family = /_editable_/.test(t.className) ? 'table-editable' : 'table'
     note(
       family,
       `th ${css(th).fontSize}/${css(th).fontWeight}/${css(th).letterSpacing}/${css(th).backgroundColor}` +
@@ -156,27 +158,27 @@ export function screenSignatures() {
   for (const t of root.querySelectorAll('table')) {
     const row = t.querySelector('tbody tr')
     const last = row ? [...row.querySelectorAll('td')].pop() : null
-    const group = last?.querySelector('[class*="_acciones_"]')
+    const group = last?.querySelector('[class*="_actions_"]')
     if (!group) continue
-    note('acciones', `${Math.round(t.getBoundingClientRect().right - group.getBoundingClientRect().right)}px from the edge`)
+    note('actions', `${Math.round(t.getBoundingClientRect().right - group.getBoundingClientRect().right)}px from the edge`)
   }
 
-  /* The count that goes with a table. Its TEXT changes on purpose —the three
-     vocabularies are upstream literals—; its look does not. */
+  /* The count that goes with a table. Its TEXT changes on purpose (the three
+     vocabularies are upstream literals); its look does not. */
   for (const n of root.querySelectorAll('div, span, b')) {
     if (n.children.length > 0) continue
-    /* With the colon and the number: without them, "Total Queries" —the label of
-       a Dashboard tile— passed for a count and showed up as a separate signature
+    /* With the colon and the number: without them, "Total Queries" (the label of
+       a Dashboard tile) passed for a count and showed up as a separate signature
        that did not exist. */
     if (!/^(Total [A-Za-z ]+: ?\d|\d+ zones|\d+-\d+ \()/.test((n.textContent || '').trim())) continue
-    note('recuento', `${css(n).fontSize}/${css(n).fontWeight}/${css(n).color}`)
+    note('count', `${css(n).fontSize}/${css(n).fontWeight}/${css(n).color}`)
   }
 
   /*
   The form controls. This family was not here, and it was the one that was
   missing: the textarea was painted by hand in Settings, DHCP, Administration and
-  the lists screens —radius 6 instead of 8, one step less in size, without the
-  inset shadow every other field carries— and neither the screenshots nor the
+  the lists screens (radius 6 instead of 8, one step less in size, without the
+  inset shadow every other field carries), and neither the screenshots nor the
   other families said so, because on each screen, alone, the textarea looked
   right.
 
@@ -195,65 +197,67 @@ export function screenSignatures() {
     ].join(' | ')
   }
   for (const e of root.querySelectorAll('input[type=text], input[type=number], input[type=password], input:not([type])')) {
-    note('campo-text', box(e))
+    note('field-text', box(e))
   }
-  for (const e of root.querySelectorAll('textarea')) note('campo-area', box(e))
+  for (const e of root.querySelectorAll('textarea')) note('field-area', box(e))
 
   /*
-  Y dos familias NUEVAS para el bloque de anchos de control, en vez de meter la
-  medida en las de arriba.
+  And two NEW families for the control widths, instead of putting the measure
+  into the ones above.
 
-  `box()` excluye el ancho a propósito y con razón: el ancho de un campo de texto
-  es suyo —upstream fija los numéricos en 80-100 y deja anchos los de texto—, así
-  que meterlo ahí convertiría cada campo en su propia firma y enterraría cualquier
-  deriva bajo el ruido. Pero lo que la fase 1 decidió —`--ctrl-num` para el ancho
-  numérico por defecto y `--area-min` para la altura mínima del área— no se ve en
-  ninguna firma actual.
+  `box()` leaves the width out on purpose and for a reason: a text field's width
+  is its own (upstream pins the numeric ones at 80-100 and leaves the text ones
+  wide), so putting it there would turn every field into its own signature and
+  bury any drift under the noise. But what the design system decided
+  (`--ctrl-num` for the default numeric width and `--area-min` for the minimum
+  height of a textarea) shows up in no existing signature.
 
-  Así que van aparte y acotadas: **el ancho de los campos numéricos** y **la altura
-  de las áreas de texto**. Se mide lo RENDERIZADO y no lo declarado, que es la
-  lección que ya costó dos correcciones: el tope de los avisos vivía en el
-  contenedor y el relleno lo decidía el orden del bundle.
+  So they go apart and narrow: **the width of numeric fields** and **the height
+  of textareas**. What is measured is what is RENDERED and not what is declared,
+  which is the lesson that already cost two corrections: the alerts' cap lived on
+  the container and the fill was decided by the order of the bundle.
 
-  Los anchos explícitos que la consola ya tiene —80, 125, 200, 38, 28— saldrán como
-  firmas propias, y eso es correcto: son decisiones por campo, no deriva. Lo que se
-  vigila es que el DEFECTO sea uno solo.
+  The explicit widths the console already has (80, 125, 200, 38, 28) will come out
+  as signatures of their own, and that is right: they are per-field decisions,
+  not drift. What is watched is that the DEFAULT is a single one.
   */
   /*
-  La retícula de la fila, y **panel y modal por separado**.
+  The row grid, with **panel and modal measured apart**.
 
-  No es una distinción cosmética: `Form.module.css:23` la declara —«dentro de un
-  modal hay menos sitio y menos filas: sin separador y sin 210 px»— y va atada a la
-  prop `modal`. La auditoría 2.1 llegó a llamarla deriva **desde un grep de px
-  sueltos, sin abrir el fichero**, y se corrigió el 2026-09-03.
+  It is not a cosmetic distinction: `ui/Form.module.css` declares it (inside a
+  modal there is less room and fewer rows: no divider and no 210 px) and it is
+  tied to the `modal` prop. An earlier audit went as far as calling it drift
+  **from a grep of loose px values, without opening the file**, and that was
+  corrected on 2026-09-03.
 
-  Medirlas juntas repetiría ese error a nivel de instrumento: 210 y 180 saldrían
-  como dos firmas de una familia y parecerían una inconsistencia. Van aparte, y
-  **cada una debe tener una sola firma**.
+  Measuring them together would repeat that mistake at the level of the
+  instrument: 210 and 180 would come out as two signatures of one family and look
+  like an inconsistency. They go apart, and **each must have a single signature**.
 
-  Se mide `grid-template-columns` RESUELTO, que es lo que decide dónde cae la
-  ayuda: si la tercera columna entra, aquí se ve; si degrada por ancho, también.
+  What is measured is the RESOLVED `grid-template-columns`, which is what decides
+  where the help lands: whether the third column fits shows here, and so does
+  whether it degrades with the width.
   */
   for (const e of root.querySelectorAll('[class*="_row_"], [class*="_mrow_"]')) {
     const cls = [...e.classList].join(' ')
-    /* `_mrow_` contiene `row`, así que se pregunta primero por el modal. */
-    const donde = /_mrow_/.test(cls) ? 'modal' : 'panel'
+    /* `_mrow_` contains `row`, so the modal is asked about first. */
+    const where = /_mrow_/.test(cls) ? 'modal' : 'panel'
     if (!/_m?row_/.test(cls)) continue
     /*
-    Y tiene que ser la fila de `ui/Form`, no cualquier `.row`.
+    And it has to be the row of `ui/Form`, not just any `.row`.
 
-    Medido: `[class*="_row_"]` atrapaba tambien el `.row` propio de Cache, Allowed,
-    Blocked y View Logs, que no son retículas, y la familia salía con una tercera
-    firma `none` que no es ninguna retícula de formulario. Una familia que mide dos
-    objetos distintos no puede decir si uno de ellos ha cambiado.
+    Measured: `[class*="_row_"]` also caught the `.row` of Cache, Allowed, Blocked
+    and View Logs, which are not grids, and the family came out with a third
+    signature, `none`, which is no form grid at all. A family that measures two
+    different objects cannot tell you whether one of them has changed.
 
-    El rasgo que la identifica es su rótulo: toda fila de `Form` —`Row` y
-    `GroupRow`, modal o no— pinta un hijo directo `_rowLabel_`/`_mrowLabel_`. Es
-    más estable que el hash del módulo, que cambia con cada build.
+    What identifies it is its label: every `Form` row (`Row` and `GroupRow`, modal
+    or not) paints a direct child `_rowLabel_`/`_mrowLabel_`. That is more stable
+    than the module hash, which changes with every build.
     */
-    const suyo = [...e.children].some((h) => /_m?rowLabel_/.test([...h.classList].join(' ')))
-    if (!suyo) continue
-    note(`reticula-${donde}`, css(e).gridTemplateColumns)
+    const ours = [...e.children].some((h) => /_m?rowLabel_/.test([...h.classList].join(' ')))
+    if (!ours) continue
+    note(`grid-${where}`, css(e).gridTemplateColumns)
   }
 
   /*
@@ -263,16 +267,16 @@ export function screenSignatures() {
   is one width.
   */
   for (const e of root.querySelectorAll('input[type=number]')) {
-    const where = e.closest('td') ? 'celda' : 'form'
-    note(`campo-num-ancho-${where}`, `${Math.round(e.getBoundingClientRect().width)}px`)
+    const where = e.closest('td') ? 'cell' : 'form'
+    note(`field-num-width-${where}`, `${Math.round(e.getBoundingClientRect().width)}px`)
   }
   /*
   The height of a textarea is a FUNCTION of its `rows`: 3 rows gave 66 px and 5
   gave 98, and measuring the height reported that as drift when it is somebody
   having asked for five rows instead of three.
 
-  So what is measured is the FORMULA and not the result — the line and the frame
-  around it — and `rows` drops out. Both Settings textareas turn out to be
+  So what is measured is the FORMULA and not the result (the line and the frame
+  around it), and `rows` drops out. Both Settings textareas turn out to be
   16 px per line inside 18 px of frame, which is one look and not two: that is
   checked here rather than declared as an allowed exception.
   */
@@ -281,9 +285,9 @@ export function screenSignatures() {
     const frame =
       parseFloat(c.paddingTop) + parseFloat(c.paddingBottom) +
       parseFloat(c.borderTopWidth) + parseFloat(c.borderBottomWidth)
-    note('campo-area-alto', `line ${c.lineHeight} + frame ${Math.round(frame)}px`)
+    note('field-area-height', `line ${c.lineHeight} + frame ${Math.round(frame)}px`)
   }
-  for (const e of root.querySelectorAll('[class*="_disparador_"], select')) note('campo-lista', box(e))
+  for (const e of root.querySelectorAll('select')) note('field-list', box(e))
 
   /*
   The checkbox or radio row.
@@ -291,9 +295,9 @@ export function screenSignatures() {
   A setting and a row selection are NOT the same family, even though both are an
   `input[type=checkbox]` inside a `label`: the setting changes how the server
   behaves and stays put, the selection lasts one click. They are measured apart
-  because otherwise the two legitimate exceptions of the table checkbox —40 px in
+  because otherwise the two legitimate exceptions of the table checkbox (40 px in
   the data cell, 0 in the header one, both deliberate and documented in
-  `ui/Table.module.css`— come out as two more signatures and bury any real drift
+  `ui/Table.module.css`) come out as two more signatures and bury any real drift
   in the setting checkboxes under the noise.
   */
   for (const e of root.querySelectorAll('input[type=checkbox], input[type=radio]')) {
@@ -317,63 +321,65 @@ export function screenSignatures() {
   /*
   The "Note!"/"Warning!" alert: same block and same inset inside its panel.
 
-  What is measured is the RESULT —how many pixels from the panel its edge sits—
+  What is measured is the RESULT (how many pixels from the panel its edge sits)
   and not the parent's `margin-left`, which was the first attempt and gave a
   false difference: in Settings the gap comes from a margin on the alerts
   wrapper, and in About from padding on the panel body, i.e. the same place by
   two mechanisms.
   */
   /*
-  Y se separa POR TIPO, no por el título literal.
+  And they are split BY TYPE, not by the literal title.
 
-  `aviso` era una sola familia, y por eso no podía detectar la decisión que la
-  fase 2 tiene que tomar: que el `Warning!` vaya relleno y el `Note!` con
-  contorno. Medidos juntos, dos tratamientos distintos son dos firmas de la misma
-  familia y no se distinguen de una deriva. Medidos aparte, **cada uno debe
-  acabar con UNA firma**, y eso sí es comprobable.
+  The alerts used to be a single family, and so it could not detect the decision
+  that had to be taken: whether `Warning!` goes filled and `Note!` outlined.
+  Measured together, two different treatments are two signatures of the same
+  family and cannot be told apart from drift. Measured apart, **each must end up
+  with ONE signature**, and that can be checked.
 
-  El discriminador es la clase del TIPO —`_info_`, `_warning_`— y no el texto:
-  el tratamiento se aplica por tipo, así que la medida tiene que mirar el mismo
-  eje que la decisión. `Note!` es el `info`; `Warning!` es el `warning`.
+  The discriminator is the TYPE class (`_info_`, `_warning_`) and not the text:
+  the treatment is applied by type, so the measure has to look along the same
+  axis as the decision. `Note!` is the `info`; `Warning!` is the `warning`.
 
-  Y la firma incorpora lo que antes no miraba: **el relleno** —fondo con color
-  contra transparente, que es la decisión entera— y **si lleva icono**. Con la
-  firma anterior, `borderRadius | inset`, se podía cambiar de relleno a contorno
-  sin que ninguna familia se moviera.
+  And the signature includes what it did not look at before: **the fill**
+  (coloured background against transparent, which is the whole decision) and
+  **whether it carries an icon**. With the old signature, `borderRadius | inset`,
+  an alert could go from filled to outlined without any family moving.
   */
-  for (const e of root.querySelectorAll('[class*="_alerta_"], [role=note], [class*="_alert"]')) {
-    const clases = [...e.classList].join(' ')
-    const tipo = ['info', 'warning', 'success', 'danger'].find((t) => clases.includes(`_${t}_`)) ?? 'sin-tipo'
+  for (const e of root.querySelectorAll('[role=note], [class*="_alert"]')) {
+    const classes = [...e.classList].join(' ')
+    const type = ['info', 'warning', 'success', 'danger'].find((t) => classes.includes(`_${t}_`)) ?? 'no-type'
     const panel = e.closest('[class*="_panel_"], [class*="_block_"]')
     const inset = panel
       ? `${Math.round(e.getBoundingClientRect().left - panel.getBoundingClientRect().left)}px from the panel`
       : 'loose on the page'
     const s = css(e)
-    /* Transparente o sin pintar cuenta como CONTORNO; cualquier otra cosa, como
-       relleno. `rgba(0, 0, 0, 0)` es lo que devuelve un fondo sin declarar. */
-    const relleno = /^(transparent|rgba\(0, 0, 0, 0\))$/.test(s.backgroundColor) ? 'contorno' : 'relleno'
-    const icono = e.querySelector('svg') ? 'con-icono' : 'sin-icono'
+    /* Transparent or unpainted counts as OUTLINED; anything else, as filled.
+       `rgba(0, 0, 0, 0)` is what an undeclared background returns. */
+    const fill = /^(transparent|rgba\(0, 0, 0, 0\))$/.test(s.backgroundColor) ? 'outlined' : 'filled'
+    const icon = e.querySelector('svg') ? 'with-icon' : 'no-icon'
     /*
-    Y el TOPE DE ANCHO, por la misma razón por la que se añadió el relleno: un
-    aviso de seiscientos caracteres se lee mal si la línea es demasiado larga, esa
-    es la decisión que la fase 1 tomó con `--notice-max`, y la firma no la veía.
-    Se mide el ancho REALMENTE PINTADO y no el `max-width` del propio aviso, y la
-    primera versión se equivocó justo ahí: el tope se declara en el CONTENEDOR
-    —`.notices`—, así que el aviso sigue diciendo `max-width: none` y la firma no
-    habría visto nada. Es el mismo error que ya se cometió con el relleno, y por
-    eso se corrige mirando el resultado en vez de la declaración.
+    And the WIDTH CAP, for the same reason the fill was added: a six-hundred-
+    character alert reads badly if the line is too long, that is the decision
+    `--notice-max` records, and the signature did not see it. What is measured is
+    the width REALLY PAINTED and not the alert's own `max-width`, and the first
+    version got exactly that wrong: the cap is declared on the CONTAINER
+    (`.notices`), so the alert still says `max-width: none` and the signature
+    would have seen nothing. It is the same mistake already made with the fill,
+    and that is why it is fixed by looking at the result instead of the
+    declaration.
 
-    Depende del ancho de ventana, sí; por eso el barrido se hace siempre a 1440.
+    It depends on the window width, yes; that is why the sweep is always taken at
+    1440.
     */
     note(
-      `aviso-${tipo}`,
-      `${relleno} | ${icono} | ancho ${Math.round(e.getBoundingClientRect().width)}px | ${s.borderRadius} | ${inset}`,
+      `notice-${type}`,
+      `${fill} | ${icon} | width ${Math.round(e.getBoundingClientRect().width)}px | ${s.borderRadius} | ${inset}`,
     )
   }
 
   /* The screen title. */
   const h1 = root.querySelector('h1')
-  if (h1) note('titulo', `${css(h1).fontSize}/${css(h1).fontWeight}/${css(h1).letterSpacing}`)
+  if (h1) note('title', `${css(h1).fontSize}/${css(h1).fontWeight}/${css(h1).letterSpacing}`)
 
   /*
   And the gap under that title, which had also drifted apart: six screens had it
@@ -399,7 +405,7 @@ export function screenSignatures() {
 How many looks each family is ALLOWED to have, and why.
 
 Without this the report was a list of fifteen families to read and judge, four of
-them permanently split for reasons nobody reread — and a tool that always shows
+them permanently split for reasons nobody reread, and a tool that always shows
 four problems teaches you to skim it. That is not hypothetical: the panel lost its
 shadow on three screens on 2026-09-07 and the only thing that said so was a
 fifth split appearing among the four.
@@ -411,7 +417,7 @@ const EXPECTED = {
   /*
   Empty, and that is the point: every family that used to need an exception here
   was a family measuring two objects at once, and each has been split into the two
-  it was really holding. An entry in this map is a debt, not a feature — it says
+  it was really holding. An entry in this map is a debt, not a feature: it says
   "these two looks are both right and nobody will ever tell them apart again".
   */
 }
@@ -419,12 +425,12 @@ const EXPECTED = {
 /** Accumulates the signatures of several screens into a single report. */
 export function merge(reports) {
   const total = {}
-  for (const { ruta, firmas } of reports) {
-    for (const [family, list] of Object.entries(firmas)) {
+  for (const { route, signatures } of reports) {
+    for (const [family, list] of Object.entries(signatures)) {
       total[family] = total[family] ?? {}
       for (const f of list) {
         total[family][f] = total[family][f] ?? []
-        total[family][f].push(ruta)
+        total[family][f].push(route)
       }
     }
   }
@@ -432,13 +438,13 @@ export function merge(reports) {
     const many = Object.keys(signatures).length
     const allowed = EXPECTED[family] ?? 1
     return {
-      familia: family,
-      cuantas: many,
-      esperadas: allowed,
+      family,
+      count: many,
+      expected: allowed,
       /* A family with FEWER looks than declared is a finding too: the reason
          above has stopped being true and nobody will notice by reading it. */
-      hallazgo: many === allowed ? null : many > allowed ? 'gained a look' : 'lost one, the reason is stale',
-      firmas: Object.entries(signatures).map(([f, routes]) => `${f}  →  ${routes.join(', ')}`),
+      finding: many === allowed ? null : many > allowed ? 'gained a look' : 'lost one, the reason is stale',
+      signatures: Object.entries(signatures).map(([f, routes]) => `${f}  →  ${routes.join(', ')}`),
     }
   })
 }

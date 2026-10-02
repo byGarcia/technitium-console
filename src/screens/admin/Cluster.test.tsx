@@ -32,7 +32,7 @@ function server(state: ClusterState = CLUSTER_NOT_INITIALISED) {
 
 const props = { token: 'tok', cluster: null, onCluster: vi.fn(), onNotice: vi.fn() }
 
-describe('Cluster — not initialised', () => {
+describe('Cluster: not initialised', () => {
   it('it only offers initialising: no Resync, no Options, no Leave, no Delete', async () => {
     server()
     render(<Cluster {...props} />)
@@ -59,7 +59,7 @@ describe('Cluster — not initialised', () => {
   })
 })
 
-describe('Cluster — starting a new one', () => {
+describe('Cluster: starting a new one', () => {
   async function open() {
     const spy = server()
     const user = userEvent.setup()
@@ -120,7 +120,7 @@ describe('Cluster — starting a new one', () => {
   })
 })
 
-describe('Cluster — joining an existing one', () => {
+describe('Cluster: joining an existing one', () => {
   async function open() {
     const spy = server()
     const user = userEvent.setup()
@@ -206,7 +206,7 @@ describe('Cluster — joining an existing one', () => {
   })
 })
 
-describe('Cluster — seen from the PRIMARY node', () => {
+describe('Cluster: seen from the PRIMARY node', () => {
   it('it offers Options and Delete Cluster, but neither Resync nor Leave', async () => {
     server(CLUSTER_PRIMARY)
     render(<Cluster {...props} />)
@@ -307,7 +307,7 @@ describe('Cluster — seen from the PRIMARY node', () => {
   })
 })
 
-describe('Cluster — seen from a SECONDARY node', () => {
+describe('Cluster: seen from a SECONDARY node', () => {
   it('it offers Resync, Options and Leave Cluster, but not Delete Cluster', async () => {
     server(CLUSTER_SECONDARY)
     render(<Cluster {...props} />)
@@ -423,7 +423,7 @@ describe('Cluster — seen from a SECONDARY node', () => {
   })
 })
 
-describe('Cluster — the options', () => {
+describe('Cluster: the options', () => {
   it('from the primary they can be touched and saved, in the order of upstream', async () => {
     const spy = server(CLUSTER_PRIMARY)
     const user = userEvent.setup()
@@ -470,7 +470,7 @@ describe('Cluster — the options', () => {
   })
 })
 
-describe('Cluster — the node table', () => {
+describe('Cluster: the node table', () => {
   it('the node itself shows no \"Last Seen\", and a secondary looking at itself does show \"Last Synced\"', async () => {
     server(CLUSTER_SECONDARY)
     render(<Cluster {...props} />)
@@ -502,12 +502,12 @@ describe('Cluster — the node table', () => {
 The three things this round decided about `Cluster`, and the reason each one is a
 test rather than a screenshot: none of them is visible in a picture of one branch.
 */
-describe('Cluster — what tells the three branches apart', () => {
+describe('Cluster: what tells the three branches apart', () => {
   it('says the role of this server beside the title, with the table own literal', async () => {
     server(CLUSTER_PRIMARY)
     const { unmount } = render(<Cluster {...props} />)
     /* `Primary` twice: the pill beside the `h1` and the `Type` of its own row.
-       It is the same literal on purpose — the pill is not a new word. */
+       It is the same literal on purpose: the pill is not a new word. */
     expect(await screen.findAllByText('Primary')).toHaveLength(2)
     unmount()
 
@@ -534,7 +534,7 @@ describe('Cluster — what tells the three branches apart', () => {
   })
 })
 
-describe('Cluster — the consequence block', () => {
+describe('Cluster: the consequence block', () => {
   it('carries the upstream literal and arms only when ticked', async () => {
     server(CLUSTER_PRIMARY)
     const user = userEvent.setup()
@@ -565,8 +565,8 @@ describe('Cluster — the consequence block', () => {
     const before = within(dialog).getByRole('button', { name: 'Delete' })
     await user.click(within(dialog).getByRole('checkbox', { name: 'Force Delete Cluster' }))
     expect(before).toHaveTextContent('Delete')
-    /* And the dismiss stays `Close`, which is what upstream writes on this modal
-       — it is a `Dialog` and not a `Confirm` precisely because of that. The
+    /* And the dismiss stays `Close`, which is what upstream writes on this modal;
+       it is a `Dialog` and not a `Confirm` precisely because of that. The
        header's ✕ is also named `Close`, so it is the FOOTER one that is read. */
     const footer = dialog.lastElementChild!
     expect([...footer.querySelectorAll('button')].map((b) => b.textContent)).toEqual([

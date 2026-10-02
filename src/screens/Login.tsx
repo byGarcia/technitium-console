@@ -31,7 +31,8 @@ export interface Session {
     uptimestamp: string
     /* The server sends these on `includeInfo=true` and always has
        (`WebServiceAuthApi.cs:96-104`); the nodes only when a cluster exists.
-       Nothing here declared them, which is half of why spec F10 happened. */
+       Nothing here declared them, which is half of why the cluster node selector
+       was missing from every screen that offers it upstream. */
     clusterInitialized?: boolean
     clusterNodes?: { name: string; type: string }[]
   }
@@ -85,7 +86,7 @@ export function Login({
   useEffect(() => clearOtpTimer, [])
 
   /*
-  main.js:48-60 — on showing the login, `api/status` is queried, and it decides
+  main.js:48-60. On showing the login, `api/status` is queried, and it decides
   two things: whether the SSO button shows, and whether the install still has the
   factory credentials, in which case it **logs itself in** with admin/admin. A
   failed auto-login leaves no alert: it falls back to the form in silence.
@@ -158,7 +159,7 @@ export function Login({
     if (outcome.kind === 'ok') {
       clearOtpTimer()
       const session = outcome.data as Session
-      // auth.js:283-284 — logging in with the factory credentials and no 2FA opens
+      // auth.js:283-284. Logging in with the factory credentials and no 2FA opens
       // Change Password with the current one filled in. The comparison is
       // case-sensitive upstream: `ADMIN` does not trigger it.
       const forcePasswordChange =
@@ -167,7 +168,7 @@ export function Login({
       return
     }
 
-    // auth.js:281 — if the attempt was automatic, the failure is swallowed: the
+    // auth.js:281. If the attempt was automatic, the failure is swallowed: the
     // form is left clean instead of an alert the user did not cause.
     if (auto) {
       userRef.current?.focus()
@@ -189,7 +190,7 @@ export function Login({
     }
   }
 
-  /** auth.js:70-74 — on reaching 6 characters it submits itself. */
+  /** auth.js:70-74. On reaching 6 characters it submits itself. */
   function onTotpInput(value: string) {
     setTotp(value)
     if (value.length === 6) void submit(value)
@@ -200,11 +201,10 @@ export function Login({
  `<main>` and an `<h1>`, which is what this screen did not have.
 
  Measured before touching it: it was the ONLY one in the console with no landmark
- —no `main`, no `header`, no `footer`— and with no heading; the mark was a `div`.
+ (no `main`, no `header`, no `footer`) and with no heading; the mark was a `div`.
  Two consequences you do not see by looking: whoever navigates by landmarks had
- nowhere to jump, and `dev/screen-contract.mjs` returned
- `{error: 'no main element'}` for the screen you enter the console through, so the
- front door had no contract.
+ nowhere to jump, and any tool that reads a screen's structure from its `main`
+ found nothing on the screen you enter the console through.
 
     It is fixed by redrawing it and costs nothing. If nobody names it, it comes back.
     */
@@ -269,7 +269,7 @@ export function Login({
               <div className={styles.orLogin}>or login with</div>
               {/* Upstream's link to `sso/login` is relative to a one-page console,
                   so it always lands on the root. Here the login can be drawn at
-                  any real route —`/dashboard/`, after a session expires— and the
+                  any real route (`/dashboard/`, after a session expires) and the
                   relative link became `/dashboard/sso/login`, a 404 (2026-09-30,
                   on the home server). It hangs from the root, like every other
                   path in this console. */}

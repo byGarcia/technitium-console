@@ -43,8 +43,8 @@ export function StoreApps({
   const [pendingUninstall, setPendingUninstall] = useState<StoreApp | null>(null)
 
   /*
-  Upstream's store header is a sort link —`sortTable('tableStoreAppsBody', 0)`,
-  index.html:6166— and this screen had dropped it. It is the same class of loss
+  Upstream's store header is a sort link (`sortTable('tableStoreAppsBody', 0)`,
+  index.html:6166), and this screen had dropped it. It is the same class of loss
   About turned up: `check-parity-controls.mjs` counts destinations, helps and
   examples, so a control that is none of the three walks straight past it.
 
@@ -108,7 +108,7 @@ export function StoreApps({
   }
 
   /*
-  apps.js:292-294 — the same literal confirmation as the tab's.
+  apps.js:292-294. The same literal confirmation as the tab's.
 
   It stacks over this dialog, which is what Radix does with a modal inside
   another. Before it was the browser's native `confirm()`, the only step of this
@@ -166,7 +166,7 @@ export function StoreApps({
           <ul className={styles.store}>
             {sorted.map((app) => {
               const hasUpdate = app.installed && app.updateAvailable === true
-              // apps.js:164 — installed shows ITS version; not installed, the store's.
+              // apps.js:164. Installed shows ITS version; not installed, the store's.
               const version = app.installed ? (app.installedVersion ?? app.version) : app.version
               return (
                 <li key={app.name} className={styles.srow} aria-label={app.name}>
@@ -181,7 +181,7 @@ export function StoreApps({
                     {/*
                     The catalogue is 27 apps and the dialog was 5.868 px of
                     scroll: to find one you rolled through six screens. Upstream
-                    is the same —same fields, same length, and no filter either—
+                    is the same (same fields, same length, and no filter either),
                     so what could not be done was to add a search box, which is a
                     control upstream does not have.
 

@@ -5,12 +5,12 @@ import styles from './ForgotPassword.module.css'
 `modalForgotPassword` (index.html:3864). It calls no endpoint: it is text.
 
 And it is needed all the same, because it explains the ONLY procedure that exists
-for recovering access —renaming `auth.config` to `resetadmin.config` and
-restarting— and without it an administrator who loses the password is locked out
+for recovering access (renaming `auth.config` to `resetadmin.config` and
+restarting), and without it an administrator who loses the password is locked out
 without knowing the way back exists. The text is copied literally: they are
 operating instructions, not prose of ours.
 
-It was found missing in the phase 10 inventory sweep: it was the only one of
+It was found missing in an inventory sweep of upstream's modals: it was the only one of
 upstream's 40 modals with no counterpart.
 */
 

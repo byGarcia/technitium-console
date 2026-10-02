@@ -18,8 +18,8 @@ Three jobs, in this order, and the order matters:
      clamping here: a bubble squashed against the right edge covers the very
      control it describes.
   3. **Clamp** whatever is left into the viewport, with a margin. After a flip
-     there can still be overflow on the other axis —a tall bubble beside a
-     control at the top of the screen— and that is what clamping is for.
+     there can still be overflow on the other axis (a tall bubble beside a
+     control at the top of the screen), and that is what clamping is for.
 
 `margin` is not decoration: at 390 px a bubble flush against the edge reads as
 cut off, and the console's own gutter is 8.

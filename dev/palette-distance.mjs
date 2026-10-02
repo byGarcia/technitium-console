@@ -4,7 +4,7 @@ How far apart the chart colours actually are.
 
 A series palette is not a matter of taste at the point where two series land in
 the same doughnut: either the eye separates them or it does not. This measures
-it, so the decision between the design project's palette and the code's is made
+it, so the decision between the design drawing's palette and the code's is made
 on numbers and not on which one was written last.
 
 What it measures, for each palette:
@@ -21,8 +21,8 @@ What it measures, for each palette:
 
 Thresholds, stated so they can be argued with:
 
-  ΔE00 < 10  collision — the two read as the same colour at line and chip size
-  ΔE00 < 15  at risk   — separable side by side, not separable across a chart
+  ΔE00 < 10  collision: the two read as the same colour at line and chip size
+  ΔE00 < 15  at risk:   separable side by side, not separable across a chart
 
 Every theme is measured, not only the dark one: the code's palette is read from
 each theme block of `tokens.css` and reported against that theme's own panel and
@@ -35,8 +35,8 @@ thresholds were argued on and light has to answer to it pair by pair:
     risk in dark may stay at risk in light, never sink further.
 
 Exit code: 1 when a theme of the code fails its rules (every theme: each series
-at 3:1 on its panel; light: also the two above), 0 otherwise. The pilot and the
-proposal are history, printed for comparison and never gated.
+at 3:1 on its panel; light: also the two above), 0 otherwise. The drawn palette
+and the proposal are history, printed for comparison and never gated.
 
 Run: node dev/palette-distance.mjs
 */
@@ -65,12 +65,10 @@ export function codePalettes(css = readFileSync(join(ROOT, 'src/theme/tokens.css
 }
 
 /*
-The pilot's, transcribed from `12-piloto-dashboard.dc.html` in the Claude Design
-project «technitium-ui — consola DNS», the `.pil` rule, etag 1788332174231441
-(2026-09-02 08:56). Transcribed and not read: the design project is not a file
-on this disk.
+The palette of the Dashboard design drawing, transcribed by hand on 2026-09-02.
+Transcribed and not read: the drawing is not a file in this repository.
 */
-const PILOT = {
+const DRAWN = {
   'ch-total': '#60a5fa',
   'ch-ok': '#34d399',
   'ch-fail': '#f87171',
@@ -82,7 +80,7 @@ const PILOT = {
   'ch-block': '#c084fc',
   'ch-drop': '#868e96',
   'ch-clients': '#f5a524',
-  /* The open cycle, taken from the two doughnuts the pilot draws with it. */
+  /* The open cycle, taken from the two doughnuts the drawing paints with it. */
   'ch-1': '#60a5fa',
   'ch-2': '#38bdf8',
   'ch-3': '#2dd4bf',
@@ -91,11 +89,11 @@ const PILOT = {
 }
 
 /*
-The proposal this measurement argues for: the pilot's hues, which measure better
+The proposal this measurement argues for: the drawing's hues, which measure better
 where it counts, with the two exact identities corrected back to the code's.
 */
 const PROPOSED = {
-  ...PILOT,
+  ...DRAWN,
   /* `#868e96` IS `--faint`, to the digit: a series cannot be the text colour. */
   'ch-drop': '#94a3b8',
   /* Eight and not five: the cycle feeds an unbounded set (StatsManager.cs:2544
@@ -256,7 +254,7 @@ function report(title, palette, ui) {
       const bad = p.filter((x) => x.d < 15)
       const head = vision ?? 'normal vision'
       if (!bad.length) {
-        console.log(`  ${head.padEnd(14)} worst pair ΔE00 ${p[0].d.toFixed(1)}  ${label(p[0].a)} / ${label(p[0].b)}  — clear`)
+        console.log(`  ${head.padEnd(14)} worst pair ΔE00 ${p[0].d.toFixed(1)}  ${label(p[0].a)} / ${label(p[0].b)}: clear`)
       } else {
         console.log(`  ${head}`)
         for (const x of bad)
@@ -320,14 +318,14 @@ const uiOf = (p) => ({ ink: p.ink, mute: p.mute, faint: p.faint, line: p.line, p
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   const { dark, light } = codePalettes()
 
-  report('CODE, dark — src/theme/tokens.css', dark, uiOf(dark))
-  report('CODE, light — src/theme/tokens.css', light, uiOf(light))
-  report('PILOT — 12-piloto-dashboard.dc.html', PILOT, uiOf(dark))
-  report('PROPOSED — the pilot with the two identities corrected', PROPOSED, uiOf(dark))
+  report('CODE, dark: src/theme/tokens.css', dark, uiOf(dark))
+  report('CODE, light: src/theme/tokens.css', light, uiOf(light))
+  report('DRAWN: the Dashboard design drawing', DRAWN, uiOf(dark))
+  report('PROPOSED: the drawing with the two identities corrected', PROPOSED, uiOf(dark))
 
   console.log(`\n${'='.repeat(72)}\nWhere the two disagree\n${'='.repeat(72)}`)
   for (const k of Object.keys(NAME)) {
-    if (dark[k] !== PILOT[k]) console.log(`  ${label(k).padEnd(15)} code ${dark[k]}   pilot ${PILOT[k]}`)
+    if (dark[k] !== DRAWN[k]) console.log(`  ${label(k).padEnd(15)} code ${dark[k]}   drawn ${DRAWN[k]}`)
   }
 
   console.log(`\n${'='.repeat(72)}\nLight against dark, pair by pair\n${'='.repeat(72)}`)

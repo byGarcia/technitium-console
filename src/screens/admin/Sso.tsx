@@ -22,7 +22,7 @@ import frm from '../../ui/Form.module.css'
 /*
 `refreshAdminSsoConfig`, `loadAdminSsoConfig` and `saveAdminSsoConfig`
 (auth.js:2215-2377 in v15.5.1). This is the screen that CONFIGURES SSO; signing in through
-SSO is already solved in phase 2 and is not touched here.
+SSO is a separate matter and is not touched here.
 
 Four things about the server that govern this form:
 
@@ -61,24 +61,24 @@ The four sections of this form, and their four names are upstream's own: they we
 the labels of its four groups (`index.html`, the `well` of `adminTabPaneSso`).
 Nothing here is a new word.
 
-## And why there is no index beside them, which pilot 3 did ask for
+## And why there is no index beside them, which the dense-form design did ask for
 
 Because it costs the dense form its single geometry, and that was measured rather
 than argued. With `ui/SectionIndex` in a column here, `dev/uniformity.js` reported
-`reticula-panel` at THREE signatures instead of two: `210px 354px 360px` on this
+`grid-panel` at THREE signatures instead of two: `210px 354px 360px` on this
 screen against `210px 542px 360px` on Settings' eight panes. The 188 px are the
 index column and its gap.
 
-Settings is the same archetype, is already built and deployed, and has no index —
-phase 2 left `SectionIndex` written and unwired on purpose. Wiring it on one of
+Settings is the same archetype, is already built and deployed, and has no index:
+`SectionIndex` was left written and unwired there on purpose. Wiring it on one of
 the two dense forms and not the other means the same `Row` renders at two widths
 across the console, which is exactly what that tool exists to catch. It is the
-same call the tool round made about the padlock pill: a change that obliges
-rebuilding a screen that is already done is not a change this round takes.
+same call made about the padlock pill: a change that obliges rebuilding a screen
+that is already done is not one to take in passing.
 
 So the index is DEFERRED, with its condition written down: it goes on Settings and
 on SSO together, or on neither. `Permissions` does keep one, and that costs
-nothing measured — it has no `Row` grid at all.
+nothing measured: it has no `Row` grid at all.
 */
 const SECTIONS = [
   { id: 'sso-single-sign-on', label: 'Single Sign-On (SSO)' },
@@ -141,7 +141,7 @@ export function Sso({ tabs, token, onNotice }: Props) {
   Upstream's `pathname` is the console's root, because its console is one page.
   Here it is not: since the routes became real this screen lives at
   `/admin/sso/`, and taking its `pathname` as it stands told the administrator
-  to register `…/admin/sso/sso/callback` — a URI the server does not serve, so
+  to register `…/admin/sso/sso/callback`, a URI the server does not serve, so
   the provider's callback would fail. What upstream's expression means is the
   root, and the root is `appRoot()` (found on 2026-09-30).
   */
@@ -231,13 +231,13 @@ export function Sso({ tabs, token, onNotice }: Props) {
       />
 
       {/*
-      Pilot 3's dense form, as it stands: help in its third column, `Warning!`
+      The dense form, as it stands: help in its third column, `Warning!`
       before the controls and `Note!` after, the index beside and the save bar
       stuck to the bottom.
 
       The four blocks ARE upstream's four groups, and their titles are the four
-      labels it already wrote —`Single Sign-On (SSO)`, `SSO User Sign Up`,
-      `Scopes`, `Group Map (Optional)`—. Not one of them is new: what changed is
+      labels it already wrote: `Single Sign-On (SSO)`, `SSO User Sign Up`,
+      `Scopes`, `Group Map (Optional)`. Not one of them is new: what changed is
       which component carries them. They used to be the label of a row; being four
       groups and not one, they are what the screen is divided into, and a screen
       with four sections and no headings cannot be indexed.
@@ -387,13 +387,13 @@ export function Sso({ tabs, token, onNotice }: Props) {
                   <Button onClick={() => setScopes((list) => [...list, ''])}>Add</Button>
                 </div>
                 {/*
-                This help and the Group Map one are NOT among the 27 the census
-                counts, and they are kept: both are upstream literals —checked
-                against the `ref` instance— that the census misses because they
-                carry markup and travel as JSX children instead of as a `help=`
-                prop. The delivery retired them from the drawing for exactly that
-                reason, which was right for a drawing that could not read the
-                source; dropping them from the product would be losing two helps.
+                This help and the Group Map one are NOT among the 27 `help=` props
+                of this form, and they are kept: both are upstream literals
+                (checked against the `ref` instance) that a count of `help=` props
+                misses because they carry markup and travel as JSX children. The
+                design drawing left them out for exactly that reason, which was
+                right for a drawing that could not read the source; dropping them
+                from the product would be losing two helps.
                 */}
                 <div className={styles.help}>
                   Enter the scopes to be sent to the Single Sign-On (SSO) provider. The scopes{' '}
@@ -491,11 +491,11 @@ export function Sso({ tabs, token, onNotice }: Props) {
 
           {/*
           The eight `Note!` after the controls: they explain, they do not change
-          the decision — the two `Warning!` went up into the first block.
+          the decision; the two `Warning!` went up into the first block.
 
           They go inside an untitled `Block` and not loose on the page, and that
           too came out of `dev/uniformity.js`: loose, `notice-info` split into a
-          third signature —«loose on the page» against «15px from the panel»— for
+          third signature ("loose on the page" against "15px from the panel") for
           an alert that is the same alert. In Settings the notices live inside
           their block; these belong to the whole screen and not to any one of the
           four, so the block that holds them has no title.
@@ -606,7 +606,7 @@ export function Sso({ tabs, token, onNotice }: Props) {
 /*
 A text field of this screen. The row is `ui/Form`'s; what is left here is only
 what belongs to it: the `Input` and its width. This used to be a FOURTH copy of
-the row —the other three were in the Settings, DHCP and Administration parts—
+the row (the other three were in the Settings, DHCP and Administration parts),
 each with its own `useId` and its own layout.
 */
 function SsoField({

@@ -11,7 +11,7 @@ const WS: WebServiceSettings = {
   webServiceHttpToTlsRedirect: false,
 }
 
-describe('detectReverseProxy — checkForReverseProxy (main.js:2275-2291)', () => {
+describe('detectReverseProxy: checkForReverseProxy (main.js:2275-2291)', () => {
   it('over HTTP on the web service port there is no proxy', () => {
     expect(detectReverseProxy(http('5380'), WS)).toBe(false)
   })
@@ -37,7 +37,7 @@ describe('detectReverseProxy — checkForReverseProxy (main.js:2275-2291)', () =
   })
 })
 
-describe('webConsoleRedirection — checkForWebConsoleRedirection (main.js:2293-2334)', () => {
+describe('webConsoleRedirection: checkForWebConsoleRedirection (main.js:2293-2334)', () => {
   it('a detected proxy never redirects', () => {
     expect(webConsoleRedirection(http('8080'), { ...WS, webServiceHttpPort: 9000 }, true)).toBeNull()
   })

@@ -1,8 +1,8 @@
 /*
 It lives in `lib/` and not under `screens/zones/` because three screens use it:
 the zone list, a zone's records and Query Logs. That last one carried its own
-copy —`rangoPaginas`, with the same arithmetic letter for letter and tests of its
-own— citing `logs.js:571-586` where the other cites `zone.js:880-905`: two places
+copy (`rangoPaginas`, with the same arithmetic letter for letter and tests of its
+own) citing `logs.js:571-586` where the other cites `zone.js:880-905`: two places
 in upstream doing exactly the same thing.
 
 Upstream's page window (`refreshZones`, zone.js:880-905) and the status text that

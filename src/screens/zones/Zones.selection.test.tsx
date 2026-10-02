@@ -1,8 +1,7 @@
 /*
-The selection bar, which pilot 2's reconciliation asked for and the build did not
-make.
+The selection bar, which the Zones design asked for and the build did not make.
 
-Its words: "**`Delete Zones` moves from the header to the selection bar**, declared
+The design's words: "**`Delete Zones` moves from the header to the selection bar**, declared
 in two places and reasoned: the button lives glued to the number that says how much
 it acts on". It stayed in the header, next to `Add Zone`, where it reads as a
 screen-level action and nothing says it works on the ticked rows.

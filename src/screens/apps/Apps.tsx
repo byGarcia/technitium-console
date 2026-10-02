@@ -38,8 +38,8 @@ three buttons per card:
      write an APP record; without it the screen loses real usefulness.
 
 What is NOT here: the Enabled/Disabled badge nor the mockup's "Enable" button.
-The API has no such concept —neither `apps/list` nor `WriteAppAsJson` bring
-anything like it— and an installed app is always active. Inventing it would be
+The API has no such concept (neither `apps/list` nor `WriteAppAsJson` bring
+anything like it), and an installed app is always active. Inventing it would be
 adding functionality.
 */
 export interface AlertState { type: AlertType; title: string; text: string }
@@ -71,15 +71,15 @@ export function Apps({ token }: { token: string | null }) {
       return
     }
     /*
-  The data is thrown away, as it was before — this screen does NOT keep the
+  The data is thrown away, as it was before: this screen does NOT keep the
   previous one, so there is nothing here to "go stale" and it does not carry the
   other collections' strip: inheriting the look is not inheriting behaviour it
   does not have.
 
   What does change is HOW the gap is drawn. It said "No apps installed" and
   offered to open the store, which is worse than saying nothing: it not only
-  asserts something it does not know —there may be ten apps installed and the call
-  may have fallen over— it invites you to act on that false premise.
+  asserts something it does not know (there may be ten apps installed and the call
+  may have fallen over), it invites you to act on that false premise.
     */
     setApps([])
     setFailure(true)
@@ -91,7 +91,7 @@ export function Apps({ token }: { token: string | null }) {
   }, [reload])
 
   /*
-  apps.js:425-449 — the confirmation and the alert are upstream literals.
+  apps.js:425-449. The confirmation and the alert are upstream literals.
 
   The confirmation step is `ui/Confirm`, as in the console's other eleven
   destructive actions. Here the browser's native `confirm()` had been left
@@ -135,7 +135,7 @@ export function Apps({ token }: { token: string | null }) {
     await reload()
   }
 
-  // apps.js:459-491 — the config is read BEFORE opening the modal, and from the
+  // apps.js:459-491. The config is read BEFORE opening the modal, and from the
   // cluster's primary node. `config` can come null; the editor is left empty.
   async function openConfig(name: string) {
     setBusy(name)
@@ -205,7 +205,7 @@ export function Apps({ token }: { token: string | null }) {
             </Button>
           }
         >
-          DNS Apps add behaviour to the server — query logging, advanced blocking, split horizon —
+          DNS Apps add behaviour to the server (query logging, advanced blocking, split horizon)
           without touching the base configuration. Open the store to see what is available.
         </Empty>
       ) : (

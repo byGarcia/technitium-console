@@ -38,7 +38,7 @@ const FILTERS: QueryLogsParams = {
   qclass: '',
 }
 
-describe('api/logs — files', () => {
+describe('api/logs: files', () => {
   it('logs/list asks for the node and returns the files', async () => {
     const spy = vi.spyOn(client, 'apiRequest').mockResolvedValue(
       ok({ response: { logFiles: [{ fileName: '2026-08-26', size: '2.96 KB' }] } }),
@@ -51,7 +51,7 @@ describe('api/logs — files', () => {
   })
 
   /*
-  This test claimed the opposite —"returns an empty list if the server fails"—
+  This test claimed the opposite ("returns an empty list if the server fails")
   and was pinning the bug in place: an empty list and a fallen call draw the
   same, so the screen said "No Log File Was Found" when what had happened was
   that there was no response. Now the failure rises as it is, with its message,
@@ -78,7 +78,7 @@ describe('api/logs — files', () => {
   })
 })
 
-describe('api/logs — download for the viewer', () => {
+describe('api/logs: download for the viewer', () => {
   it('asks for the first 2 MB with the token in the header and returns the text', async () => {
     const fetchSpy = vi.fn().mockResolvedValue({ text: () => Promise.resolve('[2026] ok\n') })
     vi.stubGlobal('fetch', fetchSpy)
@@ -120,7 +120,7 @@ describe('api/logs — download for the viewer', () => {
   })
 })
 
-describe('api/logs — query and export', () => {
+describe('api/logs: query and export', () => {
   it('logs/query sends the fourteen filters plus the node', async () => {
     const spy = vi
       .spyOn(client, 'apiRequest')

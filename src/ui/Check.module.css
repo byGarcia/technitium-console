@@ -25,18 +25,18 @@
   /*
   720 px, and **it is a local exception with its figure**, not a missing token.
 
-  Decided 2026-09-03, which is decision 21 of the phase 2 reconciliation. Measured
-  first: **it really bites** —at 1920, with the control column at 1022 px, the nine
-  checkbox helps of `Settings › General` come out at exactly 720— so it is not dead
+  Decided 2026-09-03, in a design review. Measured
+  first: **it really bites**. At 1920, with the control column at 1022 px, the nine
+  checkbox helps of `Settings › General` come out at exactly 720, so it is not dead
   code that can be deleted.
 
   And it does not go up to `tokens.css` for the same reason the Dashboard hero did
   not: **only this uses it**. A global token is declared when two places share a
   decision; declaring one for a single use is inventing vocabulary nobody speaks.
 
-  What the cap is and why it is not `--help-col`: this is **the only help pilot 3
-  did NOT move** to the third column. A checkbox's stays under its control
-  —because the checkbox IS its label and separating them would break that unit— so
+  What the cap is and why it is not `--help-col`: this is **the only help the
+  dense-form design did NOT move** to the third column. A checkbox's stays under its control
+  (because the checkbox IS its label and separating them would break that unit), so
   it inherits the control column's width, which on wide screens goes well past
   what reads comfortably. 720 is the readable line cap for THIS case.
 

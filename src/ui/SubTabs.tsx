@@ -7,11 +7,10 @@ The sub-navigation of a section: `View Logs · Query Logs`, the nine panes of
 
 ## Why it exists, and where it was
 
-It lived in the sidebar, nested under its section, and the three accepted
-deliveries put it **under the title** instead. Pilot 3 says so and reasons it:
-the 60 px rail hides the labels below 1180 px, so nine sub-panes nested there run
-out of room — "taking them out of the sidebar fixes something pilot 1 broke". The
-two phase 3 deliveries draw the same shape for Administration and for Logs.
+It lived in the sidebar, nested under its section, and the design puts it
+**under the title** instead, for a reason: the 60 px rail hides the labels below
+1180 px, so nine sub-panes nested there run out of room. Taking them out of the
+sidebar fixes that, and Administration and Logs get the same shape.
 
 What the sidebar gets back is its own shape: **twelve entries, always the same
 twelve**, instead of fourteen, eighteen or twenty-one depending on where you are.
@@ -24,8 +23,8 @@ is what the routes existing as folders is for. A plain click is intercepted so
 there is no reload.
 
 `aria-current="page"` and not `aria-selected`: these are not the tabs of an ARIA
-`tablist` —there is no panel switching under one heading, there is a page you
-navigate to— and announcing a `tab` would promise arrow-key navigation that these
+`tablist` (there is no panel switching under one heading, there is a page you
+navigate to), and announcing a `tab` would promise arrow-key navigation that these
 do not have. It is the same distinction `SectionIndex` documents, one step over:
 there `location`, because the sections stay on the page; here `page`, because
 each one is a different screen.

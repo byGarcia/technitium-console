@@ -9,7 +9,7 @@ import styles from './Blocking.module.css'
 
 /*
 "Block or allow a domain": upstream's single field with its verbs beside it
-(index.html:768-777), which this console had split — `Block` went up to the page
+(index.html:768-777), which this console had split: `Block` went up to the page
 header and the field stayed in the tree, labelled next to `Browse`, so it read as a
 search box. The panel title and the field label `Domain` are OURS (upstream's field
 has only its `example.com` placeholder); the `Block` / `Allow` buttons, the calls,

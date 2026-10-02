@@ -7,10 +7,10 @@ the free-text field they fill.
 They live in files, not in the API: `www/json/<name>-custom.json` if the
 administrator wrote one, otherwise `<name>-builtin.json`. That fallback is why
 `install.sh` goes out of its way to preserve `*-custom.json` when it replaces the
-web root — those files are somebody's customisation and no release carries them.
+web root: those files are somebody's customisation and no release carries them.
 
 This console shipped both files and read neither, and the control they feed was
-missing from Settings › Blocking and Settings › Proxy & Forwarders. See spec F8.
+missing from Settings › Blocking and Settings › Proxy & Forwarders.
 */
 
 export interface QuickEntry {
@@ -84,7 +84,7 @@ treating it as "a dropdown that writes a textarea":
 
   · the addresses REPLACE the forwarders field, one per line;
   · the protocol radio follows the entry, falling back to UDP;
-  · the proxy follows the entry too — `SOCKS5` and `HTTP` fill its four fields,
+  · the proxy follows the entry too: `SOCKS5` and `HTTP` fill its four fields,
     `NONE` clears them, and **anything else leaves the proxy untouched**. Upstream
     has no default branch there, and the null case becomes `DefaultProxy`, which
     matches nothing. So an entry that says nothing about proxying does not undo
@@ -129,7 +129,7 @@ Upstream offers it as a dropdown attached to a text field, not instead of one:
 the field stays free text and the list only fills it. So this returns the strings
 it offers, in its order, and the caller writes the chosen one into the field.
 
-One string PER ADDRESS, not per entry, formatted `Name {address}` — or the bare
+One string PER ADDRESS, not per entry, formatted `Name {address}`, or the bare
 address when the entry carries no name. The first is always this server.
 */
 export const THIS_SERVER = 'This Server {this-server}'

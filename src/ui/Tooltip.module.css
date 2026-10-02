@@ -1,7 +1,7 @@
 /*
 The bubble, and the wrapper that measures it.
 
-The wrapper adds NOTHING of its own —no padding, no margin, no size— because it
+The wrapper adds NOTHING of its own (no padding, no margin, no size) because it
 has to be the trigger's own box: `getBoundingClientRect()` is taken from it, and a
 wrapper with room of its own would hang the bubble away from what it describes.
 */
@@ -16,7 +16,7 @@ table wrapper, which scrolls horizontally. It is the same reason `ui/Menu` and
 `ui/Select` take their lists out fixed.
 
 The layer is the floating one: it shares it with the menu and the dropdown, and it
-is deliberately BELOW the dialog's — a tooltip inside a modal must not paint over
+is deliberately BELOW the dialog's: a tooltip inside a modal must not paint over
 the modal's own chrome.
 */
 .bubble {
@@ -42,13 +42,13 @@ There is no `transform`, and its absence is the correction.
 
 The position used to be decided in halves: the arithmetic in the component and a
 `translate()` here. That made it impossible to check where the bubble ended up
-—half of it lived in a stylesheet— and that is why it went off screen at 390 and
+(half of it lived in a stylesheet), and that is why it went off screen at 390 and
 next to any edge with nothing catching it.
 
 Now `top` and `left` are worked out by `tooltip-place.ts`, which flips and then
 clamps against the viewport, and it is tested with numbers. The CSS draws what it
 is given.
 
-`data-placement` stays: it says where the bubble REALLY ended up —it may have
-flipped— and it is the hook for an arrow, if it ever gets one.
+`data-placement` stays: it says where the bubble REALLY ended up (it may have
+flipped), and it is the hook for an arrow, if it ever gets one.
 */

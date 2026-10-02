@@ -114,7 +114,7 @@ describe('the three \"More\" buttons of the Dashboard', () => {
   }
 
   it('\"More\" on Top Clients opens the modal and asks for TopClients', async () => {
-    // Before phase 10 the three buttons were in place and did nothing.
+    // Before this modal existed the three buttons were in place and did nothing.
     const user = userEvent.setup()
     vi.spyOn(api, 'getDashboardStats').mockResolvedValue({ kind: 'ok', data: DATA } as never)
     const top = vi.spyOn(api, 'getTop').mockResolvedValue(CLIENTS as never)

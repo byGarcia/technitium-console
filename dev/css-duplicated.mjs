@@ -3,7 +3,7 @@ The same thing, written in two modules.
 
 `css-dead.mjs` answers whether a rule is unused. This one answers something
 different: whether the SAME rule is written more than once. That is the defect
-that produces drift —two copies that start identical and stop being identical—
+that produces drift (two copies that start identical and stop being identical),
 and no screen-by-screen review catches it, because on each screen, taken alone,
 everything looks right.
 
@@ -23,8 +23,8 @@ others:
 ## How to read it
 
 It groups by rule BODY, ignoring `composes`, and only shows bodies that appear in
-more than one module. That leaves out what is already shared —a class that
-composes from another repeats nothing— and leaves in three things that are NOT
+more than one module. That leaves out what is already shared (a class that
+composes from another repeats nothing) and leaves in three things that are NOT
 defects, so look before you touch:
 
   · **Applying the same token.** Two components with `background: var(--acc)`
@@ -65,7 +65,7 @@ for (const mod of files(ROOT)) {
   for (const m of css.matchAll(/([^{}]+)\{([^{}]+)\}/g)) {
     const selector = m[1].trim().split('\n').at(-1).trim()
     /* Normalised: no spaces and sorted, so two identical rules written with
-       different formatting —or with the properties in another order— match. */
+       different formatting, or with the properties in another order, match. */
     const body = m[2]
       .split(';')
       .map((d) => d.trim().replaceAll(' ', ''))

@@ -20,9 +20,9 @@ export type AlertType = 'success' | 'info' | 'warning' | 'danger'
 /*
 The icon, by TYPE and not by the title.
 
-Pilot 3 asked for the difference between `Note!` and `Warning!` to be visible, and
+The dense-form design asked for the difference between `Note!` and `Warning!` to be visible, and
 measuring showed that today **it is not**: the two `dev/uniformity.js` signatures
-came out identical —`filled | no-icon | 8px | 15px from the panel`— because only
+came out identical (`filled | no-icon | 8px | 15px from the panel`) because only
 the tone told them apart, and the signature does not look at that.
 
 It goes here and not in `PanelForm` because the two notices are drawn by TWO

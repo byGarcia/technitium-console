@@ -31,8 +31,8 @@ TR=$(token "$REF")
 
 # Leaves the zone identical on both before each comparison block.
 reset_zone() {
-  for par in "$DEV $TD" "$REF $TR"; do
-    set -- $par
+  for pair in "$DEV $TD" "$REF $TR"; do
+    set -- $pair
     curl -s "$1/api/zones/delete?token=$2&zone=$ZONE" >/dev/null
     curl -s "$1/api/zones/create?token=$2&zone=$ZONE&type=Primary" >/dev/null
   done
@@ -67,8 +67,8 @@ print(re.sub(r"(dev|ref)\.technitium-ui\.test", "THIS-SERVER", text))'
 compare() {
   local name=$1 path=$2 body=${3:-} method=${4:-GET}
 
-  for par in "$DEV $TD" "$REF $TR"; do
-    set -- $par
+  for pair in "$DEV $TD" "$REF $TR"; do
+    set -- $pair
     if [ "$method" = POST ]; then
       curl -s -X POST "$1/api/$path?token=$2&node=" --data "$body" >/dev/null
     else
@@ -96,7 +96,7 @@ compare "A with PTR" "zones/records/add" \
 compare "MX" "zones/records/add" \
   "zone=$ZONE&domain=$ZONE&type=MX&ttl=3600&overwrite=false&comments=&expiryTtl=&preference=10&exchange=mail.$ZONE" POST
 compare "split TXT" "zones/records/add" \
-  "zone=$ZONE&domain=$ZONE&type=TXT&ttl=3600&overwrite=false&comments=nota&expiryTtl=&text=v=spf1 -all&splitText=true" POST
+  "zone=$ZONE&domain=$ZONE&type=TXT&ttl=3600&overwrite=false&comments=note&expiryTtl=&text=v=spf1 -all&splitText=true" POST
 compare "SRV" "zones/records/add" \
   "zone=$ZONE&domain=_s._tcp.$ZONE&type=SRV&ttl=3600&overwrite=false&comments=&expiryTtl=&priority=1&weight=2&port=443&target=www.$ZONE" POST
 compare "CAA with default values" "zones/records/add" \

@@ -24,7 +24,7 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
 ## v1.2.0 (2026-10-01)
 
 **Allowed and Blocked are now one Blocking section, and Docker gets an image.** Overview, Rules
-and Lists, laid out the way AdGuard Home and Pi-hole lay blocking out. It is a deliberate exception
+and Lists: what blocking is doing, your own rules and your lists, each in one place. It is a deliberate exception
 to "design only", written down with its limits: it calls only endpoints the server already has,
 with the stock console's own actions and wording, and Settings › Blocking is left exactly as it
 was. If Technitium runs in Docker, a small image now copies the console into a volume that the
@@ -130,6 +130,9 @@ time the way the stock console does.
   never moves `latest` or a version.
 - New issues start from a Bug report or Feature request form, which asks for the console and
   server versions and labels the issue.
+- Everything in the repository is in English, and `npm run lint:language` now reads every file,
+  not only `src/`. The notes from the design process, which were in Spanish, are no longer part
+  of the repository.
 
 ---
 

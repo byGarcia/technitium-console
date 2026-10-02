@@ -95,7 +95,7 @@ export function resolveTheme(choice: ThemeChoice | null, prefersDark: boolean): 
 /*
 `data-theme` on `<html>` is the contract with the stylesheets: the tokens are
 declared per theme under that attribute. `color-scheme` goes with it so the
-browser's own parts —scrollbars, date pickers, form controls— follow the page.
+browser's own parts (scrollbars, date pickers, form controls) follow the page.
 
 `tokens.css` declares `color-scheme` in each theme block too, and both are kept on
 purpose. The stylesheet's is the fallback for the page before this runs, where

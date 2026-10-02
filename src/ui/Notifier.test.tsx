@@ -6,7 +6,7 @@ import { Notifier } from './Notifier'
 /*
 The air it leaves beneath is measured in the browser, not here: jsdom does not lay
 out. What it can answer is the contract, which is what fifty places were writing by
-hand —and out of that came four distances for the same thing—.
+hand (and out of that came four distances for the same thing).
 */
 describe('Notifier', () => {
   it('with no alert it draws nothing', () => {

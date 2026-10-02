@@ -16,10 +16,10 @@ import { Input } from '../../../ui/Field'
 `modalImportZone` (zone.js:1318 and 1342 in v15.5.1). v15.5 renamed its title
 from "Import - " to "Import Zone - " and stopped the text editor from wrapping
 (index.html:5127 and 5186). Two ways of handing over the file
-—uploading it or pasting it— and **the "file is missing" alert only exists in the
+(uploading it or pasting it), and **the "file is missing" alert only exists in the
 first**: if the text editor is empty, upstream sends the request all the same and
 lets the server answer. It is replicated. (It does not fail: v15.5.1 answers `ok`
-to an empty body and imports nothing — unless "Overwrite Zone" is checked, and
+to an empty body and imports nothing, unless "Overwrite Zone" is checked, and
 then it empties the zone down to its SOA.)
 */
 
@@ -51,7 +51,7 @@ export function ImportZone({
   const file = useRef<HTMLInputElement>(null)
 
   // `showImportZoneModal`: on opening it returns to the defaults, which are NOT
-  // are all false — "Overwrite Existing Records" starts checked.
+  // all false: "Overwrite Existing Records" starts checked.
   useEffect(() => {
     if (!open) return
     setMode('File')

@@ -3,11 +3,11 @@ import { place, type Rect } from './tooltip-place'
 
 /*
 These tests do NOT depend on jsdom, and that is the reason the arithmetic was
-taken out of the component: with a fake layout —every rect at zero— it is
+taken out of the component: with a fake layout (every rect at zero) it is
 impossible to check that the bubble does not go off screen, which is exactly the
 defect it had. Numbers go in and numbers come out.
 
-The case that rules is 390: it is the narrow width the three pilots draw, and
+The case that rules is 390: it is the narrow width the designs draw, and
 where a 240 px bubble beside a control almost never fits any more.
 */
 const v = (width: number, height: number): Rect => ({ top: 0, left: 0, width, height })

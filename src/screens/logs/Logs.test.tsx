@@ -183,7 +183,7 @@ describe('Logs › View Logs', () => {
  Corrected on 2026-09-04: this test asserted THE DEFECT.
 
  It said that without the permission the button "is not in the document", and that
- is what rule 2 of phase 1 forbids — *disabled, never hidden*. It is the same fix
+ is what the console's design rule forbids: *disabled, never hidden*. It is the same fix
  made in `Settings`, and here it matters twice as much because **this screen
  already has a legitimate case of disappearing**: with no files, `Delete All Logs`
  goes because there is nothing to delete. The two reasons looked alike and now
@@ -204,7 +204,7 @@ describe('Logs › View Logs', () => {
 
   /*
  And the padlock says WHICH one is missing. The stats one asks for
- `Dashboard.canDelete` —another screen's— which is what a redesign gets wrong.
+ `Dashboard.canDelete` (another screen's), which is what a redesign gets wrong.
   */
   it('the padlock names the permission, and the stats one belongs to another section', async () => {
     const user = userEvent.setup()
@@ -232,7 +232,7 @@ describe('Logs › View Logs', () => {
   })
 })
 
-describe('Logs › Query Logs — the form', () => {
+describe('Logs › Query Logs: the form', () => {
   it('it only offers the apps that declare `isQueryLogs`', async () => {
     withApps([NO_QUERY_LOGS, APP])
     render(<Logs token="t" sub="Query Logs" />)
@@ -414,7 +414,7 @@ describe('Logs › Query Logs — the form', () => {
   })
 })
 
-describe('Logs › Query Logs — the table', () => {
+describe('Logs › Query Logs: the table', () => {
   it('it draws one row per entry, with the RTT and the formatted timestamp', async () => {
     const user = userEvent.setup()
     withApps([APP])
@@ -509,7 +509,7 @@ describe('Logs › Query Logs — the table', () => {
   })
 })
 
-describe('Query Logs — pure pieces', () => {
+describe('Query Logs: pure pieces', () => {
   it('the counter replicates the upstream format', () => {
     expect(
       statusText({
@@ -550,8 +550,8 @@ describe('Query Logs — pure pieces', () => {
 /*
  The legend and the colour code: two lists that have to say the same thing.
 
- This screen got as far as seven row colours and NO legend, against the phase 1
- rule —every server label carries its entry. The guard is not that the legend
+ This screen got as far as seven row colours and NO legend, against the design
+ rule that every server label carries its entry. The guard is not that the legend
  exists: it is that **it cannot fall short**. If somebody adds a case to
  `rowClass` and not to `LEGEND_ROWS`, this falls over.
 */

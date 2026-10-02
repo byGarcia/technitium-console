@@ -2,8 +2,8 @@
 The row of a selectable side list: the zones and lists tree, and the Logs files.
 It is clickable, it highlights on hover, and one of them is the one being viewed.
 
-It was written twice. The STATES matched byte for byte —the same `--hover-strong`
-on hover, the same `--pan2` and `--acc` on the current one— so they were just two
+It was written twice. The STATES matched byte for byte (the same `--hover-strong`
+on hover, the same `--pan2` and `--acc` on the current one), so they were just two
 places to touch the same thing. The density did NOT match, and that one is a real
 decision: the tree is a hierarchy of many nodes and reads better tight; the file
 list is four entries. It splits into `.row` and `.compact`, which is naming the

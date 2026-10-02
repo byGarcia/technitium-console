@@ -91,14 +91,14 @@ export interface QueryLogsParams {
 /*
 Returns the whole outcome, not a list.
 
-It used to return `[]` when the server failed, and that looked prudent —"the
+It used to return `[]` when the server failed, and that looked prudent ("the
 screen does not blow up if the request falls over". It was the opposite: an empty
 list and a failure draw the same, so the screen said "No Log File Was Found" when
 what had happened was that the call never arrived. That is worse than an error,
 because nobody suspects a response that looks normal.
 
-By returning the `ApiOutcome` —as the list screens already did, and those did
-warn— the type forces the two apart, and the message the server sent is kept as
+By returning the `ApiOutcome` (as the list screens already did, and those did
+warn), the type forces the two apart, and the message the server sent is kept as
 well, which is what upstream shows.
 */
 /** `logs/list` (logs.js:112). */
@@ -139,7 +139,7 @@ export async function downloadLogText(
     return null
   }
 
-  // logs.js:170 — `if (response.status != null) response = JSON.stringify(...)`.
+  // logs.js:170: `if (response.status != null) response = JSON.stringify(...)`.
   try {
     const parsed: unknown = JSON.parse(text)
     if (parsed !== null && typeof parsed === 'object' && 'status' in parsed) {
@@ -154,7 +154,7 @@ export async function downloadLogText(
 /** The viewer's "Download" button (logs.js:186): the WHOLE file, without
  *  `limit`, with a single-use token and in a new tab.
  *
- *  It carries `ts` —the cache-buster— because upstream adds it here
+ *  It carries `ts` (the cache-buster) because upstream adds it here
  *  (`"&ts=" + (new Date().getTime())`). `logs/export` does NOT carry it. */
 export function openLogDownload(
   token: string | null,

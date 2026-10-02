@@ -5,7 +5,7 @@ import { urlApi } from '../app/base'
 /*
 The `zones` family, the zone-management part: 15 endpoints. The 4 of
 `zones/records/*` live in records.ts and the 15 of DNSSEC in dnssec.ts. Between
-the three they add up to the 34 of phase 4.
+the three they add up to the 34 endpoints of zone management.
 
 TWO DIFFERENT PAGINATIONS, and this one is easy to get wrong:
 
@@ -57,7 +57,7 @@ export interface Zone {
 /**
  * The state drawn in the row, with the EXACT priority of `refreshZones`
  * (zone.js:733-745). It is neither alphabetical nor by severity: it is
- * upstream's chain of `else if` and the order matters — a zone that is expired
+ * upstream's chain of `else if` and the order matters: a zone that is expired
  * and has a failed notify says "Expired", not "Notify Failed".
  */
 export type ZoneState = 'Disabled' | 'Expired' | 'Validation Failed' | 'Sync Failed' | 'Notify Failed' | 'Enabled'
@@ -128,7 +128,7 @@ export async function listZones(
   Returns the whole outcome and not `ZoneList | null`.
 
   With `null` the screen did not know WHY it had failed and always said "Unable
-  to reach the DNS server.", which is a concrete claim —the network is down— and
+  to reach the DNS server.", which is a concrete claim (the network is down) and
   was false in the two cases that actually happen: the server answering an error,
   and the server rejecting the session. In the second one it also sent someone to
   go look at the network when what they had to do was log back in.
@@ -486,8 +486,8 @@ export async function exportZoneText(
 
 /**
  * Saving the "Edit Zone File" dialog (`saveEditZoneFile`, zone.js:1280-1316 in
- * v15.5.1). The same endpoint as importing by pasting —raw `text/plain`
- * body— with a different query: `overwriteZone=true` fixed, the dialog's
+ * v15.5.1). The same endpoint as importing by pasting (raw `text/plain`
+ * body) with a different query: `overwriteZone=true` fixed, the dialog's
  * `overwriteSoaSerial`, and **no `overwrite`** at all (zone.js:1293). The
  * server defaults that one to `true` (WebServiceZonesApi.cs:1930); it is left
  * out because upstream leaves it out.

@@ -35,7 +35,7 @@ function rec(type: string, rData: Record<string, unknown>, extra: Partial<Resour
   }
 }
 
-describe('zones/records — transport', () => {
+describe('zones/records: transport', () => {
   it('getRecords does NOT paginate: it asks with listZone=true and no page parameters', async () => {
     const spy = vi.spyOn(client, 'apiRequest').mockResolvedValue(
       env({ zone: { name: 'home.test' }, records: [] }),
@@ -182,7 +182,7 @@ describe('loose rules of upstream', () => {
   })
 
   it('without the record list loaded, the SVCB hints are asked for anyway', () => {
-    // zone.js:4690 — the default case is `true`, not `false`.
+    // zone.js:4690: the default case is `true`, not `false`.
     expect(zoneHasSvcbAutoHint(null, true, false)).toBe(true)
   })
 

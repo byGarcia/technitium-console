@@ -6,8 +6,8 @@ still in flight, `Cache`, `Allowed` and `Blocked` drew "0 zones" and an empty
 tree, which is exactly what a genuinely empty list draws. Zones drew "1-0 (0) of 0
 zones" and an empty table for the same reason.
 
-It is the same lie the failure state was fixed for on these very screens — a
-screen answering falsely about the one thing it exists to show — caught this time
+It is the same lie the failure state was fixed for on these very screens (a
+screen answering falsely about the one thing it exists to show), caught this time
 in the state that had never been put on the bench.
 */
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'

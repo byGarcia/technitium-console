@@ -44,7 +44,7 @@ export function readBootIntent(): BootIntent {
   const params = new URLSearchParams(hash.length > 0 ? '?' + hash.substring(1) : '')
 
   /*
-  The hash belongs only to the SSO return —"#token=…", "#error=…"— and is wiped
+  The hash belongs only to the SSO return ("#token=…", "#error=…") and is wiped
   from the address bar as soon as it has been read, so it is neither shared nor
   left in history. The `pathname` is kept: that is where the console's route
   lives.

@@ -56,7 +56,7 @@ describe('zones', () => {
 
   The difference is not a whim: the zone list is the first thing drawn on
   entering the screen, so its failure is the one the user sees and it has to be
-  told with its reason —it used to say "Unable to connect to the server. Please try again." even
+  told with its reason. It used to say "Unable to connect to the server. Please try again." even
   when the server had answered. The other three feed dialogs that already warn on
   their own.
   */

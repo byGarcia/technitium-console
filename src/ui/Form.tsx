@@ -6,8 +6,8 @@ import frm from './Form.module.css'
 A form row: label on the left, control on the right.
 
 It was written by hand 38 times, and on top of that existed TWICE as a component
-—in `screens/settings/parts.tsx` and in `screens/dhcp/parts.tsx`, byte-identical
-apart from one comment— without any of the other twelve screens using either. With
+(in `screens/settings/parts.tsx` and in `screens/dhcp/parts.tsx`, byte-identical
+apart from one comment) without any of the other twelve screens using either. With
 the row loose, the pieces around it drifted apart too: the help under a field and
 the checkbox group were each defined three times.
 
@@ -29,8 +29,8 @@ export function Row({
   /*
   The name of the switch that has this row turned off, if there is one.
 
-  It is the signal pilot 3 closed, and it comes in THREE pieces with none to
-  spare: an **amber edge** on the side —seen without reading—, **opacity**, which
+  It is the master-switch signal, and it comes in THREE pieces with none to
+  spare: an **amber edge** on the side (seen without reading), **opacity**, which
   already comes with the control's own `disabled`, and **a pill that NAMES it**,
   because "this is off" without saying who turned it off makes you hunt for the
   switch across the whole screen.
@@ -53,8 +53,8 @@ export function Row({
 
       Put inside, the field's accessible name became "ECS IPv4 Prefix
       Length**Needs Enable EDNS Client Subnet**" and the control **stopped being
-      findable by its own label**. It is exactly what phase 1 forbids for the
-      tooltip —"it never replaces the accessible name"— and here it was happening
+      findable by its own label**. It is exactly what the design rules forbid for the
+      tooltip ("it never replaces the accessible name"), and here it was happening
       with the pill: a visual reinforcement had eaten the name.
 
       Outside, the label still governs its control and the pill is still read: it
@@ -73,8 +73,8 @@ export function Row({
       <div className={modal ? frm.mrowCtl : frm.rowCtl}>
         {children(id)}
         {/* In the MODAL the help stays nested in the control's cell, which is
-            what makes it fall underneath. Its geometry is not touched: pilot 3
-            measured a dense form, not a dialog. */}
+            what makes it fall underneath. Its geometry is not touched: the dense-form
+            design measured a form, not a dialog. */}
         {modal && help != null && <div className={frm.help}>{help}</div>}
       </div>
       {/* In the PANEL it is the control's sibling, and that is why it can take up
@@ -86,7 +86,7 @@ export function Row({
 }
 
 /**
- * A row whose label governs no single control —checkbox and radio groups—:
+ * A row whose label governs no single control (checkbox and radio groups):
  * upstream uses a `<label>` with no `for` there, because pointing it at one of the
  * group's controls would lie about what it refers to.
  */

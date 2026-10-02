@@ -4,9 +4,9 @@ import { visibleSections, type Section } from './sections'
 const P = (canView: boolean) => ({ canView, canModify: false, canDelete: false })
 
 const LIST: Section[] = [
-  { id: 'one', label: 'One', permission: 'One', phase: 'x' },
-  { id: 'any', label: 'Any', permission: ['A', 'B'], phase: 'x' },
-  { id: 'free', label: 'Free', permission: null, phase: 'x' },
+  { id: 'one', label: 'One', permission: 'One' },
+  { id: 'any', label: 'Any', permission: ['A', 'B'] },
+  { id: 'free', label: 'Free', permission: null },
 ]
 
 describe('visibleSections', () => {
