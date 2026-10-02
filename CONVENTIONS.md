@@ -461,7 +461,8 @@ written down**. If you find a fifth, do not introduce it on your own: report it.
    `src/theme/theme.ts`.
 2. **The Blocking section** (`src/screens/blocking/`; what it offers is listed
    in the CHANGELOG, v1.2.0). It replaces Allowed and Blocked
-   with Overview, Rules and Lists.
+   with Overview, Rules and Lists. Its Quick Add also offers the console's own
+   catalogue (`extra-lists.json`) after Technitium's, and a search field.
    It is the only one that *adds* a screen. It stays inside four limits, and a
    change that crosses one is a bug:
    - **only endpoints the server already has**, and only ones upstream's console

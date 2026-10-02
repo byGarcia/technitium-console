@@ -1,0 +1,212 @@
+[
+	{
+		"name": "AdGuard DNS filter [ads + tracking]",
+		"urls": [
+			"https://adguardteam.github.io/HostlistsRegistry/assets/filter_1.txt"
+		]
+	},
+	{
+		"name": "EasyList [ads, domains only]",
+		"urls": [
+			"https://v.firebog.net/hosts/Easylist.txt"
+		]
+	},
+	{
+		"name": "EasyPrivacy [tracking, domains only]",
+		"urls": [
+			"https://v.firebog.net/hosts/Easyprivacy.txt"
+		]
+	},
+	{
+		"name": "1Hosts Lite [ads + tracking, balanced]",
+		"urls": [
+			"https://badmojr.github.io/1Hosts/Lite/wildcards.txt"
+		]
+	},
+	{
+		"name": "1Hosts Xtra [ads + tracking, aggressive]",
+		"urls": [
+			"https://badmojr.github.io/1Hosts/Xtra/wildcards.txt"
+		]
+	},
+	{
+		"name": "HaGeZi [Pop-Up Ads]",
+		"urls": [
+			"https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/popupads-onlydomains.txt"
+		]
+	},
+	{
+		"name": "Frogeye [first-party trackers hidden behind CNAME]",
+		"urls": [
+			"https://hostfiles.frogeye.fr/firstparty-trackers-hosts.txt"
+		]
+	},
+	{
+		"name": "HaGeZi [Threat Intelligence Feeds, medium size for low-memory servers]",
+		"urls": [
+			"https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/tif.medium-onlydomains.txt"
+		]
+	},
+	{
+		"name": "Phishing Army [phishing, extended]",
+		"urls": [
+			"https://phishing.army/download/phishing_army_blocklist_extended.txt"
+		]
+	},
+	{
+		"name": "malware-filter [malware URLs from URLhaus]",
+		"urls": [
+			"https://malware-filter.gitlab.io/malware-filter/urlhaus-filter-hosts.txt"
+		]
+	},
+	{
+		"name": "malware-filter [phishing URLs]",
+		"urls": [
+			"https://malware-filter.gitlab.io/malware-filter/phishing-filter-hosts.txt"
+		]
+	},
+	{
+		"name": "HaGeZi [Fake: scams, fake shops and subscription traps]",
+		"urls": [
+			"https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/fake-onlydomains.txt"
+		]
+	},
+	{
+		"name": "Dandelion Sprout [anti-malware]",
+		"urls": [
+			"https://raw.githubusercontent.com/DandelionSprout/adfilt/master/Alternate%20versions%20Anti-Malware%20List/AntiMalwareHosts.txt"
+		]
+	},
+	{
+		"name": "RPiList [phishing]",
+		"urls": [
+			"https://raw.githubusercontent.com/RPiList/specials/master/Blocklisten/Phishing-Angriffe"
+		]
+	},
+	{
+		"name": "ShadowWhisperer [malware]",
+		"urls": [
+			"https://raw.githubusercontent.com/ShadowWhisperer/BlockLists/master/RAW/Malware"
+		]
+	},
+	{
+		"name": "HaGeZi [Dynamic DNS services abused by malware]",
+		"urls": [
+			"https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/dyndns-onlydomains.txt"
+		]
+	},
+	{
+		"name": "HaGeZi [Badware Hoster: free hosts abused by malware]",
+		"urls": [
+			"https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/hoster-onlydomains.txt"
+		]
+	},
+	{
+		"name": "NoCoin [browser cryptomining]",
+		"urls": [
+			"https://raw.githubusercontent.com/hoshsadiq/adblock-nocoin-list/master/hosts.txt"
+		]
+	},
+	{
+		"name": "Echap [stalkerware]",
+		"urls": [
+			"https://raw.githubusercontent.com/AssoEchap/stalkerware-indicators/master/generated/hosts"
+		]
+	},
+	{
+		"name": "HaGeZi [Native Tracker: Windows and Office]",
+		"urls": [
+			"https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/native.winoffice-onlydomains.txt"
+		]
+	},
+	{
+		"name": "HaGeZi [Native Tracker: Apple]",
+		"urls": [
+			"https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/native.apple-onlydomains.txt"
+		]
+	},
+	{
+		"name": "HaGeZi [Native Tracker: Samsung]",
+		"urls": [
+			"https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/native.samsung-onlydomains.txt"
+		]
+	},
+	{
+		"name": "HaGeZi [Native Tracker: Amazon]",
+		"urls": [
+			"https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/native.amazon-onlydomains.txt"
+		]
+	},
+	{
+		"name": "HaGeZi [Native Tracker: Xiaomi]",
+		"urls": [
+			"https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/native.xiaomi-onlydomains.txt"
+		]
+	},
+	{
+		"name": "HaGeZi [Native Tracker: TikTok]",
+		"urls": [
+			"https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/native.tiktok-onlydomains.txt"
+		]
+	},
+	{
+		"name": "HaGeZi [Native Tracker: Huawei]",
+		"urls": [
+			"https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/native.huawei-onlydomains.txt"
+		]
+	},
+	{
+		"name": "HaGeZi [Native Tracker: OPPO and Realme]",
+		"urls": [
+			"https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/native.oppo-realme-onlydomains.txt"
+		]
+	},
+	{
+		"name": "HaGeZi [Native Tracker: Vivo]",
+		"urls": [
+			"https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/native.vivo-onlydomains.txt"
+		]
+	},
+	{
+		"name": "HaGeZi [Native Tracker: LG webOS]",
+		"urls": [
+			"https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/native.lgwebos-onlydomains.txt"
+		]
+	},
+	{
+		"name": "HaGeZi [Native Tracker: Roku]",
+		"urls": [
+			"https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/native.roku-onlydomains.txt"
+		]
+	},
+	{
+		"name": "Perflyst [Smart TV tracking]",
+		"urls": [
+			"https://raw.githubusercontent.com/Perflyst/PiHoleBlocklist/master/SmartTV.txt"
+		]
+	},
+	{
+		"name": "HaGeZi [Gambling]",
+		"urls": [
+			"https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/gambling-onlydomains.txt"
+		]
+	},
+	{
+		"name": "HaGeZi [NSFW: adult content]",
+		"urls": [
+			"https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/nsfw-onlydomains.txt"
+		]
+	},
+	{
+		"name": "HaGeZi [DoH, VPN, TOR and proxy bypass]",
+		"urls": [
+			"https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/doh-vpn-proxy-bypass-onlydomains.txt"
+		]
+	},
+	{
+		"name": "HaGeZi [Anti-Piracy]",
+		"urls": [
+			"https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/anti.piracy-onlydomains.txt"
+		]
+	}
+]
