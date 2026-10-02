@@ -68,7 +68,7 @@ export interface SettingsForm {
   qpmLimitUdpTruncationPercentage: string
   qpmLimitBypassList: string
 
-  // General — avanzado
+  // General — advanced
   clientTimeout: string
   tcpSendTimeout: string
   tcpReceiveTimeout: string
@@ -460,12 +460,12 @@ export interface BodyResult {
 
 /*
 The algorithm is upstream's `serializeTableData` and it lives in
-`lib/tabla-serie`, shared by the five screens with an editable table. All that is
+`lib/table-serialise`, shared by the five screens with an editable table. All that is
 translated here is where the failing cell is: in Settings, to the sub-tab and the
 field.
 
 Only `sharedSecret` carries `data-optional` in upstream, so only it allows empty;
-each cell says so through its `opcional`.
+each cell says so through its `optional`.
 */
 function serializeWithLocation(
   rows: Cell[][],

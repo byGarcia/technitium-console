@@ -11,7 +11,7 @@ browser's `Date` read that form in LOCAL time, so the result is the same.
 /* `dateTime` was unified into `src/lib/dates.ts` when integrating phases 4, 8 and 9. */
 export { dateTime } from '../../lib/dates'
 
-/** `moment(valor).toISOString()` (logs.js:411). An empty string if there is no
+/** `moment(value).toISOString()` (logs.js:411). An empty string if there is no
  *  value, which is what upstream sends when the field is blank. */
 export function toIso(value: string): string {
   if (value === '') return ''

@@ -4,7 +4,7 @@ import styles from './FooterLinks.module.css'
 
 /**
  * Upstream's footer links, and beneath them the theme credit —the only thing this
- * console adds here—. See `app/pie.ts` and the styles module.
+ * console adds here—. See `app/footer.ts` and the styles module.
  */
 export function FooterLinks({ className }: { className?: string }) {
   return (

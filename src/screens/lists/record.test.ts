@@ -31,7 +31,7 @@ const ALLOWED_NS: DnsRecord = {
   ttl: 14400,
   ttlString: '4h',
   disabled: false,
-  rData: { nameServer: 'ns1.casa.test' },
+  rData: { nameServer: 'ns1.home.test' },
   dnssecStatus: 'Unknown',
   lastUsedOn: '0001-01-01T00:00:00',
   lastModified: '0001-01-01T00:00:00',
@@ -127,7 +127,7 @@ describe('shortDate', () => {
 
 describe('extras', () => {
   it('it pulls into rows the fields that belong neither to rData nor to the grey line', () => {
-    const e = extras({ ...ALLOWED_NS, comments: 'una nota', eDnsClientSubnet: '10.0.0.0/24' })
+    const e = extras({ ...ALLOWED_NS, comments: 'a note', eDnsClientSubnet: '10.0.0.0/24' })
     expect(e.map((x) => x.key)).toContain('Comments')
     expect(e.map((x) => x.key)).toContain('EDNS Client Subnet')
   })

@@ -45,10 +45,10 @@ describe('cluster — state', () => {
 describe('cluster — initialisation', () => {
   it('`init` sends no `node`: the cluster is created on this server', async () => {
     const spy = makeSpy()
-    await initCluster('tok', 'micluster.tld', '10.0.0.1,10.0.0.2')
+    await initCluster('tok', 'mycluster.tld', '10.0.0.1,10.0.0.2')
     expect(spy).toHaveBeenCalledWith('admin/cluster/init', {
       token: 'tok',
-      body: { clusterDomain: 'micluster.tld', primaryNodeIpAddresses: '10.0.0.1,10.0.0.2' },
+      body: { clusterDomain: 'mycluster.tld', primaryNodeIpAddresses: '10.0.0.1,10.0.0.2' },
     })
   })
 

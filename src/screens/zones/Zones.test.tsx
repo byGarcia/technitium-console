@@ -288,23 +288,23 @@ describe('modals', () => {
 
   it('creating a Primary zone sends catalog and useSoaSerialDateScheme in the QUERY', async () => {
     const user = userEvent.setup()
-    const spy = server({ 'zones/create': { domain: 'nueva.test' } })
+    const spy = server({ 'zones/create': { domain: 'new.test' } })
     draw()
     await screen.findByRole('button', { name: 'casa.test' })
 
     await user.click(screen.getByRole('button', { name: 'Add Zone' }))
     const dialog = await screen.findByRole('dialog')
-    await user.type(within(dialog).getByLabelText('Zone'), 'nueva.test')
+    await user.type(within(dialog).getByLabelText('Zone'), 'new.test')
     await user.click(within(dialog).getByRole('button', { name: 'Add' }))
 
     await waitFor(() => {
       const call = spy.mock.calls.find((c) => String(c[0]).startsWith('zones/create'))
-      expect(String(call![0])).toContain('zone=nueva.test')
+      expect(String(call![0])).toContain('zone=new.test')
       expect(String(call![0])).toContain('useSoaSerialDateScheme=false')
       expect(call![1]?.method).toBe('POST')
     })
     // Upstream opens the newly created zone.
-    expect(await screen.findByRole('heading', { name: 'nueva.test' })).toBeTruthy()
+    expect(await screen.findByRole('heading', { name: 'new.test' })).toBeTruthy()
   })
 
   it('\"Convert Zone\" on a Primary only allows converting to Forwarder', async () => {
@@ -349,12 +349,12 @@ describe('modals', () => {
     await user.click(within(dialog).getByRole('button', { name: 'Clone Zone' }))
     expect(await screen.findByText('Please enter a domain name for the new zone.')).toBeTruthy()
 
-    await user.type(within(dialog).getByLabelText('New Zone'), 'copia.test')
+    await user.type(within(dialog).getByLabelText('New Zone'), 'copy.test')
     await user.click(within(dialog).getByRole('button', { name: 'Clone Zone' }))
 
     await waitFor(() => {
       const call = spy.mock.calls.find((c) => c[0] === 'zones/clone')
-      expect(call![1]?.body).toMatchObject({ zone: 'copia.test', sourceZone: 'casa.test' })
+      expect(call![1]?.body).toMatchObject({ zone: 'copy.test', sourceZone: 'casa.test' })
     })
   })
 })

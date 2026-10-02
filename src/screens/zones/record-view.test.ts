@@ -75,9 +75,9 @@ describe('the Data cell by type', () => {
 
   it('a split TXT shows each string in quotes and on its own line', () => {
     const cells = recordCells(
-      rec('TXT', { splitText: true, characterStrings: ['uno', 'dos'], text: 'uno dos' }),
+      rec('TXT', { splitText: true, characterStrings: ['one', 'two'], text: 'one two' }),
     )
-    expect(cells[0]).toEqual({ cls: 'lines', lines: ['"uno"', '"dos"'] })
+    expect(cells[0]).toEqual({ cls: 'lines', lines: ['"one"', '"two"'] })
   })
 
   it('escapes backslashes, carriage returns, newlines and quotes of a TXT', () => {
@@ -105,7 +105,7 @@ describe('the Data cell by type', () => {
     )
     const table = cells.find((c) => c.cls === 'table')
     expect(table).toBeDefined()
-    const keys = table!.cls === 'table' ? table!.rows.map((f) => f[0]) : []
+    const keys = table!.cls === 'table' ? table!.rows.map((row) => row[0]) : []
     expect(keys).toEqual(['alpn', 'ipv6hint'])
   })
 

@@ -9,7 +9,7 @@ import { Dashboard } from './Dashboard'
 afterEach(() => vi.restoreAllMocks())
 
 const CLIENTS = [
-  { name: '10.0.0.1', domain: 'pc.casa.test', hits: 1234, rateLimited: false },
+  { name: '10.0.0.1', domain: 'pc.home.test', hits: 1234, rateLimited: false },
   { name: '10.0.0.9', domain: '', hits: 99, rateLimited: true },
 ]
 
@@ -49,13 +49,13 @@ describe('modal Top Stats', () => {
   it('a client shows its domain under the name', async () => {
     mockTop({ topClients: CLIENTS })
     render(<TopStats type="TopClients" range="LastHour" token="t" onClose={() => {}} />)
-    expect(await screen.findByText('pc.casa.test')).toBeTruthy()
+    expect(await screen.findByText('pc.home.test')).toBeTruthy()
   })
 
   it('a client with no domain is drawn as the root', async () => {
     mockTop({ topClients: CLIENTS })
     render(<TopStats type="TopClients" range="LastHour" token="t" onClose={() => {}} />)
-    await screen.findByText('pc.casa.test')
+    await screen.findByText('pc.home.test')
     expect(screen.getByText('.')).toBeTruthy()
   })
 
@@ -130,7 +130,7 @@ describe('the three \"More\" buttons of the Dashboard', () => {
   it('the short client list already shows the domain and the rate-limited marking', async () => {
     vi.spyOn(api, 'getDashboardStats').mockResolvedValue({ kind: 'ok', data: DATA } as never)
     render(<Dashboard token="t" />)
-    expect(await screen.findByText('pc.casa.test')).toBeTruthy()
+    expect(await screen.findByText('pc.home.test')).toBeTruthy()
     expect(screen.getByText(/10\.0\.0\.9 \(rate limited\)/)).toBeTruthy()
   })
 })

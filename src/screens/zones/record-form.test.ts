@@ -186,18 +186,18 @@ describe('edit — sends the old value AND the new one', () => {
   })
 
   it('CNAME and DNAME do NOT send the old one: only the new value', () => {
-    const original = rec('CNAME', { cname: 'viejo.casa.test' })
-    const b = body(form({ type: 'CNAME', name: 'ali', value: 'nuevo.casa.test' }), ctxOf(original))
-    expect(b.cname).toBe('nuevo.casa.test')
+    const original = rec('CNAME', { cname: 'old.casa.test' })
+    const b = body(form({ type: 'CNAME', name: 'ali', value: 'new.casa.test' }), ctxOf(original))
+    expect(b.cname).toBe('new.casa.test')
     expect(b).not.toHaveProperty('newCname')
   })
 
   it('TXT identifies by the base64 strings, not by the text', () => {
-    const original = rec('TXT', { text: 'viejo', characterStringsBase64: ['dmllam8='] })
-    const b = body(form({ type: 'TXT', name: 'x', txt: 'nuevo' }), ctxOf(original))
+    const original = rec('TXT', { text: 'old', characterStringsBase64: ['b2xk'] })
+    const b = body(form({ type: 'TXT', name: 'x', txt: 'new' }), ctxOf(original))
     expect(b).toMatchObject({
-      characterStringsBase64: 'dmllam8=',
-      newText: 'nuevo',
+      characterStringsBase64: 'b2xk',
+      newText: 'new',
       newSplitText: 'false',
     })
   })
@@ -220,9 +220,9 @@ describe('edit — sends the old value AND the new one', () => {
   })
 
   it('APP when editing does not validate and takes the app and class from the record', () => {
-    const original = rec('APP', { appName: 'Split Horizon', classPath: 'X.App', data: 'viejo' })
-    const b = body(form({ type: 'APP', name: 'x', recordData: 'nuevo' }), ctxOf(original))
-    expect(b).toMatchObject({ appName: 'Split Horizon', classPath: 'X.App', recordData: 'nuevo' })
+    const original = rec('APP', { appName: 'Split Horizon', classPath: 'X.App', data: 'old' })
+    const b = body(form({ type: 'APP', name: 'x', recordData: 'new' }), ctxOf(original))
+    expect(b).toMatchObject({ appName: 'Split Horizon', classPath: 'X.App', recordData: 'new' })
   })
 
   it('FWD when editing: without \"this-server\" it sends the proxy; with it, no', () => {

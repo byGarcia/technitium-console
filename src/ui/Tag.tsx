@@ -4,7 +4,7 @@ import styles from './Tag.module.css'
 /*
 A pill says ONE state. The five tones and what they mean:
 
-  · neutro — a classification fact that is neither good nor bad: `Primary`, `IPv4`
+  · neutral — a classification fact that is neither good nor bad: `Primary`, `IPv4`
   · ok     — the desirable state: `Enabled`, `Online`
   · warn   — something wants attention but works: `Updating`, `Expiring`
   · dan    — it is broken or switched off: `Disabled`, `Expired`

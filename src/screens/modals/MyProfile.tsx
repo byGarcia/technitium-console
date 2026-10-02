@@ -103,7 +103,7 @@ export function MyProfile({
   auth.js:795-838 — before deleting a session upstream asks for confirmation
   with this exact text, and the success message is literal too.
 
-  The confirmation is `ui/Confirmar`, the same one "Administration > Sessions"
+  The confirmation is `ui/Confirm`, the same one "Administration > Sessions"
   and "User Details" use for this very action. Here the browser's native
   `confirm()` had been left behind.
   */

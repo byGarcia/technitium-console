@@ -7,13 +7,13 @@ The links that lead out of the console.
 They are here and not scattered because a review found they had been going missing
 one at a time: upstream's sentence stayed and the destination disappeared —"read
 the change log" with no change log, "Use ZONEMD to Validate Zone" with no RFC—.
-With a single place where they are written, `dev/check-paridad-controles.mjs` can
+With a single place where they are written, `dev/check-parity-controls.mjs` can
 verify by list that none is missing.
 
 Two shapes, which is what upstream has:
 
 - `External`, inside a sentence: "validated using the [ZONEMD] record".
-- `Ayuda`, the standalone line at the foot of a panel or a dialog: "Help: …".
+- `HelpText`, the standalone line at the foot of a panel or a dialog: "Help: …".
 */
 export function External({ href, children }: { href: string; children: ReactNode }) {
   return (

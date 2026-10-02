@@ -86,7 +86,7 @@ export interface DnsRecord {
   lastModified?: string
   expiryTtl?: number
   expiryTtlString?: string
-  // En ambas
+  // both
   glueRecords?: string[]
   lastUsedOn?: string
   [field: string]: unknown
@@ -134,7 +134,7 @@ does nothing and the domain travels exactly as it was typed. The real behaviour
 is replicated, not the intent: the server already takes care of the case.
 
 It returns the `ApiOutcome` with the node already unwrapped instead of
-`NodoLista | null` because in upstream a `list` that fails does NOT stay quiet:
+`ListNode | null` because in upstream a `list` that fails does NOT stay quiet:
 the error handler of `HTTPRequest` (common.js) draws the server's `errorMessage`
 as an alert. With `null` that text would be lost, and losing a text is losing
 behaviour.
@@ -194,7 +194,7 @@ export function flushList(list: DomainList, token: string | null): Promise<ApiOu
 `importAllowedZones` / `importBlockedZones`. It goes by POST and the field is
 named differently in each list. The server splits on commas
 (`WebServiceOtherZonesApi.cs:271`), so the text has to arrive already cleaned by
-`clearList`.
+`cleanList`.
 */
 export function importDomains(
   list: DomainList,

@@ -53,7 +53,7 @@ describe('Sessions — the table', () => {
   it('a session type it does not know is not swallowed: it comes out as \"Unknown\"', async () => {
     vi.spyOn(client, 'apiRequest').mockResolvedValue(
       ok({
-        response: { sessions: [{ ...ADMIN_SESSION, type: 'Marciana' }] },
+        response: { sessions: [{ ...ADMIN_SESSION, type: 'Martian' }] },
         server: 'x',
       }),
     )
@@ -89,13 +89,13 @@ describe('Sessions — "Create Token"', () => {
   })
 
   it('it shows if this server IS the primary node', async () => {
-    server({}, 'ns1.micluster.test')
+    server({}, 'ns1.mycluster.test')
     render(<Sessions {...props} cluster={CLUSTER_PRIMARY} />)
     expect(await screen.findByRole('button', { name: 'Create Token' })).toBeInTheDocument()
   })
 
   it('it hides if this server is NOT the primary node', async () => {
-    server({}, 'ns2.micluster.test')
+    server({}, 'ns2.mycluster.test')
     render(<Sessions {...props} cluster={CLUSTER_PRIMARY} />)
     await screen.findByText('Total Sessions: 2')
     expect(screen.queryByRole('button', { name: 'Create Token' })).not.toBeInTheDocument()
@@ -161,7 +161,7 @@ describe('Sessions — deleting a session', () => {
   })
 
   it('an API token is deleted against the PRIMARY node, not the chosen one', async () => {
-    const spy = server({}, 'ns1.micluster.test')
+    const spy = server({}, 'ns1.mycluster.test')
     const user = userEvent.setup()
     render(<Sessions {...props} cluster={CLUSTER_PRIMARY} />)
 
@@ -171,7 +171,7 @@ describe('Sessions — deleting a session', () => {
 
     expect(spy.mock.calls.find((c) => c[0] === 'admin/sessions/delete')?.[1]).toEqual({
       token: 'tok',
-      body: { partialToken: '799a4919af7636e2', node: 'ns1.micluster.test' },
+      body: { partialToken: '799a4919af7636e2', node: 'ns1.mycluster.test' },
     })
   })
 

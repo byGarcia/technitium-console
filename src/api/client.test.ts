@@ -64,8 +64,8 @@ describe('apiRequest', () => {
 
   it('puts the body in the query when it is a GET', async () => {
     const spy = mockFetch({ status: 'ok' })
-    await apiRequest('zones/list', { body: { zone: 'casa.test' } })
-    expect(spy.mock.calls[0][0]).toBe('/api/zones/list?zone=casa.test')
+    await apiRequest('zones/list', { body: { zone: 'home.test' } })
+    expect(spy.mock.calls[0][0]).toBe('/api/zones/list?zone=home.test')
   })
 
   it('encodes the body as a form when it is a POST', async () => {
@@ -83,7 +83,7 @@ describe('apiRequest', () => {
   })
 
   it('tells apart that the second factor is needed', async () => {
-    // Literal verificado en DnsWebService.cs:2530
+    // Literal verified in DnsWebService.cs:2530
     mockFetch({ status: '2fa-required', errorMessage: 'TOTP required' })
     expect(await apiRequest('user/login')).toEqual({ kind: 'two-factor-required' })
   })
@@ -119,8 +119,8 @@ describe('apiRequest', () => {
 describe('multipart uploads', () => {
   it('sends FormData and does NOT set Content-Type by hand', async () => {
     const spy = mockFetch({ status: 'ok' })
-    const file = new File(['zone-file'], 'casa.test.zone', { type: 'text/plain' })
-    await apiRequest('zones/import', { token: 't', body: { zone: 'casa.test' }, file: { field: 'fileZone', file } })
+    const file = new File(['zone-file'], 'home.test.zone', { type: 'text/plain' })
+    await apiRequest('zones/import', { token: 't', body: { zone: 'home.test' }, file: { field: 'fileZone', file } })
     const [url, init] = spy.mock.calls[0]
     expect(url).toBe('/api/zones/import')
     expect(init.method).toBe('POST')
@@ -132,11 +132,11 @@ describe('multipart uploads', () => {
   it('the ordinary fields travel inside the FormData, not in the query', async () => {
     const spy = mockFetch({ status: 'ok' })
     const file = new File(['x'], 'a.txt')
-    await apiRequest('zones/import', { body: { zone: 'casa.test', overwrite: 'true' }, file: { field: 'f', file } })
+    await apiRequest('zones/import', { body: { zone: 'home.test', overwrite: 'true' }, file: { field: 'f', file } })
     const [url, init] = spy.mock.calls[0]
     expect(url).not.toContain('?')
     const fd = init.body as FormData
-    expect(fd.get('zone')).toBe('casa.test')
+    expect(fd.get('zone')).toBe('home.test')
     expect(fd.get('overwrite')).toBe('true')
     expect(fd.get('f')).toBeInstanceOf(File)
   })
@@ -174,7 +174,7 @@ describe('the cluster node parameter', () => {
       new Response(JSON.stringify({ status: 'ok' })),
     )
     spy.mockClear()
-    await apiRequest('dashboard/stats/get', { node: 'dns 1.casa' })
-    expect(String(spy.mock.calls[0]?.[0])).toContain('node=dns%201.casa')
+    await apiRequest('dashboard/stats/get', { node: 'dns 1.home' })
+    expect(String(spy.mock.calls[0]?.[0])).toContain('node=dns%201.home')
   })
 })

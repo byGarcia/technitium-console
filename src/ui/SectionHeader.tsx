@@ -33,7 +33,7 @@ With no sub-tabs there is no path: the title is the section name, plain.
 
 ## Tags are STATE, not counts
 
-`etiquetas` is for state pills —`Primary`, `Enabled`, `DNSSEC`—. Counts have their
+`labels` is for state pills —`Primary`, `Enabled`, `DNSSEC`—. Counts have their
 place in the count bar above the table; putting them here with the same look as a
 state was another of the inconsistencies: the same pill meant a figure sometimes,
 a state other times and a setting others.

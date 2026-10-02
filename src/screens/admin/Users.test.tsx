@@ -22,7 +22,7 @@ function server(users = [ADMIN_USER, NEW_USER], detail = USER_DETAIL) {
       })
     }
     if (path === 'admin/users/create') {
-      return ok({ response: { ...NEW_USER, username: 'nuevo' }, server: 'x' })
+      return ok({ response: { ...NEW_USER, username: 'newuser' }, server: 'x' })
     }
     return ok({ response: {}, server: 'x' })
   })
@@ -208,22 +208,22 @@ describe('Users — "Add User"', () => {
     await user.click(add)
     expect(screen.getByText('Please enter an username to add user.')).toBeInTheDocument()
 
-    await user.type(screen.getByLabelText('Username'), 'nuevo')
+    await user.type(screen.getByLabelText('Username'), 'newuser')
     await user.click(add)
     expect(screen.getByText('Please enter a password to add user.')).toBeInTheDocument()
 
-    await user.type(screen.getByLabelText('Password'), 'uno')
+    await user.type(screen.getByLabelText('Password'), 'one')
     await user.click(add)
     expect(screen.getByText('Please enter confirm password.')).toBeInTheDocument()
 
-    await user.type(screen.getByLabelText('Confirm Password'), 'dos')
+    await user.type(screen.getByLabelText('Confirm Password'), 'two')
     await user.click(add)
     expect(screen.getByText('Passwords do not match. Please try again.')).toBeInTheDocument()
   })
 
   it('the display name is optional: it is not validated', async () => {
     const user = await open()
-    await user.type(screen.getByLabelText('Username'), 'nuevo')
+    await user.type(screen.getByLabelText('Username'), 'newuser')
     await user.type(screen.getByLabelText('Password'), 'x')
     await user.type(screen.getByLabelText('Confirm Password'), 'x')
     await user.click(screen.getByRole('button', { name: 'Add' }))
@@ -232,7 +232,7 @@ describe('Users — "Add User"', () => {
     expect(spy.mock.calls.find((c) => c[0] === 'admin/users/create')?.[1]).toEqual({
       token: 'tok',
       method: 'POST',
-      body: { displayName: '', user: 'nuevo', pass: 'x' },
+      body: { displayName: '', user: 'newuser', pass: 'x' },
     })
   })
 })
@@ -251,22 +251,22 @@ describe('Users — "Reset Password"', () => {
     await user.click(reset)
     expect(screen.getByText('Please enter new password.')).toBeInTheDocument()
 
-    await user.type(screen.getByLabelText('New Password'), 'uno')
+    await user.type(screen.getByLabelText('New Password'), 'one')
     await user.click(reset)
     expect(screen.getByText('Please enter confirm password.')).toBeInTheDocument()
 
-    await user.type(screen.getByLabelText('Confirm Password'), 'dos')
+    await user.type(screen.getByLabelText('Confirm Password'), 'two')
     await user.click(reset)
     expect(screen.getByText('Passwords do not match. Please try again.')).toBeInTheDocument()
 
     await user.clear(screen.getByLabelText('Confirm Password'))
-    await user.type(screen.getByLabelText('Confirm Password'), 'uno')
+    await user.type(screen.getByLabelText('Confirm Password'), 'one')
     await user.click(reset)
 
     expect(spy.mock.calls.find((c) => c[0] === 'admin/users/set')?.[1]).toEqual({
       token: 'tok',
       method: 'POST',
-      body: { user: 'testuser', newPass: 'uno' },
+      body: { user: 'testuser', newPass: 'one' },
     })
     expect(onNotice).toHaveBeenCalledWith({
       type: 'success',
@@ -460,11 +460,11 @@ describe('Users — the details modal', () => {
     await user.click(await screen.findByRole('button', { name: 'View Details' }))
     const field = await screen.findByLabelText('Username')
     await user.clear(field)
-    await user.type(field, 'otro')
+    await user.type(field, 'other')
     await user.click(screen.getByRole('button', { name: 'Save' }))
 
     const body = spy.mock.calls.find((c) => c[0] === 'admin/users/set')?.[1]?.body as Record<string, string>
-    expect(body.newUser).toBe('otro')
+    expect(body.newUser).toBe('other')
   })
 
   it('the sessions of the user come out inside the modal with their own total', async () => {

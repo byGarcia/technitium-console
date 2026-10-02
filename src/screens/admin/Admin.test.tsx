@@ -48,7 +48,7 @@ describe('Admin — the sub-navigation is a bar under the title', () => {
 
   it('a sub-tab that does not exist falls to Sessions instead of going blank', async () => {
     server()
-    render(<Admin token="tok" sub="Inventada" />)
+    render(<Admin token="tok" sub="Invented" />)
     expect(await screen.findByRole('heading', { name: 'Administration' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Sessions' })).toHaveAttribute('aria-current', 'page')
   })
@@ -96,13 +96,13 @@ describe('Admin — the sub-navigation is a bar under the title', () => {
     await screen.findByText('Total Sessions: 1')
 
     expect(screen.getAllByLabelText('Cluster Node')).toHaveLength(1)
-    await choose(user, screen.getByLabelText('Cluster Node'), 'ns2.micluster.test (secondary)')
-    expect(valueShown(screen.getByLabelText('Cluster Node'))).toBe('ns2.micluster.test (secondary)')
+    await choose(user, screen.getByLabelText('Cluster Node'), 'ns2.mycluster.test (secondary)')
+    expect(valueShown(screen.getByLabelText('Cluster Node'))).toBe('ns2.mycluster.test (secondary)')
 
     rerender(<Admin token="tok" sub="Cluster" />)
     await screen.findByText('Total Nodes: 2')
     expect(screen.getAllByLabelText('Cluster Node')).toHaveLength(1)
-    expect(valueShown(screen.getByLabelText('Cluster Node'))).toBe('ns2.micluster.test (secondary)')
+    expect(valueShown(screen.getByLabelText('Cluster Node'))).toBe('ns2.mycluster.test (secondary)')
 
     rerender(<Admin token="tok" sub="Users" />)
     await screen.findByText('Total Users: 1')
@@ -121,7 +121,7 @@ describe('Admin — the sub-navigation is a bar under the title', () => {
     server(CLUSTER_PRIMARY)
     render(<Admin token="tok" sub="Sessions" />)
     await screen.findByText('Total Sessions: 1')
-    expect(valueShown(screen.getByLabelText('Cluster Node'))).toBe('ns1.micluster.test (primary)')
+    expect(valueShown(screen.getByLabelText('Cluster Node'))).toBe('ns1.mycluster.test (primary)')
   })
 
   it('if this server is not among the nodes, it falls back to the first', async () => {
@@ -131,7 +131,7 @@ describe('Admin — the sub-navigation is a bar under the title', () => {
     })
     render(<Admin token="tok" sub="Sessions" />)
     await screen.findByText('Total Sessions: 1')
-    expect(valueShown(screen.getByLabelText('Cluster Node'))).toBe('ns1.micluster.test (primary)')
+    expect(valueShown(screen.getByLabelText('Cluster Node'))).toBe('ns1.mycluster.test (primary)')
   })
 
   it('if the cluster state fails, the section keeps working', async () => {

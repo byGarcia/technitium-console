@@ -7,7 +7,7 @@ What gets drawn in each record's "Data" cell. A replica of
 
 The original mixes the drawing and the extraction of the `data-record-*` in the
 same function; here there is only the drawing. The other half lives in
-`api/registros.ts::identidadRegistro`.
+`api/records.ts::recordIdentity`.
 
 Rules that are replicated and not "fixed":
 
@@ -430,16 +430,16 @@ export function recordFooter(r: ResourceRecord, now?: number): { label: string; 
 /** The name that is shown: relative to the zone, and `@` at the apex. */
 export function relativeName(fullName: string, zone: string): string {
   const name = fullName === '' ? '.' : fullName
-  const minus = name.toLowerCase()
-  if (minus === zone.toLowerCase()) return '@'
-  const i = minus.lastIndexOf(`.${zone.toLowerCase()}`)
+  const lower = name.toLowerCase()
+  if (lower === zone.toLowerCase()) return '@'
+  const i = lower.lastIndexOf(`.${zone.toLowerCase()}`)
   return i > -1 ? name.substring(0, i) : name
 }
 
 /* ── Per-row actions ──────────────────────────────────────────────────── */
 
 export interface RowActions {
-  /** La column entera desaparece. */
+  /** The whole column disappears. */
   hidden: boolean
   /** They show but Enable/Disable/Delete are off; Edit is not. */
   editingOnly: boolean

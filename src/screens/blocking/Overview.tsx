@@ -274,8 +274,8 @@ export function Overview({
         </div>
 
         {/* Without Dashboard.View every panel fed by the stats keeps its place and its
-            title, locked (spec, «Permisos»): the screen does not change shape with
-            who looks. */}
+            title, locked (spec, the section on permissions, «Permisos»): the screen
+            does not change shape with who looks. */}
         {statsNeed != null ? (
           <div className={shared.row21}>
             <Locked title="Queries over time" need={statsNeed} />

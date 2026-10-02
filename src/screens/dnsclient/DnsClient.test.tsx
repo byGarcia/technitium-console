@@ -25,7 +25,7 @@ describe('DNS Client', () => {
       kind: 'ok', data: { status: 'ok', response: { result: { ok: true } } },
     } as never)
     render(<DnsClient token="t" />)
-    await userEvent.type(screen.getByLabelText('Domain'), 'casa.test')
+    await userEvent.type(screen.getByLabelText('Domain'), 'home.test')
     await userEvent.click(screen.getByRole('button', { name: 'Resolve' }))
     expect(spy.mock.calls[0][1].runImport).toBeFalsy()
     spy.mockClear()
@@ -38,7 +38,7 @@ describe('DNS Client', () => {
       kind: 'ok', data: { status: 'ok', response: { result: {} } },
     } as never)
     render(<DnsClient token="t" />)
-    await userEvent.type(screen.getByLabelText('Domain'), 'casa.test')
+    await userEvent.type(screen.getByLabelText('Domain'), 'home.test')
     await userEvent.click(screen.getByRole('button', { name: 'Import' }))
     expect(
       await screen.findByText('Resource records resolved by this DNS client query were successfully imported into this server.'),
@@ -57,7 +57,7 @@ describe('DNS Client', () => {
       data: { status: 'ok', response: { result: {}, rawResponses: [{ a: 1 }, { b: 2 }, { c: 3 }] } },
     } as never)
     render(<DnsClient token="t" />)
-    await userEvent.type(screen.getByLabelText('Domain'), 'casa.test')
+    await userEvent.type(screen.getByLabelText('Domain'), 'home.test')
     await userEvent.click(screen.getByRole('button', { name: 'Resolve' }))
 
     const summary = await screen.findByText('Raw Responses (3)')
@@ -70,7 +70,7 @@ describe('DNS Client', () => {
       kind: 'ok', data: { status: 'ok', response: { result: {}, rawResponses: [] } },
     } as never)
     render(<DnsClient token="t" />)
-    await userEvent.type(screen.getByLabelText('Domain'), 'casa.test')
+    await userEvent.type(screen.getByLabelText('Domain'), 'home.test')
     await userEvent.click(screen.getByRole('button', { name: 'Resolve' }))
     await screen.findByText('Response')
     expect(screen.queryByText(/Raw Responses/)).not.toBeInTheDocument()
@@ -78,12 +78,12 @@ describe('DNS Client', () => {
 
   it('a warningMessage from the server is shown as an alert and beats the imported one', async () => {
     vi.spyOn(api, 'resolve').mockResolvedValue({
-      kind: 'ok', data: { status: 'ok', response: { result: {}, warningMessage: 'Ojo con esto' } },
+      kind: 'ok', data: { status: 'ok', response: { result: {}, warningMessage: 'Watch out for this' } },
     } as never)
     render(<DnsClient token="t" />)
-    await userEvent.type(screen.getByLabelText('Domain'), 'casa.test')
+    await userEvent.type(screen.getByLabelText('Domain'), 'home.test')
     await userEvent.click(screen.getByRole('button', { name: 'Import' }))
-    expect(await screen.findByText('Ojo con esto')).toBeInTheDocument()
+    expect(await screen.findByText('Watch out for this')).toBeInTheDocument()
     expect(screen.queryByText(/successfully imported/)).not.toBeInTheDocument()
   })
 
@@ -99,8 +99,8 @@ describe('DNS Client', () => {
 
     const checkbox = screen.getByLabelText('Enable DNSSEC Validation')
     expect(checkbox).toHaveProperty('type', 'checkbox')
-    /* Arranca MARCADA (`useState(true)`, DnsClient.tsx:61). Se comprueba leyendo
- the source and not by assuming: the first version of this test took for granted
+    /* It starts CHECKED (`useState(true)`, DnsClient.tsx:62). That was checked by
+ reading the source and not by assuming: the first version of this test took for granted
  that it started empty and failed because of that, not because of the component. */
     expect(checkbox).toBeChecked()
 

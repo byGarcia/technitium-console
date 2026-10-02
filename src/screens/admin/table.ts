@@ -4,7 +4,7 @@ pushes into a list or into a table.
 
 The serialisation itself is NOT here: it is upstream's `serializeTableData`
 (`common.js:282`) and the five screens with an editable table use it, so it lives
-in `lib/tabla-serie`. It is re-exported so Administration's four sub-tabs keep
+in `lib/table-serialise`. It is re-exported so Administration's four sub-tabs keep
 asking for it through this door.
 */
 export { serializeTable, type Cell, type TableFailure, type TableResult } from '../../lib/table-serialise'

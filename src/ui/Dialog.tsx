@@ -13,7 +13,7 @@ Here the order belongs to the component, not to whoever uses it:
 
     [ actions … ] [ Close ]
 
-`acciones` are the buttons that DO something; the dismiss one is painted by
+`actions` are the buttons that DO something; the dismiss one is painted by
 `Dialog` and always goes last, in the corner upstream had it in all 40 of its
 modals. That way no new modal can pick its own order again.
 */

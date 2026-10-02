@@ -269,8 +269,8 @@ export function Notices({ children }: { children: ReactNode }) {
 
 /*
 Upstream's alerts are `<p><b>Note!</b> …</p>` in bold, inline. Here they become
-a coloured block: `Warning!` amber, `Note!` blue. They always go inside an
-`Avisos`, which is what supplies the inset — when the alert supplied it itself on
+a coloured block: `Warning!` amber, `Note!` blue. They always go inside a
+`Notices`, which is what supplies the inset — when the alert supplied it itself on
 one screen and not the other, the same "Note!" came out indented in DHCP and flush
 in Settings.
 */

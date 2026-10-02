@@ -150,7 +150,7 @@ export function Sso({ tabs, token, onNotice }: Props) {
     return base.endsWith('/') ? `${base}sso/callback` : `${base}/sso/callback`
   })()
 
-  function save(saltarAuthority = false, saltarMetadata = false) {
+  function save(skipAuthority = false, skipMetadata = false) {
     if (enabled && authority === '') {
       onNotice({ type: 'warning', title: 'Missing!', text: 'Please enter the Authority URL.' })
       return
@@ -181,11 +181,11 @@ export function Sso({ tabs, token, onNotice }: Props) {
       return
     }
 
-    if (!saltarAuthority && authority.startsWith('http:')) {
+    if (!skipAuthority && authority.startsWith('http:')) {
       setConfirm('authority')
       return
     }
-    if (!saltarMetadata && metadata.startsWith('http:')) {
+    if (!skipMetadata && metadata.startsWith('http:')) {
       setConfirm('metadata')
       return
     }

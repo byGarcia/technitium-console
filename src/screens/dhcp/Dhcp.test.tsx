@@ -343,13 +343,13 @@ describe('DHCP › Scopes — the form', () => {
     await screen.findByText('No Scope Found')
 
     await user.click(screen.getByRole('button', { name: 'Add Scope' }))
-    await user.type(screen.getByLabelText('Name'), 'Casa')
+    await user.type(screen.getByLabelText('Name'), 'Home')
     await user.type(screen.getByLabelText('Starting Address'), '10.0.1.1')
     await user.click(screen.getByRole('button', { name: 'Save' }))
 
     const [, body, node] = spy.mock.calls[0]
     expect(node).toBe('')
-    expect(body).toMatchObject({ name: 'Casa', startingAddress: '10.0.1.1' })
+    expect(body).toMatchObject({ name: 'Home', startingAddress: '10.0.1.1' })
     expect(body).not.toHaveProperty('newName')
     expect(await screen.findByText('Scope Saved!')).toBeInTheDocument()
     expect(screen.getByText('DHCP Scope was saved successfully.')).toBeInTheDocument()
@@ -366,10 +366,10 @@ describe('DHCP › Scopes — the form', () => {
     await screen.findByRole('heading', { name: 'Edit Scope' })
 
     await user.clear(screen.getByLabelText('Name'))
-    await user.type(screen.getByLabelText('Name'), 'Casa')
+    await user.type(screen.getByLabelText('Name'), 'Home')
     await user.click(screen.getByRole('button', { name: 'Save' }))
 
-    expect(spy.mock.calls[0][1]).toMatchObject({ name: 'Default', newName: 'Casa' })
+    expect(spy.mock.calls[0][1]).toMatchObject({ name: 'Default', newName: 'Home' })
   })
 
   it('an empty required cell stops the save, alerts and focuses that cell', async () => {

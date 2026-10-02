@@ -282,7 +282,7 @@ export function Login({
       </div>
 
       {/* Upstream's footer shows on its login screen too, because it hangs off
-          the `body` and not the panel. See `app/pie.ts`. */}
+          the `body` and not the panel. See `app/footer.ts`. */}
       <FooterLinks className={styles.footer} />
 
       <ForgotPassword open={forgotten} onOpenChange={setForgotten} />

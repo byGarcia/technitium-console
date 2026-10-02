@@ -120,8 +120,8 @@ describe('formFromScope', () => {
 
 describe('buildBody — name and rename', () => {
   it('a new scope does NOT send `newName`', () => {
-    const b = body(form({ oldName: '', name: 'Nuevo' }))
-    expect(b.name).toBe('Nuevo')
+    const b = body(form({ oldName: '', name: 'New' }))
+    expect(b.name).toBe('New')
     expect(b).not.toHaveProperty('newName')
   })
 
@@ -132,9 +132,9 @@ describe('buildBody — name and rename', () => {
   })
 
   it('renaming sends the OLD name in `name` and the new one in `newName`', () => {
-    const b = body(form({ oldName: 'Default', name: 'Casa' }))
+    const b = body(form({ oldName: 'Default', name: 'Home' }))
     expect(b.name).toBe('Default')
-    expect(b.newName).toBe('Casa')
+    expect(b.newName).toBe('Home')
   })
 })
 

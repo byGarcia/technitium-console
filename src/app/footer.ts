@@ -38,7 +38,7 @@ export const FOOTER: FooterLink[] = [
 
 /*
 The theme credit. It is NOT upstream's: it is the only thing in the footer this
-console adds, and that is why it lives outside `PIE` and outside the list
+console adds, and that is why it lives outside `FOOTER` and outside the list
 `dev/check-parity-controls.mjs` compares. Whoever reads this has to be able to
 tell at a glance what is parity and what is our addition.
 

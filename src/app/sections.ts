@@ -1,8 +1,9 @@
 /*
 The console's 11 sections, in upstream's order — with one that is OURS: Blocking
 takes the place of upstream's Allowed and Blocked, and gathers them with the block
-lists into three tabs (docs/2026-10-01-blocking-section-spec.md, "La excepción").
-Their old addresses still land: see `LEGACY_ROUTES` in `static-routes.ts`.
+lists into three tabs (docs/2026-10-01-blocking-section-spec.md, the section on the
+exception, "La excepción"). Their old addresses still land: see `LEGACY_ROUTES` in
+`static-routes.ts`.
 
 `permission` is the key inside `sessionData.info.permissions`, and it does NOT
 always match the label: the "DNS Client" tab is governed by `DnsClient` and "DHCP"

@@ -76,7 +76,7 @@ describe('Cluster — starting a new one', () => {
     await user.click(button)
     expect(screen.getByText('Please enter the Cluster domain name.')).toBeInTheDocument()
 
-    await user.type(screen.getByLabelText('Cluster Domain'), 'micluster.test')
+    await user.type(screen.getByLabelText('Cluster Domain'), 'mycluster.test')
     await user.click(button)
     expect(screen.getByText('Please enter a Primary node IP address.')).toBeInTheDocument()
     expect(spy.mock.calls.find((c) => c[0] === 'admin/cluster/init')).toBeUndefined()
@@ -101,13 +101,13 @@ describe('Cluster — starting a new one', () => {
 
   it('it sends domain and IP already cleaned, and without `node`', async () => {
     const { user, spy } = await open()
-    await user.type(screen.getByLabelText('Cluster Domain'), 'micluster.test')
+    await user.type(screen.getByLabelText('Cluster Domain'), 'mycluster.test')
     await user.type(screen.getByLabelText('Primary Node IP Addresses'), '10.0.0.1\n10.0.0.2\n')
     await user.click(screen.getByRole('button', { name: 'Initialize' }))
 
     expect(spy.mock.calls.find((c) => c[0] === 'admin/cluster/init')?.[1]).toEqual({
       token: 'tok',
-      body: { clusterDomain: 'micluster.test', primaryNodeIpAddresses: '10.0.0.1,10.0.0.2' },
+      body: { clusterDomain: 'mycluster.test', primaryNodeIpAddresses: '10.0.0.1,10.0.0.2' },
     })
   })
 
@@ -163,7 +163,7 @@ describe('Cluster — joining an existing one', () => {
     const { user, spy } = await open()
     await user.type(screen.getByLabelText('Secondary Node IP Addresses'), '10.0.0.3\n')
     await user.type(screen.getByLabelText('Primary Node URL'), 'https://ns1.test')
-    await user.type(screen.getByLabelText('Primary Node Password'), 'secreta')
+    await user.type(screen.getByLabelText('Primary Node Password'), 'secret')
     await user.click(screen.getByRole('button', { name: 'Join' }))
 
     expect(spy.mock.calls.find((c) => c[0] === 'admin/cluster/initJoin')?.[1]).toEqual({
@@ -175,7 +175,7 @@ describe('Cluster — joining an existing one', () => {
         primaryNodeIpAddress: '',
         ignoreCertificateErrors: 'false',
         primaryNodeUsername: 'admin',
-        primaryNodePassword: 'secreta',
+        primaryNodePassword: 'secret',
         primaryNodeTotp: '',
       },
     })
@@ -194,7 +194,7 @@ describe('Cluster — joining an existing one', () => {
     await user.click(await screen.findByRole('button', { name: 'Join Cluster' }))
     await user.type(await screen.findByLabelText('Secondary Node IP Addresses'), '10.0.0.3\n')
     await user.type(screen.getByLabelText('Primary Node URL'), 'https://ns1.test')
-    await user.type(screen.getByLabelText('Primary Node Password'), 'secreta')
+    await user.type(screen.getByLabelText('Primary Node Password'), 'secret')
     await user.click(screen.getByRole('button', { name: 'Join' }))
 
     expect(await screen.findByLabelText('Primary Node OTP')).toBeInTheDocument()
@@ -224,8 +224,8 @@ describe('Cluster — seen from the PRIMARY node', () => {
     await screen.findByText('Total Nodes: 2')
     const user = userEvent.setup()
     expect(await optionsOf(user, screen.getByLabelText('Cluster Node'))).toEqual([
-      'ns1.micluster.test (primary)',
-      'ns2.micluster.test (secondary)',
+      'ns1.mycluster.test (primary)',
+      'ns2.mycluster.test (secondary)',
     ])
   })
 
@@ -235,7 +235,7 @@ describe('Cluster — seen from the PRIMARY node', () => {
     await screen.findByText('Total Nodes: 2')
 
     expect(screen.getAllByRole('button', { name: 'Edit Node' })).toHaveLength(1)
-    await userEvent.click(screen.getByRole('button', { name: 'Actions for ns2.micluster.test' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Actions for ns2.mycluster.test' }))
     expect(await screen.findByRole('menuitem', { name: 'Remove Node' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Promote To Primary' })).not.toBeInTheDocument()
   })
@@ -246,14 +246,14 @@ describe('Cluster — seen from the PRIMARY node', () => {
     render(<Cluster {...props} />)
 
     await screen.findByText('Total Nodes: 2')
-    await user.click(screen.getByRole('button', { name: 'Actions for ns2.micluster.test' }))
+    await user.click(screen.getByRole('button', { name: 'Actions for ns2.mycluster.test' }))
     await user.click(await screen.findByRole('menuitem', { name: 'Remove Node' }))
     await user.click(screen.getByRole('button', { name: 'Remove' }))
     expect(spy.mock.calls.find((c) => c[0] === 'admin/cluster/primary/removeSecondary')?.[1]).toEqual(
       { token: 'tok', body: { secondaryNodeId: '2', node: '' } },
     )
 
-    await user.click(screen.getByRole('button', { name: 'Actions for ns2.micluster.test' }))
+    await user.click(screen.getByRole('button', { name: 'Actions for ns2.mycluster.test' }))
     await user.click(await screen.findByRole('menuitem', { name: 'Remove Node' }))
     await user.click(screen.getByLabelText('Force Remove Node'))
     await user.click(screen.getByRole('button', { name: 'Remove' }))
@@ -406,7 +406,7 @@ describe('Cluster — seen from a SECONDARY node', () => {
     await user.click(screen.getByRole('button', { name: 'Save' }))
     expect(screen.getByText('Please enter the Primary node URL.')).toBeInTheDocument()
 
-    await user.type(url, 'https://ns1.micluster.test')
+    await user.type(url, 'https://ns1.mycluster.test')
     await user.clear(screen.getByLabelText('Primary Node IP Addresses (Optional)'))
     await user.click(screen.getByRole('button', { name: 'Save' }))
 
@@ -414,7 +414,7 @@ describe('Cluster — seen from a SECONDARY node', () => {
       {
         token: 'tok',
         body: {
-          primaryNodeUrl: 'https://ns1.micluster.test',
+          primaryNodeUrl: 'https://ns1.mycluster.test',
           primaryNodeIpAddresses: '',
           node: '',
         },
@@ -489,7 +489,7 @@ describe('Cluster — the node table', () => {
     server({
       ...CLUSTER_PRIMARY,
       clusterNodes: [
-        { ...CLUSTER_PRIMARY.clusterNodes![0], type: 'Marciano', state: 'Raro' },
+        { ...CLUSTER_PRIMARY.clusterNodes![0], type: 'Martian', state: 'Weird' },
       ],
     })
     render(<Cluster {...props} />)

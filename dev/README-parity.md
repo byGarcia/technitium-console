@@ -1,6 +1,6 @@
 # Parity checks
 
-## `check-parity-actions.sh` — the one that actually counts
+## `check-parity-actions.sh`: the one that actually counts
 
 Runs **the same action on both instances** and compares the state the server is
 left in, not the bytes of the page. This is the check that makes the project's
@@ -13,8 +13,8 @@ docker compose up -d
 ./check-parity-actions.sh
 ```
 
-It covers fourteen actions: seven creates (including the awkward ones —split TXT,
-SVCB with flattened `svcParams`, CAA with its default values—), three edits
+It covers fourteen actions: seven creates (including the awkward ones: split TXT,
+SVCB with flattened `svcParams`, CAA with its default values), three edits
 (among them disabling a record, which upstream does as a `records/update`
 resending the whole record), three deletes (including CNAME, which falls to the
 `default` branch and sends no identity parameter at all) and the `options/set`
@@ -25,7 +25,7 @@ parity: `lastModified`, the SOA serial and **the server's own name**, which is
 embedded in the NS and SOA of every zone and is deliberately different in each
 container.
 
-## `check-parity.sh` — only for the preserved files
+## `check-parity.sh`: only for the preserved files
 
 Compares the content of a path between the two instances. Since phase 0 the
 console is ours, so **for `/` it reports `DIFFERENT` and that is the point of the
@@ -47,5 +47,5 @@ node parity-login.mjs
 ```
 
 It found two real divergences the first time it ran: the "×" button to dismiss
-the alert was missing —upstream has it, so its absence was a behavioural
-difference— and so was the space between the title and the text.
+the alert was missing, upstream has it, so its absence was a behavioural
+difference, and so was the space between the title and the text.

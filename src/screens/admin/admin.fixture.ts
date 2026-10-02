@@ -169,9 +169,9 @@ export const CLUSTER_NOT_INITIALISED: ClusterState = {
  *  could NOT be observed live. */
 export const CLUSTER_PRIMARY: ClusterState = {
   version: '15.4',
-  dnsServerDomain: 'ns1.micluster.test',
+  dnsServerDomain: 'ns1.mycluster.test',
   clusterInitialized: true,
-  clusterDomain: 'micluster.test',
+  clusterDomain: 'mycluster.test',
   heartbeatRefreshIntervalSeconds: 30,
   heartbeatRetryIntervalSeconds: 10,
   configRefreshIntervalSeconds: 900,
@@ -179,8 +179,8 @@ export const CLUSTER_PRIMARY: ClusterState = {
   clusterNodes: [
     {
       id: 1,
-      name: 'ns1.micluster.test',
-      url: 'https://ns1.micluster.test:53443',
+      name: 'ns1.mycluster.test',
+      url: 'https://ns1.mycluster.test:53443',
       ipAddresses: ['10.0.0.1'],
       type: 'Primary',
       state: 'Self',
@@ -188,8 +188,8 @@ export const CLUSTER_PRIMARY: ClusterState = {
     },
     {
       id: 2,
-      name: 'ns2.micluster.test',
-      url: 'https://ns2.micluster.test:53443',
+      name: 'ns2.mycluster.test',
+      url: 'https://ns2.mycluster.test:53443',
       ipAddresses: ['10.0.0.2'],
       type: 'Secondary',
       state: 'Connected',
@@ -202,7 +202,7 @@ export const CLUSTER_PRIMARY: ClusterState = {
 /** The same cluster seen FROM the secondary. */
 export const CLUSTER_SECONDARY: ClusterState = {
   ...CLUSTER_PRIMARY,
-  dnsServerDomain: 'ns2.micluster.test',
+  dnsServerDomain: 'ns2.mycluster.test',
   clusterNodes: [
     {
       ...CLUSTER_PRIMARY.clusterNodes![0],

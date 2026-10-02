@@ -28,13 +28,13 @@ describe('readBootIntent', () => {
   })
 
   it('it takes the token from the cookie and deletes it on the spot', () => {
-    document.cookie = 'token=de-sso; path=/'
-    expect(readBootIntent()).toEqual({ kind: 'try-token', token: 'de-sso' })
-    expect(document.cookie).not.toContain('de-sso')
+    document.cookie = 'token=from-sso; path=/'
+    expect(readBootIntent()).toEqual({ kind: 'try-token', token: 'from-sso' })
+    expect(document.cookie).not.toContain('from-sso')
   })
 
   it('the cookie wins over localStorage', () => {
-    localStorage.setItem('token', 'viejo')
+    localStorage.setItem('token', 'old')
     document.cookie = 'token=fresh; path=/'
     expect(readBootIntent()).toEqual({ kind: 'try-token', token: 'fresh' })
   })
@@ -49,7 +49,7 @@ describe('readBootIntent', () => {
   })
 
   it('it cleans the URL even with no error and no token', () => {
-    setHash('#loquesea=1')
+    setHash('#whatever=1')
     readBootIntent()
     expect(window.location.hash).toBe('')
   })

@@ -22,9 +22,9 @@ describe('a section count', () => {
   it('it counts the controls it holds', async () => {
     render(
       <Block title="Rate Limiting">
-        <TextRow label="Uno" value="" onChange={() => {}} />
-        <TextRow label="Dos" value="" onChange={() => {}} />
-        <TextRow label="Tres" value="" onChange={() => {}} />
+        <TextRow label="One" value="" onChange={() => {}} />
+        <TextRow label="Two" value="" onChange={() => {}} />
+        <TextRow label="Three" value="" onChange={() => {}} />
       </Block>,
     )
 
@@ -36,7 +36,7 @@ describe('a section count', () => {
   it('the figure follows the content, not a constant', async () => {
     const { rerender } = render(
       <Block title="Rate Limiting">
-        <TextRow label="Uno" value="" onChange={() => {}} />
+        <TextRow label="One" value="" onChange={() => {}} />
       </Block>,
     )
     const header = screen.getByRole('heading', { name: 'Rate Limiting' }).parentElement!
@@ -44,8 +44,8 @@ describe('a section count', () => {
 
     rerender(
       <Block title="Rate Limiting">
-        <TextRow label="Uno" value="" onChange={() => {}} />
-        <TextRow label="Dos" value="" onChange={() => {}} />
+        <TextRow label="One" value="" onChange={() => {}} />
+        <TextRow label="Two" value="" onChange={() => {}} />
       </Block>,
     )
 

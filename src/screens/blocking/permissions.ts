@@ -3,9 +3,9 @@ import type { Permission } from '../../app/sections'
 /*
 What each control of the Blocking section asks for is what the SERVER asks of the
 call it makes (WebServiceOtherZonesApi.cs, WebServiceSettingsApi.cs,
-WebServiceDashboardApi.cs, WebServiceLogsApi.cs). The table is in the spec,
-"Permisos por operación". A control whose permission is missing is drawn disabled
-with `PermissionButton`, never hidden.
+WebServiceDashboardApi.cs, WebServiceLogsApi.cs). The table is in the spec, in the
+section on permissions per operation, "Permisos por operación". A control whose
+permission is missing is drawn disabled with `PermissionButton`, never hidden.
 */
 
 export type Permissions = Record<string, Permission> | undefined

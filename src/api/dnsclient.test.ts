@@ -14,10 +14,10 @@ describe('dnsClient', () => {
 
   it('it sends the parameters under the upstream names', async () => {
     const spy = vi.spyOn(client, 'apiRequest').mockResolvedValue({ kind: 'ok', data: {} })
-    await resolve('t', { server: 'this-server', domain: 'casa.test', type: 'A', protocol: 'UDP', dnssec: true })
+    await resolve('t', { server: 'this-server', domain: 'home.test', type: 'A', protocol: 'UDP', dnssec: true })
     expect(spy.mock.calls[0][0]).toBe('dnsClient/resolve')
     expect(spy.mock.calls[0][1]?.body).toEqual({
-      server: 'this-server', domain: 'casa.test', type: 'A',
+      server: 'this-server', domain: 'home.test', type: 'A',
       protocol: 'UDP', dnssec: 'true', eDnsClientSubnet: '',
     })
   })
@@ -52,6 +52,6 @@ describe('prepareServer', () => {
   })
 
   it('empty braces are an empty server, even though the field has text', () => {
-    expect(prepareServer('Servidor {}', 'UDP').server).toBe('')
+    expect(prepareServer('Server {}', 'UDP').server).toBe('')
   })
 })

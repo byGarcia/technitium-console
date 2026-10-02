@@ -56,7 +56,7 @@ describe('Login', () => {
     const spy = vi.spyOn(client, 'apiRequest').mockResolvedValue(session)
     render(<Login onSuccess={() => {}} />)
     await userEvent.type(screen.getByLabelText('Username'), 'ADMIN')
-    await userEvent.type(screen.getByLabelText('Password'), 'secreto')
+    await userEvent.type(screen.getByLabelText('Password'), 'secret')
     await userEvent.click(screen.getByRole('button', { name: 'Login' }))
     expect(loginCall(spy)?.[1]?.body?.user).toBe('admin')
   })
@@ -65,7 +65,7 @@ describe('Login', () => {
     const spy = vi.spyOn(client, 'apiRequest').mockResolvedValue(session)
     render(<Login onSuccess={() => {}} />)
     await userEvent.type(screen.getByLabelText('Username'), 'admin')
-    await userEvent.type(screen.getByLabelText('Password'), 'secreto')
+    await userEvent.type(screen.getByLabelText('Password'), 'secret')
     await userEvent.click(screen.getByRole('button', { name: 'Login' }))
     const call = loginCall(spy)
     expect(call).toBeDefined()
@@ -80,7 +80,7 @@ describe('Login', () => {
     })
     render(<Login onSuccess={() => {}} />)
     await userEvent.type(screen.getByLabelText('Username'), 'admin')
-    await userEvent.type(screen.getByLabelText('Password'), 'mal')
+    await userEvent.type(screen.getByLabelText('Password'), 'wrong')
     await userEvent.click(screen.getByRole('button', { name: 'Login' }))
     expect(
       await screen.findByText('Invalid username or password for user: admin'),
@@ -91,7 +91,7 @@ describe('Login', () => {
     vi.spyOn(client, 'apiRequest').mockResolvedValue({ kind: 'two-factor-required' })
     render(<Login onSuccess={() => {}} />)
     await userEvent.type(screen.getByLabelText('Username'), 'admin')
-    await userEvent.type(screen.getByLabelText('Password'), 'secreto')
+    await userEvent.type(screen.getByLabelText('Password'), 'secret')
     await userEvent.click(screen.getByRole('button', { name: 'Login' }))
     expect(await screen.findByLabelText('OTP')).toBeInTheDocument()
     expect(screen.getByLabelText('Password')).toBeDisabled()
@@ -101,7 +101,7 @@ describe('Login', () => {
     vi.spyOn(client, 'apiRequest').mockResolvedValue({ kind: 'two-factor-required' })
     render(<Login onSuccess={() => {}} />)
     await userEvent.type(screen.getByLabelText('Username'), 'admin')
-    await userEvent.type(screen.getByLabelText('Password'), 'secreto')
+    await userEvent.type(screen.getByLabelText('Password'), 'secret')
     await userEvent.click(screen.getByRole('button', { name: 'Login' }))
     await screen.findByLabelText('OTP')
     await userEvent.type(screen.getByLabelText('OTP'), '123')
@@ -118,7 +118,7 @@ describe('Login', () => {
     const onSuccess = vi.fn()
     render(<Login onSuccess={onSuccess} />)
     await userEvent.type(screen.getByLabelText('Username'), 'admin')
-    await userEvent.type(screen.getByLabelText('Password'), 'secreto')
+    await userEvent.type(screen.getByLabelText('Password'), 'secret')
     await userEvent.click(screen.getByRole('button', { name: 'Login' }))
     expect(onSuccess).toHaveBeenCalledWith(
       expect.objectContaining({ token: 't', displayName: 'Administrator' }),

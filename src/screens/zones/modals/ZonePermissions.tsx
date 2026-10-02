@@ -15,7 +15,7 @@ import { Notifier } from '../../../ui/Notifier'
 
 Two tables identical in appearance —users and groups— with the catch that **the
 subject's name is called something different in each**: `username` in users and
-`name` in groups. Here they are normalised to `nombre` on the way in and
+`name` in groups. Here they are normalised to `name` on the way in and
 serialised back the same on the way out, which is all the server sees.
 
 The "add" dropdown carries two phantom entries from upstream —an empty one and

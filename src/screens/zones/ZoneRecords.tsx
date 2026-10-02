@@ -157,7 +157,7 @@ export function ZoneRecords(p: ZoneRecordsProps) {
   const offset = (currentPage - 1) * perPage
   const onPage = sorted.slice(offset, offset + perPage)
 
-  const cab = zoneInfo ? zoneHeader(zoneInfo.type, zoneInfo.dnssecStatus) : null
+  const head = zoneInfo ? zoneHeader(zoneInfo.type, zoneInfo.dnssecStatus) : null
 
   /** Runs a mutation on a record and reloads the whole zone. */
   async function mutateRecord(fn: () => Promise<{ kind: string; message?: string }>, success: Notice) {
@@ -347,7 +347,7 @@ export function ZoneRecords(p: ZoneRecordsProps) {
         }
         actions={
           <>
-            {cab?.addRecord && (
+            {head?.addRecord && (
               <Button
                 variant="primary"
                 disabled={!p.canModify || busy}
@@ -376,42 +376,42 @@ export function ZoneRecords(p: ZoneRecordsProps) {
                       in v15.5.1). Not gated by permission: upstream shows it to
                       anyone who can open the zone, the read needs only
                       Zones: View, and it is the save that the server refuses. */}
-                  {cab?.editZoneFile && (
+                  {head?.editZoneFile && (
                     <button type="button" onClick={() => { close(); p.onEditZoneFile(zone) }}>
                       Edit Zone File
                     </button>
                   )}
-                  {cab?.resync && (
+                  {head?.resync && (
                     <button type="button" disabled={!p.canModify} onClick={() => { close(); resync() }}>
                       Resync
                     </button>
                   )}
-                  {cab?.runImport && (
+                  {head?.runImport && (
                     <button type="button" disabled={!p.canModify} onClick={() => { close(); p.onImport(zone) }}>
                       Import Zone
                     </button>
                   )}
-                  {cab?.runExport && (
+                  {head?.runExport && (
                     <button type="button" onClick={() => { close(); void runExport() }}>
                       Export Zone
                     </button>
                   )}
-                  {cab?.convert && (
+                  {head?.convert && (
                     <button type="button" disabled={!p.canModify} onClick={() => { close(); p.onConvert(zone, zoneInfo.type) }}>
                       Convert Zone
                     </button>
                   )}
-                  {cab?.clone && (
+                  {head?.clone && (
                     <button type="button" disabled={!p.canModify} onClick={() => { close(); p.onClone(zone) }}>
                       Clone Zone
                     </button>
                   )}
-                  {cab?.options && (
+                  {head?.options && (
                     <button type="button" disabled={!p.canModify} onClick={() => { close(); p.onOptions(zone) }}>
                       Zone Options
                     </button>
                   )}
-                  {cab?.permissions && (
+                  {head?.permissions && (
                     <button type="button" onClick={() => { close(); p.onPermissions(zone) }}>
                       Permissions
                     </button>
@@ -420,31 +420,31 @@ export function ZoneRecords(p: ZoneRecordsProps) {
               )}
             </Menu>
 
-            {cab?.dnssec && (
+            {head?.dnssec && (
               <Menu label="DNSSEC actions" text="DNSSEC">
                 {(close) => (
                   <>
-                    {cab.sign && (
+                    {head.sign && (
                       <button type="button" disabled={!p.canModify} onClick={() => { close(); p.onSign(zone) }}>
                         Sign Zone
                       </button>
                     )}
-                    {cab.toggleDnssecRecords && (
+                    {head.toggleDnssecRecords && (
                       <button type="button" onClick={() => { close(); toggleDnssec() }}>
                         {hideDnssecRecords ? 'Show DNSSEC Records' : 'Hide DNSSEC Records'}
                       </button>
                     )}
-                    {cab.viewDs && (
+                    {head.viewDs && (
                       <button type="button" onClick={() => { close(); p.onViewDs(zone) }}>
                         View DS Info
                       </button>
                     )}
-                    {cab.properties && (
+                    {head.properties && (
                       <button type="button" disabled={!p.canModify} onClick={() => { close(); p.onDnssecProperties(zone) }}>
                         DNSSEC Properties
                       </button>
                     )}
-                    {cab.unsign && (
+                    {head.unsign && (
                       <>
                         <Separator />
                         <button type="button" disabled={!p.canModify} onClick={() => { close(); p.onUnsign(zone) }}>

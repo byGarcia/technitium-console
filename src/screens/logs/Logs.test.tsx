@@ -277,7 +277,7 @@ describe('Logs › Query Logs — the form', () => {
     render(<Logs token="t" sub="Query Logs" />)
     await screen.findByLabelText('App Name')
 
-    await user.type(screen.getByLabelText('Domain'), 'casa.test')
+    await user.type(screen.getByLabelText('Domain'), 'home.test')
     await choose(user, screen.getByLabelText('Protocol'), 'UDP')
     await user.click(screen.getByRole('button', { name: 'Query' }))
 
@@ -293,7 +293,7 @@ describe('Logs › Query Logs — the form', () => {
       protocol: 'Udp',
       responseType: '',
       rcode: '',
-      qname: 'casa.test',
+      qname: 'home.test',
       qtype: '',
       qclass: '',
       node: '',
@@ -356,7 +356,7 @@ describe('Logs › Query Logs — the form', () => {
     render(<Logs token="t" sub="Query Logs" />)
     await screen.findByLabelText('App Name')
 
-    await user.type(screen.getByLabelText('Domain'), 'casa.test')
+    await user.type(screen.getByLabelText('Domain'), 'home.test')
     await choose(user, screen.getByLabelText('Order'), 'Ascending')
     await user.click(screen.getByRole('button', { name: 'Reset' }))
 
@@ -543,7 +543,7 @@ describe('Query Logs — pure pieces', () => {
     expect(c('NxDomain', 'Blocked')).toBe(c('NoError', 'UpstreamBlockedCached'))
     expect(c('NxDomain', 'Authoritative')).not.toBe(c('NxDomain', 'Blocked'))
     expect(c('NoError', 'Authoritative')).not.toBe(c('NoError', 'Recursive'))
-    expect(c('NoError', 'Loquesea')).toBe('')
+    expect(c('NoError', 'Whatever')).toBe('')
   })
 })
 

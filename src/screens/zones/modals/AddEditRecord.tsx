@@ -36,7 +36,7 @@ import { Notifier } from '../../../ui/Notifier'
 types: changing the "Type" dropdown replaces the fields below.
 
 All the logic about what travels and in what order it validates lives in
-`registro-form.ts`. Only the fields are here.
+`record-form.ts`. Only the fields are here.
 
 **On edit the type cannot be changed**: upstream leaves the dropdown fixed
 because the server identifies the record by its content and changing the type

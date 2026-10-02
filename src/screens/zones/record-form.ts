@@ -288,12 +288,12 @@ export function formFromRecord(r: ResourceRecord, zone: string): RecordForm {
   return f
 }
 
-/** A local copy so as not to import circularly from `registro-vista`. */
+/** A local copy so as not to import circularly from `record-view`. */
 function relativeName(fullName: string, zone: string): string {
   const name = fullName === '' ? '.' : fullName
-  const minus = name.toLowerCase()
-  if (minus === zone.toLowerCase()) return '@'
-  const i = minus.lastIndexOf(`.${zone.toLowerCase()}`)
+  const lower = name.toLowerCase()
+  if (lower === zone.toLowerCase()) return '@'
+  const i = lower.lastIndexOf(`.${zone.toLowerCase()}`)
   return i > -1 ? name.substring(0, i) : name
 }
 
@@ -319,7 +319,7 @@ export interface RecordContext {
 
 /*
 `serializeTableData` with 2 columns for an SVCB's parameters. The algorithm lives
-in `lib/tabla-serie`, shared by the five screens with an editable table.
+in `lib/table-serialise`, shared by the five screens with an editable table.
 
 An empty list travels as the string "false", not as an empty string, and that
 part does belong here: the shared function returns the empty one and the caller

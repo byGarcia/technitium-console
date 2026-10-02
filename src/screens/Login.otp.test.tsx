@@ -18,7 +18,7 @@ async function reachOtpPanel() {
   const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime, delay: null })
   render(<Login onSuccess={() => {}} />)
   await user.type(screen.getByLabelText('Username'), 'admin')
-  await user.type(screen.getByLabelText('Password'), 'secreto')
+  await user.type(screen.getByLabelText('Password'), 'secret')
   await user.click(screen.getByRole('button', { name: 'Login' }))
   // With fake clocks findBy* cannot be used: it waits on timers that never
   // advance. The microtask queue is drained and the query is made synchronously.
@@ -27,7 +27,7 @@ async function reachOtpPanel() {
   return user
 }
 
-describe('panel OTP', () => {
+describe('OTP panel', () => {
   it('it submits itself on typing the sixth digit, and not before', async () => {
     const user = await reachOtpPanel()
     const spy = vi.spyOn(client, 'apiRequest')

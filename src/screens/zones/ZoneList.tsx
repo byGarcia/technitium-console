@@ -189,7 +189,7 @@ export function ZoneList({
   /*
   On mount and when something from outside asks for a re-read. The filters do
   NOT trigger a reload on their own: "Go" has to be pressed, just like upstream,
-  where `refreshZones` reads them at that moment. That is why `cargar` goes by
+  where `refreshZones` reads them at that moment. That is why `load` goes by
   ref and not in the dependencies: were it there, typing in the filter would
   reload the list.
   */

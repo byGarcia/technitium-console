@@ -49,8 +49,8 @@ describe('place', () => {
   it('at 390 it never goes off screen, on the right or on the left', () => {
     for (const x of [0, 8, 40, 120, 200, 300, 358]) {
       const p = place({ trigger: r(x, 300), bubble: bubble(), viewport: v(390, 844) })
-      expect(p.left, `trigger en x=${x}`).toBeGreaterThanOrEqual(8)
-      expect(p.left + 240, `trigger en x=${x}`).toBeLessThanOrEqual(390 - 8)
+      expect(p.left, `trigger at x=${x}`).toBeGreaterThanOrEqual(8)
+      expect(p.left + 240, `trigger at x=${x}`).toBeLessThanOrEqual(390 - 8)
     }
   })
 

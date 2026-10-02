@@ -192,7 +192,7 @@ export function listSessions(
   return apiRequest('admin/sessions/list', { token, body: { node } })
 }
 
-/** `createApiToken` (auth.js:988). Permiso `Administration.canModify`. */
+/** `createApiToken` (auth.js:988). Permission `Administration.canModify`. */
 export function createApiToken(
   token: string | null,
   user: string,

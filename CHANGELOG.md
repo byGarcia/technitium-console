@@ -36,8 +36,9 @@ time the way the stock console does.
 ### 🌗 Light theme
 
 - **Change Theme is back** in the account menu, as in the stock console: Use System Theme
-  (default), Light Theme and Dark Theme, applied the moment you click. Asked for in
-  [#1](https://github.com/byGarcia/technitium-console/issues/1).
+  (default), Light Theme and Dark Theme, applied the moment you click. Asked for by @scgf in
+  [#1](https://github.com/byGarcia/technitium-console/issues/1), and by @armgenio in
+  [#2](https://github.com/byGarcia/technitium-console/issues/2).
 - **It remembers what the stock console remembers.** The choice is kept under the same browser
   key, so if you picked Light in the stock console you get Light here without doing anything, and
   the other way round. Follow the system and it changes when your system does, without a reload.
@@ -110,6 +111,11 @@ time the way the stock console does.
   Settings, Logs, Administration and DHCP.
 - **Drop-down lists show their options whole.** A list is now as wide as its longest option,
   within the window, and scrolling it no longer closes it.
+- **Big figures stay inside their cards on the Dashboard.** A Block List of millions of domains
+  ran out of its card in Server. Server now has two columns while it sits beside Queries, so nine
+  characters fit at full size, and any figure that is still too long for its card is drawn
+  smaller instead of spilling out. Reported by @armgenio in
+  [#2](https://github.com/byGarcia/technitium-console/issues/2).
 
 ### 🧪 Under the hood
 
@@ -122,6 +128,8 @@ time the way the stock console does.
 - Every push to `develop` builds `ghcr.io/bygarcia/technitium-console:develop`, the same way a
   release is built, for trying changes before they are released. It is not for production, and it
   never moves `latest` or a version.
+- New issues start from a Bug report or Feature request form, which asks for the console and
+  server versions and labels the issue.
 
 ---
 

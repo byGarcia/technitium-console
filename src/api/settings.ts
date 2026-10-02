@@ -102,7 +102,7 @@ export interface DnsSettings {
   qpmLimitUdpTruncationPercentage: number
   qpmLimitBypassList: string[]
 
-  // General — opciones avanzadas
+  // General — advanced options
   clientTimeout: number
   tcpSendTimeout: number
   tcpReceiveTimeout: number

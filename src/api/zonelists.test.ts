@@ -18,16 +18,16 @@ afterEach(() => vi.restoreAllMocks())
 
 const RESPONSE = {
   kind: 'ok' as const,
-  data: { status: 'ok', response: { domain: 'casa.test', zones: ['a.casa.test'], records: [] } },
+  data: { status: 'ok', response: { domain: 'home.test', zones: ['a.home.test'], records: [] } },
 }
 
 describe('listNode', () => {
   it('it calls the endpoint of each list with domain and node, like upstream', async () => {
     const spy = vi.spyOn(client, 'apiRequest').mockResolvedValue(RESPONSE)
 
-    await listNode('cache', 't', 'casa.test')
+    await listNode('cache', 't', 'home.test')
     expect(spy.mock.calls[0][0]).toBe('cache/list')
-    expect(spy.mock.calls[0][1]?.body).toEqual({ domain: 'casa.test', node: '' })
+    expect(spy.mock.calls[0][1]?.body).toEqual({ domain: 'home.test', node: '' })
 
     spy.mockClear()
     await listNode('allowed', 't', '')
@@ -42,11 +42,11 @@ describe('listNode', () => {
   it('it only sends direction when navigating upwards', async () => {
     const spy = vi.spyOn(client, 'apiRequest').mockResolvedValue(RESPONSE)
 
-    await listNode('cache', 't', 'casa.test')
+    await listNode('cache', 't', 'home.test')
     expect(spy.mock.calls[0][1]?.body?.direction).toBeUndefined()
 
     spy.mockClear()
-    await listNode('cache', 't', 'casa.test', 'up')
+    await listNode('cache', 't', 'home.test', 'up')
     expect(spy.mock.calls[0][1]?.body?.direction).toBe('up')
   })
 
@@ -54,8 +54,8 @@ describe('listNode', () => {
      JavaScript strings are immutable, so the domain travels EXACTLY as typed. */
   it('it does not lowercase the domain: upstream does not either', async () => {
     const spy = vi.spyOn(client, 'apiRequest').mockResolvedValue(RESPONSE)
-    await listNode('cache', 't', 'CASA.Test')
-    expect(spy.mock.calls[0][1]?.body?.domain).toBe('CASA.Test')
+    await listNode('cache', 't', 'HOME.Test')
+    expect(spy.mock.calls[0][1]?.body?.domain).toBe('HOME.Test')
   })
 
   it('it unwraps the node, which is what the screen needs', async () => {
@@ -63,8 +63,8 @@ describe('listNode', () => {
     const r = await listNode('cache', 't', 'x')
     expect(r.kind).toBe('ok')
     if (r.kind !== 'ok') return
-    expect(r.data.domain).toBe('casa.test')
-    expect(r.data.zones).toEqual(['a.casa.test'])
+    expect(r.data.domain).toBe('home.test')
+    expect(r.data.zones).toEqual(['a.home.test'])
   })
 
   /* Upstream draws the server's errorMessage when a list fails; with null that
@@ -78,8 +78,8 @@ describe('listNode', () => {
 
 describe('parentDomain', () => {
   it('it replicates getParentDomain from other-zones.js', () => {
-    expect(parentDomain('a.b.casa.test')).toBe('b.casa.test')
-    expect(parentDomain('casa.test')).toBe('test')
+    expect(parentDomain('a.b.home.test')).toBe('b.home.test')
+    expect(parentDomain('home.test')).toBe('test')
     // A single-label domain has the root as its parent, which is "".
     expect(parentDomain('test')).toBe('')
     // The root has no parent: null, which is what hides the [up] link.
@@ -112,9 +112,9 @@ describe('cache', () => {
 
   it('deleteNodeCache calls cache/delete with domain and node', async () => {
     const spy = vi.spyOn(client, 'apiRequest').mockResolvedValue({ kind: 'ok', data: {} })
-    await deleteCacheNode('t', 'casa.test')
+    await deleteCacheNode('t', 'home.test')
     expect(spy.mock.calls[0][0]).toBe('cache/delete')
-    expect(spy.mock.calls[0][1]?.body).toEqual({ domain: 'casa.test', node: '' })
+    expect(spy.mock.calls[0][1]?.body).toEqual({ domain: 'home.test', node: '' })
   })
 })
 
@@ -122,9 +122,9 @@ describe('allowed and blocked', () => {
   it('addDomain and deleteDomain use the endpoint of their list', async () => {
     const spy = vi.spyOn(client, 'apiRequest').mockResolvedValue({ kind: 'ok', data: {} })
 
-    await addDomain('allowed', 't', 'casa.test')
+    await addDomain('allowed', 't', 'home.test')
     expect(spy.mock.calls[0][0]).toBe('allowed/add')
-    expect(spy.mock.calls[0][1]?.body).toEqual({ domain: 'casa.test' })
+    expect(spy.mock.calls[0][1]?.body).toEqual({ domain: 'home.test' })
 
     spy.mockClear()
     await deleteDomain('blocked', 't', 'ads.test')

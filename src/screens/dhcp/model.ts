@@ -243,7 +243,7 @@ function serialize(
 ): { value: string } | { error: ScopeError } {
   /*
   The algorithm is upstream's `serializeTableData` and it lives in
-  `lib/tabla-serie`, shared by the five screens with an editable table. All that
+  `lib/table-serialise`, shared by the five screens with an editable table. All that
   is translated here is where the failing cell is: in DHCP, to that cell's
   deterministic `id`, because the alert literally says "the text field in focus"
   and without being able to focus it there is no resolving it.

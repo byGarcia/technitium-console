@@ -25,10 +25,10 @@ function server(groups = GROUPS, detail?: Record<string, unknown>) {
       })
     }
     if (path === 'admin/groups/create') {
-      return ok({ response: { name: 'Ops', description: 'los de guardia' }, server: 'x' })
+      return ok({ response: { name: 'Ops', description: 'the on-call team' }, server: 'x' })
     }
     if (path === 'admin/groups/set') {
-      return ok({ response: { name: 'Otros', description: 'Super administrators' }, server: 'x' })
+      return ok({ response: { name: 'Others', description: 'Super administrators' }, server: 'x' })
     }
     return ok({ response: {}, server: 'x' })
   })
@@ -90,12 +90,12 @@ describe('Groups — "Add Group"', () => {
 
     await user.click(await screen.findByRole('button', { name: 'Add Group' }))
     await user.type(screen.getByLabelText('Name'), 'Ops')
-    await user.type(screen.getByLabelText('Description'), 'los de guardia')
+    await user.type(screen.getByLabelText('Description'), 'the on-call team')
     await user.click(screen.getByRole('button', { name: 'Add' }))
 
     expect(spy.mock.calls.find((c) => c[0] === 'admin/groups/create')?.[1]).toEqual({
       token: 'tok',
-      body: { group: 'Ops', description: 'los de guardia' },
+      body: { group: 'Ops', description: 'the on-call team' },
     })
     expect(screen.getByText('Total Groups: 4')).toBeInTheDocument()
     expect(onNotice).toHaveBeenCalledWith({
@@ -136,11 +136,11 @@ describe('Groups — the details modal', () => {
     await user.click((await screen.findAllByRole('button', { name: 'View Details' }))[0])
     const name = await screen.findByLabelText('Name')
     await user.clear(name)
-    await user.type(name, 'Otros')
+    await user.type(name, 'Others')
     await user.click(screen.getByRole('button', { name: 'Save' }))
 
     const body = spy.mock.calls.find((c) => c[0] === 'admin/groups/set')?.[1]?.body as Record<string, string>
-    expect(body.newGroup).toBe('Otros')
+    expect(body.newGroup).toBe('Others')
     expect(body.group).toBe('Administrators')
   })
 

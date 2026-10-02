@@ -36,7 +36,7 @@ is given a body —panel, border and corners— instead of being left floating.
   padding: var(--s-5) var(--s-7);
   border-bottom: 1px solid var(--line);
   white-space: nowrap;
-  /* A single height for every header; see `--row-cabecera`. */
+  /* A single height for every header; see `--row-header`. */
   height: var(--row-header);
 }
 
@@ -56,7 +56,7 @@ never the only channel — the session says `(current)` in its own cell and the 
 says `Self` in its `State` column. The colour is what lets you find the row
 without reading; the word is what says which row it is.
 
-Hover still wins over it, because `.tabla tbody tr:hover` is the more specific
+Hover still wins over it, because `.table tbody tr:hover` is the more specific
 selector and losing the hover on precisely the row you are on would be worse than
 the tint.
 */
@@ -89,7 +89,7 @@ It was written twice and with opposite treatments: in Zones the name is the name
 —ink and bold— and turns `--acc` on hover; in the three Administration tables it
 was `--acc` ALREADY at rest. With two hundred and forty rows that is a whole
 column of amber, and the colour stops meaning "this is clickable" exactly where
-it had to mean it. Zones wins, which is also what `.entidad` above describes.
+it had to mean it. Zones wins, which is also what `.entity` above describes.
 
 The monospace family does NOT come along: it belongs to Zones because the value
 is a domain, not because it is an entity. And that is why LONGHANDS go here and
@@ -133,7 +133,7 @@ The "there is nothing here" row. It was written with
 `style={{textAlign:'center'}}` in four places and with two more class names for
 the same rule.
 
-It goes as `td.sinFilas` and not as plain `.sinFilas` because `.tabla td` —one
+It goes as `td.noRows` and not as plain `.noRows` because `.table td` —one
 class and one type— beat it on specificity, so neither the colour nor the padding
 ever applied: the row came out with the data colour and the height of a normal
 cell. Only the centring showed, which is the one of the three rules that clashes

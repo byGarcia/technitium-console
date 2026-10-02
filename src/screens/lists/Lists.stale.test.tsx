@@ -17,7 +17,7 @@ import { Cache } from './Lists'
 
 afterEach(() => vi.restoreAllMocks())
 
-const NODE = { domain: '', zones: ['casa.test'], records: [] }
+const NODE = { domain: '', zones: ['home.test'], records: [] }
 
 /** Answers well the first time and badly from the second on. */
 function goodThenBroken() {
@@ -37,20 +37,20 @@ describe('stale data in the lists', () => {
     } as never)
     render(<Cache token="t" />)
 
-    expect(await screen.findByText('casa.test')).toBeInTheDocument()
+    expect(await screen.findByText('home.test')).toBeInTheDocument()
     expect(screen.queryByText(/Could not refresh/)).not.toBeInTheDocument()
   })
 
   it('when a refresh fails, the tree stays and it is reported once', async () => {
     goodThenBroken()
     const { rerender } = render(<Cache token="t" />)
-    await screen.findByText('casa.test')
+    await screen.findByText('home.test')
 
     /* Changing node is what fires the second `load`. */
     rerender(<Cache token="t2" />)
 
     await screen.findByText(/Could not refresh/)
-    expect(screen.getByText('casa.test')).toBeInTheDocument()
+    expect(screen.getByText('home.test')).toBeInTheDocument()
     expect(screen.getAllByRole('alert')).toHaveLength(1)
     expect(screen.queryByText(/boom/)).not.toBeInTheDocument()
   })
@@ -73,7 +73,7 @@ describe('stale data in the lists', () => {
         : ({ kind: 'ok', data: { status: 'ok', response: NODE } } as never)
     })
     const { rerender } = render(<Cache token="t" />)
-    await screen.findByText('casa.test')
+    await screen.findByText('home.test')
     rerender(<Cache token="t2" />)
     await screen.findByText(/Could not refresh/)
 

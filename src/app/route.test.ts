@@ -76,8 +76,8 @@ describe('appRoot', () => {
   })
 
   it('with a two-segment prefix', () => {
-    servedAt('/casa/dns/zones/', 'zones')
-    expect(appRoot()).toBe('/casa/dns/')
+    servedAt('/home/dns/zones/', 'zones')
+    expect(appRoot()).toBe('/home/dns/')
   })
 
   it('a doubled slash on the front page stays on this origin', () => {
@@ -113,12 +113,12 @@ describe('readRoute', () => {
   })
 
   it('an unknown section does not resolve', () => {
-    servedAt('/noexiste/', 'noexiste')
+    servedAt('/nonexistent/', 'nonexistent')
     expect(readRoute(SECTIONS)).toBeNull()
   })
 
   it('an unknown sub does NOT bring the section down: it falls to the first', () => {
-    servedAt('/settings/tampoco-existe/', 'settings/tampoco-existe')
+    servedAt('/settings/nonexistent-either/', 'settings/nonexistent-either')
     expect(readRoute(SECTIONS)).toEqual({ section: 'settings', sub: null })
   })
 

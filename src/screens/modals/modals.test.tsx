@@ -33,7 +33,7 @@ describe('Change Password', () => {
   it('it requires the confirmation', async () => {
     open()
     await userEvent.type(screen.getByLabelText('Current Password'), 'old-one')
-    await userEvent.type(screen.getByLabelText('New Password'), 'nueva')
+    await userEvent.type(screen.getByLabelText('New Password'), 'new-one')
     await userEvent.click(screen.getByRole('button', { name: 'Change' }))
     expect(await screen.findByText('Please enter confirm password.')).toBeInTheDocument()
   })
@@ -41,8 +41,8 @@ describe('Change Password', () => {
   it('it warns that they do not match under the Mismatch! title', async () => {
     open()
     await userEvent.type(screen.getByLabelText('Current Password'), 'old-one')
-    await userEvent.type(screen.getByLabelText('New Password'), 'nueva')
-    await userEvent.type(screen.getByLabelText('Confirm Password'), 'otra')
+    await userEvent.type(screen.getByLabelText('New Password'), 'new-one')
+    await userEvent.type(screen.getByLabelText('Confirm Password'), 'another-one')
     await userEvent.click(screen.getByRole('button', { name: 'Change' }))
     expect(await screen.findByText('Passwords do not match. Please try again.')).toBeInTheDocument()
     expect(screen.getByText('Mismatch!')).toBeInTheDocument()
@@ -53,18 +53,18 @@ describe('Change Password', () => {
     open(false)
     expect(screen.queryByLabelText('Enter OTP')).not.toBeInTheDocument()
     await userEvent.type(screen.getByLabelText('Current Password'), 'old-one')
-    await userEvent.type(screen.getByLabelText('New Password'), 'nueva')
-    await userEvent.type(screen.getByLabelText('Confirm Password'), 'nueva')
+    await userEvent.type(screen.getByLabelText('New Password'), 'new-one')
+    await userEvent.type(screen.getByLabelText('Confirm Password'), 'new-one')
     await userEvent.click(screen.getByRole('button', { name: 'Change' }))
     expect(spy.mock.calls[0][0]).toBe('user/changePassword')
-    expect(spy.mock.calls[0][1]?.body).toEqual({ pass: 'old-one', newPass: 'nueva', totp: '' })
+    expect(spy.mock.calls[0][1]?.body).toEqual({ pass: 'old-one', newPass: 'new-one', totp: '' })
   })
 
   it('with 2FA on it requires the 6 digits', async () => {
     open(true)
     await userEvent.type(screen.getByLabelText('Current Password'), 'old-one')
-    await userEvent.type(screen.getByLabelText('New Password'), 'nueva')
-    await userEvent.type(screen.getByLabelText('Confirm Password'), 'nueva')
+    await userEvent.type(screen.getByLabelText('New Password'), 'new-one')
+    await userEvent.type(screen.getByLabelText('Confirm Password'), 'new-one')
     await userEvent.click(screen.getByRole('button', { name: 'Change' }))
     expect(
       await screen.findByText('Please enter the 6-digit OTP that you see in your authenticator app.'),
@@ -79,8 +79,8 @@ describe('Change Password', () => {
       <ChangePassword open onOpenChange={onOpenChange} onNotice={onNotice} totpEnabled={false} token="t" />,
     )
     await userEvent.type(screen.getByLabelText('Current Password'), 'old-one')
-    await userEvent.type(screen.getByLabelText('New Password'), 'nueva')
-    await userEvent.type(screen.getByLabelText('Confirm Password'), 'nueva')
+    await userEvent.type(screen.getByLabelText('New Password'), 'new-one')
+    await userEvent.type(screen.getByLabelText('Confirm Password'), 'new-one')
     await userEvent.click(screen.getByRole('button', { name: 'Change' }))
     await vi.waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false))
     expect(onNotice).toHaveBeenCalledWith({

@@ -189,7 +189,7 @@ describe('the body of options/set', () => {
 describe('filling the form', () => {
   it('an unknown transfer protocol falls to TCP', () => {
     expect(
-      formFromOptions(options({ primaryZoneTransferProtocol: 'Loquesea' })).primaryZoneTransferProtocol,
+      formFromOptions(options({ primaryZoneTransferProtocol: 'Whatever' })).primaryZoneTransferProtocol,
     ).toBe('Tcp')
     expect(
       formFromOptions(options({ primaryZoneTransferProtocol: 'Quic' })).primaryZoneTransferProtocol,

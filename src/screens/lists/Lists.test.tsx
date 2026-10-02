@@ -30,7 +30,7 @@ const REG_AUTH: DnsRecord = {
   ttl: 14400,
   ttlString: '4h',
   disabled: false,
-  rData: { nameServer: 'ns1.casa.test' },
+  rData: { nameServer: 'ns1.home.test' },
   dnssecStatus: 'Unknown',
   lastUsedOn: '0001-01-01T00:00:00',
   lastModified: '0001-01-01T00:00:00',
@@ -42,7 +42,7 @@ function node(p: Partial<ListNode> = {}): ListNode {
   return { domain: '', zones: [], records: [], ...p }
 }
 
-/** Leaves `listarNodo` returning whatever node it is given, whichever list it is. */
+/** Leaves `listNode` returning whatever node it is given, whichever list it is. */
 function withNode(...nodes: ListNode[]) {
   const spy = vi.spyOn(api, 'listNode')
   for (const n of nodes) spy.mockResolvedValueOnce({ kind: 'ok', data: n })
@@ -83,19 +83,19 @@ describe('tree navigation', () => {
   })
 
   it('the Browse field navigates to the typed domain', async () => {
-    const spy = withNode(node(), node({ domain: 'casa.test' }))
+    const spy = withNode(node(), node({ domain: 'home.test' }))
     render(<Cache token="t" />)
-    await userEvent.type(await screen.findByLabelText('Domain'), 'casa.test')
+    await userEvent.type(await screen.findByLabelText('Domain'), 'home.test')
     await userEvent.click(screen.getByRole('button', { name: 'Browse' }))
-    expect(spy.mock.calls.some((c) => c[2] === 'casa.test')).toBe(true)
+    expect(spy.mock.calls.some((c) => c[2] === 'home.test')).toBe(true)
   })
 
   it('going up to the parent from the tree sends direction=up, like the [up] link', async () => {
-    const spy = withNode(node({ domain: 'a.casa.test', records: [REG_AUTH] }))
+    const spy = withNode(node({ domain: 'a.home.test', records: [REG_AUTH] }))
     render(<Lists list="allowed" token="t" embedded />)
-    await userEvent.click(await screen.findByRole('button', { name: 'casa.test' }))
-    const upload = spy.mock.calls.find((c) => c[2] === 'casa.test')
-    expect(upload?.[3]).toBe('up')
+    await userEvent.click(await screen.findByRole('button', { name: 'home.test' }))
+    const goingUp = spy.mock.calls.find((c) => c[2] === 'home.test')
+    expect(goingUp?.[3]).toBe('up')
   })
 
   it('it shows the error message from the server if the listing fails', async () => {
@@ -162,7 +162,7 @@ describe('Cache', () => {
 
   it('flushing the cache alerts with the literal text and returns to the root', async () => {
     const spy = vi.spyOn(api, 'flushCache').mockResolvedValue(OK)
-    const list = withNode(node({ domain: 'casa.test', records: [REG_CACHE] }))
+    const list = withNode(node({ domain: 'home.test', records: [REG_CACHE] }))
     render(<Cache token="t" />)
     await userEvent.click(await screen.findByRole('button', { name: 'Flush Cache' }))
     await confirm('Flush Cache')
@@ -182,25 +182,25 @@ describe('Cache', () => {
     expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument()
     unmount()
 
-    withNode(node({ domain: 'casa.test', zones: ['a.casa.test'], records: [] }))
+    withNode(node({ domain: 'home.test', zones: ['a.home.test'], records: [] }))
     render(<Cache token="t" />)
     expect(await screen.findByRole('button', { name: 'Delete' })).toBeInTheDocument()
   })
 
   it('deleting a node confirms and alerts with the literal texts', async () => {
     const spy = vi.spyOn(api, 'deleteCacheNode').mockResolvedValue(OK)
-    withNode(node({ domain: 'casa.test', records: [REG_CACHE] }))
+    withNode(node({ domain: 'home.test', records: [REG_CACHE] }))
     render(<Cache token="t" />)
     await userEvent.click(await screen.findByRole('button', { name: 'Delete' }))
     expect(
       await screen.findByText(
-        "Are you sure you want to delete the cached zone 'casa.test' and all its records?",
+        "Are you sure you want to delete the cached zone 'home.test' and all its records?",
       ),
     ).toBeInTheDocument()
     await confirm('Delete')
-    expect(spy.mock.calls[0][1]).toBe('casa.test')
+    expect(spy.mock.calls[0][1]).toBe('home.test')
     expect(
-      await screen.findByText("Cached zone 'casa.test' was deleted successfully."),
+      await screen.findByText("Cached zone 'home.test' was deleted successfully."),
     ).toBeInTheDocument()
   })
 })
@@ -215,28 +215,28 @@ component: the node's Delete, and the Import dialog Rules borrows.
 describe('Allowed', () => {
   /* Delete here depends on the node HAVING records (other-zones.js:319-327). */
   it('Delete only appears when the node has records', async () => {
-    withNode(node({ domain: 'casa.test', zones: ['a.casa.test'], records: [] }))
+    withNode(node({ domain: 'home.test', zones: ['a.home.test'], records: [] }))
     const { unmount } = render(<Lists list="allowed" token="t" embedded />)
-    await screen.findByText('a.casa.test')
+    await screen.findByText('a.home.test')
     expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument()
     unmount()
 
-    withNode(node({ domain: 'casa.test', records: [REG_AUTH] }))
+    withNode(node({ domain: 'home.test', records: [REG_AUTH] }))
     render(<Lists list="allowed" token="t" embedded />)
     expect(await screen.findByRole('button', { name: 'Delete' })).toBeInTheDocument()
   })
 
   it('deleting alerts with \"deleted from Allowed Zone\", which is not the Blocked text', async () => {
     vi.spyOn(api, 'deleteDomain').mockResolvedValue(OK)
-    withNode(node({ domain: 'casa.test', records: [REG_AUTH] }))
+    withNode(node({ domain: 'home.test', records: [REG_AUTH] }))
     render(<Lists list="allowed" token="t" embedded />)
     await userEvent.click(await screen.findByRole('button', { name: 'Delete' }))
     expect(
-      await screen.findByText("Are you sure you want to delete the allowed zone 'casa.test'?"),
+      await screen.findByText("Are you sure you want to delete the allowed zone 'home.test'?"),
     ).toBeInTheDocument()
     await confirm('Delete')
     expect(
-      await screen.findByText("Domain 'casa.test' was deleted from Allowed Zone successfully."),
+      await screen.findByText("Domain 'home.test' was deleted from Allowed Zone successfully."),
     ).toBeInTheDocument()
   })
 

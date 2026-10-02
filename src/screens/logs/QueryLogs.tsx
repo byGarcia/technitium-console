@@ -168,7 +168,7 @@ export function statusText(p: QueryLogPage): string {
 
 /*
 The ten pages centred on the current one. It was a letter-for-letter copy of
-`lib/paginacion.ts` —that one cited `zone.js:880-905` and this one
+`lib/pagination.ts` —that one cited `zone.js:880-905` and this one
 `logs.js:571-586`, two places in upstream doing the same thing— with tests of its
 own. The name is kept because this screen's tests use it.
 */
@@ -191,7 +191,7 @@ export function QueryLogs({ tabs, token, node = '' }: QueryLogsProps) {
   const [busy, setBusy] = useState(false)
   const [live, setLive] = useState(false)
 
-  const since2 = useRef<HTMLInputElement>(null)
+  const since = useRef<HTMLInputElement>(null)
   const until = useRef<HTMLInputElement>(null)
   // The dropdown is `ui/Select`, so what gets focused is its trigger.
   const appRef = useRef<HTMLButtonElement>(null)
@@ -282,13 +282,13 @@ export function QueryLogs({ tabs, token, node = '' }: QueryLogsProps) {
 
       // logs.js:407-424 — "From" before "To", and only if the browser says
       // what was typed is not a date.
-      if (since2.current?.validity.badInput === true) {
+      if (since.current?.validity.badInput === true) {
         setNotice({
           type: 'warning',
           title: 'Missing!',
           text: "Please enter correct date and time for 'From' field.",
         })
-        since2.current.focus()
+        since.current.focus()
         return
       }
       if (until.current?.validity.badInput === true) {
@@ -513,7 +513,7 @@ export function QueryLogs({ tabs, token, node = '' }: QueryLogsProps) {
                 <label htmlFor="ql-start">From</label>
                 <Input
                   id="ql-start"
-                  ref={since2}
+                  ref={since}
                   type="datetime-local"
                   disabled={live}
                   value={f.start}

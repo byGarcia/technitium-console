@@ -67,8 +67,8 @@ describe('table sorting', () => {
   })
 
   it('it sorts by the text you see, case-insensitively', async () => {
-    render(<Table data={[{ name: 'Zeta' }, { name: 'alfa' }]} />)
+    render(<Table data={[{ name: 'Zeta' }, { name: 'alpha' }]} />)
     await userEvent.click(screen.getByRole('button', { name: /Name/ }))
-    expect(texts()).toEqual(['alfa', 'Zeta'])
+    expect(texts()).toEqual(['alpha', 'Zeta'])
   })
 })

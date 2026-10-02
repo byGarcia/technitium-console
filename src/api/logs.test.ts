@@ -137,14 +137,14 @@ describe('api/logs — query and export', () => {
   it('logs/export does NOT send the three paging parameters nor `ts`', async () => {
     const spy = vi.spyOn(user, 'openDownload').mockResolvedValue({ ok: true })
 
-    await exportLogsCsv('tok', { ...FILTERS, qname: 'casa.test' })
+    await exportLogsCsv('tok', { ...FILTERS, qname: 'home.test' })
 
     const [, route, params, options] = spy.mock.calls[0]
     expect(route).toBe('logs/export')
     expect(params).not.toHaveProperty('pageNumber')
     expect(params).not.toHaveProperty('entriesPerPage')
     expect(params).not.toHaveProperty('descendingOrder')
-    expect(params).toMatchObject({ name: 'Query Logs (Sqlite)', qname: 'casa.test', node: '' })
+    expect(params).toMatchObject({ name: 'Query Logs (Sqlite)', qname: 'home.test', node: '' })
     expect(options).toBeUndefined()
   })
 })

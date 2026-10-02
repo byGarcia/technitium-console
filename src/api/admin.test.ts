@@ -118,11 +118,11 @@ describe('admin — users', () => {
 
   it('resetting the password uses the same endpoint but by POST', async () => {
     const spy = makeSpy()
-    await resetUserPassword('tok', 'adrian', 'nueva')
+    await resetUserPassword('tok', 'adrian', 'new')
     expect(spy).toHaveBeenCalledWith('admin/users/set', {
       token: 'tok',
       method: 'POST',
-      body: { user: 'adrian', newPass: 'nueva' },
+      body: { user: 'adrian', newPass: 'new' },
     })
   })
 
@@ -137,7 +137,7 @@ describe('admin — groups', () => {
   it('lists, creates, reads and deletes', async () => {
     const spy = makeSpy()
     await listGroups('tok')
-    await createGroup('tok', 'Ops', 'los de guardia')
+    await createGroup('tok', 'Ops', 'the on-call team')
     await getGroup('tok', 'Ops')
     await deleteGroup('tok', 'Ops')
 
@@ -149,7 +149,7 @@ describe('admin — groups', () => {
     ])
     expect(spy.mock.calls.find((c) => c[0] === 'admin/groups/create')?.[1]).toEqual({
       token: 'tok',
-      body: { group: 'Ops', description: 'los de guardia' },
+      body: { group: 'Ops', description: 'the on-call team' },
     })
     expect(spy.mock.calls.find((c) => c[0] === 'admin/groups/get')?.[1]).toEqual({
       token: 'tok',

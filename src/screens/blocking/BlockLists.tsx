@@ -75,8 +75,8 @@ const COUNTS_FAILED = 'Could not read the counts.'
 
 /*
 After a Save or an Update Now the server reloads the lists in the background, and
-the counts change when it has finished, not at once (spec, «Qué se refresca»). Until
-then both figures say "Updating…" (OURS).
+the counts change when it has finished, not at once (spec, the section on what
+refreshes, «Qué se refresca»). Until then both figures say "Updating…" (OURS).
 
 How the end is told, from the server (v15.5.1): `blockListNextUpdatedOn` is the last
 SUCCESSFUL update plus the interval (WebServiceSettingsApi.cs:384), and the last update

@@ -40,9 +40,9 @@ JavaScript and that govern the two screens:
  *  (`WebServiceDhcpApi.cs:90-101`), but `hostName` can come `null`. */
 export interface DhcpLease {
   scope: string
-  /** `Dynamic` o `Reserved`. */
+  /** `Dynamic` or `Reserved`. */
   type: string
-  /** Formato `AA-BB-CC-DD-EE-FF` (BitConverter.ToString). */
+  /** Format `AA-BB-CC-DD-EE-FF` (BitConverter.ToString). */
   hardwareAddress: string
   clientIdentifier: string
   address: string
@@ -228,7 +228,7 @@ export async function getScope(
 
 /*
 `dhcp/scopes/set` (dhcp.js:558). POST with the encoded body and the `node` in
-the query, exactly like upstream. The body is built by `construirCuerpo` in
+the query, exactly like upstream. The body is built by `buildBody` in
 `screens/dhcp/model.ts`, which is the one that knows the form.
 */
 export function setScope(

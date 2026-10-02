@@ -457,7 +457,7 @@ export type OptionsResult = { error: OptionsError } | { body: Record<string, str
 
 /*
 `serializeTableData` with 3 columns for the update policies. The algorithm lives
-in `lib/tabla-serie`, shared by the five screens with an editable table; all that
+in `lib/table-serialise`, shared by the five screens with an editable table; all that
 is said here is where the failing cell is.
 */
 function serializePolicies(

@@ -31,7 +31,7 @@ describe('serializeTable', () => {
   })
 
   it('a `|` inside a field aborts with its own alert', () => {
-    const r = serializeTable([[t('remoto'), t('mal|valor')]])
+    const r = serializeTable([[t('remote'), t('bad|value')]])
     expect(r.ok).toBe(false)
     if (r.ok) return
     expect(r.failure.title).toBe('Invalid Character!')

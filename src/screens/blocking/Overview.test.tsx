@@ -154,8 +154,9 @@ describe('Overview', () => {
     expect(spy).not.toHaveBeenCalled()
   })
 
-  /* M1, spec «Permisos»: a panel without its view permission keeps its place and its
-     title, with the padlock, so the screen does not change shape with who looks. */
+  /* M1, spec, the section on permissions, «Permisos»: a panel without its view permission
+     keeps its place and its title, with the padlock, so the screen does not change shape
+     with who looks. */
   it('without Dashboard.canView the charts and both tops keep their place, locked', () => {
     serve()
     render(<Overview token="T" permissions={{ Dashboard: { canView: false, canModify: false, canDelete: false } }} />)

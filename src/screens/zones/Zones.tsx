@@ -23,7 +23,7 @@ import { Notifier } from '../../ui/Notifier'
 The whole Zones section: the list, a zone's view and the ten modals.
 
 In upstream they are two `div` shown and hidden (`divViewZones` and
-`divEditZone`); here it is a state, `abierta`. The rest of the structure is the
+`divEditZone`); here it is a state, `open`. The rest of the structure is the
 same on purpose: same modals, same texts, same steps.
 
 **The alerts live here, not in each screen.** In upstream a `showAlert` with no

@@ -27,7 +27,7 @@ const baseSignature = { dnsKeyTtl: '3600', zskRolloverDays: '30', nxProof: 'NSEC
 describe('signing and unsigning', () => {
   it('ECDSA sends `curve` and NOT the RSA parameters', async () => {
     const spy = vi.spyOn(client, 'apiRequest').mockResolvedValue({ kind: 'ok', data: {} })
-    await signZone('t', 'casa.test', { ...baseSignature, algorithm: 'ECDSA', curve: 'P256' })
+    await signZone('t', 'home.test', { ...baseSignature, algorithm: 'ECDSA', curve: 'P256' })
     const body = spy.mock.calls[0][1]?.body
     expect(spy.mock.calls[0][0]).toBe('zones/dnssec/sign')
     expect(body).toMatchObject({ algorithm: 'ECDSA', curve: 'P256' })
@@ -37,7 +37,7 @@ describe('signing and unsigning', () => {
 
   it('RSA sends hash and sizes, and NOT `curve`', async () => {
     const spy = vi.spyOn(client, 'apiRequest').mockResolvedValue({ kind: 'ok', data: {} })
-    await signZone('t', 'casa.test', {
+    await signZone('t', 'home.test', {
       ...baseSignature,
       algorithm: 'RSA',
       hashAlgorithm: 'SHA256',
@@ -51,7 +51,7 @@ describe('signing and unsigning', () => {
 
   it('NSEC3 adds iterations and salt; NSEC does not send them', async () => {
     const spy = vi.spyOn(client, 'apiRequest').mockResolvedValue({ kind: 'ok', data: {} })
-    await signZone('t', 'casa.test', {
+    await signZone('t', 'home.test', {
       ...baseSignature,
       algorithm: 'ECDSA',
       curve: 'P256',
@@ -61,13 +61,13 @@ describe('signing and unsigning', () => {
     })
     expect(spy.mock.calls[0][1]?.body).toMatchObject({ iterations: '5', saltLength: '8' })
 
-    await signZone('t', 'casa.test', { ...baseSignature, algorithm: 'ECDSA', curve: 'P256' })
+    await signZone('t', 'home.test', { ...baseSignature, algorithm: 'ECDSA', curve: 'P256' })
     expect(spy.mock.calls[1][1]?.body).not.toHaveProperty('iterations')
   })
 
   it('the PEMs always travel, even when empty', async () => {
     const spy = vi.spyOn(client, 'apiRequest').mockResolvedValue({ kind: 'ok', data: {} })
-    await signZone('t', 'casa.test', { ...baseSignature, algorithm: 'ECDSA', curve: 'P256' })
+    await signZone('t', 'home.test', { ...baseSignature, algorithm: 'ECDSA', curve: 'P256' })
     expect(spy.mock.calls[0][1]?.body).toMatchObject({
       pemKskPrivateKey: '',
       pemZskPrivateKey: '',
@@ -76,27 +76,27 @@ describe('signing and unsigning', () => {
 
   it('unsign only sends the zone and the node', async () => {
     const spy = vi.spyOn(client, 'apiRequest').mockResolvedValue({ kind: 'ok', data: {} })
-    await unsignZone('t', 'casa.test')
+    await unsignZone('t', 'home.test')
     expect(spy.mock.calls[0][0]).toBe('zones/dnssec/unsign')
-    expect(spy.mock.calls[0][1]?.body).toEqual({ zone: 'casa.test', node: '' })
+    expect(spy.mock.calls[0][1]?.body).toEqual({ zone: 'home.test', node: '' })
   })
 })
 
 describe('reads', () => {
   it('viewDS tolerates there being no DS records', async () => {
-    vi.spyOn(client, 'apiRequest').mockResolvedValue(env({ name: 'casa.test' }))
-    expect(await viewDs('t', 'casa.test')).toMatchObject({ dsRecords: [] })
+    vi.spyOn(client, 'apiRequest').mockResolvedValue(env({ name: 'home.test' }))
+    expect(await viewDs('t', 'home.test')).toMatchObject({ dsRecords: [] })
   })
 
   it('properties/get tolerates there being no keys', async () => {
-    vi.spyOn(client, 'apiRequest').mockResolvedValue(env({ name: 'casa.test', dnsKeyTtl: 3600 }))
-    expect(await getProperties('t', 'casa.test')).toMatchObject({ dnssecPrivateKeys: [] })
+    vi.spyOn(client, 'apiRequest').mockResolvedValue(env({ name: 'home.test', dnsKeyTtl: 3600 }))
+    expect(await getProperties('t', 'home.test')).toMatchObject({ dnssecPrivateKeys: [] })
   })
 
   it('both return null if the call fails', async () => {
     vi.spyOn(client, 'apiRequest').mockResolvedValue({ kind: 'error', message: 'x' })
-    expect(await viewDs('t', 'casa.test')).toBeNull()
-    expect(await getProperties('t', 'casa.test')).toBeNull()
+    expect(await viewDs('t', 'home.test')).toBeNull()
+    expect(await getProperties('t', 'home.test')).toBeNull()
   })
 })
 
@@ -104,13 +104,13 @@ describe('the nine actions on keys', () => {
   it('each one calls its endpoint with the keyTag as a string', async () => {
     const spy = vi.spyOn(client, 'apiRequest').mockResolvedValue({ kind: 'ok', data: {} })
 
-    await updatePrivateKey('t', 'casa.test', 47895, '30')
-    await deletePrivateKey('t', 'casa.test', 47895)
-    await publishAllPrivateKeys('t', 'casa.test')
-    await activateKskDnsKey('t', 'casa.test', 47895)
-    await rolloverDnsKey('t', 'casa.test', 47895)
-    await retireDnsKey('t', 'casa.test', 47895)
-    await updateDnsKeyTtl('t', 'casa.test', '7200')
+    await updatePrivateKey('t', 'home.test', 47895, '30')
+    await deletePrivateKey('t', 'home.test', 47895)
+    await publishAllPrivateKeys('t', 'home.test')
+    await activateKskDnsKey('t', 'home.test', 47895)
+    await rolloverDnsKey('t', 'home.test', 47895)
+    await retireDnsKey('t', 'home.test', 47895)
+    await updateDnsKeyTtl('t', 'home.test', '7200')
 
     expect(spy.mock.calls.map((c) => c[0])).toEqual([
       'zones/dnssec/properties/updatePrivateKey',
@@ -122,7 +122,7 @@ describe('the nine actions on keys', () => {
       'zones/dnssec/properties/updateDnsKeyTtl',
     ])
     expect(spy.mock.calls[0][1]?.body).toEqual({
-      zone: 'casa.test',
+      zone: 'home.test',
       keyTag: '47895',
       rolloverDays: '30',
       node: '',
@@ -132,7 +132,7 @@ describe('the nine actions on keys', () => {
 
   it('adding a key splits the parameters by algorithm, as when signing', async () => {
     const spy = vi.spyOn(client, 'apiRequest').mockResolvedValue({ kind: 'ok', data: {} })
-    await addPrivateKey('t', 'casa.test', {
+    await addPrivateKey('t', 'home.test', {
       keyType: 'KeySigningKey',
       algorithm: 'RSA',
       hashAlgorithm: 'SHA512',
@@ -147,9 +147,9 @@ describe('the nine actions on keys', () => {
 
   it('the three proof-of-non-existence changes go to their endpoint', async () => {
     const spy = vi.spyOn(client, 'apiRequest').mockResolvedValue({ kind: 'ok', data: {} })
-    await convertToNSEC('t', 'casa.test')
-    await convertToNSEC3('t', 'casa.test', '5', '8')
-    await updateNSEC3Params('t', 'casa.test', '5', '8')
+    await convertToNSEC('t', 'home.test')
+    await convertToNSEC3('t', 'home.test', '5', '8')
+    await updateNSEC3Params('t', 'home.test', '5', '8')
     expect(spy.mock.calls.map((c) => c[0])).toEqual([
       'zones/dnssec/properties/convertToNSEC',
       'zones/dnssec/properties/convertToNSEC3',

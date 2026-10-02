@@ -96,7 +96,7 @@ describe('Tooltip', () => {
   it('it never replaces the trigger accessible name', async () => {
     const user = userEvent.setup()
     render(
-      <Tooltip text="Esto describe, no nombra">
+      <Tooltip text="This describes, it does not name">
         <Button aria-label="Delete Zones">✕</Button>
       </Tooltip>,
     )
@@ -106,7 +106,7 @@ describe('Tooltip', () => {
 
     /* With the bubble open, the name has not moved... */
     expect(screen.getByRole('button', { name: 'Delete Zones' })).toBe(trigger)
-    expect(screen.queryByRole('button', { name: 'Esto describe, no nombra' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'This describes, it does not name' })).toBeNull()
     /* ...and it is not named with it. */
     expect(trigger).not.toHaveAttribute('aria-labelledby')
     expect(trigger).toHaveAttribute('aria-label', 'Delete Zones')

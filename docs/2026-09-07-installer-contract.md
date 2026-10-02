@@ -1,10 +1,10 @@
-# The installer — contract
+# The installer: contract
 
 **Date:** 2026-09-07 · **Measured with:** `dev/installer-probe.sh` against
 `technitium/dns-server:latest` (v15.4.0.0) · **Ratified 2026-09-07** after two
-readings — F4, W3, A1, A7 and S2 rewritten in the first, two of them because
+readings: F4, W3, A1, A7 and S2 rewritten in the first, two of them because
 they contradicted other clauses, and A2 in the second, because it promised
-something no installer can deliver — and **implemented the same day**.
+something no installer can deliver, and **implemented the same day**.
 
 > Read this before touching `install.sh`. The installer is not missing: it was
 > written on 2026-09-01 (`b20842d`) and it already does most of what it should.
@@ -14,7 +14,7 @@ something no installer can deliver — and **implemented the same day**.
 **Where it stands: all twenty-one clauses are met, and all twenty-one probe
 cases have been seen passing.** Nineteen of them against the official image, and
 the two mode B cases against a server built from the fork branch that carries the
-variable — because until that branch is merged, that is the only server there is
+variable: because until that branch is merged, that is the only server there is
 that honours it. Building one takes four commands and they are written down in
 `dev/README.md`. Those numbers come out of the probe, not out of this paragraph.
 
@@ -76,14 +76,14 @@ whichever folder is served; at `v15.5.1` the `no-cache` line is `:1950`.
 Two consequences that the installer lives with:
 
 - The provider is created **once**, at start, from a path string, and resolves
-  every request against it. Replacing the folder's contents — even deleting the
-  folder and recreating it — is picked up **without restarting the service**
+  every request against it. Replacing the folder's contents (even deleting the
+  folder and recreating it) is picked up **without restarting the service**
   (probe C11). Changing *which* folder is served is not: that needs a restart.
 - Every static file is answered with `Cache-Control: no-cache`
   (`DnsWebService.cs:1977`), and this console's assets are content-hashed on top
   of that. There is no browser-cache problem to warn anybody about.
 
-Dotfiles in the web root are **not served** — `/.technitium-console` answers 404,
+Dotfiles in the web root are **not served**: `/.technitium-console` answers 404,
 a sibling without the dot answers 200. That is ASP.NET's default exclusion of
 hidden files, and it matters twice: an in-root marker cannot be verified over
 HTTP, and a non-hidden one would be readable by anyone who can reach the login
@@ -104,7 +104,7 @@ saying otherwise is wrong; the folder list it produces is still right.
 
 ### 1.3 Updating on bare metal
 
-The same script. An update is `tar -zxf` **over** the installation directory —
+The same script. An update is `tar -zxf` **over** the installation directory:
 an extraction, not a replacement:
 
 > files present in the archive are overwritten; files that are not in it stay
@@ -120,7 +120,7 @@ underneath (measured; the probe rebuilds this state in C3).
 
 The web root lives inside the image at `/opt/technitium/dns/www`
 (`Dockerfile`). An update is a new image, so anything written into the
-container's own files is gone with the next recreate — which is what
+container's own files is gone with the next recreate: which is what
 `docker exec <c> sh -c "curl … | sh"` installs into, and the installer now says
 so when it does (C11).
 
@@ -129,8 +129,8 @@ volume or a bind mount, and that is the one the README gives Docker users: an
 init image, `ghcr.io/bygarcia/technitium-console`, copies the console into a
 volume that the server mounts read-only (D1–D4). Before 15.5 the only one is a
 bind mount from the host over `www`, which is what `dev/compose.yaml` does for
-development. The previous wording — "the only layout that survives is a bind
-mount over that path" — stopped being true with 15.5.
+development. The previous wording ("the only layout that survives is a bind
+mount over that path") stopped being true with 15.5.
 
 ### 1.5 Windows
 
@@ -163,7 +163,7 @@ environment variable … PR #2138", and v15.5.1 carries it.
 and when the folder does not exist writes the log line W3 quotes and falls back
 to `www`. Upstream documents it in `EnvironmentVariables.md:11`, a file of its
 own for variables read on every start, whose note says that changing one needs a
-restart — not in `DockerEnvironmentVariables.md`, as the PR had it. **The
+restart: not in `DockerEnvironmentVariables.md`, as the PR had it. **The
 official image honours it since v15.5**: the probe measured it against
 `technitium/dns-server:latest` (v15.5.1) on 2026-09-30, and C12 and C13 ran and
 were met against it. What follows is this section as written on 2026-09-07, when
@@ -189,7 +189,7 @@ Two facts the installer has to respect:
   than guessing at unit files or compose files.
 
 The PR also had a hole: the variable was **not** in `DockerEnvironmentVariables.md`,
-where upstream documents every other one — and that file opens with a NOTE
+where upstream documents every other one: and that file opens with a NOTE
 saying its variables are read only on first start, which is exactly what this
 one does not do. Both are fixed before opening: the row is there and the
 exception is named.
@@ -217,16 +217,16 @@ needs in order to know whether it has gone stale.
 ## 2 · Two installation modes
 
 The contract below is written for both, because which one applies is not our
-choice — it depends on the server in front of us.
+choice: it depends on the server in front of us.
 
-**Mode A — replacement.** The only mode possible today: install over
+**Mode A: replacement.** The only mode possible today: install over
 `<appFolder>/www`, keep a copy of the stock console, restore it on uninstall.
 It cannot survive a server update (§1.3), so under this mode an update means the
 administrator re-runs the installer. *2026-10-01:* no longer the only mode since
 v15.5 (§1.7). It is what the installer does when the variable is not set, and
 the only mode on a server before 15.5.
 
-**Mode B — side by side.** Once the variable lands: install into a folder of our
+**Mode B: side by side.** Once the variable lands: install into a folder of our
 own, never touch `www`, and let the variable point the server at it. Server
 updates stop mattering. This is the mode the project wants, and the reason the
 PR exists. *2026-10-01:* the variable landed in v15.5 (§1.7). Mode B is what any
@@ -272,7 +272,7 @@ the three.
   before anything is installed**: write a probe file with an unguessable name
   into the folder the variable names, ask the web service for it, delete it
   whatever the answer, and only then decide. Not by a version number, and not by
-  installing first and looking afterwards — an installer that has to undo an
+  installing first and looking afterwards: an installer that has to undo an
   install to find out where it belongs has already got it wrong. The probe file
   is not hidden, or the answer is a 404 for the wrong reason (§1.1).
 
@@ -281,7 +281,7 @@ the three.
   web root folder since the folder configured by the
   DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH environment variable does not exist"*.
   With that line, the server honours the variable and fell back because the
-  folder was missing when it started — create it, install, restart (S2).
+  folder was missing when it started: create it, install, restart (S2).
   Without it, the server does not know the variable at all, and the console goes
   where it is actually read. The half of this clause that a released server can
   exercise is the refusal, and that is what C15 measures; the other half rides on
@@ -293,7 +293,7 @@ the three.
   backed up that was never there, which is what used to make the documented
   Docker flow fail before it had installed anything.
 - **W5 ✓** (C9) A web root that is a mount point is installed into, in place.
-  Nothing ever removes or renames the web root itself — see A1 — so the layout
+  Nothing ever removes or renames the web root itself (see A1) so the layout
   the README asks Docker users to create is no longer a special case.
 - **W6 ✓** (C22) *2026-09-30.* The installer writes only into a folder it can
   show is a console, because publishing sweeps, as root, everything the release
@@ -304,8 +304,8 @@ the three.
   `#root` and names an `assets/*.js` that is there). Anything else stops the run
   before anything is written, with or without `--yes` and with or without a
   TTY. Before this, `--dir /opt/technitium/dns` by mistake removed the server's
-  binaries and configuration, with no backup — there was no `index.html` to back
-  up — and without asking, because `curl … | sudo sh` has no TTY to ask on.
+  binaries and configuration, with no backup: there was no `index.html` to back
+  up, and without asking, because `curl … | sudo sh` has no TTY to ask on.
   *2026-10-01* (C28): a folder holding nothing but `json/` and
   `json/*-custom.json` counts as empty. Publishing neither overwrites nor sweeps
   those files, so there is nothing in it to lose, and it is how a host folder
@@ -327,7 +327,7 @@ the three.
   candidate; it is believed only when every uid it runs as (read from
   `/proc/<pid>/status`, not from the owner of `/proc/<pid>`) and the owners of
   its `DnsServerApp.dll`, of the folder holding it and of that folder's `www` are
-  root or the service's account — `dns-server`, which upstream's installer has
+  root or the service's account: `dns-server`, which upstream's installer has
   used since v15.0, or the `User=` of the unit that runs the server. Candidates
   that fail are named and ignored; a process in another root filesystem (a
   container seen from its host) is not a candidate. Two believable servers with
@@ -350,26 +350,26 @@ the three.
   fetches them relative to whatever folder is being served. On install they are
   copied from `www/json` into the console's own folder, and the administrator is
   told that the one to edit from now on is the new one. On uninstall everything
-  matching the pattern in the console's folder — including lists written after
-  the install, which is where F2 bites again — is copied back to `www/json`
+  matching the pattern in the console's folder (including lists written after
+  the install, which is where F2 bites again) is copied back to `www/json`
   before the folder goes.
 - **F4 ✓** (C16) The installer never modifies the server's data. It writes to exactly
   three places: the web root it is installing into, the backup it keeps, and its
-  own state (A5). Everything else — `dns.config`, the zones, the users, the
-  logs, `/etc/resolv.conf`, the service unit — is out of bounds, with the single
+  own state (A5). Everything else (`dns.config`, the zones, the users, the
+  logs, `/etc/resolv.conf`, the service unit) is out of bounds, with the single
   exception of the service change in §4, which is offered and confirmed before
   it happens.
 
   **Reading is not writing.** The environment of the running process, the
   startup log and the unit files are read freely, and W1, W3 and A7 are built on
   exactly that: the way not to guess is to go and look. C16 measures the
-  writing half the only way worth measuring it — a checksum of `/etc/dns`, the
+  writing half the only way worth measuring it: a checksum of `/etc/dns`, the
   logs, the units and `/etc/resolv.conf` before and after an install and an
   uninstall, which has to come out identical.
 
 ### Replacing atomically
 
-- **A1 ✓** (C17) The web root is never observably broken — mount point or not.
+- **A1 ✓** (C17) The web root is never observably broken, mount point or not.
   It is also never renamed, moved or removed, and that is a change from how this
   clause was first written: **swapping two directories takes two renames, and
   between them there is no web root at all**, which is precisely what A2 forbids.
@@ -382,8 +382,8 @@ the three.
 
   Step 2 is the **publication point**, and each file within it is replaced by a
   write-then-rename so no page is ever half written. What makes the step safe is
-  not that it is a single instant — it is not, there is one `index.html` per
-  route — but that during it *every* page a request can be handed finds the files
+  not that it is a single instant (it is not, there is one `index.html` per
+  route) but that during it *every* page a request can be handed finds the files
   it names: the new assets are already there and the old ones are not gone yet.
   Whichever version of a page a browser gets in that window, it works.
 
@@ -393,13 +393,13 @@ the three.
   previous console, whole.
 - **A2 ✓** (C17, C7) **At every moment there is a complete console being served**:
   the previous one before the publication point, the new one after it. That is
-  the guarantee, and it is the only one an installer can actually keep — a
+  the guarantee, and it is the only one an installer can actually keep: a
   `SIGKILL` or a power cut mid-copy is not a failure it gets to handle, and on a
   mount point it cannot fall back on a rename either.
 
   So the promise splits in two. A failure the installer **sees** it undoes
   itself, and the previous console is back when it exits. A stop it never sees
-  leaves the invariant standing anyway — because of A1's order — plus possible
+  leaves the invariant standing anyway: because of A1's order, plus possible
   leftovers: a staging folder, an orphan of the console being replaced, a state
   file that says a run started. **Those are repaired by the next run**, which
   therefore has to recognise them instead of tripping over them.
@@ -411,12 +411,12 @@ the three.
   marker: there is no marker to key off any more (A6).
 - **A4 ✓** (C2) Re-running is idempotent, and the backup is taken exactly once:
   a second run must never save this console as "the original".
-- **A5 ✓** (C18) The install state — mode, version, web root, backup path, and the
-  server version the backup was taken from — lives **outside** the served
+- **A5 ✓** (C18) The install state (mode, version, web root, backup path, and the
+  server version the backup was taken from) lives **outside** the served
   folder, in `/var/lib/technitium-console/`. Bookkeeping in the web root is
   either invisible to the installer (dotfiles 404, §1.1) or visible to the
   internet (non-dotfiles 200). Neither is a reason to put it there.
-- **A6 ✓** (C8) The web root holds the console and nothing else — no marker, no
+- **A6 ✓** (C8) The web root holds the console and nothing else: no marker, no
   staging folder, nothing hidden. The staging area lives with the state, so a
   half-finished download is never inside the folder being served.
   *2026-10-01:* one exception, in the Docker image's volume only: the marker
@@ -430,7 +430,7 @@ the three.
 - **A7 ✓** (C19) When the version recorded with the backup and the running one
   differ, the backup is the console of another server: `--uninstall` **stops**,
   names both versions, and does nothing. Restoring it anyway takes a flag of its
-  own —`--restore-mismatched-backup`— and **`--yes` does not grant it**: `--yes`
+  own (`--restore-mismatched-backup`) and **`--yes` does not grant it**: `--yes`
   means "do not ask me the ordinary question", not "accept an incompatible
   restore". The message names the repair that does not need us at all: re-run
   upstream's own installer, which puts back the console the running version
@@ -441,7 +441,7 @@ the three.
   and then the installer says so and leaves the current one alone. In mode B the
   recorded folder is removed only if it still holds this console, and never when
   it is the server's own `www`; before this, that `rm -rf` went to whatever
-  folder was resolved at the time — the stock console, in the case above. In
+  folder was resolved at the time: the stock console, in the case above. In
   mode A the restore is held to W6.
   *Same night (1.1.1):* removing it has to finish when the folder is a mount
   point, as it is in the Docker layout. It is emptied and then removed if it can
@@ -456,7 +456,7 @@ the three.
   stock console, an older build of this one, or the hybrid a server update
   leaves behind (§1.3). No leftovers of the console being replaced.
 - **U2 ✓** (C20) The hybrid is detected and named. An administrator whose
-  console reverted after a server update is told what happened — and told in the
+  console reverted after a server update is told what happened, and told in the
   same breath that the backup is older than the server now running, which is the
   fact A7 will stop them on later.
 
@@ -497,8 +497,7 @@ volume: after every check has passed and before the first file is copied, the
 init writes `.technitium-console` at the volume's root, and `--into-volume`
 accepts a volume that holds it as its own (W6). That is what lets A2's repair
 half hold in the init: a first copy interrupted halfway leaves assets and no
-`index.html`, which W6 alone would refuse forever, and the next run of the init
-— the next `up`, or the next update — finds the marker and finishes it (C29,
+`index.html`, which W6 alone would refuse forever, and the next run of the init (the next `up`, or the next update) finds the marker and finishes it (C29,
 interrupted first copy, then re-run). The marker stays; it is the one exception
 to A6.
 
@@ -507,8 +506,8 @@ These four are what the layout adds.
 - **D1 ✓** (C29) **The init never keeps the DNS server from starting.** The
   compose block the README gives has no `depends_on` from the server on the
   init, and the init neither looks for the server nor waits for it. When the
-  init fails a check — a folder W6 refuses, no volume mounted at `/target`, a
-  bad or missing checksum (C29, bad or missing checksum) — it stops before
+  init fails a check (a folder W6 refuses, no volume mounted at `/target`, a
+  bad or missing checksum; C29, bad or missing checksum), it stops before
   publishing, exits non-zero having written nothing into the volume, not even
   the marker, and the server starts all the same and serves whatever the volume
   holds: a whole console on an update, nothing on a first install. A failure
@@ -546,7 +545,7 @@ These four are what the layout adds.
   One that fails after pushing turns the job red with the tags already out, and
   the init's own check is what stands between those bytes and a volume.
   Re-running the `image` job on its own downloads the same bytes again, so it
-  only helps a failure that was transient — the network, the registry. A release
+  only helps a failure that was transient: the network, the registry. A release
   asset that does not match its own `.sha256` fails the same way every time, and
   needs a new release. Never the whole workflow on a published tag: it would
   rebuild the tarball under it with other bytes and another checksum.
@@ -554,16 +553,16 @@ These four are what the layout adds.
 ### The service and the browser
 
 - **S1 ✓** (C11, C21) Installing does **not** restart the DNS service. C11
-  measures the premise — with the service running and never restarted, a full
-  replacement of the web root is served immediately — and C21 measures the
+  measures the premise: with the service running and never restarted, a full
+  replacement of the web root is served immediately, and C21 measures the
   clause, with a `systemctl` of its own that records being called and never is.
   A restart is a resolution outage for everything behind this server; it is not
   spent on copying files.
 - **S2 ✓** A restart happens **only when the path being served or the
   environment changes**, because the file provider is built once at start
   (§1.1). That is the first install into the variable's folder and the uninstall
-  out of it — not a property of mode B: a later reinstall into the same folder,
-  with the environment untouched, restarts nothing — which is what C12 and C13
+  out of it, not a property of mode B: a later reinstall into the same folder,
+  with the environment untouched, restarts nothing, which is what C12 and C13
   show by installing, reinstalling and uninstalling against a server that was
   never restarted once. When one is needed the installer names the change that
   requires it and asks first.
@@ -583,10 +582,10 @@ These four are what the layout adds.
   unit never sees and that the uninstall deletes. It is still a change to how
   the administrator's service starts, so it is **offered and confirmed**, never
   silent, and never on OpenRC or Docker, where the equivalent belongs to
-  `/etc/conf.d/dns` and to the compose file — the installer prints those and
+  `/etc/conf.d/dns` and to the compose file: the installer prints those and
   stops. *2026-10-01* (C30): on a Docker host it reads `docker inspect` and the
   startup log through `docker exec`, and prints the exact change for each
-  container — the way in, and with `--uninstall` the way out — with the
+  container (the way in, and with `--uninstall` the way out) with the
   container, service, file and volume names it found, and exits 0. It never
   prints `$0`, which under `curl … | sudo sh` is `sh`.
 - **SELinux relabelling, distro packages, and updating the console by itself.**
@@ -627,7 +626,7 @@ ones need a server that honours the variable, and are not applicable otherwise.
 
 C12, C13 and C15 depend on what the image can do, and the probe does not decide
 that by decree: it **detects the capability** the same way W3 says the installer
-must — it starts the image with the variable pointing at a folder holding a probe
+must: it starts the image with the variable pointing at a folder holding a probe
 file, asks the web service for it, and believes the answer. Against
 `technitium/dns-server:latest` the answer is no, so C12 and C13 stand down and
 C15 runs, which is the refusal case. Against a build of the fork branch the
@@ -639,7 +638,7 @@ commands (`dev/README.md`). Nothing here is a case that has never been seen
 passing.
 
 The gate for the installer round is the same as every other round in this
-project: **the probe at zero on both images** — met on 2026-09-07, nineteen
+project: **the probe at zero on both images**: met on 2026-09-07, nineteen
 cases against `technitium/dns-server:latest` and twenty against a server that
 honours the variable. What is left is not a measurement: it is upstream merging
 the branch, at which point the `†` comes off W2, F3 and S2 and the image stops
@@ -669,7 +668,7 @@ gated by the same answer as C12 and C13.
 Five of these were failures the probe caught the day the contract was written.
 All five are fixed; the last two are notes, not code.
 
-- The README documented a Docker flow that did not work — `--dir` on a folder
+- The README documented a Docker flow that did not work: `--dir` on a folder
   that did not exist installed nothing (W4).
 - `--uninstall` destroyed exactly the files the installer goes out of its way to
   preserve, when the administrator had written them after installing (F2).
@@ -681,7 +680,7 @@ All five are fixed; the last two are notes, not code.
 
 And one thing the implementation found that the contract had got wrong: **A1's
 rename shortcut is not available**. Swapping a staged tree for the old one takes
-two renames, and between them there is no web root — the exact state A2 says can
+two renames, and between them there is no web root: the exact state A2 says can
 never exist. So there is no rename path at all, on any filesystem: one order, in
 place, everywhere. The clause was rewritten rather than the guarantee weakened.
 

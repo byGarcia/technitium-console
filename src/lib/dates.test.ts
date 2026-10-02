@@ -20,7 +20,7 @@ describe('dateTime / minuteStamp', () => {
   it('an absent or unreadable date does not break the table: it returns an empty string', () => {
     expect(dateTime(null)).toBe('')
     expect(dateTime(undefined)).toBe('')
-    expect(dateTime('no es una fecha')).toBe('')
+    expect(dateTime('not a date')).toBe('')
     expect(minuteStamp(null)).toBe('')
   })
 })

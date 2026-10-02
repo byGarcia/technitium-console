@@ -6,7 +6,7 @@ import { Table } from '../../ui/Table'
 import styles from './Zones.module.css'
 
 /*
-A record's "Data" cell. The content is decided by `registro-vista.ts`; here it is
+A record's "Data" cell. The content is decided by `record-view.ts`; here it is
 only drawn.
 
 **Public keys are truncated** (Adrián's decision, 2026-08-25): a DNSKEY is 400

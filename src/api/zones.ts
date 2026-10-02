@@ -4,7 +4,7 @@ import { urlApi } from '../app/base'
 
 /*
 The `zones` family, the zone-management part: 15 endpoints. The 4 of
-`zones/records/*` live in registros.ts and the 15 of DNSSEC in dnssec.ts. Between
+`zones/records/*` live in records.ts and the 15 of DNSSEC in dnssec.ts. Between
 the three they add up to the 34 of phase 4.
 
 TWO DIFFERENT PAGINATIONS, and this one is easy to get wrong:
@@ -14,7 +14,7 @@ TWO DIFFERENT PAGINATIONS, and this one is easy to get wrong:
     Careful: those three fields **only appear if you send `pageNumber`**;
     without it the response brings only `zones`.
 
-  · `zones/records/get` does NOT paginate (see registros.ts).
+  · `zones/records/get` does NOT paginate (see records.ts).
 
 `node` is the cluster node the request is aimed at (`optZonesClusterNode`). With
 a single instance it goes empty, and that is how upstream sends it: the string
@@ -125,7 +125,7 @@ export async function listZones(
     },
   })
   /*
-  Returns the whole outcome and not `ListaZonas | null`.
+  Returns the whole outcome and not `ZoneList | null`.
 
   With `null` the screen did not know WHY it had failed and always said "Unable
   to reach the DNS server.", which is a concrete claim —the network is down— and
@@ -294,7 +294,7 @@ export async function getZoneOptions(
   return outcome.kind === 'ok' ? outcome.data.response : null
 }
 
-/** The body is built by the screen, which is the one that validates (see screens/zones/opciones.ts). */
+/** The body is built by the screen, which is the one that validates (see screens/zones/options.ts). */
 export function setZoneOptions(
   token: string | null,
   body: Record<string, string>,

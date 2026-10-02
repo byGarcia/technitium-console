@@ -215,7 +215,7 @@ export function Shell({
       const r = readRoute(sections)
       if (r == null) {
         // A route that does not resolve left the bar and the screen saying different
-        // different ones. The screen rules: the URL is corrected.
+        // things. The screen rules: the URL is corrected.
         writeRoute({ section: activeRef.current.section, sub: activeRef.current.sub }, true)
         return
       }

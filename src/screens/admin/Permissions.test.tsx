@@ -168,7 +168,7 @@ describe('Permissions — the editing modal', () => {
         userPermissions: '',
         groupPermissions:
           'Administrators|true|true|true|Everyone|true|false|false',
-        node: 'ns1.micluster.test',
+        node: 'ns1.mycluster.test',
       },
     })
   })

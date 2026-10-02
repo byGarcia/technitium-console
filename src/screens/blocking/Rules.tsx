@@ -96,8 +96,8 @@ export function Rules({
   const [treeList, setTreeList] = useState<DomainList>(viewBlocked ? 'blocked' : 'allowed')
   /* Bumped after Block, Allow, Delete, Import and Flush: the open tree is mounted
      again so it reads the lists as they are now — from the primary node, as every
-     read after a change does (spec, «Clúster»). Choosing another list or view is a
-     fresh read again, from the connected node. */
+     read after a change does (spec, the section on the cluster, «Clúster»). Choosing
+     another list or view is a fresh read again, from the connected node. */
   const [generation, setGeneration] = useState(0)
   const [afterChange, setAfterChange] = useState(false)
   /* Where the remounted tree opens: the domain a Block or Allow just added, as

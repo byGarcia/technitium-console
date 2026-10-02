@@ -38,13 +38,13 @@ function rec(type: string, rData: Record<string, unknown>, extra: Partial<Resour
 describe('zones/records — transport', () => {
   it('getRecords does NOT paginate: it asks with listZone=true and no page parameters', async () => {
     const spy = vi.spyOn(client, 'apiRequest').mockResolvedValue(
-      env({ zone: { name: 'casa.test' }, records: [] }),
+      env({ zone: { name: 'home.test' }, records: [] }),
     )
-    await getRecords('t', 'casa.test')
+    await getRecords('t', 'home.test')
     expect(spy.mock.calls[0][0]).toBe('zones/records/get')
     expect(spy.mock.calls[0][1]?.body).toEqual({
-      domain: 'casa.test',
-      zone: 'casa.test',
+      domain: 'home.test',
+      zone: 'home.test',
       listZone: 'true',
       node: '',
     })
@@ -58,12 +58,12 @@ describe('zones/records — transport', () => {
 
   it('add and delete are POST and carry `node` in the QUERY, not in the body', async () => {
     const spy = vi.spyOn(client, 'apiRequest').mockResolvedValue({ kind: 'ok', data: {} })
-    await addRecord('t', { zone: 'casa.test' })
+    await addRecord('t', { zone: 'home.test' })
     expect(spy.mock.calls[0][0]).toBe('zones/records/add?node=')
     expect(spy.mock.calls[0][1]?.method).toBe('POST')
     expect(spy.mock.calls[0][1]?.body).not.toHaveProperty('node')
 
-    await deleteRecord('t', { zone: 'casa.test' }, 'node-2')
+    await deleteRecord('t', { zone: 'home.test' }, 'node-2')
     expect(spy.mock.calls[1][0]).toBe('zones/records/delete?node=node-2')
   })
 })
@@ -77,12 +77,12 @@ describe('identity of a record', () => {
   })
 
   it('NS carries the glue when disabling and NOT when deleting', () => {
-    const r = rec('NS', { nameServer: 'ns1.casa.test' }, { glueRecords: ['10.0.0.1', '10.0.0.2'] })
+    const r = rec('NS', { nameServer: 'ns1.home.test' }, { glueRecords: ['10.0.0.1', '10.0.0.2'] })
     expect(recordIdentity(r)).toEqual({
-      nameServer: 'ns1.casa.test',
+      nameServer: 'ns1.home.test',
       glue: '10.0.0.1, 10.0.0.2',
     })
-    expect(recordIdentity(r, { forDeletion: true })).toEqual({ nameServer: 'ns1.casa.test' })
+    expect(recordIdentity(r, { forDeletion: true })).toEqual({ nameServer: 'ns1.home.test' })
   })
 
   it('CNAME, DNAME and APP contribute nothing to the delete (zone.js:6420-6510)', () => {
@@ -147,37 +147,37 @@ describe('identity of a record', () => {
 
 describe('complete bodies', () => {
   it('the delete sends zone, domain and type, and the root goes as a dot', () => {
-    const r = rec('MX', { preference: 10, exchange: 'mail.casa.test' }, { name: '' })
-    expect(deletionBody('casa.test', r)).toEqual({
-      zone: 'casa.test',
+    const r = rec('MX', { preference: 10, exchange: 'mail.home.test' }, { name: '' })
+    expect(deletionBody('home.test', r)).toEqual({
+      zone: 'home.test',
       domain: '.',
       type: 'MX',
       preference: '10',
-      exchange: 'mail.casa.test',
+      exchange: 'mail.home.test',
     })
   })
 
   it('disabling resends the whole record with disable=true', () => {
-    const r = rec('MX', { preference: 10, exchange: 'mail.casa.test' }, { comments: 'nota', expiryTtl: 60 })
-    expect(stateChangeBody('casa.test', r, true, false)).toEqual({
-      zone: 'casa.test',
+    const r = rec('MX', { preference: 10, exchange: 'mail.home.test' }, { comments: 'note', expiryTtl: 60 })
+    expect(stateChangeBody('home.test', r, true, false)).toEqual({
+      zone: 'home.test',
       domain: 'www',
       type: 'MX',
       ttl: '3600',
       disable: 'true',
-      comments: 'nota',
+      comments: 'note',
       expiryTtl: '60',
       preference: '10',
-      exchange: 'mail.casa.test',
+      exchange: 'mail.home.test',
     })
   })
 })
 
 describe('loose rules of upstream', () => {
   it('the full name: empty is @, @ is the zone, and the root closes with a dot', () => {
-    expect(fullDomain('casa.test', '')).toBe('casa.test')
-    expect(fullDomain('casa.test', '@')).toBe('casa.test')
-    expect(fullDomain('casa.test', 'www')).toBe('www.casa.test')
+    expect(fullDomain('home.test', '')).toBe('home.test')
+    expect(fullDomain('home.test', '@')).toBe('home.test')
+    expect(fullDomain('home.test', 'www')).toBe('www.home.test')
     expect(fullDomain('.', 'www')).toBe('www.')
   })
 

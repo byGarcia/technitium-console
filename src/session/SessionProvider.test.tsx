@@ -250,7 +250,7 @@ describe('SessionProvider', () => {
       'href', 'https://go.technitium.com/?id=35',
     )
     /* "DNS Client" is also a section of the panel, so here it is found by the
-       disambiguated name; see `app/pie.ts`. */
+       disambiguated name; see `app/footer.ts`. */
     expect(screen.getByRole('link', { name: 'DNS Client at dnsclient.net' })).toHaveAttribute(
       'href', 'https://dnsclient.net/',
     )

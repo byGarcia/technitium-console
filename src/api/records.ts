@@ -161,7 +161,7 @@ export function flattenCharacterStrings(r: Record<string, unknown>): string {
  * `deleteRecord` and `updateRecordState` send, and also the "old" half of a
  * `records/update`.
  *
- * `paraBorrado` tells the two splits apart, and they are NOT the same: when
+ * `forDeletion` tells the two splits apart, and they are NOT the same: when
  * deleting, NS goes without `glue`, and CNAME, DNAME, SOA and APP contribute
  * nothing.
  */

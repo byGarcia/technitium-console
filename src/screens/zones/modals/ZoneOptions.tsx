@@ -34,7 +34,7 @@ import { Notifier } from '../../../ui/Notifier'
 
 /*
 `modalZoneOptions` (zone.js:1524 and 2380). Five tabs and a visibility matrix
-that `opciones.ts` decides.
+that `options.ts` decides.
 
 **The form is A SINGLE ONE**: "Save" sends the fields of all five tabs wherever
 you are, just as in Settings. Chopping it up per tab would change what gets

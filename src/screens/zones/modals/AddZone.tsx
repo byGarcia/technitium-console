@@ -28,7 +28,7 @@ import { Notifier } from '../../../ui/Notifier'
 
 /*
 `modalAddZone` (zone.js:2726 and 2911). Eight zone types, each with its own form.
-The decision about what shows and what travels is in `anadir-zona.ts`, which
+The decision about what shows and what travels is in `add-zone.ts`, which
 tests without mounting anything.
 
 The catalog is only offered **if the server returned one**: upstream marks the

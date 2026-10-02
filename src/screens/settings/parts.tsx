@@ -1,6 +1,6 @@
 /*
 The pieces the nine sub-tabs are drawn with are the panel-form kit's,
-`ui/Ajustes`. They were here and, again, in DHCP; see there what having them
+`ui/PanelForm`. They were here and, again, in DHCP; see there what having them
 twice cost.
 
 This file stays as the door through which the nine sub-tabs ask for them, so as

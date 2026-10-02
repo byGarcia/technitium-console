@@ -247,9 +247,10 @@ describe('BlockLists', () => {
   })
 
   /*
-  Spec, «Qué se refresca»: Block List Domains changes when the server finishes
-  reloading, not at once, and the figure says so. What the real server (v15.5.1) gives
-  to tell: `blockListNextUpdatedOn` is the last SUCCESSFUL update plus the interval
+  Spec, the section on what refreshes, «Qué se refresca»: Block List Domains changes
+  when the server finishes reloading, not at once, and the figure says so. What the
+  real server (v15.5.1) gives to tell: `blockListNextUpdatedOn` is the last SUCCESSFUL
+  update plus the interval
   (WebServiceSettingsApi.cs:384), and the last update only moves when a download ends
   well (BlockListZoneManager.cs:674-692). So while it reloads it keeps answering the
   OLD date, and the reload has finished when the date differs from the one captured

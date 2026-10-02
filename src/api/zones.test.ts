@@ -76,8 +76,8 @@ describe('zones', () => {
 
   it('importing by file goes as multipart, with the fileImportZone field', async () => {
     const spy = vi.spyOn(client, 'apiRequest').mockResolvedValue({ kind: 'ok', data: {} })
-    const file = new File(['$ORIGIN casa.test.'], 'casa.zone')
-    await importZone('t', 'casa.test', { file }, {
+    const file = new File(['$ORIGIN home.test.'], 'home.zone')
+    await importZone('t', 'home.test', { file }, {
       overwrite: true,
       overwriteZone: false,
       overwriteSoaSerial: false,
@@ -91,7 +91,7 @@ describe('zones', () => {
 
   it('importing by pasting the text goes as text/plain, not as multipart', async () => {
     const spy = vi.spyOn(client, 'apiRequest').mockResolvedValue({ kind: 'ok', data: {} })
-    await importZone('t', 'casa.test', { text: '@ 3600 IN A 10.0.0.1' }, {
+    await importZone('t', 'home.test', { text: '@ 3600 IN A 10.0.0.1' }, {
       overwrite: false,
       overwriteZone: true,
       overwriteSoaSerial: false,
@@ -104,20 +104,20 @@ describe('zones', () => {
     // zone.js:1322 does not add the cache-buster that the log downloads and the
     // settings backup do carry. The URL has to come out the same.
     const spy = vi.spyOn(user, 'openDownload').mockResolvedValue({ ok: true })
-    await exportZone('t', 'casa.test')
-    expect(spy).toHaveBeenCalledWith('t', 'zones/export', { zone: 'casa.test', node: '' })
+    await exportZone('t', 'home.test')
+    expect(spy).toHaveBeenCalledWith('t', 'zones/export', { zone: 'home.test', node: '' })
   })
 
   it('options/get asks for the available catalogs in the same call', async () => {
-    const spy = vi.spyOn(client, 'apiRequest').mockResolvedValue(env({ name: 'casa.test' }))
-    await getZoneOptions('t', 'casa.test')
+    const spy = vi.spyOn(client, 'apiRequest').mockResolvedValue(env({ name: 'home.test' }))
+    await getZoneOptions('t', 'home.test')
     expect(spy.mock.calls[0][0]).toBe('zones/options/get')
     expect(spy.mock.calls[0][1]?.body).toMatchObject({ includeAvailableCatalogZoneNames: 'true' })
   })
 
   it('permissions/get asks for users and groups, and tolerates absent lists', async () => {
     const spy = vi.spyOn(client, 'apiRequest').mockResolvedValue(env({ section: 'Zones' }))
-    const r = await getZonePermissions('t', 'casa.test')
+    const r = await getZonePermissions('t', 'home.test')
     expect(spy.mock.calls[0][1]?.body).toMatchObject({ includeUsersAndGroups: 'true' })
     expect(r).toMatchObject({ userPermissions: [], groupPermissions: [] })
   })
@@ -137,10 +137,10 @@ describe('zones', () => {
 
   it('permissions/set sends both tables already serialised', async () => {
     const spy = vi.spyOn(client, 'apiRequest').mockResolvedValue({ kind: 'ok', data: {} })
-    await setZonePermissions('t', 'casa.test', 'a|true|true|true', '')
+    await setZonePermissions('t', 'home.test', 'a|true|true|true', '')
     expect(spy.mock.calls[0][0]).toBe('zones/permissions/set')
     expect(spy.mock.calls[0][1]?.body).toEqual({
-      zone: 'casa.test',
+      zone: 'home.test',
       userPermissions: 'a|true|true|true',
       groupPermissions: '',
       node: '',
@@ -149,22 +149,22 @@ describe('zones', () => {
 
   it('every call carries `node`, even when it goes empty', async () => {
     const spy = vi.spyOn(client, 'apiRequest').mockResolvedValue({ kind: 'ok', data: {} })
-    await convertZone('t', 'casa.test', 'Secondary')
+    await convertZone('t', 'home.test', 'Secondary')
     expect(spy.mock.calls[0][1]?.body).toHaveProperty('node', '')
   })
 })
 
 describe('Edit Zone File (v15.5)', () => {
   it('reads the zone as TEXT from zones/export, with zone and an empty node', async () => {
-    const file = '$ORIGIN casa.test.\n@ 900 IN SOA ns hostadmin 3 900 300 604800 900\n'
+    const file = '$ORIGIN home.test.\n@ 900 IN SOA ns hostadmin 3 900 300 604800 900\n'
     const fetchSpy = vi.fn().mockResolvedValue({ text: () => Promise.resolve(file) })
     vi.stubGlobal('fetch', fetchSpy)
 
-    const text = await exportZoneText('tok', 'casa.test')
+    const text = await exportZoneText('tok', 'home.test')
 
     // zone.js:1256 in v15.5.1: `api/zones/export?zone=…&node=…`.
     const [url, init] = fetchSpy.mock.calls[0]
-    expect(url).toBe('/api/zones/export?zone=casa.test&node=')
+    expect(url).toBe('/api/zones/export?zone=home.test&node=')
     expect(init.headers).toEqual({ Authorization: 'Bearer tok' })
     expect(text).toBe(file)
   })
@@ -186,24 +186,24 @@ describe('Edit Zone File (v15.5)', () => {
 
   it('CRLF from a Windows server arrives as LF, as the browser textarea leaves it', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ text: () => Promise.resolve('a\r\nb\r\n') }))
-    expect(await exportZoneText('tok', 'casa.test')).toBe('a\nb\n')
+    expect(await exportZoneText('tok', 'home.test')).toBe('a\nb\n')
   })
 
   it('returns null if the request does not even go out', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')))
-    expect(await exportZoneText('tok', 'casa.test')).toBeNull()
+    expect(await exportZoneText('tok', 'home.test')).toBeNull()
   })
 
   it('saving is a POST to zones/import with overwriteZone=true and NO overwrite, raw text/plain body', async () => {
     const fetchSpy = vi.fn().mockResolvedValue({ json: () => Promise.resolve({ status: 'ok', response: {} }) })
     vi.stubGlobal('fetch', fetchSpy)
 
-    const r = await saveZoneFile('tok', 'casa.test', 'www 3600 IN A 10.0.0.9', true, 'node-2')
+    const r = await saveZoneFile('tok', 'home.test', 'www 3600 IN A 10.0.0.9', true, 'node-2')
 
     expect(r.kind).toBe('ok')
     const [url, init] = fetchSpy.mock.calls[0]
     // zone.js:1293 in v15.5.1, parameter for parameter and in the same order.
-    expect(url).toBe('/api/zones/import?zone=casa.test&overwriteZone=true&overwriteSoaSerial=true&node=node-2')
+    expect(url).toBe('/api/zones/import?zone=home.test&overwriteZone=true&overwriteSoaSerial=true&node=node-2')
     expect(url).not.toContain('overwrite=')
     expect(init.method).toBe('POST')
     expect(init.headers['Content-Type']).toBe('text/plain')
@@ -212,8 +212,8 @@ describe('Edit Zone File (v15.5)', () => {
 
   it('overwriteSoaSerial travels as false when unchecked', async () => {
     const spy = vi.spyOn(client, 'apiRequest').mockResolvedValue({ kind: 'ok', data: {} })
-    await saveZoneFile('t', 'casa.test', '', false)
-    expect(spy.mock.calls[0][0]).toBe('zones/import?zone=casa.test&overwriteZone=true&overwriteSoaSerial=false&node=')
+    await saveZoneFile('t', 'home.test', '', false)
+    expect(spy.mock.calls[0][0]).toBe('zones/import?zone=home.test&overwriteZone=true&overwriteSoaSerial=false&node=')
     expect(spy.mock.calls[0][1]).toMatchObject({ method: 'POST', text: '' })
   })
 })

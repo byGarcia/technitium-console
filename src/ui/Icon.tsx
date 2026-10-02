@@ -167,7 +167,7 @@ Same closed body and same arc as the rest: a grid of 24 and a stroke of
     </>
   ),
 
-  // ── Controles ─────────────────────────────────────────────────────────
+  // ── Controls ──────────────────────────────────────────────────────────
   chevronDown: <path d="m6 9 6 6 6-6" />,
   chevronRight: <path d="m9 6 6 6-6 6" />,
   chevronLeft: <path d="m15 6-6 6 6 6" />,

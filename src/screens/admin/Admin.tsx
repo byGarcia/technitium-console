@@ -101,8 +101,8 @@ export function Admin({ token, sub, onSubChange }: AdminProps) {
   }, [token])
 
   // Stable across renders: the sub-tabs put it in the dependencies of their
-  // loading `useCallback`, and a new function per render would reload them in
-  // bucle.
+  // loading `useCallback`, and a new function per render would reload them in a
+  // loop.
   const notify = useCallback((a: Notice) => setNotice(a), [])
   const toCluster = useCallback((s: ClusterState) => setCluster(s), [])
 
