@@ -21,7 +21,7 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
 
 ---
 
-## v1.2.0 (2026-10-01)
+## v1.2.0 (2026-10-02)
 
 **Allowed and Blocked are now one Blocking section, and Docker gets an image.** Overview, Rules
 and Lists: what blocking is doing, your own rules and your lists, each in one place. It is a deliberate exception
