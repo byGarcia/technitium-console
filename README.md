@@ -13,7 +13,9 @@ Same API, same behaviour, same texts: the interface rebuilt from scratch.
 
 </div>
 
-![Blocking › Overview](docs/screenshots/blocking-overview.png)
+| Dashboard | Blocking |
+|---|---|
+| ![The dashboard](docs/screenshots/dashboard.png) | ![Blocking › Overview](docs/screenshots/blocking-overview.png) |
 
 **Latest: [v1.2.0](https://github.com/byGarcia/technitium-console/releases/latest) for Technitium DNS
 Server 15.5.x**, with Allowed and Blocked as one Blocking section, a light theme, plus LDAP, the
@@ -69,17 +71,15 @@ limits, and the other deliberate deviations, are in
 
 ## What it looks like
 
-| Dashboard | Zones |
+| Zones | Settings |
 |---|---|
-| ![The dashboard](docs/screenshots/dashboard.png) | ![Zones](docs/screenshots/zones.png) |
+| ![Zones](docs/screenshots/zones.png) | ![Settings](docs/screenshots/settings.png) |
 
-| Settings | Cache, and the tree in Blocking › Rules |
+| Cache, and the tree in Blocking › Rules | Apps |
 |---|---|
-| ![Settings](docs/screenshots/settings.png) | ![The domain tree](docs/screenshots/cache.png) |
+| ![The domain tree](docs/screenshots/cache.png) | ![Apps](docs/screenshots/apps.png) |
 
-| Apps | The light theme |
-|---|---|
-| ![Apps](docs/screenshots/apps.png) | ![Blocking › Overview in the light theme](docs/screenshots/blocking-overview-light.png) |
+![Blocking › Overview in the light theme](docs/screenshots/blocking-overview-light.png)
 
 **Light or dark, or whatever your system uses**, from Change Theme in the account menu, as in the
 stock console. Both themes are measured: every text colour reaches 4.5:1 on every surface it is
