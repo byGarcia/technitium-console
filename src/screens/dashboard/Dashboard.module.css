@@ -53,7 +53,18 @@ file. All three were seen by measuring and none by reading.
 */
 .tiles .tile { border-left: 3px solid var(--tc, var(--acc)); }
 
-.tile .v { font:600 var(--t-7)/1.1 var(--font-mono); letter-spacing:-.02em; color:var(--ink); }
+/*
+A figure never spills out of its card (issue #2). The card is a size container
+and the figure takes the smaller of its normal size (`--size`) and what fits:
+the card's inner width over `--len` characters. Measured, a monospace digit or
+separator is 0.602 em, but at small sizes each glyph's advance is rounded to a
+whole pixel, which overflowed by 2 px at 11 px; so each character gets 0.62 em
+plus 1 px. A browser without container units (Firefox before 110, Safari before
+16) cannot work the `min()` out, and the figure takes its parent's size.
+*/
+.tile, .cnt { container-type: inline-size; }
+.v { --fit: calc((100cqi - var(--len, 1) * 1px) / (var(--len, 1) * 0.62)); white-space: nowrap; }
+.tile .v { --size: var(--t-7); font:600 var(--t-7)/1.1 var(--font-mono); font-size: min(var(--size), var(--fit)); letter-spacing:-.02em; color:var(--ink); }
 
 /*
 `Total Queries` is the figure that gets read first, and that is why it takes up
@@ -79,7 +90,7 @@ the hero did not grow. It is the same failure that already cost a `background` i
 `ui/Alert`.
 */
 .hero { display:flex; flex-direction:column; justify-content:center; }
-.hero .v { font-size: 34px; line-height:1.05; }
+.hero .v { --size: 34px; font-size: 34px; font-size: min(var(--size), var(--fit)); line-height:1.05; }
 
 /* With no data the figure is a dash, and dimmed: it is not a value. */
 .noData { color: var(--faint); }
@@ -109,10 +120,17 @@ was empty at 1440.
 .trio:last-child { margin-bottom:0; }
 .panel {}
 
-/* Three columns, six counters, two rows — the drawing's shape. It used to be
-   `auto-fill minmax(92px,1fr)`, which inside the 310 px rail could only ever
-   resolve to two. */
-.counters { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap: var(--s-6); }
+/*
+Two columns and three rows while `Server` sits in the 310 px rail; three columns
+once it goes full width (the 1080 step below).
+
+The drawing had three columns in the rail, and issue #2 showed what that costs:
+each cell has 61 px for its figure, so a Block List of 2,551,031 domains ran out
+of its card. Shrinking the figure alone brought it down to 9 px at 1440, next to
+neighbours at 17. In two columns a cell has about 107 px, which holds nine
+characters at full size; past that the figure shrinks (see `.v`).
+*/
+.counters { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap: var(--s-6); }
 
 /*
 A doughnut and its legend side by side, not one under the other.
@@ -140,7 +158,7 @@ its longest label plus its percentage, and that is not negotiable.
 .split .legend { margin-bottom:0; flex-direction:column; flex-wrap:nowrap; align-items:flex-start; gap: var(--s-3); flex:0 1 auto; }
 .split .lg { white-space:nowrap; }
 .cnt { padding: var(--s-8); background:var(--pan2); border:1px solid var(--line2); border-radius: var(--r-3); }
-.cnt .v { font:600 var(--t-6)/1 var(--font-mono); color:var(--ink); }
+.cnt .v { --size: var(--t-6); font:600 var(--t-6)/1 var(--font-mono); font-size: min(var(--size), var(--fit)); color:var(--ink); }
 .cnt .k { font-size: var(--t-1); color:var(--mute); margin-top: var(--s-3); text-transform:uppercase; letter-spacing:.05em; }
 .toprow { display:flex; align-items:center; justify-content:space-between; gap: var(--s-8); padding: var(--s-4) 0; border-bottom:1px solid var(--line2); font-size: var(--t-4); }
 .toprow:last-child { border-bottom:0; }
@@ -186,8 +204,9 @@ screens it is at 12.5 and normal weight.
 The responsive steps of the lower half, measured at the four widths.
 
 1080 — `Server` stops fitting beside `Queries`: the chart was down to 425 px and
-at 390 it was pushed off the screen. Both go full width, `Server` keeping its
-three columns because six counters in three columns is what it is.
+at 390 it was pushed off the screen. Both go full width, and `Server`, with room
+to spare, goes to three columns: two rows of three read better than three of two
+across the whole width.
 
 980 — the three doughnuts and the three top-N lists stop being three: a
 doughnut's ring plus its legend needs about 300 px, and three of those plus the
@@ -200,6 +219,7 @@ row: a column of five entries under a ring doubles the panel's height for nothin
 */
 @media (max-width: 1080px) {
   .grid { grid-template-columns: minmax(0, 1fr); }
+  .counters { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
 @media (max-width: 980px) {
@@ -234,8 +254,8 @@ families of three, and breaking them into two columns mixes rows that answer
 different questions. What gives is the size of the figure, not the grid.
 */
 @media (max-width: 560px) {
-  .tile .v { font-size: var(--t-6); }
-  .hero .v { font-size: var(--t-7); }
+  .tile .v { --size: var(--t-6); }
+  .hero .v { --size: var(--t-7); }
   .tile .k { font-size: var(--t-1); letter-spacing: .03em; }
   .counters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

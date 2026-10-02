@@ -76,6 +76,21 @@ describe('Dashboard', () => {
     expect(c.getByText((184302).toLocaleString())).toBeInTheDocument()
   })
 
+  // Issue #2: the stylesheet shrinks a figure that would not fit its card, and
+  // it needs the figure's length in characters to do so.
+  it('every figure carries its length, so a long one can shrink to fit', async () => {
+    vi.spyOn(api, 'getDashboardStats').mockResolvedValue({
+      kind: 'ok', data: { ...data, stats: { ...data.stats, blockListZones: 2551031 } },
+    } as never)
+    render(<Dashboard token="t" />)
+    const c = within(await screen.findByTestId('counters'))
+    const big = (2551031).toLocaleString()
+    expect(c.getByText(big).style.getPropertyValue('--len')).toBe(String(big.length))
+    const tiles = within(screen.getByTestId('metrics'))
+    const total = (48312).toLocaleString()
+    expect(tiles.getByText(total).style.getPropertyValue('--len')).toBe(String(total.length))
+  })
+
   it('it offers the six ranges with their labels and starts on Last Hour', async () => {
     vi.spyOn(api, 'getDashboardStats').mockResolvedValue({ kind: 'ok', data: data } as never)
     render(<Dashboard token="t" />)
@@ -113,7 +128,7 @@ describe('Dashboard', () => {
 
  It came out when the two states were separated, which is exactly what this test
  believed it was
-    mirando.
+    looking at.
     */
     vi.spyOn(api, 'getDashboardStats').mockResolvedValue({
       kind: 'ok',

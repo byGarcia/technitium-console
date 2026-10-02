@@ -347,6 +347,21 @@ function useHidden(data: ChartData | undefined) {
 }
 
 /*
+A figure that shrinks to fit its card instead of spilling out of it (issue #2: a
+Block List of 2,551,031 domains ran past the `Server` rail at 1440). The card is a
+size container and the figure's font is the smaller of its normal size and the
+width that this many monospace characters can have; `--len` carries the count.
+Short figures keep their size, so only the one that would not fit gives way.
+*/
+function Figure({ className, text }: { className: string; text: string }) {
+  return (
+    <div className={className} style={{ ['--len' as string]: String(text.length) }}>
+      {text}
+    </div>
+  )
+}
+
+/*
 One card. It is pulled out into its own component because it is now drawn from two
 places —the two totals and the nine— and keeping it duplicated is how one of the
 two copies ends up without the `—` or without the percentage.
@@ -375,7 +390,7 @@ function Card({
     >
       {/* With no data it is NOT a zero: it is a dash, and dimmed. A zero is a
           true figure, and here it would be a lie. */}
-      <div className={`${styles.v}${s ? '' : ` ${styles.noData}`}`}>{s ? num2(s[m.k]) : '—'}</div>
+      <Figure className={`${styles.v}${s ? '' : ` ${styles.noData}`}`} text={s ? num2(s[m.k]) : '—'} />
       <div className={styles.p}>{m.pct && s ? percentage(s[m.k], total) : ' '}</div>
       <div className={styles.k}>{m.label}</div>
     </div>
@@ -599,6 +614,9 @@ export function Dashboard({
       to live in, so they came out as a huge centred ring with the legend
       underneath, `Server` lost its third column, `Top Clients` left the group it
       belongs to, and half the canvas below was empty.
+
+      `Server` is back to two columns in the rail since issue #2, for the width of
+      its figures and not for the doughnuts: see `.counters`.
       */}
       <div className={styles.grid}>
         <Panel title="Queries" className={styles.panel}>
@@ -618,7 +636,7 @@ export function Dashboard({
             <div className={styles.counters} data-testid="counters">
               {COUNTERS.map((c) => (
                 <div className={styles.cnt} key={c.k}>
-                  <div className={styles.v}>{s ? num2(s[c.k]) : '—'}</div>
+                  <Figure className={styles.v} text={s ? num2(s[c.k]) : '—'} />
                   <div className={styles.k}>{c.label}</div>
                 </div>
               ))}
