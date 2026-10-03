@@ -56,7 +56,11 @@ describe('Overview against the harness', () => {
     expect(figure('Blocked')).toBe(s.totalBlocked.toLocaleString())
     expect(screen.getByText(`${percentage(s.totalBlocked, s.totalQueries)} of total`)).toBeInTheDocument()
     expect(figure('Block List Domains')).toBe(s.blockListZones.toLocaleString())
-    expect(figure('Your Rules')).toBe(`${s.blockedZones.toLocaleString()} · ${s.allowedZones.toLocaleString()}`)
+    const rules = screen.getByText('Your Rules', { selector: 'span' }).parentElement!
+    expect([...rules.children[0].children].map((c) => c.textContent)).toEqual([
+      s.blockedZones.toLocaleString(),
+      s.allowedZones.toLocaleString(),
+    ])
   })
 
   it('a day of traffic: the bars split Total into Allowed and Blocked, minute by minute', async () => {

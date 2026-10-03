@@ -29,6 +29,11 @@ the button that acts on it.
 .kpiText { display: flex; flex-direction: column; gap: var(--s-1); flex: none; min-width: 0; }
 .kpiValue { font-family: var(--font-mono); font-size: var(--t-7); font-weight: 600; line-height: 1.1; }
 .kpiSub { font-family: var(--font-mono); font-size: var(--t-2); color: var(--faint); }
+/* Two figures in one card (`Your Rules`): the column becomes a grid of two, each number
+   over its word, and the two rows hand their cells to it. The label spans both. */
+.kpiPaired { display: grid; grid-template-columns: repeat(2, max-content); column-gap: var(--s-9); }
+.kpiRow { display: contents; }
+.kpiPaired > .kpiLabel { grid-column: 1 / -1; }
 .kpiLabel { font-size: var(--t-1); font-weight: var(--text-weight); letter-spacing: var(--text-tracking); text-transform: uppercase; color: var(--mute); }
 
 /*

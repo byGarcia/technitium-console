@@ -32,8 +32,8 @@ data, so choosing a node here and seeing another there would be a contradiction.
 The five fixed periods and not Custom: a range of your own is the Dashboard's job.
 
 The words are OURS except `Total Queries` and `Blocked`, upstream's Dashboard tiles:
-the title `Overview`, `Period`, `Block List Domains`, `Your Rules` and its `blocked ·
-allowed`, the `of total` after Blocked's share, the panel titles (`Statistics`, `Queries over time`, `Blocked share`), the
+the title `Overview`, `Period`, `Block List Domains`, `Your Rules` and its `blocked` and
+`allowed`, the `of total` after Blocked's share, the panel titles (`Statistics`, `Queries over time`, `Blocked share`), the
 `Allowed` series, the ring's `Share` and `Blocked share: N%`, and the chart's label.
 The two gap sentences are the ones this console's Dashboard already uses.
 */
@@ -81,16 +81,46 @@ function Spark({ data, tone }: { data: number[]; tone: string }) {
   )
 }
 
-function Kpi({ value, sub, label, children }: { value: string; sub?: string; label: string; children?: ReactNode }) {
+function Kpi({
+  value,
+  sub,
+  label,
+  children,
+}: {
+  /** Two figures side by side (`Your Rules`) come as pairs, each number over its word. */
+  value: string | [string, string]
+  sub?: string | [string, string]
+  label: string
+  children?: ReactNode
+}) {
+  const paired = Array.isArray(value) && Array.isArray(sub)
   return (
     <Panel className={shared.centred}>
       <Body>
         <div className={`${shared.kpi}${children != null ? ` ${styles.trended}` : ''}`}>
-          <div className={shared.kpiText}>
-            <span className={shared.kpiValue}>{value}</span>
-            {/* A figure without a sub-line keeps an empty one, a full line high, so the four
-                labels sit on one line as the drawing has them. */}
-            <span className={shared.kpiSub}>{sub ?? '\u00a0'}</span>
+          <div className={`${shared.kpiText}${paired ? ` ${shared.kpiPaired}` : ''}`}>
+            {paired ? (
+              /* Both lines are laid on one two-column grid, so each number stands
+                 over its own word: written as one string, the 7 of "2 · 7" sat over
+                 the middle of "blocked · allowed". */
+              <>
+                <span className={`${shared.kpiValue} ${shared.kpiRow}`}>
+                  <span>{value[0]}</span>
+                  <span>{value[1]}</span>
+                </span>
+                <span className={`${shared.kpiSub} ${shared.kpiRow}`}>
+                  <span>{sub[0]}</span>
+                  <span>{sub[1]}</span>
+                </span>
+              </>
+            ) : (
+              <>
+                <span className={shared.kpiValue}>{value}</span>
+                {/* A figure without a sub-line keeps an empty one, a full line high, so the four
+                    labels sit on one line as the drawing has them. */}
+                <span className={shared.kpiSub}>{sub ?? '\u00a0'}</span>
+              </>
+            )}
             <span className={shared.kpiLabel}>{label}</span>
           </div>
           {children}
@@ -256,8 +286,8 @@ export function Overview({
             </Kpi>
             <Kpi value={s ? s.blockListZones.toLocaleString() : '—'} label="Block List Domains" />
             <Kpi
-              value={s ? `${s.blockedZones.toLocaleString()} · ${s.allowedZones.toLocaleString()}` : '—'}
-              sub="blocked · allowed"
+              value={s ? [s.blockedZones.toLocaleString(), s.allowedZones.toLocaleString()] : '—'}
+              sub={s ? ['blocked', 'allowed'] : undefined}
               label="Your Rules"
             />
           </div>

@@ -8,6 +8,13 @@ import * as zonelists from '../../api/zonelists'
 import { SlotProvider } from '../../app/ChromeSlot'
 import { Overview, blockingChart } from './Overview'
 
+/** Your Rules: each number with the word under it, in the card's two columns. */
+function rulePairs() {
+  const text = screen.getByText('Your Rules', { selector: 'span' }).parentElement!
+  const [numbers, words] = [...text.children].slice(0, 2).map((row) => [...row.children].map((c) => c.textContent))
+  return numbers.map((n, i) => [n, words[i]])
+}
+
 /* Every `data` the charts were handed, by chart: Chart.tsx rebuilds its canvas on a
    new reference, so identity across renders is what the tests look at. */
 const drawn = vi.hoisted(() => new Map<string, unknown[]>())
@@ -89,7 +96,7 @@ describe('Overview', () => {
     /* The ring writes the same share in its hole: the figure is looked for in its card. */
     expect(within(screen.getByText('5,310').parentElement!).getByText('26.09% of total')).toBeInTheDocument()
     expect(screen.getByText('74,779')).toBeInTheDocument()
-    expect(screen.getByText('1 · 1')).toBeInTheDocument()
+    expect(rulePairs()).toEqual([['1', 'blocked'], ['1', 'allowed']])
   })
 
   it('draws the stacked bars and the blocked share', async () => {
@@ -171,7 +178,8 @@ describe('Overview', () => {
   it('Your Rules is localised like the other figures', async () => {
     serve().mockResolvedValue({ ...OK, data: { ...OK.data, stats: { ...STATS, blockedZones: 10000, allowedZones: 1234 } } })
     render(<Overview token="T" permissions={undefined} />)
-    expect(await screen.findByText(`${(10000).toLocaleString()} · ${(1234).toLocaleString()}`)).toBeInTheDocument()
+    await screen.findByText((10000).toLocaleString())
+    expect(rulePairs()).toEqual([[(10000).toLocaleString(), 'blocked'], [(1234).toLocaleString(), 'allowed']])
   })
 
   it('while the figures travel the top tables do not claim there are no domains', () => {
