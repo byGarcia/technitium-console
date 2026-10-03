@@ -286,3 +286,73 @@ describe('Overview', () => {
     expect(screen.queryByRole('img', { name: 'Allowed and blocked queries over time' })).not.toBeInTheDocument()
   })
 })
+
+/* Last Hour in real time, as on the Dashboard: the same `stats/get`, the same live
+   figures over it (dashboard/useLive.ts), the same minute reload. */
+describe('Overview: Last Hour in real time', () => {
+  const counters = (q: number, blocked: number) => ({
+    kind: 'ok' as const,
+    data: {
+      uptimestamp: 'u1',
+      lifetimeCounters: {
+        totalQueries: q, totalNoError: 0, totalServerFailure: 0, totalNxDomain: 0, totalRefused: 0,
+        totalAuthoritative: 0, totalRecursive: 0, totalCached: 0, totalBlocked: blocked, totalDropped: 0,
+        totalClients: 1,
+      },
+    },
+  })
+
+  afterEach(() => vi.useRealTimers())
+
+  it('Total Queries and Blocked move with the server between reloads', async () => {
+    vi.useFakeTimers()
+    serve()
+    vi.spyOn(dashboard, 'getMetrics').mockResolvedValueOnce(counters(1000, 50)).mockResolvedValue(counters(1004, 52))
+    render(<Overview token="T" permissions={undefined} />)
+    await act(async () => { await vi.advanceTimersByTimeAsync(0) })
+    expect(screen.getByText((20354).toLocaleString())).toBeInTheDocument()
+    await act(async () => { await vi.advanceTimersByTimeAsync(2_000) })
+    expect(screen.getByText((20358).toLocaleString())).toBeInTheDocument()
+    expect(screen.getByText((5312).toLocaleString())).toBeInTheDocument()
+  })
+
+  it('reloads a minute after each answer, waits while the tab is hidden, and reloads on return', async () => {
+    vi.useFakeTimers()
+    let hidden = false
+    Object.defineProperty(document, 'hidden', { configurable: true, get: () => hidden })
+    const spy = serve()
+    vi.spyOn(dashboard, 'getMetrics').mockResolvedValue({ kind: 'error', message: 'not here' })
+    render(<Overview token="T" permissions={undefined} />)
+    await act(async () => { await vi.advanceTimersByTimeAsync(0) })
+    expect(spy).toHaveBeenCalledTimes(1)
+    await act(async () => { await vi.advanceTimersByTimeAsync(60_000) })
+    expect(spy).toHaveBeenCalledTimes(2)
+
+    hidden = true
+    document.dispatchEvent(new Event('visibilitychange'))
+    await act(async () => { await vi.advanceTimersByTimeAsync(180_000) })
+    expect(spy).toHaveBeenCalledTimes(2)
+
+    hidden = false
+    await act(async () => {
+      document.dispatchEvent(new Event('visibilitychange'))
+      await vi.advanceTimersByTimeAsync(0)
+    })
+    expect(spy).toHaveBeenCalledTimes(3)
+  })
+
+  it('other periods neither reload nor read the counters', async () => {
+    vi.useFakeTimers()
+    const spy = serve()
+    const live = vi.spyOn(dashboard, 'getMetrics').mockResolvedValue(counters(1, 0))
+    render(<Overview token="T" permissions={undefined} />)
+    await act(async () => { await vi.advanceTimersByTimeAsync(0) })
+    await act(async () => { screen.getByRole('button', { name: 'Last Day' }).click() })
+    await act(async () => { await vi.advanceTimersByTimeAsync(0) })
+    spy.mockClear()
+    live.mockClear()
+    await act(async () => { await vi.advanceTimersByTimeAsync(130_000) })
+    expect(spy).not.toHaveBeenCalled()
+    expect(live).not.toHaveBeenCalled()
+  })
+})

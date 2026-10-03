@@ -18,6 +18,7 @@ import { AddDomainBar } from './AddDomainBar'
 import { StatusPanel } from './StatusPanel'
 import { TopTable } from './TopTable'
 import { RecentBlocked } from './RecentBlocked'
+import { LAST_HOUR_REFRESH_MS, useLiveView } from '../dashboard/useLive'
 import { Locked } from './Locked'
 import { missing, type Permissions } from './permissions'
 import shared from './Blocking.module.css'
@@ -219,24 +220,65 @@ export function Overview({
     void load()
   }, [load])
 
-  const s = data?.stats
+  /*
+  Last Hour keeps itself current, as the Dashboard does: read again a minute after
+  each answer, never two at once, nothing while the tab is hidden, and at once when
+  it comes back. In between, the live figures below move the counts, the bars and
+  the ring every 2 seconds (`dashboard/useLive.ts`).
+  */
+  useEffect(() => {
+    if (range !== 'LastHour' || statsNeed != null) return
+    let cancelled = false
+    let timer: number | undefined
+    const arm = () => {
+      if (!cancelled && !document.hidden) timer = window.setTimeout(() => void again(), LAST_HOUR_REFRESH_MS)
+    }
+    async function again() {
+      await load()
+      arm()
+    }
+    function onVisibility() {
+      if (timer != null) window.clearTimeout(timer)
+      timer = undefined
+      if (!document.hidden) void again()
+    }
+    arm()
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      cancelled = true
+      if (timer != null) window.clearTimeout(timer)
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
+  }, [range, load, statsNeed])
+
+  const view = useLiveView({
+    token,
+    lastHour: range === 'LastHour',
+    node,
+    nodes,
+    clusterInitialised,
+    data,
+    active: !failure && statsNeed == null,
+  })
+
+  const s = view?.stats
   /*
   Memoised on the response: Chart.tsx destroys and rebuilds its canvas on every new
   `data` reference, so a notice or any other render would otherwise redraw and
   re-animate both charts with the same numbers.
   */
-  const chart = useMemo(() => (data != null ? blockingChart(data.mainChartData) : null), [data])
+  const chart = useMemo(() => (view != null ? blockingChart(view.mainChartData) : null), [view])
   const share = useMemo<ChartData | null>(
     () =>
-      data != null
+      view != null
         ? {
             /* Blocked first: the ring starts at the top with it, as drawn and as the
                bars stack it on the baseline. */
             labels: ['Blocked', 'Allowed'],
-            datasets: [{ label: 'Share', data: [data.stats.totalBlocked, data.stats.totalQueries - data.stats.totalBlocked] }],
+            datasets: [{ label: 'Share', data: [view.stats.totalBlocked, view.stats.totalQueries - view.stats.totalBlocked] }],
           }
         : null,
-    [data],
+    [view],
   )
   const loading = data == null && !failure
 
@@ -275,14 +317,14 @@ export function Overview({
         ) : (
           <div className={shared.kpis}>
             <Kpi value={s ? s.totalQueries.toLocaleString() : '—'} label="Total Queries">
-              {data && <Spark data={series(data.mainChartData, 'Total')} tone={styles.sparkTotal} />}
+              {view && <Spark data={series(view.mainChartData, 'Total')} tone={styles.sparkTotal} />}
             </Kpi>
             <Kpi
               value={s ? s.totalBlocked.toLocaleString() : '—'}
               sub={s ? `${percentage(s.totalBlocked, s.totalQueries)} of total` : undefined}
               label="Blocked"
             >
-              {data && <Spark data={series(data.mainChartData, 'Blocked')} tone={styles.sparkBlocked} />}
+              {view && <Spark data={series(view.mainChartData, 'Blocked')} tone={styles.sparkBlocked} />}
             </Kpi>
             <Kpi value={s ? s.blockListZones.toLocaleString() : '—'} label="Block List Domains" />
             <Kpi
