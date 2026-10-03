@@ -491,7 +491,8 @@ written down**. If you find a sixth, do not introduce it on your own: report it.
    It is the only one that *adds* a screen. It stays inside four limits, and a
    change that crosses one is a bug:
    - **only endpoints the server already has**, and only ones upstream's console
-     already calls. `dev/check-endpoints.mjs` measures the other direction
+     already calls, save `dashboard/metrics/json` for its live Last Hour
+     (exception 5). `dev/check-endpoints.mjs` measures the other direction
      (upstream's endpoints this console covers), so a new path is checked by
      hand against upstream's `www/js`;
    - **upstream's actions, sentences and call sequences**: `Allow Domain` is
@@ -520,18 +521,23 @@ written down**. If you find a sixth, do not introduce it on your own: report it.
    stays dead until the page is reloaded because nothing re-evaluates its state:
    that is a bug of theirs, and replicating it would mean introducing the fault
    on purpose.
-5. **Last Hour moves in real time** (Adrián's decision, 2026-10-03). Between the
-   60-second reloads the ten count tiles, the Queries chart and the Query
-   Response Types doughnut follow the server's lifetime counters
-   (`dashboard/metrics/json`), read every 2 seconds (`dashboard/live.ts`,
-   `dashboard/useLive.ts`). Its limits, and crossing one is a bug:
+5. **Last Hour moves in real time** (Adrián's decision, 2026-10-03), on the
+   Dashboard and on Blocking › Overview, which read the same `stats/get`.
+   Between the 60-second reloads the count tiles, the Queries chart and the
+   Query Response Types doughnut (and on Overview its figures, sparklines, bars
+   and ring) follow the server's lifetime counters (`dashboard/metrics/json`),
+   read every 2 seconds (`dashboard/live.ts`, `dashboard/useLive.ts`). Overview
+   gained the minute reload with it. A chart takes new figures in place and
+   without animation (`Chart.tsx`), and a legend's switched-off series only come
+   back with a new response, as upstream's rebuilt chart does. Its limits, and
+   crossing one is a bug:
    - **only that endpoint**, which upstream documents in APIDOCS.md and its
      console does not call; `check-endpoints.mjs` counts upstream's endpoints, so
      it does not object;
    - **Clients, Query Types, Protocol Types, the tops and the Server panel never
      move**: the counters do not carry them, and distinct clients do not add up;
    - **if the endpoint fails three times in a row, live mode stops** until the
-     next reload, and the Dashboard is exactly the stock console's;
+     next reload, and the screen is exactly what it was without it;
    - **a hidden tab reads nothing**, the minute refresh included, and coming
      back reloads at once. That pause is the only change to an upstream request.
 

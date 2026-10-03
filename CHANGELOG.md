@@ -12,12 +12,31 @@ sends, every text it shows and every control it offers, compared with that serve
 
 | Console | Technitium DNS Server | Notes |
 |---|---|---|
-| **1.2.x** | **15.5.x, 15.6.x** (1.2.1 checked against 15.6.0) | Current. Allowed and Blocked become one Blocking section, a light theme, and the console comes as an image for Docker. Supports a console folder of its own (`DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH`), so server updates leave it alone. |
+| **1.2.x** | **15.5.x, 15.6.x** (1.2.1 and 1.2.2 checked against 15.6.0) | Current. Allowed and Blocked become one Blocking section, a light theme, and the console comes as an image for Docker. Supports a console folder of its own (`DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH`), so server updates leave it alone. |
 | 1.1.x | 15.5.x | Superseded by 1.2.x on the same server. If you stay on it, use 1.1.3: earlier ones flood the server from Cache, Allowed and Blocked. |
 | 1.0.0 | 15.4 | Cannot save Settings on a 15.5 server. Upgrade. |
 
 To update, run the installer again (the same one-line command). It needs no restart of the DNS
 service. On Docker, pull the image again: see [Docker](README.md#docker).
+
+---
+
+## v1.2.2 (2026-10-03)
+
+**Blocking › Overview moves in real time too, and the live charts stay still.** The live Last Hour
+of 1.2.1 left two things to finish. Blocking's Overview, which reads the same figures as the
+Dashboard, now follows the server as queries arrive and reloads every minute like the Dashboard.
+And the charts no longer replay their entry animation on every live update, nor switch back on a
+series you had switched off in the legend.
+
+- **Blocking › Overview, Last Hour:** Total Queries, Blocked, their sparklines, the queries over
+  time bars and the blocked share ring follow the server every 2 seconds, on the node or the whole
+  cluster you are viewing. The page also reloads once a minute, and not while its tab is hidden.
+- **The charts take new figures in place.** On the Dashboard every chart was rebuilt, and animated
+  again from scratch, every 2 seconds, even with no new queries. Now a reading that brings nothing
+  draws nothing, and one that does moves the chart without animating it.
+- **A series switched off in the legend stays off** until the next minute reload, as in the stock
+  console. With 1.2.1 it came back within 2 seconds.
 
 ---
 
