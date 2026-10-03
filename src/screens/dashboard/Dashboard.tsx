@@ -96,6 +96,8 @@ const COUNTERS: { k: keyof Stats; label: string }[] = [
   { k: 'blockListZones', label: 'Block List' },
 ]
 
+const AUTO_REFRESH_MS = 60_000
+
 /*
 The numbers come out as in upstream, and upstream does NOT pin a locale: it uses
 a bare `toLocaleString()` (main.js:2632-2650), that is, the browser's. They were
@@ -454,33 +456,48 @@ export function Dashboard({
 
   useEffect(() => {
     let cancelled = false
+    let refreshTimer: number | undefined
     // With "Custom" chosen and no dates yet there is nothing to ask for.
     if (range === 'Custom' && requested == null) {
       setLoading(false)
       return
     }
-    setLoading(true)
-    void (async () => {
+
+    /*
+    Upstream refreshes the Dashboard every 60 seconds, but only for Last Hour
+    (`main.js:258-262`). Its `hideLoader=true` keeps the current figures visible
+    while that request is in flight. A chained timeout gives the same visible
+    behaviour without allowing a slow request to overlap the next one.
+    */
+    async function load(showLoader: boolean) {
+      if (showLoader) setLoading(true)
       const r = await getDashboardStats(token, range, requested ?? undefined, node)
       if (cancelled) return
       setLoading(false)
       if (r.kind === 'ok') {
         setData(r.data)
         setFailure(false)
-        return
+      } else {
+        /*
+        A failure is NOT drawn as a quiet server. Without this, the eleven tiles
+        came out at zero and the panels said "No queries for this period.", which is
+        exactly what a DNS that has received nothing shows: the screen was answering
+        falsely about the one thing people come here to look at.
+        */
+        setData(null)
+        setFailure(true)
+        setNotice(noticeFromFailure(r))
       }
-      /*
-      A failure is NOT drawn as a quiet server. Without this, the eleven tiles
-      came out at zero and the panels said "No queries for this period.", which is
-      exactly what a DNS that has received nothing shows: the screen was answering
-      falsely about the one thing people come here to look at.
-      */
-      setData(null)
-      setFailure(true)
-      setNotice(noticeFromFailure(r))
-    })()
+
+      if (range === 'LastHour') {
+        refreshTimer = window.setTimeout(() => void load(false), AUTO_REFRESH_MS)
+      }
+    }
+
+    void load(true)
     return () => {
       cancelled = true
+      if (refreshTimer != null) window.clearTimeout(refreshTimer)
     }
   }, [token, range, requested, node])
 

@@ -52,6 +52,7 @@ WEB_URL=""
 ACTION="install"
 ASSUME_YES="no"
 ALLOW_MISMATCH="no"
+CONFIGURE_SERVICE="yes"
 INTO_VOLUME=""               # what the Docker image runs: see --into-volume
 
 say()  { printf '  %s\n' "$*"; }
@@ -70,6 +71,9 @@ usage() {
     --dir <path>       web root to install into (default: ask the running server)
     --url <base>       where its web console answers (default: http://127.0.0.1:5380)
     --yes              do not ask for confirmation
+    --no-configure-service
+                       do not create a systemd drop-in; replace the stock web
+                       root unless --dir or the server environment says otherwise
     --into-volume <path>
                        copy the console into the volume mounted at <path> and
                        stop. It is what the Docker image runs; needs --from.
@@ -90,6 +94,7 @@ while [ $# -gt 0 ]; do
     --dir)       WWW_DIR="${2:?--dir needs a path}"; DIR_GIVEN="yes"; shift ;;
     --url)       WEB_URL="${2:?--url needs a base URL}"; shift ;;
     --yes|-y)    ASSUME_YES="yes" ;;
+    --no-configure-service) CONFIGURE_SERVICE="no" ;;
     --restore-mismatched-backup) ALLOW_MISMATCH="yes" ;;
     --into-volume) INTO_VOLUME="${2:?--into-volume needs a path}"; shift ;;
     --help|-h)   usage ;;
@@ -297,6 +302,23 @@ find_systemd_unit_file() {
 }
 find_systemd_unit() { unit="$(find_systemd_unit_file)" && basename "$unit"; }
 
+find_systemd_unit_for_app() { # exact running DnsServerApp.dll; fails if ambiguous
+  fsu_found=""
+  fsu_count=0
+  fsu_seen="|"
+  for fsu_file in /etc/systemd/system/*.service /lib/systemd/system/*.service; do
+    [ -f "$fsu_file" ] || continue
+    grep -Fq "$SERVER_APP/DnsServerApp.dll" "$fsu_file" 2>/dev/null || continue
+    fsu_name="$(basename "$fsu_file")"
+    case "$fsu_seen" in *"|$fsu_name|"*) continue ;; esac
+    fsu_seen="$fsu_seen$fsu_name|"
+    fsu_found="$fsu_file"
+    fsu_count=$((fsu_count + 1))
+  done
+  [ "$fsu_count" = "1" ] || return 1
+  printf '%s\n' "$fsu_found"
+}
+
 # Root runs it in Docker and under the community script. Upstream's installer
 # has run it as dns-server since v15.0, and hands it the application folder
 # (DnsServerApp/install.sh: serviceUser, chown -R; User= in systemd.service,
@@ -341,6 +363,7 @@ untrusted_files() { # the DnsServerApp.dll it names, trusted uids (prints why no
 # are not settled by picking one, and resolve_target stops on it.
 SERVER_PID=""; SERVER_APP=""; SERVERS_FOUND=0; SERVERS=""
 find_server() {
+  SERVER_PID=""; SERVER_APP=""; SERVERS_FOUND=0
   fs_trusted="$(service_uids)"
   fs_here="$(stat -L -c %d:%i / 2>/dev/null || true)"
   SERVERS=""
@@ -491,6 +514,16 @@ before_15_5() {
   [ -n "$1" ] || return 1
   bv_major="${1%%.*}"; bv_rest="${1#*.}"; bv_minor="${bv_rest%%.*}"
   [ "$bv_major" -lt 15 ] || { [ "$bv_major" -eq 15 ] && [ "$bv_minor" -lt 5 ]; }
+}
+
+at_least_15_5() {
+  al_version="${1#v}"
+  al_major="${al_version%%.*}"
+  al_rest="${al_version#*.}"
+  [ "$al_rest" != "$al_version" ] || return 1
+  al_minor="${al_rest%%.*}"
+  case "$al_major:$al_minor" in *[!0-9:]*|:|*:) return 1 ;; esac
+  [ "$al_major" -gt 15 ] || { [ "$al_major" -eq 15 ] && [ "$al_minor" -ge 5 ]; }
 }
 dk_init_service() {
   docker ps -a --filter "label=com.docker.compose.project=$1" \
@@ -770,6 +803,9 @@ in_container_layer() { # folder
 MODE=""              # replacement | side-by-side
 RESTART_NEEDED="no"
 SERVER_VERSION=""
+MANAGE_SYSTEMD="no"
+MANAGED_UNIT=""
+MANAGED_DROPIN=""
 
 resolve_target() {
   if [ -n "$INTO_VOLUME" ]; then
@@ -819,6 +855,27 @@ resolve_target() {
       else
         warn "$VAR_NAME is set to $configured, but this server does not honour it."
         warn "Installing there would put the console where nobody reads it."
+      fi
+    fi
+
+    # On 15.5+ systemd installs, keep the alternative console outside the DNS
+    # server's application folder. The unit is matched to the process above,
+    # never selected merely by its name. Publishing happens before the drop-in
+    # is written, so the single restart can only point at a complete console.
+    if [ "$CONFIGURE_SERVICE" = "yes" ] && at_least_15_5 "$SERVER_VERSION" \
+      && command -v systemctl >/dev/null 2>&1 \
+      && managed_unit_file="$(find_systemd_unit_for_app)"; then
+      MANAGED_UNIT="$(basename "$managed_unit_file")"
+      MANAGED_DROPIN="/etc/systemd/system/$MANAGED_UNIT.d/technitium-console.conf"
+      if [ -e "$MANAGED_DROPIN" ] && [ "$(state_get managed_dropin)" != "$MANAGED_DROPIN" ]; then
+        warn "$MANAGED_DROPIN already exists and is not managed by this installer."
+        warn "Leaving it alone and using the server's own web root."
+      else
+        WWW_DIR="$CONSOLE_DIR"; MODE="side-by-side"; MANAGE_SYSTEMD="yes"
+        refuse_links "$WWW_DIR"
+        ok "Dedicated console folder" "$WWW_DIR"
+        say "The installer will add a systemd drop-in for $MANAGED_UNIT and restart it once."
+        return 0
       fi
     fi
 
@@ -942,6 +999,66 @@ restart_server() {
   fi
 }
 
+managed_dropin_body() {
+  printf '[Service]\nEnvironment=%s=%s\n' "$VAR_NAME" "$CONSOLE_DIR"
+}
+
+managed_dropin_is_ours() {
+  [ -f "$1" ] || return 1
+  md_expected="$(managed_dropin_body)"
+  md_actual="$(cat "$1")"
+  [ "$md_actual" = "$md_expected" ]
+}
+
+wait_for_managed_console() { # asset
+  wf_i=0
+  while [ "$wf_i" -lt 30 ]; do
+    find_server
+    if [ -n "$SERVER_PID" ] \
+      && [ "$(server_env "$SERVER_PID" "$VAR_NAME")" = "$CONSOLE_DIR" ] \
+      && web_serves "$1"; then return 0; fi
+    wf_i=$((wf_i + 1)); sleep 1
+  done
+  return 1
+}
+
+wait_for_stock_console() {
+  wf_i=0
+  while [ "$wf_i" -lt 30 ]; do
+    find_server
+    if [ -n "$SERVER_PID" ] && [ -z "$(server_env "$SERVER_PID" "$VAR_NAME")" ] \
+      && web_serves "js/main.js"; then return 0; fi
+    wf_i=$((wf_i + 1)); sleep 1
+  done
+  return 1
+}
+
+activate_managed_systemd() { # asset
+  mkdir -p "$(dirname "$MANAGED_DROPIN")"
+  ad_tmp="$MANAGED_DROPIN.tc-new"
+  managed_dropin_body > "$ad_tmp"
+  chmod 0644 "$ad_tmp"
+  mv -f "$ad_tmp" "$MANAGED_DROPIN"
+  state_set managed_unit "$MANAGED_UNIT"
+  state_set managed_dropin "$MANAGED_DROPIN"
+  if systemctl daemon-reload && systemctl restart "$MANAGED_UNIT" \
+    && wait_for_managed_console "$1"; then
+    ok "Service configured and restarted" "$MANAGED_UNIT"
+    return 0
+  fi
+
+  warn "The service did not come back on the dedicated console. Rolling back."
+  rm -f "$MANAGED_DROPIN"
+  rmdir "$(dirname "$MANAGED_DROPIN")" 2>/dev/null || true
+  systemctl daemon-reload >/dev/null 2>&1 || true
+  systemctl restart "$MANAGED_UNIT" >/dev/null 2>&1 || true
+  wait_for_stock_console || true
+  find "$WWW_DIR" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+  rmdir "$WWW_DIR" 2>/dev/null || true
+  state_clear
+  die "systemd activation failed. The drop-in was removed and the stock console was restored."
+}
+
 # ------------------------------------------------------------------- uninstall
 if [ "$ACTION" = "uninstall" ]; then
   resolve_target
@@ -961,6 +1078,8 @@ if [ "$ACTION" = "uninstall" ]; then
   [ -n "$BACKUP" ] || BACKUP="$WWW_DIR$BACKUP_SUFFIX"
   RECORDED_MODE="$(state_get mode)"
   [ -n "$RECORDED_MODE" ] || RECORDED_MODE="$MODE"
+  RECORDED_UNIT="$(state_get managed_unit)"
+  RECORDED_DROPIN="$(state_get managed_dropin)"
 
   if [ "$RECORDED_MODE" = "side-by-side" ]; then
     # The whole folder goes, so it has to still be this console. A record is not
@@ -971,6 +1090,38 @@ if [ "$ACTION" = "uninstall" ]; then
     [ -n "$stock" ] && [ -d "$stock" ] || die "cannot find the console the server ships to hand back to."
     [ "$stock" != "$WWW_DIR" ] || die "$WWW_DIR is the server's own web root. Not removing it."
     refuse_links "$stock"
+
+    if [ -n "$RECORDED_DROPIN" ]; then
+      [ -n "$RECORDED_UNIT" ] || die "the managed systemd unit is missing from $STATE. Nothing was changed."
+      [ "$RECORDED_DROPIN" = "/etc/systemd/system/$RECORDED_UNIT.d/technitium-console.conf" ] \
+        || die "the recorded systemd drop-in has an unexpected path. Nothing was changed."
+      managed_dropin_is_ours "$RECORDED_DROPIN" || die "$RECORDED_DROPIN was changed after installation.
+    Not removing an administrator's service configuration. Restore its original
+    two lines or remove the console manually. Nothing was changed."
+
+      confirm "Remove the systemd drop-in and restart $RECORDED_UNIT on its stock console?"
+      carry_custom_lists "$WWW_DIR" "$stock"
+      rm -f "$RECORDED_DROPIN"
+      if ! systemctl daemon-reload || ! systemctl restart "$RECORDED_UNIT" \
+        || ! wait_for_stock_console; then
+        warn "The service did not return on its stock console. Restoring the drop-in."
+        managed_dropin_body > "$RECORDED_DROPIN"
+        chmod 0644 "$RECORDED_DROPIN"
+        systemctl daemon-reload >/dev/null 2>&1 || true
+        systemctl restart "$RECORDED_UNIT" >/dev/null 2>&1 || true
+        wait_for_managed_console "$(cd "$WWW_DIR" && find assets -name '*.js' -type f 2>/dev/null | head -1 || true)" || true
+        die "the uninstall was rolled back; the console folder and state were left in place."
+      fi
+      rmdir "$(dirname "$RECORDED_DROPIN")" 2>/dev/null || true
+      find "$WWW_DIR" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+      rmdir "$WWW_DIR" 2>/dev/null || true
+      state_clear
+      ok "Stock console restored" "$RECORDED_UNIT"
+      ok "Console removed" "$WWW_DIR"
+      printf '\n'
+      exit 0
+    fi
+
     carry_custom_lists "$WWW_DIR" "$stock"
     # The contents first and the folder after, because the folder may be a
     # mount point (the Docker layout the README describes) and a mount point
@@ -1175,6 +1326,15 @@ if [ -n "$INTO_VOLUME" ]; then
   exit 0
 fi
 
+asset="$(cd "$TMP/dist" && find assets -name '*.js' -type f 2>/dev/null | head -1 || true)"
+
+if [ "$MANAGE_SYSTEMD" = "yes" ]; then
+  say ""
+  say "Activating the dedicated folder requires the installation's only DNS service restart."
+  activate_managed_systemd "$asset"
+  ok "Serving the new console" "$(web_base)"
+fi
+
 if [ "$RESTART_NEEDED" = "yes" ]; then
   say ""
   say "The server is still serving its old folder: the path it serves is read once,"
@@ -1184,8 +1344,7 @@ if [ "$RESTART_NEEDED" = "yes" ]; then
 else
   # It does not need one. The file provider resolves every request against the
   # folder, so a console replaced underneath a running server is served at once.
-  asset="$(cd "$TMP/dist" && find assets -name '*.js' -type f 2>/dev/null | head -1 || true)"
-  if [ -n "$asset" ] && web_answers; then
+  if [ "$MANAGE_SYSTEMD" != "yes" ] && [ -n "$asset" ] && web_answers; then
     if web_serves "$asset"; then
       ok "Serving the new console" "$(web_base)"
     else

@@ -604,6 +604,77 @@ sh /w/install.sh --from /w/console.tar.gz --yes 2>&1 | grep -q 'not verified'
 EOF
 verdict "C25" $? "a download that does not match the release's .sha256 is refused"
 
+# ---------------------- C31 · managed systemd folder, one restart and rollback
+case_run <<'EOF'
+set -e
+mkdir -p /etc/systemd/system /usr/local/bin /run
+cat > /etc/systemd/system/dns.service <<'UNIT'
+[Service]
+ExecStart=/usr/bin/dotnet /opt/technitium/dns/DnsServerApp.dll /etc/dns
+UNIT
+cat > /usr/local/bin/systemctl <<'FAKE'
+#!/bin/sh
+[ "$1" = daemon-reload ] && exit 0
+[ "$1" = restart ] || exit 1
+count=0; [ ! -f /run/restarts ] || count="$(cat /run/restarts)"
+printf '%s\n' "$((count + 1))" > /run/restarts
+if [ -f /run/dns.pid ]; then
+  kill "$(cat /run/dns.pid)" 2>/dev/null || true
+  i=0; while [ "$i" -lt 30 ] && kill -0 "$(cat /run/dns.pid)" 2>/dev/null; do i=$((i+1)); sleep 1; done
+fi
+if [ -f /etc/systemd/system/dns.service.d/technitium-console.conf ]; then
+  DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH=/opt/technitium-console /usr/bin/dotnet \
+    /opt/technitium/dns/DnsServerApp.dll /etc/dns >/tmp/dns.log 2>&1 &
+else
+  /usr/bin/dotnet /opt/technitium/dns/DnsServerApp.dll /etc/dns >/tmp/dns.log 2>&1 &
+fi
+printf '%s\n' "$!" > /run/dns.pid
+exit 0
+FAKE
+chmod +x /usr/local/bin/systemctl
+
+/usr/bin/dotnet /opt/technitium/dns/DnsServerApp.dll /etc/dns >/tmp/dns.log 2>&1 &
+printf '%s\n' "$!" > /run/dns.pid
+i=0; while [ "$i" -lt 60 ] && ! curl -sf -o /dev/null http://127.0.0.1:5380/; do i=$((i+1)); sleep 1; done
+grep -q 'DNS Server (v15\.[5-9]' /var/log/technitium/dns/*.log
+printf '[{"name":"before"}]\n' > "$WWW/json/quick-block-lists-custom.json"
+
+echo "step: first install configures systemd and restarts once"
+sh /w/install.sh --from /w/console.tar.gz --yes
+[ "$(cat /run/restarts)" = 1 ]
+curl -sf -o /dev/null "http://127.0.0.1:5380/$ASSET"
+grep -qx 'managed_unit=dns.service' /var/lib/technitium-console/install.state
+grep -qx 'managed_dropin=/etc/systemd/system/dns.service.d/technitium-console.conf' /var/lib/technitium-console/install.state
+grep -qx 'Environment=DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH=/opt/technitium-console' \
+  /etc/systemd/system/dns.service.d/technitium-console.conf
+[ -f /opt/technitium-console/json/quick-block-lists-custom.json ]
+[ -f "$WWW/js/main.js" ] && [ ! -f "$WWW/$ASSET" ]
+
+echo "step: update publishes in place without another restart"
+sh /w/install.sh --from /w/console.tar.gz --yes
+[ "$(cat /run/restarts)" = 1 ]
+
+echo "step: uninstall switches to stock before removing the folder"
+printf '[{"name":"after"}]\n' > /opt/technitium-console/json/quick-forwarders-list-custom.json
+sh /w/install.sh --uninstall --yes
+[ "$(cat /run/restarts)" = 2 ]
+[ ! -e /etc/systemd/system/dns.service.d/technitium-console.conf ]
+[ ! -e /opt/technitium-console ]
+curl -sf -o /dev/null http://127.0.0.1:5380/js/main.js
+[ -f "$WWW/json/quick-block-lists-custom.json" ]
+[ -f "$WWW/json/quick-forwarders-list-custom.json" ]
+
+echo "step: a changed drop-in belongs to the administrator and is not removed"
+sh /w/install.sh --from /w/console.tar.gz --yes
+[ "$(cat /run/restarts)" = 3 ]
+printf '\n# changed locally\n' >> /etc/systemd/system/dns.service.d/technitium-console.conf
+sh /w/install.sh --uninstall --yes && exit 1
+[ "$(cat /run/restarts)" = 3 ]
+[ -f /etc/systemd/system/dns.service.d/technitium-console.conf ]
+[ -f "/opt/technitium-console/$ASSET" ]
+EOF
+verdict "C31" $? "systemd gets a managed folder, one restart, clean uninstall and ownership checks"
+
 # ------------------------------------------------- Docker: the init image (D1–D4)
 #
 # The layout README.md gives Docker users (the contract's §3, "Docker", D1 to D4):

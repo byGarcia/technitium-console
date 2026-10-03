@@ -21,6 +21,32 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
 
 ---
 
+## v1.2.1 (unreleased)
+
+**The Dashboard keeps itself current, and systemd setup is automatic.** While Last Hour is
+selected, the Dashboard refreshes in the background once a minute, matching the stock console.
+On Technitium 15.5 or later, the installer can now create and safely manage the dedicated console
+folder and service drop-in itself.
+
+### Dashboard
+
+- **Last Hour refreshes every 60 seconds.** The selected period and cluster node stay in place.
+- Other periods do not poll: their data does not change as the current minute advances.
+- Requests never overlap, and the current figures stay visible during a refresh.
+
+### Installer
+
+- On Technitium 15.5 or later with systemd, the installer now creates and owns
+  the dedicated console folder and service drop-in itself. It publishes before
+  the single restart, verifies the running service, and rolls back to the stock
+  console if activation fails.
+- Reinstalling or updating the console in that folder does not restart the DNS
+  service. Uninstall switches back to the stock console before removing the
+  folder, and refuses to remove a drop-in changed by the administrator.
+- `--no-configure-service` keeps the previous replacement mode available.
+
+---
+
 ## v1.2.0 (2026-10-02)
 
 **Allowed and Blocked are now one Blocking section, and Docker gets an image.** Overview, Rules

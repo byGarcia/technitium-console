@@ -31,8 +31,10 @@ is not an opinion.
   back button walks the console instead of leaving it.
 - **Responsiveness.** The console works at 390 px. The stock one overflows horizontally in twelve of
   its sections; this one does not overflow in any.
-- **The installer.** `install.sh` puts the console in the server's web root and takes it out again,
-  keeping your custom lists and never restarting the DNS service.
+- **The installer.** On Technitium 15.5+ with systemd, `install.sh` gives the console its own folder
+  and manages a reversible service drop-in. The first install and uninstall restart once to change
+  folders; updates do not. Other installs use the server's web root without restarting. Custom
+  lists survive every path in and out.
 
 ## What it refuses to become
 

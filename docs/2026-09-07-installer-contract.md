@@ -41,6 +41,10 @@ that honours it. Building one took four commands; they are in the history of
 > status relies on is not needed any more, and the `†` has come off W2, F3 and
 > S2.
 
+> **2026-10-02.** Bare-metal systemd setup is now managed end to end. C31
+> measures first activation, an update without a restart, clean uninstall and
+> refusal to remove an administrator-modified drop-in: thirty-one cases.
+
 The console goes in front of a DNS server that a whole house resolves through.
 The installer is the only part of this project that writes to somebody else's
 machine, so it is the part that has to be boring.
@@ -552,38 +556,43 @@ These four are what the layout adds.
 
 ### The service and the browser
 
-- **S1 ✓** (C11, C21) Installing does **not** restart the DNS service. C11
+- **S1 ✓** (C11, C21, C31) Publishing into the folder already being served does
+  **not** restart the DNS service. C11
   measures the premise: with the service running and never restarted, a full
   replacement of the web root is served immediately, and C21 measures the
   clause, with a `systemctl` of its own that records being called and never is.
-  A restart is a resolution outage for everything behind this server; it is not
-  spent on copying files.
-- **S2 ✓** A restart happens **only when the path being served or the
+  C31 proves that first managed systemd activation restarts once and the update
+  after it does not. A restart is a resolution outage for everything behind
+  this server; it is not spent on copying files.
+- **S2 ✓** (C31) A restart happens **only when the path being served or the
   environment changes**, because the file provider is built once at start
   (§1.1). That is the first install into the variable's folder and the uninstall
   out of it, not a property of mode B: a later reinstall into the same folder,
   with the environment untouched, restarts nothing, which is what C12 and C13
-  show by installing, reinstalling and uninstalling against a server that was
-  never restarted once. When one is needed the installer names the change that
-  requires it and asks first.
+  show. On systemd, the installer publishes first, writes its own drop-in,
+  restarts once and verifies both process environment and served asset. A
+  failed activation removes the drop-in and restarts back onto stock. Uninstall
+  reverses that order: stock is verified before the dedicated folder is removed.
 - **S3 ✓** (C21) No "press Ctrl+F5" advice: every static file is `no-cache` and the
   assets are hashed (§1.1). Advice that is not true trains people to ignore the
   rest.
 
 ---
 
-## 4 · Not the installer's job
+## 4 · Service boundaries
 
 - **Windows.** Say so; do not fail at it (§1.5).
 - **Installing or updating the DNS server itself.** If it is not there, stop.
-- **Editing the service unit.** Mode B needs an environment variable set, and
-  the clean way is a systemd drop-in
-  (`/etc/systemd/system/<unit>.d/technitium-console.conf`) that upstream's own
-  unit never sees and that the uninstall deletes. It is still a change to how
-  the administrator's service starts, so it is **offered and confirmed**, never
-  silent, and never on OpenRC or Docker, where the equivalent belongs to
-  `/etc/conf.d/dns` and to the compose file: the installer prints those and
-  stops. *2026-10-01* (C30): on a Docker host it reads `docker inspect` and the
+- **The managed systemd drop-in.** On a running 15.5+ server with exactly one
+  unit that names that process's `DnsServerApp.dll`, the default installation
+  publishes to `/opt/technitium-console` and owns
+  `/etc/systemd/system/<unit>.d/technitium-console.conf`. It never edits the
+  upstream unit. An existing unrecorded drop-in is left alone. Uninstall removes
+  only the exact two-line file it wrote; a changed file is administrator-owned
+  and stops the uninstall. `--no-configure-service` opts out. OpenRC and Docker
+  remain outside this automation, where the equivalent belongs to
+  `/etc/conf.d/dns` and to the compose file. *2026-10-01* (C30): on a Docker
+  host it reads `docker inspect` and the
   startup log through `docker exec`, and prints the exact change for each
   container (the way in, and with `--uninstall` the way out) with the
   container, service, file and volume names it found, and exits 0. It never
@@ -623,6 +632,12 @@ custom lists, and an init that fails. C30 runs `install.sh` from stdin in
 a Docker host. C11 now also expects the warning about installing into a
 container's own files, and runs on any server, as it always has. The five new
 ones need a server that honours the variable, and are not applicable otherwise.
+
+*2026-10-02:* thirty-one. C31 starts the server behind a recording systemd
+stand-in. It proves that the first install writes the dedicated folder and
+drop-in before one restart, an update restarts nothing, uninstall restarts onto
+stock before deleting the folder, custom lists make both trips, and a locally
+changed drop-in is not removed.
 
 C12, C13 and C15 depend on what the image can do, and the probe does not decide
 that by decree: it **detects the capability** the same way W3 says the installer

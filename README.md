@@ -136,22 +136,25 @@ curl -sSL https://raw.githubusercontent.com/byGarcia/technitium-console/main/ins
 **Technitium in Docker?** See [Docker](#docker): a small image puts the console in a volume, and
 this command, run on a Docker host, prints the exact steps for your containers.
 
-It asks the running server where its web root is, saves the console you have
-now, and puts this one in its place. **Your DNS service is not restarted.** The
-server picks the new files up by itself, and a restart would be an outage for
-everything that resolves through it. To go back at any point:
+On Technitium 15.5 or later with systemd, it gives the console its own folder
+and configures the detected service automatically. **The first install restarts
+the DNS service once** to switch folders; updates do not restart it. On older
+versions or with `--no-configure-service`, it asks the running server for its
+web root, saves the console you have now, and replaces it without a restart.
+To go back at any point:
 
 ```sh
 curl -sSL https://raw.githubusercontent.com/byGarcia/technitium-console/main/install.sh | sudo sh -s -- --uninstall
 ```
 
-The original console is restored from the copy the installer kept. Nothing is
-downloaded to undo it.
+The managed systemd install switches back to the server's stock console before
+removing its folder. Replacement installs restore the copy the installer kept.
+Nothing is downloaded to undo either one.
 
 **It works with whichever install you have**, because it does not guess: the
-running server is found by what it executes, and its web root is read off the
-command line that started it. Wherever you put it, that is where the console
-goes.
+running server is found by what it executes, and a systemd unit is accepted only
+when it names that same `DnsServerApp.dll`. If it cannot identify one exact
+unit, it leaves service configuration alone and uses the web root it discovered.
 
 **Your custom lists are kept**, on the way in and on the way out. Any
 `json/*-custom.json` you wrote by hand is left exactly where it is, including
@@ -159,8 +162,8 @@ one you write months after installing, which no backup could contain.
 
 **Nothing else on the server is touched.** Configuration, zones, users, logs and
 `/etc/resolv.conf` come out of an install and an uninstall byte for byte the
-same. The installer writes to three places and no others: the web root, its
-backup, and its own state in `/var/lib/technitium-console`.
+same. On systemd with Technitium 15.5 or later, it also owns one clearly named
+drop-in under `/etc/systemd/system`; uninstall removes it again.
 
 **An interrupted run cannot leave you without a console.** Files go in before
 any are taken out, and every page is published after the assets it names, so at
@@ -173,7 +176,9 @@ one. Anything a killed run left behind is cleaned up by the next one.
 `--version <tag>` to pin a release, `--from <path>` to install
 from a tarball you already downloaded, `--dir <path>` to say where the web root
 is, `--url <base>` if your web console does not answer on
-`http://127.0.0.1:5380`, `--yes` to skip the confirmation.
+`http://127.0.0.1:5380`, `--yes` to skip the confirmation, and
+`--no-configure-service` to leave systemd untouched and use the server's own
+web root unless you selected another folder yourself.
 
 If the backup was taken from a different version of the DNS server than the one
 now running (which happens when the server was updated in between), the
@@ -193,40 +198,25 @@ with `DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH`. Do that, and a server update no
 longer puts the stock console back: its own `www/` is left untouched and this one
 lives somewhere the update does not write.
 
-For a systemd install, create the folder, point the server at it and restart it
-once. The folder is read when the server starts, and it has to exist by then or
-the server falls back to its own `www/`:
+On a systemd install, the one-line installer does this itself. It identifies the
+unit from the running `DnsServerApp.dll`, publishes the complete console into
+`/opt/technitium-console`, adds
+`/etc/systemd/system/<unit>.d/technitium-console.conf`, and then restarts the
+unit once. It verifies that the restarted process has the expected environment
+and serves the new assets. If that fails, it removes the drop-in and restarts
+back onto the stock console.
 
-```sh
-sudo mkdir -p /opt/technitium-console
-sudo systemctl edit technitium.service     # dns.service on older installs
-```
-
-```ini
-[Service]
-Environment=DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH=/opt/technitium-console
-```
-
-```sh
-sudo systemctl restart technitium.service
-```
-
-That restart is the only one, and like any restart of the service it stops
-resolution for the few seconds it takes. Until the next step the web console
-answers with an empty page. Then run the installer as above: it sees the variable on the running
-server, checks that the folder is really the one being served, and installs into
-it with no second restart. `--uninstall` removes the folder again; unset the
-variable and restart, and the server is back on its own console.
-
-If the folder did not exist when the server restarted, the server logs it and
-keeps serving its own console; the installer reads that log, installs anyway and
-asks for one more restart.
+Updates publish into the same folder without restarting the DNS service.
+`--uninstall` carries custom lists back, removes only an unchanged drop-in,
+restarts onto the stock console, verifies it, and only then removes the folder.
+If you edited the drop-in after installation, uninstall leaves it and the
+console untouched rather than deleting administrator-owned configuration.
 
 **On Proxmox VE with the community script** (`technitiumdns` from
-[community-scripts](https://github.com/community-scripts/ProxmoxVE)): run the steps
-above inside the container (`pct enter <id>`). Its unit is `technitium.service`, and
-the script's own *Update* no longer touches the console, since it lives in its own
-folder.
+[community-scripts](https://github.com/community-scripts/ProxmoxVE)): run the
+one-line installer inside the container (`pct enter <id>`). It detects
+`technitium.service`; the script's own *Update* no longer touches the console,
+since it lives in its own folder.
 
 For Docker, see [Docker](#docker): the image does all of this with a volume.
 

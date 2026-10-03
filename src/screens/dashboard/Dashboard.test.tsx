@@ -1,10 +1,13 @@
 import { describe, expect, it, vi, afterEach } from 'vitest'
-import { render, screen, within } from '@testing-library/react'
+import { act, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Dashboard, percentage } from './Dashboard'
 import * as api from '../../api/dashboard'
 
-afterEach(() => vi.restoreAllMocks())
+afterEach(() => {
+  vi.useRealTimers()
+  vi.restoreAllMocks()
+})
 
 const chart = { labels: ['a', 'b'], datasets: [{ label: 'Total', data: [1, 2] }] }
 const isEmpty = { labels: ['a'], datasets: [{ label: 'Total', data: [0] }] }
@@ -108,6 +111,36 @@ describe('Dashboard', () => {
     spy.mockClear()
     await userEvent.click(screen.getByRole('button', { name: 'Last Week' }))
     expect(spy.mock.calls[0][1]).toBe('LastWeek')
+  })
+
+  it('refreshes Last Hour after each completed minute without overlapping requests', async () => {
+    vi.useFakeTimers()
+    let finishFirst!: (result: Awaited<ReturnType<typeof api.getDashboardStats>>) => void
+    const first = new Promise<Awaited<ReturnType<typeof api.getDashboardStats>>>((resolve) => {
+      finishFirst = resolve
+    })
+    const spy = vi.spyOn(api, 'getDashboardStats')
+      .mockReturnValueOnce(first)
+      .mockResolvedValue({ kind: 'ok', data } as never)
+
+    render(<Dashboard token="t" />)
+    expect(spy).toHaveBeenCalledTimes(1)
+
+    await act(async () => { await vi.advanceTimersByTimeAsync(120_000) })
+    expect(spy).toHaveBeenCalledTimes(1)
+
+    await act(async () => {
+      finishFirst({ kind: 'ok', data } as never)
+      await first
+    })
+    expect(screen.getByLabelText('Queries over time')).toBeInTheDocument()
+
+    await act(async () => { await vi.advanceTimersByTimeAsync(59_999) })
+    expect(spy).toHaveBeenCalledTimes(1)
+
+    await act(async () => { await vi.advanceTimersByTimeAsync(1) })
+    expect(spy).toHaveBeenCalledTimes(2)
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
 
   it('it draws all FOUR charts, not two', async () => {
