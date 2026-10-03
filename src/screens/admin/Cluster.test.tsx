@@ -218,6 +218,17 @@ describe('Cluster: seen from the PRIMARY node', () => {
     expect(screen.queryByRole('button', { name: 'Leave Cluster' })).not.toBeInTheDocument()
   })
 
+  it('a node with a version shows it under its name as (v15.6); one without, nothing', async () => {
+    server(CLUSTER_PRIMARY)
+    render(<Cluster {...props} />)
+    await screen.findByText('Total Nodes: 2')
+    const rows = screen.getAllByRole('row')
+    const self = rows.find((r) => within(r).queryByText('ns1.mycluster.test'))!
+    const other = rows.find((r) => within(r).queryByText('ns2.mycluster.test'))!
+    expect(within(self).getByText('(v15.6)')).toBeInTheDocument()
+    expect(within(other).queryByText(/^\(v/)).not.toBeInTheDocument()
+  })
+
   it('it draws the node selector with the type lowercased', async () => {
     server(CLUSTER_PRIMARY)
     render(<Cluster {...props} />)

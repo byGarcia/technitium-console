@@ -2,11 +2,15 @@ import { Notices, Block, Check, GroupRow, Note, TextRow } from '../parts'
 import type { PaneProps } from './types'
 
 /*
-Settings > Cache (index.html:1911-2046 in v15.5.1). Four blocks.
+Settings > Cache (index.html:1911-2058 in v15.6.0). Four blocks.
 
 v15.5 removed Auto Prefetch (upstream c405e035, b817fe4b): its two fields, its
 paragraph and the "& auto prefetching" in the Prefetch Trigger suffix are gone,
 and `settings/get` no longer returns the two values.
+
+v15.6 gave prefetching its own switch, `enableCachePrefetch`: a Prefetch Trigger
+of 0 no longer turns it off, so the "set 0 to disable prefetching" suffix is gone
+and the trigger help gained "when queried".
 */
 export function Cache({ f, set, en }: PaneProps) {
   return (
@@ -148,6 +152,15 @@ export function Cache({ f, set, en }: PaneProps) {
       </Block>
 
       <Block title="Prefetch">
+        <GroupRow label="Cache Prefetch">
+          <Check
+            toggle
+            label="Enable Cache Prefetch"
+            checked={f.enableCachePrefetch}
+            onChange={(v) => set({ enableCachePrefetch: v })}
+            help="Enable this option to refresh records that are about to expire in cache. A prefetch background task for a cached record is triggered when it is queried for and the DNS server finds the record's TTL value to be less than the Prefetch Trigger value."
+          />
+        </GroupRow>
         <TextRow
           label="Prefetch Eligibility"
           type="number"
@@ -163,8 +176,8 @@ export function Cache({ f, set, en }: PaneProps) {
           value={f.cachePrefetchTrigger}
           onChange={(v) => set({ cachePrefetchTrigger: v })}
           placeholder="trigger"
-          suffix="seconds (recommended 9; set 0 to disable prefetching)"
-          help="A record with TTL value less than trigger value will initiate prefetch operation immediately for itself."
+          suffix="seconds (recommended 9)"
+          help="A record with TTL value less than trigger value will initiate prefetch operation immediately for itself when queried."
         />
       </Block>
     </>

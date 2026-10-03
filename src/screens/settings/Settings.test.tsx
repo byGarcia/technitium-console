@@ -91,6 +91,36 @@ describe('Settings: saving', () => {
     expect(body).not.toHaveProperty('cachePrefetchSampleEligibilityHitsPerHour')
   })
 
+  it('Enable Cache Prefetch (new in v15.6) loads from the server and is sent as true/false', async () => {
+    const spy = server()
+    await mount({ sub: 'Cache' })
+    const toggle = screen.getByLabelText('Enable Cache Prefetch')
+    expect(toggle).toBeChecked()
+    expect(screen.getByText('seconds (recommended 9)')).toBeInTheDocument()
+    await userEvent.click(toggle)
+    await userEvent.click(screen.getByRole('button', { name: 'Save Settings' }))
+
+    const call = await waitFor(() => {
+      const c = spy.mock.calls.find((c) => c[0] === 'settings/set')
+      expect(c).toBeDefined()
+      return c!
+    })
+    expect((call[1]!.body as Record<string, string>).enableCachePrefetch).toBe('false')
+  })
+
+  it('a v15.5 server does not send enableCachePrefetch: the box starts unchecked, as in upstream', async () => {
+    const spy = server({ enableCachePrefetch: undefined })
+    await mount({ sub: 'Cache' })
+    expect(screen.getByLabelText('Enable Cache Prefetch')).not.toBeChecked()
+    await userEvent.click(screen.getByRole('button', { name: 'Save Settings' }))
+    const call = await waitFor(() => {
+      const c = spy.mock.calls.find((c) => c[0] === 'settings/set')
+      expect(c).toBeDefined()
+      return c!
+    })
+    expect((call[1]!.body as Record<string, string>).enableCachePrefetch).toBe('false')
+  })
+
   it('on a successful save, the alert is the upstream literal', async () => {
     server()
     await mount()

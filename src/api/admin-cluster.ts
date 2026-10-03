@@ -46,6 +46,9 @@ export interface ClusterNode {
   ipAddresses: string[]
   type: ClusterNodeType
   state: ClusterNodeState
+  /** New in v15.6. Always present for the node itself; for the others, only
+   *  once a heartbeat has brought it (WebServiceClusterApi.cs:138-150). */
+  version?: string
   /** Omitted when it has never been up. */
   upSince?: string
   /** Omitted for the node itself and if it has never been seen. */

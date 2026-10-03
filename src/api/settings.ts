@@ -182,6 +182,8 @@ export interface DnsSettings {
   cacheMaximumRecordTtl: number
   cacheNegativeRecordTtl: number
   cacheFailureRecordTtl: number
+  /** New in v15.6: a v15.5 server does not send it. */
+  enableCachePrefetch?: boolean
   cachePrefetchEligibility: number
   cachePrefetchTrigger: number
 

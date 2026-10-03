@@ -242,7 +242,12 @@ export function Cluster({ tabs, token, cluster, node: controlledNode, onNodeChan
                  `State` column stays: the colour finds the row, the word says
                  which it is. Same treatment as the current session's row. */
               <tr key={n.id} className={n.state === 'Self' ? tbl.rowSelf : undefined}>
-                <td>{n.name}</td>
+                <td>
+                  {n.name}
+                  {/* The node's version under its name, as `(v15.6)`: new in
+                      v15.6 (cluster.js:180-183). */}
+                  {n.version != null && <div className={tbl.meta}>(v{n.version})</div>}
+                </td>
                 <td className={styles.mono}>
                   {n.ipAddresses.map((ip) => (
                     <div key={ip}>{ip}</div>

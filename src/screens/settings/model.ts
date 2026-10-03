@@ -148,6 +148,7 @@ export interface SettingsForm {
   cacheMaximumRecordTtl: string
   cacheNegativeRecordTtl: string
   cacheFailureRecordTtl: string
+  enableCachePrefetch: boolean
   cachePrefetchEligibility: string
   cachePrefetchTrigger: string
 
@@ -328,6 +329,7 @@ export function formFromSettings(s: DnsSettings): SettingsForm {
     cacheMaximumRecordTtl: String(s.cacheMaximumRecordTtl ?? ''),
     cacheNegativeRecordTtl: String(s.cacheNegativeRecordTtl ?? ''),
     cacheFailureRecordTtl: String(s.cacheFailureRecordTtl ?? ''),
+    enableCachePrefetch: s.enableCachePrefetch ?? false,
     cachePrefetchEligibility: String(s.cachePrefetchEligibility ?? ''),
     cachePrefetchTrigger: String(s.cachePrefetchTrigger ?? ''),
 
@@ -815,6 +817,7 @@ export function buildBody(f: SettingsForm, node = ''): BodyResult {
     body.cacheMaximumRecordTtl = f.cacheMaximumRecordTtl
     body.cacheNegativeRecordTtl = f.cacheNegativeRecordTtl
     body.cacheFailureRecordTtl = f.cacheFailureRecordTtl
+    body.enableCachePrefetch = String(f.enableCachePrefetch)
     body.cachePrefetchEligibility = f.cachePrefetchEligibility
     body.cachePrefetchTrigger = f.cachePrefetchTrigger
   }

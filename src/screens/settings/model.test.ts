@@ -284,7 +284,7 @@ The node selector decides WHICH blocks a save carries (main.js:1639-1644):
 `includeClusterParameters = (node == "") || (node == "cluster")` and
 `includeNodeParameters = (node == "") || !includeClusterParameters`. The two key
 lists are the parameter names of upstream's twelve `formData +=` blocks, in their
-order, extracted from main.js (v15.5.1) with the proxy left at "No Proxy".
+order, extracted from main.js (v15.6.0) with the proxy left at "No Proxy".
 */
 const NODE_KEYS = [
   'dnsServerDomain', 'dnsServerLocalEndPoints', 'dnsServerIPv4SourceAddresses', 'dnsServerIPv6SourceAddresses',
@@ -302,7 +302,7 @@ const NODE_KEYS = [
   'dnsTlsCertificatePath', 'dnsTlsCertificatePassword',
   'saveCache', 'serveStale', 'serveStaleTtl', 'serveStaleAnswerTtl', 'serveStaleResetTtl', 'serveStaleMaxWaitTime',
   'cacheMaximumEntries', 'cacheMinimumRecordTtl', 'cacheMaximumRecordTtl', 'cacheNegativeRecordTtl',
-  'cacheFailureRecordTtl', 'cachePrefetchEligibility', 'cachePrefetchTrigger',
+  'cacheFailureRecordTtl', 'enableCachePrefetch', 'cachePrefetchEligibility', 'cachePrefetchTrigger',
   'loggingType', 'ignoreResolverLogs', 'noStackTrace', 'logQueries', 'useLocalTime', 'logFolder', 'maxLogFileDays',
   'enableInMemoryStats', 'maxStatFileDays',
 ]

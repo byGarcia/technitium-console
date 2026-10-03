@@ -3,7 +3,8 @@ import type { DnsSettings } from '../../api/settings'
 /*
 The REAL `settings/get` response of a freshly installed v15.4 instance (the one
 in `dev/`, served at 127.0.0.1:5381), minus the two Auto Prefetch keys v15.5
-stopped sending. Checked against v15.5.1, no other key changed. It is copied as it stands, absent keys
+stopped sending and plus the `enableCachePrefetch` v15.6 added (true on a fresh
+install). Checked against v15.5.1 and v15.6.0, no other key changed. It is copied as it stands, absent keys
 included: `temporaryDisableBlockingTill`, `blockListNextUpdatedOn` and
 `clusterNodes` do NOT come when they are null, and that is exactly the case that
 has to be drawn correctly ("Not Set", "Not Scheduled").
@@ -159,6 +160,7 @@ export const SETTINGS: DnsSettings = {
   "cacheMaximumRecordTtl": 604800,
   "cacheNegativeRecordTtl": 300,
   "cacheFailureRecordTtl": 10,
+  "enableCachePrefetch": true,
   "cachePrefetchEligibility": 2,
   "cachePrefetchTrigger": 9,
   "enableBlocking": true,

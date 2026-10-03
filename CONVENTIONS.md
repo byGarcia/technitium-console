@@ -383,6 +383,16 @@ Write down here whatever you find. What is already known:
   (main.js:1303-1304, 1356-1357, 1369-1372): typing a new port or header does not
   change them until the next load or save. Their initial HTML text
   (`localhost:8053`, `tls-certificate-domain:853`) is a placeholder, not contract.
+- **Since v15.6 prefetching has its own switch, `enableCachePrefetch`**, true on a
+  fresh install. A Prefetch Trigger of 0 no longer turns it off; instead, a config
+  saved by an older server with the trigger below 1 loads with the switch off
+  (DnsServer.cs, config version 7). A v15.5 server neither sends nor reads the key,
+  so this console shows it unchecked there and the save is harmless. Checked live
+  against v15.6.0 and v15.5.1.
+- **A cluster node's `version` (v15.6) is not always there.** The node itself
+  always carries it; another node only once a heartbeat has brought it. Right
+  after a join the secondary appears without it and in state `Unknown`, and about
+  30 s later as `Connected` with `15.6`. Checked live on a two-node v15.6.0 cluster.
 
 ## How the code is written
 

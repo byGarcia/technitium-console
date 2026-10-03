@@ -166,7 +166,8 @@ export const CLUSTER_NOT_INITIALISED: ClusterState = {
 }
 
 /** A two-node cluster, built from the contract in `WebServiceClusterApi.cs`: it
- *  could NOT be observed live. */
+ *  could NOT be observed live. The secondary has no `version` on purpose: since
+ *  v15.6 a node other than this one only carries it once a heartbeat brought it. */
 export const CLUSTER_PRIMARY: ClusterState = {
   version: '15.4',
   dnsServerDomain: 'ns1.mycluster.test',
@@ -184,6 +185,7 @@ export const CLUSTER_PRIMARY: ClusterState = {
       ipAddresses: ['10.0.0.1'],
       type: 'Primary',
       state: 'Self',
+      version: '15.6',
       upSince: '2026-08-25T10:00:00Z',
     },
     {

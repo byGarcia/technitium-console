@@ -5,7 +5,7 @@ The README carried a figure for it ("114 of 114") that no script produced, and a
 figure nobody can reproduce is an opinion. This produces it.
 
 Upstream's side is every `"api/…"` literal in its `www/js/*.js` at the release
-being matched (`UPSTREAM_REF`, default v15.5.1), read from the fork checked out
+being matched (`UPSTREAM_REF`, default v15.6.0), read from the fork checked out
 beside this repository (`../technitium-ui`).
 
 This console's side is every string or template literal under `src/` that looks
@@ -28,7 +28,7 @@ import { fileURLToPath } from 'node:url'
 const here = dirname(fileURLToPath(import.meta.url))
 const SRC = resolve(here, '../src')
 const FORK = resolve(here, '../../technitium-ui')
-const REF = process.env.UPSTREAM_REF ?? 'v15.5.1'
+const REF = process.env.UPSTREAM_REF ?? 'v15.6.0'
 
 const git = (...args) => execFileSync('git', ['-C', FORK, ...args], { encoding: 'utf8', maxBuffer: 1 << 26 })
 

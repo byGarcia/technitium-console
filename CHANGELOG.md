@@ -12,7 +12,7 @@ sends, every text it shows and every control it offers, compared with that serve
 
 | Console | Technitium DNS Server | Notes |
 |---|---|---|
-| **1.2.x** | **15.5.x** (checked against 15.5.1) | Current. Allowed and Blocked become one Blocking section, a light theme, and the console comes as an image for Docker. Supports a console folder of its own (`DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH`), so server updates leave it alone. |
+| **1.2.x** | **15.5.x, 15.6.x** (1.2.1 checked against 15.6.0) | Current. Allowed and Blocked become one Blocking section, a light theme, and the console comes as an image for Docker. Supports a console folder of its own (`DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH`), so server updates leave it alone. |
 | 1.1.x | 15.5.x | Superseded by 1.2.x on the same server. If you stay on it, use 1.1.3: earlier ones flood the server from Cache, Allowed and Blocked. |
 | 1.0.0 | 15.4 | Cannot save Settings on a 15.5 server. Upgrade. |
 
@@ -26,7 +26,19 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
 **The Dashboard keeps itself current, and systemd setup is automatic.** While Last Hour is
 selected, the Dashboard refreshes in the background once a minute, matching the stock console.
 On Technitium 15.5 or later, the installer can now create and safely manage the dedicated console
-folder and service drop-in itself.
+folder and service drop-in itself. It also follows Technitium DNS Server 15.6.
+
+### Technitium 15.6
+
+- **Settings › Cache › Prefetch has the new Enable Cache Prefetch switch.** Since 15.6 a Prefetch
+  Trigger of 0 no longer turns prefetching off, so its "set 0 to disable prefetching" hint is gone
+  too. On a 15.5 server the switch shows unchecked and has no effect, as the server ignores it.
+- **Administration › Cluster shows each node's version under its name**, once the server reports
+  it. A remote node gets one after its first heartbeat.
+- The 15.6 fixes in the stock console's DHCP screen did not apply here: this console never builds
+  markup from those values.
+- Console 1.2.0 keeps working on a 15.6 server. It just does not offer the new switch, and saving
+  Settings leaves it as it was.
 
 ### Dashboard
 

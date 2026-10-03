@@ -104,13 +104,13 @@ fixed one by one.
 
 | | |
 |---|---|
-| Checked against | Technitium DNS Server 15.5.1 |
+| Checked against | Technitium DNS Server 15.6.0 |
 | Sections | 11 |
 | Routes, each a real URL | 34 |
 | API endpoints the stock console calls, and this one calls too | 132 of 132 |
 | Sortable columns kept | 64 of 66, and the two missing are declared |
 | Dialogs, checked one by one | 44 |
-| Tests | 1,528 |
+| Tests | 1,532 |
 
 Every figure in that table comes from a script in `dev/` (`check-endpoints.mjs`,
 `check-parity-sort.mjs`, `dialog-inventory.sh`) and not from this paragraph.
