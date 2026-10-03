@@ -431,6 +431,26 @@ describe('Logs › Query Logs: the table', () => {
     expect(screen.getByText('A 140.82.121.3')).toBeInTheDocument()
   })
 
+  it('the timestamp is two unbreakable pieces, date and time, so a narrow table breaks it only between them', async () => {
+    const user = userEvent.setup()
+    withApps([APP])
+    vi.spyOn(api, 'queryLogs').mockResolvedValue({
+      kind: 'ok',
+      data: { response: page() },
+    } as never)
+    render(<Logs token="t" sub="Query Logs" />)
+    await screen.findByLabelText('App Name')
+    await user.click(screen.getByRole('button', { name: 'Query' }))
+
+    const row = (await screen.findByText('github.com')).closest('tr')!
+    const stamp = row.children[1]
+    const pieces = [...stamp.children].map((c) => c.textContent)
+    expect(pieces).toHaveLength(2)
+    expect(pieces[0]).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+    expect(pieces[1]).toMatch(/^\d{2}:\d{2}:\d{2}$/)
+    expect(stamp.textContent).toBe(`${pieces[0]} ${pieces[1]}`)
+  })
+
   it('a response with no data leaves the counter at \"0 logs\"', async () => {
     const user = userEvent.setup()
     withApps([APP])

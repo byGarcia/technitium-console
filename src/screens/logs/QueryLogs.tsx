@@ -57,6 +57,18 @@ touching the Shell. It is noted as an integration gap, not half-solved.
 
 export const ENTRIES_PER_PAGE_KEY = 'optQueryLogsEntriesPerPage'
 
+/** Where the table is short of room the timestamp breaks between the date and the
+ *  time (`.stamp` in Logs.module.css), never inside either. */
+function Stamp({ text }: { text: string }) {
+  const [date, ...time] = text.split(' ')
+  if (time.length === 0) return <span className={styles.nowrap}>{text}</span>
+  return (
+    <>
+      <span className={styles.nowrap}>{date}</span> <span className={styles.nowrap}>{time.join(' ')}</span>
+    </>
+  )
+}
+
 interface Filters {
   appName: string
   classPath: string
@@ -704,6 +716,7 @@ export function QueryLogs({ tabs, token, node = '' }: QueryLogsProps) {
           </div>
 
           <Table
+            tableClass={styles.queryTable}
             header={
               <>
                 <th>#</th>
@@ -722,7 +735,9 @@ export function QueryLogs({ tabs, token, node = '' }: QueryLogsProps) {
             {page.entries.map((e) => (
               <tr key={e.rowNumber} className={rowClass(e)}>
                 <td className={styles.mono}>{e.rowNumber}</td>
-                <td className={`${styles.mono} ${styles.nowrap}`}>{dateTime(e.timestamp)}</td>
+                <td className={`${styles.mono} ${styles.stamp}`}>
+                  <Stamp text={dateTime(e.timestamp)} />
+                </td>
                 <td className={`${styles.mono} ${styles.breakUp}`}>{e.clientIpAddress}</td>
                 <td>{e.protocol}</td>
                 <td>
@@ -733,12 +748,12 @@ export function QueryLogs({ tabs, token, node = '' }: QueryLogsProps) {
                 </td>
                 <td>{e.rcode}</td>
                 {/* logs.js:518. The root is written with a dot. */}
-                <td className={`${styles.mono} ${styles.breakUp}`}>
+                <td className={`${styles.mono} ${styles.breakUp} ${styles.domain}`}>
                   {e.qname === '' ? '.' : (e.qname ?? '')}
                 </td>
                 <td>{e.qtype ?? ''}</td>
                 <td>{e.qclass ?? ''}</td>
-                <td className={`${styles.mono} ${styles.breakUp}`}>{e.answer ?? ''}</td>
+                <td className={`${styles.mono} ${styles.breakUp} ${styles.answer}`}>{e.answer ?? ''}</td>
               </tr>
             ))}
           </Table>

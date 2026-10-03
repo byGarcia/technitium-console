@@ -59,6 +59,26 @@ screen and a log line stops fitting anywhere.
 .mono { composes: mono from '../../ui/text.module.css'; }
 .nowrap { white-space: nowrap; }
 .breakUp { word-break: break-all; }
+
+/*
+The Query Logs table has to fit its panel. Every table header refuses to wrap
+(ui/Table), and so did the timestamp: under a window of about 1280 the only columns
+that gave way were Domain and Answer, squeezed to a character wide, and the rest hid
+past the right edge with the scroll bar a long table further down. So the two
+columns that carry the query always keep a readable width, and only where the table
+no longer fits do the headers take two lines, the timestamp break between date and
+time, and the ten columns sit closer. Above that it is drawn as every other table.
+Written as `table.` to outweigh ui/Table's `.table thead th` and `.table td`, which
+weigh the same as one class.
+*/
+.domain { min-width: 12ch; }
+.answer { min-width: 16ch; }
+.stamp { white-space: nowrap; }
+@media (max-width: 1279px) {
+  table.queryTable thead th { white-space: normal; padding-left: var(--s-3); padding-right: var(--s-3); }
+  table.queryTable td { padding-left: var(--s-3); padding-right: var(--s-3); }
+  .stamp { white-space: normal; }
+}
 .rtt { font-size: var(--t-2); color: var(--faint-on-tint); }
 
 /* Upstream's five row backgrounds (logs.js:452-508), as they are. */
