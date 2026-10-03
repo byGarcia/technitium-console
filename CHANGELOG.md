@@ -43,7 +43,7 @@ folder and service drop-in itself. It also follows Technitium DNS Server 15.6.
 ### Fixes
 
 - **Logs › Query Logs fits narrower windows**
-  ([#4](https://github.com/byGarcia/technitium-console/issues/4)). Under about 1280 pixels, Domain
+  ([#4](https://github.com/byGarcia/technitium-console/issues/4)). Under about 1366 pixels, Domain
   and Answer were squeezed to a character wide and the rest of the table hid past the right edge.
   They now keep a readable width, and the table fits down to small laptop windows.
 - **Blocking › Overview: each Your Rules number sits over its own word**
@@ -55,6 +55,19 @@ folder and service drop-in itself. It also follows Technitium DNS Server 15.6.
 - **Last Hour refreshes every 60 seconds.** The selected period and cluster node stay in place.
 - Other periods do not poll: their data does not change as the current minute advances.
 - Requests never overlap, and the current figures stay visible during a refresh.
+
+### Row menus
+
+- **Query Logs entries open in DNS Client again**
+  ([#4](https://github.com/byGarcia/technitium-console/issues/4)). Each row's menu offers Query
+  DNS Server, then Allow Domain or Block Domain, as in the stock console.
+- **The Dashboard's top lists and their More dialogs have their row menus back**: Show Query
+  Logs, Query DNS Server, and Block Domain or Allow Domain. Jumping to DNS Client or Query Logs
+  fills the form and runs the query, on the cluster node the Dashboard is showing.
+- **Administration › Sessions: each row's details button is now View User Details**, the stock
+  console's wording for it.
+- DNS Client now sends its cluster node with the query, and the More dialogs ask the node the
+  Dashboard is showing. Both used to answer from the node serving the console.
 
 ### Installer
 

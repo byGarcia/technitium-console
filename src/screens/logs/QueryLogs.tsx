@@ -26,6 +26,10 @@ import { pageWindow } from '../../lib/pagination'
 import { Pagination } from '../../ui/Pagination'
 import { noticeFromFailure, type Notice } from '../../lib/notice'
 import { Notifier } from '../../ui/Notifier'
+import { Menu } from '../../ui/Menu'
+import tbl from '../../ui/Table.module.css'
+import { useHandoff, type QueryLogsRequest } from '../../app/handoff'
+import { useDomainAction, verbFor } from '../../lib/allow-block'
 
 /*
 Logs › Query Logs (logs.js:20-101 and 270-710).
@@ -48,10 +52,12 @@ Five upstream behaviours that are contract and not preferences:
   5. **The "Last" page is asked for with `pageNumber=-1`**: the server returns
      the last one. Checked against a v15.4 instance.
 
-What is NOT here: each row's menu ("Query DNS Server", "Allow Domain" / "Block
-Domain", logs.js:539-552). Its three actions live on other screens (DNS Client
-and Allowed/Blocked), and there is no way to invoke them from here without
-touching the Shell. It is noted as an integration gap, not half-solved.
+Each row carries upstream's menu (logs.js:522-538): "Query DNS Server", then
+"Allow Domain" for the three blocked response types and "Block Domain" for any
+other. The jump to DNS Client goes through the Shell (`app/handoff.ts`), and the
+other way round, `showQueryLogs` from the Dashboard arrives here as `request`:
+the form is reset, filled with it and queried once the apps are known, which is
+`refreshQueryLogsTab(true)`.
 */
 
 
@@ -193,15 +199,23 @@ export interface QueryLogsProps {
   tabs?: ReactNode
   token: string | null
   node?: string
+  /** `showQueryLogs` from another screen: these filters, queried on arrival. */
+  request?: QueryLogsRequest
 }
 
-export function QueryLogs({ tabs, token, node = '' }: QueryLogsProps) {
+export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
   const [apps, setApps] = useState<{ name: string; classPaths: string[] }[] | null>(null)
   const [f, setF] = useState<Filters>(() => defaultFilters('', ''))
   const [page, setPage] = useState<QueryLogPage | null>(null)
   const [notice, setNotice] = useState<Notice | null>(null)
   const [busy, setBusy] = useState(false)
   const [live, setLive] = useState(false)
+  const handoff = useHandoff()
+  /* Allowing or blocking from a row reports on the page (logs.js:531 and 535
+     pass no alert placeholder). */
+  const action = useDomainAction(token, setNotice)
+  /* The jump that brought us here, applied once the apps list arrives. */
+  const pending = useRef(request)
 
   const since = useRef<HTMLInputElement>(null)
   const until = useRef<HTMLInputElement>(null)
@@ -215,32 +229,6 @@ export function QueryLogs({ tabs, token, node = '' }: QueryLogsProps) {
   useEffect(() => {
     filtersRef.current = f
   }, [f])
-
-  useEffect(() => {
-    let live = true
-    void (async () => {
-      const outcome = await listApps(token)
-      if (!live) return
-      if (outcome.kind !== 'ok') {
-        /*
-        Without this, a failure here left the "Source App Name" dropdown at
-        the empty-value dash, which is the same thing a server with no logging app installed
-        shows. And there is no way out of that: with no app there is no query to
-        run, so the screen sat dead without saying why.
-        */
-        setApps([])
-        setNotice(noticeFromFailure(outcome))
-        return
-      }
-      const list = appsWithQueryLogs(outcome.data.response.apps ?? [])
-      setApps(list)
-      const first = list[0]
-      setF(defaultFilters(first?.name ?? '', first?.classPaths[0] ?? ''))
-    })()
-    return () => {
-      live = false
-    }
-  }, [token])
 
   const appClasses = apps?.find((a) => a.name === f.appName)?.classPaths ?? []
 
@@ -333,6 +321,46 @@ export function QueryLogs({ tabs, token, node = '' }: QueryLogsProps) {
   useEffect(() => {
     queryRef.current = query
   }, [query])
+
+  /* Declared after `queryRef`, which the jump's arrival uses below. */
+  useEffect(() => {
+    let live = true
+    void (async () => {
+      const outcome = await listApps(token)
+      if (!live) return
+      if (outcome.kind !== 'ok') {
+        /*
+        Without this, a failure here left the "Source App Name" dropdown at
+        the empty-value dash, which is the same thing a server with no logging app installed
+        shows. And there is no way out of that: with no app there is no query to
+        run, so the screen sat dead without saying why.
+        */
+        setApps([])
+        setNotice(noticeFromFailure(outcome))
+        return
+      }
+      const list = appsWithQueryLogs(outcome.data.response.apps ?? [])
+      setApps(list)
+      const first = list[0]
+      const base = defaultFilters(first?.name ?? '', first?.classPaths[0] ?? '')
+      const req = pending.current
+      if (req == null) {
+        setF(base)
+        return
+      }
+      /* `showQueryLogs` (logs.js:624-655): the reset form, the domain and/or the
+         client, and the query. The ref is written here because the query reads
+         it before the next commit would. */
+      pending.current = undefined
+      const next = { ...base, qname: req.domain ?? '', clientIpAddress: req.clientIp ?? '' }
+      setF(next)
+      filtersRef.current = next
+      void queryRef.current(next.pageNumber, false)
+    })()
+    return () => {
+      live = false
+    }
+  }, [token])
 
   /* logs.js:610. While "Live Update" is checked, it repeats every 2 s. */
   useEffect(() => {
@@ -729,6 +757,7 @@ export function QueryLogs({ tabs, token, node = '' }: QueryLogsProps) {
                 <th>Type</th>
                 <th>Class</th>
                 <th>Answer</th>
+                <th className={tbl.actionsCell} />
               </>
             }
           >
@@ -754,6 +783,42 @@ export function QueryLogs({ tabs, token, node = '' }: QueryLogsProps) {
                 <td>{e.qtype ?? ''}</td>
                 <td>{e.qclass ?? ''}</td>
                 <td className={`${styles.mono} ${styles.breakUp} ${styles.answer}`}>{e.answer ?? ''}</td>
+                <td className={tbl.actionsCell}>
+                  <Menu label={`Actions for row ${e.rowNumber}`}>
+                    {(close) => {
+                      const verb = verbFor(e.responseType)
+                      const key = String(e.rowNumber)
+                      /* The domain is the row's `qname` as it came (the root is
+                         the empty string, not the dot drawn above). */
+                      const domain = e.qname ?? ''
+                      return (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              close()
+                              /* Upstream writes the type into the handler as text,
+                                 so a missing one travels as "null", not as no type. */
+                              handoff?.queryDnsServer(domain, String(e.qtype), node)
+                            }}
+                          >
+                            Query DNS Server
+                          </button>
+                          <button
+                            type="button"
+                            disabled={action.isBusy(key)}
+                            onClick={() => {
+                              close()
+                              void action.run(key, verb, domain)
+                            }}
+                          >
+                            {verb}
+                          </button>
+                        </>
+                      )
+                    }}
+                  </Menu>
+                </td>
               </tr>
             ))}
           </Table>

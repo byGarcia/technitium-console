@@ -18,6 +18,13 @@ import { Dhcp } from '../screens/dhcp/Dhcp'
 import { Logs } from '../screens/logs/Logs'
 import { Admin } from '../screens/admin/Admin'
 import { SlotProvider } from './ChromeSlot'
+import {
+  HandoffContext,
+  targetNode,
+  type DnsClientRequest,
+  type Handoff,
+  type QueryLogsRequest,
+} from './handoff'
 import styles from './Shell.module.css'
 import { Icon, type IconName } from '../ui/Icon'
 import { publicUrl } from './base'
@@ -181,6 +188,42 @@ export function Shell({
   const current = sections.find((s) => s.id === active) ?? sections[0]
 
   /*
+  The jumps other screens' row menus make (`app/handoff.ts`). The section switch
+  and the request land in the same render, so the target mounts already holding
+  it; the effect below then forgets it, because the target has taken what it
+  needs, and coming back later through the sidebar must find a clean screen.
+
+  A section the user cannot see is not opened: there would be no screen to land
+  on.
+  */
+  const [pending, setPending] = useState<
+    { dnsclient: DnsClientRequest } | { logs: QueryLogsRequest } | null
+  >(null)
+  useEffect(() => {
+    if (pending != null) setPending(null)
+  }, [pending])
+
+  const handoff = useMemo<Handoff>(() => {
+    const visible = (id: string) => sections.some((s) => s.id === id)
+    return {
+      queryDnsServer(domain, type, node) {
+        if (!visible('dnsclient')) return
+        setPending({ dnsclient: { domain, type: type ?? 'A', node: targetNode(node) } })
+        setActive('dnsclient')
+        setSub(null)
+        setDrawer(false)
+      },
+      showQueryLogs(domain, clientIp, node) {
+        if (!visible('logs')) return
+        setPending({ logs: { domain, clientIp, node: targetNode(node) } })
+        setActive('logs')
+        setSub('Query Logs')
+        setDrawer(false)
+      },
+    }
+  }, [sections])
+
+  /*
   The effective sub. A section with sub-sections is ALWAYS in one of them, so
   `null` means "the first one".
 
@@ -240,6 +283,7 @@ export function Shell({
   }, [sections])
 
   return (
+    <HandoffContext.Provider value={handoff}>
     <SlotProvider>
       {(slot) => (
     <div className={styles.shell}>
@@ -442,7 +486,12 @@ export function Shell({
             clusterInitialised={session.info?.clusterInitialized === true}
           />
         ) : current?.id === 'dnsclient' ? (
-          <DnsClient token={session.token} nodes={session.info?.clusterNodes ?? []} clusterInitialised={session.info?.clusterInitialized === true} />
+          <DnsClient
+            token={session.token}
+            nodes={session.info?.clusterNodes ?? []}
+            clusterInitialised={session.info?.clusterInitialized === true}
+            request={pending != null && 'dnsclient' in pending ? pending.dnsclient : undefined}
+          />
         ) : current?.id === 'about' ? (
           <About info={info} />
         ) : current?.id === 'apps' ? (
@@ -488,6 +537,7 @@ export function Shell({
             onSubChange={setSub}
             canDeleteLogs={permissions?.Logs?.canDelete !== false}
             canDeleteStats={permissions?.Dashboard?.canDelete !== false}
+            request={pending != null && 'logs' in pending ? pending.logs : undefined}
           />
         ) : current?.id === 'admin' ? (
           /* No permission props on purpose: upstream hides and disables nothing
@@ -579,5 +629,6 @@ export function Shell({
     </div>
       )}
     </SlotProvider>
+    </HandoffContext.Provider>
   )
 }

@@ -62,7 +62,7 @@ screen and a log line stops fitting anywhere.
 
 /*
 The Query Logs table has to fit its panel. Every table header refuses to wrap
-(ui/Table), and so did the timestamp: under a window of about 1280 the only columns
+(ui/Table), and so did the timestamp: under a window of about 1366 the only columns
 that gave way were Domain and Answer, squeezed to a character wide, and the rest hid
 past the right edge with the scroll bar a long table further down. So the two
 columns that carry the query always keep a readable width, and only where the table
@@ -71,10 +71,10 @@ time, and the ten columns sit closer. Above that it is drawn as every other tabl
 Written as `table.` to outweigh ui/Table's `.table thead th` and `.table td`, which
 weigh the same as one class.
 */
-.domain { min-width: 12ch; }
-.answer { min-width: 16ch; }
+.domain { min-width: 10ch; }
+.answer { min-width: 12ch; }
 .stamp { white-space: nowrap; }
-@media (max-width: 1279px) {
+@media (max-width: 1365px) {
   table.queryTable thead th { white-space: normal; padding-left: var(--s-3); padding-right: var(--s-3); }
   table.queryTable td { padding-left: var(--s-3); padding-right: var(--s-3); }
   .stamp { white-space: normal; }

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Sessions } from './Sessions'
 import * as client from '../../api/client'
@@ -10,6 +10,7 @@ import {
   TOKEN_SESSION,
   ADMIN_USER,
   NEW_USER,
+  USER_DETAIL,
 } from './admin.fixture'
 import { choose } from '../../test/dropdown'
 
@@ -24,6 +25,9 @@ function server(overrides: Record<string, unknown> = {}, server = 'ref.technitiu
     }
     if (path === 'admin/users/list') {
       return ok({ response: { users: [ADMIN_USER, NEW_USER] }, server })
+    }
+    if (path === 'admin/users/get') {
+      return ok({ response: { ...USER_DETAIL, username: 'testuser' }, server })
     }
     if (path === 'admin/sessions/createToken') {
       return ok({
@@ -205,5 +209,33 @@ describe('Sessions: the row that is mine', () => {
     /* The colour is never the only channel: the cell still says `(current)`,
        which is upstream's own word for it. */
     expect(marked[0].textContent).toContain('(current)')
+  })
+})
+
+/* auth.js:937-938: upstream's menu holds "View User Details" and "Delete Session".
+   Here the first is the row's own button and the menu keeps the second, so each
+   is offered once. */
+describe('Sessions: the row actions', () => {
+  it('View User Details is the row button and the menu keeps only Delete Session', async () => {
+    server()
+    render(<Sessions {...props} />)
+    await userEvent.click(await screen.findByRole('button', { name: 'Actions for 799a4919af7636e2' }))
+    const menu = screen.getByRole('menu', { name: 'Actions for 799a4919af7636e2' })
+    expect(within(menu).getAllByRole('menuitem').map((i) => i.textContent)).toEqual(['Delete Session'])
+    expect(screen.getAllByRole('button', { name: 'View User Details' }).length).toBeGreaterThan(0)
+  })
+
+  it('View User Details opens the details of that session user', async () => {
+    const spy = server()
+    render(<Sessions {...props} />)
+    const row = (await screen.findByRole('button', { name: 'Actions for 799a4919af7636e2' })).closest('tr')!
+    await userEvent.click(within(row).getByRole('button', { name: 'View User Details' }))
+
+    expect(await screen.findByRole('dialog')).toBeInTheDocument()
+    expect(await screen.findByDisplayValue('testuser')).toBeInTheDocument()
+    await waitFor(() => {
+      const call = spy.mock.calls.find((c) => c[0] === 'admin/users/get')
+      expect(call?.[1]?.body).toEqual({ user: 'testuser', includeGroups: 'true' })
+    })
   })
 })

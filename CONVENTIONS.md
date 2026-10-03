@@ -393,6 +393,21 @@ Write down here whatever you find. What is already known:
   always carries it; another node only once a heartbeat has brought it. Right
   after a join the secondary appears without it and in state `Unknown`, and about
   30 s later as `Connected` with `15.6`. Checked live on a two-node v15.6.0 cluster.
+- **The row menus' jumps carry their arguments as TEXT.** Query Logs writes
+  `queryDnsServer(…, '<qtype>', '<node>')` into the `onclick` (logs.js:525), so a
+  row without a type sends the string `"null"` and DNS Client does NOT default it
+  to "A"; the Dashboard passes a real `null` and does get "A" (main.js:2824,
+  dnsclient.js:232). Both jumps pick the target's node only when given one that is
+  not `cluster` (dnsclient.js:243, logs.js:634); from the Dashboard's aggregate
+  the target keeps the node it had. `allowDomain`/`blockDomain` send no `node` at
+  all: they always act on the server the console is on.
+- **The Top Stats modal follows the Dashboard's node and keeps its own alerts.**
+  It reads `optDashboardClusterNode` for `getTop` (main.js:2932), and allowing or
+  blocking from it reports in `divTopStatsAlert`, inside the modal, while the same
+  action from the Dashboard's panels reports on the page (main.js:2986 vs 2825).
+- **The same action can be worded differently per table.** Opening a user is
+  "View User Details" in the Sessions row menu (auth.js:938) and "View Details" in
+  the Users one (auth.js:1191).
 
 ## How the code is written
 

@@ -183,9 +183,13 @@ export function Sessions({ tabs, token, cluster, node: controlledNode, onNodeCha
                 </td>
                 <td className={tbl.actionsCell}>
                   <div className={tbl.actions}>
+                    {/* auth.js:938: upstream's menu entry says "View User Details",
+                        not the Users table's "View Details". The frequent action
+                        goes in the row and the menu keeps the rest, as in Cluster,
+                        so it is offered once. */}
                     <RowAction
                       icon="card"
-                      name="View Details"
+                      name="View User Details"
                       onClick={() => setViewUser(s.username)}
                     />
                     <Menu label={`Actions for ${s.partialToken}`}>

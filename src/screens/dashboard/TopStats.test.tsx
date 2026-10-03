@@ -124,7 +124,8 @@ describe('the three \"More\" buttons of the Dashboard', () => {
     await user.click(within(panel).getByRole('button', { name: 'More' }))
 
     expect(await screen.findByText('Top 1000 Clients')).toBeTruthy()
-    await waitFor(() => expect(top).toHaveBeenCalledWith('t', 'LastHour', 'TopClients', 1000))
+    // With the Dashboard's node, the aggregate by default (main.js:2932).
+    await waitFor(() => expect(top).toHaveBeenCalledWith('t', 'LastHour', 'TopClients', 1000, 'cluster'))
   })
 
   it('the short client list already shows the domain and the rate-limited marking', async () => {

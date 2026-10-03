@@ -8,6 +8,8 @@ import { tokenForLabel } from './palette'
 import { ClusterNodeSelect, AGGREGATE, type ClusterNode } from '../../ui/ClusterNodeSelect'
 import { InChrome } from '../../app/ChromeSlot'
 import { TopStats } from './TopStats'
+import { TopRowMenu } from './TopRowMenu'
+import { useDomainAction } from '../../lib/allow-block'
 import type { ChartData } from '../../api/dashboard'
 import { SectionHeader } from '../../ui/SectionHeader'
 import { Empty, Failure, Loading } from '../../ui/Empty'
@@ -193,9 +195,12 @@ function Top({
   onMore,
   failure,
   beforeMore,
+  menu,
 }: {
   title: string
   rows: TopEntry[]
+  /** Each row's menu (`TopRowMenu`), at the end of the row as upstream draws it. */
+  menu: (row: TopEntry) => ReactNode
   /** A client also shows the domain it resolved and whether it was rate limited. */
   isClient?: boolean
   onMore: () => void
@@ -238,6 +243,7 @@ function Top({
               )}
             </span>
             <span className={styles.c}>{num2(f.hits)}</span>
+            {menu(f)}
           </div>
         ))}
       </Body>
@@ -444,6 +450,9 @@ export function Dashboard({
   const [missingRange, setMissingRange] = useState<string | null>(null)
   const [top, setTop] = useState<TopKind | null>(null)
   const [notice, setNotice] = useState<{ type: AlertType; title: string; text: string } | null>(null)
+  /* Allowing or blocking from a top list reports on the page (main.js:2825 and
+     2853 pass no alert placeholder). */
+  const action = useDomainAction(token, setNotice)
   /*
   The custom range. `start`/`end` are what is typed into the two fields;
   `requested` is the last thing "Show" was pressed with, which is what triggers the
@@ -676,6 +685,7 @@ export function Dashboard({
           rows={data?.topDomains ?? []}
           onMore={() => setTop('TopDomains')}
           failure={failure}
+          menu={(f) => <TopRowMenu kind="TopDomains" name={f.name} node={node} action={action} />}
         />
         <Top
           title="Top Blocked Domains"
@@ -683,6 +693,7 @@ export function Dashboard({
           onMore={() => setTop('TopBlockedDomains')}
           failure={failure}
           beforeMore={<BlockingMenu token={token} onNotice={setNotice} />}
+          menu={(f) => <TopRowMenu kind="TopBlockedDomains" name={f.name} node={node} action={action} />}
         />
         <Top
           title="Top Clients"
@@ -690,10 +701,11 @@ export function Dashboard({
           isClient
           onMore={() => setTop('TopClients')}
           failure={failure}
+          menu={(f) => <TopRowMenu kind="TopClients" name={f.name} node={node} action={action} />}
         />
       </div>
 
-      <TopStats type={top} range={range} token={token} onClose={() => setTop(null)} />
+      <TopStats type={top} range={range} token={token} node={node} onClose={() => setTop(null)} />
     </>
   )
 }
