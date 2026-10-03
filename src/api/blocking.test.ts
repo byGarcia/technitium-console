@@ -79,12 +79,12 @@ describe('readRuleExport', () => {
     expect(String(spy.mock.calls[0][0])).toMatch(/api\/blocked\/export\?node=dev\.cluster\.test$/)
   })
 
-  it('sends no node for this server, nor for the aggregate', async () => {
+  it('sends no node for this server, and the aggregate as `apiRequest` sends it', async () => {
     const spy = serve('')
     await readRuleExport('blocked', 'T', '')
     await readRuleExport('allowed', 'T', 'cluster')
     expect(String(spy.mock.calls[0][0])).toMatch(/api\/blocked\/export$/)
-    expect(String(spy.mock.calls[1][0])).toMatch(/api\/allowed\/export$/)
+    expect(String(spy.mock.calls[1][0])).toMatch(/api\/allowed\/export\?node=cluster$/)
   })
 
   /* M5: a reverse proxy's 200 page (an auth wall, a captive portal) is not a list

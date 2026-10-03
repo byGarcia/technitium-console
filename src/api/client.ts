@@ -32,9 +32,14 @@ export interface ApiOptions {
   Which cluster node answers this request.
 
   It is not per-endpoint: the server reads `node` centrally in
-  `DnsWebService.cs:2378` and proxies the whole request to that node, so any call
-  can carry it and the individual APIs know nothing about it. `cluster` and the
-  empty string mean "this one" and are not sent.
+  `DnsWebService.cs:2355` and proxies the whole request to that node, so any call
+  can carry it. The empty string means "this one" and is not sent.
+
+  `cluster`, the aggregate, IS sent, as upstream sends it (main.js:2622, 2935):
+  the proxy skips it (`DnsWebService.cs:2356`), and `dashboard/stats/get` and
+  `dashboard/stats/getTop` read it themselves to add every node up
+  (`WebServiceDashboardApi.cs:281-282, 801-802`). Dropping it, as this client did
+  until v1.2.1, made the Dashboard's "Cluster" show the local node alone.
 
   Upstream offers the choice on eight screens and remembers it per screen
   (`ui/ClusterNodeSelect`).
@@ -117,7 +122,7 @@ export async function apiRequest<T = unknown>(
   if (token) headers.Authorization = `Bearer ${token}`
 
   let url = urlApi(`api/${path}`)
-  if (opts.node && opts.node !== 'cluster') {
+  if (opts.node) {
     url += (url.includes('?') ? '&' : '?') + 'node=' + encodeURIComponent(opts.node)
   }
   const init: RequestInit & { headers: Record<string, string> } = { method, headers }

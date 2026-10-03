@@ -15,7 +15,8 @@ place. The good answer is `text/plain`, one zone per line
 (WebServiceOtherZonesApi.cs:306, 511); a failure is the usual JSON envelope.
 
 `node` is the cluster node that answers, sent exactly as `apiRequest` sends it: the
-empty string and `cluster` mean "this one" and travel as nothing. Rules reads the
+empty string travels as nothing, and `cluster` travels as it is and the server's
+proxy treats it as "this one". Rules reads the
 PRIMARY after a change (other-zones.js:269, 434): the change is made there, and a
 secondary still answers the old list until the cluster syncs.
 */
@@ -28,7 +29,7 @@ export async function readRuleExport(
   if (token) headers.Authorization = `Bearer ${token}`
 
   let url = urlApi(`api/${list}/export`)
-  if (node && node !== 'cluster') url += '?node=' + encodeURIComponent(node)
+  if (node) url += '?node=' + encodeURIComponent(node)
 
   let res: Response
   let text: string

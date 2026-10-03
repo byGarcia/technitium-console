@@ -156,14 +156,25 @@ describe('the cluster node parameter', () => {
     expect(String(spy.mock.calls[0]?.[0])).toContain('node=node-2')
   })
 
-  /* "cluster" is upstream's word for the aggregate, and it is the default: it
-     must not be sent, or the server would look for a node with that name. */
-  it('is not sent for the aggregate or when absent', async () => {
+  /* "cluster" is upstream's word for the aggregate and it travels as it is: the
+     Dashboard's figures only add every node up when the server receives it
+     (WebServiceDashboardApi.cs:281-282). Checked live on a v15.6.0 cluster: 74
+     queries with it, 69 (the local node) without. */
+  it('is sent for the aggregate, as upstream sends it', async () => {
     const spy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(JSON.stringify({ status: 'ok' })),
     )
     spy.mockClear()
     await apiRequest('dashboard/stats/get', { node: 'cluster' })
+    expect(String(spy.mock.calls[0]?.[0])).toContain('node=cluster')
+  })
+
+  it('is not sent when empty or absent', async () => {
+    const spy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ status: 'ok' })),
+    )
+    spy.mockClear()
+    await apiRequest('dashboard/stats/get', { node: '' })
     await apiRequest('dashboard/stats/get')
     expect(String(spy.mock.calls[0]?.[0])).not.toContain('node=')
     expect(String(spy.mock.calls[1]?.[0])).not.toContain('node=')
