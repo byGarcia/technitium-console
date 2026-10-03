@@ -30,7 +30,7 @@ import {
 } from './parts'
 import tbl from '../../ui/Table.module.css'
 import { RowAction, Th, useSort, type Keys, Table } from '../../ui/Table'
-import { Menu } from '../../ui/Menu'
+import { Menu, Separator } from '../../ui/Menu'
 import { Notifier } from '../../ui/Notifier'
 
 /*
@@ -183,16 +183,24 @@ export function Sessions({ tabs, token, cluster, node: controlledNode, onNodeCha
                 </td>
                 <td className={tbl.actionsCell}>
                   <div className={tbl.actions}>
+                    {/* auth.js:938: this table's menu says "View User Details",
+                        not the Users table's "View Details". */}
                     <RowAction
                       icon="card"
-                      name="View Details"
+                      name="View User Details"
                       onClick={() => setViewUser(s.username)}
                     />
                     <Menu label={`Actions for ${s.partialToken}`}>
                       {(close) => (
-                        <button type="button" data-variant="danger" onClick={() => { close(); setPendingDelete(s) }}>
-                          Delete Session
-                        </button>
+                        <>
+                          <button type="button" onClick={() => { close(); setViewUser(s.username) }}>
+                            View User Details
+                          </button>
+                          <Separator />
+                          <button type="button" data-variant="danger" onClick={() => { close(); setPendingDelete(s) }}>
+                            Delete Session
+                          </button>
+                        </>
                       )}
                     </Menu>
                   </div>

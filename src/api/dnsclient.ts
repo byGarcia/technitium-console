@@ -45,6 +45,8 @@ export interface ResolveParams {
   dnssec: boolean
   eDnsClientSubnet?: string
   runImport?: boolean
+  /** The node selector's value; it travels as `node` (dnsclient.js:154 and 166). */
+  node?: string
 }
 
 export interface ResolveResult {
@@ -66,5 +68,5 @@ export function resolve(
     eDnsClientSubnet: p.eDnsClientSubnet ?? '',
   }
   if (p.runImport) body.import = 'true'
-  return apiRequest<{ response: ResolveResult }>('dnsClient/resolve', { token, body })
+  return apiRequest<{ response: ResolveResult }>('dnsClient/resolve', { token, body, node: p.node })
 }

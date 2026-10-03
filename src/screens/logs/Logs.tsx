@@ -3,6 +3,7 @@ import { SubTabs } from '../../ui/SubTabs'
 import { ClusterNodeSelect } from '../../ui/ClusterNodeSelect'
 import { QueryLogs } from './QueryLogs'
 import { ViewLogs } from './ViewLogs'
+import type { QueryLogsRequest } from '../../app/handoff'
 
 /*
 Logs. Two sub-tabs, with upstream's literal labels (index.html:3243-3244): "View
@@ -37,6 +38,8 @@ export interface LogsProps {
   canDeleteStats?: boolean
   /** The cluster node. Empty means "this server". */
   node?: string
+  /** `showQueryLogs` from another screen: Query Logs filtered and run on arrival. */
+  request?: QueryLogsRequest
 }
 
 export function Logs({
@@ -47,10 +50,12 @@ export function Logs({
   sub,
   canDeleteLogs = true,
   canDeleteStats = true,
+  request,
 }: LogsProps) {
   /* Which node this screen reads. Upstream mounts a selector here
-     and the parameter was already travelling empty. */
-  const [node, setNode] = useState<string>(() => '')
+     and the parameter was already travelling empty. `showQueryLogs` picks one
+     only when it was given one (logs.js:634-635). */
+  const [node, setNode] = useState<string>(() => request?.node ?? '')
   const requested = (sub ?? 'View Logs') as SubTab
   const active: SubTab = SUB_TABS.includes(requested) ? requested : 'View Logs'
 
@@ -81,7 +86,7 @@ export function Logs({
         label="Cluster Node"
       />
       {active === 'Query Logs' ? (
-        <QueryLogs tabs={tabs} token={token} node={node} />
+        <QueryLogs tabs={tabs} token={token} node={node} request={request} />
       ) : (
         <ViewLogs tabs={tabs}
           token={token}

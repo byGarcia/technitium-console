@@ -163,7 +163,7 @@ its longest label plus its percentage, and that is not negotiable.
 .toprow { display:flex; align-items:center; justify-content:space-between; gap: var(--s-8); padding: var(--s-4) 0; border-bottom:1px solid var(--line2); font-size: var(--t-4); }
 .toprow:last-child { border-bottom:0; }
 .toprow .n { color:var(--ink); font-family:var(--font-mono); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.toprow .c { color:var(--mute); font-family:var(--font-mono); flex:none; }
+.toprow .c { color:var(--mute); font-family:var(--font-mono); flex:none; margin-left:auto; }
 /* "Top Stats" modal: the long list behind the "More" buttons. */
 .topTableWrap { overflow-x: auto; max-height: 460px; overflow-y: auto; }
 /*

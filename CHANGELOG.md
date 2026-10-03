@@ -46,6 +46,19 @@ folder and service drop-in itself. It also follows Technitium DNS Server 15.6.
 - Other periods do not poll: their data does not change as the current minute advances.
 - Requests never overlap, and the current figures stay visible during a refresh.
 
+### Row menus
+
+- **Query Logs entries open in DNS Client again**
+  ([#4](https://github.com/byGarcia/technitium-console/issues/4)). Each row's menu offers Query
+  DNS Server, then Allow Domain or Block Domain, as in the stock console.
+- **The Dashboard's top lists and their More dialogs have their row menus back**: Show Query
+  Logs, Query DNS Server, and Block Domain or Allow Domain. Jumping to DNS Client or Query Logs
+  fills the form and runs the query, on the cluster node the Dashboard is showing.
+- **Administration › Sessions offers View User Details in each row's menu**, with the stock
+  console's wording.
+- DNS Client now sends its cluster node with the query, and the More dialogs ask the node the
+  Dashboard is showing. Both used to answer from the node serving the console.
+
 ### Installer
 
 - On Technitium 15.5 or later with systemd, the installer now creates and owns

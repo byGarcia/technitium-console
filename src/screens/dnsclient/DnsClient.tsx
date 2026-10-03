@@ -1,5 +1,6 @@
 import { ClusterNodeSelect } from '../../ui/ClusterNodeSelect'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import type { DnsClientRequest } from '../../app/handoff'
 import { PROTOCOLS, TYPES, prepareServer, resolve } from '../../api/dnsclient'
 import { type AlertType } from '../../ui/Alert'
 import { Button } from '../../ui/Button'
@@ -20,6 +21,9 @@ A replica of `resolveQuery()` (dnsclient.js:95-210). Both buttons call the same
 endpoint: "Import" only adds `import=true`.
 
 The alert texts are upstream literals.
+
+`request` is `queryDnsServer` (dnsclient.js:231-257), the jump other screens' row
+menus make: the form starts filled with it and the query runs on arrival.
 */
 interface AlertState { type: AlertType; title: string; text: string }
 
@@ -27,15 +31,18 @@ export function DnsClient({
   token,
   nodes = [],
   clusterInitialised = false,
+  request,
 }: {
   token: string | null
   /** The cluster nodes, for the node selector. */
   nodes?: { name: string; type: string }[]
   clusterInitialised?: boolean
+  /** A query another screen asked for: fill the form with it and run it. */
+  request?: DnsClientRequest
 }) {
   /* Upstream mounts one here (`optDnsClientClusterNode`), no aggregate, no
-     persistence. */
-  const [clusterNode, setClusterNode] = useState<string>('')
+     persistence. The jump picks a node only when it was given one. */
+  const [clusterNode, setClusterNode] = useState<string>(() => request?.node ?? '')
 
   const [server, setServer] = useState('This Server {this-server}')
 
@@ -54,11 +61,13 @@ export function DnsClient({
       alive = false
     }
   }, [])
-  const [domain, setDomain] = useState('')
-  const [type, setType] = useState('A')
+  const [domain, setDomain] = useState(() => request?.domain ?? '')
+  const [type, setType] = useState(() => request?.type ?? 'A')
   const [protocol, setProtocol] = useState('UDP')
   const [ecs, setEcs] = useState('')
-  const [dnssec, setDnssec] = useState(true)
+  /* The one field the jump does not leave at its default: it UNCHECKS validation
+     (dnsclient.js:240). */
+  const [dnssec, setDnssec] = useState(() => request == null)
   const [output, setOutput] = useState<string | null>(null)
   /*
   The raw responses of each hop of the resolution.
@@ -96,6 +105,7 @@ export function DnsClient({
       dnssec,
       eDnsClientSubnet: ecs,
       runImport,
+      node: clusterNode,
     })
     setBusy(false)
 
@@ -120,6 +130,17 @@ export function DnsClient({
       })
     }
   }
+
+  /* `resolveQuery()` on arrival (dnsclient.js:256), once per request. The ref
+     outlives the development double-run of effects, so it is still once there. */
+  const ran = useRef<DnsClientRequest | null>(null)
+  useEffect(() => {
+    if (request == null || ran.current === request) return
+    ran.current = request
+    void fire(false)
+    // Only a new request runs it; `fire` reads the state this render holds.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [request])
 
   return (
     <>
