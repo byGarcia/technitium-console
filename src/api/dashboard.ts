@@ -131,3 +131,32 @@ export async function getTop(
 export function deleteAllStats(token: string | null): Promise<ApiOutcome> {
   return apiRequest('dashboard/stats/deleteAll', { token })
 }
+
+/*
+`dashboard/metrics/json`: the server's lifetime counters, current to the query
+(a query shows on the very next read). Upstream documents it in APIDOCS.md
+("Get Metrics (JSON)", marked experimental) but its console does not call it;
+this console reads it to keep Last Hour moving between reloads (deviation 5 in
+CONVENTIONS.md). `node=cluster` does NOT aggregate, it answers the local node, so
+the aggregate is summed by the caller, node by node. Checked against v15.6.0.
+
+`totalClients` counts distinct clients, so differences of it mean nothing: it is
+not one of the live keys.
+*/
+export const LIVE_KEYS = [
+  'totalQueries', 'totalNoError', 'totalServerFailure', 'totalNxDomain', 'totalRefused',
+  'totalAuthoritative', 'totalRecursive', 'totalCached', 'totalBlocked', 'totalDropped',
+] as const
+export type LiveKey = (typeof LIVE_KEYS)[number]
+export type LiveCounters = Record<LiveKey, number>
+
+export interface Metrics {
+  uptimestamp: string
+  lifetimeCounters: LiveCounters & { totalClients: number }
+}
+
+export async function getMetrics(token: string | null, node?: string): Promise<ApiOutcome<Metrics>> {
+  const outcome = await apiRequest<{ response: Metrics }>('dashboard/metrics/json', { token, node })
+  if (outcome.kind !== 'ok') return outcome
+  return { kind: 'ok', data: outcome.data.response }
+}
