@@ -15,6 +15,7 @@ draw on, and what is under test is when the palette is read, not the drawing.
 const built = vi.hoisted(() => [] as unknown[])
 const readAt = vi.hoisted(() => [] as (string | undefined)[])
 const hiddenOn = vi.hoisted(() => [] as { build: number; index: number }[])
+const updates = vi.hoisted(() => [] as (string | undefined)[])
 
 vi.mock('chart.js', () => {
   class Chart {
@@ -25,7 +26,9 @@ vi.mock('chart.js', () => {
       built.push(config)
     }
     destroy() {}
-    update() {}
+    update(mode?: string) {
+      updates.push(mode)
+    }
     setDatasetVisibility(index: number, visible: boolean) {
       if (!visible) hiddenOn.push({ build: built.length, index })
     }
@@ -61,6 +64,7 @@ afterEach(() => {
   built.length = 0
   readAt.length = 0
   hiddenOn.length = 0
+  updates.length = 0
 })
 
 const DATA = { labels: ['a', 'b'], datasets: [{ label: 'Total', data: [1, 2] }] }
@@ -111,5 +115,40 @@ describe('Chart and the theme', () => {
     )
     system.change(true)
     expect(hiddenOn).toContainEqual({ build: 2, index: 0 })
+  })
+
+  /* The live Last Hour hands a new `data` every 2 seconds: rebuilding would destroy
+     the canvas and replay the entry animation each time. */
+  it('new data is swapped in place, redrawn without animation, and keeps a switched-off series off', () => {
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+      createLinearGradient: () => ({ addColorStop() {} }),
+    } as never)
+    mockSystemTheme(false)
+    const off = new Set(['Total'])
+    const view = (data: typeof DATA) => (
+      <ThemeProvider>
+        <Chart type="line" data={data} aria="Queries" hidden={off} />
+      </ThemeProvider>
+    )
+    const { rerender } = render(view(DATA))
+    updates.length = 0
+    hiddenOn.length = 0
+    const next = { labels: ['a', 'b'], datasets: [{ label: 'Total', data: [1, 3] }] }
+    rerender(view(next))
+    expect(built).toHaveLength(1)
+    expect(updates).toEqual(['none'])
+    expect(hiddenOn).toContainEqual({ build: 1, index: 0 })
+  })
+
+  it('the same data again does nothing', () => {
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+      createLinearGradient: () => ({ addColorStop() {} }),
+    } as never)
+    mockSystemTheme(false)
+    const { rerender } = render(<ThemeProvider><Chart type="line" data={DATA} aria="Queries" /></ThemeProvider>)
+    updates.length = 0
+    rerender(<ThemeProvider><Chart type="line" data={DATA} aria="Queries" /></ThemeProvider>)
+    expect(built).toHaveLength(1)
+    expect(updates).toEqual([])
   })
 })

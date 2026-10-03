@@ -127,7 +127,16 @@ export function Chart({
   (main.js:3260-3265).
   */
   const { resolved: theme } = useTheme()
+  /* The `data` the chart on screen holds, so a new reference with the chart
+     already built is swapped in place instead of rebuilding (see below). */
+  const holds = useRef<ChartData | null>(null)
 
+  /*
+  Built when something that shapes the canvas changes: the type, the height, the
+  legend, the theme. NOT when only the data does: the live Last Hour hands a new
+  `data` every 2 seconds, and rebuilding destroyed the canvas and replayed the
+  entry animation each time. New data goes in through the next effect.
+  */
   useEffect(() => {
     if (!ref.current) return
     const ctx = ref.current.getContext('2d')
@@ -199,11 +208,48 @@ export function Chart({
             : undefined,
       },
     })
+    holds.current = data
     return () => {
       chart.current?.destroy()
       chart.current = null
+      holds.current = null
     }
-  }, [type, data, height, separateLegend, legendOrder, theme])
+    // `data` is read for the first drawing only; a later one is swapped in below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [type, height, separateLegend, legendOrder, theme])
+
+  /*
+  New data on a chart that is already drawn: swapped in place and redrawn without
+  animation, so a figure that moves does not make the whole chart replay its
+  entry. The series switched off stay off: they are applied again before the
+  redraw, by the same rule as the effect below.
+  */
+  useEffect(() => {
+    const c = chart.current
+    if (c == null || holds.current === data || !ref.current) return
+    const ctx = ref.current.getContext('2d')
+    if (!ctx) return
+    const p = readPalette(getComputedStyle(document.documentElement))
+    const next = repaint(data, type, p, ctx, height)
+    /* The same series: their figures are copied INTO the datasets the chart already
+       has. Chart.js keeps a series' state (switched off from its own in-canvas
+       legend, say) on the dataset object, and a new object would drop it. */
+    const current = c.data.datasets
+    const same =
+      current.length === next.datasets.length &&
+      next.datasets.every((d, i) => current[i]?.label === d.label)
+    if (same) {
+      c.data.labels = next.labels
+      next.datasets.forEach((d, i) => Object.assign(current[i], d))
+    } else {
+      c.data = next
+    }
+    holds.current = data
+    if (hidden != null) applyVisibility(c)
+    c.update('none')
+    // Only new data swaps; the rest rebuilds through the effect above.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data])
 
   /*
   Switching off and on, in its own effect, and **what is switched off is not the
@@ -219,15 +265,21 @@ export function Chart({
   click would have destroyed and rebuilt the canvas (`data` is in its
   dependencies), and you would see a flicker instead of a line disappearing.
 
-  **And it depends on `data`.** Without that, when new data arrives Chart.js
-  rebuilds the chart from scratch, the visibility is lost and the button goes on
-  saying `aria-pressed="false"` while the series has come back: the control and the
-  thing controlled, disagreeing. A change of theme rebuilds it too, so it depends
-  on the theme for the same reason.
+  **And it runs again after every rebuild** (theme, type, size, legend), and new
+  data applies it before its own redraw. Without that the visibility is lost and
+  the button goes on saying `aria-pressed="false"` while the series has come back:
+  the control and the thing controlled, disagreeing.
   */
   useEffect(() => {
     const c = chart.current
     if (c == null) return
+    applyVisibility(c)
+    c.update()
+    // Runs after every build (theme, type, size, legend) and on every switch.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hidden, type, theme, height, separateLegend, legendOrder])
+
+  function applyVisibility(c: ChartJS) {
     const isHidden = (label: unknown) => hidden?.has(String(label)) ?? false
 
     if (type === 'doughnut') {
@@ -239,8 +291,7 @@ export function Chart({
     } else {
       c.data.datasets.forEach((d, i) => c.setDatasetVisibility(i, !isHidden(d.label)))
     }
-    c.update()
-  }, [hidden, data, type, theme])
+  }
 
   return (
     <div style={{ height: height }}>

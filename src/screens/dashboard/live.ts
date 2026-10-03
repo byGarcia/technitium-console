@@ -54,11 +54,13 @@ export interface LiveMinute {
 const MINUTE = 60_000
 
 /** Adds `delta` to the minute `now` falls in; a minute that turns opens a new
- *  entry even when nothing happened, so the chart keeps moving. */
+ *  entry even when nothing happened, so the chart keeps moving. A quiet reading
+ *  inside the same minute returns the SAME list, so nothing is drawn again. */
 export function record(minutes: LiveMinute[], delta: LiveCounters, now: number): LiveMinute[] {
   const at = Math.floor(now / MINUTE) * MINUTE
   const last = minutes[minutes.length - 1]
   if (last != null && last.at === at) {
+    if (LIVE_KEYS.every((k) => delta[k] === 0)) return minutes
     return [...minutes.slice(0, -1), { at, counts: sum(last.counts, delta) }]
   }
   return [...minutes, { at, counts: delta }]

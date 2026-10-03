@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
-import { getMetrics } from '../../api/dashboard'
-import { advance, record, sum, zero, type LiveMinute, type Sample } from './live'
+import { useEffect, useMemo, useState } from 'react'
+import { getMetrics, type DashboardStats } from '../../api/dashboard'
+import { AGGREGATE, type ClusterNode } from '../../ui/ClusterNodeSelect'
+import { advance, applyLive, record, sum, zero, type LiveMinute, type Sample } from './live'
 
 /*
 Reads the server's lifetime counters every 2 s, the cadence of the stock console's
@@ -82,4 +83,47 @@ export function useLive({
   }, [token, key, epoch, active])
 
   return minutes
+}
+
+/** Last Hour's reload, as upstream's (main.js:258-262). Shared by the Dashboard and
+ *  Blocking › Overview, which read the same `stats/get`. */
+export const LAST_HOUR_REFRESH_MS = 60_000
+
+/** Which nodes to read: every node by name for the aggregate of a cluster, else the
+ *  one chosen, `''` being the server answering. */
+export function liveTargets(node: string, nodes: ClusterNode[], clusterInitialised: boolean): string[] {
+  if (clusterInitialised && node === AGGREGATE) return nodes.map((n) => n.name)
+  return [node === AGGREGATE ? '' : node]
+}
+
+/** The screen's `stats/get` with the live figures laid over it while Last Hour is
+ *  shown; anything else passes through untouched. Every new `data` is a new
+ *  baseline. */
+export function useLiveView({
+  token,
+  lastHour,
+  node,
+  nodes,
+  clusterInitialised,
+  data,
+  active,
+}: {
+  token: string | null
+  lastHour: boolean
+  node: string
+  nodes: ClusterNode[]
+  clusterInitialised: boolean
+  data: DashboardStats | null
+  active: boolean
+}): DashboardStats | null {
+  const minutes = useLive({
+    token,
+    targets: lastHour ? liveTargets(node, nodes, clusterInitialised) : [],
+    epoch: data,
+    active: lastHour && active && data != null,
+  })
+  return useMemo(
+    () => (data != null && lastHour ? applyLive(data, minutes) : data),
+    [data, lastHour, minutes],
+  )
 }

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import {
   RANGE_LABEL, RANGES, getDashboardStats,
   type DashboardStats, type Range, type Stats, type TopKind, type TopEntry,
@@ -18,8 +18,7 @@ import { Body, Panel } from '../../ui/Panel'
 import { Button } from '../../ui/Button'
 import { type AlertType } from '../../ui/Alert'
 import { BlockingMenu } from './BlockingMenu'
-import { applyLive } from './live'
-import { useLive } from './useLive'
+import { LAST_HOUR_REFRESH_MS, useLiveView } from './useLive'
 import { rangeInstants, whatIsMissing, MSG_START, MSG_END } from './custom-range'
 import { Segmented } from '../../ui/Segmented'
 import { noticeFromFailure } from '../../lib/notice'
@@ -100,7 +99,6 @@ const COUNTERS: { k: keyof Stats; label: string }[] = [
   { k: 'blockListZones', label: 'Block List' },
 ]
 
-const AUTO_REFRESH_MS = 60_000
 
 /*
 The numbers come out as in upstream, and upstream does NOT pin a locale: it uses
@@ -147,8 +145,19 @@ The percentage is worked out here and does not come from the server. It is
 written with the same `percentage()` as the cards **on purpose**: two shapes of
 the same number on one screen is worse than either of them.
 */
-function Split({ title, data, failure }: { title: string; data?: ChartData; failure: boolean }) {
-  const { hidden, toggle } = useHidden(data)
+function Split({
+  title,
+  data,
+  failure,
+  resetOn = data,
+}: {
+  title: string
+  data?: ChartData
+  failure: boolean
+  /** What switches every slice back on: the server's response (see `useHidden`). */
+  resetOn?: unknown
+}) {
+  const { hidden, toggle } = useHidden(resetOn)
   /*
   `data` may NOT arrive, and the first version of this did not allow for it: it
   worked out the percentages before the `hasData` below and took the whole screen
@@ -300,8 +309,8 @@ function Legend({
 /*
 The line chart: one entry per SERIES, and its figure is the count for the period.
 */
-function Line({ data }: { data: ChartData }) {
-  const { hidden, toggle } = useHidden(data)
+function Line({ data, resetOn = data }: { data: ChartData; resetOn?: unknown }) {
+  const { hidden, toggle } = useHidden(resetOn)
   const entries = data.datasets.map((d) => ({
     label: String(d.label ?? ''),
     datum: num2((d.data ?? []).reduce((a, n) => a + Number(n || 0), 0)),
@@ -343,11 +352,14 @@ saying another. It would also change today's behaviour: Chart.js's stock legend
 loses its state on every rebuild, so keeping it would be inventing a memory the
 console does not have.
 
-It resets on the identity of `data`, which is what changes with every response.
+It resets on the identity of the server's response, which is what changes with
+every reload, as upstream's rebuilt chart does. NOT on the live figures laid over
+it every 2 seconds (`live.ts`): those would bring a switched-off series back before
+the eye found it gone.
 */
-function useHidden(data: ChartData | undefined) {
+function useHidden(resetOn: unknown) {
   const [hidden, setHidden] = useState<ReadonlySet<string>>(() => new Set())
-  useEffect(() => setHidden(new Set()), [data])
+  useEffect(() => setHidden(new Set()), [resetOn])
   const toggle = (label: string) =>
     setHidden((prev) => {
       const next = new Set(prev)
@@ -502,7 +514,7 @@ export function Dashboard({
       }
 
       if (range === 'LastHour' && !document.hidden) {
-        refreshTimer = window.setTimeout(() => void load(false), AUTO_REFRESH_MS)
+        refreshTimer = window.setTimeout(() => void load(false), LAST_HOUR_REFRESH_MS)
       }
     }
 
@@ -536,22 +548,15 @@ export function Dashboard({
   the server's lifetime counters. Every result of `stats/get` is a new baseline.
   The aggregate is read node by node; a single server or a chosen node, alone.
   */
-  const liveTargets =
-    range !== 'LastHour'
-      ? []
-      : clusterInitialised && node === AGGREGATE
-        ? nodes.map((n) => n.name)
-        : [node === AGGREGATE ? '' : node]
-  const liveMinutes = useLive({
+  const view = useLiveView({
     token,
-    targets: liveTargets,
-    epoch: data,
-    active: range === 'LastHour' && data != null && !failure,
+    lastHour: range === 'LastHour',
+    node,
+    nodes,
+    clusterInitialised,
+    data,
+    active: !failure,
   })
-  const view = useMemo(
-    () => (data != null && range === 'LastHour' ? applyLive(data, liveMinutes) : data),
-    [data, range, liveMinutes],
-  )
 
   /*
   The range message goes NEXT TO ITS FIELD, not to the notice at the top.
@@ -692,7 +697,7 @@ export function Dashboard({
           <Body>
             {loading && <Loading compact />}
             {!loading && view && hasData(view.mainChartData) && (
-              <Line data={view.mainChartData} />
+              <Line data={view.mainChartData} resetOn={data?.mainChartData} />
             )}
             {!loading && (!view || !hasData(view.mainChartData)) && (
               <Placeholder failure={failure} empty="No queries for this period." />
@@ -716,7 +721,12 @@ export function Dashboard({
 
       {view && (
         <div className={styles.trio}>
-          <Split title="Query Response Types" data={view.queryResponseChartData} failure={failure} />
+          <Split
+            title="Query Response Types"
+            data={view.queryResponseChartData}
+            resetOn={data?.queryResponseChartData}
+            failure={failure}
+          />
           <Split title="Query Types" data={view.queryTypeChartData} failure={failure} />
           <Split title="Protocol Types" data={view.protocolTypeChartData} failure={failure} />
         </div>

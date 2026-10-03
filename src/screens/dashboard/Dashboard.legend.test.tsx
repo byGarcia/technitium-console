@@ -12,12 +12,16 @@ four canvases became four doubles with the same `data-testid`. A double that mak
 the test next door fail is badly placed, not badly written.
 */
 import { describe, expect, it, vi, afterEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Dashboard } from './Dashboard'
 import * as api from '../../api/dashboard'
+import { formatLabel } from '../../api/chart-labels'
 
-afterEach(() => vi.restoreAllMocks())
+afterEach(() => {
+  vi.useRealTimers()
+  vi.restoreAllMocks()
+})
 
 /*
 The double exposes the switched-off series in an attribute. Chart.js needs a real
@@ -209,3 +213,46 @@ jsdom, which does not give a `<canvas>` with a 2D context.
 It is written down rather than simulated: a test that doubles the very piece it
 wants to check verifies nothing, and that already happened once in this session.
 */
+
+/* The live Last Hour lays new figures over the chart every 2 seconds. A switched-off
+   series has to survive them, or it comes back before the eye finds it gone. It is
+   switched back on, as upstream's rebuilt chart does, only by a new response. */
+describe('the legend and the live figures', () => {
+  it('a series switched off stays off while the live figures move', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(Date.UTC(2026, 9, 3, 19, 42, 10))
+    const timed = {
+      ...STATS,
+      mainChartData: {
+        labelFormat: 'HH:mm',
+        /* As `getDashboardStats` hands them: already written in local time. */
+        labels: ['2026-10-03T19:41:00.000Z', '2026-10-03T19:42:00.000Z'].map((l) => formatLabel(l, 'HH:mm')),
+        datasets: [dataset('Total', [5, 0]), dataset('No Error', [1, 0])],
+      },
+    }
+    vi.spyOn(api, 'getDashboardStats').mockResolvedValue({ kind: 'ok', data: timed } as never)
+    const counters = (q: number) => ({
+      kind: 'ok' as const,
+      data: {
+        uptimestamp: 'u1',
+        lifetimeCounters: {
+          totalQueries: q, totalNoError: 0, totalServerFailure: 0, totalNxDomain: 0, totalRefused: 0,
+          totalAuthoritative: 0, totalRecursive: 0, totalCached: 0, totalBlocked: 0, totalDropped: 0,
+          totalClients: 1,
+        },
+      },
+    })
+    vi.spyOn(api, 'getMetrics').mockResolvedValueOnce(counters(100)).mockResolvedValue(counters(103))
+    render(<Dashboard token="t" />)
+    await act(async () => { await vi.advanceTimersByTimeAsync(0) })
+
+    await act(async () => { seriesButton(/^Total/).click() })
+    expect(seriesButton(/^Total/)).toHaveAttribute('aria-pressed', 'false')
+
+    await act(async () => { await vi.advanceTimersByTimeAsync(2_000) })
+    /* The live reading arrived: the legend's Total went from 5 to 8. */
+    expect(seriesButton(/^Total/)).toHaveTextContent('8')
+    expect(seriesButton(/^Total/)).toHaveAttribute('aria-pressed', 'false')
+    expect(line()).toHaveAttribute('data-hidden', 'Total')
+  })
+})

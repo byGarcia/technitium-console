@@ -51,6 +51,11 @@ describe('record', () => {
     ])
   })
 
+  it('a quiet reading in the same minute changes nothing, not even the reference', () => {
+    const m = record([], d(1), at)
+    expect(record(m, zero(), at + 2_000)).toBe(m)
+  })
+
   it('a quiet minute still opens, so the chart keeps moving', () => {
     const m = record(record([], d(1), at), zero(), at + 60_000)
     expect(m.map((x) => x.at)).toEqual([at, at + 60_000])
