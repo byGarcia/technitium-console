@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { listApps } from '../../api/apps'
 import { recentBlocked } from '../../api/blocking'
 import type { QueryLogEntry } from '../../api/logs'
@@ -28,6 +28,13 @@ link "Apps"; the empty-state title is ours. Ours too: the panel title `Recently
 Blocked`, `on <node>`, `Open Query Logs`, the columns `Time`, `Client`, `Domain` and
 `Type` (upstream's Query Logs table calls them otherwise), `No blocked queries.` and
 `Some blocked queries could not be read.`
+
+It reads again whenever `refreshOn` changes: the Overview passes the Blocked figure it
+shows, which moves in real time on Last Hour, so a new blocked query shows up here as
+it shows up in the count. The query logs app writes the row at once (measured against
+v15.6.0: five blocked queries were five rows on the very next read). A refresh keeps
+the rows on screen while it travels, never runs two at a time, and a failed one
+leaves the last good list in place.
 */
 
 type Load =
@@ -42,6 +49,7 @@ export function RecentBlocked({
   node,
   aggregate,
   serverDomain,
+  refreshOn,
 }: {
   token: string | null
   permissions: Permissions
@@ -51,14 +59,24 @@ export function RecentBlocked({
   aggregate: boolean
   /** The connected node's name, said in the header with the aggregate. */
   serverDomain: string | undefined
+  /** A new value reads the list again (the Overview's Blocked figure). */
+  refreshOn?: unknown
 }) {
   const need = missing(permissions, 'Logs.canView')
   const [state, setState] = useState<Load>({ kind: 'loading' })
   const target = aggregate ? '' : node
+  /* The app the first read found, for the refreshes; `null` until then or without one. */
+  const app = useRef<{ name: string; classPath: string } | null>(null)
+  /* Numbers the first reads, so a refresh started for a previous node is dropped. */
+  const round = useRef(0)
+  const busy = useRef(false)
+  const again = useRef(false)
 
   useEffect(() => {
     if (need != null) return
     let live = true
+    const mine = ++round.current
+    app.current = null
     setState({ kind: 'loading' })
     void (async () => {
       const a = await listApps(token)
@@ -67,19 +85,45 @@ export function RecentBlocked({
         setState({ kind: 'failed', text: noticeFromFailure(a).text })
         return
       }
-      const app = appsWithQueryLogs(a.data.response.apps ?? [])[0]
-      if (app == null) {
+      const found = appsWithQueryLogs(a.data.response.apps ?? [])[0]
+      if (found == null) {
         setState({ kind: 'no-app' })
         return
       }
-      const r = await recentBlocked(token, { name: app.name, classPath: app.classPaths[0] }, target)
+      const which = { name: found.name, classPath: found.classPaths[0] }
+      const r = await recentBlocked(token, which, target)
       if (!live) return
+      if (mine === round.current) app.current = which
       setState(r.kind === 'ok' ? { kind: 'ok', ...r.data } : { kind: 'failed', text: noticeFromFailure(r).text })
     })()
     return () => {
       live = false
     }
   }, [token, target, need])
+
+  useEffect(() => {
+    if (need != null || refreshOn === undefined) return
+    async function refresh() {
+      const which = app.current
+      if (which == null) return
+      if (busy.current) {
+        again.current = true
+        return
+      }
+      busy.current = true
+      const mine = round.current
+      const r = await recentBlocked(token, which, target)
+      busy.current = false
+      if (mine === round.current && r.kind === 'ok') setState({ kind: 'ok', ...r.data })
+      if (again.current) {
+        again.current = false
+        void refresh()
+      }
+    }
+    void refresh()
+    // Only a new figure reads again; the node and the token start over above.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshOn])
 
   if (need != null) return <Locked title="Recently Blocked" need={need} />
 

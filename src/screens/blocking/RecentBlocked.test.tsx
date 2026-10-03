@@ -85,3 +85,64 @@ describe('RecentBlocked', () => {
     expect(list).not.toHaveBeenCalled()
   })
 })
+
+/* The Overview's Blocked figure moves in real time; the list follows it. */
+describe('RecentBlocked: following the Blocked figure', () => {
+  const row = (n: number, qname: string) => ({
+    rowNumber: n, timestamp: '2026-10-01T10:00:00Z', clientIpAddress: '192.168.1.34', protocol: 'Udp',
+    responseType: 'Blocked', rcode: 'NoError', qname, qtype: 'A', qclass: 'IN', answer: null,
+  })
+  const props = { token: 'T', permissions: undefined, node: '', aggregate: false, serverDomain: 'dns.test' }
+
+  it('a new figure reads the list again, keeping the rows on screen while it travels', async () => {
+    withApps([LOGGER])
+    let finish!: (v: Awaited<ReturnType<typeof blocking.recentBlocked>>) => void
+    const spy = vi.spyOn(blocking, 'recentBlocked')
+      .mockResolvedValueOnce({ kind: 'ok', data: { partial: false, entries: [row(1, 'first.test')] } })
+      .mockReturnValueOnce(new Promise((r) => { finish = r }))
+    const { rerender } = render(<RecentBlocked {...props} refreshOn={5} />)
+    expect(await screen.findByText('first.test')).toBeInTheDocument()
+
+    rerender(<RecentBlocked {...props} refreshOn={6} />)
+    expect(spy).toHaveBeenCalledTimes(2)
+    expect(screen.getByText('first.test')).toBeInTheDocument()
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+
+    finish({ kind: 'ok', data: { partial: false, entries: [row(2, 'second.test'), row(1, 'first.test')] } })
+    expect(await screen.findByText('second.test')).toBeInTheDocument()
+    expect(listApps()).toHaveBeenCalledTimes(1)
+  })
+
+  it('never two reads at once: a figure that moves mid-read reads once more afterwards', async () => {
+    withApps([LOGGER])
+    let finish!: (v: Awaited<ReturnType<typeof blocking.recentBlocked>>) => void
+    const spy = vi.spyOn(blocking, 'recentBlocked')
+      .mockResolvedValueOnce({ kind: 'ok', data: { partial: false, entries: [row(1, 'first.test')] } })
+      .mockReturnValueOnce(new Promise((r) => { finish = r }))
+      .mockResolvedValue({ kind: 'ok', data: { partial: false, entries: [row(3, 'third.test')] } })
+    const { rerender } = render(<RecentBlocked {...props} refreshOn={5} />)
+    await screen.findByText('first.test')
+    rerender(<RecentBlocked {...props} refreshOn={6} />)
+    rerender(<RecentBlocked {...props} refreshOn={7} />)
+    rerender(<RecentBlocked {...props} refreshOn={8} />)
+    expect(spy).toHaveBeenCalledTimes(2)
+    finish({ kind: 'ok', data: { partial: false, entries: [row(2, 'second.test')] } })
+    expect(await screen.findByText('third.test')).toBeInTheDocument()
+    expect(spy).toHaveBeenCalledTimes(3)
+  })
+
+  it('a failed refresh leaves the last good list in place', async () => {
+    withApps([LOGGER])
+    vi.spyOn(blocking, 'recentBlocked')
+      .mockResolvedValueOnce({ kind: 'ok', data: { partial: false, entries: [row(1, 'first.test')] } })
+      .mockResolvedValue({ kind: 'error', message: 'boom' })
+    const { rerender } = render(<RecentBlocked {...props} refreshOn={5} />)
+    await screen.findByText('first.test')
+    rerender(<RecentBlocked {...props} refreshOn={6} />)
+    await new Promise((r) => setTimeout(r, 20))
+    expect(screen.getByText('first.test')).toBeInTheDocument()
+    expect(screen.queryByText('boom')).not.toBeInTheDocument()
+  })
+})
+
+const listApps = () => vi.mocked(apps.listApps)
