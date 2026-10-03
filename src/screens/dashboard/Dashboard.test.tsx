@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, afterEach } from 'vitest'
+import { describe, expect, it, vi, afterEach, beforeEach } from 'vitest'
 import { act, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Dashboard, percentage } from './Dashboard'
@@ -7,6 +7,12 @@ import * as api from '../../api/dashboard'
 afterEach(() => {
   vi.useRealTimers()
   vi.restoreAllMocks()
+})
+
+beforeEach(() => {
+  /* The live Last Hour reads `dashboard/metrics/json`; by default it finds
+     nothing and the Dashboard behaves as before. */
+  vi.spyOn(api, 'getMetrics').mockResolvedValue({ kind: 'error', message: 'not stubbed' })
 })
 
 const chart = { labels: ['a', 'b'], datasets: [{ label: 'Total', data: [1, 2] }] }
@@ -200,5 +206,79 @@ describe('Dashboard', () => {
     vi.spyOn(api, 'getDashboardStats').mockResolvedValue({ kind: 'invalid-token' })
     render(<Dashboard token="t" />)
     expect(await screen.findByText('Invalid token or session expired.')).toBeInTheDocument()
+  })
+})
+
+describe('Dashboard: Last Hour in real time', () => {
+  const live = (q: number, blocked = 0) => ({
+    kind: 'ok' as const,
+    data: {
+      uptimestamp: 'u1',
+      lifetimeCounters: {
+        totalQueries: q, totalNoError: 0, totalServerFailure: 0, totalNxDomain: 0, totalRefused: 0,
+        totalAuthoritative: 0, totalRecursive: 0, totalCached: 0, totalBlocked: blocked, totalDropped: 0,
+        totalClients: 1,
+      },
+    },
+  })
+
+  it('the Total Queries tile moves between reloads', async () => {
+    vi.useFakeTimers()
+    vi.spyOn(api, 'getDashboardStats').mockResolvedValue({ kind: 'ok', data } as never)
+    vi.spyOn(api, 'getMetrics').mockResolvedValueOnce(live(1000)).mockResolvedValue(live(1005, 2))
+    render(<Dashboard token="t" />)
+    await act(async () => { await vi.advanceTimersByTimeAsync(0) })
+    expect(screen.getByText((48312).toLocaleString())).toBeInTheDocument()
+    await act(async () => { await vi.advanceTimersByTimeAsync(2_000) })
+    expect(screen.getByText((48317).toLocaleString())).toBeInTheDocument()
+    expect(screen.getByText((6054).toLocaleString())).toBeInTheDocument()
+    expect(screen.getByText((27).toLocaleString())).toBeInTheDocument()
+  })
+
+  it('other periods do not read the counters', async () => {
+    vi.spyOn(api, 'getDashboardStats').mockResolvedValue({ kind: 'ok', data } as never)
+    const spy = vi.spyOn(api, 'getMetrics').mockResolvedValue(live(1))
+    render(<Dashboard token="t" />)
+    await screen.findByText('Total Queries')
+    await userEvent.click(screen.getByRole('button', { name: 'Last Week' }))
+    spy.mockClear()
+    await new Promise((r) => setTimeout(r, 2_100))
+    expect(spy).not.toHaveBeenCalled()
+  })
+
+  it('with the cluster aggregate it reads every node by name', async () => {
+    vi.spyOn(api, 'getDashboardStats').mockResolvedValue({ kind: 'ok', data } as never)
+    const spy = vi.spyOn(api, 'getMetrics').mockResolvedValue(live(1))
+    localStorage.setItem('dashboardClusterNode', 'cluster')
+    render(
+      <Dashboard
+        token="t"
+        clusterInitialised
+        nodes={[{ name: 'ns1.test' }, { name: 'ns2.test' }] as never}
+      />,
+    )
+    await screen.findByText('Total Queries')
+    await vi.waitFor(() => expect(spy.mock.calls.map((c) => c[1]).sort()).toEqual(['ns1.test', 'ns2.test']))
+    localStorage.removeItem('dashboardClusterNode')
+  })
+
+  it('with the tab hidden the minute refresh waits, and coming back reloads at once', async () => {
+    vi.useFakeTimers()
+    let hidden = false
+    Object.defineProperty(document, 'hidden', { configurable: true, get: () => hidden })
+    const spy = vi.spyOn(api, 'getDashboardStats').mockResolvedValue({ kind: 'ok', data } as never)
+    render(<Dashboard token="t" />)
+    await act(async () => { await vi.advanceTimersByTimeAsync(0) })
+    expect(spy).toHaveBeenCalledTimes(1)
+    hidden = true
+    document.dispatchEvent(new Event('visibilitychange'))
+    await act(async () => { await vi.advanceTimersByTimeAsync(180_000) })
+    expect(spy).toHaveBeenCalledTimes(1)
+    hidden = false
+    await act(async () => {
+      document.dispatchEvent(new Event('visibilitychange'))
+      await vi.advanceTimersByTimeAsync(0)
+    })
+    expect(spy).toHaveBeenCalledTimes(2)
   })
 })

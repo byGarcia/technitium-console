@@ -158,5 +158,10 @@ export interface Metrics {
 export async function getMetrics(token: string | null, node?: string): Promise<ApiOutcome<Metrics>> {
   const outcome = await apiRequest<{ response: Metrics }>('dashboard/metrics/json', { token, node })
   if (outcome.kind !== 'ok') return outcome
-  return { kind: 'ok', data: outcome.data.response }
+  /* Experimental upstream: a response of another shape is a failure, not a crash. */
+  const data = outcome.data?.response
+  if (data == null || typeof data.lifetimeCounters !== 'object' || data.lifetimeCounters == null) {
+    return { kind: 'error', message: 'Unexpected metrics response.' }
+  }
+  return { kind: 'ok', data }
 }

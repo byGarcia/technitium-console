@@ -27,6 +27,13 @@ describe('getMetrics', () => {
     expect(await getMetrics('tok')).toEqual({ kind: 'error', message: 'boom' })
   })
 
+  it('a response of another shape is a failure, not a crash', async () => {
+    vi.spyOn(client, 'apiRequest').mockResolvedValue({ kind: 'ok', data: { response: { uptimestamp: 'x' } } } as never)
+    expect((await getMetrics('tok')).kind).toBe('error')
+    vi.spyOn(client, 'apiRequest').mockResolvedValue({ kind: 'ok', data: {} } as never)
+    expect((await getMetrics('tok')).kind).toBe('error')
+  })
+
   it('the ten live keys are the summable counters, Clients excluded', () => {
     expect(LIVE_KEYS).toEqual([
       'totalQueries', 'totalNoError', 'totalServerFailure', 'totalNxDomain', 'totalRefused',

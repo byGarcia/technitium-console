@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import {
   RANGE_LABEL, RANGES, getDashboardStats,
   type DashboardStats, type Range, type Stats, type TopKind, type TopEntry,
@@ -18,6 +18,8 @@ import { Body, Panel } from '../../ui/Panel'
 import { Button } from '../../ui/Button'
 import { type AlertType } from '../../ui/Alert'
 import { BlockingMenu } from './BlockingMenu'
+import { applyLive } from './live'
+import { useLive } from './useLive'
 import { rangeInstants, whatIsMissing, MSG_START, MSG_END } from './custom-range'
 import { Segmented } from '../../ui/Segmented'
 import { noticeFromFailure } from '../../lib/notice'
@@ -476,7 +478,8 @@ export function Dashboard({
     Upstream refreshes the Dashboard every 60 seconds, but only for Last Hour
     (`main.js:258-262`). Its `hideLoader=true` keeps the current figures visible
     while that request is in flight. A chained timeout gives the same visible
-    behaviour without allowing a slow request to overlap the next one.
+    behaviour without allowing a slow request to overlap the next one. Unlike
+    upstream, it pauses while the tab is hidden (`onVisibility` below).
     */
     async function load(showLoader: boolean) {
       if (showLoader) setLoading(true)
@@ -498,17 +501,57 @@ export function Dashboard({
         setNotice(noticeFromFailure(r))
       }
 
-      if (range === 'LastHour') {
+      if (range === 'LastHour' && !document.hidden) {
         refreshTimer = window.setTimeout(() => void load(false), AUTO_REFRESH_MS)
       }
     }
+
+    /*
+    A tab out of sight does not refresh (this console's, with the live Last
+    Hour, deviation 5): the timer stops when it hides, and coming back reloads at
+    once, which also gives the live figures a fresh baseline.
+    */
+    function onVisibility() {
+      if (range !== 'LastHour') return
+      if (document.hidden) {
+        if (refreshTimer != null) window.clearTimeout(refreshTimer)
+        refreshTimer = undefined
+      } else {
+        void load(false)
+      }
+    }
+    document.addEventListener('visibilitychange', onVisibility)
 
     void load(true)
     return () => {
       cancelled = true
       if (refreshTimer != null) window.clearTimeout(refreshTimer)
+      document.removeEventListener('visibilitychange', onVisibility)
     }
   }, [token, range, requested, node])
+
+  /*
+  Last Hour in real time (`live.ts`, `useLive.ts`): between reloads the ten
+  count tiles, the Queries chart and the Query Response Types doughnut move with
+  the server's lifetime counters. Every result of `stats/get` is a new baseline.
+  The aggregate is read node by node; a single server or a chosen node, alone.
+  */
+  const liveTargets =
+    range !== 'LastHour'
+      ? []
+      : clusterInitialised && node === AGGREGATE
+        ? nodes.map((n) => n.name)
+        : [node === AGGREGATE ? '' : node]
+  const liveMinutes = useLive({
+    token,
+    targets: liveTargets,
+    epoch: data,
+    active: range === 'LastHour' && data != null && !failure,
+  })
+  const view = useMemo(
+    () => (data != null && range === 'LastHour' ? applyLive(data, liveMinutes) : data),
+    [data, range, liveMinutes],
+  )
 
   /*
   The range message goes NEXT TO ITS FIELD, not to the notice at the top.
@@ -529,7 +572,7 @@ export function Dashboard({
     setRequested(rangeInstants(start, end))
   }
 
-  const s = data?.stats
+  const s = view?.stats
   const total = s?.totalQueries ?? 0
 
   return (
@@ -648,10 +691,10 @@ export function Dashboard({
         <Panel title="Queries" className={styles.panel}>
           <Body>
             {loading && <Loading compact />}
-            {!loading && data && hasData(data.mainChartData) && (
-              <Line data={data.mainChartData} />
+            {!loading && view && hasData(view.mainChartData) && (
+              <Line data={view.mainChartData} />
             )}
-            {!loading && (!data || !hasData(data.mainChartData)) && (
+            {!loading && (!view || !hasData(view.mainChartData)) && (
               <Placeholder failure={failure} empty="No queries for this period." />
             )}
           </Body>
@@ -671,25 +714,25 @@ export function Dashboard({
         </Panel>
       </div>
 
-      {data && (
+      {view && (
         <div className={styles.trio}>
-          <Split title="Query Response Types" data={data.queryResponseChartData} failure={failure} />
-          <Split title="Query Types" data={data.queryTypeChartData} failure={failure} />
-          <Split title="Protocol Types" data={data.protocolTypeChartData} failure={failure} />
+          <Split title="Query Response Types" data={view.queryResponseChartData} failure={failure} />
+          <Split title="Query Types" data={view.queryTypeChartData} failure={failure} />
+          <Split title="Protocol Types" data={view.protocolTypeChartData} failure={failure} />
         </div>
       )}
 
       <div className={styles.trio}>
         <Top
           title="Top Domains"
-          rows={data?.topDomains ?? []}
+          rows={view?.topDomains ?? []}
           onMore={() => setTop('TopDomains')}
           failure={failure}
           menu={(f) => <TopRowMenu kind="TopDomains" name={f.name} node={node} action={action} />}
         />
         <Top
           title="Top Blocked Domains"
-          rows={data?.topBlockedDomains ?? []}
+          rows={view?.topBlockedDomains ?? []}
           onMore={() => setTop('TopBlockedDomains')}
           failure={failure}
           beforeMore={<BlockingMenu token={token} onNotice={setNotice} />}
@@ -697,7 +740,7 @@ export function Dashboard({
         />
         <Top
           title="Top Clients"
-          rows={data?.topClients ?? []}
+          rows={view?.topClients ?? []}
           isClient
           onMore={() => setTop('TopClients')}
           failure={failure}

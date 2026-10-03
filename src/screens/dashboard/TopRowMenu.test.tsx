@@ -113,7 +113,8 @@ describe('Dashboard: the top lists row menus', () => {
 
     expect(await screen.findByText("Domain 'github.com' was added to Blocked Zone successfully.")).toBeInTheDocument()
     expect(screen.getByText('Blocked!')).toBeInTheDocument()
-    const calls = spy.mock.calls.filter((c) => c[0] !== 'dashboard/stats/get')
+    /* The live Last Hour reads the counters too; only the row's calls matter here. */
+    const calls = spy.mock.calls.filter((c) => c[0] !== 'dashboard/stats/get' && c[0] !== 'dashboard/metrics/json')
     expect(calls.map((c) => c[0])).toEqual(['allowed/delete', 'blocked/add'])
     expect(calls[1][1]?.body).toEqual({ domain: 'github.com' })
   })
@@ -127,7 +128,7 @@ describe('Dashboard: the top lists row menus', () => {
     await userEvent.click(screen.getByRole('menuitem', { name: 'Allow Domain' }))
 
     expect(await screen.findByText("Domain 'ads.example' was added to Allowed Zone successfully.")).toBeInTheDocument()
-    expect(spy.mock.calls.map((c) => c[0])).toEqual(['blocked/delete', 'allowed/add'])
+    expect(spy.mock.calls.map((c) => c[0]).filter((p) => p !== 'dashboard/metrics/json')).toEqual(['blocked/delete', 'allowed/add'])
   })
 
   it('with empty lists there is no row menu', async () => {
