@@ -40,6 +40,16 @@ folder and service drop-in itself. It also follows Technitium DNS Server 15.6.
 - Console 1.2.0 keeps working on a 15.6 server. It just does not offer the new switch, and saving
   Settings leaves it as it was.
 
+### Fixes
+
+- **Logs › Query Logs fits narrower windows**
+  ([#4](https://github.com/byGarcia/technitium-console/issues/4)). Under about 1280 pixels, Domain
+  and Answer were squeezed to a character wide and the rest of the table hid past the right edge.
+  They now keep a readable width, and the table fits down to small laptop windows.
+- **Blocking › Overview: each Your Rules number sits over its own word**
+  ([#5](https://github.com/byGarcia/technitium-console/issues/5)), so the card reads like the other
+  three.
+
 ### Dashboard
 
 - **Last Hour refreshes every 60 seconds.** The selected period and cluster node stay in place.
