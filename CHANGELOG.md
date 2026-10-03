@@ -21,13 +21,14 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
 
 ---
 
-## v1.2.1 (unreleased)
+## v1.2.1 (2026-10-03)
 
-**The Dashboard keeps itself current, and systemd setup is automatic.** While Last Hour is
-selected, the query counts and the Queries chart move in real time, and the rest of the Dashboard
-refreshes once a minute, matching the stock console.
-On Technitium 15.5 or later, the installer can now create and safely manage the dedicated console
-folder and service drop-in itself. It also follows Technitium DNS Server 15.6.
+**Last Hour moves in real time, the row menus are back, and Technitium 15.6 is supported.** With
+Last Hour selected, the query counts and the Queries chart follow the server as queries arrive,
+and in a cluster they now add up every node. Query Logs entries and the Dashboard's top lists have
+their row menus again, to query the DNS server, open the matching logs, or allow and block a
+domain. On Technitium 15.5 or later with systemd, the installer now sets up the dedicated console
+folder by itself.
 
 ### Technitium 15.6
 
@@ -47,6 +48,9 @@ folder and service drop-in itself. It also follows Technitium DNS Server 15.6.
   ([#4](https://github.com/byGarcia/technitium-console/issues/4)). Under about 1366 pixels, Domain
   and Answer were squeezed to a character wide and the rest of the table hid past the right edge.
   They now keep a readable width, and the table fits down to small laptop windows.
+- **The Dashboard's Cluster view adds every node up.** It showed the node serving the console
+  alone, because the console never told the server it wanted the whole cluster. Blocking ›
+  Overview and the More dialogs had the same fault and are fixed too.
 - **Blocking › Overview: each Your Rules number sits over its own word**
   ([#5](https://github.com/byGarcia/technitium-console/issues/5)), so the card reads like the other
   three.

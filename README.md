@@ -17,9 +17,10 @@ Same API, same behaviour, same texts: the interface rebuilt from scratch.
 |---|---|
 | ![The dashboard](docs/screenshots/dashboard.png) | ![Blocking › Overview](docs/screenshots/blocking-overview.png) |
 
-**Latest: [v1.2.0](https://github.com/byGarcia/technitium-console/releases/latest) for Technitium DNS
-Server 15.5.x**, with Allowed and Blocked as one Blocking section, a light theme, plus LDAP, the
-zone file editor and everything else 15.5 brought.
+**Latest: [v1.2.1](https://github.com/byGarcia/technitium-console/releases/latest) for Technitium DNS
+Server 15.5.x and 15.6.x**, with a Dashboard that moves in real time, Allowed and Blocked as one
+Blocking section, a light theme, plus LDAP, the zone file editor and everything else 15.5 and 15.6
+brought.
 [What's new](CHANGELOG.md) · [Which console for which server](CHANGELOG.md#which-version-for-which-server) · [Installing](#installing) · [Technitium in Docker](#docker)
 
 It replaces the console the server ships with. Install it and the DNS service
@@ -110,7 +111,7 @@ fixed one by one.
 | API endpoints the stock console calls, and this one calls too | 132 of 132 |
 | Sortable columns kept | 64 of 66, and the two missing are declared |
 | Dialogs, checked one by one | 44 |
-| Tests | 1,532 |
+| Tests | 1,598 |
 
 Every figure in that table comes from a script in `dev/` (`check-endpoints.mjs`,
 `check-parity-sort.mjs`, `dialog-inventory.sh`) and not from this paragraph.
@@ -371,7 +372,7 @@ unpacked folder.
 npm install
 npm run build        # emits into dist/
 npm run dev          # Vite development server
-npm test             # 1,487 tests
+npm test             # 1,598 tests
 npm run typecheck
 npm run lint
 ```
