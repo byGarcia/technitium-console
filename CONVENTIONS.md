@@ -472,8 +472,8 @@ Write down here whatever you find. What is already known:
 
 ## Deliberate deviations from upstream behaviour
 
-The rule is "zero functionality", but there are four exceptions, **decided and
-written down**. If you find a fifth, do not introduce it on your own: report it.
+The rule is "zero functionality", but there are five exceptions, **decided and
+written down**. If you find a sixth, do not introduce it on your own: report it.
 
 1. **Amber is not offered** (Adrián's decision). `Change Theme` is back as
    upstream has it: in the account menu, under the same `localStorage` key,
@@ -520,6 +520,20 @@ written down**. If you find a fifth, do not introduce it on your own: report it.
    stays dead until the page is reloaded because nothing re-evaluates its state:
    that is a bug of theirs, and replicating it would mean introducing the fault
    on purpose.
+5. **Last Hour moves in real time** (Adrián's decision, 2026-10-03). Between the
+   60-second reloads the ten count tiles, the Queries chart and the Query
+   Response Types doughnut follow the server's lifetime counters
+   (`dashboard/metrics/json`), read every 2 seconds (`dashboard/live.ts`,
+   `dashboard/useLive.ts`). Its limits, and crossing one is a bug:
+   - **only that endpoint**, which upstream documents in APIDOCS.md and its
+     console does not call; `check-endpoints.mjs` counts upstream's endpoints, so
+     it does not object;
+   - **Clients, Query Types, Protocol Types, the tops and the Server panel never
+     move**: the counters do not carry them, and distinct clients do not add up;
+   - **if the endpoint fails three times in a row, live mode stops** until the
+     next reload, and the Dashboard is exactly the stock console's;
+   - **a hidden tab reads nothing**, the minute refresh included, and coming
+     back reloads at once. That pause is the only change to an upstream request.
 
 ## Four constraints the server imposes
 

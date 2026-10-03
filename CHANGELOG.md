@@ -24,7 +24,8 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
 ## v1.2.1 (unreleased)
 
 **The Dashboard keeps itself current, and systemd setup is automatic.** While Last Hour is
-selected, the Dashboard refreshes in the background once a minute, matching the stock console.
+selected, the query counts and the Queries chart move in real time, and the rest of the Dashboard
+refreshes once a minute, matching the stock console.
 On Technitium 15.5 or later, the installer can now create and safely manage the dedicated console
 folder and service drop-in itself. It also follows Technitium DNS Server 15.6.
 
@@ -52,6 +53,12 @@ folder and service drop-in itself. It also follows Technitium DNS Server 15.6.
 
 ### Dashboard
 
+- **Last Hour now moves in real time.** Between the minute refreshes, the query counts, the
+  Queries chart and the response types follow the server's own counters every 2 seconds, on the
+  node or the whole cluster you are viewing. Clients, query and protocol types and the top lists
+  still update once a minute, as the server only counts them that way.
+- While the browser tab is hidden the Dashboard asks for nothing, and it catches up as soon as you
+  come back.
 - **Last Hour refreshes every 60 seconds.** The selected period and cluster node stay in place.
 - Other periods do not poll: their data does not change as the current minute advances.
 - Requests never overlap, and the current figures stay visible during a refresh.
