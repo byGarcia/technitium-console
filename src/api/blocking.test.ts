@@ -43,6 +43,7 @@ describe('readRuleExport', () => {
       serve(JSON.stringify({ status: 'invalid-token' }))
       await readRuleExport('blocked', 'T')
       expect(ended).toHaveBeenCalledOnce()
+      expect(ended).toHaveBeenCalledWith('T')
     } finally {
       onSessionExpired(null)
     }

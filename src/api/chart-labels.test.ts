@@ -88,11 +88,22 @@ describe('localiseLabels', () => {
       labels: ['2026-09-29T00:00:00.0000000Z', '2026-09-30T00:00:00.0000000Z'],
       datasets: [{ label: 'Total', data: [1, 2] }],
     }
-    expect(localiseLabels(chart)).toEqual({ ...chart, labels: ['09/29', '09/30'] })
+    expect(localiseLabels(chart)).toEqual({ ...chart, labels: ['09/29', '09/30'], instants: chart.labels })
   })
 
   it('without a format the chart passes through untouched', () => {
     const chart = { labels: ['A', 'AAAA'], datasets: [{ label: 'Type', data: [1, 2] }] }
     expect(localiseLabels(chart)).toBe(chart)
+  })
+
+  it('retains UTC instants if an already formatted chart is formatted again', () => {
+    const chart = { labelFormat: 'MM/DD', labels: ['2026-09-30T00:00:00Z'], datasets: [] }
+    const once = localiseLabels(chart)
+    expect(localiseLabels(once).instants).toEqual(chart.labels)
+  })
+
+  it('does not create instants from parseable legacy date labels', () => {
+    const chart = { labelFormat: 'MM/DD', labels: ['09/30'], datasets: [] }
+    expect(localiseLabels(chart)).toEqual(chart)
   })
 })

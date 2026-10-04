@@ -86,9 +86,9 @@ It is solved in a single place, here, and not in the thirty screens, because the
 rule is one: `SessionProvider` registers it, since it is the one that holds the
 session.
 */
-let onExpired: (() => void) | null = null
+let onExpired: ((token?: string | null) => void) | null = null
 
-export function onSessionExpired(fn: (() => void) | null): void {
+export function onSessionExpired(fn: ((token?: string | null) => void) | null): void {
   onExpired = fn
 }
 
@@ -98,12 +98,12 @@ cannot go through it because their good answer is not JSON (`allowed/export`,
 `blocked/export`): when those fail they answer this same envelope, and an
 `invalid-token` there has to end the session like anywhere else.
 */
-export function envelopeOutcome<T>(payload: Envelope): ApiOutcome<T> {
+export function envelopeOutcome<T>(payload: Envelope, token?: string | null): ApiOutcome<T> {
   switch (payload.status) {
     case 'ok':
       return { kind: 'ok', data: payload as T }
     case 'invalid-token':
-      onExpired?.()
+      onExpired?.(token)
       return { kind: 'invalid-token' }
     case '2fa-required':
       return { kind: 'two-factor-required' }
@@ -171,5 +171,5 @@ export async function apiRequest<T = unknown>(
     return { kind: 'error', message: `parsererror - ${String(e)}` }
   }
 
-  return envelopeOutcome<T>(payload)
+  return envelopeOutcome<T>(payload, token)
 }

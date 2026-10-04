@@ -73,3 +73,19 @@ There is no bounty.
   real trade-off. Download it, read it, run it. The file is POSIX shell and is meant to be read.
 - **The console is served by the DNS server's own web service**, so its TLS, its bind address and
   its authentication are the server's. Nothing here changes them.
+
+## Installer filesystem boundary
+
+The installer accepts only root-owned console, backup and state trees, with no
+group or other write bits on files or directories, including every ancestor.
+It rejects links, special files and newline-containing names before root copies
+or cleanup. It refuses unsafe ownership instead of trying to repair it while
+another account may still hold writable files open. Use a dedicated root-owned
+folder created afresh or a console volume mounted read-only in the DNS server. Custom-list
+migration has the same source and destination requirements.
+
+These checks assume local filesystem ownership and mode enforcement. A remote
+filesystem whose server can change those objects is a separate trust boundary.
+DNSSEC private-key submissions use POST form bodies, keeping PEM values out of
+request URLs. Logout and expiry cleanup use the affected session's token, even
+when another tab has replaced the token in shared browser storage.

@@ -34,7 +34,7 @@ export function SessionProvider() {
         setState({ phase: 'ready', session: outcome.data })
       } else {
         // auth.js:65-67 → showPageLogin, which removes the token (main.js:28).
-        localStorage.removeItem('token')
+        if (localStorage.getItem('token') === intent.token) localStorage.removeItem('token')
         setState({ phase: 'login' })
       }
     })()
@@ -49,10 +49,10 @@ export function SessionProvider() {
   stayed standing with a dead session.
   */
   useEffect(() => {
-    onSessionExpired(() => {
-      localStorage.removeItem('token')
+    onSessionExpired((token) => {
+      if (token && localStorage.getItem('token') === token) localStorage.removeItem('token')
       setState((previous) =>
-        previous.phase === 'login'
+        previous.phase === 'login' || (previous.phase === 'ready' && token !== previous.session.token)
           ? previous
           : {
               phase: 'login',
@@ -74,11 +74,16 @@ export function SessionProvider() {
 
   // auth.js:299-312: the session is cleared whether the call succeeds or fails.
   const onLogout = useCallback(async () => {
-    const token = localStorage.getItem('token')
+    if (state.phase !== 'ready') return
+    const token = state.session.token
     await apiRequest('user/logout', { token })
-    localStorage.removeItem('token')
-    setState({ phase: 'login' })
-  }, [])
+    if (localStorage.getItem('token') === token) localStorage.removeItem('token')
+    setState((previous) =>
+      previous.phase === 'ready' && previous.session.token !== token
+        ? previous
+        : { phase: 'login' },
+    )
+  }, [state])
 
   if (state.phase === 'booting') return null
   if (state.phase === 'login') return <Login onSuccess={onSuccess} initialAlert={state.alert} />

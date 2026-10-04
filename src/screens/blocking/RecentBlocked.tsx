@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { listApps } from '../../api/apps'
 import { recentBlocked } from '../../api/blocking'
 import type { QueryLogEntry } from '../../api/logs'
@@ -28,6 +28,11 @@ link "Apps"; the empty-state title is ours. Ours too: the panel title `Recently
 Blocked`, `on <node>`, `Open Query Logs`, the columns `Time`, `Client`, `Domain` and
 `Type` (upstream's Query Logs table calls them otherwise), `No blocked queries.` and
 `Some blocked queries could not be read.`
+
+The Overview passes its Blocked figure as `refreshOn`. A change refreshes the rows
+without clearing the previous list, serializes overlapping reads, and retains the
+last good list if a background read fails. Token, node and permission changes
+invalidate the entire read context.
 */
 
 type Load =
@@ -42,6 +47,7 @@ export function RecentBlocked({
   node,
   aggregate,
   serverDomain,
+  refreshOn,
 }: {
   token: string | null
   permissions: Permissions
@@ -51,35 +57,88 @@ export function RecentBlocked({
   aggregate: boolean
   /** The connected node's name, said in the header with the aggregate. */
   serverDomain: string | undefined
+  /** Read the logs again when the Overview's Blocked figure changes. */
+  refreshOn?: number
 }) {
   const need = missing(permissions, 'Logs.canView')
   const [state, setState] = useState<Load>({ kind: 'loading' })
   const target = aggregate ? '' : node
+  const requestRefresh = useRef<(() => void) | null>(null)
+  const lastRefresh = useRef(refreshOn)
 
   useEffect(() => {
     if (need != null) return
     let live = true
+    // These belong to this token/node only. A late answer cannot start a queued
+    // refresh for another context or after permission is revoked.
+    let busy = true
+    let again = false
+    let app: { name: string; classPath: string } | null = null
+    lastRefresh.current = refreshOn
     setState({ kind: 'loading' })
+
+    async function refresh() {
+      if (!live || app == null) return
+      if (busy) {
+        again = true
+        return
+      }
+      busy = true
+      const r = await recentBlocked(token, app, target)
+      if (!live) return
+      if (r.kind === 'ok') setState({ kind: 'ok', ...r.data })
+      busy = false
+      if (again) {
+        again = false
+        void refresh()
+      }
+    }
+
+    const request = () => {
+      if (!live) return
+      // A figure can change while the logging app or the first rows are loading.
+      if (busy) again = true
+      else void refresh()
+    }
+    requestRefresh.current = request
+
     void (async () => {
       const a = await listApps(token)
       if (!live) return
       if (a.kind !== 'ok') {
+        busy = false
         setState({ kind: 'failed', text: noticeFromFailure(a).text })
         return
       }
-      const app = appsWithQueryLogs(a.data.response.apps ?? [])[0]
-      if (app == null) {
+      const found = appsWithQueryLogs(a.data.response.apps ?? [])[0]
+      if (found == null) {
+        busy = false
         setState({ kind: 'no-app' })
         return
       }
-      const r = await recentBlocked(token, { name: app.name, classPath: app.classPaths[0] }, target)
+      app = { name: found.name, classPath: found.classPaths[0] }
+      const r = await recentBlocked(token, app, target)
       if (!live) return
       setState(r.kind === 'ok' ? { kind: 'ok', ...r.data } : { kind: 'failed', text: noticeFromFailure(r).text })
+      busy = false
+      if (again) {
+        again = false
+        void refresh()
+      }
     })()
     return () => {
       live = false
+      if (requestRefresh.current === request) requestRefresh.current = null
     }
+    // A new figure refreshes the existing context in the effect below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, target, need])
+
+  useEffect(() => {
+    if (Object.is(lastRefresh.current, refreshOn)) return
+    lastRefresh.current = refreshOn
+    if (refreshOn !== undefined) requestRefresh.current?.()
+  }, [refreshOn])
 
   if (need != null) return <Locked title="Recently Blocked" need={need} />
 

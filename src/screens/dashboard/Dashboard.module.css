@@ -162,7 +162,11 @@ its longest label plus its percentage, and that is not negotiable.
 .cnt .k { font-size: var(--t-1); color:var(--mute); margin-top: var(--s-3); text-transform:uppercase; letter-spacing:.05em; }
 .toprow { display:flex; align-items:center; justify-content:space-between; gap: var(--s-8); padding: var(--s-4) 0; border-bottom:1px solid var(--line2); font-size: var(--t-4); }
 .toprow:last-child { border-bottom:0; }
-.toprow .n { color:var(--ink); font-family:var(--font-mono); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.topRank { flex:none; width:1ch; color:var(--faint); font:var(--t-2) var(--font-mono); }
+.toprow .n { flex:1; min-width:0; color:var(--ink); font-family:var(--font-mono); overflow:hidden; white-space:nowrap; }
+.topLabel, .toprow .topDomain { display:block; overflow:hidden; text-overflow:ellipsis; }
+/* A neutral decoration: the count and server order carry its meaning. */
+.topBar { display:block; height:var(--s-1); margin-top:var(--s-2); border-radius:var(--r-full); background:var(--line); }
 .toprow .c { color:var(--mute); font-family:var(--font-mono); flex:none; margin-left:auto; }
 /* "Top Stats" modal: the long list behind the "More" buttons. */
 .topTableWrap { overflow-x: auto; max-height: 460px; overflow-y: auto; }

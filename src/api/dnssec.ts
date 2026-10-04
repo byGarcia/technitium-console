@@ -142,7 +142,7 @@ export function signZone(
   }
 
   body.node = node
-  return apiRequest('zones/dnssec/sign', { token, body })
+  return apiRequest('zones/dnssec/sign', { token, method: 'POST', body })
 }
 
 /** `zones/dnssec/unsign` (zone.js:6681). */
@@ -217,7 +217,7 @@ export function addPrivateKey(
   }
 
   body.node = node
-  return apiRequest('zones/dnssec/properties/addPrivateKey', { token, body })
+  return apiRequest('zones/dnssec/properties/addPrivateKey', { token, method: 'POST', body })
 }
 
 export function updatePrivateKey(
