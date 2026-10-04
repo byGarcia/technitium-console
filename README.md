@@ -17,7 +17,7 @@ Same API, same behaviour, same texts: the interface rebuilt from scratch.
 |---|---|
 | ![The dashboard](docs/screenshots/dashboard.png) | ![Blocking › Overview](docs/screenshots/blocking-overview.png) |
 
-**Latest: [v1.2.2](https://github.com/byGarcia/technitium-console/releases/latest) for Technitium DNS
+**Latest: [v1.2.3](https://github.com/byGarcia/technitium-console/releases/latest) for Technitium DNS
 Server 15.5.x and 15.6.x**, with a Dashboard that moves in real time, Allowed and Blocked as one
 Blocking section, a light theme, plus LDAP, the zone file editor and everything else 15.5 and 15.6
 brought.

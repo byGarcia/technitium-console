@@ -4,7 +4,29 @@ What changed in each release, newest first. Every release is also on the
 [Releases page](https://github.com/byGarcia/technitium-console/releases), with the files the
 installer downloads.
 
-## Unreleased
+## Which version for which server
+
+A console release is built and checked against one Technitium DNS Server release: every action it
+sends, every text it shows and every control it offers, compared with that server's own console.
+**Update the console together with the server.**
+
+| Console | Technitium DNS Server | Notes |
+|---|---|---|
+| **1.2.x** | **15.5.x, 15.6.x** (1.2.1 and 1.2.2 checked against 15.6.0) | Current. Allowed and Blocked become one Blocking section, a light theme, and the console comes as an image for Docker. Supports a console folder of its own (`DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH`), so server updates leave it alone. |
+| 1.1.x | 15.5.x | Superseded by 1.2.x on the same server. If you stay on it, use 1.1.3: earlier ones flood the server from Cache, Allowed and Blocked. |
+| 1.0.0 | 15.4 | Cannot save Settings on a 15.5 server. Upgrade. |
+
+To update, run the installer again (the same one-line command). It needs no restart of the DNS
+service. On Docker, pull the image again: see [Docker](README.md#docker).
+
+---
+
+## v1.2.3 (2026-10-04)
+
+**Security hardening and live figures that survive minute reloads.** The root installer
+rejects filesystem paths that non-root accounts can change, session cleanup preserves
+newer logins, and private DNSSEC fields travel in POST bodies. Last Hour retains the
+queries the server has not consolidated yet, and Recently Blocked follows its count.
 
 - Last Hour keeps pending live readings across minute reloads on the Dashboard
   and Blocking Overview, discarding them only when the server's UTC minute
@@ -26,20 +48,10 @@ installer downloads.
 - Update the development-only jsdom dependency undici from 8.10.0 to 8.10.2 to
   include its published security fixes.
 
-## Which version for which server
-
-A console release is built and checked against one Technitium DNS Server release: every action it
-sends, every text it shows and every control it offers, compared with that server's own console.
-**Update the console together with the server.**
-
-| Console | Technitium DNS Server | Notes |
-|---|---|---|
-| **1.2.x** | **15.5.x, 15.6.x** (1.2.1 and 1.2.2 checked against 15.6.0) | Current. Allowed and Blocked become one Blocking section, a light theme, and the console comes as an image for Docker. Supports a console folder of its own (`DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH`), so server updates leave it alone. |
-| 1.1.x | 15.5.x | Superseded by 1.2.x on the same server. If you stay on it, use 1.1.3: earlier ones flood the server from Cache, Allowed and Blocked. |
-| 1.0.0 | 15.4 | Cannot save Settings on a 15.5 server. Upgrade. |
-
-To update, run the installer again (the same one-line command). It needs no restart of the DNS
-service. On Docker, pull the image again: see [Docker](README.md#docker).
+**Installer migration:** existing service-owned or group-writable console, backup or
+state trees are refused. Use a fresh root-owned console folder or a dedicated console
+volume mounted read-only in the DNS server. The installer does not repair ownership
+in place. See [Installing](README.md#installing) and [Security](SECURITY.md).
 
 ---
 
