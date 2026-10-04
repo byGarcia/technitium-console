@@ -46,6 +46,10 @@ export interface Stats {
 export interface ChartData {
   labelFormat?: string
   labels: string[]
+  /** The labels as the server sent them, before `localiseLabels` wrote them for the
+   *  eye: UTC instants, each the END of its minute (or hour, day...). The live Last
+   *  Hour reads the last one to know how far the server has counted. */
+  instants?: string[]
   datasets: { label: string; data: number[]; backgroundColor?: string | string[] }[]
 }
 
@@ -160,7 +164,10 @@ export async function getMetrics(token: string | null, node?: string): Promise<A
   if (outcome.kind !== 'ok') return outcome
   /* Experimental upstream: a response of another shape is a failure, not a crash. */
   const data = outcome.data?.response
-  if (data == null || typeof data.lifetimeCounters !== 'object' || data.lifetimeCounters == null) {
+  if (data == null || typeof data.uptimestamp !== 'string' ||
+    typeof data.lifetimeCounters !== 'object' || data.lifetimeCounters == null ||
+    LIVE_KEYS.some((key) => typeof data.lifetimeCounters[key] !== 'number' ||
+      !Number.isFinite(data.lifetimeCounters[key]) || data.lifetimeCounters[key] < 0)) {
     return { kind: 'error', message: 'Unexpected metrics response.' }
   }
   return { kind: 'ok', data }

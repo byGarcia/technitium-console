@@ -39,7 +39,10 @@ import { fileURLToPath } from 'node:url'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.resolve(HERE, '..')
-const UPSTREAM = path.resolve(ROOT, '../technitium-ui/DnsServerCore/www/index.html')
+// UPSTREAM_HTML supplies an explicit snapshot when the sibling checkout is absent.
+const UPSTREAM = process.env.UPSTREAM_HTML
+  ? path.resolve(process.env.UPSTREAM_HTML)
+  : path.resolve(ROOT, '../technitium-ui/DnsServerCore/www/index.html')
 
 /**
  * Upstream table id -> where it lives here, how many of its columns we made
@@ -71,8 +74,9 @@ const MAP = [
 ]
 
 if (!fs.existsSync(UPSTREAM)) {
-  console.log(`\n  upstream not found at ${UPSTREAM}: nothing measured.\n`)
-  process.exit(0)
+  console.error(`\n  SORT PARITY FAILED: upstream not found at ${UPSTREAM}.\n` +
+    '  Check out technitium-ui or set UPSTREAM_HTML to its www/index.html snapshot.\n')
+  process.exit(1)
 }
 
 const html = fs.readFileSync(UPSTREAM, 'utf8')

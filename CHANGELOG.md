@@ -21,6 +21,40 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
 
 ---
 
+## v1.2.3 (2026-10-04)
+
+**Security hardening and live figures that survive minute reloads.** The root installer
+rejects filesystem paths that non-root accounts can change, session cleanup preserves
+newer logins, and private DNSSEC fields travel in POST bodies. Last Hour retains the
+queries the server has not consolidated yet, and Recently Blocked follows its count.
+
+- Last Hour keeps pending live readings across minute reloads on the Dashboard
+  and Blocking Overview, discarding them only when the server's UTC minute
+  boundary includes them. Quiet intervals retain their place in the chart.
+- Recently Blocked follows the Overview's Blocked count, keeps the last good
+  rows during refreshes, and discards late responses after context changes.
+- Dashboard Top five lists show their position and a subtle proportional bar.
+- Adding a rule keeps a closed tree's selection and only opens an added domain
+  in a list the current user can view.
+- The sortable-column parity check fails when its upstream snapshot is absent
+  and accepts an explicit snapshot path.
+- Root installer publication, restore and custom-list migration reject writable
+  service-owned trees, links, special files and ambiguous pathnames. State and
+  staging use protected root-owned storage; state and systemd changes use unique
+  temporary files. Unsafe trees are refused without changing their ownership.
+- DNSSEC signing and private-key import send PEM fields in POST form bodies.
+- Logout revokes the displayed session, and expiry responses preserve tokens
+  belonging to newer sessions or other tabs.
+- Update the development-only jsdom dependency undici from 8.10.0 to 8.10.2 to
+  include its published security fixes.
+
+**Installer migration:** existing service-owned or group-writable console, backup or
+state trees are refused. Use a fresh root-owned console folder or a dedicated console
+volume mounted read-only in the DNS server. The installer does not repair ownership
+in place. See [Installing](README.md#installing) and [Security](SECURITY.md).
+
+---
+
 ## v1.2.2 (2026-10-03)
 
 **Blocking › Overview moves in real time too, and the live charts stay still.** The live Last Hour

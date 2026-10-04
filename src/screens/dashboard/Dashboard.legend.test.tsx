@@ -226,8 +226,9 @@ describe('the legend and the live figures', () => {
       mainChartData: {
         labelFormat: 'HH:mm',
         /* As `getDashboardStats` hands them: already written in local time. */
-        labels: ['2026-10-03T19:41:00.000Z', '2026-10-03T19:42:00.000Z'].map((l) => formatLabel(l, 'HH:mm')),
-        datasets: [dataset('Total', [5, 0]), dataset('No Error', [1, 0])],
+        labels: ['2026-10-03T19:40:00.000Z', '2026-10-03T19:41:00.000Z', '2026-10-03T19:42:00.000Z'].map((l) => formatLabel(l, 'HH:mm')),
+        instants: ['2026-10-03T19:40:00.000Z', '2026-10-03T19:41:00.000Z', '2026-10-03T19:42:00.000Z'],
+        datasets: [dataset('Total', [0, 5, 0]), dataset('No Error', [0, 1, 0])],
       },
     }
     vi.spyOn(api, 'getDashboardStats').mockResolvedValue({ kind: 'ok', data: timed } as never)

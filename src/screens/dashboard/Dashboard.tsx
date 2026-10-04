@@ -221,6 +221,11 @@ function Top({
    *  uses it, with the blocking menu upstream puts there. */
   beforeMore?: ReactNode
 }) {
+  /* Upstream renders these entries in the server's order (main.js:2798-2857).
+     Position and a relative bar only make that same order easier to scan. */
+  const visibleRows = rows.slice(0, 5)
+  const largest = Math.max(0, ...visibleRows.map((row) => Number.isFinite(row.hits) ? row.hits : 0))
+
   return (
     <Panel
       title={title}
@@ -239,19 +244,27 @@ function Top({
     >
       <Body className={styles.pbAdjusted}>
         {rows.length === 0 && <Placeholder failure={failure} empty="No data for this period." />}
-        {rows.slice(0, 5).map((f, i) => (
+        {visibleRows.map((f, i) => (
           <div
             className={`${styles.toprow}${f.rateLimited ? ` ${styles.limited}` : ''}`}
             key={`${f.name}|${i}`}
           >
+            <span className={styles.topRank}>{i + 1}</span>
             <span className={styles.n}>
-              {f.name}
-              {f.rateLimited ? ' (rate limited)' : ''}
+              <span className={styles.topLabel}>
+                {f.name}
+                {f.rateLimited ? ' (rate limited)' : ''}
+              </span>
               {isClient && (
                 <span className={styles.topDomain}>
                   {f.domain === '' || f.domain == null ? '.' : f.domain}
                 </span>
               )}
+              <span
+                className={styles.topBar}
+                aria-hidden="true"
+                style={{ width: `${largest > 0 && Number.isFinite(f.hits) ? Math.max(0, f.hits) / largest * 100 : 0}%` }}
+              />
             </span>
             <span className={styles.c}>{num2(f.hits)}</span>
             {menu(f)}

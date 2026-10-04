@@ -24,6 +24,30 @@ const env = (r: unknown) => ({ kind: 'ok' as const, data: { status: 'ok', respon
 
 const baseSignature = { dnsKeyTtl: '3600', zskRolloverDays: '30', nxProof: 'NSEC' as const }
 
+describe('private keys stay out of request URLs', () => {
+  it('signing and adding a private key send PEM markers in POST bodies', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ status: 'ok' }), { headers: { 'Content-Type': 'application/json' } }),
+    )
+    const marker = '-----BEGIN PRIVATE KEY-----\nDUMMY-KEY-MARKER\n-----END PRIVATE KEY-----'
+    await signZone('dummy-token', 'home.test', {
+      ...baseSignature, algorithm: 'ECDSA', curve: 'P256',
+      pemKskPrivateKey: marker, pemZskPrivateKey: marker,
+    })
+    await addPrivateKey('dummy-token', 'home.test', {
+      keyType: 'KeySigningKey', algorithm: 'ECDSA', curve: 'P256',
+      rolloverDays: '0', pemPrivateKey: marker,
+    })
+    for (const [url, init] of fetchSpy.mock.calls) {
+      expect(new URL(String(url), 'https://fixture.test').search).not.toContain('pem')
+      expect(String(url)).not.toContain('DUMMY-KEY-MARKER')
+      expect(init?.method).toBe('POST')
+      expect(new URLSearchParams(String(init?.body)).toString()).toContain('DUMMY-KEY-MARKER')
+      expect(init?.headers).toMatchObject({ Authorization: 'Bearer dummy-token' })
+    }
+  })
+})
+
 describe('signing and unsigning', () => {
   it('ECDSA sends `curve` and NOT the RSA parameters', async () => {
     const spy = vi.spyOn(client, 'apiRequest').mockResolvedValue({ kind: 'ok', data: {} })

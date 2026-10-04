@@ -17,7 +17,7 @@ Same API, same behaviour, same texts: the interface rebuilt from scratch.
 |---|---|
 | ![The dashboard](docs/screenshots/dashboard.png) | ![Blocking › Overview](docs/screenshots/blocking-overview.png) |
 
-**Latest: [v1.2.2](https://github.com/byGarcia/technitium-console/releases/latest) for Technitium DNS
+**Latest: [v1.2.3](https://github.com/byGarcia/technitium-console/releases/latest) for Technitium DNS
 Server 15.5.x and 15.6.x**, with a Dashboard that moves in real time, Allowed and Blocked as one
 Blocking section, a light theme, plus LDAP, the zone file editor and everything else 15.5 and 15.6
 brought.
@@ -165,6 +165,16 @@ one you write months after installing, which no backup could contain.
 `/etc/resolv.conf` come out of an install and an uninstall byte for byte the
 same. On systemd with Technitium 15.5 or later, it also owns one clearly named
 drop-in under `/etc/systemd/system`; uninstall removes it again.
+
+**The installer requires root-owned files and folders.** The console, backup,
+installer state and every parent folder must be writable only by root. Symbolic
+links, hard links, special files and newline-containing names are refused before
+publication. A service-owned stock console can still be used with a dedicated
+`/opt/technitium-console` folder when no custom lists need copying. If custom
+lists need migrating from an unsafe tree, copy them yourself after inspecting
+them into a fresh root-owned tree. Changing ownership on an existing tree cannot
+revoke files another account already has open. For Docker, mount the console
+volume read-only in the DNS server.
 
 **An interrupted run cannot leave you without a console.** Files go in before
 any are taken out, and every page is published after the assets it names, so at

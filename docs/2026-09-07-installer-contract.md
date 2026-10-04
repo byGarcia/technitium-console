@@ -258,6 +258,28 @@ merges it. *2026-10-01:* upstream released it in v15.5 (§1.7), and C12 and C13
 were met against the official v15.5.1 on 2026-09-30, so the `†` has come off
 the three.
 
+### Filesystem security amendment, 2026-10-04
+
+Root pathname operations require an immutable namespace against lower-privilege
+accounts. Console, backup, state and custom-list trees must be root-owned with
+no group or other write bits on files, directories or ancestors. Links, special
+files and newline-containing names are rejected before copies and cleanup.
+Archive inspection rejects links and device members before extraction; the
+extracted tree is checked before publication, and published files use mode 0644.
+The installer refuses unsafe trees instead of changing ownership while another
+account may retain open writable files. State and staging are protected under
+the state directory; state updates and managed drop-ins use unique temporary
+files. Uninstall first selects the trusted recorded console folder, even when
+the server already returned to a service-owned stock console.
+
+This tightens earlier acceptance of service-owned web roots. Use a dedicated
+root-owned console folder or a volume mounted read-only in the DNS server.
+Custom lists in an unsafe stock tree need an administrator's inspected manual
+copy; the installer does not import them through a privileged copy. This
+amendment has offline GNU and BusyBox regression coverage, rather than a repeat
+of the historical live-server measurements above. Remote filesystem servers
+that can change root-owned objects remain outside this local permission model.
+
 ### Where it installs
 
 - **W1 ✓** (C14) The web root is resolved, in order: `--dir`; the value of the

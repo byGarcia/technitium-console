@@ -427,6 +427,7 @@ export function Overview({
           node={node}
           aggregate={clusterInitialised && node === AGGREGATE}
           serverDomain={serverDomain}
+          refreshOn={s?.totalBlocked}
         />
       </div>
     </>

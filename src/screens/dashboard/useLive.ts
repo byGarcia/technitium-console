@@ -1,24 +1,26 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { getMetrics, type DashboardStats } from '../../api/dashboard'
 import { AGGREGATE, type ClusterNode } from '../../ui/ClusterNodeSelect'
-import { advance, applyLive, record, sum, zero, type LiveMinute, type Sample } from './live'
+import { advance, applyLive, prune, record, sum, zero, type LiveReading, type Sample } from './live'
 
 /*
 Reads the server's lifetime counters every 2 s, the cadence of the stock console's
-Query Logs Live Update, and returns what happened since the last baseline, per
-minute (`live.ts`). This console's own code: deviation 5 in CONVENTIONS.md.
+Query Logs Live Update, and returns every reading that brought something, with its
+time (`live.ts` decides which of them the server has not counted yet). This console's own code: deviation 5 in CONVENTIONS.md.
 
   · `targets`: the node names to read and add up; `''` is the server answering,
     read without `node`. The aggregate is the sum of every node, because
     `node=cluster` answers the local node only.
-  · `epoch`: a new value (the Dashboard passes each `stats/get` result) empties
-    the minutes and takes a new baseline, since that result already holds what
-    came before it.
+  · The readings are KEPT across reloads, bounded to the displayed hour:
+    `applyLive` only lays over the server's data those after its last label.
+    Emptying them at each reload dropped every query of the minute the server had
+    not counted yet, and the figures fell back until the next reload.
   · Readings are chained, never overlapping. A tab out of sight reads nothing and
     forgets its baseline, so the time away is not poured into the current minute.
   · Three failed rounds in a row (an older server without the endpoint, one that
-    changed it, a user without Dashboard: View) stop it until the next epoch: the
-    Dashboard is then exactly the stock console's.
+    changed it, a user without Dashboard: View) stop it until the next `epoch`
+    (the Dashboard passes each `stats/get` result): the screen is then exactly
+    what it is without it.
 */
 export const LIVE_POLL_MS = 2_000
 export const LIVE_MAX_FAILURES = 3
@@ -33,13 +35,19 @@ export function useLive({
   targets: string[]
   epoch: unknown
   active: boolean
-}): LiveMinute[] {
-  const [minutes, setMinutes] = useState<LiveMinute[]>([])
+}): LiveReading[] {
+  const [readings, setReadings] = useState<LiveReading[]>([])
   const key = targets.join('\n')
+  /* The response it stopped on after three failures; a new one starts it again. */
+  const [stoppedOn, setStoppedOn] = useState<{ epoch: unknown; token: string | null; key: string } | null>(null)
+  const latest = useRef(epoch)
+  latest.current = epoch
+  const running = active && targets.length > 0 && !(stoppedOn != null &&
+    stoppedOn.epoch === epoch && stoppedOn.token === token && stoppedOn.key === key)
 
   useEffect(() => {
-    setMinutes([])
-    if (!active) return
+    setReadings([])
+    if (!running) return
     let cancelled = false
     let timer: number | undefined
     let failures = 0
@@ -61,6 +69,7 @@ export function useLive({
       if (results.some((r) => r.kind !== 'ok')) {
         failures += 1
         if (failures < LIVE_MAX_FAILURES) schedule()
+        else setStoppedOn({ epoch: latest.current, token, key })
         return
       }
       failures = 0
@@ -71,7 +80,8 @@ export function useLive({
         samples.set(nodes[i], step.sample)
         delta = sum(delta, step.delta)
       })
-      setMinutes((m) => record(m, delta, Date.now()))
+      const now = Date.now()
+      setReadings((r) => prune(record(r, delta, now), now))
       schedule()
     }
 
@@ -80,9 +90,9 @@ export function useLive({
       cancelled = true
       if (timer != null) window.clearTimeout(timer)
     }
-  }, [token, key, epoch, active])
+  }, [token, key, running])
 
-  return minutes
+  return readings
 }
 
 /** Last Hour's reload, as upstream's (main.js:258-262). Shared by the Dashboard and
@@ -97,8 +107,7 @@ export function liveTargets(node: string, nodes: ClusterNode[], clusterInitialis
 }
 
 /** The screen's `stats/get` with the live figures laid over it while Last Hour is
- *  shown; anything else passes through untouched. Every new `data` is a new
- *  baseline. */
+ *  shown; anything else passes through untouched. */
 export function useLiveView({
   token,
   lastHour,
@@ -116,14 +125,17 @@ export function useLiveView({
   data: DashboardStats | null
   active: boolean
 }): DashboardStats | null {
-  const minutes = useLive({
+  const readings = useLive({
     token,
     targets: lastHour ? liveTargets(node, nodes, clusterInitialised) : [],
     epoch: data,
     active: lastHour && active && data != null,
   })
+  /* When this response arrived: the cut for a server whose labels are not instants. */
+  const [arrived, setArrived] = useState(0)
+  useEffect(() => setArrived(Date.now()), [data])
   return useMemo(
-    () => (data != null && lastHour ? applyLive(data, minutes) : data),
-    [data, lastHour, minutes],
+    () => (data != null && lastHour ? applyLive(data, readings, arrived) : data),
+    [data, lastHour, readings, arrived],
   )
 }

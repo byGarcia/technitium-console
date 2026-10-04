@@ -47,10 +47,11 @@ Export downloads at once with a single-use token, Flush asks first.
 `Tree` mounts the tree that exists today, so nothing upstream has is lost. It
 reports through this page's notifier, and every change (from the table, the foot,
 the add bar or the tree itself) reads the table again from the primary node and
-remounts the tree from there. A Block or Allow opens the tree at the added domain,
-as upstream's blockZone/allowZone do; because this one bar serves both lists, the
-tree also turns to the list the domain went into (ours: upstream's verbs live on
-two separate pages, each with its own tree).
+remounts the tree from there. With the tree open and the destination viewable, a
+Block or Allow opens it at the added domain, as upstream's blockZone/allowZone
+do; because this one bar serves both lists, the tree also turns to the list the
+domain went into (ours: upstream's verbs live on two separate pages, each with
+its own tree). Otherwise the chosen list stays and its next refresh opens the root.
 */
 
 const LABEL: Record<DomainList, string> = { blocked: 'Blocked', allowed: 'Allowed' }
@@ -104,6 +105,12 @@ export function Rules({
      upstream's blockZone/allowZone open it (other-zones.js:350, 185); the root after
      anything else. */
   const [treeDomain, setTreeDomain] = useState('')
+  /* AddDomainBar may finish after the view or permissions changed. Its callback
+     must follow the tree that is visible when the request completes. */
+  const treeContext = useRef({ view, viewBlocked, viewAllowed })
+  useEffect(() => {
+    treeContext.current = { view, viewBlocked, viewAllowed }
+  }, [view, viewBlocked, viewAllowed])
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null)
   const [importing, setImporting] = useState<DomainList | null>(null)
   const [busy, setBusy] = useState(false)
@@ -175,8 +182,16 @@ export function Rules({
   /* A Block or Allow from the add bar. With the tree open it turns to the list the
      domain went into, when the session may view it, and opens at the domain. */
   function added(list: DomainList, domain: string) {
-    if (list === 'blocked' ? viewBlocked : viewAllowed) setTreeList(list)
-    changed(domain)
+    const current = treeContext.current
+    const mayView = list === 'blocked' ? current.viewBlocked : current.viewAllowed
+    if (current.view === 'tree' && mayView) {
+      setTreeList(list)
+      changed(domain)
+    } else {
+      /* A hidden or locked destination must not navigate the other list to an
+         unrelated domain. Refresh its root, from the primary, as after Delete. */
+      changed()
+    }
     void load(true)
   }
 

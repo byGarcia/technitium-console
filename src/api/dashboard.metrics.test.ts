@@ -40,4 +40,15 @@ describe('getMetrics', () => {
       'totalAuthoritative', 'totalRecursive', 'totalCached', 'totalBlocked', 'totalDropped',
     ])
   })
+
+  it.each([undefined, -1, Number.NaN, Number.POSITIVE_INFINITY, '50'])('rejects an invalid live counter: %s', async (counter) => {
+    const malformed = { ...RESPONSE, lifetimeCounters: { ...RESPONSE.lifetimeCounters, totalQueries: counter } }
+    vi.spyOn(client, 'apiRequest').mockResolvedValue({ kind: 'ok', data: { response: malformed } } as never)
+    expect((await getMetrics('tok')).kind).toBe('error')
+  })
+
+  it('requires the restart marker to distinguish counter generations', async () => {
+    vi.spyOn(client, 'apiRequest').mockResolvedValue({ kind: 'ok', data: { response: { ...RESPONSE, uptimestamp: undefined } } } as never)
+    expect((await getMetrics('tok')).kind).toBe('error')
+  })
 })
