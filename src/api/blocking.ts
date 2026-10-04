@@ -44,7 +44,7 @@ export async function readRuleExport(
   if (text.trimStart().startsWith('{')) {
     try {
       const env = JSON.parse(text) as { status?: string; errorMessage?: string }
-      if (env.status != null && env.status !== 'ok') return envelopeOutcome<string[]>(env)
+      if (env.status != null && env.status !== 'ok') return envelopeOutcome<string[]>(env, token)
     } catch {
       /* Not JSON: a zone name cannot start with `{`, but the server owns the format. */
     }

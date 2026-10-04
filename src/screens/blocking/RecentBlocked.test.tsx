@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { act, render, screen } from '@testing-library/react'
 import * as apps from '../../api/apps'
 import type { InstalledApp } from '../../api/apps'
 import * as blocking from '../../api/blocking'
@@ -133,15 +133,82 @@ describe('RecentBlocked: following the Blocked figure', () => {
 
   it('a failed refresh leaves the last good list in place', async () => {
     withApps([LOGGER])
-    vi.spyOn(blocking, 'recentBlocked')
+    const spy = vi.spyOn(blocking, 'recentBlocked')
       .mockResolvedValueOnce({ kind: 'ok', data: { partial: false, entries: [row(1, 'first.test')] } })
       .mockResolvedValue({ kind: 'error', message: 'boom' })
     const { rerender } = render(<RecentBlocked {...props} refreshOn={5} />)
     await screen.findByText('first.test')
-    rerender(<RecentBlocked {...props} refreshOn={6} />)
-    await new Promise((r) => setTimeout(r, 20))
+    await act(async () => rerender(<RecentBlocked {...props} refreshOn={6} />))
+    expect(spy).toHaveBeenCalledTimes(2)
     expect(screen.getByText('first.test')).toBeInTheDocument()
     expect(screen.queryByText('boom')).not.toBeInTheDocument()
+  })
+
+  it('queues a figure change while the first rows are loading', async () => {
+    withApps([LOGGER])
+    let finish!: (v: Awaited<ReturnType<typeof blocking.recentBlocked>>) => void
+    const spy = vi.spyOn(blocking, 'recentBlocked')
+      .mockReturnValueOnce(new Promise((r) => { finish = r }))
+      .mockResolvedValue({ kind: 'ok', data: { partial: false, entries: [row(2, 'new.test')] } })
+    const { rerender } = render(<RecentBlocked {...props} refreshOn={5} />)
+    await act(async () => {})
+    expect(spy).toHaveBeenCalledTimes(1)
+    rerender(<RecentBlocked {...props} refreshOn={6} />)
+    await act(async () => finish({ kind: 'ok', data: { partial: false, entries: [row(1, 'old.test')] } }))
+    expect(await screen.findByText('new.test')).toBeInTheDocument()
+    expect(spy).toHaveBeenCalledTimes(2)
+  })
+
+  it('drops an old node response and its queued refresh after changing nodes', async () => {
+    withApps([LOGGER])
+    let finish!: (v: Awaited<ReturnType<typeof blocking.recentBlocked>>) => void
+    const spy = vi.spyOn(blocking, 'recentBlocked')
+      .mockResolvedValueOnce({ kind: 'ok', data: { partial: false, entries: [row(1, 'first.test')] } })
+      .mockReturnValueOnce(new Promise((r) => { finish = r }))
+      .mockResolvedValue({ kind: 'ok', data: { partial: false, entries: [row(3, 'new-node.test')] } })
+    const { rerender } = render(<RecentBlocked {...props} node="old-node.test" refreshOn={5} />)
+    await screen.findByText('first.test')
+    rerender(<RecentBlocked {...props} node="old-node.test" refreshOn={6} />)
+    rerender(<RecentBlocked {...props} node="old-node.test" refreshOn={7} />)
+    rerender(<RecentBlocked {...props} node="new-node.test" refreshOn={7} />)
+    await screen.findByText('new-node.test')
+    await act(async () => finish({ kind: 'ok', data: { partial: false, entries: [row(2, 'late.test')] } }))
+    expect(screen.queryByText('late.test')).not.toBeInTheDocument()
+    expect(screen.getByText('new-node.test')).toBeInTheDocument()
+    expect(spy).toHaveBeenCalledTimes(3)
+    expect(spy.mock.calls.map((args) => args[2])).toEqual(['old-node.test', 'old-node.test', 'new-node.test'])
+  })
+
+  it('drops a pending refresh when Logs permission is revoked', async () => {
+    withApps([LOGGER])
+    let finish!: (v: Awaited<ReturnType<typeof blocking.recentBlocked>>) => void
+    const spy = vi.spyOn(blocking, 'recentBlocked')
+      .mockResolvedValueOnce({ kind: 'ok', data: { partial: false, entries: [row(1, 'first.test')] } })
+      .mockReturnValueOnce(new Promise((r) => { finish = r }))
+    const { rerender } = render(<RecentBlocked {...props} refreshOn={5} />)
+    await screen.findByText('first.test')
+    rerender(<RecentBlocked {...props} refreshOn={6} />)
+    rerender(<RecentBlocked {...props} refreshOn={7} />)
+    rerender(<RecentBlocked {...props} refreshOn={7} permissions={{ Logs: { canView: false, canModify: false, canDelete: false } }} />)
+    await act(async () => finish({ kind: 'ok', data: { partial: false, entries: [row(2, 'late.test')] } }))
+    expect(screen.getByText('Requires Logs: View')).toBeInTheDocument()
+    expect(spy).toHaveBeenCalledTimes(2)
+    expect(screen.queryByText('late.test')).not.toBeInTheDocument()
+  })
+
+  it('does not continue a queued refresh after unmount', async () => {
+    withApps([LOGGER])
+    let finish!: (v: Awaited<ReturnType<typeof blocking.recentBlocked>>) => void
+    const spy = vi.spyOn(blocking, 'recentBlocked')
+      .mockResolvedValueOnce({ kind: 'ok', data: { partial: false, entries: [row(1, 'first.test')] } })
+      .mockReturnValueOnce(new Promise((r) => { finish = r }))
+    const { rerender, unmount } = render(<RecentBlocked {...props} refreshOn={5} />)
+    await screen.findByText('first.test')
+    rerender(<RecentBlocked {...props} refreshOn={6} />)
+    rerender(<RecentBlocked {...props} refreshOn={7} />)
+    unmount()
+    await act(async () => finish({ kind: 'ok', data: { partial: false, entries: [] } }))
+    expect(spy).toHaveBeenCalledTimes(2)
   })
 })
 

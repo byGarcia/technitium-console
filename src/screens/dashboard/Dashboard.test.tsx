@@ -3,6 +3,7 @@ import { act, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Dashboard, percentage } from './Dashboard'
 import * as api from '../../api/dashboard'
+import { formatLabel } from '../../api/chart-labels'
 
 afterEach(() => {
   vi.useRealTimers()
@@ -280,5 +281,54 @@ describe('Dashboard: Last Hour in real time', () => {
       await vi.advanceTimersByTimeAsync(0)
     })
     expect(spy).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe('Dashboard: the minute reload keeps what the server has not counted yet', () => {
+  it('the tile does not fall back when the reload arrives before the server consolidates the minute', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(Date.UTC(2026, 9, 3, 19, 42, 10))
+    /* As the server answers: minutes labelled by their end, the last one closed at
+       19:42; the queries after it are not counted, in this response or the next. */
+    const timed = {
+      ...data,
+      stats: {
+        ...data.stats,
+        totalQueries: 7, totalNoError: 7, totalServerFailure: 0, totalNxDomain: 0, totalRefused: 0,
+        totalAuthoritative: 0, totalRecursive: 7, totalCached: 0, totalBlocked: 0, totalDropped: 0,
+      },
+      mainChartData: {
+        labelFormat: 'HH:mm',
+        labels: Array.from({ length: 60 }, (_, i) => formatLabel(new Date(Date.UTC(2026, 9, 3, 18, 43 + i)).toISOString(), 'HH:mm')),
+        instants: Array.from({ length: 60 }, (_, i) => new Date(Date.UTC(2026, 9, 3, 18, 43 + i)).toISOString()),
+        datasets: ['Total', 'No Error', 'Recursive'].map((label) => ({ label, data: [...Array<number>(58).fill(0), 5, 2] })),
+      },
+      queryResponseChartData: {
+        labels: ['Authoritative', 'Recursive', 'Cached', 'Blocked', 'Dropped'],
+        datasets: [{ label: '', data: [0, 7, 0, 0, 0] }],
+      },
+    }
+    /* A new object each time, as every real response is: the reload must be a reload. */
+    const stats = vi.spyOn(api, 'getDashboardStats').mockImplementation(async () => ({ kind: 'ok', data: { ...timed } }) as never)
+    const counters = (q: number) => ({
+      kind: 'ok' as const,
+      data: {
+        uptimestamp: 'u1',
+        lifetimeCounters: {
+          totalQueries: q, totalNoError: q, totalServerFailure: 0, totalNxDomain: 0, totalRefused: 0,
+          totalAuthoritative: 0, totalRecursive: q, totalCached: 0, totalBlocked: 0, totalDropped: 0,
+          totalClients: 1,
+        },
+      },
+    })
+    vi.spyOn(api, 'getMetrics').mockResolvedValueOnce(counters(1000)).mockResolvedValue(counters(1003))
+    render(<Dashboard token="t" />)
+    await act(async () => { await vi.advanceTimersByTimeAsync(0) })
+    await act(async () => { await vi.advanceTimersByTimeAsync(2_000) })
+    expect(within(screen.getByText('Total Queries').parentElement!).getByText('10')).toBeInTheDocument()
+    /* The reload brings the same consolidated figures: those 3 queries are not in them yet. */
+    await act(async () => { await vi.advanceTimersByTimeAsync(60_000) })
+    expect(stats).toHaveBeenCalledTimes(2)
+    expect(within(screen.getByText('Total Queries').parentElement!).getByText('10')).toBeInTheDocument()
   })
 })

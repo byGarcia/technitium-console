@@ -4,6 +4,28 @@ What changed in each release, newest first. Every release is also on the
 [Releases page](https://github.com/byGarcia/technitium-console/releases), with the files the
 installer downloads.
 
+## Unreleased
+
+- Last Hour keeps pending live readings across minute reloads on the Dashboard
+  and Blocking Overview, discarding them only when the server's UTC minute
+  boundary includes them. Quiet intervals retain their place in the chart.
+- Recently Blocked follows the Overview's Blocked count, keeps the last good
+  rows during refreshes, and discards late responses after context changes.
+- Dashboard Top five lists show their position and a subtle proportional bar.
+- Adding a rule keeps a closed tree's selection and only opens an added domain
+  in a list the current user can view.
+- The sortable-column parity check fails when its upstream snapshot is absent
+  and accepts an explicit snapshot path.
+- Root installer publication, restore and custom-list migration reject writable
+  service-owned trees, links, special files and ambiguous pathnames. State and
+  staging use protected root-owned storage; state and systemd changes use unique
+  temporary files. Unsafe trees are refused without changing their ownership.
+- DNSSEC signing and private-key import send PEM fields in POST form bodies.
+- Logout revokes the displayed session, and expiry responses preserve tokens
+  belonging to newer sessions or other tabs.
+- Update the development-only jsdom dependency undici from 8.10.0 to 8.10.2 to
+  include its published security fixes.
+
 ## Which version for which server
 
 A console release is built and checked against one Technitium DNS Server release: every action it

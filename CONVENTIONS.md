@@ -472,8 +472,16 @@ Write down here whatever you find. What is already known:
 
 ## Deliberate deviations from upstream behaviour
 
-The rule is "zero functionality", but there are five exceptions, **decided and
-written down**. If you find a sixth, do not introduce it on your own: report it.
+The rule is "zero functionality", with the exceptions below **decided and
+written down**. Additional exceptions need the maintainer's authorization.
+
+Security fixes authorized on 2026-10-04 add one transport exception: DNSSEC
+signing and private-key import use POST form bodies instead of GET query
+parameters. Upstream accepts both methods and reads these fields with
+`GetQueryOrForm`. The endpoint, fields and user actions remain the same. Session
+revocation and expiry cleanup are bound to the affected token rather than
+mutable shared storage. Installer filesystem requirements are recorded in its
+contract and SECURITY.md.
 
 1. **Amber is not offered** (Adrián's decision). `Change Theme` is back as
    upstream has it: in the account menu, under the same `localStorage` key,
@@ -527,7 +535,14 @@ written down**. If you find a sixth, do not introduce it on your own: report it.
    Query Response Types doughnut (and on Overview its figures, sparklines, bars
    and ring) follow the server's lifetime counters (`dashboard/metrics/json`),
    read every 2 seconds (`dashboard/live.ts`, `dashboard/useLive.ts`). Overview
-   gained the minute reload with it. A chart takes new figures in place and
+   gained the minute reload with it. Live readings keep their timestamps across
+   reloads: only readings after the last server UTC label are added. Labels name
+   the end of each closed minute (StatsManager.cs:675-704), so a response that has
+   not consolidated a pending reading cannot erase it. The history is bounded
+   to the displayed hour; gaps between measured minutes occupy chart slots.
+   A polling interval that straddles the server boundary is assigned to its end
+   until a later consolidated response replaces that approximation.
+   A chart takes new figures in place and
    without animation (`Chart.tsx`), and a legend's switched-off series only come
    back with a new response, as upstream's rebuilt chart does. Its limits, and
    crossing one is a bug:
@@ -538,6 +553,9 @@ written down**. If you find a sixth, do not introduce it on your own: report it.
      move**: the counters do not carry them, and distinct clients do not add up;
    - **if the endpoint fails three times in a row, live mode stops** until the
      next reload, and the screen is exactly what it was without it;
+   - **Recently Blocked follows the displayed Blocked count** through its existing
+     `logs/query` reads. Background refreshes keep the previous rows, serialize
+     requests and invalidate queued work when token, node or permissions change;
    - **a hidden tab reads nothing**, the minute refresh included, and coming
      back reloads at once. That pause is the only change to an upstream request.
 

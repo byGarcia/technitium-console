@@ -45,5 +45,12 @@ export function formatLabel(label: string, format: string): string {
 export function localiseLabels(chart: ChartData): ChartData {
   const format = chart.labelFormat
   if (format == null) return chart
-  return { ...chart, labels: chart.labels.map((l) => formatLabel(l, format)) }
+  /* Keep the original instants if the chart is formatted again. A legacy label
+     such as "09/30" can be parsed as a date, but is not a server UTC boundary. */
+  const instants = chart.instants ?? (
+    chart.labels.every((l) => /^\d{4}-\d{2}-\d{2}T.*(?:Z|[+-]\d{2}:\d{2})$/.test(l) && Number.isFinite(Date.parse(l)))
+      ? chart.labels
+      : undefined
+  )
+  return { ...chart, labels: chart.labels.map((l) => formatLabel(l, format)), ...(instants != null ? { instants } : {}) }
 }

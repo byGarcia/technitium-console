@@ -28,6 +28,7 @@
 # It is POSIX sh: the official image is Debian, but people run this on Alpine too.
 
 set -eu
+umask 022
 
 REPO="byGarcia/technitium-console"
 STATE_DIR="/var/lib/technitium-console"
@@ -203,6 +204,92 @@ refuse_links() { # folder about to be written into
   [ -z "$rl_inside" ] || die "$rl_inside is a link to a folder, inside the web root. Not writing through it."
 }
 
+# Path checks alone do not close a race in a service-owned directory. POSIX sh
+# cannot open directory descriptors with O_NOFOLLOW, so this installer refuses
+# any namespace a non-root owner can change, including an ancestor. Do not try
+# to repair ownership here: recursive chown/chmod would race through that same
+# namespace. Use a dedicated root-owned folder, or the read-only Docker volume.
+secure_path() { # absolute directory, optionally not created yet
+  case "$1" in
+    /*) ;;
+    *) die "the console folder must be absolute: $1" ;;
+  esac
+  case "$1" in *"
+"*) die "a console path cannot contain a newline." ;; esac
+  sp_walk="/"
+  sp_saved_ifs="$IFS"; IFS=/; set -f
+  set -- "$1" ${1#/}
+  IFS="$sp_saved_ifs"; set +f
+  sp_target="$1"; shift
+  for sp_part in '' "$@"; do
+    case "$sp_part" in .|..) die "unsafe folder component in $sp_target" ;; esac
+    [ -z "$sp_part" ] || sp_walk="${sp_walk%/}/$sp_part"
+    [ ! -L "$sp_walk" ] || die "$sp_walk is a symbolic link. Nothing was changed."
+    if [ -e "$sp_walk" ]; then
+      [ -d "$sp_walk" ] || die "$sp_walk is not a directory."
+      sp_meta="$(stat -c '%u:%a' "$sp_walk")" || die "cannot inspect $sp_walk"
+      sp_mode="${sp_meta#*:}"
+      if [ "${sp_meta%%:*}" != 0 ] || [ "$((0$sp_mode & 0022))" != 0 ]; then
+        die "$sp_walk can be changed by a non-root account. Root publication is unsafe.
+    Use a dedicated root-owned console folder under /opt, or mount the console
+    volume read-only in the DNS server. See $DOCKER_DOCS."
+      fi
+    fi
+  done
+}
+
+# find output is used as one pathname per line below. Verify the original
+# objects before serializing them, not the lines after their identity is lost.
+# Reject links (including hard links) and special files before any root copy.
+secure_tree() { # existing tree or a directory that may be created
+  secure_path "$1"
+  [ -d "$1" ] || return 0
+  find "$1" -exec sh -c '
+    for p do
+      case "$p" in *"
+"*) printf "unsafe control character in pathname\n" >&2; exit 1 ;; esac
+      [ ! -L "$p" ] || { printf "symbolic link in console tree: %s\n" "$p" >&2; exit 1; }
+      if [ -d "$p" ]; then
+        m=$(stat -c "%u:%a" "$p") || exit 1
+        mode=${m#*:}
+        [ "${m%%:*}" = 0 ] && [ "$((0$mode & 0022))" = 0 ] || {
+          printf "root-only writable namespace required: %s\n" "$p" >&2; exit 1;
+        }
+      elif [ -f "$p" ]; then
+        m=$(stat -c "%u:%a:%h" "$p") || exit 1
+        mode=${m#*:}; mode=${mode%:*}
+        [ "${m%%:*}" = 0 ] && [ "$((0$mode & 0022))" = 0 ] && [ "${m##*:}" = 1 ] || {
+          printf "root-owned, non-shared regular file required: %s\n" "$p" >&2; exit 1;
+        }
+      else
+        printf "special file in console tree: %s\n" "$p" >&2; exit 1
+      fi
+    done
+  ' sh {} + || die "unsafe console tree at $1. No files were published."
+}
+
+safe_relative() { # a pathname read from one of our line-delimited lists
+  case "$1" in
+    ''|/*|.|..|./*|../*|*/../*|*/..|*/./*|*/.) die "unsafe relative console pathname: $1" ;;
+  esac
+}
+
+# Reject link/device archive members before tar can act on them. Both GNU tar
+# and BusyBox reject parent traversal; also reject it explicitly in the list.
+# GNU tar escapes control characters with backslashes; the extracted tree is
+# checked again for literal newlines on BusyBox before publication.
+check_archive() {
+  tar -tzf "$1" > "$TMP/archive-names" || die "that file is not a valid archive."
+  while IFS= read -r ca_name; do
+    case "$ca_name" in
+      /*|*\\*|..|../*|*/../*|*/..) die "unsafe archive pathname: $ca_name" ;;
+    esac
+  done < "$TMP/archive-names"
+  tar -tvzf "$1" > "$TMP/archive-types" || die "cannot inspect archive members."
+  awk 'substr($0, 1, 1) != "-" && substr($0, 1, 1) != "d" { bad = 1 } END { exit bad }' \
+    "$TMP/archive-types" || die "the archive contains a link, special file or invalid member."
+}
+
 # What a console looks like, from the files alone. The stock one has carried the
 # same title, js/main.js and json/readme.txt since v11 (DnsServerCore/www); this
 # one is an index.html that mounts #root and names a hashed script under
@@ -279,8 +366,10 @@ may_write_into() { # folder
 # who can reach the login page.
 state_get() { [ -f "$STATE" ] && sed -n "s/^$1=//p" "$STATE" | tail -1 || true; }
 state_set() {
+  secure_tree "$STATE_DIR"
   mkdir -p "$STATE_DIR"
-  tmp="$STATE.tmp"
+  chmod 0700 "$STATE_DIR"
+  tmp="$(mktemp "$STATE_DIR/state.XXXXXX")" || die "could not create private state."
   { [ -f "$STATE" ] && grep -v "^$1=" "$STATE" || true; } > "$tmp"
   printf '%s=%s\n' "$1" "$2" >> "$tmp"
   mv -f "$tmp" "$STATE"
@@ -435,6 +524,7 @@ random_name() {
 # straight back out.
 serves_folder() {
   folder="$1"
+  secure_tree "$folder"
   created="no"
   [ -d "$folder" ] || { mkdir -p "$folder"; created="yes"; }
   probe="technitium-console-probe-$(random_name).txt"
@@ -810,6 +900,7 @@ MANAGED_DROPIN=""
 resolve_target() {
   if [ -n "$INTO_VOLUME" ]; then
     MODE="side-by-side"            # a folder of its own: nothing to back up, ever
+    secure_tree "$WWW_DIR"
     refuse_links "$WWW_DIR"
     ok "Installing into the volume" "$WWW_DIR"
     return 0
@@ -818,8 +909,22 @@ resolve_target() {
   SERVER_VERSION="$(server_version)"
   find_server
 
+  # Uninstall follows the trusted record even if the server already returned
+  # to a service-owned stock folder. That stock folder is not a write target.
+  if [ "$ACTION" = "uninstall" ]; then
+    recorded_target="$(state_get webroot)"
+    if [ -n "$recorded_target" ]; then
+      WWW_DIR="$recorded_target"
+      MODE="$(state_get mode)"; MODE="${MODE:-replacement}"
+      secure_tree "$WWW_DIR"
+      refuse_links "$WWW_DIR"
+      return 0
+    fi
+  fi
+
   if [ -n "$WWW_DIR" ]; then
     MODE="${1:-replacement}"
+    secure_tree "$WWW_DIR"
     refuse_links "$WWW_DIR"
     return 0
   fi
@@ -838,6 +943,7 @@ resolve_target() {
     app="$SERVER_APP"
 
     if [ -n "$configured" ]; then
+      secure_tree "$configured"
       refuse_links "$configured"          # the probe below already writes into it
       if ! web_answers; then
         warn "$VAR_NAME is set, but the web console does not answer at $(web_base)."
@@ -872,6 +978,7 @@ resolve_target() {
         warn "Leaving it alone and using the server's own web root."
       else
         WWW_DIR="$CONSOLE_DIR"; MODE="side-by-side"; MANAGE_SYSTEMD="yes"
+        secure_tree "$WWW_DIR"
         refuse_links "$WWW_DIR"
         ok "Dedicated console folder" "$WWW_DIR"
         say "The installer will add a systemd drop-in for $MANAGED_UNIT and restart it once."
@@ -881,6 +988,7 @@ resolve_target() {
 
     if [ -n "$app" ] && [ -d "$app" ]; then
       WWW_DIR="$app/www"; MODE="replacement"
+      secure_tree "$WWW_DIR"
       refuse_links "$WWW_DIR"
       ok "Technitium DNS Server found" "$WWW_DIR"
       return 0
@@ -892,6 +1000,7 @@ resolve_target() {
   for d in /opt/technitium/dns/www /etc/dns/www; do
     if [ -d "$d" ]; then
       WWW_DIR="$d"; MODE="replacement"
+      secure_tree "$WWW_DIR"
       refuse_links "$WWW_DIR"
       ok "Technitium DNS Server found" "$WWW_DIR"
       return 0
@@ -918,12 +1027,13 @@ resolve_target() {
 CUSTOM_GLOB='json/*-custom.json'
 
 copy_one() { # src root, dst root, relative path
+  safe_relative "$3"
   case "$3" in
     $CUSTOM_GLOB) if [ -e "$2/$3" ]; then return 0; fi ;;   # the administrator's file wins
   esac
   mkdir -p "$2/$(dirname "$3")"
-  # cp writes through a link that is already there, and the web root can belong
-  # to the service account: whatever sits at the temporary name goes first.
+  # The namespace has been checked as root-only writable. Remove a leftover
+  # temporary file from an interrupted publication before replacing it.
   rm -f "$2/$3.tc-new"
   cp -f "$1/$3" "$2/$3.tc-new"
   mv -f "$2/$3.tc-new" "$2/$3"
@@ -936,11 +1046,14 @@ copy_one() { # src root, dst root, relative path
 # started together). Taken before W6 and not after it, so that anything already
 # there was there when W6 judged the folder.
 snapshot() { # folder, a folder of its own for the lists
+  secure_tree "$1"
   ( cd "$1" 2>/dev/null && find . -type f -print ) | sed 's|^\./||' > "$2/before"
   ( cd "$1" 2>/dev/null && find . -mindepth 1 -type d -print ) | sed 's|^\./||' | sort -r > "$2/dirs"
 }
 
 publish() { # src, dst, the folder snapshot wrote its lists in
+  secure_tree "$1"
+  secure_tree "$2"
   src="$1"; dst="$2"; list="$3/list"
   mkdir -p "$dst"
 
@@ -953,6 +1066,7 @@ publish() { # src, dst, the folder snapshot wrote its lists in
 
   while IFS= read -r f; do
     [ -n "$f" ] || continue
+    safe_relative "$f"
     case "$f" in $CUSTOM_GLOB) continue ;; esac
     if [ -n "$INTO_VOLUME" ] && [ "$f" = "$MARKER" ]; then continue; fi
     [ -e "$src/$f" ] || rm -f "$dst/$f"
@@ -960,12 +1074,19 @@ publish() { # src, dst, the folder snapshot wrote its lists in
   # Deepest first (sort -r puts a/b before a), and only folders that were there
   # before and are empty now.
   while IFS= read -r d; do
-    if [ -n "$d" ]; then rmdir "$dst/$d" 2>/dev/null || true; fi
+    if [ -n "$d" ]; then safe_relative "$d"; rmdir "$dst/$d" 2>/dev/null || true; fi
   done < "$3/dirs"
 }
 
 carry_custom_lists() { # from, to (used when the served folder changes)
   [ -d "$1/json" ] || return 0
+  cc_any="no"
+  for cc_file in "$1"/json/*-custom.json; do
+    if [ -e "$cc_file" ] || [ -L "$cc_file" ]; then cc_any="yes"; break; fi
+  done
+  [ "$cc_any" = "yes" ] || return 0
+  secure_tree "$1"
+  secure_tree "$2"
   for f in "$1"/json/*-custom.json; do
     [ -f "$f" ] || continue
     mkdir -p "$2/json"
@@ -1034,8 +1155,9 @@ wait_for_stock_console() {
 }
 
 activate_managed_systemd() { # asset
+  secure_tree "$(dirname "$MANAGED_DROPIN")"
   mkdir -p "$(dirname "$MANAGED_DROPIN")"
-  ad_tmp="$MANAGED_DROPIN.tc-new"
+  ad_tmp="$(mktemp "$(dirname "$MANAGED_DROPIN")/technitium-console.XXXXXX")"
   managed_dropin_body > "$ad_tmp"
   chmod 0644 "$ad_tmp"
   mv -f "$ad_tmp" "$MANAGED_DROPIN"
@@ -1061,6 +1183,7 @@ activate_managed_systemd() { # asset
 
 # ------------------------------------------------------------------- uninstall
 if [ "$ACTION" = "uninstall" ]; then
+  secure_tree "$STATE_DIR"
   resolve_target
 
   # The folder to undo is the one the install wrote to, which is on record. The
@@ -1071,6 +1194,7 @@ if [ "$ACTION" = "uninstall" ]; then
     warn "The console was installed in $RECORDED; the server now points at $WWW_DIR."
     warn "Undoing it in $RECORDED, the folder on record. $WWW_DIR is left as it is."
     WWW_DIR="$RECORDED"
+    secure_tree "$WWW_DIR"
     refuse_links "$WWW_DIR"
   fi
 
@@ -1095,6 +1219,7 @@ if [ "$ACTION" = "uninstall" ]; then
       [ -n "$RECORDED_UNIT" ] || die "the managed systemd unit is missing from $STATE. Nothing was changed."
       [ "$RECORDED_DROPIN" = "/etc/systemd/system/$RECORDED_UNIT.d/technitium-console.conf" ] \
         || die "the recorded systemd drop-in has an unexpected path. Nothing was changed."
+      secure_tree "$(dirname "$RECORDED_DROPIN")"
       managed_dropin_is_ours "$RECORDED_DROPIN" || die "$RECORDED_DROPIN was changed after installation.
     Not removing an administrator's service configuration. Restore its original
     two lines or remove the console manually. Nothing was changed."
@@ -1170,7 +1295,9 @@ if [ "$ACTION" = "uninstall" ]; then
     warn "Restoring a $taken console onto a $SERVER_VERSION server, because you asked."
   fi
 
-  PUBLISH_WORK="$(mktemp -d)"
+  mkdir -p "$STATE_DIR"
+  chmod 0700 "$STATE_DIR"
+  PUBLISH_WORK="$(mktemp -d "$STATE_DIR/restore.XXXXXX")"
   # A signal ends the run; it does not clean up and carry on (see the install).
   trap 'rm -rf "$PUBLISH_WORK"' EXIT
   trap 'exit 130' INT
@@ -1186,6 +1313,7 @@ if [ "$ACTION" = "uninstall" ]; then
 fi
 
 # ---------------------------------------------------------------------- install
+secure_tree "$STATE_DIR"
 resolve_target
 
 command -v tar >/dev/null 2>&1 || die "tar is needed and is not installed."
@@ -1221,6 +1349,8 @@ if [ -d "$TMP" ]; then
   warn "A previous run did not finish. Picking up from a clean slate."
   rm -rf "$TMP"
 fi
+mkdir -p "$STATE_DIR"
+chmod 0700 "$STATE_DIR"
 mkdir -p "$TMP/dist"
 
 if [ -n "$SOURCE" ] && [ -f "$SOURCE" ]; then
@@ -1261,7 +1391,11 @@ else
 fi
 
 # Owners come from this machine, not from whoever packed the archive.
-tar --no-same-owner -xzf "$TMP/console.tar.gz" -C "$TMP/dist" || die "that file is not a valid archive."
+check_archive "$TMP/console.tar.gz"
+tar --no-same-owner --no-same-permissions -xzf "$TMP/console.tar.gz" -C "$TMP/dist" || die "that file is not a valid archive."
+secure_tree "$TMP/dist"
+# The served bundle is data: never publish archive execute or special bits.
+find "$TMP/dist" -type f -exec chmod 0644 {} +
 [ -f "$TMP/dist/index.html" ] || die "the archive does not look like a built console."
 
 INSTALLED_AT="$(state_get webroot)"
@@ -1276,8 +1410,10 @@ fi
 if [ "$MODE" = "replacement" ]; then
   BACKUP="$WWW_DIR$BACKUP_SUFFIX"
   if [ -d "$BACKUP" ]; then
+    secure_tree "$BACKUP"
     ok "Original console already saved" "$BACKUP"
   elif [ -d "$WWW_DIR" ] && [ -f "$WWW_DIR/index.html" ]; then
+    secure_path "$BACKUP"
     cp -a "$WWW_DIR" "$BACKUP"
     ok "Original console backed up" "$BACKUP"
     state_set server_version "${SERVER_VERSION:-unknown}"

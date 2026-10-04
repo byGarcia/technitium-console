@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, within } from '@testing-library/react'
+import { act, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import * as blocking from '../../api/blocking'
 import * as zonelists from '../../api/zonelists'
@@ -273,6 +273,62 @@ describe('Rules', () => {
     await screen.findByText("Domain 'ok.test' was added to Allowed Zone successfully.")
     await vi.waitFor(() => expect(list).toHaveBeenLastCalledWith('allowed', 'T', 'ok.test', undefined, ''))
     expect(screen.getByRole('button', { name: 'Allowed' })).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('an Allow in list view keeps the previously chosen tree list', async () => {
+    exports([], [])
+    vi.spyOn(zonelists, 'addDomain').mockResolvedValue(OK)
+    const list = emptyTree()
+    draw()
+    await screen.findByRole('table')
+    await userEvent.type(screen.getByRole('textbox', { name: 'Domain' }), 'ok.test')
+    await userEvent.click(screen.getByRole('button', { name: 'Allow' }))
+    await screen.findByText("Domain 'ok.test' was added to Allowed Zone successfully.")
+    expect(list).not.toHaveBeenCalled()
+    await userEvent.click(screen.getByRole('button', { name: 'Tree' }))
+    await screen.findByText('0 zones')
+    expect(list).toHaveBeenLastCalledWith('blocked', 'T', '', undefined, '')
+    expect(within(screen.getByRole('group', { name: 'Tree' })).getByRole('button', { name: 'Blocked' }))
+      .toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('Allow without Allowed view refreshes the visible Blocked tree at its root', async () => {
+    const read = exports([], [])
+    vi.spyOn(zonelists, 'addDomain').mockResolvedValue(OK)
+    const list = emptyTree()
+    render(<Rules token="T" permissions={{ Blocked: P(true), Allowed: P(false) }} nodes={NODES} clusterInitialised />)
+    await screen.findByRole('table')
+    await userEvent.click(screen.getByRole('button', { name: 'Tree' }))
+    await screen.findByText('0 zones')
+    await userEvent.type(screen.getByRole('textbox', { name: 'Domain' }), 'ok.test')
+    await userEvent.click(screen.getByRole('button', { name: 'Allow' }))
+    await screen.findByText("Domain 'ok.test' was added to Allowed Zone successfully.")
+    await vi.waitFor(() => expect(list).toHaveBeenCalledTimes(2))
+    expect(list).toHaveBeenLastCalledWith('blocked', 'T', '', undefined, 'dev.cluster.test')
+    expect(list.mock.calls.some(([kind, , domain]) => kind === 'allowed' || domain === 'ok.test')).toBe(false)
+    expect(read).toHaveBeenLastCalledWith('blocked', 'T', 'dev.cluster.test')
+    expect(within(screen.getByRole('group', { name: 'Tree' })).getByRole('button', { name: 'Blocked' }))
+      .toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('an Allow completing after the tree closes does not change its remembered list', async () => {
+    exports([], [])
+    let finish!: (outcome: typeof OK) => void
+    vi.spyOn(zonelists, 'addDomain').mockImplementation(() => new Promise((resolve) => { finish = resolve }))
+    const list = emptyTree()
+    draw()
+    await screen.findByRole('table')
+    await userEvent.click(screen.getByRole('button', { name: 'Tree' }))
+    await screen.findByText('0 zones')
+    await userEvent.type(screen.getByRole('textbox', { name: 'Domain' }), 'ok.test')
+    await userEvent.click(screen.getByRole('button', { name: 'Allow' }))
+    await userEvent.click(screen.getByRole('button', { name: 'List' }))
+    await act(async () => finish(OK))
+    await screen.findByText("Domain 'ok.test' was added to Allowed Zone successfully.")
+    expect(list).toHaveBeenCalledTimes(1)
+    await userEvent.click(screen.getByRole('button', { name: 'Tree' }))
+    await screen.findByText('0 zones')
+    expect(list).toHaveBeenLastCalledWith('blocked', 'T', '', undefined, '')
   })
 
   /* An older read that answers last must not land over a newer one. */

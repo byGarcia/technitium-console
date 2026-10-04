@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { StrictMode } from 'react'
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { SessionProvider } from './SessionProvider'
 import { ThemeProvider } from '../theme/ThemeProvider'
@@ -71,11 +71,81 @@ describe('SessionProvider', () => {
     expect(screen.queryByRole('button', { name: 'Login' })).not.toBeInTheDocument()
   })
 
+  it('logout revokes the displayed session after another tab replaces storage', async () => {
+    localStorage.setItem('token', 'tok')
+    const api = vi.spyOn(client, 'apiRequest').mockResolvedValue(session())
+    mount()
+    await screen.findByRole('navigation')
+    localStorage.setItem('token', 'other-tab-token')
+    await userEvent.click(screen.getByRole('button', { name: /Administrator/ }))
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Logout' }))
+    await screen.findByRole('button', { name: 'Login' })
+    expect(api).toHaveBeenCalledWith('user/logout', { token: 'tok' })
+    expect(localStorage.getItem('token')).toBe('other-tab-token')
+  })
+
   it('with an invalid token, it falls back to the login', async () => {
     localStorage.setItem('token', 'stale')
     vi.spyOn(client, 'apiRequest').mockResolvedValue({ kind: 'invalid-token' })
     mount()
     expect(await screen.findByRole('button', { name: 'Login' })).toBeInTheDocument()
+  })
+
+  it('expired logout keeps the newer token stored by another tab', async () => {
+    localStorage.setItem('token', 'tok')
+    vi.spyOn(client, 'apiRequest').mockResolvedValue(session())
+    mount()
+    await screen.findByRole('navigation')
+    localStorage.setItem('token', 'other-tab-token')
+    await userEvent.click(screen.getByRole('button', { name: /Administrator/ }))
+    const logout = await screen.findByRole('menuitem', { name: 'Logout' })
+    vi.restoreAllMocks()
+    const fetch = vi.spyOn(globalThis, 'fetch').mockImplementation(async () =>
+      new Response(JSON.stringify({ status: 'invalid-token' }), {
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    )
+    await userEvent.click(logout)
+    await screen.findByRole('button', { name: 'Login' })
+    expect(fetch.mock.calls.find(([url]) => String(url).endsWith('/user/logout'))?.[1]?.headers)
+      .toEqual({ Authorization: 'Bearer tok' })
+    expect(localStorage.getItem('token')).toBe('other-tab-token')
+  })
+
+  it('an expired response from an older session keeps the displayed session', async () => {
+    localStorage.setItem('token', 'tok')
+    vi.spyOn(client, 'apiRequest').mockResolvedValue(session())
+    mount()
+    await screen.findByRole('navigation')
+    vi.restoreAllMocks()
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async () =>
+      new Response(JSON.stringify({ status: 'invalid-token' })),
+    )
+    await client.apiRequest('zones/list', { token: 'older-session' })
+    expect(screen.getByRole('navigation')).toBeInTheDocument()
+    expect(localStorage.getItem('token')).toBe('tok')
+  })
+
+  it('a delayed logout completion keeps a newer login in the same tab', async () => {
+    localStorage.setItem('token', 'tok')
+    let finishLogout!: (outcome: client.ApiOutcome) => void
+    vi.spyOn(client, 'apiRequest').mockImplementation(async (path: string) => {
+      if (path === 'user/logout') return await new Promise((resolve) => { finishLogout = resolve })
+      if (path === 'user/login') return session({ token: 'new-session' })
+      return session()
+    })
+    mount()
+    await screen.findByRole('navigation')
+    await userEvent.click(screen.getByRole('button', { name: /Administrator/ }))
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Logout' }))
+    act(() => { client.envelopeOutcome({ status: 'invalid-token' }, 'tok') })
+    await userEvent.type(await screen.findByLabelText('Username'), 'new-user')
+    await userEvent.type(screen.getByLabelText('Password'), 'new-password')
+    await userEvent.click(screen.getByRole('button', { name: 'Login' }))
+    await screen.findByRole('navigation')
+    await act(async () => { finishLogout({ kind: 'invalid-token' }) })
+    expect(screen.getByRole('navigation')).toBeInTheDocument()
+    expect(localStorage.getItem('token')).toBe('new-session')
   })
 
   it('when the stored token fails for any reason, it is removed as upstream does', async () => {

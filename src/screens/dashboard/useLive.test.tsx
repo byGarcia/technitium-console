@@ -78,18 +78,86 @@ describe('useLive', () => {
     expect(spy).toHaveBeenCalledTimes(4)
   })
 
-  it('a new epoch empties the minutes and takes a new baseline', async () => {
-    vi.spyOn(api, 'getMetrics').mockResolvedValueOnce(ok(10)).mockResolvedValueOnce(ok(15)).mockResolvedValue(ok(20))
+  /* A reload must not drop uncounted readings or replace the lifetime baseline. */
+  it('a reload (new epoch) keeps the readings and the baseline', async () => {
+    const spy = vi.spyOn(api, 'getMetrics').mockResolvedValueOnce(ok(10)).mockResolvedValueOnce(ok(15)).mockResolvedValue(ok(20))
     const { result, rerender } = renderHook((p: { epoch: number }) => useLive({ token: 't', targets: [''], epoch: p.epoch, active: true }), { initialProps: { epoch: 1 } })
     await act(async () => { await vi.advanceTimersByTimeAsync(0) })
     await tick()
     expect(result.current.reduce((n, m) => n + m.counts.totalQueries, 0)).toBe(5)
     rerender({ epoch: 2 })
     await act(async () => { await vi.advanceTimersByTimeAsync(0) })
-    /* The new baseline opens the current minute with nothing in it. */
-    expect(result.current.reduce((n, m) => n + m.counts.totalQueries, 0)).toBe(0)
+    expect(result.current.reduce((n, m) => n + m.counts.totalQueries, 0)).toBe(5)
     await tick()
-    expect(result.current.reduce((n, m) => n + m.counts.totalQueries, 0)).toBe(0)
+    expect(result.current.reduce((n, m) => n + m.counts.totalQueries, 0)).toBe(10)
+    expect(spy).toHaveBeenCalledTimes(3)
+  })
+
+  it('readings remain available after five minutes if the server has not counted them', async () => {
+    let q = 0
+    vi.spyOn(api, 'getMetrics').mockImplementation(async () => ok((q += 1)))
+    const { result } = renderHook(() => useLive({ token: 't', targets: [''], epoch: 1, active: true }))
+    await act(async () => { await vi.advanceTimersByTimeAsync(0) })
+    await act(async () => { await vi.advanceTimersByTimeAsync(8 * 60_000) })
+    const from = Date.now() - 60 * 60_000
+    expect(result.current.length).toBeGreaterThan(0)
+    expect(result.current.every((r) => r.at >= from)).toBe(true)
+    expect(result.current.some((r) => r.at < Date.now() - 5 * 60_000)).toBe(true)
+  })
+
+  it.each(['token', 'node'] as const)('changing the %s starts a clean context after failures stopped polling', async (changed) => {
+    const spy = vi.spyOn(api, 'getMetrics').mockResolvedValue({ kind: 'error', message: 'Not found' })
+    const { result, rerender } = renderHook(
+      (p: { token: string; node: string }) => useLive({ token: p.token, targets: [p.node], epoch: 1, active: true }),
+      { initialProps: { token: 't1', node: 'a' } },
+    )
+    await act(async () => { await vi.advanceTimersByTimeAsync(0) })
+    await tick(); await tick(); await tick()
+    expect(spy).toHaveBeenCalledTimes(3)
+    spy.mockResolvedValueOnce(ok(100)).mockResolvedValue(ok(102))
+    rerender({ token: changed === 'token' ? 't2' : 't1', node: changed === 'node' ? 'b' : 'a' })
+    await act(async () => { await vi.advanceTimersByTimeAsync(0) })
+    await tick()
+    expect(spy).toHaveBeenCalledTimes(5)
+    expect(result.current.reduce((n, r) => n + r.counts.totalQueries, 0)).toBe(2)
+  })
+
+  it('a changed target clears the previous node readings and ignores its late response', async () => {
+    let finish!: (v: ReturnType<typeof ok>) => void
+    const spy = vi.spyOn(api, 'getMetrics').mockResolvedValueOnce(ok(100)).mockResolvedValueOnce(ok(105))
+      .mockReturnValueOnce(new Promise((r) => { finish = r }) as never)
+      .mockResolvedValueOnce(ok(10)).mockResolvedValue(ok(12))
+    const { result, rerender } = renderHook(
+      (p: { node: string }) => useLive({ token: 't', targets: [p.node], epoch: 1, active: true }),
+      { initialProps: { node: 'a' } },
+    )
+    await act(async () => { await vi.advanceTimersByTimeAsync(0) })
+    await tick()
+    expect(result.current.reduce((n, r) => n + r.counts.totalQueries, 0)).toBe(5)
+    await tick()
+    rerender({ node: 'b' })
+    await act(async () => { await vi.advanceTimersByTimeAsync(0) })
+    expect(result.current).toEqual([])
+    await act(async () => { finish(ok(500)); await vi.advanceTimersByTimeAsync(0) })
+    await tick()
+    expect(result.current.reduce((n, r) => n + r.counts.totalQueries, 0)).toBe(2)
+    expect(spy.mock.calls.filter((call) => call[1] === 'a')).toHaveLength(3)
+  })
+
+  it('a restart takes a new baseline while retaining measurements the persisted stats may not have counted yet', async () => {
+    vi.spyOn(api, 'getMetrics').mockResolvedValueOnce(ok(100)).mockResolvedValueOnce(ok(105))
+      .mockResolvedValueOnce(ok(1, 'u2')).mockResolvedValue(ok(3, 'u2'))
+    const { result } = renderHook(() => useLive({ token: 't', targets: [''], epoch: 1, active: true }))
+    await act(async () => { await vi.advanceTimersByTimeAsync(0) })
+    await tick(); await tick(); await tick()
+    expect(result.current.reduce((n, r) => n + r.counts.totalQueries, 0)).toBe(7)
+  })
+
+  it('an empty cluster has no local node to substitute for the missing aggregate targets', async () => {
+    const spy = vi.spyOn(api, 'getMetrics').mockResolvedValue(ok(1))
+    renderHook(() => useLive({ token: 't', targets: [], epoch: 1, active: true }))
+    await act(async () => { await vi.advanceTimersByTimeAsync(10_000) })
+    expect(spy).not.toHaveBeenCalled()
   })
 
   it('inactive, it reads nothing', async () => {

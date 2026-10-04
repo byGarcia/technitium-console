@@ -166,6 +166,16 @@ one you write months after installing, which no backup could contain.
 same. On systemd with Technitium 15.5 or later, it also owns one clearly named
 drop-in under `/etc/systemd/system`; uninstall removes it again.
 
+**The installer requires root-owned files and folders.** The console, backup,
+installer state and every parent folder must be writable only by root. Symbolic
+links, hard links, special files and newline-containing names are refused before
+publication. A service-owned stock console can still be used with a dedicated
+`/opt/technitium-console` folder when no custom lists need copying. If custom
+lists need migrating from an unsafe tree, copy them yourself after inspecting
+them into a fresh root-owned tree. Changing ownership on an existing tree cannot
+revoke files another account already has open. For Docker, mount the console
+volume read-only in the DNS server.
+
 **An interrupted run cannot leave you without a console.** Files go in before
 any are taken out, and every page is published after the assets it names, so at
 every moment the server has a whole console to serve: the old one or the new
