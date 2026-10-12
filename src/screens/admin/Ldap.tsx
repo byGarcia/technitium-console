@@ -569,9 +569,15 @@ export function Ldap({ tabs, token, onNotice }: Props) {
               Server itself.
             </Note>
             <Note>
-              The domain name used for LDAP Server above will be resolved by the DNS Server
-              internally only. Thus, make sure that the DNS Server is able to resolve the configured
-              domain name. Adding hosts file entries in the host OS will not work.
+              On Windows, the domain name used for LDAP Server above will be resolved by the DNS
+              Server internally only. Thus, make sure that the DNS Server is able to resolve the
+              configured domain name. Adding hosts file entries in the host OS will not work.
+            </Note>
+            <Note>
+              On Linux, the domain name used for LDAP Server above will be resolved using the
+              system&apos;s DNS server. Thus, make sure that <code>/etc/resolv.conf</code> is
+              configured with <code>127.0.0.1</code> loopback address to ensure that the resolution
+              is done using this DNS Server.
             </Note>
           </Notices>
         </Block>

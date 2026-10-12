@@ -437,7 +437,7 @@ describe('LDAP: Test Connection', () => {
 })
 
 describe('LDAP: the dense form', () => {
-  it('is three blocks titled with upstream labels, two `Warning!` before and seven `Note!` after', async () => {
+  it('is three blocks titled with upstream labels, two `Warning!` before and eight `Note!` after', async () => {
     server()
     render(<Ldap {...props} />)
     const first = await screen.findByLabelText('Enable LDAP Authentication')
@@ -448,7 +448,7 @@ describe('LDAP: the dense form', () => {
     const warnings = alerts.filter((a) => /Warning!/.test(a.textContent ?? ''))
     const notes = alerts.filter((a) => /Note!/.test(a.textContent ?? ''))
     expect(warnings).toHaveLength(2)
-    expect(notes).toHaveLength(7)
+    expect(notes).toHaveLength(8)
     for (const w of warnings) {
       expect(w.compareDocumentPosition(first) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     }

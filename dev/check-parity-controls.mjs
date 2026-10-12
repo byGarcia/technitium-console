@@ -277,12 +277,21 @@ const EXCUSED_NOTES = [
   'amber theme',
 ]
 
+/* A run only proves its own note when no other upstream note shares it. v15.6.1
+   split the LDAP server note into "On Windows, the domain name used for LDAP
+   Server above ..." and "On Linux, the domain name used for LDAP Server above
+   ...", and the Linux one passed on the run it shares with the Windows one while
+   it was not here at all. */
+const noteWords = NOTES.map((t) => asWords(t))
+const distinctive = (run) => noteWords.filter((w) => w.includes(` ${run} `)).length === 1
+
 const missingNotes = NOTES.filter((t) => {
   const words = asWords(t).trim().split(' ')
   if (words.length < 12) return false
   if (EXCUSED_NOTES.some((e) => asWords(t).includes(` ${e} `) && words.length < 40)) return false
-  const runs = [words.slice(2, 10), words.slice(6, 14), words.slice(-8)]
-  return !runs.some((p) => prose.includes(` ${p.join(' ')} `))
+  const all = [words.slice(2, 10), words.slice(6, 14), words.slice(-8)].map((p) => p.join(' '))
+  const runs = all.filter(distinctive)
+  return !(runs.length ? runs : all).some((p) => prose.includes(` ${p} `))
 })
 
 console.log('')
