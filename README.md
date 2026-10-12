@@ -17,7 +17,7 @@ Same API, same behaviour, same texts: the interface rebuilt from scratch.
 |---|---|
 | ![The dashboard](docs/screenshots/dashboard.png) | ![Blocking › Overview](docs/screenshots/blocking-overview.png) |
 
-**Latest: [v1.2.3](https://github.com/byGarcia/technitium-console/releases/latest) for Technitium DNS
+**Latest: [v1.2.4](https://github.com/byGarcia/technitium-console/releases/latest) for Technitium DNS
 Server 15.5.x and 15.6.x**, with a Dashboard that moves in real time, Allowed and Blocked as one
 Blocking section, a light theme, plus LDAP, the zone file editor and everything else 15.5 and 15.6
 brought.
@@ -105,13 +105,13 @@ fixed one by one.
 
 | | |
 |---|---|
-| Checked against | Technitium DNS Server 15.6.0 |
+| Checked against | Technitium DNS Server 15.6.1 |
 | Sections | 11 |
 | Routes, each a real URL | 34 |
 | API endpoints the stock console calls, and this one calls too | 132 of 132 |
 | Sortable columns kept | 64 of 66, and the two missing are declared |
 | Dialogs, checked one by one | 44 |
-| Tests | 1,605 |
+| Tests | 1,647 |
 
 Every figure in that table comes from a script in `dev/` (`check-endpoints.mjs`,
 `check-parity-sort.mjs`, `dialog-inventory.sh`) and not from this paragraph.
@@ -382,7 +382,7 @@ unpacked folder.
 npm install
 npm run build        # emits into dist/
 npm run dev          # Vite development server
-npm test             # 1,605 tests
+npm test             # 1,647 tests
 npm run typecheck
 npm run lint
 ```

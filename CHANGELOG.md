@@ -12,7 +12,7 @@ sends, every text it shows and every control it offers, compared with that serve
 
 | Console | Technitium DNS Server | Notes |
 |---|---|---|
-| **1.2.x** | **15.5.x, 15.6.x** (1.2.1 and 1.2.2 checked against 15.6.0) | Current. Allowed and Blocked become one Blocking section, a light theme, and the console comes as an image for Docker. Supports a console folder of its own (`DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH`), so server updates leave it alone. |
+| **1.2.x** | **15.5.x, 15.6.x** (1.2.4 checked against 15.6.1) | Current. Allowed and Blocked become one Blocking section, a light theme, and the console comes as an image for Docker. Supports a console folder of its own (`DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH`), so server updates leave it alone. |
 | 1.1.x | 15.5.x | Superseded by 1.2.x on the same server. If you stay on it, use 1.1.3: earlier ones flood the server from Cache, Allowed and Blocked. |
 | 1.0.0 | 15.4 | Cannot save Settings on a 15.5 server. Upgrade. |
 
@@ -20,6 +20,17 @@ To update, run the installer again (the same one-line command). It needs no rest
 service. On Docker, pull the image again: see [Docker](README.md#docker).
 
 ---
+
+## v1.2.4 (2026-10-12)
+
+**Technitium DNS Server 15.6.1.** The server release changes one note in its own console, and
+this one now says the same. No API changes: all 132 endpoints are still covered.
+
+- LDAP Authentication: the note on how the LDAP server name is resolved is now two notes, one for
+  Windows and one for Linux, as in 15.6.1. The Linux one asks for `127.0.0.1` in
+  `/etc/resolv.conf`.
+- The note parity check no longer counts a note as present on a run of words it shares with
+  another note. That is how the new Linux note passed before it was here.
 
 ## v1.2.3 (2026-10-04)
 
