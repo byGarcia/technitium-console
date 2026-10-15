@@ -35,7 +35,7 @@ function server(blocked: string[], allowed: string[]) {
 
 const status = () => screen.getByRole('status')
 
-async function del(domain: string, user: Pick<UserEvent, 'click'> = userEvent) {
+async function deleteRule(domain: string, user: Pick<UserEvent, 'click'> = userEvent) {
   await user.click(await screen.findByRole('button', { name: `Delete ${domain}` }))
 }
 
@@ -43,7 +43,7 @@ describe('Rules: Delete with Undo', () => {
   it('deletes at once, with no dialog, and says so with upstream sentence', async () => {
     const { remove, lists } = server(['ads.example.com'], [])
     render(<Rules token="T" permissions={undefined} />)
-    await del('ads.example.com')
+    await deleteRule('ads.example.com')
     expect(screen.queryByRole('dialog')).toBeNull()
     expect(remove).toHaveBeenCalledWith('blocked', 'T', 'ads.example.com')
     expect(lists.blocked.size).toBe(0)
@@ -54,7 +54,7 @@ describe('Rules: Delete with Undo', () => {
   it('Undo puts the same domain back in the same list, with the add call', async () => {
     const { add } = server([], ['s.youtube.com'])
     render(<Rules token="T" permissions={undefined} />)
-    await del('s.youtube.com')
+    await deleteRule('s.youtube.com')
     expect(status()).toHaveTextContent("Domain 's.youtube.com' was deleted from Allowed Zone successfully.")
     await userEvent.click(within(status().parentElement!).getByRole('button', { name: 'Undo' }))
     expect(add).toHaveBeenCalledExactlyOnceWith('allowed', 'T', 's.youtube.com')
@@ -66,8 +66,8 @@ describe('Rules: Delete with Undo', () => {
   it('a second Delete joins the open notice, and one Undo puts both back, each in its list', async () => {
     const { add, lists } = server(['ads.example.com'], ['s.youtube.com'])
     render(<Rules token="T" permissions={undefined} />)
-    await del('ads.example.com')
-    await del('s.youtube.com')
+    await deleteRule('ads.example.com')
+    await deleteRule('s.youtube.com')
     expect(status()).toHaveTextContent('2 rules were deleted.')
     await userEvent.click(screen.getByRole('button', { name: 'Undo' }))
     expect(add.mock.calls).toEqual([
@@ -81,10 +81,10 @@ describe('Rules: Delete with Undo', () => {
   it('a Delete after the notice said "back" starts a new one', async () => {
     server(['a.test', 'b.test'], [])
     render(<Rules token="T" permissions={undefined} />)
-    await del('a.test')
+    await deleteRule('a.test')
     await userEvent.click(screen.getByRole('button', { name: 'Undo' }))
     await screen.findByText("'a.test' is back in Blocked.")
-    await del('b.test')
+    await deleteRule('b.test')
     expect(status()).toHaveTextContent("Blocked zone 'b.test' was deleted successfully.")
   })
 
@@ -92,9 +92,9 @@ describe('Rules: Delete with Undo', () => {
     const { add } = server(['a.test', 'b.test', 'c.test'], [])
     add.mockResolvedValueOnce(OK).mockResolvedValueOnce({ kind: 'error', message: 'Access was denied.' })
     render(<Rules token="T" permissions={undefined} />)
-    await del('a.test')
-    await del('b.test')
-    await del('c.test')
+    await deleteRule('a.test')
+    await deleteRule('b.test')
+    await deleteRule('c.test')
     await userEvent.click(screen.getByRole('button', { name: 'Undo' }))
     expect(await screen.findByText('2 of 3 rules were not put back: Access was denied.')).toBeInTheDocument()
     // It stops at the first refusal: the third is not asked for.
@@ -106,7 +106,7 @@ describe('Rules: Delete with Undo', () => {
     const { add } = server(['a.test'], [])
     add.mockResolvedValue({ kind: 'invalid-token' })
     render(<Rules token="T" permissions={undefined} />)
-    await del('a.test')
+    await deleteRule('a.test')
     await userEvent.click(screen.getByRole('button', { name: 'Undo' }))
     expect(await screen.findByText("'a.test' was not put back: Invalid token or session expired.")).toBeInTheDocument()
   })
@@ -115,7 +115,7 @@ describe('Rules: Delete with Undo', () => {
     const { remove } = server(['a.test'], [])
     remove.mockResolvedValue({ kind: 'error', message: 'No such zone.' })
     render(<Rules token="T" permissions={undefined} />)
-    await del('a.test')
+    await deleteRule('a.test')
     expect(await screen.findByText('No such zone.')).toBeInTheDocument()
     expect(status()).toBeEmptyDOMElement()
   })
@@ -123,7 +123,7 @@ describe('Rules: Delete with Undo', () => {
   it('dismissing the notice keeps the deletion', async () => {
     const { add } = server(['a.test'], [])
     render(<Rules token="T" permissions={undefined} />)
-    await del('a.test')
+    await deleteRule('a.test')
     await userEvent.click(screen.getByRole('button', { name: 'Dismiss' }))
     expect(status()).toBeEmptyDOMElement()
     expect(add).not.toHaveBeenCalled()
@@ -133,7 +133,7 @@ describe('Rules: Delete with Undo', () => {
   it('Escape inside the notice dismisses it', async () => {
     server(['a.test'], [])
     render(<Rules token="T" permissions={undefined} />)
-    await del('a.test')
+    await deleteRule('a.test')
     screen.getByRole('button', { name: 'Undo' }).focus()
     await userEvent.keyboard('{Escape}')
     expect(status()).toBeEmptyDOMElement()
@@ -144,7 +144,7 @@ describe('Rules: Delete with Undo', () => {
     const user = userEvent.setup({ delay: null, advanceTimers: vi.advanceTimersByTime })
     server(['a.test'], [])
     render(<Rules token="T" permissions={undefined} />)
-    await del('a.test', user)
+    await deleteRule('a.test', user)
     await user.hover(screen.getByRole('button', { name: 'Undo' }))
     act(() => vi.advanceTimersByTime(20_000))
     expect(screen.getByRole('button', { name: 'Undo' })).toBeInTheDocument()
@@ -158,7 +158,7 @@ describe('Rules: Delete with Undo', () => {
   it('a permission lost while the notice is up turns Undo off and names it', async () => {
     const { add } = server(['a.test'], [])
     const { rerender } = render(<Rules token="T" permissions={{ Blocked: P(true), Allowed: P(true) }} />)
-    await del('a.test')
+    await deleteRule('a.test')
     rerender(<Rules token="T" permissions={{ Blocked: P(true, false), Allowed: P(true) }} />)
     const undo = screen.getByRole('button', { name: 'Undo' })
     expect(undo).toBeDisabled()
@@ -170,7 +170,7 @@ describe('Rules: Delete with Undo', () => {
   it('leaving the tab drops the notice and keeps the deletion', async () => {
     const { add } = server(['a.test'], [])
     const { unmount } = render(<Rules token="T" permissions={undefined} />)
-    await del('a.test')
+    await deleteRule('a.test')
     unmount()
     expect(screen.queryByRole('status')).toBeNull()
     expect(add).not.toHaveBeenCalled()
@@ -192,10 +192,10 @@ describe('Rules: Delete with Undo', () => {
   it('without Modify on the list the Delete asks first, as upstream; with it, it does not', async () => {
     const { remove } = server(['ads.test'], ['ok.test'])
     render(<Rules token="T" permissions={{ Blocked: P(true), Allowed: P(true, false) }} />)
-    await del('ads.test')
+    await deleteRule('ads.test')
     expect(screen.queryByRole('dialog')).toBeNull()
     expect(remove).toHaveBeenCalledWith('blocked', 'T', 'ads.test')
-    await del('ok.test')
+    await deleteRule('ok.test')
     const dialog = await screen.findByRole('dialog')
     expect(dialog).toHaveTextContent("Are you sure you want to delete the allowed zone 'ok.test'?")
   })
