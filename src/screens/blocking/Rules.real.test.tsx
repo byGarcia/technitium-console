@@ -3,6 +3,7 @@ import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { REAL, realServer } from '../../test/real-blocking'
 import { Rules } from './Rules'
+import { wholeText } from '../../test/whole-text'
 
 /*
 Rules fed with the harness's real `blocked/export` and `allowed/export`
@@ -28,8 +29,8 @@ describe('Rules against the harness', () => {
     const table = await screen.findByRole('table')
     const rows = within(table).getAllByRole('row').slice(1)
     expect(rows).toHaveLength(BLOCKED.length + ALLOWED.length)
-    for (const d of BLOCKED) expect(within(table).getByText(d).closest('tr')).toHaveTextContent('Blocked')
-    for (const d of ALLOWED) expect(within(table).getByText(d).closest('tr')).toHaveTextContent('Allowed')
+    for (const d of BLOCKED) expect(within(table).getByText(wholeText(d)).closest('tr')).toHaveTextContent('Blocked')
+    for (const d of ALLOWED) expect(within(table).getByText(wholeText(d)).closest('tr')).toHaveTextContent('Allowed')
   })
 
   it('the counts agree with the figures the server gives the Overview', async () => {

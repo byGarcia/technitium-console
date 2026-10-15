@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 import * as blocking from '../../api/blocking'
 import * as zonelists from '../../api/zonelists'
 import { Rules } from './Rules'
+import { wholeText } from '../../test/whole-text'
 
 const OK = { kind: 'ok' as const, data: {} }
 const P = (v: boolean, m = true, d = true) => ({ canView: v, canModify: m, canDelete: d })
@@ -44,7 +45,7 @@ describe('Rules', () => {
     exports(['ads.example.com'], ['s.youtube.com'])
     draw()
     const table = await screen.findByRole('table')
-    expect(within(table).getByText('ads.example.com')).toBeInTheDocument()
+    expect(within(table).getByText(wholeText('ads.example.com'))).toBeInTheDocument()
     expect(within(table).getByText('Allowed')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'All 2' })).toHaveAttribute('aria-pressed', 'true')
   })
@@ -54,7 +55,7 @@ describe('Rules', () => {
     exports(['ads.example.com'], ['s.youtube.com'])
     draw()
     const table = await screen.findByRole('table')
-    expect(within(table).queryByText('ads.example.com')).toBeNull()
+    expect(within(table).queryByText(wholeText('ads.example.com'))).toBeNull()
     await userEvent.click(screen.getByRole('button', { name: 'Blocked 1' }))
     expect(window.location.search).toBe('?rule=blocked')
   })
@@ -346,12 +347,12 @@ describe('Rules', () => {
     await vi.waitFor(() => expect(answers).toHaveLength(4))
     answers[2]({ kind: 'ok', data: ['new.test'] })
     answers[3]({ kind: 'ok', data: [] })
-    expect(await screen.findByText('new.test')).toBeInTheDocument()
+    expect(await screen.findByText(wholeText('new.test'))).toBeInTheDocument()
     answers[0]({ kind: 'ok', data: ['old.test'] })
     answers[1]({ kind: 'ok', data: [] })
     await new Promise((r) => setTimeout(r, 20))
-    expect(screen.queryByText('old.test')).toBeNull()
-    expect(screen.getByText('new.test')).toBeInTheDocument()
+    expect(screen.queryByText(wholeText('old.test'))).toBeNull()
+    expect(screen.getByText(wholeText('new.test'))).toBeInTheDocument()
   })
 
   it('a failed first read says so instead of drawing an empty table', async () => {
@@ -371,7 +372,7 @@ describe('Rules', () => {
     expect(screen.getByText('Could not read the rules.')).toBeInTheDocument()
     read.mockImplementation(async (list) => ({ kind: 'ok', data: list === 'blocked' ? ['ads.example.com'] : [] }))
     await userEvent.click(screen.getByRole('button', { name: 'Retry' }))
-    expect(await screen.findByText('ads.example.com')).toBeInTheDocument()
+    expect(await screen.findByText(wholeText('ads.example.com'))).toBeInTheDocument()
     expect(screen.queryByText('Could not read the rules.')).toBeNull()
   })
 
@@ -380,7 +381,7 @@ describe('Rules', () => {
     exports(['ads.example.com'], ['never.test'])
     draw({ Blocked: P(true), Allowed: P(false) })
     const table = await screen.findByRole('table')
-    expect(within(table).getByText('ads.example.com')).toBeInTheDocument()
+    expect(within(table).getByText(wholeText('ads.example.com'))).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'All 1' })).toHaveAttribute('aria-pressed', 'true')
     expect(window.location.search).toBe('?x=1')
   })

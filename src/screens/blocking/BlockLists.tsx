@@ -25,6 +25,7 @@ import { hostsOf, moreLists } from './extra-lists'
 import { missing, type Permissions } from './permissions'
 import shared from './Blocking.module.css'
 import styles from './BlockLists.module.css'
+import { UrlText } from '../../ui/UrlText'
 
 /*
 The Lists tab: the "Allow / Block List URLs" field of Settings > Blocking drawn as a
@@ -571,7 +572,7 @@ export function BlockLists({
         </td>
         <td className={faded}>
           {name != null && <div className={styles.name}>{name}</div>}
-          <div className={styles.url}>{l.url ?? l.raw}</div>
+          <div className={styles.url}><UrlText url={l.url ?? l.raw} /></div>
           {/* The kind under the URL where the Type column is folded away. */}
           <span className={`${styles.kind} ${styles.kindInline} ${KIND_CLASS[l.kind]}`}>
             <Icon name={KIND_ICON[l.kind]} size={14} />

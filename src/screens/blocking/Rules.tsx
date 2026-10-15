@@ -13,6 +13,7 @@ import { Notifier } from '../../ui/Notifier'
 import { Toast } from '../../ui/Toast'
 import { Input } from '../../ui/Field'
 import { Icon } from '../../ui/Icon'
+import { DomainName } from '../../ui/DomainName'
 import { Failure, Loading } from '../../ui/Empty'
 import { Button } from '../../ui/Button'
 import { primaryNodeName } from '../../ui/ClusterNodeSelect'
@@ -526,7 +527,7 @@ export function Rules({
               >
                 {current.rows.map((r) => (
                   <tr key={`${r.list}:${r.domain}`}>
-                    <td className={styles.domain}>{r.domain}</td>
+                    <td className={styles.domain}><DomainName name={r.domain} /></td>
                     <td>
                       <span className={`${styles.kind} ${styles[r.list]}`}>
                         <Icon name={r.list} size={14} />

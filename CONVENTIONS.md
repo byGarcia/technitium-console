@@ -465,6 +465,12 @@ Write down here whatever you find. What is already known:
   redesign left 1,098 pieces of Spanish across 67 files (comments, identifiers and
   nineteen file names) while the interface stayed English and every other gate
   stayed green. A rule nothing measures is a preference.
+- **A name is never cut letter by letter.** `word-break: break-all`,
+  `word-break: break-word` and `overflow-wrap: anywhere` are refused by
+  `npm run lint:breaks` (`dev/check-word-breaks.mjs`, also run by `npm test`) outside a short list
+  of things with no words (keys, signatures, raw output), each with its reason. A
+  DNS name goes through `ui/DomainName`, a URL through `ui/UrlText`, other text
+  through `overflow-wrap: break-word`.
 - **No `BrowserRouter`**: the server's only `MapFallback` is `/api/{*path}`.
 - **No CDN and no fonts in `data:`**: the server's CSP does not declare
   `font-src`. Images in `data:` are fine (`img-src 'self' data:`).

@@ -21,11 +21,14 @@ pairing here: the domain heads the block that talks about that server.
   gap: var(--s-3);
 }
 
+/* The server's domain wraps at its dots only (`ui/DomainName`): `break-all` cut it
+   wherever the card's edge fell, mid-label. A name with no dot, which DomainName
+   leaves as plain text, still breaks rather than leave the card. */
 .host {
   font-family: var(--font-mono);
+  overflow-wrap: break-word;
   font-size: var(--t-1);
   color: var(--faint);
-  word-break: break-all;
   padding-bottom: var(--s-3);
   border-bottom: 1px solid var(--line2);
   margin-bottom: var(--s-2);

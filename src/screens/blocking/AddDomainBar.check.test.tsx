@@ -5,6 +5,7 @@ import quickBuiltin from '../../../public/json/quick-block-lists-builtin.json'
 import * as zonelists from '../../api/zonelists'
 import REAL from './check-domain.real.json'
 import { AddDomainBar } from './AddDomainBar'
+import { wholeText } from '../../test/whole-text'
 
 /*
 "Check" in the panel, fed at the `fetch` level with what a live v15.6.1 answered
@@ -76,8 +77,8 @@ describe('Check a domain', () => {
   it('blocked by a rule on a parent: the rule, and the way to Rules', async () => {
     await check('sub.telemetry.example-iot.net')
     expect(await screen.findByText('Blocked by your rule')).toBeInTheDocument()
-    expect(screen.getByText('sub.telemetry.example-iot.net', { selector: 'div' })).toBeInTheDocument()
-    expect(screen.getByText('telemetry.example-iot.net')).toBeInTheDocument()
+    expect(screen.getByText(wholeText('sub.telemetry.example-iot.net'), { selector: 'div' })).toBeInTheDocument()
+    expect(screen.getByText(wholeText('telemetry.example-iot.net'))).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Open Rules' })).toHaveAttribute('href', expect.stringMatching(/blocking\/rules\/$/))
   })
 

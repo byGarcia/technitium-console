@@ -7,6 +7,7 @@ import { ThemeProvider } from '../theme/ThemeProvider'
 import * as client from '../api/client'
 import { SETTINGS } from '../screens/settings/settings.fixture'
 import { appRoot, forgetRoot } from '../app/route'
+import { wholeText } from '../test/whole-text'
 
 // The Shell consumes the theme, so it is mounted the way App.tsx will.
 function mount() {
@@ -202,7 +203,7 @@ describe('SessionProvider', () => {
     await waitFor(() =>
       expect(document.title).toBe('renamed.example.net - Technitium DNS Server v15.5.1'),
     )
-    expect(screen.getAllByText('renamed.example.net').length).toBeGreaterThan(0)
+    expect(screen.getAllByText(wholeText('renamed.example.net')).length).toBeGreaterThan(0)
   })
 
   it('it hides the sections with no read permission', async () => {

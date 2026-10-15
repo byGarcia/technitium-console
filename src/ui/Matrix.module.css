@@ -73,7 +73,8 @@ changes is that the sticky corner stops being a special case.
   font-size: var(--t-4);
   font-weight: 400;
   color: var(--ink);
-  overflow-wrap: anywhere;
+  /* Between words: `anywhere` let the column shrink until a name broke letter by letter. */
+  overflow-wrap: break-word;
 }
 
 /*
