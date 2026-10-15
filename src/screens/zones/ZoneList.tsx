@@ -19,6 +19,7 @@ import { Loading } from '../../ui/Empty'
 import { StaleData } from '../StaleData'
 import { Field, Input, Select } from '../../ui/Field'
 import { SectionHeader } from '../../ui/SectionHeader'
+import { DomainName } from '../../ui/DomainName'
 import { Tag, type TagTone } from '../../ui/Tag'
 import { Menu, Separator } from '../../ui/Menu'
 import { minuteStamp as date } from '../../lib/dates'
@@ -655,7 +656,7 @@ function ZoneRow(p: RowProps) {
           className={`${styles.zoneLink} ${tbl.entity}`}
           onClick={() => p.onOpen(name)}
         >
-          {zoneNameOf(z)}
+          <DomainName name={zoneNameOf(z)} />
         </button>
         {catalogLabel && (
           <div className={styles.tags}>

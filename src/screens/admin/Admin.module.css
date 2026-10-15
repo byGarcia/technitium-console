@@ -12,7 +12,9 @@
 .count { composes: bar below from '../../ui/count.module.css'; }
 
 /* The first column's user / group / section name opens its record. */
-.link { composes: entityLink from '../../ui/Table.module.css'; word-break: break-all; }
+/* No `word-break: break-all` of its own: it cut a name letter by letter wherever
+   the column was narrow. The shared rule breaks one only when it cannot fit. */
+.link { composes: entityLink from '../../ui/Table.module.css'; }
 
 .node { font-size: var(--t-4); padding: var(--s-3) var(--s-6); border:1px solid var(--line-field); border-radius: var(--r-2); background:var(--field); color:var(--ink); }
 

@@ -20,6 +20,7 @@ import {
   type Zone,
 } from '../../api/zones'
 import { Button } from '../../ui/Button'
+import { DomainName } from '../../ui/DomainName'
 import { Field, Input, Select } from '../../ui/Field'
 import { DataCell } from './DataCell'
 import { minuteStamp as date } from '../../lib/dates'
@@ -535,7 +536,7 @@ export function ZoneRecords(p: ZoneRecordsProps) {
             return (
               <tr key={`${r.name}|${r.type}|${offset + i}`}>
                 <td className={styles.num2}>{offset + i + 1}</td>
-                <td className={`${styles.mono}`}>{relativeName(r.name, zone)}</td>
+                <td className={`${styles.mono}`}><DomainName name={relativeName(r.name, zone)} /></td>
                 <td>
                   <Chip>{r.type}</Chip>
                   {r.disabled && (
@@ -547,7 +548,7 @@ export function ZoneRecords(p: ZoneRecordsProps) {
                 <td className={styles.ttl}>
                   {r.ttl} <small>({r.ttlString})</small>
                 </td>
-                <td>
+                <td className={styles.dataCell}>
                   <DataCell record={r} notifyFailedFor={zoneInfo.notifyFailedFor} />
                 </td>
                 <td className={tbl.actionsCell}>
