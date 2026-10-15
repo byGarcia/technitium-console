@@ -670,6 +670,10 @@ wherever the attribute says `light`.
   --t-5: 14px;    /* block title, panel subtitle                      (15) */
   --t-6: 17px;    /* counter figure                               (16,17) */
   --t-7: 22px;    /* section title                             (19,21,22) */
+  /* The one display size, and only the login cover's headline uses it
+     (`screens/LoginCover`, 2026-10-15). It is a ceiling: the cover scales the
+     headline with the viewport between `--t-7` and this. */
+  --t-8: 40px;
 
   /* ── Spacing ────────────────────────────────────────────────────────── */
   /*

@@ -15,8 +15,8 @@ is a different job.
 
 The exceptions are few, decided and written down: see
 [Deliberate deviations from upstream behaviour](#deliberate-deviations-from-upstream-behaviour).
-The largest is the Blocking section, which replaces Allowed and Blocked, and it is
-the only one with written limits of its own.
+The largest is the Blocking section, which replaces Allowed and Blocked. Those that
+add something carry written limits of their own.
 
 ## Where the reference is
 
@@ -558,6 +558,24 @@ contract and SECURITY.md.
      requests and invalidate queued work when token, node or permissions change;
    - **a hidden tab reads nothing**, the minute refresh included, and coming
      back reloads at once. That pause is the only change to an upstream request.
+6. **The login screen has a cover** (Adrián's decision, 2026-10-15): a brand
+   panel beside the stock form above 960 px, and a header above it below,
+   compact under 560 px (`screens/LoginCover.tsx`). It changes the layout and
+   nothing else. Its limits, and crossing one is a bug:
+   - **the form is upstream's, whole**: every field, text, step (the OTP one
+     included), validation, alert and behaviour of `Login.tsx` is untouched, and
+     it stays alone inside `<main>`; the cover is an `<aside>` outside it, and
+     upstream's `Technitium DNS Server` is still the only `<h1>`;
+   - **its words are ours and say so** in the header comment of its file: the
+     name, the headline and the four TXT records. They must not age (no "new")
+     and each must be true of the console as it ships; a line that stops being
+     true changes in the same commit. It shows the console's version from the
+     build and nothing else: no screenshot and no figure, since nobody has
+     logged in yet and anything that looks like data would be invented;
+   - **it calls nothing**: no endpoint, no asset beyond the fonts the console
+     already ships, and its colours are theme tokens measured on `--field` by
+     `dev/theme-contrast.mjs`. Its only motion is the answer rows settling in,
+     and `prefers-reduced-motion` removes it.
 
 ## Four constraints the server imposes
 

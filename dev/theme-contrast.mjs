@@ -108,6 +108,10 @@ export const PAIRS = [
   ...['ch-fail', 'ch-block', 'ch-nx', 'ch-refuse', 'ch-auth', 'ch-rec', 'ch-cache'].map((k) => ({
     fg: 'faint-on-tint', on: [`pan + ${k}@0.3`], min: 4.5, where: `Query Logs row, its response time (${k})`,
   })),
+  // The login cover (`screens/LoginCover`) draws all its text on `field`, the deepest surface.
+  ...['ink', 'mute', 'faint', 'acc-ink'].map((fg) => ({
+    fg, on: ['field'], min: 4.5, where: `the login cover (${fg})`,
+  })),
   // Non-text: what a user has to see to operate a control.
   { fg: 'faint-on-tint', on: ['pan', 'pan + hover'], min: 4.5, where: 'Query Logs, the response time on an uncoloured or hovered row' },
   { fg: 'line-field', on: ['bg', 'pan', 'field', 'pan2'], min: 3, where: 'a field\'s border at rest: it is what tells a field from the panel' },

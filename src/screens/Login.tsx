@@ -9,6 +9,7 @@ import styles from './Login.module.css'
 import { publicUrl } from '../app/base'
 import { FooterLinks } from '../ui/FooterLinks'
 import { Notifier } from '../ui/Notifier'
+import { LoginCover } from './LoginCover'
 
 /*
 The login screen. A replica of `login()` in
@@ -207,85 +208,92 @@ export function Login({
  found nothing on the screen you enter the console through.
 
     It is fixed by redrawing it and costs nothing. If nobody names it, it comes back.
+
+    The cover beside it is OURS (`LoginCover.tsx`, deviation of 2026-10-15): an
+    `<aside>` outside `<main>`, so the landmark still holds the form and only the
+    form. Nothing inside `<main>` changed for it.
     */
-    <main className={styles.page}>
-      <div className={styles.card}>
-        <h1 className={styles.brand}>
-          <img className={styles.mark} src={publicUrl('img/logo.png')} alt="" width={28} height={28} />
-          <span className={styles.name}>Technitium DNS Server</span>
-        </h1>
+    <div className={styles.screen}>
+      <LoginCover />
+      <main className={styles.page}>
+        <div className={styles.card}>
+          <h1 className={styles.brand}>
+            <img className={styles.mark} src={publicUrl('img/logo.png')} alt="" width={28} height={28} />
+            <span className={styles.name}>Technitium DNS Server</span>
+          </h1>
 
-        <Notifier notice={alert} onClose={() => setAlert(null)} />
+          <Notifier notice={alert} onClose={() => setAlert(null)} />
 
-        <form
-          className={styles.form}
-          onSubmit={(e) => {
-            e.preventDefault()
-            void submit()
-          }}
-        >
-          <LabeledInput
-            label="Username"
-            ref={userRef}
-            value={user}
-            autoComplete="username"
-            onChange={(e) => setUser(e.target.value)}
-          />
-          <LabeledInput
-            label="Password"
-            type="password"
-            ref={passRef}
-            value={pass}
-            disabled={otpVisible}
-            autoComplete="current-password"
-            onChange={(e) => setPass(e.target.value)}
-          />
-          {otpVisible && (
+          <form
+            className={styles.form}
+            onSubmit={(e) => {
+              e.preventDefault()
+              void submit()
+            }}
+          >
             <LabeledInput
-              label="OTP"
-              mono
-              inputMode="numeric"
-              maxLength={6}
-              ref={otpRef}
-              value={totp}
-              autoComplete="one-time-code"
-              onChange={(e) => onTotpInput(e.target.value)}
+              label="Username"
+              ref={userRef}
+              value={user}
+              autoComplete="username"
+              onChange={(e) => setUser(e.target.value)}
             />
-          )}
-          <Button type="submit" variant="primary" disabled={busy}>
-            Login
-          </Button>
-        </form>
+            <LabeledInput
+              label="Password"
+              type="password"
+              ref={passRef}
+              value={pass}
+              disabled={otpVisible}
+              autoComplete="current-password"
+              onChange={(e) => setPass(e.target.value)}
+            />
+            {otpVisible && (
+              <LabeledInput
+                label="OTP"
+                mono
+                inputMode="numeric"
+                maxLength={6}
+                ref={otpRef}
+                value={totp}
+                autoComplete="one-time-code"
+                onChange={(e) => onTotpInput(e.target.value)}
+              />
+            )}
+            <Button type="submit" variant="primary" disabled={busy}>
+              Login
+            </Button>
+          </form>
 
-        {/* In upstream the link goes BEFORE the SSO block, and the "or login
-            with" only appears if there is SSO (index.html:119-124). */}
-        <div className={styles.sso}>
-          <button type="button" className={styles.link} onClick={() => setForgotten(true)}>
-            Forgot Password?
-          </button>
+          {/* In upstream the link goes BEFORE the SSO block, and the "or login
+              with" only appears if there is SSO (index.html:119-124). */}
+          <div className={styles.sso}>
+            <button type="button" className={styles.link} onClick={() => setForgotten(true)}>
+              Forgot Password?
+            </button>
 
-          {ssoEnabled && (
-            <>
-              <div className={styles.orLogin}>or login with</div>
-              {/* Upstream's link to `sso/login` is relative to a one-page console,
-                  so it always lands on the root. Here the login can be drawn at
-                  any real route (`/dashboard/`, after a session expires) and the
-                  relative link became `/dashboard/sso/login`, a 404 (2026-09-30,
-                  on the home server). It hangs from the root, like every other
-                  path in this console. */}
-              <a className={styles.ssoLink} href={publicUrl('sso/login')}>
-                Sign in with SSO
-              </a>
-            </>
-          )}
+            {ssoEnabled && (
+              <>
+                <div className={styles.orLogin}>or login with</div>
+                {/* Upstream's link to `sso/login` is relative to a one-page console,
+                    so it always lands on the root. Here the login can be drawn at
+                    any real route (`/dashboard/`, after a session expires) and the
+                    relative link became `/dashboard/sso/login`, a 404 (2026-09-30,
+                    on the home server). It hangs from the root, like every other
+                    path in this console. */}
+                <a className={styles.ssoLink} href={publicUrl('sso/login')}>
+                  Sign in with SSO
+                </a>
+              </>
+            )}
+          </div>
         </div>
-      </div>
 
-      {/* Upstream's footer shows on its login screen too, because it hangs off
-          the `body` and not the panel. See `app/footer.ts`. */}
-      <FooterLinks className={styles.footer} />
+        {/* Upstream's footer shows on its login screen too, because it hangs off
+            the `body` and not the panel. See `app/footer.ts`. */}
+        <FooterLinks className={styles.footer} />
 
-      <ForgotPassword open={forgotten} onOpenChange={setForgotten} />
-    </main>
+        <ForgotPassword open={forgotten} onOpenChange={setForgotten} />
+      </main>
+    </div>
   )
 }
