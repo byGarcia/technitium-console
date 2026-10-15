@@ -23,6 +23,30 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
 
 ## Unreleased
 
+**A Dashboard that answers at a glance, and Blocking that explains itself.**
+
+- Dashboard: every figure, the Queries chart, a week by hour, Server, the three top lists and the
+  three breakdowns (now stacked bars) fit in the first screen. Each figure shows its trend and its
+  change against the previous period of the same length; Clients has no change for Last Week and
+  Last Year, where the server cannot give a comparable number. Clicking a chart point, a slice, a
+  bar or an hour opens Query Logs filtered to it.
+- Blocking › Overview: Check a domain says whether this server blocks a name and why (which block
+  lists, which of your rules, or which allow rule lets it through), next to Block and Allow.
+- Blocking › Lists: comment lines act as group headings. Add, rename and ungroup groups, add lists
+  into a group and move lists up and down. The save bar says what changed and the tab is marked
+  while changes are unsaved.
+- Blocking › Rules: deleting from the table no longer asks and offers Undo for a few seconds. The
+  tree view and Flush still ask.
+- The sidebar marks Blocking when blocking is off or paused, with the time it comes back.
+- Blocking's three tabs have a one-line subtitle saying what each is for.
+- Login: a cover beside the sign-in form, in both themes and at phone width. The form, its steps
+  and its messages are unchanged.
+- Query Logs: the filters fit in two bands, Live Update is a switch in the header, rows stay on one
+  line with the full value on hover, and the response colour is a pill instead of a tinted row.
+- Panel titles sit one step above table headers.
+- Fields, dropdowns and buttons share one height. Domain names and list URLs no longer break in the
+  middle of a word, and a new check (`npm run lint:breaks`) keeps it that way.
+- Session rows keep the user agent to two lines.
 - The installer accepts a web root whose files root's own group can write. Technitium's install
   script leaves every file of its console as root:root 0664, so since 1.2.3 upgrading or
   uninstalling over a stock web root, or over a console a server update had written into, stopped
