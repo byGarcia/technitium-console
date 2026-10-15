@@ -1,186 +1,199 @@
 /*
-The panel is drawn by `ui/Panel`. What is left here is only this screen's own
-adjustments, if any: replicating its markup with `composes:` was what there was,
-and that is how a header ended up 21 px shorter than its card.
+The cockpit (Adrián's choice of 2026-10-15): everything a question needs fits in the
+first 1440 x 980 screen, so nobody scrolls to answer one. Four bands, top to bottom:
+the title with the period; the eleven figures; `Queries` with the week by hour and
+`Server` beside it; the three top lists and the three breakdowns in one row.
+
+The panels are drawn by `ui/Panel`. What is here is only this screen's arrangement
+and its own pieces.
 */
-/*
-The eleven, in two bands: the four read first, larger and with their trend, and the
-seven others in a quieter band, in their two families (`Figures.tsx` says which and
-why). The width no longer decides the split: it was a 2 + 9 grid where Total
-Queries sat alone in a tall box with a hundred pixels of air above and below it,
-and every other card weighed the same.
-*/
-.tiles { display:grid; gap: var(--s-8); margin-bottom: var(--gap-block); }
-.keys { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap: var(--s-8); }
-.details { display:grid; grid-template-columns:minmax(0,4fr) minmax(0,3fr); gap: var(--s-8); }
-.family { display:grid; grid-template-columns:repeat(var(--n, 3), minmax(0,1fr)); gap: var(--s-7); }
+
+/* The title and the period on one line. `SectionHeader` brings its own space
+   under the title; on this line it is the line's. */
+.head { display:flex; flex-wrap:wrap; align-items:center; gap: var(--s-5) var(--s-10); margin-bottom: var(--s-8); }
+.head > :first-child { margin-bottom: 0; }
+/* The picker scrolls inside its own strip when narrow; it may not push the line wider. */
+.period { min-width: 0; max-width: 100%; }
+.period > * { max-width: 100%; }
 
 /*
-A metric's colour is the colour of ITS SERIES in the chart below, and that
-relation is what makes the card useful. It is said with an edge, not with the
-square swatch a legend uses: the `Queries` legend already uses the swatch, and
-giving the card the same piece would make two different objects (the series and
-its total) announce themselves the same way.
-
-A key card is a panel; a detail card is an inner block, flatter and smaller, so the
-eye lands on the four first.
+The eleven figures in one block: `Total Queries` spans both rows, the other ten are
+compact cards in two rows of five (`Figures.tsx` says which and why).
 */
-.tile { min-width: 0; }
-.key {
-  composes: panel from '../../ui/Panel.module.css';
-  display:grid;
-  grid-template-columns:minmax(0,1fr) minmax(var(--s-12), 40%);
-  gap: var(--s-8);
-  padding: var(--s-9);
-}
-.detail {
-  padding: var(--s-7) var(--s-8);
-  background: var(--pan2);
+.tiles { display:grid; grid-template-columns: minmax(0, 1.15fr) repeat(5, minmax(0, 1fr)); gap: var(--s-5); }
+
+/*
+A figure's colour is the colour of ITS SERIES in the chart, said with an edge and
+not with the square swatch a legend uses: the swatch already means "a series" in the
+`Queries` legend, and a card is that series' total.
+
+Each card is a size container: its figure takes the smaller of its normal size
+(`--size`) and what fits (`--fit`, below), so a long figure never spills out.
+*/
+.tile {
+  container-type: inline-size;
+  min-width: 0;
+  background: var(--pan);
   border: 1px solid var(--line2);
+  border-left: 3px solid var(--tc, var(--acc));
   border-radius: var(--r-3);
+  box-shadow: var(--e-1), var(--edge);
 }
 
 /*
-The edge goes on `.tiles .tile` and not on `.tile`, and this is not fussiness.
-
-Measured: written on `.tile` it came out **1 px and grey**. `composes` ADDS
-`ui/Panel`'s class, it does not copy its declarations, so the element carries both
-and the two rules have the same specificity (0,1,0): the last one emitted wins,
-which is `Panel`'s `border`, and its shorthand resets the left side too.
-
-With the parent in front they are (0,2,0) against (0,1,0) and it stops depending
-on the order.
+A compact card: what it is across the top; under it, how much with its share and the
+change, and the trend beside them. The text keeps the width its figure line needs
+and the trend takes the rest, up to 64 px; the text never shrinks while the trend
+can (down to 32 px). Past that the share wraps under its figure and the card grows a
+line: nothing is cut and nothing overlaps.
 */
-.tiles .tile { border-left: 3px solid var(--tc, var(--acc)); }
+.fig { padding: var(--s-4) var(--s-7); }
+.body { display:flex; align-items:flex-end; justify-content: space-between; gap: var(--s-5); }
+.text { flex: 0 1 auto; min-width: min-content; }
+.fig .spark { flex: 1 0 var(--s-12); max-width: calc(2 * var(--s-12)); height: calc(var(--s-11) + var(--s-1)); }
+
+/* `Total Queries`: label, figure, change, and its trend along the foot. */
+.hero {
+  grid-row: span 2;
+  display:flex;
+  flex-direction: column;
+  padding: var(--s-7) var(--s-9);
+}
+.hero .body { flex: 1; flex-direction: column; align-items: stretch; gap: var(--s-3); }
+.hero .spark { margin-top: auto; width: 100%; height: calc(var(--s-11) + var(--s-10) + var(--s-2)); }
+/* "vs previous hour" goes under its change rather than out of the card. */
+.hero .ctx { white-space: normal; }
+
+.tile .k { font-size: var(--t-1); font-weight: 600; color:var(--mute); text-transform:uppercase; letter-spacing:.05em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.line { display:flex; flex-wrap:wrap; align-items:baseline; column-gap: var(--s-3); min-width: 0; }
 
 /*
-What it is, how much, and against what, in that order: the label first, so a
-number is never read before knowing what it counts.
-
-A figure never spills out of its card (issue #2). The text column is a size
-container and the figure takes the smaller of its normal size (`--size`) and what
-fits: the column's width over `--len` characters. Measured, a monospace digit or
-separator is 0.602 em, but at small sizes each glyph's advance is rounded to a
-whole pixel, which overflowed by 2 px at 11 px; so each character gets 0.62 em
-plus 1 px. A browser without container units (Firefox before 110, Safari before
-16) cannot work the `min()` out, and the figure takes its parent's size.
+The figure fits its card. The card is the size container and the figure takes the
+smaller of its normal size (`--size`) and the card's width over `--len` characters.
+Measured, a monospace digit or separator is 0.602 em, but at small sizes each
+glyph's advance is rounded to a whole pixel, which overflowed by 2 px at 11 px; so
+each character gets 0.62 em plus 1 px. A browser without container units (Firefox
+before 110, Safari before 16) cannot work the `min()` out, and the figure takes its
+parent's size.
 */
-.tileText, .cnt { container-type: inline-size; min-width: 0; }
-.tileText { display:flex; flex-direction:column; gap: var(--s-2); }
 .v { --fit: calc((100cqi - var(--len, 1) * 1px) / (var(--len, 1) * 0.62)); white-space: nowrap; }
-.tile .v { --size: var(--t-6); font:600 var(--t-6)/1.1 var(--font-mono); font-size: min(var(--size), var(--fit)); letter-spacing:-.02em; color:var(--ink); }
+.tile .v { --size: var(--t-6); font:600 var(--t-6)/1.3 var(--font-mono); font-size: min(var(--size), var(--fit)); letter-spacing:-.01em; color:var(--ink); }
 
 /*
-The four key figures at 34 px, a deliberate local exception: the type scale ends at
+`Total Queries` at 30 px, a deliberate local exception: the type scale ends at
 `--t-7` (22 px, the section title) and nothing else in the console needs this size,
-so it is not a token. It is the size of the figures read first, on one screen.
-
-It goes AFTER `.tile .v` on purpose: same specificity (0,2,0), so the last one
-emitted wins.
+so it is not a token. It is the size of the figure read first, on one screen.
+It goes AFTER `.tile .v` on purpose: same specificity, so the last one wins.
 */
-.key .v { --size: 34px; font-size: 34px; font-size: min(var(--size), var(--fit)); line-height:1.05; }
+.hero .v { --size: 30px; font-size: 30px; font-size: min(var(--size), var(--fit)); line-height:1.15; margin-top: var(--s-2); }
 
 /* With no data the figure is a dash, and dimmed: it is not a value. */
 .noData { color: var(--faint); }
-.tile .k { font-size: var(--t-1); color:var(--mute); text-transform:uppercase; letter-spacing:.05em; font-weight: 550; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.ctx { display:flex; flex-wrap:wrap; align-items:baseline; gap: var(--s-1) var(--s-5); min-width:0; }
-.p { composes: annotationQuiet from '../../ui/text.module.css'; }
-/* The change: muted like the share beside it, and never red or green (Figures.tsx). */
+/* The share of the total, beside its figure. */
+.p { font: 400 var(--t-2)/1.3 var(--font-mono); color: var(--mute); white-space: nowrap; }
+.ctx { min-width:0; white-space: nowrap; }
+/* The change: muted like the share, its size in ink, and never red or green
+   (Figures.tsx). */
 .change { font: 400 var(--t-2)/1.3 var(--font-mono); font-variant-numeric: tabular-nums; color: var(--mute); }
+.change b { font-weight: 600; color: var(--ink); }
 /* Said to assistive technology, not drawn. */
 .offscreen { position:absolute; width:1px; height:1px; overflow:hidden; clip-path: inset(50%); white-space:nowrap; }
 
-/* The trend fills the key card's second column, as tall as the text beside it. */
-.key .keySpark { width:100%; height:100%; min-height: var(--s-11); }
+/*
+`Queries`, two thirds of the width, with the week by hour and `Server` stacked
+beside it. The column ends where `Queries` does: `Server` takes what the week
+leaves.
+*/
+.middle { display:grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: var(--s-8); margin-top: var(--s-8); }
+.side { display:grid; grid-template-rows: auto 1fr; gap: var(--s-8); min-width: 0; }
+.queries .legend { gap: 0 var(--s-2); margin-bottom: var(--s-3); }
+/* What a point of the chart does, in the panel's header. */
+.hint { font-size: var(--t-3); color: var(--faint); text-align: right; }
+
+/* `Server`: six counts in three columns. */
+.counters { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap: var(--s-3); }
+.cnt { container-type: inline-size; min-width: 0; padding: var(--s-3) var(--s-7); background:var(--pan2); border-radius: var(--r-2); }
+.cnt .v { --size: var(--t-5); font:600 var(--t-5)/1.3 var(--font-mono); font-size: min(var(--size), var(--fit)); color:var(--ink); }
+.cnt .k { font-size: var(--t-1); font-weight: 600; color:var(--mute); text-transform:uppercase; letter-spacing:.07em; }
 
 /*
-The lower half, in three rows, which is what the accepted drawing has: `Queries`
-with `Server` beside it, then the three doughnuts, then the three top-N lists.
-
-It was a 310 px right rail with everything stacked inside it. Nothing recorded the
-change and nothing fixed the layout, so it was drift and not a
-decision, and it cost the composition: a doughnut in 310 px is a huge centred
-ring with its legend underneath, `Server` could only fit two columns, `Top
-Clients` sat away from the two lists it belongs with, and half the canvas below
-was empty at 1440.
+The four in one row: the three top lists in upstream's order, and the three
+breakdowns in one card. `Top Blocked Domains` is a little wider because its header
+carries two buttons.
 */
-.grid { display:grid; grid-template-columns:minmax(0,1fr) 310px; gap: var(--s-9); align-items:start; margin-bottom: var(--gap-block); }
-.trio { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap: var(--s-9); align-items:start; margin-bottom: var(--gap-block); }
-.trio:last-child { margin-bottom:0; }
-.panel {}
+.lists {
+  display:grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, .95fr);
+  gap: var(--s-8);
+  margin-top: var(--s-8);
+  align-items: stretch;
+}
 
-/*
-Two columns and three rows while `Server` sits in the 310 px rail; three columns
-once it goes full width (the 1080 step below).
-
-The drawing had three columns in the rail, and issue #2 showed what that costs:
-each cell has 61 px for its figure, so a Block List of 2,551,031 domains ran out
-of its card. Shrinking the figure alone brought it down to 9 px at 1440, next to
-neighbours at 17. In two columns a cell has about 107 px, which holds nine
-characters at full size; past that the figure shrinks (see `.v`).
-*/
-.counters { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap: var(--s-6); }
+/* A panel's header can carry more than one control. */
+.panelActions { display: flex; align-items: center; gap: var(--s-3); }
+.top .panelActions { flex: none; }
+.pbAdjusted { padding: var(--s-5) var(--s-8) var(--s-7); }
+/* The lists' headers are a little shorter than a panel's: their buttons set their
+   height. */
+.lists .top > :first-child { padding-block: var(--s-2); padding-inline: var(--s-8); }
 
 /*
-A doughnut and its legend side by side, not one under the other.
-
-The ring is drawn at a fixed size and the legend takes the rest: with the legend
-underneath, the panel grew tall and the ring grew with the column, which is what
-turned three small charts into three big ones.
+A top list's row: rank, the name, the count and the row menu, and under the name
+and count the count as a bar on its track, in its list's series colour (`--bar`).
+The name never breaks: it ends in an ellipsis and is whole on hover.
 */
-/*
-Flex with wrap and NOT a grid with a breakpoint: the ring and its legend sit side
-by side while both fit, and the legend drops underneath when they do not. Measured
-at 1024 the grid version clipped five entries (`Author…`, `Recurs…`) because a
-column of `minmax(0,1fr)` is allowed to be narrower than its content. Here nothing
-is allowed to: the legend keeps its width, the ring gives way down to 110 px, and
-past that the row wraps. No width has to be guessed in advance.
-*/
-.split { display:flex; flex-wrap:wrap; gap: var(--s-8); align-items:center; justify-content:center; }
-.split > :first-child { flex:1 1 110px; min-width:110px; }
-/*
-The legend is a column here and a wrapping row everywhere else, and it must not
-truncate: an entry that reads `Author…` has lost the word the colour is for. The
-ring is what gives way (it is drawn smaller) because the legend's width is set by
-its longest label plus its percentage, and that is not negotiable.
-*/
-.split .legend { margin-bottom:0; flex-direction:column; flex-wrap:nowrap; align-items:flex-start; gap: var(--s-3); flex:0 1 auto; }
-.split .lg { white-space:nowrap; }
-.cnt { padding: var(--s-8); background:var(--pan2); border:1px solid var(--line2); border-radius: var(--r-3); }
-.cnt .v { --size: var(--t-6); font:600 var(--t-6)/1 var(--font-mono); font-size: min(var(--size), var(--fit)); color:var(--ink); }
-.cnt .k { font-size: var(--t-1); color:var(--mute); margin-top: var(--s-3); text-transform:uppercase; letter-spacing:.05em; }
-.toprow { display:flex; align-items:center; justify-content:space-between; gap: var(--s-8); padding: var(--s-4) 0; border-bottom:1px solid var(--line2); font-size: var(--t-4); }
-.toprow:last-child { border-bottom:0; }
-.topRank { flex:none; width:1ch; color:var(--faint); font:var(--t-2) var(--font-mono); }
-.toprow .n { flex:1; min-width:0; color:var(--ink); font-family:var(--font-mono); overflow:hidden; white-space:nowrap; }
-.topLabel, .toprow .topDomain { display:block; overflow:hidden; text-overflow:ellipsis; }
-/*
-The hit count as a bar on a track, in its list's series colour (`--bar`, set by the
-list), as Blocking › Overview's top tables draw theirs. It was a 2 px grey rule with
-no track, which read as an underline and not as a size.
-*/
-.topBar { display:block; position:relative; height:var(--s-2); margin-top:var(--s-2); border-radius:var(--r-full); background:var(--line2); overflow:hidden; }
+.toprow {
+  display:grid;
+  grid-template-columns: calc(var(--s-10) + var(--s-1)) minmax(0, 1fr) auto auto;
+  align-items:center;
+  column-gap: var(--s-5);
+  padding: var(--s-1) 0 var(--s-2);
+}
+/* The row menu's button may not make the row taller than its line. */
+.toprow > :nth-child(4) { margin-block: calc(-1 * var(--s-2)); }
+.topRank { color:var(--faint); font:var(--t-2) var(--font-mono); text-align:right; }
+.toprow .n { min-width:0; font: 400 var(--t-4)/1.5 var(--font-ui); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.toprow .topLabel { color:var(--ink); }
+.toprow .topDomain { margin-left: var(--s-3); font: 400 var(--t-2)/1 var(--font-ui); color:var(--faint); }
+.toprow .c { color:var(--ink); font: 400 var(--t-3)/1.5 var(--font-mono); font-variant-numeric: tabular-nums; text-align:right; }
+.topBar { grid-column: 2 / 4; display:block; position:relative; height:var(--s-2); margin-top:var(--s-1); border-radius:var(--r-full); background:var(--line2); overflow:hidden; }
 .topBar > i { position:absolute; inset:0 auto 0 0; border-radius:var(--r-full); background:var(--bar, var(--ch-total)); }
-.toprow .c { color:var(--mute); font-family:var(--font-mono); flex:none; margin-left:auto; }
+/* Upstream draws a rate-limited client in orange. */
+.toprow.limited .topLabel, .limited td { color: var(--warn); }
+
+/*
+The three breakdowns: each a title, a stacked bar and its legend (`Breakdown.tsx`).
+*/
+.breakdown { padding-top: var(--s-8); }
+.parts { display:flex; flex-direction:column; gap: var(--s-8); padding: 0 var(--s-8) var(--s-7); }
+.part { min-width: 0; }
+.partTitle { margin: 0 0 var(--s-3); font-size: var(--t-1); font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--mute); }
+.stack { display:flex; gap: var(--s-1); height: var(--s-6); border-radius: var(--r-1); overflow:hidden; }
+.segment { display:block; flex-basis: 0; min-width: var(--s-1); height: 100%; padding: 0; border: 0; border-radius: 0; }
+button.segment { cursor: pointer; }
+button.segment:hover { box-shadow: inset 0 0 0 1px var(--ink); }
+.stackLegend { margin-top: var(--s-3); }
+.stackLegend .legend, .stackLegend.legend { gap: 0 var(--s-4); margin-bottom: 0; }
+.stackLegend .lg { gap: var(--s-3); padding: var(--s-1); }
+.stackLegend .lg i { width: var(--s-5); height: var(--s-5); }
+.stackLegend .lg b { font-weight: 400; color: var(--mute); }
+/* An entry with no jump is a label, not a control. */
+.lgStill { cursor: default; }
+.lgStill:hover { background: transparent; color: var(--mute); }
+
 /* "Top Stats" modal: the long list behind the "More" buttons. */
 .topTableWrap { overflow-x: auto; max-height: 460px; overflow-y: auto; }
 /*
 The "More" dialog's table is the console's table, with one difference that does
 have a reason: the header stays stuck to the top because the list can have three
 hundred rows inside a dialog that scrolls.
-
-It used to be a table apart (header at `--t-2` and over `--pan` instead of
-`--pan2`), and that is why the same datum looked different in the Dashboard's
-panel and in the dialog that expands it.
 */
 .topTable { composes: table from '../../ui/Table.module.css'; }
 .topTable thead th { position: sticky; top: 0; }
 .topTable td { vertical-align: top; }
 /*
 The footer's "Total Domains: N" is the same count any other table in the console
-carries (`ui/count.module.css`), even though here it travels in a `tfoot`
-instead of in a `div`: it was at 11.5 px and weight 550 when on the other nine
-screens it is at 12.5 and normal weight.
+carries (`ui/count.module.css`), even though here it travels in a `tfoot`.
 */
 .topTable tfoot th {
   padding: var(--s-6) var(--s-7);
@@ -192,95 +205,56 @@ screens it is at 12.5 and normal weight.
   letter-spacing: normal;
   background: transparent;
 }
-/* Upstream draws the whole row in orange when the client is rate limited. */
-.limited td { color: var(--warn); }
 .topName { display: block; font-family: var(--font-mono); word-break: break-all; }
-.topDomain { display: block; margin-top: var(--s-1); font: var(--t-2) var(--font-mono); color: var(--faint); word-break: break-all; }
+.topTable .topDomain { display: block; margin-top: var(--s-1); font: var(--t-2) var(--font-mono); color: var(--faint); word-break: break-all; }
 .topCount { composes: mono from '../../ui/text.module.css'; }
 
 /*
-The responsive steps of the lower half, measured at the four widths.
+The steps, measured at 1440, 1280, 1024 and 390.
 
-At 1080, `Server` stops fitting beside `Queries`: the chart was down to 425 px and
-at 390 it was pushed off the screen. Both go full width, and `Server`, with room
-to spare, goes to three columns: two rows of three read better than three of two
-across the whole width.
+At 1360 the four in a row go two by two: `Top Blocked Domains` stops holding its
+title and its two buttons on one line. `Total Queries` takes a row of its own, with
+its trend beside its figure, and the ten get its column: at 1280 a compact card
+was 159 px and every share had to wrap under its figure.
 
-At 980, the three doughnuts and the three top-N lists stop being three: a
-doughnut's ring plus its legend needs about 300 px, and three of those plus the
-gaps do not fit. They go to one column rather than two, because two would leave an
-orphan on a second row and the panels are tall enough that a single column reads
-better than a 2+1.
+At 1180 `Queries` takes the whole width and the week and `Server` sit side by side
+under it: beside the chart, the week's cells were under 8 px wide.
 
-At 560, the doughnut's legend, once wrapped under the ring, goes back to being a
-row: a column of five entries under a ring doubles the panel's height for nothing.
+At 860 the ten compact cards go two by two under `Total Queries`, which takes the
+whole row, and the week and `Server` stack.
+
+At 720 the lists go to one column.
 */
-@media (max-width: 1080px) {
-  .grid { grid-template-columns: minmax(0, 1fr); }
-  .counters { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 1360px) {
+  .lists { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tiles { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .hero { grid-row: auto; grid-column: 1 / -1; }
+  .hero .body { flex-direction: row; align-items: flex-end; gap: var(--s-11); }
+  .hero .text { flex: none; }
+  .hero .spark { flex: 1; height: var(--s-12); }
 }
 
-@media (max-width: 980px) {
-  .trio { grid-template-columns: minmax(0, 1fr); }
+@media (max-width: 1180px) {
+  .middle { grid-template-columns: minmax(0, 1fr); }
+  .side { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: none; }
 }
 
-/* Wrapped (narrow panel), the legend goes back to being a row: a column of five
-   entries under a ring makes the panel twice as tall for no reason. */
-@media (max-width: 560px) {
-  .split .legend { flex-direction:row; flex-wrap:wrap; justify-content:center; }
-}
-
-/*
-The card breakpoints.
-
-At 1080 the two families of the quieter band stop sharing a row: four and three
-cards beside each other leave each under 120 px. Each family keeps its own row, so
-the response codes and the ways of answering never mix.
-
-At 720 the four key cards go two by two.
-
-At 560 both families go two by two, and the odd one out (`Dropped`) takes the
-whole row: in three columns each card had 84 px and `AUTHORITATIVE` lost its end,
-and a label cut short has lost the word its colour is for. A key card's trend leaves the side of its text, which has no
-room left, and becomes a band along the card's foot, edge to edge (the card's
-padding is given back on three sides and its rounded corners clip it).
-*/
-@media (max-width: 1080px) {
-  .details { grid-template-columns: minmax(0, 1fr); }
+@media (max-width: 860px) {
+  .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .side { grid-template-columns: minmax(0, 1fr); }
 }
 
 @media (max-width: 720px) {
-  .keys { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .lists { grid-template-columns: minmax(0, 1fr); }
 }
 
 @media (max-width: 560px) {
-  .key { grid-template-columns: minmax(0, 1fr); }
-  .key .v { --size: var(--t-7); }
-  .key .keySpark {
-    width: calc(100% + 2 * var(--s-9));
-    height: var(--s-12);
-    margin: 0 calc(-1 * var(--s-9)) calc(-1 * var(--s-9));
-  }
-  .family { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .family > :last-child:nth-child(odd) { grid-column: 1 / -1; }
-  .tile .k { letter-spacing: .03em; }
-  .counters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .hint { display: none; }
+  .hero .body { flex-direction: column; align-items: stretch; gap: var(--s-3); }
+  .hero .spark { width: 100%; height: calc(var(--s-11) + var(--s-10) + var(--s-2)); }
+  .fig { grid-template-columns: minmax(min-content, max-content) minmax(var(--s-11), calc(1.5 * var(--s-12))); }
 }
 
-/* A chart's legend already brings its own space on top. */
-/* The period bar, under the title and to the left. `SectionHeader` already leaves
-   the gap under the title, so this only carries its own space below. */
-.periodBar { display:flex; flex-wrap:wrap; align-items:center; gap: var(--s-4) var(--s-9); margin-bottom: var(--gap-block); }
-/* What the cards' arrows are measured against, beside the period it follows. */
-.against { font-size: var(--t-3); color: var(--mute); }
-/* The picker scrolls inside its own strip when narrow; it may not push the bar wider. */
-.periodBar > :first-child { min-width: 0; max-width: 100%; }
-
-.pbAdjusted { padding-top: var(--s-2); }
-
-/* The alert for the screen's own actions: today, the blocking menu. */
-/* A panel's header can carry more than one control. */
-.panelActions { display: flex; align-items: center; gap: var(--s-4); }
 
 /* The custom range: two dates and the button, on one line. */
 .ownRange { display:flex; align-items:flex-end; gap: var(--s-7); flex-wrap:wrap; margin-bottom: var(--s-9); }
@@ -342,31 +316,6 @@ each other. The rows share one grid through `subgrid`; a browser without it keep
 each row's own columns, which are the same widths in all but the figures.
 */
 .legendTable { display:grid; grid-template-columns: auto auto auto auto; column-gap: var(--s-6); }
-.split .legendTable { display:grid; column-gap: var(--s-6); }
 .legendTable .lg { display:grid; grid-column: 1 / -1; grid-template-columns: subgrid; align-items:center; }
 .legendTable .lg b { text-align:right; }
 .lgName { text-align:left; }
-
-/*
-Query Types and Protocol Types: one row per value, longest first. The name, the bar
-on its track, the count and the share, each in a column of its own across the rows.
-A row that opens Query Logs is a button that looks like the row and only says so on
-hover and focus.
-*/
-.bars { list-style:none; margin:0; padding:0; display:grid; grid-template-columns: minmax(0, max-content) minmax(var(--s-12), 1fr) auto auto; column-gap: var(--s-8); }
-.bars > li { display:grid; grid-column: 1 / -1; grid-template-columns: subgrid; }
-.barRow {
-  display:grid; grid-column: 1 / -1; grid-template-columns: subgrid; align-items:center;
-  padding: var(--s-3) var(--s-3);
-  margin: 0 calc(-1 * var(--s-3));
-  border: 0; border-radius: var(--r-2); background: transparent;
-  font: 400 var(--t-3)/1.2 var(--font-mono); color: var(--ink); text-align:left;
-}
-button.barRow { cursor:pointer; }
-button.barRow:hover { background: var(--hover); }
-button.barRow:focus-visible { outline:none; box-shadow: var(--halo-focus); }
-.barLabel { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.barTrack { position:relative; display:block; height: var(--s-3); border-radius: var(--r-full); background: var(--line2); overflow:hidden; }
-.barTrack > i { position:absolute; inset:0 auto 0 0; border-radius: var(--r-full); background: var(--bar); }
-.barCount, .barShare { text-align:right; font-variant-numeric: tabular-nums; }
-.barShare { color: var(--mute); }

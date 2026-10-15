@@ -8,6 +8,9 @@ for why it exists.
 is announced with `role="tab"` and `aria-selected`; a group of options (the
 Dashboard's period) are state buttons and are announced with `aria-pressed`. They
 look alike and are not the same thing, so the caller decides.
+
+`compact` is the smaller strip that sits on a title's line (the Dashboard's period,
+beside its title) instead of on a line of its own.
 */
 export function Segmented<T extends string>({
   options,
@@ -15,6 +18,7 @@ export function Segmented<T extends string>({
   onChoose,
   label,
   asTabs = false,
+  compact = false,
 }: {
   options: { id: T; label: string }[]
   active: T
@@ -22,10 +26,11 @@ export function Segmented<T extends string>({
   /** The group's name, for whoever does not see the screen. */
   label: string
   asTabs?: boolean
+  compact?: boolean
 }) {
   return (
     <div
-      className={styles.secs}
+      className={`${styles.secs}${compact ? ` ${styles.compact}` : ''}`}
       role={asTabs ? 'tablist' : 'group'}
       aria-label={label}
     >

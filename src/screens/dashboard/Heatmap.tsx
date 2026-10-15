@@ -11,7 +11,8 @@ import styles from './Heatmap.module.css'
 /*
 The week by hour (deviation 7 in CONVENTIONS.md; the arithmetic and why it takes
 more than one request are in `heatmap.ts`). The words are OURS: the title, the
-weekday names, and each cell's "HH:00 to HH:00: N queries".
+weekday names, each cell's "HH:00 to HH:00: N queries", the hint "Click a cell for
+that hour's Query Logs" and the scale's "Quiet" and "Busy".
 
 It reads on its own clock, not the period's: the same week whatever period the
 figures above show, from the node they read. It is asked once per node and per
@@ -99,7 +100,7 @@ export function Heatmap({
     `${day}, ${clock(cell.from)} to ${clock(cell.to)}: ${num2(cell.count)} ${cell.count === 1 ? 'query' : 'queries'}`
 
   return (
-    <Panel title="Queries per Hour, Last 7 Days" className={styles.panel}>
+    <Panel title="Queries per Hour, Last 7 Days">
       <Body>
         {state.kind === 'loading' && <Loading compact />}
         {state.kind === 'failed' && <Failure>Could not load this data.</Failure>}
@@ -143,11 +144,15 @@ export function Heatmap({
                 </div>
               ))}
             </div>
-            {/* The scale: the shades from none to the busiest hour, with the two counts. */}
-            <div className={styles.scale} aria-hidden="true">
-              <span>0</span>
-              {[0, 1, 2, 3, 4, 5].map((l) => <i key={l} className={`${styles.cell} ${styles[`h${l}`]}`} />)}
-              <span>{num2(max)}</span>
+            {/* Under the grid, what a click does (only when it can) and the scale,
+                from no queries to the busiest hour; each cell says its count. */}
+            <div className={styles.foot}>
+              {jump != null ? <span>Click a cell for that hour&apos;s Query Logs</span> : <span />}
+              <span className={styles.scale} aria-hidden="true">
+                Quiet
+                {[1, 2, 3, 4, 5].map((l) => <i key={l} className={`${styles.cell} ${styles[`h${l}`]}`} />)}
+                Busy
+              </span>
             </div>
           </div>
         )}

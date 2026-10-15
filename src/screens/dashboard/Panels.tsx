@@ -2,18 +2,17 @@ import { useEffect, useState, type ReactNode } from 'react'
 import type { ChartData, TopEntry } from '../../api/dashboard'
 import { Chart } from './Chart'
 import { tokenForLabel } from './palette'
-import { TypeBars } from './TypeBars'
-import { num2, percentage } from './metrics'
+import { num2 } from './metrics'
 import { Body, Panel } from '../../ui/Panel'
 import { Button } from '../../ui/Button'
 import { Empty, Failure } from '../../ui/Empty'
 import styles from './Dashboard.module.css'
 
 /*
-The Dashboard's panels, each one a piece that does not know where it sits: the
-breakdown ring with its legend (`Split`), the breakdown bars (`Bars`), a top list
-(`Top`), the Queries line with its legend (`Line`) and the gap a region draws when it
-has nothing (`Placeholder`). `Dashboard.tsx` only arranges them.
+The Dashboard's panels, each one a piece that does not know where it sits: a top
+list (`Top`), the Queries line with its legend (`Line`) and the gap a region draws
+when it has nothing (`Placeholder`). The three breakdowns are in `Breakdown.tsx`.
+`Dashboard.tsx` only arranges them.
 */
 
 /*
@@ -29,111 +28,6 @@ slipping in through the side door.
 export function hasData(d?: ChartData): d is ChartData {
   if (!d?.datasets?.length) return false
   return d.datasets.some((s) => (s.data ?? []).some((n) => Number(n) > 0))
-}
-
-/*
-A doughnut chart, with its legend outside the canvas.
-
-Its entry is a LABEL and not a series (a doughnut has one dataset and as many
-slices as `labels`), and its figure is the **percentage** of that chart's own
-total. It is what the design draws and what the in-canvas legend could not say:
-there, only the name fitted.
-
-The percentage is worked out here and does not come from the server. It is
-written with the same `percentage()` as the cards **on purpose**: two shapes of
-the same number on one screen is worse than either of them.
-*/
-export function Split({
-  title,
-  data,
-  failure,
-  resetOn = data,
-  onPick,
-  pickable,
-}: {
-  title: string
-  data?: ChartData
-  failure: boolean
-  /** What switches every slice back on: the server's response (see `useHidden`). */
-  resetOn?: unknown
-  /** A slice's jump to Query Logs, by its label (deviation 7). */
-  onPick?: (label: string) => void
-  pickable?: (label: string) => boolean
-}) {
-  const { hidden, toggle } = useHidden(resetOn)
-  /*
-  `data` may NOT arrive, and the first version of this did not allow for it: it
-  worked out the percentages before the `hasData` below and took the whole screen
-  down with a `Cannot read properties of undefined`. The previous code was safe by
-  accident: it asked `hasData(data)` first, and that one does accept `undefined`.
-
-  The suite found it, not a reading: six session tests that have nothing to do
-  with the Dashboard fell over at once, because a component that throws takes down
-  the tree holding it.
-  */
-  const values = (data?.datasets?.[0]?.data ?? []) as number[]
-  const total = values.reduce((a, n) => a + Number(n || 0), 0)
-  const labels = (data?.labels ?? []).map(String)
-  const entries = labels.map((l, i) => ({
-    label: l,
-    count: num2(Number(values[i] ?? 0)),
-    datum: percentage(Number(values[i] ?? 0), total),
-  }))
-
-  return (
-    <Panel title={title} className={styles.panel}>
-      <Body>
-        {hasData(data) ? (
-          /* Ring on the left, legend on the right: the drawing's shape. */
-          <div className={styles.split}>
-            <Chart
-              type="doughnut"
-              data={data}
-              height={128}
-              aria={title}
-              separateLegend
-              hidden={hidden}
-              onPick={onPick != null ? (i) => onPick(labels[i]) : undefined}
-              pickable={pickable != null ? (i) => pickable(labels[i]) : undefined}
-            />
-            <Legend entries={entries} hidden={hidden} onToggle={toggle} table />
-          </div>
-        ) : (
-          <Placeholder failure={failure} empty="No data for this period." />
-        )}
-      </Body>
-    </Panel>
-  )
-}
-
-/*
-Query Types and Protocol Types: the same panel and the same gaps as `Split`, with
-the list of bars in place of the doughnut (`TypeBars.tsx` says why).
-*/
-export function Bars({
-  title,
-  data,
-  failure,
-  colour,
-  jump,
-}: {
-  title: string
-  data?: ChartData
-  failure: boolean
-  colour: string
-  jump?: (label: string) => (() => void) | undefined
-}) {
-  return (
-    <Panel title={title} className={styles.panel}>
-      <Body>
-        {hasData(data) ? (
-          <TypeBars data={data} aria={title} colour={colour} jump={jump} />
-        ) : (
-          <Placeholder failure={failure} empty="No data for this period." />
-        )}
-      </Body>
-    </Panel>
-  )
 }
 
 export function Top({
@@ -172,7 +66,7 @@ export function Top({
   return (
     <Panel
       title={title}
-      className={styles.panel}
+      className={styles.top}
       actions={
         <div className={styles.panelActions}>
           {beforeMore}
@@ -188,30 +82,30 @@ export function Top({
       <Body className={styles.pbAdjusted}>
         <div style={{ ['--bar' as string]: `var(${tone})` }}>
         {rows.length === 0 && <Placeholder failure={failure} empty="No data for this period." />}
-        {visibleRows.map((f, i) => (
-          <div
-            className={`${styles.toprow}${f.rateLimited ? ` ${styles.limited}` : ''}`}
-            key={`${f.name}|${i}`}
-          >
-            <span className={styles.topRank}>{i + 1}</span>
-            <span className={styles.n}>
-              <span className={styles.topLabel}>
-                {f.name}
-                {f.rateLimited ? ' (rate limited)' : ''}
+        {visibleRows.map((f, i) => {
+          /* One line: the name, a client's domain after it in a quieter tone, and
+             the count. A long one ends in an ellipsis and is whole on hover; the
+             row menu's actions carry the whole name too. */
+          const domain = isClient ? (f.domain === '' || f.domain == null ? '.' : f.domain) : null
+          const label = `${f.name}${f.rateLimited ? ' (rate limited)' : ''}`
+          return (
+            <div
+              className={`${styles.toprow}${f.rateLimited ? ` ${styles.limited}` : ''}`}
+              key={`${f.name}|${i}`}
+            >
+              <span className={styles.topRank}>{i + 1}</span>
+              <span className={styles.n} title={domain != null ? `${label} ${domain}` : label}>
+                <span className={styles.topLabel}>{label}</span>
+                {domain != null && <span className={styles.topDomain}>{domain}</span>}
               </span>
-              {isClient && (
-                <span className={styles.topDomain}>
-                  {f.domain === '' || f.domain == null ? '.' : f.domain}
-                </span>
-              )}
+              <span className={styles.c}>{num2(f.hits)}</span>
+              {menu(f)}
               <span className={styles.topBar} aria-hidden="true">
                 <i style={{ width: `${largest > 0 && Number.isFinite(f.hits) ? Math.max(0, f.hits) / largest * 100 : 0}%` }} />
               </span>
-            </span>
-            <span className={styles.c}>{num2(f.hits)}</span>
-            {menu(f)}
-          </div>
-        ))}
+            </div>
+          )
+        })}
         </div>
       </Body>
     </Panel>
@@ -286,9 +180,12 @@ export function Line({
   data,
   resetOn = data,
   onPick,
+  height,
 }: {
   data: ChartData
   resetOn?: unknown
+  /** The canvas height; `Chart`'s own when not given. */
+  height?: number
   /** A point's jump to Query Logs, by its index (deviation 7). */
   onPick?: (index: number) => void
 }) {
@@ -300,7 +197,7 @@ export function Line({
   return (
     <>
       <Legend entries={entries} hidden={hidden} onToggle={toggle} />
-      <Chart type="line" data={data} aria="Queries over time" separateLegend hidden={hidden} onPick={onPick} />
+      <Chart type="line" data={data} height={height} aria="Queries over time" separateLegend hidden={hidden} onPick={onPick} />
     </>
   )
 }
