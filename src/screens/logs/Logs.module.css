@@ -45,12 +45,46 @@ screen and a log line stops fitting anywhere.
   border-bottom: 1px solid var(--line); font-size: var(--t-1); font-weight: 600;
   letter-spacing: 0.09em; text-transform: uppercase; color: var(--mute);
 }
-.fsIn { padding: var(--s-3) var(--s-10) var(--s-9); }
-.frow { display: grid; grid-template-columns: 110px 1fr; gap: var(--s-10); padding: var(--s-8) 0; border-bottom: 1px solid var(--line2); align-items: start; }
-.frow:last-child { border-bottom: 0; }
-.frowLabel { font-size: var(--t-4); color: var(--ink); font-weight: 600; padding-top: var(--s-4); }
-.frowCtl { display: flex; align-items: flex-end; gap: var(--s-8); flex-wrap: wrap; }
-.field { display: flex; flex-direction: column; gap: var(--s-3); }
+/*
+The filters are laid out as GROUPS SIDE BY SIDE, not as one row per group.
+
+They used to be five full-width rows (Source, Mode, Query, Response, Paging), each
+with its name in a 110 px column on the left and its fields in a single line on
+the right. Every row used less than half of its width, and the five stacked made
+the panel so tall that at 1440x980 the results started at y=842, with one row on
+screen: the table, which is what the screen is for, was below the fold.
+
+Now each group carries its name ABOVE its fields and the groups flow side by side,
+wrapping as the width runs out: two bands at 1440 instead of five rows (Source,
+Mode and Paging; then Query and Response), so the table starts at y=629. Nothing
+is collapsed or hidden: the same fifteen controls, the same labels and options.
+Two things moved: `Live Update` went to the screen's header (QueryLogs.tsx says
+why), and Paging now follows Mode in the document, which is also the tab order.
+The grouping is the one decided below (the MODE group keeps its four fields and
+its edge together).
+*/
+.fsIn {
+  display: flex; flex-wrap: wrap; align-items: flex-start;
+  gap: var(--s-9) var(--s-10);
+  padding: var(--s-8) var(--s-10) var(--s-10);
+}
+.group { display: flex; flex-direction: column; gap: var(--s-4); min-width: 0; max-width: 100%; }
+/* Every head is as tall as the `While Live Update` pill that appears in Mode's,
+   so the fields of the groups in one band line up and the pill appearing does
+   not move anything. */
+.groupLabel {
+  display: flex; align-items: center; gap: var(--s-6) var(--s-8); flex-wrap: wrap;
+  min-height: var(--s-11);
+  font-size: var(--t-1); font-weight: 600; letter-spacing: 0.09em;
+  text-transform: uppercase; color: var(--mute);
+}
+.groupCtl { display: flex; align-items: flex-end; gap: var(--s-7); flex-wrap: wrap; }
+.field { display: flex; flex-direction: column; gap: var(--s-3); width: var(--ql-field, auto); }
+/* On a phone each filter takes the whole line instead of its desktop width: the
+   same column for all fifteen, and no field left half as wide as its neighbour. */
+@media (max-width: 560px) {
+  .group, .groupCtl, .field { width: 100%; }
+}
 .field label { font-size: var(--t-2); color: var(--mute); font-weight: 550; }
 .field input, .field select { width: 100%; }
 
@@ -154,10 +188,6 @@ to become a summary of what is in front of you.
    same checkbox. Query Logs uses the primitive now. */
 
 
-@media (max-width: 720px) {
-  .frow { grid-template-columns: minmax(0, 1fr); gap: var(--s-4); }
-  .frowLabel { padding-top: 0; }
-}
 
 /*
 The group a MODE switches off: the edge, once for all four.
@@ -177,5 +207,14 @@ It goes on the GROUP and not on each field because all four switch off together:
 four pills saying the same thing are noise, and the `Settings` rule was already
 one pill per group.
 */
-.byMode { composes: dependent from '../../ui/Form.module.css'; padding-left: var(--s-8); }
-.frowLabel { display: flex; align-items: center; gap: var(--s-6); flex-wrap: wrap; }
+/* The edge needs room to its left, and it takes it from the gap BEFORE the group
+   (the negative margin cancels the padding): a group that grew when the mode
+   switched on would push its neighbours to another band. */
+/* The switch in the header: centred on the buttons beside it. */
+.live { display: inline-flex; align-items: center; padding-left: var(--s-5); }
+
+.byMode {
+  composes: dependent from '../../ui/Form.module.css';
+  padding-left: var(--s-8);
+  margin-left: calc(-1 * var(--s-8));
+}

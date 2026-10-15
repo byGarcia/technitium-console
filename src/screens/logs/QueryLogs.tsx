@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { listApps, type InstalledApp } from '../../api/apps'
 import {
@@ -73,6 +73,12 @@ function Stamp({ text }: { text: string }) {
       <span className={styles.nowrap}>{date}</span> <span className={styles.nowrap}>{time.join(' ')}</span>
     </>
   )
+}
+
+/** A filter's width on a wide screen; on a phone every filter takes the whole
+ *  line (`.field` in Logs.module.css), which an inline `width` would not allow. */
+function fieldWidth(px: number): CSSProperties {
+  return { '--ql-field': `${px}px` } as CSSProperties
 }
 
 interface Filters {
@@ -464,6 +470,20 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
             Export
           </Button>
           <Button onClick={restart}>Reset</Button>
+          {/*
+          "Live Update" is a MODE of the whole screen, not a filter: it governs
+          Query, the four fields of the Mode group and the table at once. So it
+          sits with the screen's actions and is drawn as `ui/Check`'s switch,
+          which this console uses for a state that stays put. Underneath it is
+          the same checkbox with the same label, in upstream's place in the
+          order (after Reset, index.html:3565-3569), and the same handler.
+
+          Not wrapped in `.field`: `dev/uniformity.js` caught that once, when it
+          turned the label into an 11 px grey one.
+          */}
+          <span className={styles.live}>
+            <Check toggle label="Live Update" checked={live} onChange={toggleLive} />
+          </span>
         </>}
       />
 
@@ -472,10 +492,10 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
       <div className={styles.fs}>
         <h3 className={styles.fsTitle}>Filters</h3>
         <div className={styles.fsIn}>
-          <div className={styles.frow}>
-            <div className={styles.frowLabel}>Source</div>
-            <div className={styles.frowCtl}>
-              <div className={styles.field} style={{ width: 220 }}>
+          <div className={styles.group}>
+            <div className={styles.groupLabel}>Source</div>
+            <div className={styles.groupCtl}>
+              <div className={styles.field} style={fieldWidth(195)}>
                 <label htmlFor="ql-appName">App Name</label>
                 <Select
                   id="ql-appName"
@@ -490,7 +510,7 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
                   ))}
                 </Select>
               </div>
-              <div className={styles.field} style={{ width: 220 }}>
+              <div className={styles.field} style={fieldWidth(195)}>
                 <label htmlFor="ql-classPath">Class Path</label>
                 <Select
                   id="ql-classPath"
@@ -509,7 +529,8 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
           </div>
 
           {/*
-          The MODE group: the switch and the FOUR fields it turns off, together.
+          The MODE group: the FOUR fields "Live Update" turns off, together. The
+          switch itself is in the header, with the screen's actions (see there).
 
           They used to be spread about (`From`, `To` and `Order` in "Period", and
           `Page Number` at the end of "Response"), so the off signal jumped from one
@@ -521,9 +542,9 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
           only one the mode does NOT turn off and the only one remembered between
           sessions. Putting it here would say it is turned off, and it is not.
           */}
-          <div className={`${styles.frow}${live ? ` ${styles.byMode}` : ''}`}>
-            <div className={styles.frowLabel}>
-              Mode
+          <div className={`${styles.group}${live ? ` ${styles.byMode}` : ''}`}>
+            <div className={styles.groupLabel}>
+              <span>Mode</span>
               {/*
               The pill carries the OPPOSITE POLARITY to the one in `Settings`.
 
@@ -539,17 +560,8 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
               */}
               {live && <Tag tone="acc">While Live Update</Tag>}
             </div>
-            <div className={styles.frowCtl}>
-              {/*
-              Not wrapped in `.field`, and `dev/uniformity.js` caught this.
-
-              Put inside, `.field label` changed its label to 11 px and grey: the
-              `settings-checkbox` family went from ONE signature to two, and the
-              second existed only on this route. A checkbox **is** its own label;
-              `.field` is for a control that carries a separate label above it.
-              */}
-              <Check label="Live Update" checked={live} onChange={toggleLive} />
-              <div className={styles.field} style={{ width: 200 }}>
+            <div className={styles.groupCtl}>
+              <div className={styles.field} style={fieldWidth(180)}>
                 <label htmlFor="ql-start">From</label>
                 <Input
                   id="ql-start"
@@ -560,7 +572,7 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
                   onChange={(e) => set({ start: e.target.value })}
                 />
               </div>
-              <div className={styles.field} style={{ width: 200 }}>
+              <div className={styles.field} style={fieldWidth(180)}>
                 <label htmlFor="ql-end">To</label>
                 <Input
                   id="ql-end"
@@ -571,7 +583,7 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
                   onChange={(e) => set({ end: e.target.value })}
                 />
               </div>
-              <div className={styles.field} style={{ width: 140 }}>
+              <div className={styles.field} style={fieldWidth(120)}>
                 <label htmlFor="ql-order">Order</label>
                 <Select
                   id="ql-order"
@@ -583,7 +595,7 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
                   <option value="true">Descending</option>
                 </Select>
               </div>
-              <div className={styles.field} style={{ width: 110 }}>
+              <div className={styles.field} style={fieldWidth(90)}>
                 <label htmlFor="ql-pageNumber">Page Number</label>
                 <Input
                   id="ql-pageNumber"
@@ -596,10 +608,35 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
             </div>
           </div>
 
-          <div className={styles.frow}>
-            <div className={styles.frowLabel}>Query</div>
-            <div className={styles.frowCtl}>
-              <div className={styles.field} style={{ width: 260 }}>
+          {/* On its own, and not in "Response", because it is not a search
+              criterion: it is how many rows fit. And it is the only control on
+              this screen that survives a `Reset`: it is re-read from
+              `localStorage`. It follows Mode, next to Order and Page Number,
+              and that is also where it fits: Source, Mode and Paging make the
+              first band at 1440, Query and Response the second. */}
+          <div className={styles.group}>
+            <div className={styles.groupLabel}>Paging</div>
+            <div className={styles.groupCtl}>
+              <div className={styles.field} style={fieldWidth(100)}>
+                <label htmlFor="ql-entriesPerPage">Logs Per Page</label>
+                <Select
+                  id="ql-entriesPerPage"
+                  value={f.entriesPerPage}
+                  onChange={(e) => saveEntriesPerPage(e.target.value)}
+                >
+                  {ENTRIES_PER_PAGE.map((n) => (
+                    <option key={n} value={n}>
+                      {n}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+            </div>
+          </div>
+          <div className={styles.group}>
+            <div className={styles.groupLabel}>Query</div>
+            <div className={styles.groupCtl}>
+              <div className={styles.field} style={fieldWidth(240)}>
                 <label htmlFor="ql-qname">Domain</label>
                 <Input
                   id="ql-qname"
@@ -609,7 +646,7 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
                   onChange={(e) => set({ qname: e.target.value })}
                 />
               </div>
-              <div className={styles.field} style={{ width: 130 }}>
+              <div className={styles.field} style={fieldWidth(110)}>
                 <label htmlFor="ql-qtype">Type</label>
                 <Input
                   id="ql-qtype"
@@ -618,7 +655,7 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
                   onChange={(e) => set({ qtype: e.target.value })}
                 />
               </div>
-              <div className={styles.field} style={{ width: 110 }}>
+              <div className={styles.field} style={fieldWidth(96)}>
                 <label htmlFor="ql-qclass">Class</label>
                 <Select
                   id="ql-qclass"
@@ -632,7 +669,7 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
                   ))}
                 </Select>
               </div>
-              <div className={styles.field} style={{ width: 180 }}>
+              <div className={styles.field} style={fieldWidth(160)}>
                 <label htmlFor="ql-clientIpAddress">Client IP Address</label>
                 <Input
                   id="ql-clientIpAddress"
@@ -644,10 +681,10 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
             </div>
           </div>
 
-          <div className={styles.frow}>
-            <div className={styles.frowLabel}>Response</div>
-            <div className={styles.frowCtl}>
-              <div className={styles.field} style={{ width: 150 }}>
+          <div className={styles.group}>
+            <div className={styles.groupLabel}>Response</div>
+            <div className={styles.groupCtl}>
+              <div className={styles.field} style={fieldWidth(120)}>
                 <label htmlFor="ql-protocol">Protocol</label>
                 <Select
                   id="ql-protocol"
@@ -661,7 +698,7 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
                   ))}
                 </Select>
               </div>
-              <div className={styles.field} style={{ width: 200 }}>
+              <div className={styles.field} style={fieldWidth(190)}>
                 <label htmlFor="ql-responseType">Response Type</label>
                 <Select
                   id="ql-responseType"
@@ -675,7 +712,7 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
                   ))}
                 </Select>
               </div>
-              <div className={styles.field} style={{ width: 160 }}>
+              <div className={styles.field} style={fieldWidth(140)}>
                 <label htmlFor="ql-rcode">RCODE</label>
                 <Select
                   id="ql-rcode"
@@ -692,29 +729,6 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
             </div>
           </div>
 
-          {/* On its own, and not in "Response", because it is not a search
-              criterion: it is how many rows fit. And it is the only control on
-              this screen that survives a `Reset`: it is re-read from
-              `localStorage`. */}
-          <div className={styles.frow}>
-            <div className={styles.frowLabel}>Paging</div>
-            <div className={styles.frowCtl}>
-              <div className={styles.field} style={{ width: 130 }}>
-                <label htmlFor="ql-entriesPerPage">Logs Per Page</label>
-                <Select
-                  id="ql-entriesPerPage"
-                  value={f.entriesPerPage}
-                  onChange={(e) => saveEntriesPerPage(e.target.value)}
-                >
-                  {ENTRIES_PER_PAGE.map((n) => (
-                    <option key={n} value={n}>
-                      {n}
-                    </option>
-                  ))}
-                </Select>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 
