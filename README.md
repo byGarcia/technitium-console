@@ -2,8 +2,9 @@
 
 # technitium-console
 
-**An alternative administration console for [Technitium DNS Server](https://github.com/TechnitiumSoftware/DnsServer).**
-Same API, same behaviour, same texts: the interface rebuilt from scratch.
+**A modern administration console for [Technitium DNS Server](https://github.com/TechnitiumSoftware/DnsServer).**
+Everything the stock console does, with blocking in one place, light and dark themes, and a layout
+that works on your phone.
 
 [![License](https://img.shields.io/github/license/byGarcia/technitium-console)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/byGarcia/technitium-console?include_prereleases)](https://github.com/byGarcia/technitium-console/releases)
@@ -28,6 +29,17 @@ behaves exactly as before; remove it and you are back to the original. Nothing o
 the server side changes: this console talks to it only through its documented
 `/api` endpoints.
 
+- **Every feature of the stock console**: zones, settings, DHCP, apps, logs and administration,
+  through the same 132 API endpoints, with Technitium's own users and permissions.
+- **A Dashboard that answers at a glance**: every figure with its trend and its change against the
+  previous period, a week by hour, and charts that open Query Logs on what you click.
+- **Blocking in one place**: what it is doing, your own rules and your lists, and a check that tells
+  you why a domain is blocked, [below](#blocking-in-one-place).
+- **Light, dark or your system's theme**, measured for contrast in both.
+- **Works on a phone**: no section scrolls sideways at 390 px.
+- **Nothing extra to run**: no backend, no database, no second login. It installs into the server's
+  web folder or a Docker volume, and removing it brings the stock console back.
+
 ## Blocking, in one place
 
 The stock console spreads blocking over three places: Allowed and Blocked are two separate domain
@@ -43,32 +55,18 @@ It is the one part of the console that goes beyond a new look:
 - **Lists** turns your block and allow lists into rows, each with its readable name, an Enabled
   switch and Remove. Add one by URL or with Quick Add, update them all with Update Now, and nothing
   changes until you Save.
+- **Check a domain** and see whether this server blocks it and why: which block lists, which of your
+  rules, or which allow rule lets it through.
+- **Group your lists** under named headings, saved as plain comment lines, so the stock console still
+  reads them.
+- **Undo** a rule you deleted from the Rules table, and see in the sidebar when blocking is off or
+  paused.
 - **Block or allow a domain** from Overview or Rules, or from the menu on any row of Top Domains and
   Top Blocked Domains.
 
 | Rules | Lists |
 |---|---|
 | ![Blocking › Rules](docs/screenshots/blocking-rules.png) | ![Blocking › Lists](docs/screenshots/blocking-lists.png) |
-
-## Design only. Zero functionality.
-
-That is the rule the whole project is built on, and it is worth stating plainly
-because it is unusual:
-
-> Any behavioural difference from the upstream console is a bug, **even when it
-> looks like an improvement**.
-
-Same controls, same steps, same wording, same validation order. If a feature was
-missing before, it is still missing. If a confirmation asked twice, it still asks
-twice. You are changing how the console looks, not what your DNS server does.
-That is the only reason it is safe to put a third-party interface in front of
-infrastructure.
-
-One section is a deliberate exception, and it is written down rather than slipped
-in: **Blocking**, above. It calls only endpoints the server already has, with upstream's actions and wording, and each of its files
-declares the words that are its own; `/allowed/` and `/blocked/` still land. Its
-limits, and the other deliberate deviations, are in
-[CONVENTIONS.md](CONVENTIONS.md#deliberate-deviations-from-upstream-behaviour).
 
 ## What it looks like
 
@@ -79,6 +77,10 @@ limits, and the other deliberate deviations, are in
 | Cache, and the tree in Blocking › Rules | Apps |
 |---|---|
 | ![The domain tree](docs/screenshots/cache.png) | ![Apps](docs/screenshots/apps.png) |
+
+| Query Logs | Login |
+|---|---|
+| ![Query Logs](docs/screenshots/query-logs.png) | ![The login screen](docs/screenshots/login.png) |
 
 ![Blocking › Overview in the light theme](docs/screenshots/blocking-overview-light.png)
 
@@ -101,6 +103,28 @@ fixed one by one.
 
 <br clear="right">
 
+## Safe to put in front of your DNS
+
+**Design only. Zero functionality.** That is the rule the whole project is built on, and it is
+worth stating plainly because it is unusual:
+
+> Any behavioural difference from the upstream console is a bug, **even when it
+> looks like an improvement**.
+
+Same controls, same steps, same wording, same validation order. If a feature was
+missing before, it is still missing. If a confirmation asked twice, it still asks
+twice. You are changing how the console looks, not what your DNS server does.
+That is the only reason it is safe to put a third-party interface in front of
+infrastructure.
+
+A few deliberate exceptions are written down rather than slipped in: **Blocking**,
+above; the **Dashboard's** comparisons with the previous period, its week by hour and
+its jumps to Query Logs; and the **login cover** beside the stock form. They call only
+endpoints the server already has, and each of their files declares the words that are
+its own; `/allowed/` and `/blocked/` still land. Their limits, and the other
+deliberate deviations, are in
+[CONVENTIONS.md](CONVENTIONS.md#deliberate-deviations-from-upstream-behaviour).
+
 ## How thoroughly
 
 | | |
@@ -111,7 +135,7 @@ fixed one by one.
 | API endpoints the stock console calls, and this one calls too | 132 of 132 |
 | Sortable columns kept | 64 of 66, and the two missing are declared |
 | Dialogs, checked one by one | 44 |
-| Tests | 1,647 |
+| Tests | 1,838 |
 
 Every figure in that table comes from a script in `dev/` (`check-endpoints.mjs`,
 `check-parity-sort.mjs`, `dialog-inventory.sh`) and not from this paragraph.
