@@ -39,7 +39,10 @@ before.
          display:-webkit-box; -webkit-line-clamp:2; line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
 .sdescFull { margin: 0 0 var(--s-5); font-size: var(--t-4); line-height:1.55; color:var(--mute); white-space:pre-line; }
 .sdetails { margin: 0 0 var(--s-5); }
-.smeta { composes: annotation from '../../ui/text.module.css'; word-break: break-all; }
+/* The zip URL and the size. Lines end between words: `break-all` split `App Zip
+   File` and the size mid-word to fill each line. Only the URL, one long word, breaks
+   where it reaches the edge. */
+.smeta { composes: annotation from '../../ui/text.module.css'; overflow-wrap: break-word; }
 .smeta b { color:var(--mute); font-family:var(--font-ui); }
 .sacts { display:flex; flex-direction:column; gap: var(--s-3); flex:none; }
 /* The count is `ui/count.module.css`'s: see there for why. */

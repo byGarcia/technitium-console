@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { percentage } from '../dashboard/Dashboard'
 import { REAL, realServer } from '../../test/real-blocking'
 import { Overview } from './Overview'
+import { wholeText } from '../../test/whole-text'
 
 /*
 The Overview fed with what the harness really answered (`test/real-blocking.ts`):
@@ -98,7 +99,7 @@ describe('Overview against the harness', () => {
       const table = within(panel).getByRole('table')
       expect(within(table).getAllByRole('row')).toHaveLength(rows.length + 1)
       for (const r of rows) {
-        const row = within(table).getByText(r.name).closest('tr')!
+        const row = within(table).getByText(wholeText(r.name)).closest('tr')!
         expect(row).toHaveTextContent(r.hits.toLocaleString())
       }
     }

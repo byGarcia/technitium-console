@@ -19,14 +19,16 @@ block colour for blocked, the text green for allowed, neutral for the rest.
 
 .body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--s-2); }
 .title { font-size: var(--t-5); font-weight: 600; }
-.name { font-family: var(--font-mono); color: var(--mute); overflow-wrap: anywhere; }
+/* Names wrap at their dots (`ui/DomainName`) and URLs after their separators
+   (`ui/UrlText`); a piece that alone does not fit still breaks. */
+.name { font-family: var(--font-mono); color: var(--mute); overflow-wrap: break-word; }
 
 .lists { list-style: none; margin: var(--s-3) 0 0; padding: 0; display: flex; flex-direction: column; gap: var(--s-5); }
 .lists > li { display: flex; flex-direction: column; gap: var(--s-1); min-width: 0; }
 .listName { font-weight: 600; }
-.url { font-family: var(--font-mono); font-size: var(--t-2); color: var(--mute); overflow-wrap: anywhere; }
+.url { font-family: var(--font-mono); font-size: var(--t-2); color: var(--mute); overflow-wrap: break-word; }
 
-.fact { margin-top: var(--s-3); overflow-wrap: anywhere; }
+.fact { margin-top: var(--s-3); overflow-wrap: break-word; }
 .label { color: var(--mute); }
 .mono { font-family: var(--font-mono); }
 .why { margin-top: var(--s-3); color: var(--mute); }

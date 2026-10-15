@@ -3,6 +3,7 @@ import type { Range, TopEntry } from '../../api/dashboard'
 import { TopStats } from '../dashboard/TopStats'
 import { Panel } from '../../ui/Panel'
 import { Table } from '../../ui/Table'
+import { DomainName } from '../../ui/DomainName'
 import { Menu } from '../../ui/Menu'
 import { Button } from '../../ui/Button'
 import type { Notice } from '../../lib/notice'
@@ -89,7 +90,7 @@ export function TopTable({
       >
         {rows.map((r) => (
           <tr key={r.name}>
-            <td className={styles.name}>{r.name}</td>
+            <td className={styles.name}><DomainName name={r.name} /></td>
             <td>
               <span className={`${styles.share} ${isBlocked ? styles.shareBlocked : styles.shareTotal}`}>
                 <i style={{ width: `${top === 0 ? 0 : (r.hits * 100) / top}%` }} />

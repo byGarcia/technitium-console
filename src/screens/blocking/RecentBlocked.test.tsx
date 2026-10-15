@@ -4,6 +4,7 @@ import * as apps from '../../api/apps'
 import type { InstalledApp } from '../../api/apps'
 import * as blocking from '../../api/blocking'
 import { RecentBlocked } from './RecentBlocked'
+import { wholeText } from '../../test/whole-text'
 
 afterEach(() => vi.restoreAllMocks())
 
@@ -39,7 +40,7 @@ describe('RecentBlocked', () => {
       }] },
     })
     render(<RecentBlocked token="T" permissions={undefined} node="" aggregate={false} serverDomain="dns.test" />)
-    expect(await screen.findByText('app-measurement.com')).toBeInTheDocument()
+    expect(await screen.findByText(wholeText('app-measurement.com'))).toBeInTheDocument()
     expect(spy).toHaveBeenCalledWith('T', { name: 'Query Logs (Sqlite)', classPath: 'QueryLogsSqlite.App' }, '')
     expect(screen.getByRole('link', { name: 'Open Query Logs' }))
       .toHaveAttribute('href', expect.stringMatching(/logs\/query-logs\/$/))
@@ -101,15 +102,15 @@ describe('RecentBlocked: following the Blocked figure', () => {
       .mockResolvedValueOnce({ kind: 'ok', data: { partial: false, entries: [row(1, 'first.test')] } })
       .mockReturnValueOnce(new Promise((r) => { finish = r }))
     const { rerender } = render(<RecentBlocked {...props} refreshOn={5} />)
-    expect(await screen.findByText('first.test')).toBeInTheDocument()
+    expect(await screen.findByText(wholeText('first.test'))).toBeInTheDocument()
 
     rerender(<RecentBlocked {...props} refreshOn={6} />)
     expect(spy).toHaveBeenCalledTimes(2)
-    expect(screen.getByText('first.test')).toBeInTheDocument()
+    expect(screen.getByText(wholeText('first.test'))).toBeInTheDocument()
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
 
     finish({ kind: 'ok', data: { partial: false, entries: [row(2, 'second.test'), row(1, 'first.test')] } })
-    expect(await screen.findByText('second.test')).toBeInTheDocument()
+    expect(await screen.findByText(wholeText('second.test'))).toBeInTheDocument()
     expect(listApps()).toHaveBeenCalledTimes(1)
   })
 
@@ -121,13 +122,13 @@ describe('RecentBlocked: following the Blocked figure', () => {
       .mockReturnValueOnce(new Promise((r) => { finish = r }))
       .mockResolvedValue({ kind: 'ok', data: { partial: false, entries: [row(3, 'third.test')] } })
     const { rerender } = render(<RecentBlocked {...props} refreshOn={5} />)
-    await screen.findByText('first.test')
+    await screen.findByText(wholeText('first.test'))
     rerender(<RecentBlocked {...props} refreshOn={6} />)
     rerender(<RecentBlocked {...props} refreshOn={7} />)
     rerender(<RecentBlocked {...props} refreshOn={8} />)
     expect(spy).toHaveBeenCalledTimes(2)
     finish({ kind: 'ok', data: { partial: false, entries: [row(2, 'second.test')] } })
-    expect(await screen.findByText('third.test')).toBeInTheDocument()
+    expect(await screen.findByText(wholeText('third.test'))).toBeInTheDocument()
     expect(spy).toHaveBeenCalledTimes(3)
   })
 
@@ -137,10 +138,10 @@ describe('RecentBlocked: following the Blocked figure', () => {
       .mockResolvedValueOnce({ kind: 'ok', data: { partial: false, entries: [row(1, 'first.test')] } })
       .mockResolvedValue({ kind: 'error', message: 'boom' })
     const { rerender } = render(<RecentBlocked {...props} refreshOn={5} />)
-    await screen.findByText('first.test')
+    await screen.findByText(wholeText('first.test'))
     await act(async () => rerender(<RecentBlocked {...props} refreshOn={6} />))
     expect(spy).toHaveBeenCalledTimes(2)
-    expect(screen.getByText('first.test')).toBeInTheDocument()
+    expect(screen.getByText(wholeText('first.test'))).toBeInTheDocument()
     expect(screen.queryByText('boom')).not.toBeInTheDocument()
   })
 
@@ -155,7 +156,7 @@ describe('RecentBlocked: following the Blocked figure', () => {
     expect(spy).toHaveBeenCalledTimes(1)
     rerender(<RecentBlocked {...props} refreshOn={6} />)
     await act(async () => finish({ kind: 'ok', data: { partial: false, entries: [row(1, 'old.test')] } }))
-    expect(await screen.findByText('new.test')).toBeInTheDocument()
+    expect(await screen.findByText(wholeText('new.test'))).toBeInTheDocument()
     expect(spy).toHaveBeenCalledTimes(2)
   })
 
@@ -167,14 +168,14 @@ describe('RecentBlocked: following the Blocked figure', () => {
       .mockReturnValueOnce(new Promise((r) => { finish = r }))
       .mockResolvedValue({ kind: 'ok', data: { partial: false, entries: [row(3, 'new-node.test')] } })
     const { rerender } = render(<RecentBlocked {...props} node="old-node.test" refreshOn={5} />)
-    await screen.findByText('first.test')
+    await screen.findByText(wholeText('first.test'))
     rerender(<RecentBlocked {...props} node="old-node.test" refreshOn={6} />)
     rerender(<RecentBlocked {...props} node="old-node.test" refreshOn={7} />)
     rerender(<RecentBlocked {...props} node="new-node.test" refreshOn={7} />)
-    await screen.findByText('new-node.test')
+    await screen.findByText(wholeText('new-node.test'))
     await act(async () => finish({ kind: 'ok', data: { partial: false, entries: [row(2, 'late.test')] } }))
-    expect(screen.queryByText('late.test')).not.toBeInTheDocument()
-    expect(screen.getByText('new-node.test')).toBeInTheDocument()
+    expect(screen.queryByText(wholeText('late.test'))).not.toBeInTheDocument()
+    expect(screen.getByText(wholeText('new-node.test'))).toBeInTheDocument()
     expect(spy).toHaveBeenCalledTimes(3)
     expect(spy.mock.calls.map((args) => args[2])).toEqual(['old-node.test', 'old-node.test', 'new-node.test'])
   })
@@ -186,14 +187,14 @@ describe('RecentBlocked: following the Blocked figure', () => {
       .mockResolvedValueOnce({ kind: 'ok', data: { partial: false, entries: [row(1, 'first.test')] } })
       .mockReturnValueOnce(new Promise((r) => { finish = r }))
     const { rerender } = render(<RecentBlocked {...props} refreshOn={5} />)
-    await screen.findByText('first.test')
+    await screen.findByText(wholeText('first.test'))
     rerender(<RecentBlocked {...props} refreshOn={6} />)
     rerender(<RecentBlocked {...props} refreshOn={7} />)
     rerender(<RecentBlocked {...props} refreshOn={7} permissions={{ Logs: { canView: false, canModify: false, canDelete: false } }} />)
     await act(async () => finish({ kind: 'ok', data: { partial: false, entries: [row(2, 'late.test')] } }))
     expect(screen.getByText('Requires Logs: View')).toBeInTheDocument()
     expect(spy).toHaveBeenCalledTimes(2)
-    expect(screen.queryByText('late.test')).not.toBeInTheDocument()
+    expect(screen.queryByText(wholeText('late.test'))).not.toBeInTheDocument()
   })
 
   it('does not continue a queued refresh after unmount', async () => {
@@ -203,7 +204,7 @@ describe('RecentBlocked: following the Blocked figure', () => {
       .mockResolvedValueOnce({ kind: 'ok', data: { partial: false, entries: [row(1, 'first.test')] } })
       .mockReturnValueOnce(new Promise((r) => { finish = r }))
     const { rerender, unmount } = render(<RecentBlocked {...props} refreshOn={5} />)
-    await screen.findByText('first.test')
+    await screen.findByText(wholeText('first.test'))
     rerender(<RecentBlocked {...props} refreshOn={6} />)
     rerender(<RecentBlocked {...props} refreshOn={7} />)
     unmount()

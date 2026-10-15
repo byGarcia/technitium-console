@@ -40,10 +40,12 @@ screen and a log line stops fitting anywhere.
 /* ---- Query Logs ---- */
 
 .fs { composes: panel from '../../ui/Panel.module.css'; margin-bottom: var(--s-9); }
+/* The box is a panel, so its title is a panel's (`ui/Panel`, `.title`): one step
+   above the field labels under it, not another row of small capitals. */
 .fsTitle {
-  display: block; width: 100%; padding: var(--s-8) var(--s-10); margin: 0;
-  border-bottom: 1px solid var(--line); font-size: var(--t-1); font-weight: 600;
-  letter-spacing: 0.09em; text-transform: uppercase; color: var(--mute);
+  composes: title from '../../ui/Panel.module.css';
+  display: block; width: 100%; padding: var(--s-8) var(--s-10);
+  border-bottom: 1px solid var(--line);
 }
 /*
 The filters are laid out as GROUPS SIDE BY SIDE, not as one row per group.

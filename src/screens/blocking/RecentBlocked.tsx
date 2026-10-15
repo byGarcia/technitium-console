@@ -6,6 +6,7 @@ import { appsWithQueryLogs } from '../logs/QueryLogs'
 import { RouteLink } from '../../ui/RouteLink'
 import { Panel, Body } from '../../ui/Panel'
 import { Table } from '../../ui/Table'
+import { DomainName } from '../../ui/DomainName'
 import { Chip } from '../../ui/Tag'
 import { Icon } from '../../ui/Icon'
 import { Empty, Loading, Failure } from '../../ui/Empty'
@@ -205,7 +206,7 @@ export function RecentBlocked({
               <tr key={`${e.responseType}:${e.rowNumber}:${e.timestamp}`}>
                 <td className={styles.time}>{dateTime(e.timestamp)}</td>
                 <td className={styles.mono}>{e.clientIpAddress}</td>
-                <td className={styles.name}>{e.qname ?? '.'}</td>
+                <td className={styles.name}><DomainName name={e.qname ?? '.'} /></td>
                 <td>{e.qtype != null && <Chip>{e.qtype}</Chip>}</td>
               </tr>
             ))}

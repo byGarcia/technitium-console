@@ -3,6 +3,7 @@ import { checkForUpdate, type UpdateInfo } from '../api/user'
 import { Dialog } from '../ui/Dialog'
 import { External } from '../ui/External'
 import { Alert } from '../ui/Alert'
+import { DomainName } from '../ui/DomainName'
 import styles from './Versions.module.css'
 import text from '../ui/text.module.css'
 
@@ -60,7 +61,7 @@ export function Versions({ token, serverVersion, domain, markHidden = false }: {
   return (
     <>
       <div className={styles.block}>
-        {domain && <div className={styles.host}>{domain}</div>}
+        {domain && <div className={styles.host}><DomainName name={domain} /></div>}
 
         <div className={styles.row}>
           <span className={styles.name}>DNS Server</span>

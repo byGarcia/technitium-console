@@ -277,3 +277,161 @@ export function headingEdits(a: readonly string[], b: readonly string[]): number
   }
   return prev[b.length]
 }
+
+/*
+WHAT CHANGED, OURS (2026-10-15): the Lists tab's save bar says it in words, so every
+count here is one the bar prints and none is a guess.
+
+A list is told by its URL, so switching one off is one change (`switchedOff`) and not
+a removal plus an addition. Lines whose text is identical match first, by text and
+then by place, the same as the count this replaced. What is left of a URL on each
+side is paired in order: a pair is `switchedOff` or `switchedOn` when only the `#`
+differs, `changed` otherwise (block to allow, or the same line written another way);
+what has no pair is `added` or `removed`.
+
+Headings are aligned as `headingEdits` aligns them, and on a tie an addition and a
+removal are preferred to a rename, so ungrouping one heading and adding another is
+not reported as a rename.
+
+`moved` is how many lists changed place among the lines kept on both sides: the
+smallest number of lists that, taken out and put back, turn the old order into the
+new one. Kept headings stay put in that count (they cannot be moved), so a list that
+crossed a heading counts as moved. Additions and removals move nothing.
+*/
+export interface ListChanges {
+  added: number
+  removed: number
+  switchedOn: number
+  switchedOff: number
+  changed: number
+  moved: number
+  groupsAdded: number
+  groupsRemoved: number
+  groupsRenamed: number
+}
+
+/** The heading alignment: for each heading of `b`, the index in `a` it continues, or -1. */
+function alignHeadings(a: readonly string[], b: readonly string[]) {
+  const d: number[][] = Array.from({ length: a.length + 1 }, (_, i) =>
+    Array.from({ length: b.length + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0)),
+  )
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1))
+    }
+  }
+  const from = Array<number>(b.length).fill(-1)
+  let added = 0
+  let removed = 0
+  let renamed = 0
+  let i = a.length
+  let j = b.length
+  while (i > 0 || j > 0) {
+    if (i > 0 && j > 0 && a[i - 1] === b[j - 1] && d[i][j] === d[i - 1][j - 1]) {
+      from[--j] = --i
+    } else if (i > 0 && d[i][j] === d[i - 1][j] + 1) {
+      removed++
+      i--
+    } else if (j > 0 && d[i][j] === d[i][j - 1] + 1) {
+      added++
+      j--
+    } else {
+      renamed++
+      from[--j] = --i
+    }
+  }
+  return { from, added, removed, renamed }
+}
+
+export function changesOf(saved: readonly ListLine[], lines: readonly ListLine[]): ListChanges {
+  const out: ListChanges = {
+    added: 0, removed: 0, switchedOn: 0, switchedOff: 0, changed: 0, moved: 0,
+    groupsAdded: 0, groupsRemoved: 0, groupsRenamed: 0,
+  }
+
+  /* Every line gets a key, the same on both sides when it is the same line. */
+  const keyBefore: (string | null)[] = saved.map(() => null)
+  const keyAfter: (string | null)[] = lines.map(() => null)
+
+  const byUrl = new Map<string, [number[], number[]]>()
+  saved.forEach((l, i) => {
+    if (l.url != null) (byUrl.get(l.url) ?? byUrl.set(l.url, [[], []]).get(l.url)!)[0].push(i)
+  })
+  lines.forEach((l, i) => {
+    if (l.url != null) (byUrl.get(l.url) ?? byUrl.set(l.url, [[], []]).get(l.url)!)[1].push(i)
+  })
+  for (const [url, [before, after]] of byUrl) {
+    const restBefore: number[] = []
+    const restAfter = [...after]
+    for (const i of before) {
+      const k = restAfter.findIndex((j) => lines[j].raw === saved[i].raw)
+      if (k < 0) {
+        restBefore.push(i)
+        continue
+      }
+      keyBefore[i] = keyAfter[restAfter[k]] = `L:${url}:${i}`
+      restAfter.splice(k, 1)
+    }
+    const pairs = Math.min(restBefore.length, restAfter.length)
+    for (let p = 0; p < pairs; p++) {
+      const was = saved[restBefore[p]]
+      const now = lines[restAfter[p]]
+      keyBefore[restBefore[p]] = keyAfter[restAfter[p]] = `P:${url}:${p}`
+      if (was.kind === now.kind && was.enabled && !now.enabled) out.switchedOff++
+      else if (was.kind === now.kind && !was.enabled && now.enabled) out.switchedOn++
+      else out.changed++
+    }
+    out.removed += restBefore.length - pairs
+    out.added += restAfter.length - pairs
+  }
+
+  const headsBefore = headingIndexes(saved)
+  const headsAfter = headingIndexes(lines)
+  const heads = alignHeadings(
+    headsBefore.map((i) => saved[i].raw),
+    headsAfter.map((i) => lines[i].raw),
+  )
+  out.groupsAdded = heads.added
+  out.groupsRemoved = heads.removed
+  out.groupsRenamed = heads.renamed
+  heads.from.forEach((g, h) => {
+    if (g >= 0) keyBefore[headsBefore[g]] = keyAfter[headsAfter[h]] = `H:${g}`
+  })
+
+  /* The moves: a longest common subsequence of the kept keys, where a heading weighs
+     more than all the lists together, so every kept heading is in it. */
+  const kept = new Set(keyAfter.filter((k): k is string => k != null))
+  const a = keyBefore.filter((k): k is string => k != null && kept.has(k))
+  const b = keyAfter.filter((k): k is string => k != null)
+  const weight = (k: string) => (k.startsWith('H:') ? lines.length + 1 : 1)
+  let prev = Array<number>(b.length + 1).fill(0)
+  for (let i = 1; i <= a.length; i++) {
+    const row = [0]
+    for (let j = 1; j <= b.length; j++) {
+      row[j] = a[i - 1] === b[j - 1] ? prev[j - 1] + weight(a[i - 1]) : Math.max(prev[j], row[j - 1])
+    }
+    prev = row
+  }
+  const keptHeadings = b.filter((k) => k.startsWith('H:')).length
+  const keptLists = b.length - keptHeadings
+  out.moved = keptLists - (prev[b.length] - keptHeadings * (lines.length + 1))
+  return out
+}
+
+/** The changes in words, in the bar's order; empty when there are none. */
+export function changesText(c: ListChanges): string {
+  const parts: string[] = []
+  const put = (n: number, words: string) => {
+    if (n > 0) parts.push(`${n} ${words}`)
+  }
+  put(c.added, 'added')
+  put(c.removed, 'removed')
+  put(c.switchedOn, 'switched on')
+  put(c.switchedOff, 'switched off')
+  put(c.changed, 'changed')
+  put(c.moved, 'moved')
+  put(c.groupsAdded, c.groupsAdded === 1 ? 'group added' : 'groups added')
+  put(c.groupsRenamed, c.groupsRenamed === 1 ? 'group renamed' : 'groups renamed')
+  put(c.groupsRemoved, c.groupsRemoved === 1 ? 'group removed' : 'groups removed')
+  return parts.join(', ')
+}

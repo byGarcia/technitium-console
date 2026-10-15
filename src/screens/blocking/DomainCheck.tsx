@@ -5,6 +5,8 @@ import type { QuickEntry } from '../../lib/quick-lists'
 import { reportedListName, type Missing, type Verdict } from './check-domain'
 import { requiresText } from './permissions'
 import styles from './DomainCheck.module.css'
+import { DomainName } from '../../ui/DomainName'
+import { UrlText } from '../../ui/UrlText'
 
 /*
 The verdict of "Check a domain", drawn under the field it answers (`check-domain.ts`
@@ -88,7 +90,7 @@ export function DomainCheck({ verdict, catalog }: { verdict: Verdict; catalog: r
       </span>
       <div className={styles.body}>
         <div className={styles.title}>{title}</div>
-        <div className={styles.name}>{verdict.name}</div>
+        <div className={styles.name}><DomainName name={verdict.name} /></div>
 
         {verdict.kind === 'lists' && (
           <>
@@ -98,13 +100,13 @@ export function DomainCheck({ verdict, catalog }: { verdict: Verdict; catalog: r
                 return (
                   <li key={url}>
                     {name != null && <span className={styles.listName}>{name}</span>}
-                    <span className={styles.url}>{url}</span>
+                    <span className={styles.url}><UrlText url={url} /></span>
                   </li>
                 )
               })}
             </ul>
             {verdict.domain.toLowerCase() !== verdict.name.toLowerCase() && (
-              <Fact label="Listed as">{verdict.domain}</Fact>
+              <Fact label="Listed as"><DomainName name={verdict.domain} /></Fact>
             )}
             <div className={styles.next}>
               <RouteLink to={{ section: 'blocking', sub: 'Lists' }}>Open Lists</RouteLink>
@@ -114,7 +116,7 @@ export function DomainCheck({ verdict, catalog }: { verdict: Verdict; catalog: r
 
         {(verdict.kind === 'rule' || verdict.kind === 'allowed') && (
           <>
-            <Fact label="Rule">{verdict.domain}</Fact>
+            <Fact label="Rule"><DomainName name={verdict.domain} /></Fact>
             <div className={styles.next}>
               <RouteLink to={{ section: 'blocking', sub: 'Rules' }}>Open Rules</RouteLink>
             </div>

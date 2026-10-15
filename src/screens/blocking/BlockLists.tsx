@@ -16,8 +16,8 @@ import { RouteLink } from '../../ui/RouteLink'
 import { Icon } from '../../ui/Icon'
 import { noticeFromFailure, type Notice } from '../../lib/notice'
 import {
-  addHeading, addListTo, applyQuickTo, canMove, canToggle, fromUrls, headingEdits, headingIndexes, headingName,
-  headingProblem, listName, moveLine, removeHeading, renameHeading, saveBody, sameLines, toggleLine,
+  addHeading, addListTo, applyQuickTo, canMove, canToggle, changesOf, changesText, fromUrls, headingIndexes, headingName,
+  headingProblem, listName, moveLine, removeHeading, renameHeading, saveBody, toggleLine,
   type ListLine,
 } from './list-lines'
 import { Locked } from './Locked'
@@ -25,6 +25,7 @@ import { hostsOf, moreLists } from './extra-lists'
 import { missing, type Permissions } from './permissions'
 import shared from './Blocking.module.css'
 import styles from './BlockLists.module.css'
+import { UrlText } from '../../ui/UrlText'
 
 /*
 The Lists tab: the "Allow / Block List URLs" field of Settings > Blocking drawn as a
@@ -47,9 +48,13 @@ every alert of the update and the save. Everything else is OURS:
   `Unnamed group` for a bare `#`, `Rename`, `Ungroup`, `Add group`, `Group name`,
   `Cancel`, the field `Add to group`, and `headingProblem`'s sentences;
 - the table's foot: `N list(s) · N disabled · N group(s)`;
-- the unsaved-changes bar: `1 unsaved change` / `N unsaved changes` with its
-  suffix `to the block list URLs`, `Discard`, and `Save`, shortened from upstream's
-  "Save Settings" (index.html:2460);
+- the subtitle under the title (`LISTS_SUBTITLE`);
+- the unsaved-changes bar (2026-10-15): `Unsaved changes to the block list URLs:`
+  and what changed, in `changesText`'s words (`N added`, `N removed`, `N switched on`,
+  `N switched off`, `N changed`, `N moved`, `N group(s) added`, `renamed`,
+  `removed`; `list-lines.ts`, WHAT CHANGED), `Discard`, and `Save`, shortened from
+  upstream's "Save Settings" (index.html:2460); and the Lists tab's mark while there
+  are unsaved changes, read as `unsaved changes` (`onDirty`, `Blocking.tsx`);
 - the two `Could not read …` sentences and the link to Settings › Blocking;
 - Quick Add's search (`Search lists`, `No lists match`) and its second catalogue, the
   console's own (`extra-lists.ts`), under `More lists` after Technitium's.
@@ -127,39 +132,8 @@ function sameItems(a: readonly string[], b: readonly string[]): boolean {
   return a.length === b.length && a.every((x) => b.includes(x))
 }
 
-/*
-How many lines the save would change. A list is identified by its URL, so switching
-a list off is ONE change and not the removal of one line plus the addition of
-another. Headings are counted apart, as edits between the two sequences of headings
-(`headingEdits`), so renaming a group is one change too. Lines that only moved
-still count as one change: the order is saved too.
-*/
-function pendingChanges(saved: ListLine[], lines: ListLine[]): number {
-  const byKey = new Map<string, [string[], string[]]>()
-  const put = (l: ListLine, side: 0 | 1) => {
-    if (l.url == null) return
-    const entry = byKey.get(l.url) ?? [[], []]
-    entry[side].push(l.raw)
-    byKey.set(l.url, entry)
-  }
-  saved.forEach((l) => put(l, 0))
-  lines.forEach((l) => put(l, 1))
-  const heads = (all: ListLine[]) => all.filter((l) => l.kind === 'comment').map((l) => l.raw)
-
-  let n = 0
-  for (const [before, after] of byKey.values()) {
-    const rest = [...after]
-    let gone = 0
-    for (const raw of before) {
-      const i = rest.indexOf(raw)
-      if (i < 0) gone++
-      else rest.splice(i, 1)
-    }
-    n += Math.max(gone, rest.length)
-  }
-  n += headingEdits(heads(saved), heads(lines))
-  return n === 0 && !sameLines(saved, lines) ? 1 : n
-}
+/** What the tab is for, under its title. OURS (CONVENTIONS.md, deviation 2). */
+export const LISTS_SUBTITLE = 'The block and allow lists the server downloads. Changes to them wait until you save.'
 
 /** A heading being written: an existing group by its ordinal, or a new one. */
 type Editing = { group: number | 'new'; value: string; problem: string | null }
@@ -224,11 +198,14 @@ export function BlockLists({
   token,
   permissions,
   clusterInitialised = false,
+  onDirty,
 }: {
   tabs?: ReactNode
   token: string | null
   permissions: Permissions
   clusterInitialised?: boolean
+  /** Told whether there are unsaved changes, for the tab's mark; false on leaving. */
+  onDirty?: (dirty: boolean) => void
 }) {
   const node = clusterInitialised ? 'cluster' : ''
   const viewNeed = missing(permissions, 'Settings.canView')
@@ -268,6 +245,14 @@ export function BlockLists({
     )
     target?.focus()
   }, [editing, lines])
+  /* What would be saved, against what the server answered. */
+  const changes = saved == null ? '' : changesText(changesOf(saved, lines))
+  const dirty = changes !== ''
+  useEffect(() => {
+    onDirty?.(dirty)
+  }, [dirty, onDirty])
+  useEffect(() => () => onDirty?.(false), [onDirty])
+
   /** The server is reloading the lists: the counts on screen are not current yet. */
   const [reloading, setReloading] = useState<Reload | null>(null)
   /** The lines as the server last answered them, to tell whether a Save reloads. */
@@ -372,13 +357,12 @@ export function BlockLists({
   if (viewNeed != null) {
     return (
       <>
-        <SectionHeader section="Blocking" title="Lists" tabs={tabs} />
+        <SectionHeader section="Blocking" title="Lists" subtitle={LISTS_SUBTITLE} tabs={tabs} />
         <Locked title="Block Lists" need={viewNeed} />
       </>
     )
   }
 
-  const pending = saved == null ? 0 : pendingChanges(saved, lines)
   const off = modifyNeed != null
   const loading = saved == null
   const heads = headingIndexes(lines)
@@ -571,7 +555,7 @@ export function BlockLists({
         </td>
         <td className={faded}>
           {name != null && <div className={styles.name}>{name}</div>}
-          <div className={styles.url}>{l.url ?? l.raw}</div>
+          <div className={styles.url}><UrlText url={l.url ?? l.raw} /></div>
           {/* The kind under the URL where the Type column is folded away. */}
           <span className={`${styles.kind} ${styles.kindInline} ${KIND_CLASS[l.kind]}`}>
             <Icon name={KIND_ICON[l.kind]} size={14} />
@@ -618,7 +602,7 @@ export function BlockLists({
 
   return (
     <>
-      <SectionHeader section="Blocking" title="Lists" tabs={tabs} />
+      <SectionHeader section="Blocking" title="Lists" subtitle={LISTS_SUBTITLE} tabs={tabs} />
       <Notifier notice={notice} onClose={() => setNotice(null)} />
 
       <div className={shared.stack}>
@@ -818,9 +802,9 @@ export function BlockLists({
           </div>
         </Panel>
 
-        {pending > 0 && (
+        {dirty && (
           <div className={styles.bar}>
-            <span>{pending === 1 ? '1 unsaved change' : `${pending} unsaved changes`} to the block list URLs</span>
+            <span>Unsaved changes to the block list URLs: {changes}</span>
             <span className={styles.spacer} />
             <Button disabled={busy} onClick={() => saved && setLines(saved)}>Discard</Button>
             <PermissionButton variant="primary" disabled={busy} permission={modifyNeed} onClick={() => void save()}>

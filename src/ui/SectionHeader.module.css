@@ -34,6 +34,16 @@ magazine kicker, which is decoration, and this is navigation.
   word-break: break-word;
 }
 
+/* One sentence under the title (Blocking only): body size, muted, and no wider than
+   a notice so it reads as a line and not a paragraph. */
+.subtitle {
+  margin: var(--s-2) 0 0;
+  max-width: var(--notice-max);
+  font-size: var(--t-4);
+  line-height: 1.5;
+  color: var(--mute);
+}
+
 /* When the screen is a detail view, the crumb is also the way back. */
 .ctx {
   font-family: inherit;

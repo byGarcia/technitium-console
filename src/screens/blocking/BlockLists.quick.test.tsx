@@ -59,7 +59,7 @@ describe('Quick Add with the console catalogue', () => {
     const row = within(table).getByText(ADS).closest('tr')!
     expect(row).toHaveTextContent('Example Ads')
     expect(row).toHaveTextContent('Block')
-    expect(screen.getByText('1 unsaved change to the block list URLs')).toBeInTheDocument()
+    expect(screen.getByText('Unsaved changes to the block list URLs: 1 added')).toBeInTheDocument()
   })
 
   it('a saved URL of ours is named in the table', async () => {

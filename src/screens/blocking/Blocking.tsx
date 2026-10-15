@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { SubTabs } from '../../ui/SubTabs'
 import { ruleSearch } from './rules-model'
 import { Overview } from './Overview'
@@ -11,7 +11,9 @@ The Blocking section, OURS: it replaces Allowed and Blocked with three tabs,
 Overview, Rules and Lists. It is the second deliberate exception to
 "design only, zero functionality", inside the four limits written in CONVENTIONS.md.
 The section and tab names (`Blocking`, `Overview`, `Rules`, `Lists`) and the tab
-list's label `Blocking sections` are OURS.
+list's label `Blocking sections` are OURS, and so is the Lists tab's mark while
+Lists has unsaved changes, read as `unsaved changes` (2026-10-15). The mark lives
+as long as the tab's edits do: leaving the tab leaves them, and the mark goes too.
 */
 
 export const BLOCKING_TABS = ['Overview', 'Rules', 'Lists'] as const
@@ -65,15 +67,32 @@ export function Blocking({
   */
   useEffect(() => dropRule, [])
 
+  const [listsDirty, setListsDirty] = useState(false)
+
   const tabs = (
-    <SubTabs label="Blocking sections" section="blocking" tabs={BLOCKING_TABS} active={active} onChoose={onSubChange} />
+    <SubTabs
+      label="Blocking sections"
+      section="blocking"
+      tabs={BLOCKING_TABS}
+      active={active}
+      onChoose={onSubChange}
+      marks={listsDirty ? { Lists: 'unsaved changes' } : undefined}
+    />
   )
 
   if (active === 'Rules') {
     return <Rules tabs={tabs} token={token} permissions={permissions} nodes={nodes} clusterInitialised={clusterInitialised} />
   }
   if (active === 'Lists') {
-    return <BlockLists tabs={tabs} token={token} permissions={permissions} clusterInitialised={clusterInitialised} />
+    return (
+      <BlockLists
+        tabs={tabs}
+        token={token}
+        permissions={permissions}
+        clusterInitialised={clusterInitialised}
+        onDirty={setListsDirty}
+      />
+    )
   }
   return (
     <Overview

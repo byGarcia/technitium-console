@@ -42,7 +42,7 @@ the fallback is a taller row, which is what there was before.
   line-clamp: 2;
   overflow: hidden;
   min-width: 36ch;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .agent:hover,

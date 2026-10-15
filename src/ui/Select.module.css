@@ -70,8 +70,8 @@ over the form and has to read as something in front.
   font-size: var(--t-4);
   color: var(--ink);
   cursor: pointer;
-  /* Only an option wider than the window wraps; the rest fit on one line. */
-  overflow-wrap: anywhere;
+  /* Only an option wider than the window wraps, between words; the rest fit on one line. */
+  overflow-wrap: break-word;
 }
 
 .option[data-active='true'] { background: var(--hover-strong); }

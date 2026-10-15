@@ -31,6 +31,13 @@ exactly the name of the screen.
 
 With no sub-tabs there is no path: the title is the section name, plain.
 
+## A subtitle only where the words are ours
+
+`subtitle` is one plain sentence under the title saying what the screen is for.
+Upstream writes none, and every other section keeps upstream's texts and nothing
+more, so only the Blocking tabs pass one (deviation 2 in CONVENTIONS.md, 2026-10-15),
+declared in the header comment of each file that writes it.
+
 ## Tags are STATE, not counts
 
 `labels` is for state pills (`Primary`, `Enabled`, `DNSSEC`). Counts have their
@@ -43,6 +50,7 @@ export function SectionHeader({
   section,
   onBack,
   title,
+  subtitle,
   labels,
   actions,
   tabs,
@@ -55,6 +63,8 @@ export function SectionHeader({
   onBack?: () => void
   /** The most specific name: the sub-tab if there is one, otherwise the section. */
   title: string
+  /** What the screen is for, in one sentence. Blocking only: see above. */
+  subtitle?: string
   /** STATE pills. Counts go in the count bar. */
   labels?: ReactNode
   /** Action bar, always top right. */
@@ -84,6 +94,7 @@ export function SectionHeader({
           </nav>
         )}
         <h1 className={styles.title}>{title}</h1>
+        {subtitle != null && <p className={styles.subtitle}>{subtitle}</p>}
         {labels != null && <div className={styles.tags}>{labels}</div>}
       </div>
       {actions != null && <div className={styles.acts}>{actions}</div>}

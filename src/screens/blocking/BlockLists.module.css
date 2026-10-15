@@ -66,7 +66,9 @@ target and the input's alignment) and `toggle` for the switch drawing.
 .switch { composes: check toggle from '../../ui/Check.module.css'; }
 
 .name { font-weight: 600; }
-.url { font-family: var(--font-mono); color: var(--mute); overflow-wrap: anywhere; }
+/* The URL wraps after its separators (`ui/UrlText`), not at whatever letter meets the
+   edge: `anywhere` drew `raw.githubuser` / `content.com` at 390 px. */
+.url { font-family: var(--font-mono); color: var(--mute); overflow-wrap: break-word; }
 /* A switched-off list: its name and kind fade, its controls do not. */
 .off { opacity: var(--dim); }
 
@@ -122,7 +124,7 @@ the header's small capitals.
   font-weight: 400;
 }
 .groupHead { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-5); }
-.groupName { font-size: var(--t-5); font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
+.groupName { font-size: var(--t-5); font-weight: 600; color: var(--ink); overflow-wrap: break-word; }
 .groupCount { color: var(--mute); font-size: var(--t-2); }
 
 /* The heading's name being written, in the heading's own row. */

@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Versions } from './Versions'
 import * as userApi from '../api/user'
+import { wholeText } from '../test/whole-text'
 
 afterEach(() => vi.restoreAllMocks())
 
@@ -29,7 +30,7 @@ describe('Versions', () => {
     expect(screen.getByText('DNS Server')).toBeInTheDocument()
     expect(screen.getByText('15.4')).toBeInTheDocument()
     expect(screen.getByText('Web Console')).toBeInTheDocument()
-    expect(screen.getByText('dns.example.net')).toBeInTheDocument()
+    expect(screen.getByText(wholeText('dns.example.net'))).toBeInTheDocument()
   })
 
   /* The session may arrive without info; a missing version is said, not faked. */

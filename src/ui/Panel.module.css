@@ -9,10 +9,9 @@ It was defined SEVEN times (`.panel` in Dashboard, DNS Client, Logs and About;
   · and TWO title typographies for the same object: 12.5 px in sentence case for
     some, 10.5 px in small caps for others
 
-The values are not chosen from scratch: they are the table's
-(`ui/Table.module.css`), which is the most-seen surface in this console. That way
-a panel and a table are the same object (same border, same shadow, same header on
-the raised step) instead of two similar things.
+The box's values are the table's (`ui/Table.module.css`), which is the most-seen
+surface in this console: same border, same shadow, same header on the raised step.
+The TITLE is not the table's any more (see `.title`).
 */
 .panel {
   border: 1px solid var(--line);
@@ -40,24 +39,29 @@ It is `flex` because many of them carry an action on the right ("More",
   background: var(--pan2);
 }
 
-.title {
-  composes: smallCaps from './label.module.css';
-  margin: 0;
-}
-
 /*
-And by descendant, for the screens whose `.ph` COMPOSES this header instead of
-using the component: their `h2` carries no class, so there is nowhere to compose
-onto. The values are the same tokens, which is what stops them drifting apart.
+The title is one step above a table's header row, not the same row twice.
+
+Until 2026-10-15 it composed the small capitals of a table's `thead` (`--t-1`,
+`--mute`, uppercase), on the reasoning that a panel and a table are the same
+object. On screen that read as two identical grey rows stacked: "TOP BLOCKED
+DOMAINS" and right under it "DOMAIN · HITS", with nothing to tell the name of the
+box from the names of its columns. Adrián reversed it on 2026-10-15: the box keeps
+the table's border, shadow and raised header, and its title takes the block-title
+step of the type scale (`--t-5`, "block title" in tokens.css) in `--ink`, as written.
+
+Only the style changed. The words are the ones each screen already passes, upstream's
+where upstream has them; nothing is re-cased in the source, and nothing here is
+`text-transform`, so what is drawn is what the screen reader reads. The small
+capitals stay where they label something smaller than a box: a column, a group of
+fields, a figure.
 */
-.header h2,
-.header h3 {
+.title {
   margin: 0;
-  font-size: var(--text-size);
-  font-weight: var(--text-weight);
-  letter-spacing: var(--text-tracking);
-  text-transform: uppercase;
-  color: var(--mute);
+  font-size: var(--t-5);
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--ink);
 }
 
 .body { padding: var(--s-9); }

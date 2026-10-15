@@ -4,7 +4,8 @@
 .filter { display: inline-flex; gap: var(--s-2); }
 .search { width: 220px; }
 .foot { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-5); padding: var(--s-7) var(--s-9); color: var(--mute); }
-.domain { font-family: var(--font-mono); overflow-wrap: anywhere; }
+/* The name wraps at its dots only (`ui/DomainName`), never inside a label. */
+.domain { font-family: var(--font-mono); }
 .actions { text-align: right; white-space: nowrap; }
 /* The embedded tree, inset from the panel's edges as the bar above it is. */
 .tree { padding: var(--s-9) var(--s-9) 0; }

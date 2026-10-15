@@ -1,4 +1,5 @@
 import { plainClick, toTrail } from '../app/route'
+import text from './text.module.css'
 import styles from './SubTabs.module.css'
 
 /*
@@ -28,6 +29,12 @@ navigate to), and announcing a `tab` would promise arrow-key navigation that the
 do not have. It is the same distinction `SectionIndex` documents, one step over:
 there `location`, because the sections stay on the page; here `page`, because
 each one is a different screen.
+
+## A mark on a tab
+
+`marks` puts a small dot after a tab's name, with its words read as part of the
+link's name (`Lists, unsaved changes`). Only Blocking uses it, for Lists' unsaved
+changes; the words are the caller's and the caller declares them.
 */
 export function SubTabs({
   label,
@@ -35,6 +42,7 @@ export function SubTabs({
   tabs,
   active,
   onChoose,
+  marks,
 }: {
   /** The accessible name of the navigation: "Settings sections". */
   label: string
@@ -43,6 +51,8 @@ export function SubTabs({
   tabs: readonly string[]
   active: string
   onChoose: (tab: string) => void
+  /** A tab's mark: the words a screen reader hears after its name. */
+  marks?: Partial<Record<string, string>>
 }) {
   return (
     <nav className={styles.bar} aria-label={label}>
@@ -59,6 +69,12 @@ export function SubTabs({
           }}
         >
           {t}
+          {marks?.[t] != null && (
+            <>
+              <span className={text.sr}>, {marks[t]}</span>
+              <span className={styles.mark} aria-hidden="true" />
+            </>
+          )}
         </a>
       ))}
     </nav>

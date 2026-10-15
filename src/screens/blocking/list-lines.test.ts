@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  addHeading, addList, addListTo, applyQuick, applyQuickTo, canMove, canToggle, fromUrls, groupOf,
+  addHeading, addList, addListTo, applyQuick, applyQuickTo, canMove, canToggle, changesOf, changesText, fromUrls, groupOf,
   HEADING_MAX, headingEdits, headingIndexes, headingName, headingProblem, listName, moveLine, parseLine,
   removeHeading, renameHeading, saveBody, sameLines, toggleLine,
 } from './list-lines'
@@ -245,5 +245,83 @@ describe('groups', () => {
     expect(headingEdits(['# A', '# B'], ['# A', '# C'])).toBe(1)
     expect(headingEdits(['# A', '# B'], ['# B'])).toBe(1)
     expect(headingEdits([], ['# A', '# B'])).toBe(2)
+  })
+})
+
+describe('changesOf, the save bar in words', () => {
+  const A = 'https://a.test/a.txt'
+  const B = 'https://b.test/b.txt'
+  const C = 'file:///etc/dns/c.txt'
+  const text = (before: string[], after: ReturnType<typeof fromUrls>) => changesText(changesOf(fromUrls(before), after))
+
+  it('says nothing when nothing changed', () => {
+    expect(text([A, '# G', B], fromUrls([A, '# G', B]))).toBe('')
+  })
+
+  it('names an addition, a removal, a switch off and a move, once each', () => {
+    // The screen's own sequence: add C, remove the allow list, switch A off, move B up.
+    let lines = fromUrls([A, '# G', B, `!${C}`])
+    lines = addListTo(lines, 'https://d.test/d.txt', 'block', -1)
+    lines = lines.filter((l) => l.raw !== `!${C}`)
+    lines = lines.map((l) => (l.url === A ? toggleLine(l) : l))
+    lines = moveLine(lines, lines.findIndex((l) => l.url === B), -1)
+    expect(text([A, '# G', B, `!${C}`], lines)).toBe('1 added, 1 removed, 1 switched off, 1 moved')
+  })
+
+  it('a switch back on, and a list that became the other kind', () => {
+    expect(text([`#${A}`, B], fromUrls([A, `!${B}`]))).toBe('1 switched on, 1 changed')
+  })
+
+  it('a list moved across a heading is moved; one moved three places is one move', () => {
+    expect(text(['# G', A], fromUrls([A, '# G']))).toBe('1 moved')
+    expect(text([A, B, C, 'https://d.test/'], fromUrls([B, C, 'https://d.test/', A]))).toBe('1 moved')
+  })
+
+  it('adding or removing a list moves nothing', () => {
+    expect(text([A, B, C], fromUrls([A, C]))).toBe('1 removed')
+    expect(text([A, C], addListTo(fromUrls([A, '# G', C]), B, 'block', -1).filter((l) => l.kind !== 'comment'))).toBe('1 added')
+  })
+
+  it('groups: a rename is a rename; ungrouping one and adding another is not', () => {
+    expect(text(['# Ads', A], fromUrls(['# Adverts', A]))).toBe('1 group renamed')
+    expect(text(['# One', A, '# Two', B], fromUrls([A, '# Two', B, '# Three']))).toBe('1 group added, 1 group removed')
+    expect(text(['# One', A], fromUrls([A]))).toBe('1 group removed')
+    expect(text([A, B], fromUrls([A, B, '# X', '# Y']))).toBe('2 groups added')
+  })
+
+  it('reports something exactly when the lines differ, over random edits', () => {
+    let seed = 7
+    const rand = (n: number) => {
+      seed = (seed * 1103515245 + 12345) % 2147483648
+      return seed % n
+    }
+    const urls = [A, B, C, 'https://d.test/', 'https://e.test/']
+    for (let round = 0; round < 400; round++) {
+      const saved = fromUrls(['# G1', A, B, '# G2', C, `#${'https://d.test/'}`])
+      let lines = saved
+      for (let step = 0; step < 1 + rand(5); step++) {
+        // Every other round only moves: an order change alone must be reported too.
+        const op = round % 2 === 0 ? 3 : rand(6)
+        const lists = lines.map((l, i) => [l, i] as const).filter(([l]) => l.kind !== 'comment')
+        if (op === 0) lines = addListTo(lines, urls[rand(urls.length)], rand(2) === 0 ? 'block' : 'allow', rand(3) - 1)
+        else if (op === 1 && lists.length > 0) {
+          const [, i] = lists[rand(lists.length)]
+          lines = lines.filter((_, j) => j !== i)
+        } else if (op === 2 && lists.length > 0) {
+          const [, i] = lists[rand(lists.length)]
+          lines = lines.map((l, j) => (j === i ? toggleLine(l) : l))
+        } else if (op === 3 && lists.length > 0) {
+          const [, i] = lists[rand(lists.length)]
+          lines = moveLine(lines, i, rand(2) === 0 ? -1 : 1)
+        } else if (op === 4) lines = addHeading(lines, `H${rand(3)}`)
+        else {
+          const heads = headingIndexes(lines)
+          if (heads.length > 0) lines = rand(2) === 0
+            ? removeHeading(lines, heads[rand(heads.length)])
+            : renameHeading(lines, heads[rand(heads.length)], `R${rand(3)}`)
+        }
+      }
+      expect(changesText(changesOf(saved, lines)) !== '').toBe(!sameLines(saved, lines))
+    }
   })
 })

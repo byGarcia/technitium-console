@@ -53,7 +53,10 @@ it goes FIRST so the strip lands above what it indexes and not under it.
 .permCols { display:grid; grid-template-columns:1fr 1fr; }
 .permCol { padding: var(--s-7) var(--s-9); min-width:0; }
 .permCol + .permCol { border-left:1px solid var(--line); }
-.who { color:var(--ink); font-family:var(--font-mono); font-size: var(--t-4); word-break:break-all; }
+/* A user or group name. It wraps between words, and a single word breaks only when it
+   still does not fit once the column has its room: `break-all` cut every name letter
+   by letter at the column's edge. */
+.who { color:var(--ink); font-family:var(--font-mono); font-size: var(--t-4); overflow-wrap: break-word; }
 
 /* The matrix's EDITABLE checkbox: 18 px tall, and until now not enlarged. The
    read-only one is `ui/Matrix`'s, is disabled and is no target for anything. */

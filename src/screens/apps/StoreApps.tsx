@@ -11,6 +11,7 @@ import { Tag } from '../../ui/Tag'
 import styles from './Apps.module.css'
 import { Notifier } from '../../ui/Notifier'
 import { Confirm } from '../../ui/Confirm'
+import { UrlText } from '../../ui/UrlText'
 
 /*
 A replica of `modalStoreApps` (index.html:6148-6183) and of the three actions
@@ -200,7 +201,7 @@ export function StoreApps({
                       <p className={styles.sdescFull}>{app.description}</p>
                       <div className={styles.smeta}>
                         <div>
-                          <b>App Zip File</b>: {app.url}
+                          <b>App Zip File</b>: <UrlText url={app.url} />
                         </div>
                         <div>
                           <b>Size</b>: {app.size}

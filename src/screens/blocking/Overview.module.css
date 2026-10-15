@@ -9,7 +9,8 @@
 .statusSub { color: var(--mute); margin-top: var(--s-1); }
 
 /* Top tables: name, a bar for the share, the hits, the row menu. */
-.name { font-family: var(--font-mono); overflow-wrap: anywhere; }
+/* The name wraps at its dots only (`ui/DomainName`), never inside a label. */
+.name { font-family: var(--font-mono); }
 .hits { font-family: var(--font-mono); text-align: right; white-space: nowrap; }
 /* The header over the hits sits where the figures end, not where they would begin.
    Written to outweigh `.table thead th` of ui/Table, which sets every header left. */
@@ -26,7 +27,8 @@ thead > tr > th.hitsHead { text-align: right; }
   .time { white-space: normal; }
 }
 .mono { font-family: var(--font-mono); }
-.where { color: var(--mute); font-weight: 400; text-transform: none; letter-spacing: 0; }
+/* The node after Recently Blocked's title: part of the title, quieter than it. */
+.where { color: var(--mute); font-weight: 400; }
 /*
 Muted, not `--warn`: on this screen the paused mark is `--acc`, and tokens.css
 measures the two ambers as indistinguishable. The sentence and its icon say it.

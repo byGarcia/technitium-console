@@ -33,11 +33,14 @@ data, so choosing a node here and seeing another there would be a contradiction.
 The five fixed periods and not Custom: a range of your own is the Dashboard's job.
 
 The words are OURS except `Total Queries` and `Blocked`, upstream's Dashboard tiles:
-the title `Overview`, `Period`, `Block List Domains`, `Your Rules` and its `blocked` and
+the title `Overview` and its subtitle (`OVERVIEW_SUBTITLE`), `Period`, `Block List Domains`, `Your Rules` and its `blocked` and
 `allowed`, the `of total` after Blocked's share, the panel titles (`Statistics`, `Queries over time`, `Blocked share`), the
 `Allowed` series, the ring's `Share` and `Blocked share: N%`, and the chart's label.
 The two gap sentences are the ones this console's Dashboard already uses.
 */
+
+/** What the tab is for, under its title. OURS (CONVENTIONS.md, deviation 2). */
+export const OVERVIEW_SUBTITLE = 'How much is blocked and which domains, over the period you pick, and whether blocking is on.'
 
 type Period = Exclude<Range, 'Custom'>
 
@@ -329,6 +332,7 @@ export function Overview({
       <SectionHeader
         section="Blocking"
         title="Overview"
+        subtitle={OVERVIEW_SUBTITLE}
         tabs={tabs}
         actions={
           <Segmented
