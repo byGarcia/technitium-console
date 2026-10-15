@@ -8,6 +8,10 @@ with the seven series tokens, the chip separates (0 of 21 pairs below the
 threshold) and **the row does not** (5 of 21). Measuring one surface and deciding
 about the other is the mistake this file prevents.
 
+Since 2026-10-15 that background is no longer the whole row: it is the pill
+around the Response Type (`.tone` in screens/logs/Logs.module.css), at the same
+30 % over the same panel, so the three checks below measure it unchanged.
+
 The three checks, and all three have to pass at once:
 
   · ΔE00 between pairs as a BACKGROUND, at the real opacity, over the panel.

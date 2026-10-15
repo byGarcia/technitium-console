@@ -451,6 +451,49 @@ describe('Logs › Query Logs: the table', () => {
     expect(stamp.textContent).toBe(`${pieces[0]} ${pieces[1]}`)
   })
 
+  /* The cells are cut to one line by CSS; the value itself is never shortened. */
+  it('Domain, Answer and the client address carry their whole value, in the text and in the title', async () => {
+    const user = userEvent.setup()
+    withApps([APP])
+    const qname = 'rr1---sn-a5mekn7z.googlevideo.com'
+    const answer = 'CNAME login.mso.msidentity.com., AAAA 2603:1026:3000:108::7, AAAA 2603:1027:1:108::a'
+    const client = '2001:db8:85a3:0000:0000:8a2e:0370:7334'
+    vi.spyOn(api, 'queryLogs').mockResolvedValue({
+      kind: 'ok',
+      data: { response: page({ entries: [{ ...ENTRY, qname, answer, clientIpAddress: client }] }) },
+    } as never)
+    render(<Logs token="t" sub="Query Logs" />)
+    await screen.findByLabelText('App Name')
+    await user.click(screen.getByRole('button', { name: 'Query' }))
+
+    for (const value of [qname, answer, client]) {
+      const cell = await screen.findByText(value)
+      expect(cell).toHaveAttribute('title', value)
+    }
+  })
+
+  /* The colour moved from the row to a pill around the response type; the row
+     itself is neutral, and the legend draws the same pill. */
+  it('the row colour is painted on the Response Type pill, and the legend uses the same pills', async () => {
+    const user = userEvent.setup()
+    withApps([APP])
+    vi.spyOn(api, 'queryLogs').mockResolvedValue({
+      kind: 'ok',
+      data: { response: page({ entries: [{ ...ENTRY, rcode: 'NxDomain', responseType: 'Blocked' }] }) },
+    } as never)
+    render(<Logs token="t" sub="Query Logs" />)
+    await screen.findByLabelText('App Name')
+    await user.click(screen.getByRole('button', { name: 'Query' }))
+
+    const pill = (await screen.findAllByText('Blocked')).find((e) => e.closest('td') != null)!
+    const cls = rowClass({ ...ENTRY, rcode: 'NxDomain', responseType: 'Blocked' })
+    expect(pill.closest('tr')).toHaveClass(cls)
+    const legend = LEGEND_ROWS.find((e) => e.name === 'Blocked')!
+    const legendPill = screen.getAllByText('Blocked').find((e) => e.closest('td') == null)!
+    expect(legendPill).toHaveClass(legend.cls)
+    expect(legendPill.className.replace(legend.cls, '').trim()).toBe(pill.className)
+  })
+
   it('a response with no data leaves the counter at \"0 logs\"', async () => {
     const user = userEvent.setup()
     withApps([APP])
