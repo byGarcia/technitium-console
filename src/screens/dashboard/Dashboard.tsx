@@ -289,7 +289,7 @@ what the stock `onClick` did and what has to be kept. Here it is a
 `<button>` with `aria-pressed`, so it is also reachable by keyboard and announced;
 inside the canvas it was neither.
 */
-function Legend({
+export function Legend({
   entries,
   hidden,
   onToggle,
@@ -370,7 +370,7 @@ every reload, as upstream's rebuilt chart does. NOT on the live figures laid ove
 it every 2 seconds (`live.ts`): those would bring a switched-off series back before
 the eye found it gone.
 */
-function useHidden(resetOn: unknown) {
+export function useHidden(resetOn: unknown) {
   const [hidden, setHidden] = useState<ReadonlySet<string>>(() => new Set())
   useEffect(() => setHidden(new Set()), [resetOn])
   const toggle = (label: string) =>

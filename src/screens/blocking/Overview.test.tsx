@@ -20,12 +20,17 @@ function rulePairs() {
 const drawn = vi.hoisted(() => new Map<string, unknown[]>())
 
 const legends = vi.hoisted(() => new Map<string, unknown>())
+/* What each chart was told to hide, and whether it was told not to draw its own legend. */
+const hiddenOf = vi.hoisted(() => new Map<string, { hidden?: ReadonlySet<string>; separate?: boolean }>())
 
 vi.mock('../dashboard/Chart', () => ({
-  Chart: ({ aria, data, legendOrder }: { aria: string; data: unknown; legendOrder?: readonly string[] }) => {
+  Chart: ({ aria, data, legendOrder, hidden, separateLegend }: {
+    aria: string; data: unknown; legendOrder?: readonly string[]; hidden?: ReadonlySet<string>; separateLegend?: boolean
+  }) => {
     const key = aria.startsWith('Blocked share') ? 'ring' : 'bars'
     drawn.set(key, [...(drawn.get(key) ?? []), data])
     legends.set(key, legendOrder)
+    hiddenOf.set(key, { hidden, separate: separateLegend })
     return <div role="img" aria-label={aria} />
   },
 }))
@@ -86,6 +91,21 @@ describe('Overview', () => {
     render(<Overview token="T" permissions={undefined} />)
     await screen.findByRole('img', { name: 'Allowed and blocked queries over time' })
     expect(legends.get('bars')).toEqual(['Allowed', 'Blocked'])
+  })
+
+  it('the bars carry the Dashboard legend: each series with its total, and a click switches it off', async () => {
+    serve()
+    render(<Overview token="T" permissions={undefined} />)
+    await screen.findByRole('img', { name: 'Allowed and blocked queries over time' })
+    expect(hiddenOf.get('bars')?.separate).toBe(true)
+    /* MAIN: Total 10 + 30, Blocked 4 + 6, so 30 got through. In BAR_LEGEND's order. */
+    const allowed = screen.getByRole('button', { name: 'Allowed 30' })
+    const blocked = screen.getByRole('button', { name: 'Blocked 10' })
+    expect(allowed.compareDocumentPosition(blocked) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(allowed).toHaveAttribute('aria-pressed', 'true')
+    await userEvent.click(blocked)
+    expect(blocked).toHaveAttribute('aria-pressed', 'false')
+    expect([...(hiddenOf.get('bars')?.hidden ?? [])]).toEqual(['Blocked'])
   })
 
   it('draws the four figures, Blocked with its share', async () => {

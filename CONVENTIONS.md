@@ -408,6 +408,22 @@ Write down here whatever you find. What is already known:
 - **The same action can be worded differently per table.** Opening a user is
   "View User Details" in the Sessions row menu (auth.js:938) and "View Details" in
   the Users one (auth.js:1191).
+- **A blocked answer says why, but only in one setting and never for "allowed".**
+  With `allowTxtBlockingReport` on (the default), a blocked query carries an
+  Extended DNS Error with `InfoCode: "Blocked"` and `ExtraText`
+  `source=blocked-zone; domain=<rule>` (DnsServer.cs:4672) or
+  `source=block-list-zone; blockListUrl=<url>; domain=<entry>`
+  (BlockListZoneManager.cs:893), one option per list that carries the name, the
+  same for every blocking type; `dnsClient/resolve` returns it in
+  `result.EDNS.Options` and again in the OPT record of `Additional`. `domain` is
+  the entry that matched, a PARENT of the name asked when a rule or a list covers a
+  whole zone. With the setting off the answer carries nothing. Nothing marks an
+  answer as allowed by an allow rule, and an unrelated `Synthesized` option ("Result
+  from negative cache") can sit in the same list. The client library adds its own
+  `DnsClientExtendedErrors` (`BlockedByUpstreamDnsServer`), which names no reason.
+  A name the server refuses (`not a domain`) is an `error` envelope with no
+  `response` at all. Checked live against v15.6.1 on 2026-10-15
+  (`screens/blocking/check-domain.real.json`).
 
 ## How the code is written
 
@@ -496,7 +512,29 @@ contract and SECURITY.md.
    in the CHANGELOG, v1.2.0). It replaces Allowed and Blocked
    with Overview, Rules and Lists. Its Quick Add also offers the console's own
    catalogue (`extra-lists.json`) after Technitium's, and a search field.
-   It is the only one that *adds* a screen. It stays inside four limits, and a
+   Its Overview's "Check, block or allow a domain" panel also has **Check**
+   (`check-domain.ts`, `DomainCheck.tsx`): it tells whether this server blocks a
+   name and why (which block lists, with the name the Lists tab gives each; which
+   of your blocked rules; which of your allow rules lets it through; or not
+   blocked). It asks what DNS Client asks, `dnsClient/resolve` against
+   `this-server` (type A, UDP, no DNSSEC validation, no import), and reads the
+   server's own blocking report from the answer; beside it, `settings/get` and
+   `allowed/export`, each skipped when its permission is missing. It sends no
+   `node`, as the Block and Allow beside it. Its query is a real one, counted and
+   logged by the server like any DNS Client query. When the answer cannot prove
+   the verdict it says so instead of guessing: "Cannot tell" when `Allow TXT
+   Blocking Report` is off or when the `Blocking Bypass List` covers the server's
+   own address, and a "Not blocked" lists the reads it did not have. Its words,
+   all OURS: `Check`, the `Check, ` of the panel title, `Please enter a domain name
+   to check.`, the verdict titles (`Blocked by a block list`, `Blocked by N block
+   lists`, `Blocked by your rule`, `Blocked`, `Allowed by your rule`, `Not
+   blocked`, `Not blocked: blocking is disabled`, `Not blocked: blocking is
+   paused`, `Cannot tell`), `Listed as`, `Rule`, `Open Lists`, `Open Rules`, the
+   two "Cannot tell" sentences and the four "not checked" / "Could not read"
+   lines. Its next step is the panel's own `Block` and `Allow` and the tab that
+   holds the rule or the list: it adds no action.
+
+   The section is the only one that *adds* a screen. It stays inside four limits, and a
    change that crosses one is a bug:
    - **only endpoints the server already has**, and only ones upstream's console
      already calls, save `dashboard/metrics/json` for its live Last Hour

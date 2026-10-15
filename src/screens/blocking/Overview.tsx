@@ -3,7 +3,7 @@ import {
   getDashboardStats, RANGES, RANGE_LABEL,
   type ChartData, type DashboardStats, type Range,
 } from '../../api/dashboard'
-import { percentage, hasData } from '../dashboard/Dashboard'
+import { percentage, hasData, Legend, useHidden } from '../dashboard/Dashboard'
 import { Chart } from '../dashboard/Chart'
 import { InChrome } from '../../app/ChromeSlot'
 import { ClusterNodeSelect, AGGREGATE, type ClusterNode } from '../../ui/ClusterNodeSelect'
@@ -66,6 +66,38 @@ export function blockingChart(main: ChartData): ChartData {
 }
 
 const BAR_LEGEND = ['Allowed', 'Blocked'] as const
+
+/*
+The bars with the Dashboard's own legend (`Legend`, `useHidden`): in HTML above the
+canvas, each series with its total for the period, a click switching it off and a
+switched-off one dimmed. Chart.js's stock legend, centred inside the canvas, said the
+same two names without their figures, so the same kind of chart read two ways on two
+screens. Design only: the series, their names and their order are the ones the
+stock legend showed (`BAR_LEGEND`), and switching one off still hides it.
+
+The switches reset with each answer of the server (`resetOn`), as the Dashboard's
+do, and not with the live figures laid over it every 2 seconds.
+*/
+function Bars({ chart, resetOn }: { chart: ChartData; resetOn: unknown }) {
+  const { hidden, toggle } = useHidden(resetOn)
+  const entries = BAR_LEGEND.map((label) => ({
+    label,
+    datum: series(chart, label).reduce((a, n) => a + (Number.isFinite(n) ? n : 0), 0).toLocaleString(),
+  }))
+  return (
+    <>
+      <Legend entries={entries} hidden={hidden} onToggle={toggle} />
+      <Chart
+        type="bar"
+        data={chart}
+        legendOrder={BAR_LEGEND}
+        separateLegend
+        hidden={hidden}
+        aria="Allowed and blocked queries over time"
+      />
+    </>
+  )
+}
 
 /* A figure's trend, beside it: decorative, so hidden from assistive technology (the
    figure says the number). */
@@ -335,7 +367,7 @@ export function Overview({
           </div>
         )}
 
-        <div className={shared.row2}>
+        <div className={`${shared.row2} ${styles.checkRow}`}>
           <StatusPanel token={token} permissions={permissions} onNotice={setNotice} />
           <AddDomainBar
             token={token}
@@ -358,7 +390,7 @@ export function Overview({
             <Panel title="Queries over time">
               <Body>
                 {chart && hasData(chart) ? (
-                  <Chart type="bar" data={chart} legendOrder={BAR_LEGEND} aria="Allowed and blocked queries over time" />
+                  <Bars chart={chart} resetOn={data} />
                 ) : (
                   <Gap failure={failure} loading={loading} />
                 )}
