@@ -386,8 +386,8 @@ a label that is not in this list is a stray even inside the section.
 */
 const BLOCKING = join(SOURCE, 'screens/blocking/')
 const BLOCKING_OWN_LABELS = new Map([
-  ['Block List Domains', 'Overview figure, blocking/Overview.tsx:329; declared ours at Overview.tsx:35'],
-  ['Your Rules', 'Overview figure, blocking/Overview.tsx:333; declared ours at Overview.tsx:35'],
+  ['Block List Domains', 'Overview figure, blocking/Overview.tsx:361; declared ours at Overview.tsx:35'],
+  ['Your Rules', 'Overview figure, blocking/Overview.tsx:365; declared ours at Overview.tsx:35'],
   ['Tree', "the Tree view's Blocked/Allowed selector, blocking/Rules.tsx:329; declared ours at Rules.tsx:37-38"],
   ['More lists', "Quick Add's group of the console's own catalogue, blocking/BlockLists.tsx:508; declared ours at BlockLists.tsx:48-49"],
   ['Listed as', 'Check a domain, the list entry that matched, blocking/DomainCheck.tsx:107; declared ours at DomainCheck.tsx:15'],
