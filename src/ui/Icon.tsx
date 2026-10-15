@@ -30,6 +30,7 @@ export type IconName =
   | 'chevronDown' | 'chevronRight' | 'chevronLeft'
   | 'first' | 'last' | 'close' | 'menu' | 'plus' | 'sort' | 'back' | 'check'
   | 'edit' | 'power' | 'card' | 'convert' | 'warning' | 'lock'
+  | 'moveUp' | 'moveDown'
 
 const PATHS: Record<IconName, ReactElement> = {
   // ── Sections ───────────────────────────────────────────────────────────
@@ -245,6 +246,19 @@ Same closed body and same arc as the rest: a grid of 24 and a stroke of
     <>
       <path d="M19 12H5" />
       <path d="m11 6-6 6 6 6" />
+    </>
+  ),
+  /* One line up or down: the row's move buttons in Blocking › Lists. */
+  moveUp: (
+    <>
+      <path d="M12 19V5" />
+      <path d="m6 11 6-6 6 6" />
+    </>
+  ),
+  moveDown: (
+    <>
+      <path d="M12 5v14" />
+      <path d="m6 13 6 6 6-6" />
     </>
   ),
 }

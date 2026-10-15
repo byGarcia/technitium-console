@@ -36,8 +36,10 @@ describe('BlockLists', () => {
     draw()
     const table = await screen.findByRole('table')
     expect(within(table).getByText('Steven Black [adware + malware]')).toBeInTheDocument()
-    expect(within(table).getByText('Allow')).toBeInTheDocument()
-    expect(within(table).getByText('Comment')).toBeInTheDocument()
+    expect(within(table).getAllByText('Allow')).not.toHaveLength(0)
+    // The comment is a group heading, of nothing yet; the two lists above it have no group.
+    expect(within(table).getByRole('columnheader', { name: /^my lists/ })).toHaveTextContent('0 lists')
+    expect(within(table).getByRole('columnheader', { name: /^No group/ })).toHaveTextContent('2 lists')
   })
 
   it('a comment and an enabled line that is not a list URL get no switch', async () => {
@@ -148,7 +150,7 @@ describe('BlockLists', () => {
     draw()
     await userEvent.type(await screen.findByLabelText('List URL'), 'https://a.test/allow.txt')
     await userEvent.click(screen.getByRole('button', { name: 'Add allow list' }))
-    expect(within(screen.getByRole('table')).getByText('Allow')).toBeInTheDocument()
+    expect(within(screen.getByRole('table')).getAllByText('Allow')).not.toHaveLength(0)
     expect(screen.getByLabelText('List URL')).toHaveValue('')
   })
 

@@ -389,6 +389,7 @@ const BLOCKING_OWN_LABELS = new Map([
   ['Block List Domains', 'Overview figure, blocking/Overview.tsx:255; declared ours at Overview.tsx:35'],
   ['Your Rules', 'Overview figure, blocking/Overview.tsx:259; declared ours at Overview.tsx:35'],
   ['Tree', "the Tree view's Blocked/Allowed selector, blocking/Rules.tsx:329; declared ours at Rules.tsx:37-38"],
+  ['Add to group', 'the group a new list goes into, blocking/BlockLists.tsx:666; declared ours at BlockLists.tsx:48'],
 ])
 const onlyInBlocking = (label) => (LABEL_FILES.get(label) ?? []).every((f) => f.startsWith(BLOCKING))
 
