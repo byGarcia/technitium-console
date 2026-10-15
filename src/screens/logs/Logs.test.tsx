@@ -472,6 +472,28 @@ describe('Logs › Query Logs: the table', () => {
     }
   })
 
+  /* The colour moved from the row to a pill around the response type; the row
+     itself is neutral, and the legend draws the same pill. */
+  it('the row colour is painted on the Response Type pill, and the legend uses the same pills', async () => {
+    const user = userEvent.setup()
+    withApps([APP])
+    vi.spyOn(api, 'queryLogs').mockResolvedValue({
+      kind: 'ok',
+      data: { response: page({ entries: [{ ...ENTRY, rcode: 'NxDomain', responseType: 'Blocked' }] }) },
+    } as never)
+    render(<Logs token="t" sub="Query Logs" />)
+    await screen.findByLabelText('App Name')
+    await user.click(screen.getByRole('button', { name: 'Query' }))
+
+    const pill = (await screen.findAllByText('Blocked')).find((e) => e.closest('td') != null)!
+    const cls = rowClass({ ...ENTRY, rcode: 'NxDomain', responseType: 'Blocked' })
+    expect(pill.closest('tr')).toHaveClass(cls)
+    const legend = LEGEND_ROWS.find((e) => e.name === 'Blocked')!
+    const legendPill = screen.getAllByText('Blocked').find((e) => e.closest('td') == null)!
+    expect(legendPill).toHaveClass(legend.cls)
+    expect(legendPill.className.replace(legend.cls, '').trim()).toBe(pill.className)
+  })
+
   it('a response with no data leaves the counter at \"0 logs\"', async () => {
     const user = userEvent.setup()
     withApps([APP])

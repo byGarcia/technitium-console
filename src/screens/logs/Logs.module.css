@@ -129,44 +129,52 @@ table.queryTable td.answer { width: 100%; max-width: 0; min-width: 16ch; }
   table.queryTable td.stamp { white-space: normal; }
 }
 
-.rtt { font-size: var(--t-2); color: var(--faint-on-tint); }
-
-/* Upstream's five row backgrounds (logs.js:452-508), as they are. */
 /*
-The row colour code comes from the SERIES TOKENS, not from seven hand-written
-values.
+Upstream's row colour code (logs.js:452-508), with the SAME mapping, drawn as a pill.
 
-They used to be seven `rgba()` written here, off the scale, with no relation to
-the colours the same word has on the Dashboard: `Blocked` was orange in the table
-and violet in the chart. Now it is the same colour for the same word across the
-whole console.
+`rowClass` still decides one category per row from the RCODE and, within it, the
+response type, exactly as upstream does. What changed is where it is painted.
+Upstream lays it over the whole row; here it went as a 30 % background over every
+cell, and on a page of mostly Cached rows the table read as one block of colour,
+so the exception (a Blocked row) hardly stood out.
 
-**At 30 % and not at 13 %**, and the measurement decided it: at 13 % five pairs
-out of twenty-one were below the project's collision threshold; at 30 % one is
-left. It cannot go higher: past 50 % the cell text falls below 4.5:1 and drops
-out of AA. Checked with `dev/row-colours.mjs`.
+Now the row is neutral and the category sets ONE custom property, `--ql-tone`,
+which the pill around the Response Type reads: the same 30 % over the panel the
+whole row used to carry, so every measurement of `dev/row-colours.mjs` still
+holds as it is (ΔE00 between pairs as a background, ink at 6.5:1 over the
+lightest one).
 
-Bringing these tokens here uncovered two palette defects that were NOT this
-screen's (`--ch-refuse` collided with `--ch-auth` under deuteranopia and
-`--ch-block` with `--ch-total` at ΔE00 1.2), and both were fixed in `tokens.css`.
+The colour is the ROW's, not the cell's: an `NxDomain` row whose type is
+`Recursive` gets the NX Domain colour on a pill that reads `Recursive`, exactly
+as the whole row did before. That is why the legend still says "row colours".
 
-**A background and not an edge**: the edge belongs to the amber, and it means
-something else: "this is yours to change". Using it here would say two things with
-one mark.
+**A pill and not an edge**: the edge belongs to the amber, and it means "this is
+yours to change". And the colour is still reinforcement, never the only channel:
+`RCODE` and `Response Type` are written in their cells, and the legend names the
+seven conditions. One pair (`Server Failure`/`Cached` at 8.5) is below the
+collision threshold, see `tokens.css`.
 
-One pair is left unresolved, `Server Failure`/`Cached` at 8.5, and **it cannot be
-claimed that all seven are distinguishable**. That is why the colour is
-reinforcement and never the only channel: `RCODE` and `Response Type` are written
-in their cell, and the legend names the seven conditions. See `tokens.css` for why
-that pair is not fixed with a token.
+The custom property is called `--ql-tone` so that it cannot shadow a token: no
+name in `tokens.css` starts with `--ql-`.
 */
-.rServerFailure { background: color-mix(in srgb, var(--ch-fail) 30%, transparent); }
-.rBlocked { background: color-mix(in srgb, var(--ch-block) 30%, transparent); }
-.rNxDomain { background: color-mix(in srgb, var(--ch-nx) 30%, transparent); }
-.rRefused { background: color-mix(in srgb, var(--ch-refuse) 30%, transparent); }
-.rAuthoritative { background: color-mix(in srgb, var(--ch-auth) 30%, transparent); }
-.rRecursive { background: color-mix(in srgb, var(--ch-rec) 30%, transparent); }
-.rCached { background: color-mix(in srgb, var(--ch-cache) 30%, transparent); }
+.rServerFailure { --ql-tone: var(--ch-fail); }
+.rBlocked { --ql-tone: var(--ch-block); }
+.rNxDomain { --ql-tone: var(--ch-nx); }
+.rRefused { --ql-tone: var(--ch-refuse); }
+.rAuthoritative { --ql-tone: var(--ch-auth); }
+.rRecursive { --ql-tone: var(--ch-rec); }
+.rCached { --ql-tone: var(--ch-cache); }
+
+/* A row with no category gets a pill with no fill, so the response type keeps
+   the same place on every row. */
+.tone {
+  display: inline-block;
+  padding: var(--s-1) var(--s-5);
+  border-radius: var(--r-1);
+  background: color-mix(in srgb, var(--ql-tone, transparent) 30%, transparent);
+  white-space: nowrap;
+}
+.rtt { font-size: var(--t-2); color: var(--faint-on-tint); padding-left: var(--s-5); }
 
 /*
 The legend of the seven, and it is ALWAYS complete.
@@ -191,10 +199,9 @@ to become a summary of what is in front of you.
   text-transform: uppercase; color: var(--mute);
 }
 .legendItem { display: inline-flex; align-items: center; gap: var(--s-5); font-size: var(--t-2); }
-/* The swatch carries its own border: at 30 % over the panel, a square with no
-   border is lost against the background in exactly the darkest tones. */
-.swatch { width: 12px; height: 12px; border-radius: 3px; border: 1px solid var(--line); flex: none; }
-.legendName { color: var(--ink); font-weight: 550; }
+/* Each entry is the pill itself, the same one the Response Type cell carries,
+   followed by the condition that paints it. */
+.legendItem .tone { font-weight: 550; color: var(--ink); }
 .legendWhen { color: var(--faint); }
 
 /* Centred on purpose: it is a bar filter, not a settings row. But the minimum

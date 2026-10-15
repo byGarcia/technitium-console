@@ -768,8 +768,7 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
             <span className={styles.legendTitle}>Row colours</span>
             {LEGEND_ROWS.map((e) => (
               <span key={e.name} className={styles.legendItem}>
-                <span className={`${styles.swatch} ${e.cls}`} aria-hidden="true" />
-                <span className={styles.legendName}>{e.name}</span>
+                <span className={`${styles.tone} ${e.cls}`}>{e.name}</span>
                 <span className={styles.legendWhen}>{e.when}</span>
               </span>
             ))}
@@ -804,7 +803,8 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
                 </td>
                 <td>{e.protocol}</td>
                 <td>
-                  {e.responseType}
+                  {/* The row's colour, in this cell: see `.tone` in Logs.module.css. */}
+                  <span className={styles.tone}>{e.responseType}</span>
                   {e.responseRtt != null && (
                     <div className={styles.rtt}>({e.responseRtt.toFixed(2)} ms)</div>
                   )}
