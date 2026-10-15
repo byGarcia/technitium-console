@@ -17,6 +17,9 @@ to weigh the same. What changes is that this one opens.
   color: var(--ink);
   font: inherit;
   font-size: var(--t-4);
+  /* `font: inherit` brought the body's 1.55 and the trigger came out 37.4 px:
+     three px taller than the text field beside it (see `--field-line`). */
+  line-height: var(--field-line);
   text-align: left;
   cursor: pointer;
   box-shadow: var(--sunken);
@@ -117,6 +120,7 @@ in view however far down the options go.
   color: var(--ink);
   font: inherit;
   font-size: var(--t-4);
+  line-height: var(--field-line);
   box-shadow: var(--sunken);
 }
 .search::placeholder { color: var(--faint); }

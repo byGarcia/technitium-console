@@ -746,6 +746,15 @@ wherever the attribute says `light`.
   --ctrl-track-w: 34px;  /* the switch's track */
   --ctrl-track-h: 20px;
   --field-height: 34px;    /* minimum height of field, dropdown and button */
+  /*
+  The line of text inside a field: `--field-height` less two `--s-5` paddings and
+  two 1 px borders. Without it each control took its line height from wherever it
+  came from (the body's 1.55 through `font: inherit` on the dropdown, the
+  browser's `normal` on the text field), so the dropdown measured 37.4 px against
+  the text field's 34 and the labels of one row sat at two heights (Zones, DNS
+  Client, Query Logs). Measured on 2026-10-15.
+  */
+  --field-line: 16px;
 
   /* ── What the design settled (2026-09-02) ───────────────────────────── */
   /*
