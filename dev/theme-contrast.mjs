@@ -123,6 +123,7 @@ export const PAIRS = [
   { fg: 'glyph-tick-ok', on: ['ok'], min: 3, where: 'a granted permission\'s tick, on its green' },
   { fg: 'ok', on: ['pan'], min: 3, where: 'a granted permission\'s box and pip' },
   { fg: 'glyph-chevron', on: ['field'], min: 3, where: 'the dropdown\'s chevron' },
+  { fg: 'ch-1', on: ['pan', 'pan2'], min: 3, where: 'the Dashboard\'s week by hour: its busiest cell on the panel and beside an empty cell (Heatmap.module.css)' },
 ]
 
 // ── Resolution ───────────────────────────────────────────────────────────────

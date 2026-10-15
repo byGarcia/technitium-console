@@ -1,0 +1,52 @@
+/*
+The week by hour. Rows are days, columns the 24 hours, every cell a square that
+shares the width: at 390 px a cell is about 12 px, at 1440 about 40 px wide and
+kept short, so the panel stays a band and not a wall.
+*/
+.panel { margin-bottom: var(--gap-block); }
+.wrap { display: flex; flex-direction: column; gap: var(--s-7); }
+.grid { display: grid; gap: var(--s-1); }
+.row, .hours { display: grid; grid-template-columns: 7ch repeat(24, minmax(0, 1fr)); gap: var(--s-1); align-items: center; }
+.row > span[role='gridcell'] { display: block; min-width: 0; }
+.day, .hours > span { font: 400 var(--t-1)/1 var(--font-mono); color: var(--mute); white-space: nowrap; }
+.day { overflow: hidden; text-overflow: ellipsis; }
+
+/*
+A cell, and its shade: the share of the busiest hour in five steps of `--ch-1` over
+the panel, and none as the inner-block grey. Measured on 2026-10-15 against each
+step's own ground, the busiest step is 7.99:1 on `--pan` in dark and 4.50:1 in light
+(`dev/theme-contrast.mjs`, the heatmap pair), and every step under it is a lighter
+mix of the same two tokens. Adjacent steps are not told apart by contrast: the count
+of every cell is in its name and on hover, and the scale under the grid says which
+end is which.
+*/
+.cell {
+  display: block;
+  width: 100%;
+  height: var(--s-9);
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-1);
+  background: var(--pan2);
+}
+button.cell { cursor: pointer; }
+button.cell:hover { box-shadow: inset 0 0 0 1px var(--ink); }
+button.cell:focus-visible { outline: var(--focus); outline-offset: 1px; }
+.none { display: block; height: var(--s-9); }
+.h0 { background: var(--pan2); }
+.h1 { background: color-mix(in srgb, var(--ch-1) 20%, var(--pan)); }
+.h2 { background: color-mix(in srgb, var(--ch-1) 40%, var(--pan)); }
+.h3 { background: color-mix(in srgb, var(--ch-1) 60%, var(--pan)); }
+.h4 { background: color-mix(in srgb, var(--ch-1) 80%, var(--pan)); }
+.h5 { background: var(--ch-1); }
+
+.scale { display: flex; align-items: center; justify-content: flex-end; gap: var(--s-2); font: 400 var(--t-1)/1 var(--font-mono); color: var(--mute); }
+.scale > i { width: var(--s-9); }
+.scale > span:first-child { margin-right: var(--s-2); }
+.scale > span:last-child { margin-left: var(--s-2); }
+
+@media (max-width: 560px) {
+  .row, .hours { gap: 1px; }
+  .cell, .none { height: var(--s-7); }
+  .day { font-size: var(--t-1); }
+}

@@ -3,6 +3,7 @@ import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { ReactNode } from 'react'
 import * as api from '../../api/dashboard'
+import { quietHours } from '../../test/quiet-hours'
 import * as client from '../../api/client'
 import { HandoffContext, type Handoff } from '../../app/handoff'
 import { Dashboard } from './Dashboard'
@@ -13,7 +14,11 @@ The top lists' row menus: the Dashboard's three panels (main.js:2796-2853) and t
 Top Stats modal behind their "More" buttons (main.js:2952-3019).
 */
 
-beforeEach(() => localStorage.clear())
+beforeEach(() => {
+  localStorage.clear()
+  /* The week by hour asks on its own; answered quiet, it adds no request here. */
+  vi.spyOn(api, 'getHours').mockImplementation(quietHours)
+})
 afterEach(() => vi.restoreAllMocks())
 
 const chart = { labels: ['a', 'b'], datasets: [{ label: 'Total', data: [1, 2] }] }

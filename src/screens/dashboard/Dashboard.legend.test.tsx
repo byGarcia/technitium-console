@@ -129,7 +129,7 @@ chart on pressing one slice.
 describe('the doughnut charts legend', () => {
   const WITH_SLICES = {
     ...STATS,
-    queryTypeChartData: { labels: ['A', 'AAAA', 'PTR'], datasets: [dataset('', [60, 30, 10])] },
+    queryResponseChartData: { labels: ['A', 'AAAA', 'PTR'], datasets: [dataset('', [60, 30, 10])] },
   }
   const renderSectors = () => {
     vi.spyOn(api, 'getDashboardStats').mockResolvedValue({ kind: 'ok', data: WITH_SLICES } as never)
@@ -178,7 +178,7 @@ rebuild, so remembering it would be inventing a memory the console does not have
 describe('when new data arrives', () => {
   const sectors = (labels: string[]) => ({
     ...STATS,
-    queryTypeChartData: { labels, datasets: [dataset('', labels.map((_, i) => 10 * (i + 1)))] },
+    queryResponseChartData: { labels, datasets: [dataset('', labels.map((_, i) => 10 * (i + 1)))] },
   })
 
   it('the switched-off slices come back on', async () => {

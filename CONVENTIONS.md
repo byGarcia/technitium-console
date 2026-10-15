@@ -615,6 +615,64 @@ contract and SECURITY.md.
      `dev/theme-contrast.mjs`. Its only motion is the answer rows settling in,
      and `prefers-reduced-motion` removes it.
 
+7. **The Dashboard compares and jumps** (Adrián's decision, 2026-10-15). It adds
+   two things to the stock Dashboard (`screens/dashboard/compare.ts`, `jump.ts`):
+   - **each figure's change against the previous period of the same length**, as
+     an arrow and a percentage on its card, with what it is measured against
+     written once beside the period picker ("Change vs previous hour"). The
+     previous period is a second `dashboard/stats/get` with `type=Custom`, whose
+     instants are worked out from the labels of the answer on screen, so they follow
+     the server's clock, its node and its grouping. Measured against v15.6.1 and
+     v15.5.1 on 2026-10-15: Custom over a fixed period's own window gives the same
+     ten counters, bucket by bucket, for all five fixed periods, and the same
+     Clients wherever the request is exactly the window. Clients gets no change for
+     Last Week (seven days by day cannot be asked; eight are, and the counters are
+     summed over seven), for Last Year (asked by day; the server reaches a distinct
+     count of months and of days through different merges) and for a minute that
+     kept only part of its clients (more than 1,000). The other ten compare in
+     every period;
+   - **a jump from a chart to Query Logs**: a point of `Queries` opens its minute,
+     hour, day or month as `From`/`To`; a slice of `Query Response Types` or a bar
+     of `Query Types` or `Protocol Types` opens that value over the period, where
+     Query Logs has a field for it (`Dropped` and `Others` do not). It is the jump
+     of the Top lists' "Show Query Logs" (`app/handoff.ts`), with the same node
+     rule, the same arrival and the same alert when no logging app is installed.
+     Query Types and Protocol Types are drawn as bars, so the stock legend's
+     click-to-hide is not offered on those two;
+   - **a week by hour** (`Heatmap.tsx`, `heatmap.ts`): seven days of the browser's
+     calendar by its 24 hours, each cell the queries of that hour, opening Query
+     Logs for that hour on click. Custom groups by hour only up to 157 hours, so
+     the week is asked in two back-to-back pieces and stitched; an hour that comes
+     twice or not at all leaves the panel saying it could not load, never a double
+     count or a quiet hole. Checked on 2026-10-15 against v15.6.1: the stitched
+     hours equal Last Day's 24 and a single 157-hour request, hour by hour. The hour
+     in progress is left out, as Last Day leaves it. It is asked once per node and
+     per hour, not on each minute reload.
+
+   Its limits, and crossing one is a bug:
+   - **only `dashboard/stats/get`**, which the stock Dashboard already calls, and
+     Query Logs' existing fields. A Last Hour reload waits for both reads so the
+     changes do not blink; other periods ask once more per load; the week asks one
+     or two more per hour;
+   - **no change is drawn unless it is exact and current**: never while another
+     period or node is loading, never after a failed read (of either period),
+     never for a figure whose previous value is zero, never when the previous
+     period has no queries at all (a server keeping statistics in memory only, or
+     one that was not running yet). A previous period the server only partly
+     recorded (it started inside it, or its stats files were deleted) is compared
+     as recorded: the API cannot tell a quiet hour from a missing one;
+   - **upstream's texts are untouched.** What is ours is in English, declared in the
+     header comment of each file that writes it: "Change vs", "previous hour",
+     "previous 24 hours", "previous 7 days", "previous 31 days", "previous 12
+     months", "previous N minutes/hours/days" (`compare.ts`, `Figures.tsx`,
+     `Dashboard.tsx`), the week's title "Queries per Hour, Last 7 Days", its
+     weekday names and each cell's "HH:00 to HH:00: N queries" (`Heatmap.tsx`,
+     `heatmap.ts`), and the bars' "Show Query Logs" title, which is upstream's own
+     menu text;
+   - **pointer only on the canvas.** A point of `Queries` and a slice of the ring
+     take a click but no keyboard focus; the bars are buttons, and the week is one
+     keyboard stop whose arrows move between its cells.
+
 ## Four constraints the server imposes
 
 These are not preferences: break them and the console works in development and

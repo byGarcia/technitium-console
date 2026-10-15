@@ -28,16 +28,41 @@ export interface DnsClientRequest {
   node: string
 }
 
+/*
+What the Dashboard's charts add to the jump (deviation 7 in CONVENTIONS.md, this
+console's own): the time window of a point of the Queries chart, and the value of a
+slice or a bar. Each is one of Query Logs' existing fields, by its name in that form,
+and written in the form's own format (`From`/`To` are `datetime-local` values in the
+browser's zone). Upstream's jump never carries them.
+*/
+export interface QueryLogsFilters {
+  start?: string
+  end?: string
+  responseType?: string
+  protocol?: string
+  qtype?: string
+}
+
 export interface QueryLogsRequest {
   domain: string | null
   clientIp: string | null
   /** Empty: keep the node selector where it starts. */
   node: string
+  filters?: QueryLogsFilters
 }
 
 export interface Handoff {
   queryDnsServer: (domain: string, type: string | null, node: string | null) => void
-  showQueryLogs: (domain: string | null, clientIp: string | null, node: string | null) => void
+  showQueryLogs: (
+    domain: string | null,
+    clientIp: string | null,
+    node: string | null,
+    filters?: QueryLogsFilters,
+  ) => void
+  /** Whether Query Logs is there to land on. The row menus offer the jump anyway,
+   *  as upstream does, and it does nothing; a chart only invites the click when it
+   *  will go somewhere. Absent means it is. */
+  canShowQueryLogs?: boolean
 }
 
 export const HandoffContext = createContext<Handoff | null>(null)

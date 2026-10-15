@@ -97,7 +97,7 @@ export function TopTable({
             </td>
             <td className={styles.hits}>{r.hits.toLocaleString()}</td>
             <td>
-              <Menu label={`Actions for ${r.name}`}>
+              <Menu label={`Actions for ${r.name}`} quiet>
                 {(close) =>
                   need == null ? (
                     <button

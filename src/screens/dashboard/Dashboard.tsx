@@ -1,18 +1,24 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   RANGE_LABEL, RANGES, getDashboardStats,
-  type DashboardStats, type Range, type Stats, type TopKind, type TopEntry,
+  type DashboardStats, type Range, type Stats, type TopKind,
 } from '../../api/dashboard'
-import { Chart } from './Chart'
-import { tokenForLabel } from './palette'
+import { useHandoff, type QueryLogsFilters } from '../../app/handoff'
+import { changes, previousLabel, previousQuery, windowOf, type PreviousQuery } from './compare'
+import { Figure, StatCard } from './Figures'
+import { FAMILIES, KEYS, num2, percentage } from './metrics'
+import { Bars, Line, Placeholder, Split, Top, hasData } from './Panels'
+import { Heatmap } from './Heatmap'
+import {
+  bucketWindow, periodFilters, protocolFilter, queryTypeFilter, responseTypeFilter,
+} from './jump'
 import { ClusterNodeSelect, AGGREGATE, type ClusterNode } from '../../ui/ClusterNodeSelect'
 import { InChrome } from '../../app/ChromeSlot'
 import { TopStats } from './TopStats'
 import { TopRowMenu } from './TopRowMenu'
 import { useDomainAction } from '../../lib/allow-block'
-import type { ChartData } from '../../api/dashboard'
 import { SectionHeader } from '../../ui/SectionHeader'
-import { Empty, Failure, Loading } from '../../ui/Empty'
+import { Loading } from '../../ui/Empty'
 import styles from './Dashboard.module.css'
 import { Body, Panel } from '../../ui/Panel'
 import { Button } from '../../ui/Button'
@@ -24,72 +30,6 @@ import { Segmented } from '../../ui/Segmented'
 import { noticeFromFailure } from '../../lib/notice'
 import { Notifier } from '../../ui/Notifier'
 
-/*
-The eleven metrics, in upstream's order and with its literal labels. Each one's
-colour is that of its series in the main chart.
-*/
-/*
-No colour here any more.
-
-Each tile took its own hex and they contradicted the charts on the same screen:
-"Authoritative" was olive up here and sky blue down in the doughnut, "Cached"
-violet in the tile and teal in the chart. A label that changes colour halfway
-down a page is not a style problem, it is the page disagreeing with itself.
-
-The colour now comes from the same map the charts read, keyed by the same label.
-*/
-const METRICS: { k: keyof Stats; label: string; pct?: boolean }[] = [
-  /*
-  The total carries no percentage. Upstream writes a fixed "100%" there in the
-  markup (`main.js` never updates it), which is decoration: the percentage of a
-  total over itself says nothing. Really calculated, with the server freshly
-  started it came out as "0%" under "Total Queries", which on top of informing
-  nothing is confusing. The rule that stands is the one the clients tile already
-  followed: the percentage is the share of the query total, and the total has no
-  share of itself.
-  */
-  { k: 'totalQueries', label: 'Total Queries' },
-  { k: 'totalNoError', label: 'No Error', pct: true },
-  { k: 'totalServerFailure', label: 'Server Failure', pct: true },
-  { k: 'totalNxDomain', label: 'NX Domain', pct: true },
-  { k: 'totalRefused', label: 'Refused', pct: true },
-  { k: 'totalAuthoritative', label: 'Authoritative', pct: true },
-  { k: 'totalRecursive', label: 'Recursive', pct: true },
-  { k: 'totalCached', label: 'Cached', pct: true },
-  { k: 'totalBlocked', label: 'Blocked', pct: true },
-  { k: 'totalDropped', label: 'Dropped', pct: true },
-  { k: 'totalClients', label: 'Clients' },
-]
-
-/*
-The eleven, split up: TWO totals and NINE in three families of three.
-
-It is the split the Dashboard design decided, and it is about reading rather than
-placement.
-The two totals (queries and clients) **share their unit with nothing**: one
-counts questions and the other counts who asked them, so putting them in the same
-grid as the rest invites a comparison that cannot be made. And neither carries a
-percentage, which is the other thing that sets them apart.
-
-The nine are parts of the total, and each row is a different question:
-
-  · **how it ended**: `No Error`, `Server Failure`, `NX Domain`
-  · **why it was turned down**: `Refused`, `Blocked`, `Dropped`
-  · **where it came from**: `Authoritative`, `Recursive`, `Cached`
-
-The order is NOT the one in `METRICS`, and it does not matter: `tokenForLabel`
-assigns the colour **by label** and only falls back to position for labels it does
-not know, so reordering moves no colour at all. Proven in `palette.test.ts`,
-which already asserts exactly that.
-*/
-const byLabel = (label: string) => METRICS.find((m) => m.label === label)!
-const TOTALS = ['Total Queries', 'Clients'].map(byLabel)
-const FAMILIES = [
-  ['No Error', 'Server Failure', 'NX Domain'],
-  ['Refused', 'Blocked', 'Dropped'],
-  ['Authoritative', 'Recursive', 'Cached'],
-].map((row) => row.map(byLabel))
-
 const COUNTERS: { k: keyof Stats; label: string }[] = [
   { k: 'zones', label: 'Zones' },
   { k: 'cachedEntries', label: 'Cache' },
@@ -99,339 +39,11 @@ const COUNTERS: { k: keyof Stats; label: string }[] = [
   { k: 'blockListZones', label: 'Block List' },
 ]
 
+const thisHour = () => Math.floor(Date.now() / 3_600_000) * 3_600_000
 
-/*
-The numbers come out as in upstream, and upstream does NOT pin a locale: it uses
-a bare `toLocaleString()` (main.js:2632-2650), that is, the browser's. They were
-nailed to `es-ES`, so a server in English showed "84.930" as "84.930" but with
-the dot meaning the opposite.
-*/
-const num2 = (n: number) => n.toLocaleString()
-
-/*
-The percentage carries no locale, neither in upstream nor here: it is
-`toFixed(2)`, which always writes the dot (main.js:2652-2676). And with zero
-queries it is a literal "0%", not "0.00%".
-*/
-export function percentage(value: number, total: number): string {
-  if (total === 0) return '0%'
-  return ((value * 100) / total).toFixed(2) + '%'
-}
-
-/*
-A chart with no value other than zero is not drawn: an empty canvas takes up the
-same room and says nothing. It says there is no data instead.
-
-It returns a TYPE GUARD rather than a plain `boolean`: asking it whether there is
-data is precisely what proves the chart exists, so the compiler ought to hear
-about it. Without that, `Split` had to accept `ChartData | undefined` and passed
-it straight back to `Chart`, which does demand it, and the `undefined` went on
-slipping in through the side door.
-*/
-export function hasData(d?: ChartData): d is ChartData {
-  if (!d?.datasets?.length) return false
-  return d.datasets.some((s) => (s.data ?? []).some((n) => Number(n) > 0))
-}
-
-/*
-A doughnut chart, with its legend outside the canvas.
-
-Its entry is a LABEL and not a series (a doughnut has one dataset and as many
-slices as `labels`), and its figure is the **percentage** of that chart's own
-total. It is what the design draws and what the in-canvas legend could not say:
-there, only the name fitted.
-
-The percentage is worked out here and does not come from the server. It is
-written with the same `percentage()` as the cards **on purpose**: two shapes of
-the same number on one screen is worse than either of them.
-*/
-function Split({
-  title,
-  data,
-  failure,
-  resetOn = data,
-}: {
-  title: string
-  data?: ChartData
-  failure: boolean
-  /** What switches every slice back on: the server's response (see `useHidden`). */
-  resetOn?: unknown
-}) {
-  const { hidden, toggle } = useHidden(resetOn)
-  /*
-  `data` may NOT arrive, and the first version of this did not allow for it: it
-  worked out the percentages before the `hasData` below and took the whole screen
-  down with a `Cannot read properties of undefined`. The previous code was safe by
-  accident: it asked `hasData(data)` first, and that one does accept `undefined`.
-
-  The suite found it, not a reading: six session tests that have nothing to do
-  with the Dashboard fell over at once, because a component that throws takes down
-  the tree holding it.
-  */
-  const values = (data?.datasets?.[0]?.data ?? []) as number[]
-  const total = values.reduce((a, n) => a + Number(n || 0), 0)
-  const entries = (data?.labels ?? []).map((l, i) => ({
-    label: String(l),
-    datum: percentage(Number(values[i] ?? 0), total),
-  }))
-
-  return (
-    <Panel title={title} className={styles.panel}>
-      <Body>
-        {hasData(data) ? (
-          /* Ring on the left, legend on the right: the drawing's shape. */
-          <div className={styles.split}>
-            <Chart
-              type="doughnut"
-              data={data}
-              height={128}
-              aria={title}
-              separateLegend
-              hidden={hidden}
-            />
-            <Legend entries={entries} hidden={hidden} onToggle={toggle} />
-          </div>
-        ) : (
-          <Placeholder failure={failure} empty="No data for this period." />
-        )}
-      </Body>
-    </Panel>
-  )
-}
-
-function Top({
-  title,
-  rows,
-  isClient = false,
-  onMore,
-  failure,
-  beforeMore,
-  menu,
-}: {
-  title: string
-  rows: TopEntry[]
-  /** Each row's menu (`TopRowMenu`), at the end of the row as upstream draws it. */
-  menu: (row: TopEntry) => ReactNode
-  /** A client also shows the domain it resolved and whether it was rate limited. */
-  isClient?: boolean
-  onMore: () => void
-  /** When the request failed: the gap is not drawn the way an empty one is. */
-  failure: boolean
-  /** The panel's own action, to the left of "More". Only the blocked-domains one
-   *  uses it, with the blocking menu upstream puts there. */
-  beforeMore?: ReactNode
-}) {
-  /* Upstream renders these entries in the server's order (main.js:2798-2857).
-     Position and a relative bar only make that same order easier to scan. */
-  const visibleRows = rows.slice(0, 5)
-  const largest = Math.max(0, ...visibleRows.map((row) => Number.isFinite(row.hits) ? row.hits : 0))
-
-  return (
-    <Panel
-      title={title}
-      className={styles.panel}
-      actions={
-        <div className={styles.panelActions}>
-          {beforeMore}
-          {/* It was a bare `<button>`, with no class: the browser drew it with
-              its default style, in the middle of a console with a system of its
-              own. */}
-          <Button size="sm" onClick={onMore}>
-            More
-          </Button>
-        </div>
-      }
-    >
-      <Body className={styles.pbAdjusted}>
-        {rows.length === 0 && <Placeholder failure={failure} empty="No data for this period." />}
-        {visibleRows.map((f, i) => (
-          <div
-            className={`${styles.toprow}${f.rateLimited ? ` ${styles.limited}` : ''}`}
-            key={`${f.name}|${i}`}
-          >
-            <span className={styles.topRank}>{i + 1}</span>
-            <span className={styles.n}>
-              <span className={styles.topLabel}>
-                {f.name}
-                {f.rateLimited ? ' (rate limited)' : ''}
-              </span>
-              {isClient && (
-                <span className={styles.topDomain}>
-                  {f.domain === '' || f.domain == null ? '.' : f.domain}
-                </span>
-              )}
-              <span
-                className={styles.topBar}
-                aria-hidden="true"
-                style={{ width: `${largest > 0 && Number.isFinite(f.hits) ? Math.max(0, f.hits) / largest * 100 : 0}%` }}
-              />
-            </span>
-            <span className={styles.c}>{num2(f.hits)}</span>
-            {menu(f)}
-          </div>
-        ))}
-      </Body>
-    </Panel>
-  )
-}
-
-/*
-The legend, in HTML and not inside the canvas, and the same one for all four
-charts.
-
-Chart.js drew it inside the `<canvas>`, and that costs two things you only see by
-measuring: **no tool can read it** (neither a DOM-reading test tool nor a screen
-reader), and the figure that makes it useful does not fit in it: the count on the
-line chart, the percentage on the doughnuts.
-
-What does NOT change is the interaction: **clicking an entry hides it**, which is
-what the stock `onClick` did and what has to be kept. Here it is a
-`<button>` with `aria-pressed`, so it is also reachable by keyboard and announced;
-inside the canvas it was neither.
-*/
-export function Legend({
-  entries,
-  hidden,
-  onToggle,
-}: {
-  entries: { label: string; datum: string }[]
-  hidden: ReadonlySet<string>
-  onToggle: (label: string) => void
-}) {
-  return (
-    <div className={styles.legend}>
-      {entries.map((e, i) => {
-        const off = hidden.has(e.label)
-        return (
-          <button
-            type="button"
-            key={e.label || i}
-            className={`${styles.lg}${off ? ` ${styles.lgOff}` : ''}`}
-            aria-pressed={!off}
-            onClick={() => onToggle(e.label)}
-          >
-            <i style={{ background: `var(${tokenForLabel(e.label, i)})` }} />
-            {e.label} <b>{e.datum}</b>
-          </button>
-        )
-      })}
-    </div>
-  )
-}
-
-/*
-The line chart: one entry per SERIES, and its figure is the count for the period.
-*/
-function Line({ data, resetOn = data }: { data: ChartData; resetOn?: unknown }) {
-  const { hidden, toggle } = useHidden(resetOn)
-  const entries = data.datasets.map((d) => ({
-    label: String(d.label ?? ''),
-    datum: num2((d.data ?? []).reduce((a, n) => a + Number(n || 0), 0)),
-  }))
-  return (
-    <>
-      <Legend entries={entries} hidden={hidden} onToggle={toggle} />
-      <Chart type="line" data={data} aria="Queries over time" separateLegend hidden={hidden} />
-    </>
-  )
-}
-
-/*
-A region's gap: empty or failure, and **never the same drawing**.
-
-It is the design rule that matters most on this screen: *dashed = empty, solid =
-error, and they are never swapped*. Here it is not decoration: a failure drawn as
-"no queries for this period" tells whoever administers a DNS that their server is
-receiving no traffic, which is the most expensive lie in the console and the
-easiest to believe, because it looks exactly like a normal answer.
-
-The failure sentence is ONE and the same in all three regions on purpose: the
-detail (what failed and when the last good data was) travels in the notice at the
-top, which appears once. Repeating it per panel would say the same thing three
-times and compete with it.
-*/
-function Placeholder({ failure, empty }: { failure: boolean; empty: string }) {
-  if (failure) return <Failure>Could not load this data.</Failure>
-  return <Empty compact>{empty}</Empty>
-}
-
-/*
-Which legend entries are switched off, and **they reset when new data arrives**.
-
-The second half is not a convenience: without it, changing period or node rebuilds
-the chart and the series come back on, but the button would stay at
-`aria-pressed="false"`, the control saying one thing and the thing controlled
-saying another. It would also change today's behaviour: Chart.js's stock legend
-loses its state on every rebuild, so keeping it would be inventing a memory the
-console does not have.
-
-It resets on the identity of the server's response, which is what changes with
-every reload, as upstream's rebuilt chart does. NOT on the live figures laid over
-it every 2 seconds (`live.ts`): those would bring a switched-off series back before
-the eye found it gone.
-*/
-export function useHidden(resetOn: unknown) {
-  const [hidden, setHidden] = useState<ReadonlySet<string>>(() => new Set())
-  useEffect(() => setHidden(new Set()), [resetOn])
-  const toggle = (label: string) =>
-    setHidden((prev) => {
-      const next = new Set(prev)
-      if (!next.delete(label)) next.add(label)
-      return next
-    })
-  return { hidden, toggle }
-}
-
-/*
-A figure that shrinks to fit its card instead of spilling out of it (issue #2: a
-Block List of 2,551,031 domains ran past the `Server` rail at 1440). The card is a
-size container and the figure's font is the smaller of its normal size and the
-width that this many monospace characters can have; `--len` carries the count.
-Short figures keep their size, so only the one that would not fit gives way.
-*/
-function Figure({ className, text }: { className: string; text: string }) {
-  return (
-    <div className={className} style={{ ['--len' as string]: String(text.length) }}>
-      {text}
-    </div>
-  )
-}
-
-/*
-One card. It is pulled out into its own component because it is now drawn from two
-places (the two totals and the nine), and keeping it duplicated is how one of the
-two copies ends up without the empty-value dash or without the percentage.
-
-`hero` is size only: `Total Queries` is the figure that gets read first.
-
-The gap where the percentage goes is a HARD space and not an ordinary one: without
-it the row loses its height and the cards with no percentage sit lower than the
-other nine.
-*/
-function Card({
-  m,
-  s,
-  total,
-  hero = false,
-}: {
-  m: { k: keyof Stats; label: string; pct?: boolean }
-  s?: Stats
-  total: number
-  hero?: boolean
-}) {
-  return (
-    <div
-      className={`${styles.tile}${hero ? ` ${styles.hero}` : ''}`}
-      style={{ ['--tc' as string]: `var(${tokenForLabel(m.label, 0)})` }}
-    >
-      {/* With no data it is NOT a zero: it is a dash, and dimmed. A zero is a
-          true figure, and here it would be a lie. */}
-      <Figure className={`${styles.v}${s ? '' : ` ${styles.noData}`}`} text={s ? num2(s[m.k]) : '—'} />
-      <div className={styles.p}>{m.pct && s ? percentage(s[m.k], total) : ' '}</div>
-      <div className={styles.k}>{m.label}</div>
-    </div>
-  )
-}
+/* Blocking › Overview reads these from here: the figures' format, and the Queries legend its bars share. */
+export { percentage }
+export { hasData, Legend, useHidden } from './Panels'
 
 export function Dashboard({
   token,
@@ -489,6 +101,24 @@ export function Dashboard({
   const [start, setStart] = useState('')
   const [end, setEnd] = useState('')
   const [requested, setRequested] = useState<{ start: string; end: string } | null>(null)
+  /*
+  The previous period, for each figure's change (deviation 7, `compare.ts`). It
+  belongs to ONE response: `for` is the response it was asked for, with its period
+  and node, and the changes are drawn only while that response is the one on screen
+  and nothing is loading. A new period or node still on its way, a failed read, a
+  previous period that failed or that cannot be asked the same way: no change at all.
+  */
+  /* The hour in progress, for the week by hour: it asks again when this turns,
+     which is checked at each answer, so a minute reload in the same hour asks
+     nothing more. */
+  const [hour, setHour] = useState(() => thisHour())
+  const [prev, setPrev] = useState<{
+    for: DashboardStats
+    range: Range
+    node: string
+    query: PreviousQuery
+    data: DashboardStats
+  } | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -510,11 +140,40 @@ export function Dashboard({
       if (showLoader) setLoading(true)
       const r = await getDashboardStats(token, range, requested ?? undefined, node)
       if (cancelled) return
-      setLoading(false)
       if (r.kind === 'ok') {
-        setData(r.data)
-        setFailure(false)
+        setHour(thisHour())
+        /*
+        The previous period is a second read of the same endpoint, with
+        `type=Custom` and the instants `previousQuery` works out from this answer's
+        own labels, so it follows the server's clock and not the browser's.
+        A first answer is drawn at once and its changes follow; a minute reload
+        waits for both, so the changes never blink out and back every minute.
+        */
+        const query = previousQuery(windowOf(r.data.mainChartData))
+        const ask = async () => {
+          if (query == null) return null
+          const p = await getDashboardStats(token, 'Custom', { start: query.start, end: query.end }, node)
+          return p.kind === 'ok' ? { for: r.data, range, node, query, data: p.data } : null
+        }
+        if (showLoader) {
+          setLoading(false)
+          setData(r.data)
+          setFailure(false)
+          setPrev(null)
+          const p = await ask()
+          if (cancelled) return
+          setPrev(p)
+        } else {
+          const p = await ask()
+          if (cancelled) return
+          setLoading(false)
+          setData(r.data)
+          setFailure(false)
+          setPrev(p)
+        }
       } else {
+        setLoading(false)
+        setPrev(null)
         /*
         A failure is NOT drawn as a quiet server. Without this, the eleven tiles
         came out at zero and the panels said "No queries for this period.", which is
@@ -593,6 +252,41 @@ export function Dashboard({
   const s = view?.stats
   const total = s?.totalQueries ?? 0
 
+  /* Each figure's change, only for the response on screen (see `prev`). */
+  const settled = !loading && data != null && view != null && prev != null &&
+    prev.for === data && prev.range === range && prev.node === node
+  const shift = useMemo(
+    () => (settled && data != null && view != null && prev != null ? changes(data, view, prev.data, prev.query) : null),
+    [settled, data, view, prev],
+  )
+  const against = settled && prev != null ? previousLabel(prev.query.window, prev.range) : ''
+
+  /*
+  The charts' jumps to Query Logs (deviation 7, `jump.ts`): through the Shell, as
+  the row menus' "Show Query Logs", with the node this screen reads. A chart only
+  takes the click when Query Logs is there to land on.
+  */
+  const handoff = useHandoff()
+  const canJump = handoff != null && handoff.canShowQueryLogs !== false
+  const shown = useMemo(() => windowOf(view?.mainChartData), [view])
+  const jump = (filters: QueryLogsFilters) => handoff?.showQueryLogs(null, null, node, filters)
+  const pickPoint = canJump && shown != null
+    ? (i: number) => {
+        const span = bucketWindow(view?.mainChartData, i)
+        if (span != null) jump(span)
+      }
+    : undefined
+  const byValue = (field: 'responseType' | 'protocol' | 'qtype', value: (label: string) => string | null) =>
+    canJump && shown != null
+      ? (label: string) => {
+          const v = value(label)
+          return v != null ? () => jump({ ...periodFilters(shown), [field]: v }) : undefined
+        }
+      : undefined
+  const responseJump = byValue('responseType', responseTypeFilter)
+  const typeJump = byValue('qtype', queryTypeFilter)
+  const protocolJump = byValue('protocol', protocolFilter)
+
   return (
     <>
       <SectionHeader title="Dashboard" />
@@ -615,6 +309,11 @@ export function Dashboard({
             if (r !== 'Custom') setRequested(null)
           }}
         />
+        {/* What every arrow on the cards is measured against (deviation 7). Our
+            words, and only while there are changes to read. */}
+        {shift != null && Object.keys(shift).length > 0 && (
+          <span className={styles.against}>Change vs {against}</span>
+        )}
       </div>
 
       {range === 'Custom' && (
@@ -674,17 +373,31 @@ export function Dashboard({
       {/*
       `data-testid="metrics"` wraps all eleven and not each group: it is the hook
       the tests count them with (`Dashboard.test.tsx`), and eleven cards split
-      across two boxes are still eleven cards.
+      across two bands are still eleven cards. Why four are larger and how the
+      seven are grouped is in `Figures.tsx`.
       */}
       <div className={styles.tiles} data-testid="metrics">
-        <div className={styles.tot}>
-          {TOTALS.map((m) => (
-            <Card key={m.k} m={m} s={s} total={total} hero={m.label === 'Total Queries'} />
+        <div className={styles.keys}>
+          {KEYS.map((m) => (
+            <StatCard
+              key={m.k}
+              m={m}
+              s={s}
+              total={total}
+              changes={shift}
+              against={against}
+              chart={view?.mainChartData}
+              isKey
+            />
           ))}
         </div>
-        <div className={styles.nine}>
-          {FAMILIES.flat().map((m) => (
-            <Card key={m.k} m={m} s={s} total={total} />
+        <div className={styles.details}>
+          {FAMILIES.map((family, i) => (
+            <div className={styles.family} key={i} style={{ ['--n' as string]: String(family.length) }}>
+              {family.map((m) => (
+                <StatCard key={m.k} m={m} s={s} total={total} changes={shift} against={against} />
+              ))}
+            </div>
           ))}
         </div>
       </div>
@@ -710,7 +423,7 @@ export function Dashboard({
           <Body>
             {loading && <Loading compact />}
             {!loading && view && hasData(view.mainChartData) && (
-              <Line data={view.mainChartData} resetOn={data?.mainChartData} />
+              <Line data={view.mainChartData} resetOn={data?.mainChartData} onPick={pickPoint} />
             )}
             {!loading && (!view || !hasData(view.mainChartData)) && (
               <Placeholder failure={failure} empty="No queries for this period." />
@@ -732,6 +445,8 @@ export function Dashboard({
         </Panel>
       </div>
 
+      <Heatmap token={token} node={node} hour={hour} jump={canJump ? jump : undefined} />
+
       {view && (
         <div className={styles.trio}>
           <Split
@@ -739,15 +454,18 @@ export function Dashboard({
             data={view.queryResponseChartData}
             resetOn={data?.queryResponseChartData}
             failure={failure}
+            onPick={responseJump != null ? (label) => responseJump(label)?.() : undefined}
+            pickable={responseJump != null ? (label) => responseJump(label) != null : undefined}
           />
-          <Split title="Query Types" data={view.queryTypeChartData} failure={failure} />
-          <Split title="Protocol Types" data={view.protocolTypeChartData} failure={failure} />
+          <Bars title="Query Types" data={view.queryTypeChartData} failure={failure} colour="--ch-1" jump={typeJump} />
+          <Bars title="Protocol Types" data={view.protocolTypeChartData} failure={failure} colour="--ch-1" jump={protocolJump} />
         </div>
       )}
 
       <div className={styles.trio}>
         <Top
           title="Top Domains"
+          tone="--ch-total"
           rows={view?.topDomains ?? []}
           onMore={() => setTop('TopDomains')}
           failure={failure}
@@ -755,6 +473,7 @@ export function Dashboard({
         />
         <Top
           title="Top Blocked Domains"
+          tone="--ch-block"
           rows={view?.topBlockedDomains ?? []}
           onMore={() => setTop('TopBlockedDomains')}
           failure={failure}
@@ -763,6 +482,7 @@ export function Dashboard({
         />
         <Top
           title="Top Clients"
+          tone="--ch-clients"
           rows={view?.topClients ?? []}
           isClient
           onMore={() => setTop('TopClients')}

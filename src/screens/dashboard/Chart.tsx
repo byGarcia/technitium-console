@@ -5,7 +5,7 @@ import {
   LineElement, PointElement, ArcElement, BarElement,
   CategoryScale, LinearScale,
   Legend, Tooltip, Filler,
-  type ChartData as ChartJsData, type ChartType, type ChartDataset,
+  type ChartData as ChartJsData, type ChartType, type ChartDataset, type ChartEvent, type TooltipItem,
 } from 'chart.js'
 import type { ChartData } from '../../api/dashboard'
 import { readPalette, type Palette } from './palette'
@@ -43,12 +43,19 @@ function repaint(
   const datasets = (data.datasets as unknown as ChartDataset[]).map((d, i) => {
     if (type === 'line') {
       const colour = p.forLabel(String(d.label ?? ''), i)
+      /*
+      Only `Total` is filled. Eleven fills laid over each other in transparency
+      added up to one tinted mass under the top line, worst in the light theme, and
+      hid the lines they were under. `Total` encloses every other series, so its
+      fill alone says "volume" and the others stay lines.
+      */
+      const filled = d.label === 'Total'
       return {
         ...d,
         borderColor: colour,
-        backgroundColor: fade(ctx, height, colour, p.fade),
+        backgroundColor: filled ? fade(ctx, height, colour, p.fade) : colour,
         borderWidth: 1.75,
-        fill: true,
+        fill: filled,
         /*
         No dot on every reading: at sixty points an hour they merge into a dotted
         rule and hide the line they are meant to describe. They come back under
@@ -86,6 +93,34 @@ function repaint(
   return { ...data, datasets } as unknown as ChartJsData
 }
 
+const figure = (v: unknown) => (Number.isFinite(Number(v)) && v != null ? Number(v).toLocaleString() : '')
+
+/*
+A tooltip row with its figure in a column of its own: the label padded to the
+longest one shown and the figure to the widest, which in the tooltip's monospace
+lines the digits up under each other. It was "Total: 666", one string per series,
+each figure ending wherever its label did. Same labels and figures, no new words.
+*/
+export function tooltipLine(item: TooltipItem<ChartType>): string {
+  const c = item.chart
+  if ((c.config as { type?: string }).type === 'doughnut') return `${item.label}  ${figure(item.raw)}`
+  const shown = c.data.datasets
+    .map((d, i) => ({ label: String(d.label ?? ''), value: figure(d.data[item.dataIndex]), visible: c.isDatasetVisible(i) }))
+    .filter((r) => r.visible)
+  const lw = Math.max(0, ...shown.map((r) => r.label.length))
+  const vw = Math.max(0, ...shown.map((r) => r.value.length))
+  return `${String(item.dataset.label ?? '').padEnd(lw)}  ${figure(item.raw).padStart(vw)}`
+}
+
+/** The series' solid colour: a line's stroke, a bar's or a slice's fill. */
+function swatchOf(item: TooltipItem<ChartType>): string {
+  const d = item.dataset as { borderColor?: unknown; backgroundColor?: unknown }
+  const type = (item.chart.config as { type?: string }).type
+  const own = type === 'line' ? d.borderColor : d.backgroundColor
+  const colour = Array.isArray(own) ? own[item.dataIndex] : own
+  return typeof colour === 'string' ? colour : String(d.borderColor ?? '')
+}
+
 export function Chart({
   type,
   data,
@@ -94,6 +129,8 @@ export function Chart({
   separateLegend = false,
   hidden,
   legendOrder,
+  onPick,
+  pickable,
 }: {
   type: ChartType
   data: ChartData
@@ -117,8 +154,18 @@ export function Chart({
   Dashboard chart has it.
   */
   legendOrder?: readonly string[]
+  /*
+  A click on a point (the line chart) or on a slice (a doughnut), by its index, and
+  which ones take a click. This console's own (deviation 7): the Dashboard opens
+  Query Logs there. Without it the canvas takes no click, as upstream's.
+  */
+  onPick?: (index: number) => void
+  pickable?: (index: number) => boolean
 }) {
   const ref = useRef<HTMLCanvasElement>(null)
+  /* Read at click time, so a new function from the caller needs no rebuild. */
+  const pick = useRef({ onPick, pickable })
+  pick.current = { onPick, pickable }
   const chart = useRef<ChartJS | null>(null)
   /*
   The palette is read from the tokens, and the tokens change with the theme. A
@@ -153,6 +200,13 @@ export function Chart({
            reading as a single blob of colour. */
         ...(type === 'doughnut' ? { cutout: '70%' } : {}),
         interaction: { intersect: false, mode: 'index' },
+        onClick: (event, _elements, c) => {
+          const index = pickAt(c, event)
+          if (index != null) pick.current.onPick?.(index)
+        },
+        onHover: (event, _elements, c) => {
+          c.canvas.style.cursor = pickAt(c, event) != null ? 'pointer' : ''
+        },
         plugins: {
           legend: {
             display: !separateLegend,
@@ -181,8 +235,23 @@ export function Chart({
             padding: 10,
             cornerRadius: 6,
             displayColors: true,
-            usePointStyle: true,
-            boxPadding: 4,
+            /*
+            A solid square, as the HTML legend's swatch, and the series' own colour:
+            Chart.js took the swatch from the dataset's fill, which on a line is
+            translucent, so in the light theme half of them came out nearly white
+            and matched nothing in the legend above.
+            */
+            usePointStyle: false,
+            boxWidth: 8,
+            boxHeight: 8,
+            boxPadding: 6,
+            callbacks: {
+              label: tooltipLine,
+              labelColor: (item) => {
+                const solid = swatchOf(item)
+                return { borderColor: solid, backgroundColor: solid, borderWidth: 0, borderRadius: 2 }
+              },
+            },
             ...(legendOrder != null ? { itemSort: byLegendOrder(legendOrder) } : {}),
           },
         },
@@ -291,6 +360,21 @@ export function Chart({
     } else {
       c.data.datasets.forEach((d, i) => c.setDatasetVisibility(i, !isHidden(d.label)))
     }
+  }
+
+  /* Which index a click lands on: the line chart's column under the pointer (its
+     tooltip's own rule), a doughnut's slice only when the pointer is on it. */
+  function pickAt(c: ChartJS, event: ChartEvent): number | null {
+    if (pick.current.onPick == null || event.native == null) return null
+    const found = c.getElementsAtEventForMode(
+      event.native,
+      type === 'doughnut' ? 'nearest' : 'index',
+      { intersect: type === 'doughnut' },
+      true,
+    )
+    const index = found[0]?.index
+    if (index == null) return null
+    return pick.current.pickable == null || pick.current.pickable(index) ? index : null
   }
 
   return (
