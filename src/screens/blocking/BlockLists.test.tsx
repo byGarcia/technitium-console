@@ -5,7 +5,7 @@ import * as settings from '../../api/settings'
 import * as dashboard from '../../api/dashboard'
 import * as quick from '../../lib/quick-lists'
 import { chooseIn } from '../../test/dropdown'
-import { BlockLists } from './BlockLists'
+import { BlockLists, LISTS_SUBTITLE } from './BlockLists'
 
 afterEach(() => {
   vi.useRealTimers()
@@ -58,23 +58,43 @@ describe('BlockLists', () => {
     draw(true)
     await userEvent.click(await screen.findByRole('checkbox', { name: /Enabled/ }))
     expect(save).not.toHaveBeenCalled()
-    expect(screen.getByText('1 unsaved change to the block list URLs')).toBeInTheDocument()
+    expect(screen.getByText('Unsaved changes to the block list URLs: 1 switched off')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Save' }))
     expect(save).toHaveBeenCalledWith('T', { node: 'cluster', blockListUrls: `#${HOSTS}` })
     expect(await screen.findByText('DNS Server settings were saved successfully.')).toBeInTheDocument()
-    expect(screen.queryByText(/unsaved change/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Unsaved changes/)).not.toBeInTheDocument()
   })
 
-  it('counts every line that changed, not just whether something did', async () => {
+  it('says what changed, not just whether something did', async () => {
     serve([HOSTS])
     draw()
     await userEvent.click(await screen.findByRole('checkbox', { name: /Enabled/ }))
     await userEvent.type(screen.getByLabelText('List URL'), 'https://a.test/block.txt')
     await userEvent.click(screen.getByRole('button', { name: 'Add block list' }))
-    expect(screen.getByText('2 unsaved changes to the block list URLs')).toBeInTheDocument()
+    expect(screen.getByText('Unsaved changes to the block list URLs: 1 added, 1 switched off')).toBeInTheDocument()
     // Switching the first one back leaves only the addition.
     await userEvent.click(screen.getByRole('checkbox', { name: `Enabled block list ${HOSTS}` }))
-    expect(screen.getByText('1 unsaved change to the block list URLs')).toBeInTheDocument()
+    expect(screen.getByText('Unsaved changes to the block list URLs: 1 added')).toBeInTheDocument()
+  })
+
+  it('tells its tab whether there are unsaved changes, and nothing is left marked after Discard or on leaving', async () => {
+    serve([HOSTS])
+    const dirty = vi.fn()
+    const { unmount } = render(<BlockLists token="T" permissions={undefined} onDirty={dirty} />)
+    await userEvent.click(await screen.findByRole('checkbox', { name: /Enabled/ }))
+    expect(dirty).toHaveBeenLastCalledWith(true)
+    await userEvent.click(screen.getByRole('button', { name: 'Discard' }))
+    expect(dirty).toHaveBeenLastCalledWith(false)
+    await userEvent.click(screen.getByRole('checkbox', { name: /Enabled/ }))
+    expect(dirty).toHaveBeenLastCalledWith(true)
+    unmount()
+    expect(dirty).toHaveBeenLastCalledWith(false)
+  })
+
+  it('says what the tab is for under its title', async () => {
+    serve([HOSTS])
+    draw()
+    expect(await screen.findByText(LISTS_SUBTITLE)).toBeInTheDocument()
   })
 
   it('the same URL as a block and an allow list gets two distinct switch names', async () => {
@@ -160,7 +180,7 @@ describe('BlockLists', () => {
     await screen.findByRole('table')
     await userEvent.click(screen.getByRole('button', { name: 'Add block list' }))
     expect(screen.getByText('No lists')).toBeInTheDocument()
-    expect(screen.queryByText(/unsaved change/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Unsaved changes/)).not.toBeInTheDocument()
   })
 
   it('rejects a URL typed with # or !, under the field', async () => {
@@ -191,7 +211,7 @@ describe('BlockLists', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Add block list' }))
     expect(screen.getByText('This list is already in the table.')).toBeInTheDocument()
     expect(screen.getAllByRole('row')).toHaveLength(2)
-    expect(screen.queryByText(/unsaved change/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Unsaved changes/)).not.toBeInTheDocument()
   })
 
   it('Update Now is off when no list was ever saved', async () => {

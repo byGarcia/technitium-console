@@ -38,7 +38,7 @@ import styles from './Rules.module.css'
 /*
 The Rules tab: the administrator's own blocked and allowed domains in one flat table.
 The table is OURS, and so are its words:
-the title `Rules`; the filter `All` and the counts beside each filter; `Rule` (column
+the title `Rules` and its subtitle (`RULES_SUBTITLE`); the filter `All` and the counts beside each filter; `Rule` (column
 and the filter group's label); the `Domain` column; `Filter domains`, `No rules`,
 `No rules match this filter`, `1 rule` / `N rules`; `View`, `List` / `Tree` and the
 `Tree` selector's label; `Browse domain`; the `Delete <domain>` labels; the menu
@@ -70,6 +70,9 @@ do; because this one bar serves both lists, the tree also turns to the list the
 domain went into (ours: upstream's verbs live on two separate pages, each with
 its own tree). Otherwise the chosen list stays and its next refresh opens the root.
 */
+
+/** What the tab is for, under its title. OURS (CONVENTIONS.md, deviation 2). */
+export const RULES_SUBTITLE = 'Domains you block or allow yourself, with their subdomains. An allow rule wins over every block.'
 
 const LABEL: Record<DomainList, string> = { blocked: 'Blocked', allowed: 'Allowed' }
 
@@ -389,7 +392,7 @@ export function Rules({
 
   return (
     <>
-      <SectionHeader section="Blocking" title="Rules" tabs={tabs} />
+      <SectionHeader section="Blocking" title="Rules" subtitle={RULES_SUBTITLE} tabs={tabs} />
       <Notifier notice={notice} onClose={() => setNotice(null)} />
 
       <div className={shared.stack}>

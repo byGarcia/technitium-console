@@ -58,7 +58,7 @@ describe('Lists groups', () => {
     await userEvent.type(within(table).getByLabelText('Group name'), 'Ads{Enter}')
     expect(order(table)).toEqual(['[No group]', A, '[Ads]'])
     expect(screen.getByText('1 list · 0 disabled · 1 group')).toBeInTheDocument()
-    expect(screen.getByText('1 unsaved change to the block list URLs')).toBeInTheDocument()
+    expect(screen.getByText('Unsaved changes to the block list URLs: 1 group added')).toBeInTheDocument()
     expect(save).not.toHaveBeenCalled()
     expect(await saved(save)).toBe(`${A},# Ads`)
   })
@@ -76,7 +76,7 @@ describe('Lists groups', () => {
     expect(field).toHaveAccessibleDescription('A group name cannot be a list URL.')
     await userEvent.keyboard('{Escape}')
     expect(within(table).queryByLabelText('Group name')).toBeNull()
-    expect(screen.queryByText(/unsaved change/)).toBeNull()
+    expect(screen.queryByText(/Unsaved changes/)).toBeNull()
   })
 
   it('renames a heading as one change', async () => {
@@ -87,7 +87,7 @@ describe('Lists groups', () => {
     await userEvent.clear(field)
     await userEvent.type(field, 'Adverts{Enter}')
     expect(order(table)).toEqual(['[Adverts]', A])
-    expect(screen.getByText('1 unsaved change to the block list URLs')).toBeInTheDocument()
+    expect(screen.getByText('Unsaved changes to the block list URLs: 1 group renamed')).toBeInTheDocument()
     expect(await saved(save)).toBe(`# Adverts,${A}`)
   })
 
@@ -145,7 +145,7 @@ describe('Lists groups', () => {
     expect(order(table)).toEqual(['[No group]', B, A, '[One]', '[Two]', C])
     expect(screen.getByRole('button', { name: `Move up block list ${B}` })).toBeDisabled()
     expect(screen.getByRole('button', { name: `Move down block list ${C}` })).toBeDisabled()
-    expect(screen.getByText('1 unsaved change to the block list URLs')).toBeInTheDocument()
+    expect(screen.getByText('Unsaved changes to the block list URLs: 1 moved')).toBeInTheDocument()
     expect(await saved(save)).toBe(`${B},${A},# One,# Two,${C}`)
   })
 

@@ -70,6 +70,6 @@ describe('Lists against the harness', () => {
   it('nothing is pending after reading: the rows are the saved lines', async () => {
     render(<BlockLists token="T" permissions={undefined} />)
     await screen.findByRole('table')
-    expect(screen.queryByText(/unsaved change/)).toBeNull()
+    expect(screen.queryByText(/Unsaved changes/)).toBeNull()
   })
 })

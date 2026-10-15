@@ -1,10 +1,18 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { act, render, screen } from '@testing-library/react'
 import { Blocking } from './Blocking'
 
 vi.mock('./Overview', () => ({ Overview: () => <p>overview</p> }))
 vi.mock('./Rules', () => ({ Rules: () => <p>rules</p> }))
-vi.mock('./BlockLists', () => ({ BlockLists: () => <p>lists</p> }))
+vi.mock('./BlockLists', () => ({
+  BlockLists: ({ tabs, onDirty }: { tabs?: React.ReactNode; onDirty?: (dirty: boolean) => void }) => (
+    <>
+      {tabs}
+      <button type="button" onClick={() => onDirty?.(true)}>edit</button>
+      <button type="button" onClick={() => onDirty?.(false)}>discard</button>
+    </>
+  ),
+}))
 
 afterEach(() => window.history.replaceState(null, '', '/'))
 
@@ -28,5 +36,14 @@ describe('Blocking', () => {
     expect(window.location.search).toBe('?rule=blocked')
     unmount()
     expect(window.location.pathname + window.location.search).toBe('/blocking/rules/')
+  })
+
+  it('marks the Lists tab while Lists has unsaved changes, in its accessible name', () => {
+    render(<Blocking token="T" sub="Lists" onSubChange={() => {}} permissions={undefined} />)
+    expect(screen.getByRole('link', { name: 'Lists' })).toBeInTheDocument()
+    act(() => screen.getByRole('button', { name: 'edit' }).click())
+    expect(screen.getByRole('link', { name: 'Lists, unsaved changes' })).toHaveAttribute('aria-current', 'page')
+    act(() => screen.getByRole('button', { name: 'discard' }).click())
+    expect(screen.getByRole('link', { name: 'Lists' })).toBeInTheDocument()
   })
 })

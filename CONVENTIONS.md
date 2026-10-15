@@ -593,6 +593,21 @@ contract and SECURITY.md.
      without `Settings.canView`, and again after any settings write made from this
      console, when the browser tab is shown again and a second after a pause ends.
      No other sidebar entry carries a mark or a count.
+
+   And words of its own in three places, approved on 2026-10-15, all OURS and
+   declared in the header comment of the file that writes them:
+   - **a subtitle under each tab's title**, one plain sentence saying what the tab
+     is for (`OVERVIEW_SUBTITLE`, `RULES_SUBTITLE`, `LISTS_SUBTITLE`, drawn by
+     `ui/SectionHeader`'s `subtitle`). No other section has one: they keep upstream's
+     texts only. A sentence that stops being true of its tab changes in the same
+     commit;
+   - **Lists' save bar says what changed**: `Unsaved changes to the block list URLs:`
+     followed by the counts `changesOf` computes (`list-lines.ts`, WHAT CHANGED):
+     added, removed, switched on, switched off, changed, moved, and groups added,
+     renamed and removed. Only the non-zero ones are written;
+   - **the Lists tab carries a dot while there are unsaved changes**, read as
+     `Lists, unsaved changes` (`ui/SubTabs`'s `marks`). The edits still live only
+     while the tab is open, as before: leaving it leaves them, and the dot with them.
 3. **Settings jumps to the sub-tab of the invalid field.** Upstream focuses a
    hidden input and the user sees nothing; with one panel mounted at a time,
    without that jump the alert would be impossible to resolve.
