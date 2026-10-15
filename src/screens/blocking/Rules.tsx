@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { readRuleExport } from '../../api/blocking'
-import { deleteDomain, exportDomains, flushList, type DomainList } from '../../api/zonelists'
+import { addDomain, deleteDomain, exportDomains, flushList, type DomainList } from '../../api/zonelists'
 import { SectionHeader } from '../../ui/SectionHeader'
 import { Panel, Body } from '../../ui/Panel'
 import { Table } from '../../ui/Table'
@@ -10,6 +10,7 @@ import { Menu } from '../../ui/Menu'
 import { PermissionButton } from '../../ui/PermissionButton'
 import { Confirm } from '../../ui/Confirm'
 import { Notifier } from '../../ui/Notifier'
+import { Toast } from '../../ui/Toast'
 import { Input } from '../../ui/Field'
 import { Icon } from '../../ui/Icon'
 import { Failure, Loading } from '../../ui/Empty'
@@ -22,6 +23,10 @@ import { Lists, ImportDomains, type Confirmation } from '../lists/Lists'
 import { LockedBody, LockedItem } from './Locked'
 import { AddDomainBar } from './AddDomainBar'
 import { missing, type Need, type Permissions } from './permissions'
+import {
+  joinDeleted, modifyNeed, notRestoredNotice, restoreRules, RESTORED_MS, undoMessage, undoNeed, UNDO_MS,
+  type UndoState,
+} from './undo'
 import {
   countRules, filterRules, mergeRules, pageOf, readRuleParam, ruleSearch,
   type Rule, type RuleFilter,
@@ -38,11 +43,22 @@ and the filter group's label); the `Domain` column; `Filter domains`, `No rules`
 `Tree` selector's label; `Browse domain`; the `Delete <domain>` labels; the menu
 entries `Blocked zones` / `Allowed zones`; `Could not read the rules.` and its
 `Retry`; and the titles of the Delete and Flush confirmations, which upstream asks
-with a bare `confirm()`. The names `Blocked` and
+with a bare `confirm()`; and the undo notice's words (`undo.ts`). The names `Blocked` and
 `Allowed` are upstream's tabs, and every verb is upstream's, with its sentences
 (other-zones.js). The three verbs of the
 foot do NOT behave alike, so they are not made alike: Import opens its dialog,
 Export downloads at once with a single-use token, Flush asks first.
+
+DELETE IN THE TABLE DOES NOT ASK; IT CAN BE UNDONE (2026-10-15, CONVENTIONS.md,
+deviation 2). The row's Delete sends upstream's `blocked/delete` or `allowed/delete`
+at once and leaves a notice with `Undo`, which sends `blocked/add` or `allowed/add`
+for exactly the domains deleted, each to the list it came from: the same calls the
+add bar makes. A second Delete while the notice is up joins it, so one Undo puts
+back every rule it names. Dismissing the notice, letting it go, or leaving the tab
+or the section keeps the deletions: they were made on the server already.
+Without `Modify` on the rule's list the session could not put it back, so that
+Delete still asks first, with upstream's sentence. Everywhere else the
+confirmation stays: Flush, the tree (upstream's own screen) and the other sections.
 
 `Tree` mounts the tree that exists today, so nothing upstream has is lost. It
 reports through this page's notifier, and every change (from the table, the foot,
@@ -112,6 +128,22 @@ export function Rules({
     treeContext.current = { view, viewBlocked, viewAllowed }
   }, [view, viewBlocked, viewAllowed])
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null)
+  /* The undo notice: the rules it can put back, and where it is (`undo.ts`).
+     `undoKey` restarts its clock when a Delete joins it or it reports. */
+  const [undo, setUndo] = useState<UndoState | null>(null)
+  const [undoKey, setUndoKey] = useState(0)
+  const undoButton = useRef<HTMLButtonElement>(null)
+  const search = useRef<HTMLInputElement>(null)
+  /* The row that held the focus is gone once the table is read again: the focus
+     goes to Undo then, and not to the page's body. */
+  const focusUndo = useRef(false)
+  const mounted = useRef(true)
+  useEffect(() => {
+    mounted.current = true
+    return () => {
+      mounted.current = false
+    }
+  }, [])
   const [importing, setImporting] = useState<DomainList | null>(null)
   const [busy, setBusy] = useState(false)
 
@@ -156,6 +188,14 @@ export function Rules({
   useEffect(() => {
     void load()
   }, [load])
+
+  useLayoutEffect(() => {
+    if (!focusUndo.current) return
+    const active = document.activeElement
+    if (active != null && active !== document.body && document.contains(active)) return
+    focusUndo.current = false
+    undoButton.current?.focus()
+  }, [rules])
 
   /* The bar always says the filter on screen: on choosing, and on opening when the
      one it asked for fell back to All or meant nothing (`?rule=garbage`). The RAW
@@ -228,6 +268,48 @@ export function Rules({
             : { type: 'success', title: 'Deleted!', text: `Blocked zone '${rule.domain}' was deleted successfully.` },
         ),
     })
+  }
+
+  /* Delete from the table: at once, with Undo, when the session could put the rule
+     back; otherwise upstream's confirmation (see the header). */
+  async function deleteRule(rule: Rule) {
+    if (missing(permissions, modifyNeed(rule.list)) != null) {
+      askDelete(rule)
+      return
+    }
+    setBusy(true)
+    const outcome = await deleteDomain(rule.list, token, rule.domain)
+    if (!mounted.current) return
+    setBusy(false)
+    if (outcome.kind !== 'ok') {
+      setNotice(noticeFromFailure(outcome))
+      return
+    }
+    setUndo((u) => joinDeleted(u, rule))
+    setUndoKey((k) => k + 1)
+    focusUndo.current = true
+    changed()
+    await load(true)
+  }
+
+  async function runUndo() {
+    if (undo == null || undo.phase !== 'deleted') return
+    const deleted = undo.rules
+    setUndo({ rules: deleted, phase: 'restoring' })
+    setBusy(true)
+    const result = await restoreRules(deleted, (r) => addDomain(r.list, token, r.domain))
+    if (!mounted.current) return
+    setBusy(false)
+    changed()
+    await load(true)
+    if (!mounted.current) return
+    if (result.failure == null) {
+      setUndo({ rules: deleted, phase: 'restored' })
+      setUndoKey((k) => k + 1)
+      return
+    }
+    setUndo(null)
+    setNotice(notRestoredNotice(deleted, result))
   }
 
   function askFlush(list: DomainList) {
@@ -329,6 +411,7 @@ export function Rules({
                   {filterButton('allowed', counts.allowed, missing(permissions, 'Allowed.canView'))}
                 </div>
                 <Input
+                  ref={search}
                   className={styles.search}
                   aria-label="Filter domains"
                   placeholder="Filter domains…"
@@ -457,7 +540,7 @@ export function Rules({
                         aria-label={`Delete ${r.domain}`}
                         disabled={busy}
                         permission={missing(permissions, r.list === 'allowed' ? 'Allowed.canDelete' : 'Blocked.canDelete')}
-                        onClick={() => askDelete(r)}
+                        onClick={() => void deleteRule(r)}
                       >
                         Delete
                       </PermissionButton>
@@ -520,6 +603,26 @@ export function Rules({
         label={confirmation?.label ?? ''}
         onClose={() => setConfirmation(null)}
         onConfirm={() => confirmation?.action()}
+      />
+
+      <Toast
+        message={undo == null ? null : undoMessage(undo)}
+        action={
+          undo == null || undo.phase === 'restored'
+            ? undefined
+            : {
+                label: 'Undo',
+                disabled: undo.phase === 'restoring',
+                permission: undoNeed(permissions, undo.rules),
+                onClick: () => void runUndo(),
+              }
+        }
+        hold={undo?.phase === 'restoring'}
+        duration={undo?.phase === 'restored' ? RESTORED_MS : UNDO_MS}
+        timerKey={undoKey}
+        actionRef={undoButton}
+        returnFocus={() => search.current?.focus()}
+        onDismiss={() => setUndo(null)}
       />
 
       {importing != null && (

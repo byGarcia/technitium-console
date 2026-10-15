@@ -68,10 +68,13 @@ describe('Rules', () => {
     expect(within(screen.getByRole('table')).getAllByRole('row')).toHaveLength(2)
   })
 
+  /* Without Modify the rule could not be put back, so the Delete asks, as upstream. */
+  const NO_MODIFY = { Blocked: P(true, false), Allowed: P(true, false) }
+
   it('Delete asks with upstream sentence and deletes from its own list', async () => {
     exports(['ads.example.com'], [])
     const remove = vi.spyOn(zonelists, 'deleteDomain').mockResolvedValue(OK)
-    draw()
+    draw(NO_MODIFY)
     await userEvent.click(await screen.findByRole('button', { name: 'Delete ads.example.com' }))
     const dialog = await screen.findByRole('dialog')
     expect(dialog).toHaveTextContent("Are you sure you want to delete the blocked zone 'ads.example.com'?")
@@ -224,10 +227,10 @@ describe('Rules', () => {
     const read = exports(['ads.example.com'], [])
     vi.spyOn(zonelists, 'deleteDomain').mockResolvedValue(OK)
     render(<Rules token="T" permissions={undefined} nodes={NODES} clusterInitialised />)
-    await userEvent.click(await screen.findByRole('button', { name: 'Delete ads.example.com' }))
+    expect(await screen.findByRole('button', { name: 'Delete ads.example.com' })).toBeInTheDocument()
     expect(read).toHaveBeenCalledWith('blocked', 'T', '')
     expect(read).toHaveBeenCalledWith('allowed', 'T', '')
-    await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Delete' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Delete ads.example.com' }))
     await screen.findByText("Blocked zone 'ads.example.com' was deleted successfully.")
     expect(read).toHaveBeenCalledTimes(4)
     expect(read).toHaveBeenCalledWith('blocked', 'T', 'dev.cluster.test')
@@ -438,7 +441,7 @@ describe('Rules', () => {
   it('Delete on an allowed rule uses the Allowed sentences and list', async () => {
     exports([], ['s.youtube.com'])
     const remove = vi.spyOn(zonelists, 'deleteDomain').mockResolvedValue(OK)
-    draw()
+    draw(NO_MODIFY)
     await userEvent.click(await screen.findByRole('button', { name: 'Delete s.youtube.com' }))
     const dialog = await screen.findByRole('dialog')
     expect(within(dialog).getByRole('heading', { name: 'Delete Allowed Zone' })).toBeInTheDocument()
