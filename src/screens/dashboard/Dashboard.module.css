@@ -205,8 +205,10 @@ carries (`ui/count.module.css`), even though here it travels in a `tfoot`.
   letter-spacing: normal;
   background: transparent;
 }
-.topName { display: block; font-family: var(--font-mono); word-break: break-all; }
-.topTable .topDomain { display: block; margin-top: var(--s-1); font: var(--t-2) var(--font-mono); color: var(--faint); word-break: break-all; }
+/* Top 1000: a name is broken only when it cannot fit its cell. `overflow-wrap`, unlike
+   `word-break: break-all`, leaves the column's minimum width to whole names. */
+.topName { display: block; font-family: var(--font-mono); overflow-wrap: break-word; }
+.topTable .topDomain { display: block; margin-top: var(--s-1); font: var(--t-2) var(--font-mono); color: var(--faint); overflow-wrap: break-word; }
 .topCount { composes: mono from '../../ui/text.module.css'; }
 
 /*

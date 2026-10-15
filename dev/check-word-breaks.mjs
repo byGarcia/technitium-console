@@ -64,17 +64,6 @@ export const ALLOWED = [
     reason: 'Key/value lists hold DNSSEC keys and hex digests inside table cells; without it they push the table out.',
   },
   {
-    file: 'src/screens/dashboard/Dashboard.module.css',
-    selector: '.topName',
-    reason: 'The Dashboard is being rebuilt on another branch, which replaces its Top lists. '
-      + 'This entry stops matching when that lands, and the gate then asks for it to go.',
-  },
-  {
-    file: 'src/screens/dashboard/Dashboard.module.css',
-    selector: '.topDomain',
-    reason: 'The same Top lists as `.topName`, on the Dashboard being rebuilt on another branch.',
-  },
-  {
     file: 'src/ui/SectionHeader.module.css',
     selector: '.title',
     reason: 'The h1 sits in a column of definite width (`min-width: 0`), so it only breaks a word that '
