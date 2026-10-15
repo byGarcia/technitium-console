@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { readSettings, setSettings, forceUpdateBlockLists } from '../../api/settings'
 import { getDashboardStats } from '../../api/dashboard'
 import { loadQuickList, type QuickEntry } from '../../lib/quick-lists'
 import { nextUpdateText } from '../settings/panes/Blocking'
 import { SectionHeader } from '../../ui/SectionHeader'
 import { Panel, Body } from '../../ui/Panel'
-import { Table } from '../../ui/Table'
+import { RowAction, Table } from '../../ui/Table'
 import { Field, Input, Select } from '../../ui/Field'
 import { Button } from '../../ui/Button'
 import { PermissionButton } from '../../ui/PermissionButton'
@@ -16,7 +16,9 @@ import { RouteLink } from '../../ui/RouteLink'
 import { Icon } from '../../ui/Icon'
 import { noticeFromFailure, type Notice } from '../../lib/notice'
 import {
-  addList, applyQuick, canToggle, fromUrls, listName, saveBody, sameLines, toggleLine, type ListLine,
+  addHeading, addListTo, applyQuickTo, canMove, canToggle, fromUrls, headingEdits, headingIndexes, headingName,
+  headingProblem, listName, moveLine, removeHeading, renameHeading, saveBody, sameLines, toggleLine,
+  type ListLine,
 } from './list-lines'
 import { Locked } from './Locked'
 import { hostsOf, moreLists } from './extra-lists'
@@ -38,9 +40,13 @@ every alert of the update and the save. Everything else is OURS:
 - the field label `List URL` (upstream's is "Allow / Block List URLs"), its
   placeholder, the `file://` help line, the invalid-URL hint and `This list is
   already in the table.`; `Add block list` / `Add allow list`;
-- the table: the columns `Enabled`, `List` and `Type`, the types `Block`, `Allow`
-  and `Comment`, `Remove`, `No lists`, and the row controls' aria-labels;
-- the table's foot: `N list(s) · N disabled · N comment(s)`;
+- the table: the columns `Enabled`, `List` and `Type`, the types `Block` and `Allow`,
+  `Remove`, `Move up` / `Move down`, `No lists`, and the row controls' aria-labels;
+- the groups (2026-10-15): a comment line drawn as a group heading (`list-lines.ts`,
+  GROUPS) with its `N list(s)`, `No group` for the lists before the first heading,
+  `Unnamed group` for a bare `#`, `Rename`, `Ungroup`, `Add group`, `Group name`,
+  `Cancel`, the field `Add to group`, and `headingProblem`'s sentences;
+- the table's foot: `N list(s) · N disabled · N group(s)`;
 - the unsaved-changes bar: `1 unsaved change` / `N unsaved changes` with its
   suffix `to the block list URLs`, `Discard`, and `Save`, shortened from upstream's
   "Save Settings" (index.html:2460);
@@ -56,6 +62,9 @@ No node selector: `blockListUrls` is a CLUSTER-WIDE parameter (`nodeScope`,
 settings/model.ts:514), so it is read and saved on the cluster when there is one and
 on this server when there is not, which is what Settings does with the aggregate.
 
+Groups and moves are kept with everything else: a heading is a line like any other,
+so adding, renaming or removing one, and moving a list, only changes `lines`.
+
 Changes are KEPT until Save, as upstream's Save Settings keeps the textarea:
 `Quick Add > None` empties every list, and saving on each click would make that one
 click unrecoverable. One save also means one request, so quick changes cannot land
@@ -66,8 +75,8 @@ out of order.
    entry of Technitium's still picks the right one. */
 const MORE = 'more:'
 
-const KIND_LABEL = { block: 'Block', allow: 'Allow', comment: 'Comment' } as const
-const KIND_CLASS = { block: styles.block, allow: styles.allow, comment: styles.comment } as const
+const KIND_LABEL = { block: 'Block', allow: 'Allow' } as const
+const KIND_CLASS = { block: styles.block, allow: styles.allow } as const
 /* An icon and a word, not only a colour, as the Rule column of Rules: the same two
    icons, so a block list and a blocked rule read as the same kind. */
 const KIND_ICON = { block: 'blocked', allow: 'allowed' } as const
@@ -119,21 +128,23 @@ function sameItems(a: readonly string[], b: readonly string[]): boolean {
 }
 
 /*
-How many lines the save would change. A line is identified by its URL (a comment by
-its text), so switching a list off is ONE change and not the removal of one line
-plus the addition of another. Lines that only moved (removed and added back, which
-puts them last) still count as one change: the order is saved too.
+How many lines the save would change. A list is identified by its URL, so switching
+a list off is ONE change and not the removal of one line plus the addition of
+another. Headings are counted apart, as edits between the two sequences of headings
+(`headingEdits`), so renaming a group is one change too. Lines that only moved
+still count as one change: the order is saved too.
 */
 function pendingChanges(saved: ListLine[], lines: ListLine[]): number {
   const byKey = new Map<string, [string[], string[]]>()
   const put = (l: ListLine, side: 0 | 1) => {
-    const key = l.url ?? l.raw
-    const entry = byKey.get(key) ?? [[], []]
+    if (l.url == null) return
+    const entry = byKey.get(l.url) ?? [[], []]
     entry[side].push(l.raw)
-    byKey.set(key, entry)
+    byKey.set(l.url, entry)
   }
   saved.forEach((l) => put(l, 0))
   lines.forEach((l) => put(l, 1))
+  const heads = (all: ListLine[]) => all.filter((l) => l.kind === 'comment').map((l) => l.raw)
 
   let n = 0
   for (const [before, after] of byKey.values()) {
@@ -146,7 +157,66 @@ function pendingChanges(saved: ListLine[], lines: ListLine[]): number {
     }
     n += Math.max(gone, rest.length)
   }
+  n += headingEdits(heads(saved), heads(lines))
   return n === 0 && !sameLines(saved, lines) ? 1 : n
+}
+
+/** A heading being written: an existing group by its ordinal, or a new one. */
+type Editing = { group: number | 'new'; value: string; problem: string | null }
+
+const UNNAMED = 'Unnamed group'
+const nameOf = (line: ListLine) => headingName(line) || UNNAMED
+const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
+
+/*
+The heading editor: one field, its verb and `Cancel`. Enter takes it and Escape
+leaves it, as a field in a row should; the sentence that refuses a name goes under
+the field, once (the design rule).
+*/
+function HeadingEditor({
+  editing,
+  verb,
+  onChange,
+  onSubmit,
+  onCancel,
+}: {
+  editing: Editing
+  verb: string
+  onChange: (value: string) => void
+  onSubmit: () => void
+  onCancel: () => void
+}) {
+  const problemId = useId()
+  return (
+    <form
+      className={styles.editor}
+      onSubmit={(e: FormEvent) => {
+        e.preventDefault()
+        onSubmit()
+      }}
+    >
+      <Input
+        autoFocus
+        aria-label="Group name"
+        className={`${styles.bad} ${styles.editorField}`}
+        value={editing.value}
+        aria-invalid={editing.problem != null || undefined}
+        aria-describedby={editing.problem != null ? problemId : undefined}
+        onChange={(e) => onChange(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape') {
+            e.preventDefault()
+            onCancel()
+          }
+        }}
+      />
+      <Button size="sm" variant="primary" type="submit">{verb}</Button>
+      <Button size="sm" type="button" onClick={onCancel}>Cancel</Button>
+      {editing.problem != null && (
+        <p id={problemId} className={styles.invalid}>{editing.problem}</p>
+      )}
+    </form>
+  )
 }
 
 export function BlockLists({
@@ -182,6 +252,22 @@ export function BlockLists({
   const [notice, setNotice] = useState<Notice | null>(null)
   const [busy, setBusy] = useState(false)
   const [askUpdate, setAskUpdate] = useState(false)
+  /** The group "Add a list" and Quick Add put lists into: a heading's ordinal, -1 for none. */
+  const [group, setGroup] = useState(-1)
+  const [editing, setEditing] = useState<Editing | null>(null)
+  /* Closing the editor removes the field that held the focus: it goes back to the
+     button that opened it, found by its name once the table is drawn again. */
+  const table = useRef<HTMLDivElement>(null)
+  const focusAfter = useRef<string | null>(null)
+  useEffect(() => {
+    const name = focusAfter.current
+    if (name == null || editing != null) return
+    focusAfter.current = null
+    const target = [...(table.current?.querySelectorAll('button') ?? [])].find(
+      (b) => (b.getAttribute('aria-label') ?? b.textContent) === name,
+    )
+    target?.focus()
+  }, [editing, lines])
   /** The server is reloading the lists: the counts on screen are not current yet. */
   const [reloading, setReloading] = useState<Reload | null>(null)
   /** The lines as the server last answered them, to tell whether a Save reloads. */
@@ -295,6 +381,43 @@ export function BlockLists({
   const pending = saved == null ? 0 : pendingChanges(saved, lines)
   const off = modifyNeed != null
   const loading = saved == null
+  const heads = headingIndexes(lines)
+  /* What the chosen group still means: a Discard or a Quick Add that emptied the
+     headings leaves an ordinal that no longer exists, and that is no group. */
+  const target = group < heads.length ? group : -1
+  const edit = editing != null && (editing.group === 'new' || editing.group < heads.length) ? editing : null
+
+  function submitHeading() {
+    if (edit == null) return
+    const problem = headingProblem(edit.value)
+    if (problem != null) {
+      setEditing({ ...edit, problem })
+      return
+    }
+    if (edit.group === 'new') {
+      setLines(addHeading(lines, edit.value))
+      // The new group is the one the next list goes into.
+      setGroup(heads.length)
+      focusAfter.current = 'Add group'
+    } else {
+      setLines(renameHeading(lines, heads[edit.group], edit.value))
+      focusAfter.current = `Rename group ${edit.value.trim()}`
+    }
+    setEditing(null)
+  }
+
+  function cancelEditing() {
+    if (edit == null) return
+    focusAfter.current = edit.group === 'new' ? 'Add group' : `Rename group ${nameOf(lines[heads[edit.group]])}`
+    setEditing(null)
+  }
+
+  function ungroup(g: number) {
+    setLines(removeHeading(lines, heads[g]))
+    // Its lists joined the group above, and so does the choice of group.
+    if (target >= g) setGroup(target - 1)
+    if (edit != null && edit.group !== 'new' && edit.group >= g) setEditing(null)
+  }
 
   function add(kind: 'block' | 'allow') {
     const url = field.trim()
@@ -307,7 +430,7 @@ export function BlockLists({
       setInvalid(MSG_DUPLICATE)
       return
     }
-    setLines(addList(lines, url, kind))
+    setLines(addListTo(lines, url, kind, target))
     setField('')
     setInvalid(null)
   }
@@ -366,7 +489,132 @@ export function BlockLists({
 
   const listsCount = lines.filter((l) => l.kind !== 'comment').length
   const disabledCount = lines.filter((l) => l.kind !== 'comment' && !l.enabled).length
-  const commentCount = lines.length - listsCount
+  const groupCount = heads.length
+
+  /* The lists of each group, to say how many it holds. */
+  const groupSize = (g: number) => (heads[g + 1] ?? lines.length) - (g < 0 ? 0 : heads[g] + 1)
+
+  function headingRow(key: string, name: string, count: number, controls: ReactNode) {
+    return (
+      <tr key={key} className={styles.groupRow}>
+        <th colSpan={4} scope="colgroup">
+          <div className={styles.groupHead}>
+            <span className={styles.groupName}>{name}</span>
+            <span className={styles.groupCount}>{plural(count, 'list', 'lists')}</span>
+            {controls != null && <span className={styles.spacer} />}
+            {controls}
+          </div>
+        </th>
+      </tr>
+    )
+  }
+
+  /* One row per line. A key that follows the line and not its place, so a list that
+     moves or switches keeps its row, and the focus stays on the button pressed. */
+  const seen = new Map<string, number>()
+  const rows: ReactNode[] = []
+  if (heads.length > 0 && heads[0] > 0) rows.push(headingRow('none', 'No group', groupSize(-1), null))
+  lines.forEach((l, i) => {
+    if (l.kind === 'comment') {
+      const g = heads.indexOf(i)
+      const name = nameOf(l)
+      rows.push(
+        edit != null && edit.group === g ? (
+          <tr key={`H:${g}`} className={styles.groupRow}>
+            <th colSpan={4} scope="colgroup">
+              <HeadingEditor
+                editing={edit}
+                verb="Rename"
+                onChange={(value) => setEditing({ ...edit, value, problem: null })}
+                onSubmit={submitHeading}
+                onCancel={cancelEditing}
+              />
+            </th>
+          </tr>
+        ) : (
+          headingRow(`H:${g}`, name, groupSize(g), (
+            <>
+              <PermissionButton size="sm" permission={modifyNeed} aria-label={`Rename group ${name}`}
+                onClick={() => setEditing({ group: g, value: headingName(l), problem: null })}>
+                Rename
+              </PermissionButton>
+              <PermissionButton size="sm" permission={modifyNeed} aria-label={`Ungroup ${name}`}
+                onClick={() => ungroup(g)}>
+                Ungroup
+              </PermissionButton>
+            </>
+          ))
+        ),
+      )
+      return
+    }
+    const id = `${l.kind}:${l.url}`
+    const n = seen.get(id) ?? 0
+    seen.set(id, n + 1)
+    const name = l.url == null ? null : listName(l.url, named)
+    const faded = !l.enabled ? styles.off : undefined
+    const what = `${l.kind} list ${l.url ?? ''}`
+    rows.push(
+      <tr key={`L:${id}:${n}`}>
+        <td>
+          {canToggle(l) && (
+            <label className={styles.switch}>
+              <input
+                type="checkbox"
+                aria-label={`Enabled ${what}`}
+                checked={l.enabled}
+                disabled={off}
+                onChange={() => setLines((all) => all.map((x, j) => (j === i ? toggleLine(x) : x)))}
+              />
+            </label>
+          )}
+        </td>
+        <td className={faded}>
+          {name != null && <div className={styles.name}>{name}</div>}
+          <div className={styles.url}>{l.url ?? l.raw}</div>
+          {/* The kind under the URL where the Type column is folded away. */}
+          <span className={`${styles.kind} ${styles.kindInline} ${KIND_CLASS[l.kind]}`}>
+            <Icon name={KIND_ICON[l.kind]} size={14} />
+            {KIND_LABEL[l.kind]}
+          </span>
+        </td>
+        <td className={`${faded ?? ''} ${styles.kindCell}`}>
+          <span className={`${styles.kind} ${KIND_CLASS[l.kind]}`}>
+            <Icon name={KIND_ICON[l.kind]} size={14} />
+            {KIND_LABEL[l.kind]}
+          </span>
+        </td>
+        <td className={styles.actions}>
+          <div className={styles.rowActions}>
+            <RowAction icon="moveUp" name="Move up" aria-label={`Move up ${what}`}
+              disabled={off || !canMove(lines, i, -1)} onClick={() => setLines((all) => moveLine(all, i, -1))} />
+            <RowAction icon="moveDown" name="Move down" aria-label={`Move down ${what}`}
+              disabled={off || !canMove(lines, i, 1)} onClick={() => setLines((all) => moveLine(all, i, 1))} />
+            <PermissionButton size="sm" variant="danger" permission={modifyNeed}
+              aria-label={`Remove ${l.url ?? l.raw}`}
+              onClick={() => setLines((all) => all.filter((_, j) => j !== i))}>
+              Remove
+            </PermissionButton>
+          </div>
+        </td>
+      </tr>,
+    )
+  })
+  if (edit != null && edit.group === 'new') {
+    rows.push(
+      <tr key="H:new" className={styles.groupRow}>
+        <th colSpan={4} scope="colgroup">
+          <HeadingEditor
+            editing={edit}
+            verb="Add group"
+            onChange={(value) => setEditing({ ...edit, value, problem: null })}
+            onSubmit={submitHeading}
+            onCancel={cancelEditing}
+          />
+        </th>
+      </tr>,
+    )
+  }
 
   return (
     <>
@@ -440,6 +688,24 @@ export function BlockLists({
 
         <Panel title="Add a list">
           <Body>
+            {/* Above both ways in, the URL and Quick Add, because it serves both. */}
+            <div className={styles.target}>
+              <Field label="Add to group">
+                {(id) => (
+                  <Select
+                    id={id}
+                    disabled={off || loading || heads.length === 0}
+                    value={String(target)}
+                    onChange={(ev) => setGroup(Number(ev.target.value))}
+                  >
+                    <option value="-1">No group</option>
+                    {heads.map((h, g) => (
+                      <option key={g} value={String(g)}>{nameOf(lines[h])}</option>
+                    ))}
+                  </Select>
+                )}
+              </Field>
+            </div>
             <div className={styles.add}>
               <Field label="List URL">
                 {(id) => (
@@ -496,7 +762,7 @@ export function BlockLists({
                           : chosen.startsWith(MORE)
                             ? more[Number(chosen.slice(MORE.length))]
                             : catalog.find((q) => q.name === chosen)
-                        if (entry != null) setLines((l) => applyQuick(l, entry))
+                        if (entry != null) setLines((l) => applyQuickTo(l, entry, target))
                       }}
                     >
                       <option value="" />
@@ -522,64 +788,33 @@ export function BlockLists({
         </Panel>
 
         <Panel className={shared.flush}>
-          {readFailed ? (
-            <Body><Failure>Could not read the block list settings.</Failure></Body>
-          ) : saved == null ? (
-            <Body><Loading /></Body>
-          ) : (
-            <Table
-              header={<><th>Enabled</th><th>List</th><th>Type</th><th /></>}
-              isEmpty={lines.length === 0}
-              emptyText="No lists"
-              columns={4}
-              className={shared.inPanel}
-            >
-              {lines.map((l, i) => {
-                const name = l.url == null ? null : listName(l.url, named)
-                const faded = l.kind !== 'comment' && !l.enabled ? styles.off : undefined
-                return (
-                  <tr key={`${i}:${l.raw}`}>
-                    <td>
-                      {canToggle(l) && (
-                        <label className={styles.switch}>
-                          <input
-                            type="checkbox"
-                            aria-label={`Enabled ${l.kind} list ${l.url ?? ''}`}
-                            checked={l.enabled}
-                            disabled={off}
-                            onChange={() => setLines((all) => all.map((x, j) => (j === i ? toggleLine(x) : x)))}
-                          />
-                        </label>
-                      )}
-                    </td>
-                    <td className={faded}>
-                      {name != null && <div className={styles.name}>{name}</div>}
-                      <div className={styles.url}>{l.url ?? l.raw}</div>
-                    </td>
-                    <td className={faded}>
-                      <span className={`${styles.kind} ${KIND_CLASS[l.kind]}`}>
-                        {l.kind !== 'comment' && <Icon name={KIND_ICON[l.kind]} size={14} />}
-                        {KIND_LABEL[l.kind]}
-                      </span>
-                    </td>
-                    <td className={styles.actions}>
-                      <PermissionButton size="sm" variant="danger" permission={modifyNeed}
-                        aria-label={`Remove ${l.url ?? l.raw}`}
-                        onClick={() => setLines((all) => all.filter((_, j) => j !== i))}>
-                        Remove
-                      </PermissionButton>
-                    </td>
-                  </tr>
-                )
-              })}
-            </Table>
-          )}
-          <div className={styles.foot}>
-            <span>
-              {listsCount} {listsCount === 1 ? 'list' : 'lists'} · {disabledCount} disabled · {commentCount} {commentCount === 1 ? 'comment' : 'comments'}
-            </span>
-            <span className={styles.spacer} />
-            <RouteLink to={{ section: 'settings', sub: 'Blocking' }}>More blocking settings in Settings › Blocking</RouteLink>
+          <div ref={table}>
+            {readFailed ? (
+              <Body><Failure>Could not read the block list settings.</Failure></Body>
+            ) : saved == null ? (
+              <Body><Loading /></Body>
+            ) : (
+              <Table
+                header={<><th>Enabled</th><th>List</th><th className={styles.kindCell}>Type</th><th /></>}
+                isEmpty={lines.length === 0 && edit?.group !== 'new'}
+                emptyText="No lists"
+                columns={4}
+                className={shared.inPanel}
+              >
+                {rows}
+              </Table>
+            )}
+            <div className={styles.foot}>
+              <PermissionButton size="sm" permission={modifyNeed} disabled={loading || edit?.group === 'new'}
+                onClick={() => setEditing({ group: 'new', value: '', problem: null })}>
+                Add group
+              </PermissionButton>
+              <span>
+                {plural(listsCount, 'list', 'lists')} · {disabledCount} disabled · {plural(groupCount, 'group', 'groups')}
+              </span>
+              <span className={styles.spacer} />
+              <RouteLink to={{ section: 'settings', sub: 'Blocking' }}>More blocking settings in Settings › Blocking</RouteLink>
+            </div>
           </div>
         </Panel>
 

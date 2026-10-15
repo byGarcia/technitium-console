@@ -1,4 +1,5 @@
 import { apiRequest, type ApiOutcome } from './client'
+import { settingsChanged } from '../lib/settings-signal'
 
 /*
 The `settings` family. Six endpoints come from the old console:
@@ -265,11 +266,14 @@ export async function setSettings(
   token: string | null,
   body: Record<string, string>,
 ): Promise<ApiOutcome<SettingsEnvelope>> {
-  return apiRequest<SettingsEnvelope>('settings/set', {
+  const outcome = await apiRequest<SettingsEnvelope>('settings/set', {
     token,
     method: 'POST',
     body,
   })
+  // For the sidebar's Blocking mark (`lib/settings-signal.ts`).
+  if (outcome.kind === 'ok') settingsChanged()
+  return outcome
 }
 
 /** `settings/forceUpdateBlockLists`. No parameters: forces the download now. */
@@ -287,6 +291,7 @@ export async function temporaryDisableBlocking(
     'settings/temporaryDisableBlocking',
     { token, body: { minutes } },
   )
+  if (outcome.kind === 'ok') settingsChanged()
   return outcome.kind === 'ok' ? (outcome.data.response?.temporaryDisableBlockingTill ?? null) : null
 }
 
@@ -342,11 +347,13 @@ export async function restoreSettings(
   const query = new URLSearchParams(backupParams(selection, node))
   query.set('deleteExistingFiles', String(deleteExistingFiles))
 
-  return apiRequest<SettingsEnvelope>(`settings/restore?${query.toString()}`, {
+  const outcome = await apiRequest<SettingsEnvelope>(`settings/restore?${query.toString()}`, {
     token,
     method: 'POST',
     file: { field: 'fileBackupZip', file: file },
   })
+  if (outcome.kind === 'ok') settingsChanged()
+  return outcome
 }
 
 /** `cache/flush` (other-zones.js:20). It lives here on loan: see the header. */

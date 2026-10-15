@@ -1,0 +1,22 @@
+/*
+The sidebar's mark on Blocking: a small pill at the entry's end. Its tones are the
+Overview block's (`blocking-state.ts`, `blockingMark`): amber for a pause the user
+can lift, neutral otherwise. On the active entry, which is already amber, it keeps
+only its outline, in the entry's own ink.
+*/
+.mark {
+  margin-left: auto;
+  padding: 0 var(--s-3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-full);
+  background: var(--pan2);
+  color: var(--mute);
+  font-size: var(--t-1);
+  font-weight: var(--text-weight);
+  letter-spacing: var(--text-tracking);
+  text-transform: uppercase;
+  /* No taller than the entry's own line, so the entry keeps its height. */
+  line-height: 1.3;
+}
+.mark[data-tone='acc'] { background: var(--acc-bg); border-color: var(--acc-bd); color: var(--acc-ink); }
+[data-active='true'] > .mark { background: transparent; border-color: currentColor; color: inherit; }

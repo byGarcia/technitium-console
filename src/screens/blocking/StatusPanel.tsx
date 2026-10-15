@@ -1,5 +1,3 @@
-import { useCallback, useEffect, useState } from 'react'
-import { getSettings } from '../../api/settings'
 import { BlockingMenu } from '../dashboard/BlockingMenu'
 import { Panel, Body } from '../../ui/Panel'
 import { PermissionButton } from '../../ui/PermissionButton'
@@ -7,10 +5,10 @@ import { Button } from '../../ui/Button'
 import { Failure, Loading } from '../../ui/Empty'
 import { Icon } from '../../ui/Icon'
 import { Tag } from '../../ui/Tag'
-import { minuteStamp } from '../../lib/dates'
 import type { Notice } from '../../lib/notice'
 import { Locked } from './Locked'
 import { missing, type Permissions } from './permissions'
+import { untilText, useBlockingState } from './blocking-state'
 import shared from './Blocking.module.css'
 import styles from './Overview.module.css'
 
@@ -28,40 +26,10 @@ Three things the block owes the rules rather than the menu:
   error), instead of leaving "Loading…" on screen forever.
 - A pause ends on the server by itself, so the block reads again when it should
   have ended: otherwise it would keep saying "paused" for as long as the screen is
-  open. The server's own timer is armed a hair BEFORE it computes `till`
-  (BlockListZoneManager.cs:993-995), so reading a second after `till` finds
-  blocking back on; the second also absorbs a small clock skew.
+  open (`blocking-state.ts`, AFTER_PAUSE_MS).
 - The amber of "paused" says "yours to change". Without `Settings.canModify` it is
   not, and the design rule is that the padlock wins: the mark goes neutral.
 */
-
-/** How long after `till` to read again. See above. */
-const AFTER_PAUSE_MS = 1000
-/** `setTimeout`'s ceiling (2^31 - 1 ms, about 24.8 days). Past it the browser fires
-    AT ONCE, which with a far-off `till` would read in a loop; capped, it reads,
-    finds the pause still on and waits again. */
-const MAX_TIMEOUT_MS = 2_147_483_647
-
-/*
-When a pause ends, as the pill says it: the hour alone when that is today, the date as
-well when it is not (a three-hour pause at 23:00 ends tomorrow, and "Until 01:30"
-alone would read as earlier today). OURS, as the block is.
-*/
-function untilText(till: string, now: Date = new Date()): string {
-  const stamp = minuteStamp(till)
-  const end = new Date(till)
-  const today =
-    end.getFullYear() === now.getFullYear() && end.getMonth() === now.getMonth() && end.getDate() === now.getDate()
-  return `Until ${today ? stamp.slice(11) : stamp}`
-}
-
-type State = { kind: 'on' } | { kind: 'paused'; till: string } | { kind: 'off' }
-
-function stateOf(enable: boolean, till: string | null | undefined): State {
-  if (enable) return { kind: 'on' }
-  if (till != null && Date.parse(till) > Date.now()) return { kind: 'paused', till }
-  return { kind: 'off' }
-}
 
 export function StatusPanel({
   token,
@@ -73,25 +41,10 @@ export function StatusPanel({
   onNotice: (n: Notice) => void
 }) {
   const viewNeed = missing(permissions, 'Settings.canView')
-  /** `null` while the first read travels; `'failed'` when it never arrived. */
-  const [state, setState] = useState<State | 'failed' | null>(null)
-
-  const load = useCallback(async () => {
-    const s = await getSettings(token)
-    setState(s == null ? 'failed' : stateOf(s.enableBlocking, s.temporaryDisableBlockingTill))
-  }, [token])
-
-  useEffect(() => {
-    if (viewNeed == null) void load()
-  }, [load, viewNeed])
-
-  const till = state != null && state !== 'failed' && state.kind === 'paused' ? state.till : null
-  useEffect(() => {
-    if (till == null) return
-    const wait = Math.min(MAX_TIMEOUT_MS, Math.max(0, Date.parse(till) - Date.now()) + AFTER_PAUSE_MS)
-    const timer = setTimeout(() => void load(), wait)
-    return () => clearTimeout(timer)
-  }, [till, load])
+  /* The reads (when, from where, and the one when a pause ends) are
+     `useBlockingState`'s, shared with the sidebar's mark. A change made from the
+     menu below reaches it as every settings write does (`lib/settings-signal.ts`). */
+  const { state, retry } = useBlockingState(token, permissions)
 
   if (viewNeed != null) return <Locked title="Blocking" need={viewNeed} />
 
@@ -103,7 +56,7 @@ export function StatusPanel({
         <Body>
           <Failure>
             Could not read the blocking state.{' '}
-            <Button size="sm" onClick={() => { setState(null); void load() }}>
+            <Button size="sm" onClick={retry}>
               Retry
             </Button>
           </Failure>
@@ -156,7 +109,7 @@ export function StatusPanel({
             {modifyNeed != null ? (
               <PermissionButton permission={modifyNeed}>{verb}</PermissionButton>
             ) : (
-              <BlockingMenu token={token} text={verb} onNotice={onNotice} onChanged={() => void load()} />
+              <BlockingMenu token={token} text={verb} onNotice={onNotice} />
             )}
           </div>
         )}

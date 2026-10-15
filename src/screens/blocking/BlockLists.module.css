@@ -78,9 +78,56 @@ in light the series is tuned against the other ten lines and gives 4.45:1 under
 the row hover, the text tone 5.0:1.
 */
 .allow { color: var(--ok); }
-.comment { color: var(--mute); }
 
-/* Remove, hard against the row's end as Delete is in Rules. */
+/* Move up, Move down and Remove, hard against the row's end as Delete is in Rules. */
 .actions { text-align: right; white-space: nowrap; }
+.rowActions { display: inline-flex; align-items: center; gap: var(--s-2); }
+
+/*
+The kind has two places: its own column, and under the URL. Only one is drawn at a
+time (`display: none` also takes the other out of what a screen reader reads).
+*/
+.kindInline { display: none; }
+
+/*
+`--bp-stack`. Four columns and three row buttons left the URL six characters a line
+at 390: the Type column folds into the List cell, under the URL, and the row's
+buttons stack in their column, so the URL keeps most of the width.
+*/
+@media (max-width: 560px) {
+  .kindCell { display: none; }
+  .kindInline { display: inline-flex; margin-top: var(--s-2); }
+  .rowActions { flex-direction: column; align-items: flex-end; }
+}
+
+/*
+"Add to group", over the URL and Quick Add because it serves both. As wide as a
+help column: a group name is short, and a field across the whole panel would read
+as a second URL.
+*/
+.target { max-width: var(--help-col); margin-bottom: var(--s-10); }
+
+/*
+A group heading: a row across the table on the raised step, as the table's own
+header is, so the lists under it read as its rows. Its name weighs as a row's
+entity; its count is metadata. The cell is a `th` in the body, so it is reset from
+the header's small capitals.
+*/
+.groupRow > th {
+  background: var(--pan2);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line2);
+  padding: var(--s-5) var(--s-7);
+  text-align: left;
+  font-weight: 400;
+}
+.groupHead { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-5); }
+.groupName { font-size: var(--t-5); font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
+.groupCount { color: var(--mute); font-size: var(--t-2); }
+
+/* The heading's name being written, in the heading's own row. */
+.editor { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-5); }
+.editorField { flex: 1 1 var(--s-12); min-width: 0; max-width: var(--help-col); }
+.editor > .invalid { flex-basis: 100%; margin-top: 0; }
 
 .foot { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-5); padding: var(--s-7) var(--s-9); color: var(--mute); }

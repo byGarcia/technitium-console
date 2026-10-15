@@ -560,6 +560,33 @@ contract and SECURITY.md.
      history entry, which is the Rules one. So Back after leaving Rules returns
      to Rules showing All, not the filter the user had. That is deliberate:
      keeping it would mean teaching `writeRoute` about one section's query.
+
+   Three additions approved on 2026-10-15, inside the same four limits:
+   - **Groups in Lists.** A comment line of `blockListUrls` is a group heading:
+     the lists after it belong to it until the next heading, and the lists before
+     the first one have no group. Headings can be added, renamed and removed (their
+     lists stay, joining the group above), a new list can be put into a group, and
+     a list moves up or down, across headings too. All of it is a change to the
+     same lines, kept until Save. A heading is saved as `# Name` and refused when
+     the server would not keep it as one comment line: a comma (the field travels
+     comma-separated), a newline, more than 253 characters, or a name that reads as
+     a list URL. Settings › Blocking still shows the headings as the comments they
+     are. Order changes nothing that is blocked (`list-lines.ts`, GROUPS, with the
+     server lines that say so).
+   - **Rules' table deletes without asking, and offers Undo.** Its Delete sends
+     `blocked/delete` or `allowed/delete` at once and leaves a notice (`ui/Toast`)
+     whose Undo sends `blocked/add` or `allowed/add` for exactly the domains
+     deleted, each to its list. Further deletes while it is up join it. Without
+     `Modify` on the rule's list Undo could not work, so that Delete still asks.
+     Upstream's confirmation stays everywhere else: the Tree view, Flush and every
+     other section. This is the only place in the console where a confirmation was
+     replaced.
+   - **The sidebar marks Blocking when blocking is off or paused**, with the time
+     it comes back in the entry's accessible name and title. It reads what the
+     Overview's status block reads (`settings/get`, on the connected node), never
+     without `Settings.canView`, and again after any settings write made from this
+     console, when the browser tab is shown again and a second after a pause ends.
+     No other sidebar entry carries a mark or a count.
 3. **Settings jumps to the sub-tab of the invalid field.** Upstream focuses a
    hidden input and the user sees nothing; with one panel mounted at a time,
    without that jump the alert would be impossible to resolve.

@@ -31,6 +31,8 @@ import { publicUrl } from './base'
 import { Menu } from '../ui/Menu'
 import { FooterLinks } from '../ui/FooterLinks'
 import { Versions } from './Versions'
+import { BlockingMark } from './BlockingMark'
+import { useBlockingMark } from '../screens/blocking/blocking-state'
 import { Confirm } from '../ui/Confirm'
 import { Notifier } from '../ui/Notifier'
 import type { Notice } from '../lib/notice'
@@ -186,6 +188,8 @@ export function Shell({
   }, [title])
 
   const current = sections.find((s) => s.id === active) ?? sections[0]
+  /* Whether blocking is off or paused, marked on its entry (`BlockingMark.tsx`). */
+  const blockingNow = useBlockingMark(session.token, permissions, sections.some((s) => s.id === 'blocking'))
 
   /*
   The jumps other screens' row menus make (`app/handoff.ts`). The section switch
@@ -333,6 +337,7 @@ export function Shell({
                       href={toTrail({ section: sec.id, sub: first })}
                       data-active={active}
                       aria-current={active ? 'page' : undefined}
+                      title={sec.id === 'blocking' ? blockingNow?.label : undefined}
                       onClick={(e) => {
                         if (!plainClick(e)) return
                         e.preventDefault()
@@ -345,6 +350,7 @@ export function Shell({
                         <Icon name={ICONS[sec.id] ?? 'about'} size={16} />
                       </span>
                       {sec.label}
+                      {sec.id === 'blocking' && <BlockingMark mark={blockingNow} />}
                     </a>
                     {/*
                     The sub-items are NOT here any more. The design puts a

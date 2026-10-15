@@ -392,6 +392,7 @@ const BLOCKING_OWN_LABELS = new Map([
   ['More lists', "Quick Add's group of the console's own catalogue, blocking/BlockLists.tsx:508; declared ours at BlockLists.tsx:48-49"],
   ['Listed as', 'Check a domain, the list entry that matched, blocking/DomainCheck.tsx:107; declared ours at DomainCheck.tsx:15'],
   ['Rule', 'Check a domain, the rule that matched, blocking/DomainCheck.tsx:117; declared ours at DomainCheck.tsx:15'],
+  ['Add to group', 'the group a new list goes into, blocking/BlockLists.tsx:666; declared ours at BlockLists.tsx:48'],
 ])
 const onlyInBlocking = (label) => (LABEL_FILES.get(label) ?? []).every((f) => f.startsWith(BLOCKING))
 

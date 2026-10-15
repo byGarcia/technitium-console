@@ -7,7 +7,8 @@ import { BlockLists } from './BlockLists'
 /*
 The Lists tab fed with the harness's real `settings/get` and `dashboard/stats/get`
 (`test/real-blocking.ts`) and the real built-in Quick Add catalog. The harness's
-`blockListUrls` carries every row kind of the grammar at once (a comment, a URL in
+`blockListUrls` carries every row kind of the grammar at once (a comment, drawn as
+the heading of the group the four lists form, a URL in
 the catalog, an enabled `file://` list, a `#`-disabled one and a `!` allow list), so
 each is checked as the server sent it.
 */
@@ -48,11 +49,12 @@ describe('Lists against the harness', () => {
     expect(allow).toHaveTextContent('Allow')
     expect(within(allow).getByRole('checkbox')).toBeChecked()
 
-    const comment = row(table, '# T15 harness lists')
-    expect(comment).toHaveTextContent('Comment')
-    expect(within(comment).queryByRole('checkbox')).toBeNull()
+    // The comment is the heading of the four lists after it.
+    const heading = row(table, 'T15 harness lists')
+    expect(heading).toHaveTextContent('4 lists')
+    expect(within(heading).queryByRole('checkbox')).toBeNull()
 
-    expect(screen.getByText('4 lists · 1 disabled · 1 comment')).toBeInTheDocument()
+    expect(screen.getByText('4 lists · 1 disabled · 1 group')).toBeInTheDocument()
   })
 
   it('the figures and the next update are the server ones', async () => {

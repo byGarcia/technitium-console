@@ -1,0 +1,80 @@
+/*
+The passing notice. Every value is a token of theme/tokens.css.
+
+Bottom centre, over the content and below any dialog (`--layer-float`, the menus'
+layer: a dialog opened while it is up covers it). At `--bp-stack` it takes the
+width of the page less the page's own gutter, so a long domain wraps instead of
+pushing the window sideways.
+*/
+.toast {
+  position: fixed;
+  z-index: var(--layer-float);
+  left: 50%;
+  bottom: var(--s-11);
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: var(--s-7);
+  max-width: min(var(--notice-max), calc(100vw - 2 * var(--s-9)));
+  padding: var(--s-5) var(--s-5) var(--s-5) var(--s-9);
+  border: 1px solid var(--line);
+  border-radius: var(--r-3);
+  background: var(--pan2);
+  color: var(--ink);
+  font-size: var(--t-4);
+  box-shadow: var(--shadow-menu);
+  animation: rise var(--t-medium);
+}
+
+/* Closed: the live region stays in the page, empty and out of the way. */
+.closed {
+  position: fixed;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  pointer-events: none;
+}
+
+.text { margin: 0; min-width: 0; overflow-wrap: anywhere; line-height: 1.45; }
+
+.close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  min-width: 26px;
+  min-height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-2);
+  background: none;
+  color: var(--mute);
+  cursor: pointer;
+}
+.close:hover { color: var(--ink); background: var(--hover); }
+
+@keyframes rise {
+  from { opacity: 0; transform: translate(-50%, var(--s-5)); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+/* Narrow, it is not centred by a transform, so it only fades in. */
+@keyframes appear {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (max-width: 560px) {
+  .toast {
+    left: var(--s-9);
+    right: var(--s-9);
+    bottom: var(--s-9);
+    transform: none;
+    max-width: none;
+    animation-name: appear;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast { animation: none; }
+}
