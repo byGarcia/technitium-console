@@ -1,0 +1,37 @@
+/*
+The verdict of "Check a domain", under the field it answers. Every value is a token of
+theme/tokens.css. The mark is the status block's (Overview.module.css `.mark`), so the
+two blocks that share the row speak the same way; its tone is the Rules column's: the
+block colour for blocked, the text green for allowed, neutral for the rest.
+*/
+.verdict {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-8);
+  margin-top: var(--s-9);
+  padding-top: var(--s-9);
+  border-top: 1px solid var(--line2);
+}
+.mark { composes: mark from './Overview.module.css'; }
+.blocked { background: var(--pan2); border: 1px solid var(--line); color: var(--ch-block); }
+.allowed { background: var(--ok-bg); border: 1px solid var(--ok-bd); color: var(--ok); }
+.neutral { background: var(--pan2); border: 1px solid var(--line); color: var(--mute); }
+
+.body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--s-2); }
+.title { font-size: var(--t-5); font-weight: 600; }
+.name { font-family: var(--font-mono); color: var(--mute); overflow-wrap: anywhere; }
+
+.lists { list-style: none; margin: var(--s-3) 0 0; padding: 0; display: flex; flex-direction: column; gap: var(--s-5); }
+.lists > li { display: flex; flex-direction: column; gap: var(--s-1); min-width: 0; }
+.listName { font-weight: 600; }
+.url { font-family: var(--font-mono); font-size: var(--t-2); color: var(--mute); overflow-wrap: anywhere; }
+
+.fact { margin-top: var(--s-3); overflow-wrap: anywhere; }
+.label { color: var(--mute); }
+.mono { font-family: var(--font-mono); }
+.why { margin-top: var(--s-3); color: var(--mute); }
+.next { margin-top: var(--s-3); }
+.unread { display: flex; align-items: center; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-3); color: var(--mute); font-size: var(--t-2); }
+/* A way onward is the user's to take: amber, as the console's other in-text links. */
+.next a,
+.why a { color: var(--acc-ink); }

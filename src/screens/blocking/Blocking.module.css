@@ -75,3 +75,10 @@ second frame, with rounded corners showing under the panel's header. Written und
   .add > :first-child { flex-basis: 100%; }
   .kpiValue { font-size: var(--t-6); }
 }
+
+/* The check's sentence under the domain field when it cannot answer, with the field's
+   border in `--dan` (the design rule: the error goes next to its field, once). The
+   same pair as Lists' URL field. */
+.bad[aria-invalid],
+.bad[aria-invalid]:focus { border-color: var(--dan); }
+.invalid { color: var(--dan); font-size: var(--t-2); margin-top: var(--s-4); }

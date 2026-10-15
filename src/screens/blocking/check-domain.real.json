@@ -1,0 +1,684 @@
+{
+ "blockLists": {
+  "response": {
+   "result": {
+    "Metadata": {
+     "NameServer": "ns1.example.net (127.0.0.1)",
+     "Protocol": "Udp",
+     "DatagramSize": "400 bytes",
+     "RoundTripTime": "0.33 ms"
+    },
+    "EDNS": {
+     "UdpPayloadSize": 1232,
+     "ExtendedRCODE": "NxDomain",
+     "Version": 0,
+     "Flags": "None",
+     "Options": [
+      {
+       "Code": "EXTENDED_DNS_ERROR",
+       "Length": "131 bytes",
+       "Data": {
+        "InfoCode": "Blocked",
+        "ExtraText": "source=block-list-zone; blockListUrl=https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts; domain=app-measurement.com"
+       }
+      },
+      {
+       "Code": "EXTENDED_DNS_ERROR",
+       "Length": "152 bytes",
+       "Data": {
+        "InfoCode": "Blocked",
+        "ExtraText": "source=block-list-zone; blockListUrl=https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/pro-onlydomains.txt; domain=app-measurement.com"
+       }
+      }
+     ]
+    },
+    "DnsClientExtendedErrors": [
+     {
+      "InfoCode": "BlockedByUpstreamDnsServer",
+      "ExtraText": "app-measurement.com was blocked by ns1.example.net (127.0.0.1)"
+     }
+    ],
+    "Identifier": 0,
+    "IsResponse": true,
+    "OPCODE": "StandardQuery",
+    "AuthoritativeAnswer": false,
+    "Truncation": false,
+    "RecursionDesired": true,
+    "RecursionAvailable": false,
+    "Z": 0,
+    "AuthenticData": false,
+    "CheckingDisabled": false,
+    "RCODE": "NxDomain",
+    "QDCOUNT": 1,
+    "ANCOUNT": 0,
+    "NSCOUNT": 1,
+    "ARCOUNT": 1,
+    "Question": [
+     {
+      "Name": "app-measurement.com",
+      "Type": "A",
+      "Class": "IN"
+     }
+    ],
+    "Answer": [],
+    "Authority": [
+     {
+      "Name": "com",
+      "Type": "SOA",
+      "Class": "IN",
+      "TTL": "30 (30s)",
+      "RDLENGTH": "49 bytes",
+      "RDATA": {
+       "PrimaryNameServer": "ns1.example.net",
+       "ResponsiblePerson": "hostadmin@ns1.example.net",
+       "Serial": 1,
+       "Refresh": "14400 (4h)",
+       "Retry": "3600 (1h)",
+       "Expire": "604800 (1w)",
+       "Minimum": "30 (30s)"
+      },
+      "DnssecStatus": "Disabled"
+     }
+    ],
+    "Additional": [
+     {
+      "Name": "",
+      "Type": "OPT",
+      "Class": "1232",
+      "TTL": "0 (0s)",
+      "RDLENGTH": "291 bytes",
+      "RDATA": {
+       "Options": [
+        {
+         "Code": "EXTENDED_DNS_ERROR",
+         "Length": "131 bytes",
+         "Data": {
+          "InfoCode": "Blocked",
+          "ExtraText": "source=block-list-zone; blockListUrl=https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts; domain=app-measurement.com"
+         }
+        },
+        {
+         "Code": "EXTENDED_DNS_ERROR",
+         "Length": "152 bytes",
+         "Data": {
+          "InfoCode": "Blocked",
+          "ExtraText": "source=block-list-zone; blockListUrl=https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/pro-onlydomains.txt; domain=app-measurement.com"
+         }
+        }
+       ]
+      },
+      "DnssecStatus": "Disabled"
+     }
+    ]
+   },
+   "rawResponses": []
+  },
+  "server": "ns1.example.net",
+  "status": "ok"
+ },
+ "ownRule": {
+  "response": {
+   "result": {
+    "Metadata": {
+     "NameServer": "ns1.example.net (127.0.0.1)",
+     "Protocol": "Udp",
+     "DatagramSize": "174 bytes",
+     "RoundTripTime": "0.41 ms"
+    },
+    "EDNS": {
+     "UdpPayloadSize": 1232,
+     "ExtendedRCODE": "NxDomain",
+     "Version": 0,
+     "Flags": "None",
+     "Options": [
+      {
+       "Code": "EXTENDED_DNS_ERROR",
+       "Length": "55 bytes",
+       "Data": {
+        "InfoCode": "Blocked",
+        "ExtraText": "source=blocked-zone; domain=telemetry.example-iot.net"
+       }
+      }
+     ]
+    },
+    "DnsClientExtendedErrors": [
+     {
+      "InfoCode": "BlockedByUpstreamDnsServer",
+      "ExtraText": "telemetry.example-iot.net was blocked by ns1.example.net (127.0.0.1)"
+     }
+    ],
+    "Identifier": 0,
+    "IsResponse": true,
+    "OPCODE": "StandardQuery",
+    "AuthoritativeAnswer": false,
+    "Truncation": false,
+    "RecursionDesired": true,
+    "RecursionAvailable": false,
+    "Z": 0,
+    "AuthenticData": false,
+    "CheckingDisabled": false,
+    "RCODE": "NxDomain",
+    "QDCOUNT": 1,
+    "ANCOUNT": 0,
+    "NSCOUNT": 1,
+    "ARCOUNT": 1,
+    "Question": [
+     {
+      "Name": "telemetry.example-iot.net",
+      "Type": "A",
+      "Class": "IN"
+     }
+    ],
+    "Answer": [],
+    "Authority": [
+     {
+      "Name": "example-iot.net",
+      "Type": "SOA",
+      "Class": "IN",
+      "TTL": "30 (30s)",
+      "RDLENGTH": "49 bytes",
+      "RDATA": {
+       "PrimaryNameServer": "ns1.example.net",
+       "ResponsiblePerson": "hostadmin@ns1",
+       "Serial": 1,
+       "Refresh": "14400 (4h)",
+       "Retry": "3600 (1h)",
+       "Expire": "604800 (1w)",
+       "Minimum": "30 (30s)"
+      },
+      "DnssecStatus": "Disabled"
+     }
+    ],
+    "Additional": [
+     {
+      "Name": "",
+      "Type": "OPT",
+      "Class": "1232",
+      "TTL": "0 (0s)",
+      "RDLENGTH": "59 bytes",
+      "RDATA": {
+       "Options": [
+        {
+         "Code": "EXTENDED_DNS_ERROR",
+         "Length": "55 bytes",
+         "Data": {
+          "InfoCode": "Blocked",
+          "ExtraText": "source=blocked-zone; domain=telemetry.example-iot.net"
+         }
+        }
+       ]
+      },
+      "DnssecStatus": "Disabled"
+     }
+    ]
+   },
+   "rawResponses": []
+  },
+  "server": "ns1.example.net",
+  "status": "ok"
+ },
+ "ownRuleParent": {
+  "response": {
+   "result": {
+    "Metadata": {
+     "NameServer": "ns1.example.net (127.0.0.1)",
+     "Protocol": "Udp",
+     "DatagramSize": "178 bytes",
+     "RoundTripTime": "0.48 ms"
+    },
+    "EDNS": {
+     "UdpPayloadSize": 1232,
+     "ExtendedRCODE": "NxDomain",
+     "Version": 0,
+     "Flags": "None",
+     "Options": [
+      {
+       "Code": "EXTENDED_DNS_ERROR",
+       "Length": "55 bytes",
+       "Data": {
+        "InfoCode": "Blocked",
+        "ExtraText": "source=blocked-zone; domain=telemetry.example-iot.net"
+       }
+      }
+     ]
+    },
+    "DnsClientExtendedErrors": [
+     {
+      "InfoCode": "BlockedByUpstreamDnsServer",
+      "ExtraText": "sub.telemetry.example-iot.net was blocked by ns1.example.net (127.0.0.1)"
+     }
+    ],
+    "Identifier": 0,
+    "IsResponse": true,
+    "OPCODE": "StandardQuery",
+    "AuthoritativeAnswer": false,
+    "Truncation": false,
+    "RecursionDesired": true,
+    "RecursionAvailable": false,
+    "Z": 0,
+    "AuthenticData": false,
+    "CheckingDisabled": false,
+    "RCODE": "NxDomain",
+    "QDCOUNT": 1,
+    "ANCOUNT": 0,
+    "NSCOUNT": 1,
+    "ARCOUNT": 1,
+    "Question": [
+     {
+      "Name": "sub.telemetry.example-iot.net",
+      "Type": "A",
+      "Class": "IN"
+     }
+    ],
+    "Answer": [],
+    "Authority": [
+     {
+      "Name": "example-iot.net",
+      "Type": "SOA",
+      "Class": "IN",
+      "TTL": "30 (30s)",
+      "RDLENGTH": "49 bytes",
+      "RDATA": {
+       "PrimaryNameServer": "ns1.example.net",
+       "ResponsiblePerson": "hostadmin@ns1",
+       "Serial": 1,
+       "Refresh": "14400 (4h)",
+       "Retry": "3600 (1h)",
+       "Expire": "604800 (1w)",
+       "Minimum": "30 (30s)"
+      },
+      "DnssecStatus": "Disabled"
+     }
+    ],
+    "Additional": [
+     {
+      "Name": "",
+      "Type": "OPT",
+      "Class": "1232",
+      "TTL": "0 (0s)",
+      "RDLENGTH": "59 bytes",
+      "RDATA": {
+       "Options": [
+        {
+         "Code": "EXTENDED_DNS_ERROR",
+         "Length": "55 bytes",
+         "Data": {
+          "InfoCode": "Blocked",
+          "ExtraText": "source=blocked-zone; domain=telemetry.example-iot.net"
+         }
+        }
+       ]
+      },
+      "DnssecStatus": "Disabled"
+     }
+    ]
+   },
+   "rawResponses": []
+  },
+  "server": "ns1.example.net",
+  "status": "ok"
+ },
+ "allowedRule": {
+  "response": {
+   "result": {
+    "Metadata": {
+     "NameServer": "ns1.example.net (127.0.0.1)",
+     "Protocol": "Udp",
+     "DatagramSize": "234 bytes",
+     "RoundTripTime": "22.85 ms"
+    },
+    "EDNS": {
+     "UdpPayloadSize": 1232,
+     "ExtendedRCODE": "NoError",
+     "Version": 0,
+     "Flags": "None",
+     "Options": [
+      {
+       "Code": "EXTENDED_DNS_ERROR",
+       "Length": "28 bytes",
+       "Data": {
+        "InfoCode": "Synthesized",
+        "ExtraText": "Result from negative cache"
+       }
+      },
+      {
+       "Code": "EXTENDED_DNS_ERROR",
+       "Length": "28 bytes",
+       "Data": {
+        "InfoCode": "Synthesized",
+        "ExtraText": "Result from negative cache"
+       }
+      }
+     ]
+    },
+    "Identifier": 0,
+    "IsResponse": true,
+    "OPCODE": "StandardQuery",
+    "AuthoritativeAnswer": false,
+    "Truncation": false,
+    "RecursionDesired": true,
+    "RecursionAvailable": true,
+    "Z": 0,
+    "AuthenticData": false,
+    "CheckingDisabled": false,
+    "RCODE": "NoError",
+    "QDCOUNT": 1,
+    "ANCOUNT": 8,
+    "NSCOUNT": 0,
+    "ARCOUNT": 1,
+    "Question": [
+     {
+      "Name": "s.youtube.com",
+      "Type": "A",
+      "Class": "IN"
+     }
+    ],
+    "Answer": [
+     {
+      "Name": "s.youtube.com",
+      "Type": "A",
+      "Class": "IN",
+      "TTL": "152 (2m32s)",
+      "RDLENGTH": "4 bytes",
+      "RDATA": {
+       "IPAddress": "142.251.154.6"
+      },
+      "DnssecStatus": "Disabled"
+     },
+     {
+      "Name": "s.youtube.com",
+      "Type": "A",
+      "Class": "IN",
+      "TTL": "152 (2m32s)",
+      "RDLENGTH": "4 bytes",
+      "RDATA": {
+       "IPAddress": "142.251.150.6"
+      },
+      "DnssecStatus": "Disabled"
+     },
+     {
+      "Name": "s.youtube.com",
+      "Type": "A",
+      "Class": "IN",
+      "TTL": "152 (2m32s)",
+      "RDLENGTH": "4 bytes",
+      "RDATA": {
+       "IPAddress": "142.251.157.6"
+      },
+      "DnssecStatus": "Disabled"
+     },
+     {
+      "Name": "s.youtube.com",
+      "Type": "A",
+      "Class": "IN",
+      "TTL": "152 (2m32s)",
+      "RDLENGTH": "4 bytes",
+      "RDATA": {
+       "IPAddress": "142.251.156.6"
+      },
+      "DnssecStatus": "Disabled"
+     },
+     {
+      "Name": "s.youtube.com",
+      "Type": "A",
+      "Class": "IN",
+      "TTL": "152 (2m32s)",
+      "RDLENGTH": "4 bytes",
+      "RDATA": {
+       "IPAddress": "142.251.152.6"
+      },
+      "DnssecStatus": "Disabled"
+     },
+     {
+      "Name": "s.youtube.com",
+      "Type": "A",
+      "Class": "IN",
+      "TTL": "152 (2m32s)",
+      "RDLENGTH": "4 bytes",
+      "RDATA": {
+       "IPAddress": "142.251.153.6"
+      },
+      "DnssecStatus": "Disabled"
+     },
+     {
+      "Name": "s.youtube.com",
+      "Type": "A",
+      "Class": "IN",
+      "TTL": "152 (2m32s)",
+      "RDLENGTH": "4 bytes",
+      "RDATA": {
+       "IPAddress": "142.251.151.6"
+      },
+      "DnssecStatus": "Disabled"
+     },
+     {
+      "Name": "s.youtube.com",
+      "Type": "A",
+      "Class": "IN",
+      "TTL": "152 (2m32s)",
+      "RDLENGTH": "4 bytes",
+      "RDATA": {
+       "IPAddress": "142.251.155.6"
+      },
+      "DnssecStatus": "Disabled"
+     }
+    ],
+    "Authority": [],
+    "Additional": [
+     {
+      "Name": "",
+      "Type": "OPT",
+      "Class": "1232",
+      "TTL": "0 (0s)",
+      "RDLENGTH": "64 bytes",
+      "RDATA": {
+       "Options": [
+        {
+         "Code": "EXTENDED_DNS_ERROR",
+         "Length": "28 bytes",
+         "Data": {
+          "InfoCode": "Synthesized",
+          "ExtraText": "Result from negative cache"
+         }
+        },
+        {
+         "Code": "EXTENDED_DNS_ERROR",
+         "Length": "28 bytes",
+         "Data": {
+          "InfoCode": "Synthesized",
+          "ExtraText": "Result from negative cache"
+         }
+        }
+       ]
+      },
+      "DnssecStatus": "Disabled"
+     }
+    ]
+   },
+   "rawResponses": []
+  },
+  "server": "ns1.example.net",
+  "status": "ok"
+ },
+ "notBlocked": {
+  "response": {
+   "result": {
+    "Metadata": {
+     "NameServer": "ns1.example.net (127.0.0.1)",
+     "Protocol": "Udp",
+     "DatagramSize": "72 bytes",
+     "RoundTripTime": "22.93 ms"
+    },
+    "EDNS": {
+     "UdpPayloadSize": 1232,
+     "ExtendedRCODE": "NoError",
+     "Version": 0,
+     "Flags": "None",
+     "Options": []
+    },
+    "Identifier": 0,
+    "IsResponse": true,
+    "OPCODE": "StandardQuery",
+    "AuthoritativeAnswer": false,
+    "Truncation": false,
+    "RecursionDesired": true,
+    "RecursionAvailable": true,
+    "Z": 0,
+    "AuthenticData": true,
+    "CheckingDisabled": false,
+    "RCODE": "NoError",
+    "QDCOUNT": 1,
+    "ANCOUNT": 2,
+    "NSCOUNT": 0,
+    "ARCOUNT": 1,
+    "Question": [
+     {
+      "Name": "example.com",
+      "Type": "A",
+      "Class": "IN"
+     }
+    ],
+    "Answer": [
+     {
+      "Name": "example.com",
+      "Type": "A",
+      "Class": "IN",
+      "TTL": "167 (2m47s)",
+      "RDLENGTH": "4 bytes",
+      "RDATA": {
+       "IPAddress": "104.20.23.154"
+      },
+      "DnssecStatus": "Disabled"
+     },
+     {
+      "Name": "example.com",
+      "Type": "A",
+      "Class": "IN",
+      "TTL": "167 (2m47s)",
+      "RDLENGTH": "4 bytes",
+      "RDATA": {
+       "IPAddress": "172.66.147.243"
+      },
+      "DnssecStatus": "Disabled"
+     }
+    ],
+    "Authority": [],
+    "Additional": [
+     {
+      "Name": "",
+      "Type": "OPT",
+      "Class": "1232",
+      "TTL": "0 (0s)",
+      "RDLENGTH": "0 bytes",
+      "RDATA": {
+       "Options": []
+      },
+      "DnssecStatus": "Disabled"
+     }
+    ]
+   },
+   "rawResponses": []
+  },
+  "server": "ns1.example.net",
+  "status": "ok"
+ },
+ "nonExistent": {
+  "response": {
+   "result": {
+    "Metadata": {
+     "NameServer": "ns1.example.net (127.0.0.1)",
+     "Protocol": "Udp",
+     "DatagramSize": "104 bytes",
+     "RoundTripTime": "0.37 ms"
+    },
+    "EDNS": {
+     "UdpPayloadSize": 1232,
+     "ExtendedRCODE": "NxDomain",
+     "Version": 0,
+     "Flags": "None",
+     "Options": []
+    },
+    "Identifier": 0,
+    "IsResponse": true,
+    "OPCODE": "StandardQuery",
+    "AuthoritativeAnswer": true,
+    "Truncation": false,
+    "RecursionDesired": true,
+    "RecursionAvailable": true,
+    "Z": 0,
+    "AuthenticData": false,
+    "CheckingDisabled": false,
+    "RCODE": "NxDomain",
+    "QDCOUNT": 1,
+    "ANCOUNT": 0,
+    "NSCOUNT": 1,
+    "ARCOUNT": 1,
+    "Question": [
+     {
+      "Name": "this-does-not-exist-xyz123.invalid",
+      "Type": "A",
+      "Class": "IN"
+     }
+    ],
+    "Answer": [],
+    "Authority": [
+     {
+      "Name": "",
+      "Type": "SOA",
+      "Class": "IN",
+      "TTL": "900 (15m)",
+      "RDLENGTH": "30 bytes",
+      "RDATA": {
+       "PrimaryNameServer": "",
+       "ResponsiblePerson": "nobody@invalid",
+       "Serial": 1,
+       "Refresh": "3600 (1h)",
+       "Retry": "1200 (20m)",
+       "Expire": "604800 (1w)",
+       "Minimum": "900 (15m)"
+      },
+      "DnssecStatus": "Disabled"
+     }
+    ],
+    "Additional": [
+     {
+      "Name": "",
+      "Type": "OPT",
+      "Class": "1232",
+      "TTL": "0 (0s)",
+      "RDLENGTH": "0 bytes",
+      "RDATA": {
+       "Options": []
+      },
+      "DnssecStatus": "Disabled"
+     }
+    ]
+   },
+   "rawResponses": []
+  },
+  "server": "ns1.example.net",
+  "status": "ok"
+ },
+ "invalidName": {
+  "server": "ns1.example.net",
+  "status": "error",
+  "errorMessage": "Invalid domain name [not a domain]: invalid character [32] was found."
+ },
+ "settings": {
+  "response": {
+   "enableBlocking": true,
+   "allowTxtBlockingReport": true,
+   "blockingType": "NxDomain",
+   "blockingBypassList": [],
+   "blockListUrls": [
+    "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts",
+    "https://big.oisd.nl/domainswild2",
+    "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/pro-onlydomains.txt"
+   ]
+  },
+  "server": "ns1.example.net",
+  "status": "ok"
+ },
+ "allowedExport": "clients4.google.com\ns.youtube.com\nt.co\n",
+ "blockedExport": "ads.example-tv.net\nmetrics.roku.com\ntelemetry.example-iot.net\ntiktokv.com\n"
+}
