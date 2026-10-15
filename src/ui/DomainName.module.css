@@ -1,0 +1,2 @@
+/* One label and its closing dot: a line never ends inside it (see `DomainName.tsx`). */
+.label { white-space: nowrap; }

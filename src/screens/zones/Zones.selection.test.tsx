@@ -43,7 +43,7 @@ describe('the zone selection bar', () => {
   it('the delete verb is NOT in the header any more', async () => {
     vi.spyOn(client, 'apiRequest').mockResolvedValue(zones)
     render(<ZoneList {...props} />)
-    await screen.findByText('casa.test')
+    await screen.findByRole('button', { name: 'casa.test' })
     const header = screen.getByRole('heading', { name: 'Zones' }).parentElement!.parentElement!
     expect(header.textContent).toContain('Add Zone')
     expect(header.textContent).not.toContain('Delete Zones')
@@ -55,7 +55,7 @@ describe('the zone selection bar', () => {
     const notices: { text?: string }[] = []
     const user = userEvent.setup()
     render(<ZoneList {...props} onNotice={(n: { text?: string }) => notices.push(n)} />)
-    await screen.findByText('casa.test')
+    await screen.findByRole('button', { name: 'casa.test' })
 
     await user.click(screen.getByRole('button', { name: 'Delete Zones' }))
     expect(notices.map((n) => n.text)).toContain('Please select one or more zones to delete.')
@@ -66,7 +66,7 @@ describe('the zone selection bar', () => {
     vi.spyOn(client, 'apiRequest').mockResolvedValue(zones)
     const user = userEvent.setup()
     render(<ZoneList {...props} />)
-    await screen.findByText('casa.test')
+    await screen.findByRole('button', { name: 'casa.test' })
 
     const boxes = screen.getAllByRole('checkbox')
     await user.click(boxes[1])

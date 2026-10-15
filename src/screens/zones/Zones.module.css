@@ -20,9 +20,19 @@
 .num2 { color:var(--faint); font-family:var(--font-mono); font-variant-numeric:tabular-nums; }
 
 /* A zone's name is a domain: that part does belong here, and it goes on the cell
-   so the button inherits it. */
-.zoneCell { font-family: var(--font-mono); }
+   so the button inherits it. It wraps at its dots (`ui/DomainName`), and the
+   minimum keeps a short name whole: at 390 px the table is already wider than
+   the screen and gives each column only its narrowest, so `example.net` came out
+   in two lines. A long name still breaks, at a dot. */
+.zoneCell { font-family: var(--font-mono); min-width: 14ch; }
 .zoneLink { composes: entityLink from '../../ui/Table.module.css'; }
+
+/* A record's Data. Its key/value list lets the value column go down to nothing
+   (`ui/kv.module.css`, so a DNSSEC key cannot push it out of the table), and at
+   390 px the table gave it exactly that: the SOA's `ns1.example.net` stood one
+   letter per line and its row ran past a thousand pixels. The minimum leaves the
+   value room for a name; the table scrolls for the rest. */
+.dataCell { min-width: 40ch; }
 
 .ttl { composes: ttl from '../../ui/record.module.css'; }
 

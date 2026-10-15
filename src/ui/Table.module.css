@@ -109,7 +109,15 @@ out Zones' monospacing. It is the same trap already noted in `Menu.module.css`.
   color: var(--ink);
   cursor: pointer;
   text-align: left;
-  word-break: break-word;
+  /*
+  `overflow-wrap` and not `word-break: break-word`. The two break a word that does
+  not fit, but the second also tells the table the word COULD break after any
+  letter, so the column shrinks to a few characters and every name in it is cut
+  letter by letter: Zones at 390 px drew `0.30.172.in-addr.arpa` in four lines.
+  This one only breaks what still overflows once the column has taken its room.
+  A domain goes through `ui/DomainName`, which wraps it at its dots.
+  */
+  overflow-wrap: break-word;
 }
 
 .entityLink:hover { color: var(--acc-ink); }

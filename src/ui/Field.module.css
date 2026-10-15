@@ -37,6 +37,16 @@ the cursor is.
     background-color var(--t-fast);
 }
 
+/* One line, so every field in a row is `--field-height` tall: see `--field-line`.
+   The textarea keeps the browser's line height, it is not a one-line control. */
+.input:not(textarea) { line-height: var(--field-line); }
+
+/* A date field draws its value in an inner box with 1 px of padding above and
+   below, and its calendar button carries padding of its own: together they put
+   Query Logs' Start and End Date 2 px over the line. */
+.input::-webkit-datetime-edit-fields-wrapper { padding-block: 0; }
+.input::-webkit-calendar-picker-indicator { padding-block: 0; margin-block: 0; }
+
 .input::placeholder { color: var(--faint); }
 
 .input:hover:not(:disabled):not(:focus) { border-color: var(--line-ctrl); }

@@ -11,6 +11,9 @@ depending on the table.
   justify-content: center;
   gap: var(--s-3);
   font-size: var(--t-4);
+  /* The same height as the field and the dropdown it sits next to: it was 30 px,
+     so "Go" and "Resolve" stood 4 px short of the row they belong to. */
+  min-height: var(--field-height);
   padding: var(--s-4) var(--s-8);
   border-radius: var(--r-2);
   border: 1px solid var(--line);
@@ -36,6 +39,8 @@ depending on the table.
   font-weight: 400;
   padding: var(--s-3) var(--s-6);
   color: var(--mute);
+  /* A row's button is not in a form row: it keeps its own size. */
+  min-height: 0;
 }
 
 /*

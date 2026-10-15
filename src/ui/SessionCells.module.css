@@ -20,10 +20,36 @@ it showed:
   color: var(--faint);
 }
 
-/* The user agent string is long and has no natural break: it breaks anyway. */
+/*
+The user agent: two lines at rest, all of it under the pointer or while the row
+holds the focus.
+
+It used to break anywhere (`word-break: break-all`), which let the table squeeze
+its column to whatever was left: 110 px at 390, twelve lines of agent, and rows of
+220 px in Administration › Sessions. Now the column keeps a minimum and the text is
+cut by LINE (`-webkit-line-clamp`, as the store descriptions in Apps), so a row is
+as tall as its session cell. Nothing is hidden from anyone: the whole string stays
+in the page for a screen reader, the copy and the find, it opens out when the
+pointer is over it, and it opens out when the keyboard reaches any control in its
+row (the username, View User Details, the menu). If the clamp is not honoured,
+the fallback is a taller row, which is what there was before.
+*/
 .agent {
   composes: annotationQuiet from './text.module.css';
-  word-break: break-all;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  min-width: 36ch;
+  overflow-wrap: anywhere;
+}
+
+.agent:hover,
+:where(tr:focus-within) .agent {
+  -webkit-line-clamp: unset;
+  line-clamp: none;
+  overflow: visible;
 }
 
 .label { margin-top: var(--s-2); }

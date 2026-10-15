@@ -48,7 +48,7 @@ describe('stale data', () => {
     } as never)
     render(<Zones token="t" canModify canDelete />)
 
-    expect(await screen.findByText('casa.test')).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'casa.test' })).toBeInTheDocument()
     expect(screen.queryByText(/Could not refresh/)).not.toBeInTheDocument()
   })
 
@@ -57,20 +57,20 @@ describe('stale data', () => {
     const user = userEvent.setup()
     goodThenBroken()
     render(<Zones token="t" canModify canDelete />)
-    await screen.findByText('casa.test')
+    await screen.findByRole('button', { name: 'casa.test' })
 
     await clickGo(user)
 
     await screen.findByText(/Could not refresh/)
     /* The previous one is not thrown away: that would leave the user with nothing over a network error. */
-    expect(screen.getByText('casa.test')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'casa.test' })).toBeInTheDocument()
   })
 
   it('the strip carries the time of the last good data and a Retry', async () => {
     const user = userEvent.setup()
     goodThenBroken()
     render(<Zones token="t" canModify canDelete />)
-    await screen.findByText('casa.test')
+    await screen.findByRole('button', { name: 'casa.test' })
 
     await clickGo(user)
 
@@ -85,7 +85,7 @@ describe('stale data', () => {
     const user = userEvent.setup()
     goodThenBroken()
     render(<Zones token="t" canModify canDelete />)
-    await screen.findByText('casa.test')
+    await screen.findByRole('button', { name: 'casa.test' })
     expect(screen.getByLabelText('Select casa.test')).toBeEnabled()
 
     await clickGo(user)
@@ -101,7 +101,7 @@ describe('stale data', () => {
     vi.spyOn(client, 'apiRequest').mockResolvedValue({ kind: 'error', message: 'boom' } as never)
     render(<Zones token="t" canModify canDelete />)
 
-    await waitFor(() => expect(screen.queryByText('casa.test')).not.toBeInTheDocument())
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'casa.test' })).not.toBeInTheDocument())
     expect(screen.queryByText(/Could not refresh/)).not.toBeInTheDocument()
   })
 
@@ -117,7 +117,7 @@ describe('stale data', () => {
         : ({ kind: 'ok', data: { status: 'ok', response: LIST } } as never)
     })
     render(<Zones token="t" canModify canDelete />)
-    await screen.findByText('casa.test')
+    await screen.findByRole('button', { name: 'casa.test' })
     await clickGo(user)
     await screen.findByText(/Could not refresh/)
 
@@ -142,7 +142,7 @@ describe('who reports the failure', () => {
     const user = userEvent.setup()
     goodThenBroken()
     render(<Zones token="t" canModify canDelete />)
-    await screen.findByText('casa.test')
+    await screen.findByRole('button', { name: 'casa.test' })
 
     await clickGo(user)
 
