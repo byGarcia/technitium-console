@@ -21,6 +21,14 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
 
 ---
 
+## Unreleased
+
+- The installer accepts a web root whose files root's own group can write. Technitium's install
+  script leaves every file of its console as root:root 0664, so since 1.2.3 upgrading or
+  uninstalling over a stock web root, or over a console a server update had written into, stopped
+  with "root-owned, non-shared regular file required". Write by any other group or account is
+  still refused.
+
 ## v1.2.4 (2026-10-12)
 
 **Technitium DNS Server 15.6.1.** The server release changes one note in its own console, and

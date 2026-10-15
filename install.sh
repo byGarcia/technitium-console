@@ -209,6 +209,9 @@ refuse_links() { # folder about to be written into
 # any namespace a non-root owner can change, including an ancestor. Do not try
 # to repair ownership here: recursive chown/chmod would race through that same
 # namespace. Use a dedicated root-owned folder, or the read-only Docker volume.
+# Group write is accepted only when the group is root's own (gid 0), the rule
+# sudo applies to sudoers: Technitium's tarball ships every file 0664, and tar
+# run as root keeps that mode, so a stock web root is root:root 0664.
 secure_path() { # absolute directory, optionally not created yet
   case "$1" in
     /*) ;;
@@ -227,9 +230,10 @@ secure_path() { # absolute directory, optionally not created yet
     [ ! -L "$sp_walk" ] || die "$sp_walk is a symbolic link. Nothing was changed."
     if [ -e "$sp_walk" ]; then
       [ -d "$sp_walk" ] || die "$sp_walk is not a directory."
-      sp_meta="$(stat -c '%u:%a' "$sp_walk")" || die "cannot inspect $sp_walk"
-      sp_mode="${sp_meta#*:}"
-      if [ "${sp_meta%%:*}" != 0 ] || [ "$((0$sp_mode & 0022))" != 0 ]; then
+      sp_meta="$(stat -c '%u:%g:%a' "$sp_walk")" || die "cannot inspect $sp_walk"
+      sp_mode="${sp_meta##*:}"; sp_gid="${sp_meta#*:}"; sp_gid="${sp_gid%:*}"
+      if [ "${sp_meta%%:*}" != 0 ] || [ "$((0$sp_mode & 0002))" != 0 ] \
+        || { [ "$sp_gid" != 0 ] && [ "$((0$sp_mode & 0020))" != 0 ]; }; then
         die "$sp_walk can be changed by a non-root account. Root publication is unsafe.
     Use a dedicated root-owned console folder under /opt, or mount the console
     volume read-only in the DNS server. See $DOCKER_DOCS."
@@ -250,15 +254,15 @@ secure_tree() { # existing tree or a directory that may be created
 "*) printf "unsafe control character in pathname\n" >&2; exit 1 ;; esac
       [ ! -L "$p" ] || { printf "symbolic link in console tree: %s\n" "$p" >&2; exit 1; }
       if [ -d "$p" ]; then
-        m=$(stat -c "%u:%a" "$p") || exit 1
-        mode=${m#*:}
-        [ "${m%%:*}" = 0 ] && [ "$((0$mode & 0022))" = 0 ] || {
+        m=$(stat -c "%u:%g:%a" "$p") || exit 1
+        mode=${m##*:}; g=${m#*:}; g=${g%:*}; w=0002; [ "$g" = 0 ] || w=0022
+        [ "${m%%:*}" = 0 ] && [ "$((0$mode & w))" = 0 ] || {
           printf "root-only writable namespace required: %s\n" "$p" >&2; exit 1;
         }
       elif [ -f "$p" ]; then
-        m=$(stat -c "%u:%a:%h" "$p") || exit 1
-        mode=${m#*:}; mode=${mode%:*}
-        [ "${m%%:*}" = 0 ] && [ "$((0$mode & 0022))" = 0 ] && [ "${m##*:}" = 1 ] || {
+        m=$(stat -c "%u:%g:%a:%h" "$p") || exit 1
+        mode=${m#*:*:}; mode=${mode%:*}; g=${m#*:}; g=${g%%:*}; w=0002; [ "$g" = 0 ] || w=0022
+        [ "${m%%:*}" = 0 ] && [ "$((0$mode & w))" = 0 ] && [ "${m##*:}" = 1 ] || {
           printf "root-owned, non-shared regular file required: %s\n" "$p" >&2; exit 1;
         }
       else

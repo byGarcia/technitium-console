@@ -77,7 +77,10 @@ There is no bounty.
 ## Installer filesystem boundary
 
 The installer accepts only root-owned console, backup and state trees, with no
-group or other write bits on files or directories, including every ancestor.
+other write bit on files or directories, including every ancestor, and a group
+write bit only when the group is root (gid 0), as sudo does for sudoers.
+Technitium's own archive ships its files 0664, so a stock web root extracted by
+root is root:root 0664 and is accepted.
 It rejects links, special files and newline-containing names before root copies
 or cleanup. It refuses unsafe ownership instead of trying to repair it while
 another account may still hold writable files open. Use a dedicated root-owned

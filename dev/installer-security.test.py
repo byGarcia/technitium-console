@@ -70,11 +70,25 @@ child.mkdir()
 shell(f'secure_tree "{child}"', ok=False)
 print("PASS service-owned tree and ancestor rejected")
 
-# A group-writable namespace is unsafe even when its owner is root.
+# A namespace its group can write is unsafe when that group is not root's.
 writable = tree("group-writable")
 writable.chmod(0o775)
+os.chown(writable, 0, 65534)
 shell(f'secure_tree "{writable}"', ok=False)
-print("PASS group-writable namespace rejected")
+print("PASS namespace writable by a non-root group rejected")
+
+# Technitium's own tarball ships every file 0664, and tar run as root keeps
+# that mode. Root's group writing root's files gives no other account a way in.
+stock_tree = tree("stock-tarball")
+stock_tree.chmod(0o775)
+(stock_tree / "favicon.ico").write_text("icon")
+(stock_tree / "favicon.ico").chmod(0o664)
+shell(f'secure_tree "{stock_tree}"')
+other_writable = tree("other-writable")
+(other_writable / "favicon.ico").write_text("icon")
+(other_writable / "favicon.ico").chmod(0o666)
+shell(f'secure_tree "{other_writable}"', ok=False)
+print("PASS root group may write, other accounts may not")
 
 # Root-only directories cannot make service-controlled state contents trusted.
 state = tree("state")
@@ -82,7 +96,7 @@ state_file = state / "install.state"
 state_file.write_text("webroot=dummy\n")
 os.chown(state_file, 65534, 65534)
 shell(f'secure_tree "{state}"', ok=False)
-os.chown(state_file, 0, 0)
+os.chown(state_file, 0, 65534)
 state_file.chmod(0o664)
 shell(f'secure_tree "{state}"', ok=False)
 print("PASS service-owned and group-writable state files rejected")

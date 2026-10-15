@@ -280,6 +280,14 @@ amendment has offline GNU and BusyBox regression coverage, rather than a repeat
 of the historical live-server measurements above. Remote filesystem servers
 that can change root-owned objects remain outside this local permission model.
 
+*2026-10-15:* a group write bit is accepted when the group is root (gid 0), the
+rule sudo applies to sudoers. Technitium's install script extracts
+`DnsServerPortable.tar.gz` as root, the archive stores every file as 0664, and
+tar run as root keeps that mode: a stock web root, and a replacement-mode
+console after any server update, is root:root 0664. The amendment above
+refused it, so upgrade and uninstall stopped on a stock file. Write by a
+non-root group or by others is still refused.
+
 ### Where it installs
 
 - **W1 ✓** (C14) The web root is resolved, in order: `--dir`; the value of the
