@@ -92,27 +92,43 @@ its edge together).
 .count { composes: bar above from '../../ui/count.module.css'; }
 .mono { composes: mono from '../../ui/text.module.css'; }
 .nowrap { white-space: nowrap; }
-.breakUp { word-break: break-all; }
-
 /*
-The Query Logs table has to fit its panel. Every table header refuses to wrap
-(ui/Table), and so did the timestamp: under a window of about 1366 the only columns
-that gave way were Domain and Answer, squeezed to a character wide, and the rest hid
-past the right edge with the scroll bar a long table further down. So the two
-columns that carry the query always keep a readable width, and only where the table
-no longer fits do the headers take two lines, the timestamp break between date and
-time, and the ten columns sit closer. Above that it is drawn as every other table.
-Written as `table.` to outweigh ui/Table's `.table thead th` and `.table td`, which
-weigh the same as one class.
+The Query Logs table: one line per row.
+
+Every cell keeps to one line. Domain, Answer and the client address are cut with
+an ellipsis and carry the whole value in their text and `title` (`Clip` in
+QueryLogs.tsx); the rest are short by nature. Before, those three broke anywhere,
+the timestamp took two lines, and a row with a long answer reached 200 px: at
+1440x980 one row fitted on the first screen.
+
+Answer is the elastic column: `max-width: 0` takes it out of the table's minimum
+width and `width: 100%` hands it whatever the other columns leave, so a long list
+of addresses never pushes the row menu out of the panel. Its minimum keeps a
+readable piece of it where the table no longer fits and scrolls inside its panel.
+Domain is cut at a fixed width instead, wide enough for 89 of 100 names on a page
+of the showcase traffic. Written as `table.` to outweigh ui/Table's
+`.table thead th` and `.table td`, which weigh the same as one class.
 */
-.domain { min-width: 10ch; }
-.answer { min-width: 12ch; }
-.stamp { white-space: nowrap; }
-@media (max-width: 1365px) {
-  table.queryTable thead th { white-space: normal; padding-left: var(--s-3); padding-right: var(--s-3); }
-  table.queryTable td { padding-left: var(--s-3); padding-right: var(--s-3); }
-  .stamp { white-space: normal; }
+table.queryTable thead th { white-space: normal; padding-left: var(--s-3); padding-right: var(--s-3); }
+table.queryTable td { white-space: nowrap; padding-left: var(--s-3); padding-right: var(--s-3); }
+table.queryTable td:first-child { padding-left: var(--s-7); }
+table.queryTable td.answer { width: 100%; max-width: 0; min-width: 16ch; }
+.clipDomain, .clipAnswer, .clipClient {
+  display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
+.clipDomain { max-width: 30ch; }
+.clipClient { max-width: 24ch; }
+/* Narrower windows: Domain gives up width first, and the timestamp breaks
+   between date and time (`Stamp`), so the table still fits at 1366 and needs
+   less of a scroll inside its panel below that. */
+@media (max-width: 1439px) {
+  .clipDomain { max-width: 22ch; }
+  table.queryTable td.answer { min-width: 12ch; }
+}
+@media (max-width: 1365px) {
+  table.queryTable td.stamp { white-space: normal; }
+}
+
 .rtt { font-size: var(--t-2); color: var(--faint-on-tint); }
 
 /* Upstream's five row backgrounds (logs.js:452-508), as they are. */

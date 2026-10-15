@@ -81,6 +81,24 @@ function fieldWidth(px: number): CSSProperties {
   return { '--ql-field': `${px}px` } as CSSProperties
 }
 
+/*
+One line per row, whatever the value. Domain, Answer and the client address are
+drawn on a single line and cut with an ellipsis where the column ends, and the
+whole value stays reachable: it is the element's text (selected, copied and read
+by a screen reader in full) and its `title` (shown on hover). The cut is only
+visual. Before, these cells broke anywhere (`word-break: break-all`, as upstream
+writes it, logs.js:514-518): `www.clou` / `dflare.c` / `om`, and a row with a long
+answer reached 200 px.
+*/
+export function Clip({ text, className }: { text: string; className: string }) {
+  if (text === '') return null
+  return (
+    <span className={className} title={text}>
+      {text}
+    </span>
+  )
+}
+
 interface Filters {
   appName: string
   classPath: string
@@ -781,7 +799,9 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
                 <td className={`${styles.mono} ${styles.stamp}`}>
                   <Stamp text={dateTime(e.timestamp)} />
                 </td>
-                <td className={`${styles.mono} ${styles.breakUp}`}>{e.clientIpAddress}</td>
+                <td className={styles.mono}>
+                  <Clip text={e.clientIpAddress} className={styles.clipClient} />
+                </td>
                 <td>{e.protocol}</td>
                 <td>
                   {e.responseType}
@@ -791,12 +811,14 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
                 </td>
                 <td>{e.rcode}</td>
                 {/* logs.js:518. The root is written with a dot. */}
-                <td className={`${styles.mono} ${styles.breakUp} ${styles.domain}`}>
-                  {e.qname === '' ? '.' : (e.qname ?? '')}
+                <td className={styles.mono}>
+                  <Clip text={e.qname === '' ? '.' : (e.qname ?? '')} className={styles.clipDomain} />
                 </td>
                 <td>{e.qtype ?? ''}</td>
                 <td>{e.qclass ?? ''}</td>
-                <td className={`${styles.mono} ${styles.breakUp} ${styles.answer}`}>{e.answer ?? ''}</td>
+                <td className={`${styles.mono} ${styles.answer}`}>
+                  <Clip text={e.answer ?? ''} className={styles.clipAnswer} />
+                </td>
                 <td className={tbl.actionsCell}>
                   <Menu label={`Actions for row ${e.rowNumber}`}>
                     {(close) => {
