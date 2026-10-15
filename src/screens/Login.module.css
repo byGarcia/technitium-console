@@ -1,5 +1,19 @@
-.page {
+/*
+The screen: the cover (OURS, `LoginCover.tsx`) beside the form above 960 px and
+above it below. The form's side keeps what it always had: the card centred on
+`--bg`, the footer under it.
+*/
+.screen {
   min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
+  background: var(--bg);
+}
+@media (max-width: 960px) {
+  .screen { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr; }
+}
+.page {
+  min-width: 0;
   display: grid;
   place-items: center;
   /* `align-content` as well as `place-items`: with two children (the card and
@@ -52,3 +66,10 @@ what was missing: it was the only screen in the console with no heading at all.
 
 /* The footer, under the card and centred: it belongs to the page, not the form. */
 .footer { font-size: var(--t-3); line-height: 2; text-align: center; }
+
+/* Stacked under the cover, the card goes to the top instead of the middle: the
+   cover already took the top of the screen, and centring would push the form
+   further down on a phone. */
+@media (max-width: 960px) {
+  .page { align-content: start; padding: var(--s-11) var(--s-10); }
+}

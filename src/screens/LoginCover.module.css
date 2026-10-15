@@ -1,0 +1,101 @@
+/*
+The login cover (OURS, see `LoginCover.tsx`). The social banner, redrawn with the
+console's tokens so it follows the theme: `--field` is the deepest surface each
+theme has (darker than the page in dark, lighter than it in light), which is what
+separates the cover from the form's side in both. Every text token drawn on it is
+measured on `field` by `dev/theme-contrast.mjs`.
+
+Three states, set by the width alone:
+  above 960  a column beside the form, the amber rule down its left edge
+  560 to 960 a header above the form, the rule along its top
+  under 560  a compact header: name and headline, no answer block, so the form
+             starts within the first third of a phone's screen
+*/
+.cover {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--s-12);
+  min-width: 0;
+  padding: calc(var(--s-12) * 2);
+  background: var(--field);
+  border-right: 1px solid var(--line2);
+}
+/* The rule: the console's own selected-nav amber, as in the banner. */
+.cover::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--s-3);
+  background: var(--acc);
+}
+
+.name {
+  display: flex;
+  align-items: center;
+  gap: var(--s-7);
+  margin: 0;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: var(--t-6);
+  letter-spacing: 0.01em;
+  color: var(--mute);
+}
+.dot { flex: none; width: var(--s-7); height: var(--s-7); border-radius: var(--r-full); background: var(--acc); }
+.version { font-weight: 400; font-size: var(--t-4); color: var(--faint); }
+
+.headline {
+  margin: 0;
+  max-width: 14em;
+  font-weight: 700;
+  font-size: clamp(var(--t-7), 3vw, var(--t-8));
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  text-wrap: balance;
+}
+
+.answer { font-family: var(--font-mono); font-size: clamp(var(--t-5), 1.2vw, var(--t-6)); line-height: 1.9; }
+.section { display: block; color: var(--faint); }
+.records { margin: 0; padding: 0; list-style: none; }
+/* Three columns, so a value that does not fit wraps under itself and never
+   pushes the row wider than the cover. */
+.record {
+  display: grid;
+  grid-template-columns: 10ch max-content minmax(0, 1fr);
+  column-gap: 2ch;
+  animation: settle var(--t-medium) both;
+  animation-delay: calc(var(--row) * 70ms);
+}
+.key { color: var(--ink); }
+.type { color: var(--acc-ink); font-weight: 600; }
+.value { color: var(--ink); }
+
+@keyframes settle {
+  from { opacity: 0; transform: translateY(var(--s-2)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .record { animation: none; }
+}
+
+@media (max-width: 960px) {
+  .cover {
+    gap: var(--s-10);
+    padding: var(--s-12) var(--s-11) var(--s-11);
+    border-right: 0;
+    border-bottom: 1px solid var(--line2);
+  }
+  .cover::before { inset: 0 0 auto 0; width: auto; height: var(--s-3); }
+  .answer { font-size: var(--t-4); }
+}
+
+@media (max-width: 560px) {
+  .cover { gap: var(--s-5); padding: var(--s-11) var(--s-10) var(--s-10); }
+  .name { font-size: var(--t-4); gap: var(--s-5); }
+  .dot { width: var(--s-5); height: var(--s-5); }
+  .version { font-size: var(--t-3); }
+  .headline { max-width: none; font-size: var(--t-6); }
+  .answer { display: none; }
+}
