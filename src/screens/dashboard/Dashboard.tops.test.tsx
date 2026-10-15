@@ -59,9 +59,9 @@ describe('Dashboard Top five presentation', () => {
 
   it('scales decorative bars to the largest displayed count, without counting an undisplayed entry', async () => {
     await draw()
-    const bars = [...panel('Top Domains').querySelectorAll<HTMLElement>(`.${styles.topBar}`)]
+    const bars = [...panel('Top Domains').querySelectorAll<HTMLElement>(`.${styles.topBar} > i`)]
     expect(bars.map((bar) => bar.style.width)).toEqual(['50%', '100%', '25%', '0%', '10%'])
-    for (const bar of bars) expect(bar).toHaveAttribute('aria-hidden', 'true')
+    for (const bar of bars) expect(bar.parentElement).toHaveAttribute('aria-hidden', 'true')
   })
 
   it('preserves client details and draws a true zero with an empty bar', async () => {
@@ -72,7 +72,7 @@ describe('Dashboard Top five presentation', () => {
     expect(clients.querySelector(`.${styles.topRank}`)).toHaveTextContent('1')
     const blocked = panel('Top Blocked Domains')
     expect(within(blocked).getByText('0')).toBeInTheDocument()
-    expect(blocked.querySelector<HTMLElement>(`.${styles.topBar}`)?.style.width).toBe('0%')
+    expect(blocked.querySelector<HTMLElement>(`.${styles.topBar} > i`)?.style.width).toBe('0%')
     expect(within(blocked).getByRole('button', { name: 'Actions for ads.test' })).toBeInTheDocument()
   })
 })

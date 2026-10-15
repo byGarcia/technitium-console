@@ -1,0 +1,9 @@
+/*
+The trend itself: the caller gives it its place and size (`className`). Size
+containment drops the drawing's own 100:32 shape, so the trend takes the box it is
+given and can never make its card taller.
+*/
+.spark {
+  display: block;
+  contain: size;
+}

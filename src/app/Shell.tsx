@@ -213,13 +213,14 @@ export function Shell({
         setSub(null)
         setDrawer(false)
       },
-      showQueryLogs(domain, clientIp, node) {
+      showQueryLogs(domain, clientIp, node, filters) {
         if (!visible('logs')) return
-        setPending({ logs: { domain, clientIp, node: targetNode(node) } })
+        setPending({ logs: { domain, clientIp, node: targetNode(node), ...(filters != null ? { filters } : {}) } })
         setActive('logs')
         setSub('Query Logs')
         setDrawer(false)
       },
+      canShowQueryLogs: visible('logs'),
     }
   }, [sections])
 

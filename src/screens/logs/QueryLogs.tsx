@@ -349,10 +349,12 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
         return
       }
       /* `showQueryLogs` (logs.js:624-655): the reset form, the domain and/or the
-         client, and the query. The ref is written here because the query reads
-         it before the next commit would. */
+         client, and the query. From a Dashboard chart the jump also carries a time
+         window or a value for this form's own fields (deviation 6, `app/handoff.ts`).
+         The ref is written here because the query reads it before the next commit
+         would. */
       pending.current = undefined
-      const next = { ...base, qname: req.domain ?? '', clientIpAddress: req.clientIp ?? '' }
+      const next = { ...base, qname: req.domain ?? '', clientIpAddress: req.clientIp ?? '', ...req.filters }
       setF(next)
       filtersRef.current = next
       void queryRef.current(next.pageNumber, false)

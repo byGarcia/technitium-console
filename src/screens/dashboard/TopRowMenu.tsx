@@ -32,7 +32,7 @@ export function TopRowMenu({
   const verb = kind === 'TopBlockedDomains' ? 'Allow Domain' : 'Block Domain'
 
   return (
-    <Menu label={`Actions for ${name}`}>
+    <Menu label={`Actions for ${name}`} quiet>
       {(close) => (
         <>
           <button

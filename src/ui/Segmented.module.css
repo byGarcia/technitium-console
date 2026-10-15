@@ -41,18 +41,26 @@ appearance, and any change to the pagination took the tabs down with it.
 }
 
 /*
-It wraps when narrow.
+When narrow it scrolls, on one line, and loses no option.
 
-This rule was written (the commit "the console is usable at 390 px" added it), but
-in `screens/dashboard/Dashboard.module.css`, pointing at a class that belongs to
-THIS module. With CSS Modules each one has its own hash, so it never applied: the
-period picker still measured 495 px inside a 390 px window and pushed the
-Dashboard 115 px off to the right. The dead-class detector uncovered it once it
-resolved which module each `styles` belongs to.
+It used to wrap: at 390 px the Dashboard's and Blocking's period picker broke into
+two lines with `Last Year` alone on the second, a strip of state buttons read as two
+groups. Now the strip keeps its line and rolls sideways, as `SectionIndex` does
+below `--bp-index`: every option is `flex: none`, and the strip itself may not
+outgrow its parent (`max-width`, `min-width: 0`), or it is the page that scrolls,
+not the strip. The scrollbar is hidden: the option cut off at the edge already
+says there is more, and a bar under a 30 px strip would be most of its height.
 
-It goes here, which is where the class lives and where it serves both places that
-use the control: the Dashboard period and the options dialog's tabs.
+(It first lived in `screens/dashboard/Dashboard.module.css`, pointing at a class of
+THIS module; with CSS Modules each one has its own hash, so it never applied. It
+stays here, where the class lives, for every place that uses the control.)
 */
 @media (max-width: 720px) {
-  .secs { flex-wrap: wrap; }
+  .secs {
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .option { flex: none; }
 }

@@ -54,6 +54,7 @@ export function Menu({
   onOpen,
   anchor = 'right',
   asRow = false,
+  quiet = false,
   children,
 }: {
   /** Accessible name; it is all there is when it carries no visible label. */
@@ -71,6 +72,14 @@ export function Menu({
   anchor?: 'right' | 'left'
   /** The trigger fills the width of its column, with the label on the left. */
   asRow?: boolean
+  /**
+   * The compact `⋮` with no frame at rest, for a list where one menu repeats on
+   * every short row (the Dashboard's tops, Blocking's top tables): fifteen framed
+   * buttons weighed as much as the figures beside them. The frame comes back on
+   * hover, on keyboard focus and while the menu is open, so the affordance is the
+   * same; only the resting weight changes.
+   */
+  quiet?: boolean
   children: (close: () => void) => ReactNode
 }) {
   const [open, setOpen] = useState(false)
@@ -220,6 +229,7 @@ export function Menu({
         <Button
           ref={trigger}
           size="sm"
+          className={quiet && text == null ? styles.quiet : undefined}
           icon={text == null}
           aria-haspopup="menu"
           aria-expanded={open}

@@ -328,7 +328,9 @@ describe('Dashboard: the minute reload keeps what the server has not counted yet
     expect(within(screen.getByText('Total Queries').parentElement!).getByText('10')).toBeInTheDocument()
     /* The reload brings the same consolidated figures: those 3 queries are not in them yet. */
     await act(async () => { await vi.advanceTimersByTimeAsync(60_000) })
-    expect(stats).toHaveBeenCalledTimes(2)
+    /* Counted by period: each answer is followed by the previous hour's read
+       (deviation 6), which is not a reload. */
+    expect(stats.mock.calls.filter((c) => c[1] === 'LastHour')).toHaveLength(2)
     expect(within(screen.getByText('Total Queries').parentElement!).getByText('10')).toBeInTheDocument()
   })
 })
