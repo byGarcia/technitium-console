@@ -172,3 +172,23 @@ export async function getMetrics(token: string | null, node?: string): Promise<A
   }
   return { kind: 'ok', data }
 }
+
+/*
+The hours of a span, for the Dashboard's week by hour (deviation 6 in
+CONVENTIONS.md). The same `stats/get` as `getDashboardStats` with `type=Custom`,
+asked separately so the period's own reads stay what they are; only the main
+chart is read, its labels kept as the UTC instants the server wrote.
+*/
+export async function getHours(
+  token: string | null,
+  start: string,
+  end: string,
+  node?: string,
+): Promise<ApiOutcome<ChartData>> {
+  const body = { type: 'Custom', utc: 'true', start, end }
+  const outcome = await apiRequest<{ response: DashboardStats }>('dashboard/stats/get', { token, body, node })
+  if (outcome.kind !== 'ok') return outcome
+  const chart = outcome.data.response?.mainChartData
+  if (chart == null) return { kind: 'error', message: 'Unexpected statistics response.' }
+  return { kind: 'ok', data: localiseLabels(chart) }
+}

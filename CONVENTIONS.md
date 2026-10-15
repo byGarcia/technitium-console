@@ -582,12 +582,22 @@ contract and SECURITY.md.
      of the Top lists' "Show Query Logs" (`app/handoff.ts`), with the same node
      rule, the same arrival and the same alert when no logging app is installed.
      Query Types and Protocol Types are drawn as bars, so the stock legend's
-     click-to-hide is not offered on those two.
+     click-to-hide is not offered on those two;
+   - **a week by hour** (`Heatmap.tsx`, `heatmap.ts`): seven days of the browser's
+     calendar by its 24 hours, each cell the queries of that hour, opening Query
+     Logs for that hour on click. Custom groups by hour only up to 157 hours, so
+     the week is asked in two back-to-back pieces and stitched; an hour that comes
+     twice or not at all leaves the panel saying it could not load, never a double
+     count or a quiet hole. Checked on 2026-10-15 against v15.6.1: the stitched
+     hours equal Last Day's 24 and a single 157-hour request, hour by hour. The hour
+     in progress is left out, as Last Day leaves it. It is asked once per node and
+     per hour, not on each minute reload.
 
    Its limits, and crossing one is a bug:
    - **only `dashboard/stats/get`**, which the stock Dashboard already calls, and
      Query Logs' existing fields. A Last Hour reload waits for both reads so the
-     changes do not blink; other periods ask once more per load;
+     changes do not blink; other periods ask once more per load; the week asks one
+     or two more per hour;
    - **no change is drawn unless it is exact and current**: never while another
      period or node is loading, never after a failed read (of either period),
      never for a figure whose previous value is zero, never when the previous
@@ -599,10 +609,13 @@ contract and SECURITY.md.
      header comment of each file that writes it: "Change vs", "previous hour",
      "previous 24 hours", "previous 7 days", "previous 31 days", "previous 12
      months", "previous N minutes/hours/days" (`compare.ts`, `Figures.tsx`,
-     `Dashboard.tsx`), and the bars' "Show Query Logs" title, which is upstream's
-     own menu text;
+     `Dashboard.tsx`), the week's title "Queries per Hour, Last 7 Days", its
+     weekday names and each cell's "HH:00 to HH:00: N queries" (`Heatmap.tsx`,
+     `heatmap.ts`), and the bars' "Show Query Logs" title, which is upstream's own
+     menu text;
    - **pointer only on the canvas.** A point of `Queries` and a slice of the ring
-     take a click but no keyboard focus; the bars are buttons.
+     take a click but no keyboard focus; the bars are buttons, and the week is one
+     keyboard stop whose arrows move between its cells.
 
 ## Four constraints the server imposes
 

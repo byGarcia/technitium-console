@@ -10,11 +10,17 @@ that their server is receiving no traffic. `Dashboard.tsx` already denounced it
 at") and had only fixed it for the eleven cards, which show the empty-value dash; the panels went
 on lying.
 */
-import { describe, expect, it, vi, afterEach } from 'vitest'
+import { describe, expect, it, vi, afterEach, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Dashboard } from './Dashboard'
 import * as api from '../../api/dashboard'
+import { quietHours } from '../../test/quiet-hours'
+
+/* The week by hour asks on its own; answered quiet, it adds no failure here. */
+beforeEach(() => {
+  vi.spyOn(api, 'getHours').mockImplementation(quietHours)
+})
 
 afterEach(() => vi.restoreAllMocks())
 
