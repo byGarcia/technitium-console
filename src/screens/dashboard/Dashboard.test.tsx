@@ -179,7 +179,11 @@ describe('Dashboard', () => {
     } as never)
     render(<Dashboard token="t" />)
     expect(await screen.findByText('No queries for this period.')).toBeInTheDocument()
-    expect(screen.queryByLabelText('Query Types')).not.toBeInTheDocument()
+    for (const part of ['Query Response Types', 'Query Types', 'Protocol Types']) {
+      const region = screen.getByLabelText(part)
+      expect(within(region).getByText('No data for this period.')).toBeInTheDocument()
+      expect(region.querySelector('[data-segment]')).toBeNull()
+    }
   })
 
   it('an empty Top list says so instead of staying blank', async () => {

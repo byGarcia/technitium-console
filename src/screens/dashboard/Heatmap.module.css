@@ -1,12 +1,12 @@
 /*
-The week by hour. Rows are days, columns the 24 hours, every cell a square that
-shares the width: at 390 px a cell is about 12 px, at 1440 about 40 px wide and
-kept short, so the panel stays a band and not a wall.
+The week by hour, compact: it shares the column beside `Queries` with `Server`.
+Rows are days, columns the 24 hours, every cell a short block that shares the width
+(about 11 px at 1440 and at 390).
 */
-.panel { margin-bottom: var(--gap-block); }
-.wrap { display: flex; flex-direction: column; gap: var(--s-7); }
-.grid { display: grid; gap: var(--s-1); }
+.wrap { display: flex; flex-direction: column; gap: var(--s-3); }
+.grid { display: grid; gap: var(--s-3); }
 .row, .hours { display: grid; grid-template-columns: 7ch repeat(24, minmax(0, 1fr)); gap: var(--s-1); align-items: center; }
+.hours > span { overflow: visible; }
 .row > span[role='gridcell'] { display: block; min-width: 0; }
 .day, .hours > span { font: 400 var(--t-1)/1 var(--font-mono); color: var(--mute); white-space: nowrap; }
 .day { overflow: hidden; text-overflow: ellipsis; }
@@ -23,7 +23,7 @@ end is which.
 .cell {
   display: block;
   width: 100%;
-  height: var(--s-9);
+  height: var(--s-8);
   padding: 0;
   border: 0;
   border-radius: var(--r-1);
@@ -32,7 +32,9 @@ end is which.
 button.cell { cursor: pointer; }
 button.cell:hover { box-shadow: inset 0 0 0 1px var(--ink); }
 button.cell:focus-visible { outline: var(--focus); outline-offset: 1px; }
-.none { display: block; height: var(--s-9); }
+/* The hour still in progress, and the rest of today: dashed, because it is empty
+   and not a zero. */
+.none { display: block; height: var(--s-8); border: 1px dashed var(--line); border-radius: var(--r-1); }
 .h0 { background: var(--pan2); }
 .h1 { background: color-mix(in srgb, var(--ch-1) 20%, var(--pan)); }
 .h2 { background: color-mix(in srgb, var(--ch-1) 40%, var(--pan)); }
@@ -40,13 +42,12 @@ button.cell:focus-visible { outline: var(--focus); outline-offset: 1px; }
 .h4 { background: color-mix(in srgb, var(--ch-1) 80%, var(--pan)); }
 .h5 { background: var(--ch-1); }
 
-.scale { display: flex; align-items: center; justify-content: flex-end; gap: var(--s-2); font: 400 var(--t-1)/1 var(--font-mono); color: var(--mute); }
-.scale > i { width: var(--s-9); }
-.scale > span:first-child { margin-right: var(--s-2); }
-.scale > span:last-child { margin-left: var(--s-2); }
+.foot { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--s-2) var(--s-8); font: 400 var(--t-2)/1.2 var(--font-ui); color: var(--faint); }
+.scale { display: flex; align-items: center; gap: var(--s-2); color: var(--mute); }
+.scale > i { width: var(--s-8); height: var(--s-6); }
 
 @media (max-width: 560px) {
   .row, .hours { gap: 1px; }
-  .cell, .none { height: var(--s-7); }
+  .grid { gap: var(--s-2); }
   .day { font-size: var(--t-1); }
 }

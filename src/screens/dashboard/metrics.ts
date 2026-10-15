@@ -1,27 +1,25 @@
 import type { Compared } from './compare'
 
-/* The eleven figures, in the two bands `Figures.tsx` draws them in. */
+/*
+The eleven figures, in the order the cockpit draws them (`Figures.tsx` says why):
+Total Queries first and larger, then Clients, then upstream's own order for the
+other nine.
+*/
 export type Metric = { k: Compared; label: string; pct?: boolean; series: string }
 
-export const KEYS: Metric[] = [
-  { k: 'totalQueries', label: 'Total Queries', series: 'Total' },
-  { k: 'totalBlocked', label: 'Blocked', pct: true, series: 'Blocked' },
-  { k: 'totalCached', label: 'Cached', pct: true, series: 'Cached' },
-  { k: 'totalClients', label: 'Clients', series: 'Clients' },
-]
+export const TOTAL: Metric = { k: 'totalQueries', label: 'Total Queries', series: 'Total' }
 
-export const FAMILIES: Metric[][] = [
-  [
-    { k: 'totalNoError', label: 'No Error', pct: true, series: 'No Error' },
-    { k: 'totalServerFailure', label: 'Server Failure', pct: true, series: 'Server Failure' },
-    { k: 'totalNxDomain', label: 'NX Domain', pct: true, series: 'NX Domain' },
-    { k: 'totalRefused', label: 'Refused', pct: true, series: 'Refused' },
-  ],
-  [
-    { k: 'totalAuthoritative', label: 'Authoritative', pct: true, series: 'Authoritative' },
-    { k: 'totalRecursive', label: 'Recursive', pct: true, series: 'Recursive' },
-    { k: 'totalDropped', label: 'Dropped', pct: true, series: 'Dropped' },
-  ],
+export const FIGURES: Metric[] = [
+  { k: 'totalClients', label: 'Clients', series: 'Clients' },
+  { k: 'totalNoError', label: 'No Error', pct: true, series: 'No Error' },
+  { k: 'totalServerFailure', label: 'Server Failure', pct: true, series: 'Server Failure' },
+  { k: 'totalNxDomain', label: 'NX Domain', pct: true, series: 'NX Domain' },
+  { k: 'totalRefused', label: 'Refused', pct: true, series: 'Refused' },
+  { k: 'totalAuthoritative', label: 'Authoritative', pct: true, series: 'Authoritative' },
+  { k: 'totalRecursive', label: 'Recursive', pct: true, series: 'Recursive' },
+  { k: 'totalCached', label: 'Cached', pct: true, series: 'Cached' },
+  { k: 'totalBlocked', label: 'Blocked', pct: true, series: 'Blocked' },
+  { k: 'totalDropped', label: 'Dropped', pct: true, series: 'Dropped' },
 ]
 
 /*

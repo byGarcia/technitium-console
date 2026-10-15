@@ -40,6 +40,9 @@ appearance, and any change to the pagination took the tabs down with it.
   font-weight: 550;
 }
 
+/* The strip on a title's line: shorter, so the title still leads. */
+.compact .option { padding: var(--s-2) var(--s-6); font-size: var(--t-3); line-height: 1.4; }
+
 /*
 When narrow it scrolls, on one line, and loses no option.
 

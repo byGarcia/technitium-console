@@ -646,7 +646,7 @@ contract and SECURITY.md.
    two things to the stock Dashboard (`screens/dashboard/compare.ts`, `jump.ts`):
    - **each figure's change against the previous period of the same length**, as
      an arrow and a percentage on its card, with what it is measured against
-     written once beside the period picker ("Change vs previous hour"). The
+     written once, in the `Total Queries` card ("vs previous hour"). The
      previous period is a second `dashboard/stats/get` with `type=Custom`, whose
      instants are worked out from the labels of the answer on screen, so they follow
      the server's clock, its node and its grouping. Measured against v15.6.1 and
@@ -659,13 +659,15 @@ contract and SECURITY.md.
      kept only part of its clients (more than 1,000). The other ten compare in
      every period;
    - **a jump from a chart to Query Logs**: a point of `Queries` opens its minute,
-     hour, day or month as `From`/`To`; a slice of `Query Response Types` or a bar
-     of `Query Types` or `Protocol Types` opens that value over the period, where
+     hour, day or month as `From`/`To`; a segment of the `Query Response Types`,
+     `Query Types` or `Protocol Types` bar opens that value over the period, where
      Query Logs has a field for it (`Dropped` and `Others` do not). It is the jump
      of the Top lists' "Show Query Logs" (`app/handoff.ts`), with the same node
      rule, the same arrival and the same alert when no logging app is installed.
-     Query Types and Protocol Types are drawn as bars, so the stock legend's
-     click-to-hide is not offered on those two;
+     The three breakdowns are stacked bars in one card (the cockpit layout,
+     Adrián's choice of 2026-10-15, `Breakdown.tsx`). Query Response Types keeps
+     the stock legend's click-to-hide; on Query Types and Protocol Types there is
+     no slice to hide, so their legend entries are the jump instead;
    - **a week by hour** (`Heatmap.tsx`, `heatmap.ts`): seven days of the browser's
      calendar by its 24 hours, each cell the queries of that hour, opening Query
      Logs for that hour on click. Custom groups by hour only up to 157 hours, so
@@ -689,16 +691,20 @@ contract and SECURITY.md.
      recorded (it started inside it, or its stats files were deleted) is compared
      as recorded: the API cannot tell a quiet hour from a missing one;
    - **upstream's texts are untouched.** What is ours is in English, declared in the
-     header comment of each file that writes it: "Change vs", "previous hour",
+     header comment of each file that writes it: "vs", "previous hour",
      "previous 24 hours", "previous 7 days", "previous 31 days", "previous 12
      months", "previous N minutes/hours/days" (`compare.ts`, `Figures.tsx`,
-     `Dashboard.tsx`), the week's title "Queries per Hour, Last 7 Days", its
-     weekday names and each cell's "HH:00 to HH:00: N queries" (`Heatmap.tsx`,
-     `heatmap.ts`), and the bars' "Show Query Logs" title, which is upstream's own
-     menu text;
-   - **pointer only on the canvas.** A point of `Queries` and a slice of the ring
-     take a click but no keyboard focus; the bars are buttons, and the week is one
-     keyboard stop whose arrows move between its cells.
+     `Dashboard.tsx`), the Queries hint "Click a point to open Query Logs for that
+     minute/hour/day/month" (`Dashboard.tsx`), the week's title "Queries per Hour,
+     Last 7 Days", its weekday names, each cell's "HH:00 to HH:00: N queries", its
+     hint "Click a cell for that hour's Query Logs" and its scale's "Quiet" and
+     "Busy" (`Heatmap.tsx`, `heatmap.ts`), and the legend entries' "Show Query Logs"
+     title, which is upstream's own menu text. The two hints show only when the
+     click can land;
+   - **pointer only on the canvas and the bars.** A point of `Queries` and a
+     segment of a breakdown bar take a click but no keyboard focus; the Query Types
+     and Protocol Types legend entries are buttons, and the week is one keyboard
+     stop whose arrows move between its cells.
 
 ## Four constraints the server imposes
 

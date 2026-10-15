@@ -69,6 +69,8 @@ describe('Dashboard Top five presentation', () => {
     const clients = panel('Top Clients')
     expect(within(clients).getByText('10.0.0.1 (rate limited)')).toBeInTheDocument()
     expect(within(clients).getByText('pc.home.test')).toBeInTheDocument()
+    /* A long name ends in an ellipsis; the whole of it is on hover. */
+    expect(clients.querySelector(`.${styles.n}`)).toHaveAttribute('title', '10.0.0.1 (rate limited) pc.home.test')
     expect(clients.querySelector(`.${styles.topRank}`)).toHaveTextContent('1')
     const blocked = panel('Top Blocked Domains')
     expect(within(blocked).getByText('0')).toBeInTheDocument()

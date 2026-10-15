@@ -4,10 +4,11 @@ import {
   type DashboardStats, type Range, type Stats, type TopKind,
 } from '../../api/dashboard'
 import { useHandoff, type QueryLogsFilters } from '../../app/handoff'
-import { changes, previousLabel, previousQuery, windowOf, type PreviousQuery } from './compare'
+import { bucketsOf, changes, previousLabel, previousQuery, windowOf, type PreviousQuery } from './compare'
 import { Figure, StatCard } from './Figures'
-import { FAMILIES, KEYS, num2, percentage } from './metrics'
-import { Bars, Line, Placeholder, Split, Top, hasData } from './Panels'
+import { FIGURES, TOTAL, num2, percentage } from './metrics'
+import { Line, Placeholder, Top, hasData } from './Panels'
+import { Breakdown } from './Breakdown'
 import { Heatmap } from './Heatmap'
 import {
   bucketWindow, periodFilters, protocolFilter, queryTypeFilter, responseTypeFilter,
@@ -287,33 +288,36 @@ export function Dashboard({
   const typeJump = byValue('qtype', queryTypeFilter)
   const protocolJump = byValue('protocol', protocolFilter)
 
+  /* What a point of `Queries` opens: its minute, hour, day or month. The hint that
+     says so in its header is our words (deviation 7), drawn only when it can land. */
+  const unit = bucketsOf(view?.mainChartData)?.unit
+
   return (
     <>
-      <SectionHeader title="Dashboard" />
-
       {/*
-      The period bar goes UNDER the title and to the left, which is where the
-      accepted drawing puts it. It was built into the header's `actions`, which
-      pushes it to the right-hand end of the title row: that reads as "an action on
-      this screen" (like `Add Zone` or `Flush Cache`) and it is not one. It
-      reframes every figure below, the same reason the node selector went up to the
-      chrome slot.
+      The cockpit (Adrián's choice of 2026-10-15): everything a question needs fits
+      in the first 1440 x 980 screen. The title with the period beside it; the
+      eleven figures in one block; `Queries` with the week by hour and `Server`
+      beside it; and the three top lists with the three breakdowns in one row.
+
+      The period picker sits on the title's line, small, and not in the header's
+      `actions`, which would push it to the far right where it reads as "an action
+      on this screen" (like `Add Zone`). It reframes every figure below.
       */}
-      <div className={styles.periodBar}>
-        <Segmented
-          label="Period"
-          options={RANGES.map((r) => ({ id: r, label: RANGE_LABEL[r] }))}
-          active={range}
-          onChoose={(r) => {
-            setRange(r)
-            if (r !== 'Custom') setRequested(null)
-          }}
-        />
-        {/* What every arrow on the cards is measured against (deviation 7). Our
-            words, and only while there are changes to read. */}
-        {shift != null && Object.keys(shift).length > 0 && (
-          <span className={styles.against}>Change vs {against}</span>
-        )}
+      <div className={styles.head}>
+        <SectionHeader title="Dashboard" />
+        <div className={styles.period}>
+          <Segmented
+            label="Period"
+            compact
+            options={RANGES.map((r) => ({ id: r, label: RANGE_LABEL[r] }))}
+            active={range}
+            onChoose={(r) => {
+              setRange(r)
+              if (r !== 'Custom') setRequested(null)
+            }}
+          />
+        </div>
       </div>
 
       {range === 'Custom' && (
@@ -371,59 +375,37 @@ export function Dashboard({
       <Notifier notice={notice} onClose={() => setNotice(null)} />
 
       {/*
-      `data-testid="metrics"` wraps all eleven and not each group: it is the hook
-      the tests count them with (`Dashboard.test.tsx`), and eleven cards split
-      across two bands are still eleven cards. Why four are larger and how the
-      seven are grouped is in `Figures.tsx`.
+      `data-testid="metrics"` wraps all eleven: it is the hook the tests count them
+      with (`Dashboard.test.tsx`). Why Total Queries is larger and the order of the
+      other ten is in `Figures.tsx`.
       */}
       <div className={styles.tiles} data-testid="metrics">
-        <div className={styles.keys}>
-          {KEYS.map((m) => (
-            <StatCard
-              key={m.k}
-              m={m}
-              s={s}
-              total={total}
-              changes={shift}
-              against={against}
-              chart={view?.mainChartData}
-              isKey
-            />
-          ))}
-        </div>
-        <div className={styles.details}>
-          {FAMILIES.map((family, i) => (
-            <div className={styles.family} key={i} style={{ ['--n' as string]: String(family.length) }}>
-              {family.map((m) => (
-                <StatCard key={m.k} m={m} s={s} total={total} changes={shift} against={against} />
-              ))}
-            </div>
-          ))}
-        </div>
+        <StatCard
+          m={TOTAL}
+          s={s}
+          total={total}
+          changes={shift}
+          against={against}
+          chart={view?.mainChartData}
+          hero
+        />
+        {FIGURES.map((m) => (
+          <StatCard key={m.k} m={m} s={s} total={total} changes={shift} against={against} chart={view?.mainChartData} />
+        ))}
       </div>
 
-      {/*
-      The lower half, as the accepted drawing has it: `Queries` with `Server`
-      beside it, then the three doughnuts in a row, then the three top-N lists in
-      another.
-
-      It was built as a 310 px right rail holding `Server`, the three doughnuts
-      and `Top Clients` stacked, with only two panels on the left. Nothing recorded
-      the change and nothing fixed the layout, so it was not a decision;
-      it was a drift. What it cost is visible at 1440: the doughnuts had 310 px
-      to live in, so they came out as a huge centred ring with the legend
-      underneath, `Server` lost its third column, `Top Clients` left the group it
-      belongs to, and half the canvas below was empty.
-
-      `Server` is back to two columns in the rail since issue #2, for the width of
-      its figures and not for the doughnuts: see `.counters`.
-      */}
-      <div className={styles.grid}>
-        <Panel title="Queries" className={styles.panel}>
+      <div className={styles.middle}>
+        <Panel
+          title="Queries"
+          className={styles.queries}
+          actions={pickPoint != null && unit != null
+            ? <span className={styles.hint}>Click a point to open Query Logs for that {unit}</span>
+            : undefined}
+        >
           <Body>
             {loading && <Loading compact />}
             {!loading && view && hasData(view.mainChartData) && (
-              <Line data={view.mainChartData} resetOn={data?.mainChartData} onPick={pickPoint} />
+              <Line data={view.mainChartData} resetOn={data?.mainChartData} onPick={pickPoint} height={300} />
             )}
             {!loading && (!view || !hasData(view.mainChartData)) && (
               <Placeholder failure={failure} empty="No queries for this period." />
@@ -431,41 +413,37 @@ export function Dashboard({
           </Body>
         </Panel>
 
-        <Panel title="Server" className={styles.panel}>
-          <Body>
-            <div className={styles.counters} data-testid="counters">
-              {COUNTERS.map((c) => (
-                <div className={styles.cnt} key={c.k}>
-                  <Figure className={styles.v} text={s ? num2(s[c.k]) : '—'} />
-                  <div className={styles.k}>{c.label}</div>
-                </div>
-              ))}
-            </div>
-          </Body>
-        </Panel>
+        <div className={styles.side}>
+          <Heatmap token={token} node={node} hour={hour} jump={canJump ? jump : undefined} />
+
+          <Panel title="Server">
+            <Body>
+              <div className={styles.counters} data-testid="counters">
+                {COUNTERS.map((c) => (
+                  <div className={styles.cnt} key={c.k}>
+                    <Figure className={styles.v} text={s ? num2(s[c.k]) : '\u2014'} />
+                    <div className={styles.k}>{c.label}</div>
+                  </div>
+                ))}
+              </div>
+            </Body>
+          </Panel>
+        </div>
       </div>
 
-      <Heatmap token={token} node={node} hour={hour} jump={canJump ? jump : undefined} />
-
-      {view && (
-        <div className={styles.trio}>
-          <Split
-            title="Query Response Types"
-            data={view.queryResponseChartData}
-            resetOn={data?.queryResponseChartData}
-            failure={failure}
-            onPick={responseJump != null ? (label) => responseJump(label)?.() : undefined}
-            pickable={responseJump != null ? (label) => responseJump(label) != null : undefined}
-          />
-          <Bars title="Query Types" data={view.queryTypeChartData} failure={failure} colour="--ch-1" jump={typeJump} />
-          <Bars title="Protocol Types" data={view.protocolTypeChartData} failure={failure} colour="--ch-1" jump={protocolJump} />
-        </div>
-      )}
-
-      <div className={styles.trio}>
+      <div className={styles.lists}>
+        <Top
+          title="Top Clients"
+          tone="--ch-clients"
+          rows={view?.topClients ?? []}
+          isClient
+          onMore={() => setTop('TopClients')}
+          failure={failure}
+          menu={(f) => <TopRowMenu kind="TopClients" name={f.name} node={node} action={action} />}
+        />
         <Top
           title="Top Domains"
-          tone="--ch-total"
+          tone="--ch-ok"
           rows={view?.topDomains ?? []}
           onMore={() => setTop('TopDomains')}
           failure={failure}
@@ -480,14 +458,15 @@ export function Dashboard({
           beforeMore={<BlockingMenu token={token} onNotice={setNotice} />}
           menu={(f) => <TopRowMenu kind="TopBlockedDomains" name={f.name} node={node} action={action} />}
         />
-        <Top
-          title="Top Clients"
-          tone="--ch-clients"
-          rows={view?.topClients ?? []}
-          isClient
-          onMore={() => setTop('TopClients')}
+        <Breakdown
+          responses={view?.queryResponseChartData}
+          responsesResetOn={data?.queryResponseChartData}
+          queryTypes={view?.queryTypeChartData}
+          protocols={view?.protocolTypeChartData}
           failure={failure}
-          menu={(f) => <TopRowMenu kind="TopClients" name={f.name} node={node} action={action} />}
+          responseJump={responseJump}
+          typeJump={typeJump}
+          protocolJump={protocolJump}
         />
       </div>
 

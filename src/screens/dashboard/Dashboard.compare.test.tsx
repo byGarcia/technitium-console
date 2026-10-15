@@ -90,7 +90,7 @@ describe('Dashboard: the change against the previous period', () => {
     localStorage.setItem('dashboardClusterNode', 'ns2.test')
     const spy = serve()
     inShell(<Dashboard token="t" clusterInitialised nodes={[{ name: 'ns2.test' }] as never} />)
-    await screen.findByText('Change vs previous hour')
+    await screen.findByText('vs previous hour')
     const custom = spy.mock.calls.find((c) => c[1] === 'Custom')!
     expect(custom[2]).toEqual({
       start: new Date(LAST - 119 * MIN).toISOString(),
@@ -102,16 +102,16 @@ describe('Dashboard: the change against the previous period', () => {
   it('draws each change with an arrow, and says in full what it is against', async () => {
     serve()
     inShell(<Dashboard token="t" />)
-    await screen.findByText('Change vs previous hour')
+    await screen.findByText('vs previous hour')
     expect(within(card('Total Queries')).getByText('+100.0% vs previous hour')).toBeInTheDocument()
-    expect(within(card('Total Queries')).getByText('▲ 100.0%')).toBeInTheDocument()
+    expect(within(card('Total Queries')).getByText('100.0%').parentElement).toHaveTextContent(/^▲ 100\.0%$/)
     expect(within(card('Clients')).getByText('+100.0% vs previous hour')).toBeInTheDocument()
   })
 
   it('a figure that was zero before has no change', async () => {
     serve()
     inShell(<Dashboard token="t" />)
-    await screen.findByText('Change vs previous hour')
+    await screen.findByText('vs previous hour')
     expect(within(card('Blocked')).queryByText(/vs previous hour/)).not.toBeInTheDocument()
   })
 
@@ -131,7 +131,7 @@ describe('Dashboard: the change against the previous period', () => {
       return (type === 'Custom' ? { kind: 'ok', data: PREVIOUS } : { kind: 'ok', data: CURRENT }) as never
     })
     inShell(<Dashboard token="t" />)
-    await screen.findByText('Change vs previous hour')
+    await screen.findByText('vs previous hour')
     await userEvent.click(screen.getByRole('button', { name: 'Last Day' }))
     expect(spy.mock.calls.some((c) => c[1] === 'LastDay')).toBe(true)
     expect(screen.queryByText(/vs previous/)).not.toBeInTheDocument()
@@ -161,14 +161,16 @@ describe('Dashboard: from a chart to Query Logs', () => {
     expect(toIso(filters!.end!)).toBe(new Date(LAST - 1000).toISOString())
   })
 
-  it('a response type slice opens that response type over the period; Dropped has none', async () => {
+  it('a response type segment opens that response type over the period; Dropped has none', async () => {
     serve()
     const handoff = nav()
     inShell(<Dashboard token="t" />, handoff)
-    await screen.findByTestId('chart-Query Response Types')
-    const ring = charts.get('Query Response Types')!
-    expect(ring.pickable!(4)).toBe(false)
-    act(() => ring.onPick!(2))
+    const part = await screen.findByLabelText('Query Response Types')
+    const segment = (label: string) => part.querySelector<HTMLElement>(`[data-segment="${label}"]`)!
+    await vi.waitFor(() => expect(segment('Cached')).not.toBeNull())
+    expect(segment('Cached').tagName).toBe('BUTTON')
+    expect(segment('Dropped').tagName).toBe('I')
+    await userEvent.click(segment('Cached'))
     const filters = vi.mocked(handoff.showQueryLogs).mock.calls[0][3]!
     expect(filters.responseType).toBe('Cached')
     expect(toIso(filters.start!)).toBe(new Date(LAST - 60 * MIN).toISOString())
@@ -191,7 +193,7 @@ describe('Dashboard: from a chart to Query Logs', () => {
     inShell(<Dashboard token="t" />, nav(false))
     await screen.findByTestId('chart-Queries over time')
     expect(charts.get('Queries over time')!.onPick).toBeUndefined()
-    expect(charts.get('Query Response Types')!.onPick).toBeUndefined()
+    expect(screen.getByLabelText('Query Response Types').querySelector('button[data-segment]')).toBeNull()
     expect(within(screen.getByLabelText('Query Types')).queryByRole('button')).not.toBeInTheDocument()
   })
 })
