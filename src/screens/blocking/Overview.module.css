@@ -71,3 +71,14 @@ the other lacks.
 .ring { position: relative; }
 .ringValue { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; font-family: var(--font-mono); font-size: var(--t-6); font-weight: 600; pointer-events: none; }
 .ringLabel { display: block; font-family: var(--font-ui); font-size: var(--t-1); font-weight: var(--text-weight); letter-spacing: var(--text-tracking); text-transform: uppercase; color: var(--mute); }
+
+/*
+The status block and "Check, block or allow a domain" share a row, and the grid
+stretches both to the taller one. Before any check that is what balances the row:
+the status block is the shorter, and its content sits in its middle (`.centred`).
+Once the check panel holds something under its field (the wait, the verdict, or why
+there is none), stretching would leave the status block a tall box with one line
+floating in it, so it keeps its own height instead, top-aligned. The check panel's
+answer region is empty (`:empty`) until then.
+*/
+.checkRow:has([aria-live]:not(:empty)) > :first-child { align-self: start; }

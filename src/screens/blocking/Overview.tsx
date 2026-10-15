@@ -367,7 +367,7 @@ export function Overview({
           </div>
         )}
 
-        <div className={shared.row2}>
+        <div className={`${shared.row2} ${styles.checkRow}`}>
           <StatusPanel token={token} permissions={permissions} onNotice={setNotice} />
           <AddDomainBar
             token={token}
