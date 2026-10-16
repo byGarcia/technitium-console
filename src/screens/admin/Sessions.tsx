@@ -143,6 +143,7 @@ export function Sessions({ tabs, token, cluster, node: controlledNode, onNodeCha
       ) : (
         <>
           <Table
+            stack
             header={
               <>
                 <Th field="username" sort={sort} onSort={toggle}>Username</Th>
@@ -162,7 +163,7 @@ export function Sessions({ tabs, token, cluster, node: controlledNode, onNodeCha
                  its token cell stays: the colour finds the row, the word says
                  which it is. Same treatment as this node's row in `Cluster`. */
               <tr key={s.partialToken} className={s.isCurrentSession ? tbl.rowSelf : undefined}>
-                <td>
+                <td className={tbl.lead}>
                   <button
                     type="button"
                     className={styles.link}
@@ -171,7 +172,7 @@ export function Sessions({ tabs, token, cluster, node: controlledNode, onNodeCha
                     {s.username}
                   </button>
                 </td>
-                <td>
+                <td className={tbl.lead}>
                   <SessionCell session={s} />
                 </td>
                 <td className={styles.nowrap}>

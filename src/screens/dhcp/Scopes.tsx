@@ -225,6 +225,7 @@ export function Scopes({ tabs, token, node = '', canModify = true, canDelete = t
       ) : (
       <>
       <Table
+        stack
         header={
           <>
             <Th field="name" sort={sort} onSort={toggle}>Name</Th>
@@ -241,7 +242,7 @@ export function Scopes({ tabs, token, node = '', canModify = true, canDelete = t
       >
         {visibleScopes.map((s) => (
           <tr key={s.name}>
-            <td className={styles.name}>{s.name}</td>
+            <td className={`${styles.name} ${tbl.lead}`}>{s.name}</td>
             <td>
               <dl className={styles.kv}>
                 <dt>Range</dt>

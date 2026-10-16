@@ -21,11 +21,9 @@ thead > tr > th.hitsHead { text-align: right; }
 .shareBlocked > i { background: var(--ch-block); }
 .shareTotal > i { background: var(--ch-total); }
 .time { font-family: var(--font-mono); color: var(--faint); white-space: nowrap; }
-/* `--bp-stack`. At 390 the full date on one line left the domain a few characters per
-   line; the date and the hour go on two lines instead. */
-@media (max-width: 560px) {
-  .time { white-space: normal; }
-}
+/* Below `--bp-stack` Recently Blocked's rows stack (`stack` in ui/Table), so the time
+   no longer has to share a line with the domain and keeps its one line. It used to
+   wrap there, `2026-10-` / `16` / `09:42:52`, beside a domain a few characters wide. */
 .mono { font-family: var(--font-mono); }
 /* The node after Recently Blocked's title: part of the title, quieter than it. */
 .where { color: var(--mute); font-weight: 400; }

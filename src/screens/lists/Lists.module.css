@@ -159,6 +159,10 @@ step, because here they sit INSIDE the panel instead of floating above a table.
 /* A public key and an RRSIG are ONE token: without this the value walks out of
    its cell and sits on top of the DNSSEC column. */
 .key { composes: key from '../../ui/record.module.css'; overflow-wrap: anywhere; }
+/* Any other value: the key's colour, broken between words (see `Value` in
+   Records.tsx). `normal` undoes the `break-word` it inherits from `ui/kv`'s `dd`,
+   which is what let the column shrink. */
+.words { color: var(--mute); word-break: normal; overflow-wrap: break-word; }
 .showIt { composes: showIt from '../../ui/record.module.css'; }
 
 .meta { composes: meta from '../../ui/record.module.css'; }

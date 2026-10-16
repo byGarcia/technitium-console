@@ -510,6 +510,7 @@ export function ZoneRecords(p: ZoneRecordsProps) {
       </div>
 
       <Table
+        stack
         header={
           <>
             <th style={{ width: 34 }}>#</th>
@@ -536,8 +537,8 @@ export function ZoneRecords(p: ZoneRecordsProps) {
             return (
               <tr key={`${r.name}|${r.type}|${offset + i}`}>
                 <td className={styles.num2}>{offset + i + 1}</td>
-                <td className={`${styles.mono}`}><DomainName name={relativeName(r.name, zone)} /></td>
-                <td>
+                <td className={`${styles.mono} ${tbl.lead}`}><DomainName name={relativeName(r.name, zone)} /></td>
+                <td className={tbl.lead}>
                   <Chip>{r.type}</Chip>
                   {r.disabled && (
                     <div className={styles.tags}>

@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { Button } from './Button'
 import { Icon, type IconName } from './Icon'
 import styles from './Table.module.css'
@@ -50,6 +50,66 @@ thing that really changes: which columns there are and what goes in each row.
 list hands back an empty array, not zero children, and a detection that is right
 by accident is worse than a parameter.
 */
+/*
+`stack`: when the table's own box is narrower than `--bp-stack` (560) each row
+becomes a block, so the cells that say what a row IS stay on the screen instead of
+behind a sideways scroll.
+
+Measured on 2026-10-16 against the showcase at 390x844, before it:
+
+    Zones           835 px of table in a 360 px panel: Status, Serial, Expiry,
+                    Last Modified and the row actions off screen
+    Zone records    728 in 360: Data, the column that matters, off screen
+    Users           848 in 360: 2FA Status and the actions off screen
+    Query Logs      917 in 360: Response Type, Domain and Answer off screen
+    Sessions        945 in 360, DHCP Leases 714, Scopes 752, Cluster 1,168,
+                    Recently Blocked 430: the same, each with its actions or
+                    its last columns out of sight
+    Cache           no scroll, which was worse: four fixed columns left Data
+                    80 px, and one record of `google.com` stood a letter per
+                    line, 1,671 px tall. At 1024 too, beside the tree.
+
+Every one is the same defect. A table can only get narrower by squeezing a
+column or by scrolling, and at that width either loses the row: squeezed, a value
+breaks letter by letter; scrolled, the cells that identify the row are on one side
+and the ones that describe it on the other. So below 560 the row stops being a
+table row, by ONE rule for all of them:
+
+    [checkbox] LEAD CELL(S) .......................... [actions]
+    LABEL value   LABEL value   LABEL value
+    LABEL first line of a block value
+          rest of the block…
+
+The first line is what identifies the row: the cells the screen marks with
+`.lead` (the zone; the record's name and type; the user; the queried domain and
+its type), with the row's checkbox before them and its actions hard against the
+end, as at 1440. Every other cell follows as a fact, its column's header in front
+of its value, as many to a line as fit; a long value takes the whole line and
+wraps at its spaces and dots, never inside a word.
+
+The labels are the table's OWN header texts, read from each column's `<th>`
+after every render into `data-label`: nothing to keep in sync and not one new
+word, and a column upstream leaves blank gets no label. CSS draws the label with
+an empty alternative text (`content: … / ""`), so a screen reader does not hear it
+twice; it hears the header, because the table keeps its semantics. A `display`
+other than `table` makes some browsers drop them, so in this mode the table, its
+row groups, rows and cells carry their roles explicitly, the ones the elements
+imply.
+
+Nothing is hidden from anyone: every cell is still in its row, in the page, in the
+copy and in find. The header row stays in the page too, and on screen it keeps its
+sort buttons and the select-all box, as a strip: those are controls, and a phone
+needs them as much as a desk does.
+
+After it, at 390: no table scrolls sideways and none breaks a word. Rows measure
+Zones 131, an A record 142 (the SOA 284), Leases 65, Recently Blocked 92, Query
+Logs 156 to 183, Users 198, Sessions 195 to 216, Scopes 190, Cluster 208 to 220,
+the negative-cache record that was 1,671 px 220. Above 560 the table is exactly
+the table it was.
+
+It is a container query, not a media query, because a table can be narrow for
+what sits beside it (see `.stackWrap` in Table.module.css).
+*/
 export function Table({
   header,
   children,
@@ -59,6 +119,7 @@ export function Table({
   className,
   tableClass,
   footer,
+  stack = false,
 }: {
   /** The `thead` cells; normally `Th` from this same module. */
   header: ReactNode
@@ -75,14 +136,29 @@ export function Table({
   tableClass?: string
   /** The footer row, when the table carries its count inside. */
   footer?: ReactNode
+  /** Rows become blocks below `--bp-stack`; the identifying cells carry `.lead`. */
+  stack?: boolean
 }) {
+  const ref = useRef<HTMLTableElement>(null)
+
+  // After every render, because the rows are the screen's: a sort, a page or a
+  // filter hands back new cells, and React leaves alone attributes it did not set.
+  useLayoutEffect(() => {
+    if (stack && ref.current != null) labelCells(ref.current)
+  })
+
+  const group = stack ? { role: 'rowgroup' } : {}
   return (
-    <div className={[styles.wrap, className].filter(Boolean).join(' ')}>
-      <table className={[styles.table, tableClass].filter(Boolean).join(' ')}>
-        <thead>
+    <div className={[styles.wrap, stack && styles.stackWrap, className].filter(Boolean).join(' ')}>
+      <table
+        ref={ref}
+        role={stack ? 'table' : undefined}
+        className={[styles.table, stack && styles.stack, tableClass].filter(Boolean).join(' ')}
+      >
+        <thead {...group}>
           <tr>{header}</tr>
         </thead>
-        <tbody>
+        <tbody {...group}>
           {isEmpty && emptyText != null ? (
             <tr>
               <td colSpan={columns} className={styles.noRows}>
@@ -94,13 +170,63 @@ export function Table({
           )}
         </tbody>
         {footer != null && (
-          <tfoot>
+          <tfoot {...group}>
             <tr>{footer}</tr>
           </tfoot>
         )}
       </table>
     </div>
   )
+}
+
+/**
+ * Gives every row and cell of a stacking table its role, and every body cell the
+ * text of its column's header in `data-label`. Columns are counted with their
+ * `colSpan`; a cell spanning several (the "nothing here" row) gets no label.
+ */
+export function labelCells(table: HTMLTableElement) {
+  const head = table.tHead?.rows[0]
+  const labels: string[] = []
+  if (head != null) {
+    head.setAttribute('role', 'row')
+    for (const th of Array.from(head.cells)) {
+      th.setAttribute('role', 'columnheader')
+      // A header that shows no text still names its sort button (`Th`'s `name`).
+      const named = th.querySelector('button[aria-label]')?.getAttribute('aria-label')
+      const label = (th.textContent ?? '').trim() || (named ?? '')
+      for (let i = 0; i < th.colSpan; i++) labels.push(label)
+    }
+  }
+  const sections = [...Array.from(table.tBodies), ...(table.tFoot != null ? [table.tFoot] : [])]
+  for (const section of sections) {
+    for (const row of Array.from(section.rows)) {
+      row.setAttribute('role', 'row')
+      let column = 0
+      for (const cell of Array.from(row.cells)) {
+        cell.setAttribute('role', cell.tagName === 'TH' ? 'rowheader' : 'cell')
+        const label = cell.colSpan === 1 ? labels[column] : undefined
+        if (label) cell.setAttribute('data-label', label)
+        else cell.removeAttribute('data-label')
+        if (isBlank(cell)) cell.setAttribute('data-empty', '')
+        else cell.removeAttribute('data-empty')
+        column += cell.colSpan
+      }
+    }
+  }
+}
+
+/*
+A cell with nothing to show: no text but white space, and no element that is a
+value without text (an icon, an image, a control). An empty `<span>`, the space
+Zones writes for a missing serial and an empty date are blank; the "no value"
+placeholder (an em dash) is text and is a value. In a stacked row a blank fact is
+only a label with nothing after it, so the stylesheet takes it off the screen; it
+stays in the row, so every later cell keeps its column for a screen reader.
+*/
+const VALUE_WITHOUT_TEXT = 'svg, img, input, button, select, textarea, [role="img"]'
+
+function isBlank(cell: HTMLTableCellElement): boolean {
+  return (cell.textContent ?? '').trim() === '' && cell.querySelector(VALUE_WITHOUT_TEXT) == null
 }
 
 export interface Sort {

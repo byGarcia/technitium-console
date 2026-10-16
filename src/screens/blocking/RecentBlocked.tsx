@@ -6,6 +6,7 @@ import { appsWithQueryLogs } from '../logs/QueryLogs'
 import { RouteLink } from '../../ui/RouteLink'
 import { Panel, Body } from '../../ui/Panel'
 import { Table } from '../../ui/Table'
+import tbl from '../../ui/Table.module.css'
 import { DomainName } from '../../ui/DomainName'
 import { Chip } from '../../ui/Tag'
 import { Icon } from '../../ui/Icon'
@@ -189,6 +190,7 @@ export function RecentBlocked({
             </div>
           )}
           <Table
+            stack
             header={
               <>
                 <th>Time</th>
@@ -206,8 +208,8 @@ export function RecentBlocked({
               <tr key={`${e.responseType}:${e.rowNumber}:${e.timestamp}`}>
                 <td className={styles.time}>{dateTime(e.timestamp)}</td>
                 <td className={styles.mono}>{e.clientIpAddress}</td>
-                <td className={styles.name}><DomainName name={e.qname ?? '.'} /></td>
-                <td>{e.qtype != null && <Chip>{e.qtype}</Chip>}</td>
+                <td className={`${styles.name} ${tbl.lead}`}><DomainName name={e.qname ?? '.'} /></td>
+                <td className={tbl.lead}>{e.qtype != null && <Chip>{e.qtype}</Chip>}</td>
               </tr>
             ))}
           </Table>

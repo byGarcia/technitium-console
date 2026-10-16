@@ -28,8 +28,18 @@ describe('a domain name', () => {
     expect(screen.getByRole('button', { name: 'example.net' })).toBeInTheDocument()
   })
 
-  it('leaves a name with no dot, and the root, as plain text', () => {
-    for (const name of ['<root>', '@', 'localhost', '.']) {
+  it('keeps a name with no dot whole, hyphens included, as one piece', () => {
+    for (const name of ['<root>', '@', 'localhost', 'living-room-tv']) {
+      const { container, unmount } = render(<DomainName name={name} />)
+      const pieces = [...container.querySelectorAll('span')].map((s) => s.textContent)
+      expect(pieces).toEqual([name])
+      expect(container.querySelector('wbr')).toBeNull()
+      unmount()
+    }
+  })
+
+  it('leaves the root and an empty name as plain text', () => {
+    for (const name of ['.', '']) {
       const { container, unmount } = render(<DomainName name={name} />)
       expect(container.querySelector('span')).toBeNull()
       expect(container.textContent).toBe(name)
