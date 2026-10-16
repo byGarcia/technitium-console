@@ -65,6 +65,10 @@ it goes FIRST so the strip lands above what it indexes and not under it.
 @media (max-width: 960px) {
   .withIndex { grid-template-columns: minmax(0, 1fr); }
   .withIndex > :last-child { order: -1; margin-bottom: var(--s-10); }
+
+  /* The strip pins at the top (`ui/SectionIndex`), so a jump from it lands each
+     section below the strip, not under it. */
+  .anchor { scroll-margin-top: calc(var(--stuck-top, 0px) + var(--index-strip) + var(--s-9)); }
 }
 
 @media (max-width: 860px) {

@@ -18,8 +18,9 @@ without.
 
 Everywhere below that line the index is the STRIP Permissions shows under 960, the
 same primitive with `strip`, above the form: it takes height and no width, so the
-row at 1440 keeps its `552px`. Like Permissions' strip it is not sticky; it scrolls
-away with the top of the page.
+row at 1440 keeps its `552px`. It pins at the top as it scrolls (`ui/SectionIndex`),
+and the form under it is told so through `--pinned` (below), which its block titles
+and anchors read.
 
 It is a container query and not a window breakpoint because the quantity it
 protects is the screen's width, whatever the chrome around it takes. The room is
@@ -34,12 +35,25 @@ its own container so whoever uses it needs to declare nothing.
   gap: var(--s-10);
 }
 
+/* The slot steps aside so the strip's own `position: sticky` travels down the whole
+   room and not only down a slot as tall as itself. */
+.strip { display: contents; }
+
+/*
+`--pinned`: what is pinned above the form at this width, for its block titles to pin
+below (`ui/PanelForm.module.css`) and for a jump from the index to land below. Here
+the strip, on top of whatever was already pinned; beside the column, only that.
+*/
+.form { --pinned: calc(var(--stuck-top, 0px) + var(--index-strip)); }
+
 .column { min-width: 0; }
 
 .side { display: none; }
 
 @container (min-width: 1364px) {
   .strip { display: none; }
+
+  .form { --pinned: var(--stuck-top, 0px); }
 
   .withIndex {
     display: grid;

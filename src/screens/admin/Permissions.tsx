@@ -200,6 +200,7 @@ export function Permissions({ tabs, token, cluster, onNotice }: Props) {
                 <div
                   key={s.section}
                   id={anchor(s.section)}
+                  className={styles.anchor}
                 >
                   <Panel
                     className={styles.perm}

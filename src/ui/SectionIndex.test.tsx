@@ -155,3 +155,46 @@ describe('SectionIndex', () => {
     vi.unstubAllGlobals()
   })
 })
+
+/*
+As a strip wider than the screen, the entry you are in can be out of sight: the
+strip rolls itself to it, and only itself, never the page.
+*/
+describe('SectionIndex: the strip keeps the active entry in view', () => {
+  function overflowing(nav: HTMLElement) {
+    Object.defineProperty(nav, 'scrollWidth', { configurable: true, value: 1000 })
+    Object.defineProperty(nav, 'clientWidth', { configurable: true, value: 300 })
+    nav.getBoundingClientRect = () => ({ left: 0 }) as DOMRect
+    for (const [i, a] of [...nav.querySelectorAll('a')].entries()) {
+      Object.defineProperty(a, 'offsetWidth', { configurable: true, value: 100 })
+      a.getBoundingClientRect = () => ({ left: i * 120 }) as DOMRect
+    }
+    const roll = vi.fn()
+    nav.scrollTo = roll as unknown as HTMLElement['scrollTo']
+    return roll
+  }
+
+  it('rolls the strip, centred, smoothly, and does not move the page', () => {
+    const page = vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
+    const { rerender } = render(<SectionIndex sections={SECTIONS} active={SECTIONS[0].id} strip />)
+    const roll = overflowing(screen.getByRole('navigation'))
+    const last = SECTIONS[SECTIONS.length - 1]
+    rerender(<SectionIndex sections={SECTIONS} active={last.id} strip />)
+    const left = (SECTIONS.length - 1) * 120 - (300 - 100) / 2
+    expect(roll).toHaveBeenCalledWith({ left, behavior: 'smooth' })
+    expect(page).not.toHaveBeenCalled()
+    page.mockRestore()
+  })
+
+  it('does not move for an entry already in view, and moves instantly with reduced motion', () => {
+    const { rerender } = render(<SectionIndex sections={SECTIONS} active={SECTIONS[2].id} strip />)
+    const roll = overflowing(screen.getByRole('navigation'))
+    rerender(<SectionIndex sections={SECTIONS} active={SECTIONS[1].id} strip />)
+    expect(roll).not.toHaveBeenCalled()
+
+    vi.stubGlobal('matchMedia', (q: string) => ({ matches: q.includes('reduce'), addEventListener() {}, removeEventListener() {} }))
+    rerender(<SectionIndex sections={SECTIONS} active={SECTIONS[SECTIONS.length - 1].id} strip />)
+    expect(roll).toHaveBeenCalledWith(expect.objectContaining({ behavior: 'auto' }))
+    vi.unstubAllGlobals()
+  })
+})
