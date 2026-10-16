@@ -19,14 +19,24 @@ just as badly as the rest.
 // The same cut-off as in Zones: it was 48 here and 64 there, for the same control.
 const CUTOFF = 64
 
+/*
+Only a long value with no spaces breaks by characters: a key, a signature, a hex
+string. Everything else, an address, a name, a type name or the server's
+sentence for a negative answer (`NegativeCache: NoError; com. 637 IN SOA …`),
+ends its lines between words. Every value used to take the key's `break-all`,
+which also told the table the Data column could shrink to one letter: at 1024
+and at 390 it did, and one record of `google.com` stood 1,671 px tall, a letter
+per line.
+*/
 function Value({ e }: { e: Entry }) {
   const [open, setOpen] = useState(false)
+  const cls = e.long && !/\s/.test(e.value) ? styles.key : styles.words
 
-  if (!e.long || open) return <span className={styles.key}>{e.value}</span>
+  if (!e.long || open) return <span className={cls}>{e.value}</span>
 
   return (
     <>
-      <span className={styles.key}>{e.value.slice(0, CUTOFF)}…</span>{' '}
+      <span className={cls}>{e.value.slice(0, CUTOFF)}…</span>{' '}
       <button type="button" className={styles.showIt} onClick={() => setOpen(true)}>
         show full
       </button>
@@ -61,7 +71,7 @@ function Row({ r, withDnssec, node }: { r: DnsRecord; withDnssec: boolean; node:
 
   return (
     <tr>
-      <td>
+      <td className={tbl.lead}>
         <Chip>{r.type}</Chip>
         {differentName && <span className={styles.name}>{name === '' ? '<ROOT>' : name}</span>}
       </td>
@@ -123,6 +133,7 @@ export function ResourceRecords({
 }) {
   return (
     <Table
+      stack
       header={
         <>
           <th style={{ width: 110 }}>Type</th>
