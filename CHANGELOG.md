@@ -30,6 +30,8 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
   change against the previous period of the same length; Clients has no change for Last Week and
   Last Year, where the server cannot give a comparable number. Clicking a chart point, a slice, a
   bar or an hour opens Query Logs filtered to it.
+- About: a Web Console panel of its own, with the console's version, license and links to its
+  source, releases and issues, beside the server's.
 - Blocking › Overview: Check a domain says whether this server blocks a name and why (which block
   lists, which of your rules, or which allow rule lets it through), next to Block and Allow.
 - Blocking › Lists: comment lines act as group headings. Add, rename and ungroup groups, add lists

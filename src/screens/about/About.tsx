@@ -10,6 +10,8 @@ interface Info { version: string; uptimestamp: string; dnsServerDomain: string }
 /* The two destinations that repeat, so text and title do not drift apart. */
 const API_DOCS = 'https://github.com/TechnitiumSoftware/DnsServer/blob/master/APIDOCS.md'
 const DONATE = 'https://go.technitium.com/?id=35'
+/* This console's repository, for its own panel. */
+const CONSOLE_REPO = 'https://github.com/byGarcia/technitium-console'
 
 /** External link: always in a new tab and without handing over the `opener`. */
 function Link({
@@ -148,6 +150,35 @@ export function About({ info }: { info?: Info }) {
               <dt>Up since</dt><dd>{info ? dateTime(info.uptimestamp) : '—'}</dd>
               <dt>Uptime</dt><dd>{info ? fromNow(info.uptimestamp) : '—'}</dd>
             </dl>
+          </Body>
+        </Panel>
+
+        {/*
+        This console's own panel (deviation 9 of CONVENTIONS.md, approved on
+        2026-10-16). The panel on the left is Technitium's and stays literal; until
+        now nothing on this screen said that the console itself is a separate
+        project, which version of it is running, or where to report a fault in it
+        rather than in the server. "Web Console" is the name the sidebar already
+        gives it (`app/Versions`). Every word here is ours.
+        */}
+        <Panel title="Web Console">
+          <Body>
+            <dl className={styles.kv}>
+              <dt>Version</dt><dd>{__CONSOLE_VERSION__}</dd>
+              <dt>License</dt>
+              <dd><Link href={`${CONSOLE_REPO}/blob/main/LICENSE`}>GPL-3.0-or-later</Link></dd>
+            </dl>
+            <div className={styles.prose}>
+              <p className={styles.note}>
+                A modern administration console for Technitium DNS Server. An independent
+                project, not affiliated with or endorsed by Technitium.
+              </p>
+              <ul className={styles.links}>
+                <li><Link href={CONSOLE_REPO}>Source code on GitHub</Link></li>
+                <li><Link href={`${CONSOLE_REPO}/releases`}>Releases and change log</Link></li>
+                <li><Link href={`${CONSOLE_REPO}/issues`}>Report a problem with the console</Link></li>
+              </ul>
+            </div>
           </Body>
         </Panel>
       </div>
