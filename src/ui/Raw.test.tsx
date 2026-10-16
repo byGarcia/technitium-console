@@ -1,5 +1,5 @@
 /*
-Raw output, and the three things it can lose.
+Raw output, and the things it can lose.
 
 All three are checked against the CSS and not against the render, because jsdom
 does not apply CSS modules: `white-space` and `max-height` do not exist there.
@@ -32,9 +32,30 @@ describe('the raw output', () => {
     expect(screen.getByLabelText('x').textContent).toBe('{\n  "k": 1\n}')
   })
 
+  /* On the box and not on the text, because with `fill` it is the box's floor. */
   it('the height is a cap and can be set case by case', () => {
     render(<Raw text="x" height={140}>y</Raw>)
-    expect(screen.getByLabelText('x')).toHaveStyle({ '--raw-height': '140px' })
+    expect(screen.getByLabelText('x').parentElement).toHaveStyle({ '--raw-height': '140px' })
+  })
+
+  /* DNS Client's JSON keeps its indentation: nothing wraps unless asked. */
+  it('by default it neither wraps nor fills', () => {
+    const { container } = render(<Raw text="x">y</Raw>)
+    expect(container.firstElementChild?.className).not.toMatch(/fill/)
+    expect(screen.getByLabelText('x').className).not.toMatch(/wrap/)
+    expect(screen.getByLabelText('x').style.getPropertyValue('--raw-hang')).toBe('')
+  })
+
+  it('with wrap, continuation lines hang by the characters asked for', () => {
+    render(<Raw text="x" wrap hang={26}>y</Raw>)
+    expect(screen.getByLabelText('x').className).toMatch(/wrap/)
+    expect(screen.getByLabelText('x')).toHaveStyle({ '--raw-hang': '26ch' })
+  })
+
+  it('with fill, the box takes the height handed down', () => {
+    const { container } = render(<Raw text="x" fill height={240}>y</Raw>)
+    expect(container.firstElementChild?.className).toMatch(/fill/)
+    expect(container.firstElementChild).toHaveStyle({ '--raw-height': '240px' })
   })
 
   /* The `--dan` frame is for the error the server returns as TEXT, which has

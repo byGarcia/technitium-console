@@ -50,6 +50,10 @@ outside it.
 .footSide { margin-top:auto; padding: var(--s-8) var(--s-9); border-top:1px solid var(--line); display:flex; flex-direction:column; gap: var(--s-4); }
 /* It opens upwards: it sits at the foot of the window, not under a header. */
 .body { padding: var(--s-11) var(--s-11) var(--s-11); min-width:0; flex:1; }
+/* A screen that reads a file (View Logs) is as tall as the window and not as its
+   content: it marks its root and gets a flex column to grow into, down to the
+   footer. No other screen is touched. */
+.body:has(> [data-fills-window]) { display:flex; flex-direction:column; }
 
 /* The page's foot: it drops to the bottom when the section is short and comes
    after the content when it is long, which is where upstream's `div#footer` is. */

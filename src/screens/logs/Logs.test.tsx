@@ -103,6 +103,32 @@ describe('Logs › View Logs', () => {
     expect(await screen.findByText('[2026-08-26] Logging started.')).toBeInTheDocument()
   })
 
+  /*
+  The reader marks the timestamps and the break points of long words, and adds no
+  character: what it holds is the response as it came, so copying gives it back.
+  */
+  it('the file is drawn as it came, with its timestamps marked and nothing added', async () => {
+    const user = userEvent.setup()
+    const text = '[2026-08-26 05:32:14 UTC] DNS Server is reading block list from: https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts\r\n'
+    vi.spyOn(api, 'listLogFiles').mockResolvedValue({ kind: 'ok', data: FILES })
+    vi.spyOn(api, 'downloadLogText').mockResolvedValue(text)
+    render(<Logs token="t" sub="View Logs" />)
+    await user.click(await screen.findByText('2026-08-26'))
+
+    const viewer = await screen.findByLabelText('2026-08-26 log file')
+    expect(viewer.textContent).toBe(text)
+    expect(within(viewer).getByText('[2026-08-26 05:32:14 UTC]')).toBeInTheDocument()
+    expect(viewer.querySelectorAll('wbr').length).toBeGreaterThan(0)
+  })
+
+  /* The Shell gives a flex column only to a screen that asks for it. */
+  it('the screen asks the Shell for the height of the window', async () => {
+    vi.spyOn(api, 'listLogFiles').mockResolvedValue({ kind: 'ok', data: FILES })
+    const { container } = render(<Logs token="t" sub="View Logs" />)
+    await screen.findByText('2026-08-26')
+    expect(container.querySelector('[data-fills-window]')).not.toBeNull()
+  })
+
   it('\"Download\" asks for the whole file through a single-use token', async () => {
     const user = userEvent.setup()
     vi.spyOn(api, 'listLogFiles').mockResolvedValue({ kind: 'ok', data: FILES })
