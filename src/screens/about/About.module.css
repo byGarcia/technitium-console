@@ -25,6 +25,13 @@ line they already occupied.
 .prose h4 a,
 .prose .target { display:inline-block; padding: var(--s-4) 0; }
 .kv { composes: kv from '../../ui/kv.module.css'; }
+/* The console's own panel: a sentence and three standalone links under its facts.
+   The links are destinations on their own line, so they get the same 24 px target
+   as the titles on the left. */
+.prose .note { margin: var(--s-8) 0 var(--s-4); font-size: var(--t-3); }
+.kv a { color: var(--acc-ink); }
+.links { list-style: none; margin: 0; padding: 0; }
+.links a { display: inline-block; padding: var(--s-4) 0; }
 
 @media (max-width: 900px) {
   .grid { grid-template-columns: minmax(0, 1fr); }

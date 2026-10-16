@@ -88,4 +88,14 @@ describe('About', () => {
     expect(screen.getByText('Version \u2014')).toBeInTheDocument()
     expect(screen.getAllByText('—').length).toBeGreaterThan(0)
   })
+
+  it('it has a panel of its own for this console, apart from the server', () => {
+    render(<About info={info} />)
+    expect(screen.getByText('Web Console')).toBeInTheDocument()
+    expect(screen.getByText(__CONSOLE_VERSION__)).toBeInTheDocument()
+    const targets = screen.getAllByRole('link').map((a) => a.getAttribute('href'))
+    for (const path of ['', '/releases', '/issues', '/blob/main/LICENSE']) {
+      expect(targets).toContain(`https://github.com/byGarcia/technitium-console${path}`)
+    }
+  })
 })

@@ -760,6 +760,14 @@ contract and SECURITY.md.
    Its words: none new. The toggles are the panel's existing title, `Filters`, and
    the legend's, `Row colours`; the list is the fields' own labels, each followed by
    a colon and its value.
+9. **About has a panel for this console** (Adrián's decision, 2026-10-16;
+   `screens/about/About.tsx`). Upstream's About speaks only of the server, and that
+   panel stays literal. Beside it, under `Server`, a `Web Console` panel gives this
+   console's version (`__CONSOLE_VERSION__`, as in the sidebar), its license, one
+   sentence saying what it is and that it is not Technitium's, and links to its
+   source, releases and issues, so a fault in the console is not reported to
+   Technitium. Its words are all ours: `Web Console` (the sidebar's name for it),
+   `License`, the sentence and the three link texts.
 
 ## Four constraints the server imposes
 
