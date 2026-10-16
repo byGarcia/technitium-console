@@ -36,7 +36,9 @@ With no sub-tabs there is no path: the title is the section name, plain.
 `subtitle` is one plain sentence under the title saying what the screen is for.
 Upstream writes none, and every other section keeps upstream's texts and nothing
 more, so only the Blocking tabs pass one (deviation 2 in CONVENTIONS.md, 2026-10-15),
-declared in the header comment of each file that writes it.
+declared in the header comment of each file that writes it. Cache passes the
+sentence its identity band already said (`screens/lists/Lists.tsx`): it moved up
+when the band went, it is not a new one.
 
 ## Tags are STATE, not counts
 

@@ -115,6 +115,143 @@ second clickable path would be behaviour upstream does not have. So it is a
 .pathSep { color: var(--faint); opacity: 0.6; }
 .pathHere { color: var(--ink); font-weight: 650; }
 
+/*
+CACHE, ONE PANEL (2026-10-16). Cache leaves the two-column split: the tree
+column becomes two bands inside the records panel (the crumbs that go up and the
+chips that go down, `CacheNav.tsx`), so the screen has one place to look and
+the records get the full width. The identity colour stays as the panel's top
+rule, the same `--ch-cache` as before; the band that repeated "Cache" under the
+section title is gone, and its sentence is the header's subtitle.
+*/
+.cachePanel {
+  composes: panel from '../../ui/Panel.module.css';
+  border-top: 3px solid var(--ch-cache);
+}
+
+/* The field takes the width; Browse stays its own size beside it. */
+.search {
+  display: flex;
+  gap: var(--s-5);
+  align-items: flex-end;
+  padding: var(--s-8) var(--s-9);
+  border-bottom: 1px solid var(--line);
+}
+.search > div { flex: 1; min-width: 0; }
+
+/* The node's line: where you are on the left, what you can do to it on the right. */
+.where {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--s-5) var(--s-8);
+  padding: var(--s-5) var(--s-9);
+  border-bottom: 1px solid var(--line2);
+  background: var(--pan2);
+}
+.crumbs {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  min-width: 0;
+  font: var(--t-4) var(--font-mono);
+}
+.crumbList {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s-1) var(--s-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  min-width: 0;
+}
+.crumbList > li { display: flex; align-items: center; gap: var(--s-3); min-width: 0; }
+/*
+An ancestor is a link-weight button: muted until pointed at, never boxed. Boxing
+it would make three ancestors look like three actions on the same footing as
+Refresh and Delete beside them. `.hitArea` gives the 24 px target without
+growing the line.
+*/
+.crumb {
+  composes: hitArea from '../../ui/interaction.module.css';
+  border: 0;
+  padding: 0;
+  background: transparent;
+  font: inherit;
+  color: var(--mute);
+  cursor: pointer;
+  text-align: left;
+}
+.crumb:hover { color: var(--acc-ink); text-decoration: underline; }
+.crumbHere { color: var(--ink); font-weight: 650; }
+
+/*
+The children. A chip per name, wrapping, with the count in front as its label.
+They scroll inside the band past five rows and a half: the showcase's `com` has
+35 children and fits in five at 1440, but a production `com` can hold thousands,
+and the records must not be pushed off the screen by the way down to them. The
+half row is the signal: a band cut exactly between two rows of chips looks
+complete, and the ones below it would never be found.
+*/
+.children {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-5) var(--s-8);
+  padding: var(--s-6) var(--s-9);
+  border-bottom: 1px solid var(--line2);
+}
+.childrenCount {
+  flex: none;
+  padding-top: var(--s-2);
+  font-size: var(--t-3);
+  color: var(--faint);
+  white-space: nowrap;
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  min-width: 0;
+  /* Five and a half chips tall: each is its line (1.4em), its padding and its
+     two borders, and the gaps between them. */
+  font-size: var(--t-4);
+  line-height: 1.4;
+  max-height: calc(5.5 * (1.4em + 2 * var(--s-2) + var(--s-1)) + 5 * var(--s-3));
+  overflow: auto;
+}
+.chips > li { display: flex; min-width: 0; max-width: 100%; }
+.chipNode {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  max-width: 100%;
+  padding: var(--s-2) var(--s-4) var(--s-2) var(--s-5);
+  border: 1px solid var(--line);
+  border-radius: var(--r-2);
+  background: var(--pan2);
+  font: inherit;
+  font-family: var(--font-mono);
+  color: var(--ink);
+  cursor: pointer;
+  text-align: left;
+}
+.chipNode:hover { border-color: var(--line-hover); background: var(--hover-strong); }
+.chipNode:hover .chipCh { color: var(--acc-ink); }
+.chipName { min-width: 0; }
+.chipRest { color: var(--faint); }
+.chipCh { flex: none; margin-left: var(--s-1); color: var(--faint); }
+
+/* Below the rail the crumbs take their own line over the node's buttons, and
+   the count sits over its chips instead of beside them. */
+@media (max-width: 560px) {
+  .children { flex-direction: column; gap: var(--s-3); }
+  .chips { max-height: calc(6.5 * (1.4em + 2 * var(--s-2) + var(--s-1)) + 6 * var(--s-3)); }
+}
+
 /* 4 · The tree itself, at the weight it deserves. */
 .browse { display: flex; gap: var(--s-3); align-items: flex-end; padding: var(--s-7) var(--s-8); border-bottom: 1px solid var(--line); }
 .browse > div { flex: 1; min-width: 0; }
@@ -155,17 +292,55 @@ step, because here they sit INSIDE the panel instead of floating above a table.
 .name { display: block; margin-top: var(--s-3); font: var(--t-2) var(--font-mono); color: var(--faint); }
 .ttl { composes: ttl from '../../ui/record.module.css'; }
 
-.kv { composes: kv from '../../ui/kv.module.css'; }
+/*
+The record's data, inline (see `Inline` in Records.tsx): each pair is a label in
+grey and its value in ink, the pairs flow like words and wrap between pairs. A
+pair can still wrap inside itself when its value is longer than the cell (a
+truncated key, a negative-cache sentence), and then its value starts a new line
+under its label instead of pushing out of the table.
+*/
+.inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-1) var(--s-9);
+  margin: 0;
+  min-width: 0;
+}
+.pair { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--s-4); min-width: 0; max-width: 100%; }
+/* A lone field's label: kept for the screen reader, off the screen. */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+.pair dt { font-size: var(--t-3); color: var(--faint); white-space: nowrap; }
+.pair dd { margin: 0; min-width: 0; font: var(--t-4) / 1.45 var(--font-mono); color: var(--ink); }
 /* A public key and an RRSIG are ONE token: without this the value walks out of
    its cell and sits on top of the DNSSEC column. */
 .key { composes: key from '../../ui/record.module.css'; overflow-wrap: anywhere; }
-/* Any other value: the key's colour, broken between words (see `Value` in
-   Records.tsx). `normal` undoes the `break-word` it inherits from `ui/kv`'s `dd`,
-   which is what let the column shrink. */
-.words { color: var(--mute); word-break: normal; overflow-wrap: break-word; }
+/* Any other value: broken between words (see `Value` in Records.tsx), in the
+   pair's ink. */
+.words { word-break: normal; overflow-wrap: break-word; }
 .showIt { composes: showIt from '../../ui/record.module.css'; }
 
-.meta { composes: meta from '../../ui/record.module.css'; }
+.meta {
+  composes: meta from '../../ui/record.module.css';
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--s-1) var(--s-5);
+}
+/* The record's other fields, on the grey line: the line's size and colour, the
+   label a step fainter than the value only by weight. */
+.extra { gap: var(--s-1) var(--s-5); }
+.extra dt { font-size: var(--t-2); }
+.extra dd { font: inherit; color: var(--mute); }
 .signatures { margin: var(--s-5) 0 0; padding: var(--s-6) var(--s-8); background:var(--field); border:1px solid var(--line); border-radius: var(--r-2); font:var(--t-2)/1.6 var(--font-mono); color:var(--mute); white-space:pre-wrap; word-break:break-all; }
 
 .paragraph { composes: paragraph from '../../ui/text.module.css'; }

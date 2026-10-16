@@ -44,13 +44,31 @@ function Value({ e }: { e: Entry }) {
   )
 }
 
-function Kv({ entries }: { entries: Entry[] }) {
+/*
+The record's data on one line (2026-10-16). It was a two-column `dl`, a label
+over each value, so a DNSKEY stood five lines tall and a DS four, and at `com`
+four records took 640 px. Now the pairs run inline, label in grey and value in
+ink, and wrap between pairs only when the cell is full: the same DS reads on one
+line at 1440.
+
+A record with a single field drops its label from the screen and keeps it for
+the screen reader (`.srOnly`): `IP Address` in front of every A record said
+again what the type chip beside it already says. Nothing is removed: the label
+is still in the page, in find and in the copy.
+*/
+function Inline({ entries, className, bare = false }: {
+  entries: Entry[]
+  className?: string
+  /** A lone field shows its value alone (the rData of an A, an NS, a CNAME). */
+  bare?: boolean
+}) {
   if (entries.length === 0) return null
+  const single = bare && entries.length === 1
   return (
-    <dl className={styles.kv}>
+    <dl className={[styles.inline, className].filter(Boolean).join(' ')}>
       {entries.map((e) => (
-        <div key={e.key} style={{ display: 'contents' }}>
-          <dt>{e.key}</dt>
+        <div key={e.key} className={styles.pair}>
+          <dt className={single ? styles.srOnly : undefined}>{e.key}</dt>
           <dd>
             <Value e={e} />
           </dd>
@@ -65,6 +83,7 @@ function Row({ r, withDnssec, node }: { r: DnsRecord; withDnssec: boolean; node:
   const [glue, setGlue] = useState(false)
 
   const ttl = splitTtl(r)
+  const extra = extras(r)
   const name = r.nameIdn ?? r.name
   // The name always matches the open node; it is only said when it does NOT.
   const differentName = r.name !== node && name !== node
@@ -79,9 +98,15 @@ function Row({ r, withDnssec, node }: { r: DnsRecord; withDnssec: boolean; node:
         {ttl.value} {ttl.human && <small>({ttl.human})</small>}
       </td>
       <td>
-        <Kv entries={[...rdataEntries(r.rData), ...extras(r)]} />
-        <div className={styles.meta} title={r.lastUsedOn}>
-          {meta(r).join(' · ')}
+        <Inline entries={rdataEntries(r.rData)} bare />
+        {/* The second line: where the answer came from and when it was used, and
+            then whatever else the record carries (a name server's health, a field
+            the server adds tomorrow). It was a third and fourth block of
+            label-over-value rows; it is the grey line now, the same weight as the
+            metadata beside it, because none of it is the record's data. */}
+        <div className={styles.meta}>
+          <span title={r.lastUsedOn}>{meta(r).join(' · ')}</span>
+          {extra.length > 0 && <Inline entries={extra} className={styles.extra} />}
         </div>
         {signatures && r.dnssecRecords && (
           <pre className={styles.signatures}>{r.dnssecRecords.join('\n')}</pre>
