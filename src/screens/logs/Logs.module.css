@@ -59,7 +59,8 @@ screen: the table, which is what the screen is for, was below the fold.
 Now each group carries its name ABOVE its fields and the groups flow side by side,
 wrapping as the width runs out: two bands at 1440 instead of five rows (Source,
 Mode and Paging; then Query and Response), so the table starts at y=629. Nothing
-is collapsed or hidden: the same fifteen controls, the same labels and options.
+is collapsed or hidden at this width: the same fifteen controls, the same labels and
+options. Below 960 the whole panel folds instead (see `.fsToggle` below).
 Two things moved: `Live Update` went to the screen's header (QueryLogs.tsx says
 why), and Paging now follows Mode in the document, which is also the tab order.
 The grouping is the one decided below (the MODE group keeps its four fields and
@@ -89,6 +90,36 @@ its edge together).
 }
 .field label { font-size: var(--t-2); color: var(--mute); font-weight: 550; }
 .field input, .field select { width: 100%; }
+
+/*
+Folded, below 960 (FOLD_QUERY in QueryLogs.tsx says what and why).
+
+The title becomes the toggle and the whole title row is its target, so the button
+carries the padding the heading had. Closed, the row loses its rule: under it there
+is either the list of what is set, which brings its own, or the panel's edge.
+*/
+.fsIn[hidden] { display: none; }
+.fsTitleFold { padding: 0; }
+.fsTitleClosed { border-bottom: 0; }
+.fsToggle {
+  display: flex; align-items: center; gap: var(--s-5);
+  width: 100%; padding: var(--s-8) var(--s-10);
+  border: 0; background: none; color: inherit; font: inherit; text-align: left;
+  cursor: pointer;
+}
+/* The panel clips what overflows it, the focus ring included: drawn inside. */
+.fsToggle:focus-visible { outline-offset: calc(-1 * var(--s-1)); }
+.chevron { composes: chevron from '../../ui/Details.module.css'; color: var(--mute); }
+[aria-expanded='true'] > .chevron { transform: rotate(90deg); }
+/* What is set, by the fields' own labels: label quiet, value as typed. */
+.fsSet {
+  display: flex; flex-wrap: wrap; gap: var(--s-3) var(--s-9);
+  margin: 0; padding: var(--s-7) var(--s-10) var(--s-8);
+  border-top: 1px solid var(--line);
+  font-size: var(--t-3); color: var(--ink);
+}
+.fsSetItem { min-width: 0; overflow-wrap: break-word; }
+.fsSetLabel { color: var(--mute); }
 
 /* The count is `ui/count.module.css`'s: see there for why. */
 .count { composes: bar above from '../../ui/count.module.css'; }
@@ -205,6 +236,14 @@ to become a summary of what is in front of you.
    followed by the condition that paints it. */
 .legendItem .tone { font-weight: 550; color: var(--ink); }
 .legendWhen { color: var(--faint); }
+/* Folded (below 960): the seven pills stay, their conditions wait behind the
+   title, which is the toggle. */
+.legendFolded .legendWhen { display: none; }
+.legendToggle {
+  composes: hitArea from '../../ui/interaction.module.css';
+  display: inline-flex; align-items: center; gap: var(--s-4);
+  padding: 0; border: 0; background: none; font-family: inherit; cursor: pointer;
+}
 
 /* Centred on purpose: it is a bar filter, not a settings row. But the minimum
    height is the same as `ui/Check.module.css`'s. */
