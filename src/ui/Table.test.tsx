@@ -1,7 +1,8 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
-import { Th, useSort, type Keys } from './Table'
+import { useState } from 'react'
+import { Table as DataTable, Th, useSort, type Keys } from './Table'
 
 /*
 Upstream's rule (`sortTable`, common.js:228-280) is not a toggle: a click sorts
@@ -70,5 +71,92 @@ describe('table sorting', () => {
     render(<Table data={[{ name: 'Zeta' }, { name: 'alpha' }]} />)
     await userEvent.click(screen.getByRole('button', { name: /Name/ }))
     expect(texts()).toEqual(['alpha', 'Zeta'])
+  })
+})
+
+/*
+The stacking table. jsdom does not lay out, so what is checked is the DOM the
+stylesheet reads: each body cell carries its column's header text, a column with
+a blank header carries none, and every part of the table keeps its role.
+*/
+describe('a stacking table', () => {
+  function Users({ rows }: { rows: { name: string; type: string }[] }) {
+    const { rows: sorted, sort, toggle } = useSort<{ name: string; type: string }>(
+      { name: (r) => r.name },
+      rows,
+    )
+    return (
+      <DataTable
+        stack
+        header={
+          <>
+            <Th field="name" sort={sort} onSort={toggle}>Username</Th>
+            <th>Type</th>
+            <Th field="type" sort={sort} onSort={toggle} name="Kind" />
+            <th />
+          </>
+        }
+        isEmpty={rows.length === 0}
+        emptyText="No User Found"
+        columns={4}
+      >
+        {sorted.map((r) => (
+          <tr key={r.name}>
+            <td>{r.name}</td>
+            <td>{r.type}</td>
+            <td>icon</td>
+            <td>actions</td>
+          </tr>
+        ))}
+      </DataTable>
+    )
+  }
+
+  it('labels each body cell with the text of its column header', () => {
+    render(<Users rows={[{ name: 'admin', type: 'Local' }]} />)
+    const cells = screen.getAllByRole('cell')
+    expect(cells.map((c) => c.getAttribute('data-label'))).toEqual(['Username', 'Type', 'Kind', null])
+  })
+
+  it('keeps the table, its rows, cells and headers in their roles', () => {
+    render(<Users rows={[{ name: 'admin', type: 'Local' }]} />)
+    expect(screen.getByRole('table')).toBeInTheDocument()
+    expect(screen.getAllByRole('row')).toHaveLength(2)
+    expect(screen.getAllByRole('columnheader')).toHaveLength(4)
+    expect(screen.getByRole('cell', { name: 'admin' })).toBeInTheDocument()
+  })
+
+  it('labels the rows a sort brings, and none on the row that spans every column', async () => {
+    function Swap() {
+      const [rows, setRows] = useState([{ name: 'b', type: 'Local' }])
+      return (
+        <>
+          <button type="button" onClick={() => setRows([{ name: 'a', type: 'Remote' }, ...rows])}>add</button>
+          <button type="button" onClick={() => setRows([])}>clear</button>
+          <Users rows={rows} />
+        </>
+      )
+    }
+    render(<Swap />)
+    await userEvent.click(screen.getByRole('button', { name: 'add' }))
+    // Already ascending, so the click turns it around (upstream's rule, above).
+    await userEvent.click(screen.getByRole('button', { name: /Username/ }))
+    expect(screen.getAllByRole('cell').filter((c) => c.getAttribute('data-label') === 'Username').map((c) => c.textContent))
+      .toEqual(['b', 'a'])
+    await userEvent.click(screen.getByRole('button', { name: 'clear' }))
+    const empty = screen.getByRole('cell', { name: 'No User Found' })
+    expect(empty).not.toHaveAttribute('data-label')
+  })
+
+  it('touches nothing on a table that does not stack', () => {
+    render(
+      <DataTable header={<th>Name</th>}>
+        <tr>
+          <td>admin</td>
+        </tr>
+      </DataTable>,
+    )
+    expect(screen.getByRole('cell')).not.toHaveAttribute('data-label')
+    expect(screen.getByRole('cell')).not.toHaveAttribute('role')
   })
 })
