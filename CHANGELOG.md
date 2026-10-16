@@ -39,7 +39,8 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
   tree view and Flush still ask.
 - Settings: since Save Settings sends all nine panes, the save bar names the panes holding a change
   it would send, with how many fields each, and their tabs are marked. A field put back as it was
-  does not count.
+  does not count. General, Web Service and Optional Protocols get a section index beside the form on
+  screens wide enough to keep the form's columns as they are (from about 1,630 px of window).
 - The save bar of Settings and the other long forms no longer disappears behind a section title
   scrolling under it.
 - The sidebar marks Blocking when blocking is off or paused, with the time it comes back.

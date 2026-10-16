@@ -79,6 +79,15 @@ that is already done is not one to take in passing.
 So the index is DEFERRED, with its condition written down: it goes on Settings and
 on SSO together, or on neither. `Permissions` does keep one, and that costs
 nothing measured: it has no `Row` grid at all.
+
+Settings has had one since 2026-10-16, and without paying that price: it appears
+only where the screen is wide enough for the controls to keep, beside it, the width
+they have at 1440 without it (a container query at 1,364 px of screen,
+`Settings.module.css`), so below that the grid is untouched and above it the row
+keeps at least `210px 552px 360px`. That removes the reason for the condition, not
+the condition: this screen still has no index. By Settings' own rule it would earn
+one (2,350 px at 1680, two windows and more, and four named sections), and wiring it
+is this screen's change to make, with the same container rule.
 */
 const SECTIONS = [
   { id: 'sso-single-sign-on', label: 'Single Sign-On (SSO)' },

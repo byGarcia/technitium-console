@@ -195,3 +195,9 @@ A decision the instrument cannot see cannot be held.
 */
 .notices { composes: notices; }
 
+/*
+A block with an anchor (`BlockAnchors`). Followed from the section index, it lands
+level with the index's own top (`ui/SectionIndex.module.css`), not flush against
+the window's edge.
+*/
+.anchor { scroll-margin-top: var(--s-9); }

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, afterEach } from 'vitest'
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { Settings } from './Settings'
+import { Settings, SUB_TABS } from './Settings'
 import { SETTINGS } from './settings.fixture'
 import * as client from '../../api/client'
 import { valueShown } from '../../test/dropdown'
@@ -777,5 +777,45 @@ describe('Settings: what the save would change (2026-10-16)', () => {
     expect(await screen.findByText('Blocking Disabled!')).toBeInTheDocument()
     expect(screen.getByLabelText('Enable Blocking')).not.toBeChecked()
     expect(screen.queryByText(/Unsaved changes/)).not.toBeInTheDocument()
+  })
+})
+
+describe('Settings: the section index (2026-10-16)', () => {
+  const index = () => screen.queryByRole('navigation', { name: 'On this page' })
+
+  it('General lists its ten sections, by their own titles and in page order', async () => {
+    server()
+    await mount({ sub: 'General' })
+    const links = within(index()!).getAllByRole('link')
+    expect(links.map((a) => a.textContent)).toEqual([
+      'Local Parameters', 'Default Parameters', 'Software Update', 'IPv6', 'UDP Socket Pool',
+      'EDNS', 'DNSSEC', 'EDNS Client Subnet', 'Rate Limiting', 'Advanced Options',
+    ])
+    // Each entry leads to its block.
+    for (const a of links) {
+      const target = document.getElementById(a.getAttribute('href')!.slice(1))
+      expect(within(target!).getByRole('heading', { name: a.textContent! })).toBeInTheDocument()
+    }
+  })
+
+  it('Web Service and Optional Protocols have one; the six shorter panes do not', async () => {
+    server()
+    for (const sub of SUB_TABS) {
+      const { unmount } = render(<Settings token="tok" sub={sub} />)
+      await screen.findByRole('button', { name: 'Save Settings' })
+      expect([sub, index() != null]).toEqual([sub, ['General', 'Web Service', 'Optional Protocols'].includes(sub)])
+      unmount()
+    }
+  })
+
+  it('switching pane brings that pane entries, not the previous ones', async () => {
+    server()
+    const { rerender } = await mount({ sub: 'General' })
+    rerender(<Settings token="tok" sub="Web Service" />)
+    await waitFor(() =>
+      expect(within(index()!).getAllByRole('link').map((a) => a.textContent)).toEqual([
+        'Listeners', 'Unix Domain Sockets', 'HTTPS Options', 'Reverse Proxy', 'TLS Certificate',
+      ]),
+    )
   })
 })

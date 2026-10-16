@@ -1,9 +1,10 @@
 import type { ReactNode } from 'react'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Button } from '../../ui/Button'
 import { Dialog } from '../../ui/Dialog'
 import { SectionHeader } from '../../ui/SectionHeader'
 import { SectionIndex } from '../../ui/SectionIndex'
+import { useSectionInView } from '../../ui/useSectionInView'
 import { Loading } from '../../ui/Empty'
 import { Panel } from '../../ui/Panel'
 import { Matrix, MatrixCell, MatrixEmpty, MatrixGroup, MatrixMarks, MatrixRow } from '../../ui/Matrix'
@@ -58,7 +59,6 @@ export function Permissions({ tabs, token, cluster, onNotice }: Props) {
   const [sections, setSections] = useState<SectionPermission[]>([])
   const [loading, setLoading] = useState(true)
   const [edit, setEdit] = useState<string | null>(null)
-  const [here, setHere] = useState<string | undefined>(undefined)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -81,30 +81,12 @@ export function Permissions({ tabs, token, cluster, onNotice }: Props) {
   Which of the eleven you are looking at, for the index.
 
   `ui/SectionIndex` deliberately does not observe the scroll (working out the
-  active one is screen wiring, not the primitive's job), so here it is, and this
-  is the first screen to wire it. An index with no current entry is half a
-  primitive: it can take you somewhere but not tell you where you are.
+  active one is screen wiring, not the primitive's job). This was the first screen
+  to wire it; the observer now lives in `ui/useSectionInView`, which Settings uses
+  too. An index with no current entry is half a primitive: it can take you
+  somewhere but not tell you where you are.
   */
-  const boxes = useRef<Map<string, HTMLElement>>(new Map())
-  useEffect(() => {
-    if (loading || sections.length === 0) return
-    const seen = new Set<string>()
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const e of entries) {
-          if (e.isIntersecting) seen.add(e.target.id)
-          else seen.delete(e.target.id)
-        }
-        // The topmost one that is on screen: with eleven panels several are, and
-        // marking the last would say you are further down than you are.
-        const order = sections.map((x) => anchor(x.section))
-        setHere(order.find((id) => seen.has(id)))
-      },
-      { rootMargin: '-72px 0px -60% 0px' },
-    )
-    for (const el of boxes.current.values()) observer.observe(el)
-    return () => observer.disconnect()
-  }, [loading, sections])
+  const here = useSectionInView(loading ? [] : sections.map((x) => anchor(x.section)))
 
   /*
   The concession map: the subjects down the side, the eleven sections across.
@@ -218,10 +200,6 @@ export function Permissions({ tabs, token, cluster, onNotice }: Props) {
                 <div
                   key={s.section}
                   id={anchor(s.section)}
-                  ref={(el) => {
-                    if (el) boxes.current.set(anchor(s.section), el)
-                    else boxes.current.delete(anchor(s.section))
-                  }}
                 >
                   <Panel
                     className={styles.perm}
