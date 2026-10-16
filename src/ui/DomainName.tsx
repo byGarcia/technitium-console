@@ -17,11 +17,18 @@ the longest label and no narrower; a table that cannot fit that scrolls, which i
 what the table wrapper is for.
 
 Nothing changes in what is read: `<wbr>` carries no text, so the accessible name,
-the copied text and the find-in-page match are the name as the server sent it. A
-name with no dot (`<root>`, `@`, a single label) is left as plain text.
+the copied text and the find-in-page match are the name as the server sent it.
+The root (`.`) and an empty name are left as plain text.
+
+A name with no dot is one label, and it is one piece too. It used to be left as
+plain text, so a record's relative name broke after its hyphen: at 1440 the
+records' Name column was 125 px beside a Data column of 700, and
+`living-room-tv` read `living-room-` over `tv`. As one piece it sets the column's
+minimum instead.
 */
 export function DomainName({ name }: { name: string }) {
-  if (!name.includes('.') || name === '.') return <>{name}</>
+  if (name === '' || name === '.') return <>{name}</>
+  if (!name.includes('.')) return <span className={styles.label}>{name}</span>
 
   const labels = name.split('.')
   const last = labels.length - 1
