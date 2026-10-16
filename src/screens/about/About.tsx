@@ -4,15 +4,27 @@ import { fromNow, dateTime } from '../../lib/dates'
 import styles from './About.module.css'
 import { Body, Panel } from '../../ui/Panel'
 import { publicUrl } from '../../app/base'
-import { COVER_NAME } from '../LoginCover'
+import { Icon } from '../../ui/Icon'
 
 interface Info { version: string; uptimestamp: string; dnsServerDomain: string }
 
 /* The two destinations that repeat, so text and title do not drift apart. */
 const API_DOCS = 'https://github.com/TechnitiumSoftware/DnsServer/blob/master/APIDOCS.md'
 const DONATE = 'https://go.technitium.com/?id=35'
-/* This console's repository, for its own panel. */
+/* This console's repository and where it is funded (`.github/FUNDING.yml`). */
 const CONSOLE_REPO = 'https://github.com/byGarcia/technitium-console'
+const CONSOLE_LINKS: readonly [string, string][] = [
+  ['Source code', ''],
+  ['Release notes', '/releases'],
+  ['Report a problem', '/issues'],
+  ['Ideas and questions', '/discussions'],
+]
+const FUNDING: readonly [string, string][] = [
+  ['GitHub Sponsors', 'https://github.com/sponsors/byGarcia'],
+  ['Ko-fi', 'https://ko-fi.com/bygarcia'],
+  ['Liberapay', 'https://liberapay.com/bygarcia'],
+  ['PayPal', 'https://www.paypal.com/paypalme/adriangmolina'],
+]
 
 /** External link: always in a new tab and without handing over the `opener`. */
 function Link({
@@ -155,65 +167,50 @@ export function About({ info }: { info?: Info }) {
         </Panel>
 
         {/*
-        This console's own card (deviation 9 of CONVENTIONS.md, approved on
-        2026-10-16), under Technitium's and built the same way: name and version,
-        then short sections with their destinations. Technitium's card stays
-        literal. Until now nothing on this screen said that the console is a
-        separate project, which version of it is running, where a fault in it is
-        reported (not to Technitium's support), or how to support it. The words are
-        ours and come from the README ("Support", "Licence"); the four funding
-        destinations are the ones in `.github/FUNDING.yml`.
+        This console's own panels (deviation 9 of CONVENTIONS.md, approved on
+        2026-10-16), under Server. Technitium's card on the left stays literal.
+        Until now nothing on this screen said that the console is a separate
+        project, which version of it is running, where a fault in it is reported
+        (not to Technitium's support) or how to support it. They are built from
+        the console's own pieces, not as a second prose card: facts in the `kv`
+        list Server uses, destinations as rows, and the four funding destinations
+        of `.github/FUNDING.yml` as buttons. The words are ours and follow the
+        README's `Support` and `Licence`.
         */}
-        <Panel>
+        <Panel title="Web Console">
           <Body>
-            <div className={styles.head}>
-              <span className={styles.dot} aria-hidden="true" />
-              <div>
-                <h2 className={styles.h1}>{COVER_NAME}</h2>
-                <div className={styles.view}>Version {__CONSOLE_VERSION__}</div>
-              </div>
-            </div>
-            <div className={styles.prose}>
-              <p>
-                A modern administration console for Technitium DNS Server. An independent
-                project, not affiliated with or endorsed by Technitium.
-              </p>
-              <p>
-                Source code available under{' '}
-                <Link href={`${CONSOLE_REPO}/blob/main/LICENSE`}>GPL-3.0-or-later</Link>{' '}
-                on <Link href={CONSOLE_REPO}>GitHub</Link>
-              </p>
+            <dl className={styles.kv}>
+              <dt>Version</dt><dd>{__CONSOLE_VERSION__}</dd>
+              <dt>License</dt>
+              <dd><Link href={`${CONSOLE_REPO}/blob/main/LICENSE`}>GPL-3.0-or-later</Link></dd>
+            </dl>
+            <p className={styles.note}>
+              An independent project, not affiliated with or endorsed by Technitium.
+            </p>
+            <ul className={styles.rows}>
+              {CONSOLE_LINKS.map(([label, path]) => (
+                <li key={label}>
+                  <Link href={`${CONSOLE_REPO}${path}`} cls={styles.row}>
+                    <span>{label}</span>
+                    <Icon name="chevronRight" size={14} />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </Body>
+        </Panel>
 
-              <h4><Link href={`${CONSOLE_REPO}/releases`}>What&apos;s New?</Link></h4>
-              <p>
-                Read the <Link href={`${CONSOLE_REPO}/releases`}>release notes</Link> to know
-                what&apos;s new in each version of the console.
-              </p>
-
-              <h4><Link href={`${CONSOLE_REPO}/issues`}>Report a Problem</Link></h4>
-              <p>
-                Something in the console looks wrong, or does not do what the stock console
-                does? <Link href={`${CONSOLE_REPO}/issues`}>Open an issue on GitHub</Link>. A
-                problem with the DNS server itself belongs to Technitium&apos;s support.
-              </p>
-
-              <h4><Link href={`${CONSOLE_REPO}/discussions`}>Ideas and Questions</Link></h4>
-              <p>
-                Share an idea or ask a question in{' '}
-                <Link href={`${CONSOLE_REPO}/discussions`}>GitHub Discussions</Link>.
-              </p>
-
-              <h4>Support the Console</h4>
-              <p>
-                This console is free and stays free. If it made the machine your whole network
-                resolves through nicer to look at, there is{' '}
-                <Link href="https://github.com/sponsors/byGarcia">GitHub Sponsors</Link>,{' '}
-                <Link href="https://ko-fi.com/bygarcia">Ko-fi</Link>,{' '}
-                <Link href="https://liberapay.com/bygarcia">Liberapay</Link> and{' '}
-                <Link href="https://www.paypal.com/paypalme/adriangmolina">PayPal</Link>. A{' '}
-                <Link href={CONSOLE_REPO}>star on GitHub</Link> or a good bug report is worth
-                just as much.
-              </p>
+        <Panel title="Support the Console">
+          <Body>
+            <p className={styles.note}>
+              Free, and it stays free. A star or a good bug report helps as much as a
+              donation.
+            </p>
+            <Link href={CONSOLE_REPO} cls={`${styles.button} ${styles.wide}`}>Star on GitHub</Link>
+            <div className={styles.funding}>
+              {FUNDING.map(([label, href]) => (
+                <Link key={label} href={href} cls={styles.button}>{label}</Link>
+              ))}
             </div>
           </Body>
         </Panel>

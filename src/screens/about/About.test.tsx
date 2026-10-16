@@ -89,10 +89,10 @@ describe('About', () => {
     expect(screen.getAllByText('—').length).toBeGreaterThan(0)
   })
 
-  it('it has a card of its own for this console, with its funding destinations', () => {
+  it('it has panels of its own for this console, with its funding destinations', () => {
     render(<About info={info} />)
-    expect(screen.getByRole('heading', { name: 'technitium-console' })).toBeInTheDocument()
-    expect(screen.getByText(`Version ${__CONSOLE_VERSION__}`)).toBeInTheDocument()
+    expect(screen.getByText('Web Console')).toBeInTheDocument()
+    expect(screen.getByText(__CONSOLE_VERSION__)).toBeInTheDocument()
     const targets = new Set(screen.getAllByRole('link').map((a) => a.getAttribute('href')))
     const repo = 'https://github.com/byGarcia/technitium-console'
     for (const expected of [

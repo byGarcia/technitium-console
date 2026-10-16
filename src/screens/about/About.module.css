@@ -26,8 +26,22 @@ line they already occupied.
 .prose .target { display:inline-block; padding: var(--s-4) 0; }
 .kv { composes: kv from '../../ui/kv.module.css'; }
 /* The console's card wears the login cover's mark: the accent dot beside its name. */
-/* Centred in the 38 px the logo takes on the left card, so both names start at the same x. */
-.dot { flex: none; width: var(--s-8); height: var(--s-8); margin: 0 13px; border-radius: var(--r-full); background: var(--acc); }
+/* The console's panels. A short note, destinations as full-width rows (a 36 px
+   target each), and the funding destinations as buttons drawn by ui/Button's own
+   class, so they are the console's buttons and not a look of their own. */
+.note { margin: var(--s-6) 0 var(--s-6); font-size: var(--t-3); line-height: 1.6; color: var(--mute); }
+.note:first-child { margin-top: 0; }
+.kv a { color: var(--acc-ink); }
+.rows { list-style: none; margin: 0 calc(-1 * var(--s-9)) calc(-1 * var(--s-9)); padding: 0; border-top: 1px solid var(--line); }
+.rows li + li { border-top: 1px solid var(--line); }
+.row { display: flex; align-items: center; justify-content: space-between; min-height: 36px; padding: 0 var(--s-9); color: var(--ink); text-decoration: none; font-size: var(--t-4); }
+.row svg { color: var(--faint); }
+.row:hover { background: var(--pan2); }
+.row:hover svg { color: var(--acc-ink); }
+.row:focus-visible { outline: var(--focus); outline-offset: calc(-1 * var(--focus-offset)); }
+.button { composes: btn from '../../ui/Button.module.css'; text-decoration: none; }
+.wide { display: flex; width: 100%; margin-bottom: var(--s-4); }
+.funding { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-4); }
 
 @media (max-width: 900px) {
   .grid { grid-template-columns: minmax(0, 1fr); }
