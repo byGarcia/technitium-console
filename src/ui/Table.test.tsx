@@ -82,7 +82,7 @@ a blank header carries none, and every part of the table keeps its role.
 describe('a stacking table', () => {
   function Users({ rows }: { rows: { name: string; type: string }[] }) {
     const { rows: sorted, sort, toggle } = useSort<{ name: string; type: string }>(
-      { name: (r) => r.name },
+      { name: (r) => r.name, type: (r) => r.type },
       rows,
     )
     return (

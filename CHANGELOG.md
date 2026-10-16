@@ -12,7 +12,8 @@ sends, every text it shows and every control it offers, compared with that serve
 
 | Console | Technitium DNS Server | Notes |
 |---|---|---|
-| **1.2.x** | **15.5.x, 15.6.x** (1.2.4 checked against 15.6.1) | Current. Allowed and Blocked become one Blocking section, a light theme, and the console comes as an image for Docker. Supports a console folder of its own (`DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH`), so server updates leave it alone. |
+| **1.3.x** | **15.5.x, 15.6.x** (1.3.0 checked against 15.6.1) | Current. Every screen redesigned for the phone, a Dashboard that compares periods, Cache in one panel. |
+| 1.2.x | 15.5.x, 15.6.x | Superseded by 1.3.x on the same server. Allowed and Blocked become one Blocking section, a light theme, and the console comes as an image for Docker. Supports a console folder of its own (`DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH`), so server updates leave it alone. |
 | 1.1.x | 15.5.x | Superseded by 1.2.x on the same server. If you stay on it, use 1.1.3: earlier ones flood the server from Cache, Allowed and Blocked. |
 | 1.0.0 | 15.4 | Cannot save Settings on a 15.5 server. Upgrade. |
 
@@ -21,17 +22,22 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
 
 ---
 
-## Unreleased
+## v1.3.0 (2026-10-16)
 
-**A Dashboard that answers at a glance, and Blocking that explains itself.**
+**A Dashboard that answers at a glance, Blocking that explains itself, and every screen at home on
+a phone.** Same API and same behaviour as the stock console: checked against Technitium DNS
+Server 15.6.1.
 
 - Dashboard: every figure, the Queries chart, a week by hour, Server, the three top lists and the
   three breakdowns (now stacked bars) fit in the first screen. Each figure shows its trend and its
   change against the previous period of the same length; Clients has no change for Last Week and
   Last Year, where the server cannot give a comparable number. Clicking a chart point, a slice, a
   bar or an hour opens Query Logs filtered to it.
-- About: a card for the console itself under Technitium's, with its version, license, release
+- About: two panels for the console itself under Server: its version, license, source, release
   notes, where to report a problem or share an idea, and how to support it.
+- Cache: one panel instead of two. The Domain field on top, the path of the current name with
+  Refresh and Delete, the names under it as chips that open them, and each record on one line with
+  its details underneath.
 - Blocking › Overview: Check a domain says whether this server blocks a name and why (which block
   lists, which of your rules, or which allow rule lets it through), next to Block and Allow.
 - Blocking › Lists: comment lines act as group headings. Add, rename and ungroup groups, add lists
@@ -43,9 +49,8 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
   it would send, with how many fields each, and their tabs are marked. A field put back as it was
   does not count.
 - Settings › General, Web Service and Optional Protocols, and Administration › SSO, have a section
-  index: the strip Permissions shows on narrow screens, above the form at every width up to about
-  1,630 px of window, and a column beside the form above that, where it takes no width the form's
-  fields need.
+  index: a strip that stays at the top while you scroll and marks where you are, or a column beside
+  the form on wide screens. Permissions' strip now stays at the top too.
 - The save bar of Settings and the other long forms no longer disappears behind a section title
   scrolling under it.
 - The sidebar marks Blocking when blocking is off or paused, with the time it comes back.
@@ -54,6 +59,13 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
   and its messages are unchanged.
 - Query Logs: the filters fit in two bands, Live Update is a switch in the header, rows stay on one
   line with the full value on hover, and the response colour is a pill instead of a tinted row.
+  Below 960 px the filters fold under their title and say which ones are set, so the first results
+  are on the first screen of a phone.
+- Tables never scroll sideways: when one does not fit, each row becomes a block with its name and
+  actions first and the other columns labelled underneath (Zones, records, Cache, Users, Sessions,
+  Query Logs, DHCP, Cluster, Recently Blocked).
+- View Logs: the log fills the window and long lines wrap, lined up under the message, instead of
+  being cut at the right edge. Copying gives the original text.
 - Panel titles sit one step above table headers.
 - Fields, dropdowns and buttons share one height. Domain names and list URLs no longer break in the
   middle of a word, and a new check (`npm run lint:breaks`) keeps it that way.
