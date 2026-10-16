@@ -36,7 +36,9 @@ describe('a list that has not answered yet', () => {
       data: { response: { domain: '', zones: [] } },
     } as never)
     render(<Lists list="cache" token="t" />)
-    expect(await screen.findByText('0 zones')).toBeInTheDocument()
+    // Cache has no zone count when there are no zones (no chips, no band): the
+    // records count is what comes back.
+    expect(await screen.findByText(/0 records at/)).toBeInTheDocument()
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
 

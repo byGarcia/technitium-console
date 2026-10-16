@@ -22,6 +22,7 @@ import { Empty, Loading } from '../../ui/Empty'
 import { StaleData } from '../StaleData'
 import { Tree } from './Tree'
 import { Path } from './Path'
+import { Crumbs, Children } from './CacheNav'
 import { ResourceRecords } from './Records'
 import styles from './Lists.module.css'
 import { noticeFromFailure, type Notice } from '../../lib/notice'
@@ -444,9 +445,13 @@ export function Lists({
         />
       )}
 
+      {/* On Cache the identity band's second line moves up under the title: the
+          screen is one panel now, and a band naming the panel under a header
+          naming the screen said "Cache" twice in 60 px. Same words. */}
       {!embedded && (
         <SectionHeader
           title={TITLE[list]}
+          subtitle={isCache ? SUBTITLE.cache : undefined}
           actions={
             isCache ? (
               <Button variant="danger" disabled={busy} onClick={askFlushCache}>
@@ -461,151 +466,240 @@ export function Lists({
 
       {stale && <StaleData since={lastGood} onRetry={() => void load(node?.domain ?? '')} />}
 
-      <div className={styles.split}>
-        <div className={styles.tree}>
-          <section className={styles.column} aria-label="Domain tree">
-            <div className={styles.browse}>
-              {/* The field is called "Domain" and the button "Browse". Upstream puts
-                  no label here (only the `placeholder`), so this one is an
-                  addition of ours and can be called whatever suits; what it
-                  cannot be called is the same as the button next to it, which
-                  does carry upstream's literal. Embedded under another "Domain"
-                  field, it takes the name the screen gives it. */}
-              <Field label={fieldName ?? 'Domain'}>
-                {(id) => (
-                  <Input
-                    id={id}
-                    mono
-                    placeholder="example.com"
-                    value={field}
-                    onChange={(e) => setField(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') navigate(field)
-                    }}
-                  />
-                )}
-              </Field>
-              {/* "Browse" and not "Go": it is upstream's literal on all three list
-                  screens (Cache, Allowed and Blocked), and it also says better
-                  what it does: it takes you to that point of the tree, it sends
-                  nothing. */}
-              <Button variant="primary" onClick={() => navigate(field)}>
-                Browse
-              </Button>
-            </div>
-            {/*
-            Still loading is NOT the same as empty, and until 2026-09-07 it was
-            drawn the same: `node` starts null, so the first load showed "0 zones"
-            and an empty tree, the same picture a genuinely empty list shows. It is
-            the same defect that was fixed for the failure state on this very
-            screen, in the state it had not been measured in.
+      {isCache ? (
+        /*
+        Cache, one panel (2026-10-16). Top to bottom it is the order you use it in:
+        type a name, see where you are and go up, see what hangs below and go down,
+        read the records. The tree column is gone from this screen only; see
+        `CacheNav.tsx` for why each move is the one upstream makes.
 
-            A first load that FAILED does not come here: it leaves `node` null too,
-            but it sets the notice, and that is what the reader has to see.
-            */}
-            {loading ? (
-              <div className={styles.body}><Loading /></div>
-            ) : (
-              <>
-                {/* The count lives in the count bar, like the records one: in the
-                    header it looked exactly like a status pill. */}
-                <div className={styles.count}>
-                  <span>{zones.length === 1 ? '1 zone' : `${zones.length} zones`}</span>
-                </div>
-                <div className={styles.body}>
-                  <Tree
-                    domain={domain}
-                    domainIdn={node?.domainIdn}
-                    zones={zones}
-                    onNavigate={navigate}
-                  />
-                </div>
-              </>
-            )}
-          </section>
-        </div>
+        Measured on the showcase. At `com`, 1440: the page was 1,371 px tall (the
+        35-row tree set it) and is 990, with the four records rows at 85 to 106
+        px instead of 140 to 160. At the root the page went from 3,307 to 2,125.
+        At 768 the table started at y=619, under the tree, and starts at 359; at
+        390 on `google.com` at 663 and now 496, with no sideways scroll.
+        */
+        <section className={styles.cachePanel} aria-label="Cache">
+          <div className={styles.search}>
+            <Field label={fieldName ?? 'Domain'}>
+              {(id) => (
+                <Input
+                  id={id}
+                  mono
+                  placeholder="example.com"
+                  value={field}
+                  onChange={(e) => setField(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') navigate(field)
+                  }}
+                />
+              )}
+            </Field>
+            <Button variant="primary" onClick={() => navigate(field)}>
+              Browse
+            </Button>
+          </div>
 
-        <div className={[styles.records, styles[list]].join(' ')}>
-          <section className={styles.column} aria-label="Records">
-            {/*
-            Cache is what the server resolved and stored; Allowed and Blocked are
-            the administrator's decisions. Three screens, one component, and until
-            this round nothing on them said which was which.
-
-            The icon and the second line are OURS (upstream has neither), and they
-            are the two channels that do not depend on the colour, which is the
-            rule `theme/tokens.css` already applies to itself in the seven
-            conditions of Logs: colour reinforces, it is never the only channel.
-            */}
-            <div className={styles.identity}>
-              <span className={styles.emblem}>
-                <Icon name={list} size={15} />
-              </span>
-              <span className={styles.identityText}>
-                <span className={styles.identityTitle}>{TITLE[list]}</span>
-                <span className={styles.identitySub}>{SUBTITLE[list]}</span>
-              </span>
-            </div>
-
-            <Path domain={domain} label={nodeTitle} />
-
-            {/*
-            No count bar while the request is in flight. Saying "0 records at
-            <ROOT>" with nothing loaded yet is exactly the picture an empty list
-            shows, which is the defect the tree had fixed on 2026-09-07 and this
-            side still had.
-            */}
+          <div className={styles.where}>
+            <Crumbs domain={domain} label={nodeTitle} onNavigate={navigate} />
+            {/* Refresh and Delete act on the node, so they sit on the node's line.
+                Hidden while the first read is in flight, as the count bar was. */}
             {!loading && (
+              <div className={styles.countActs}>
+                <Button size="sm" onClick={() => navigate(domain)}>
+                  Refresh
+                </Button>
+                {mayDelete && (
+                  <PermissionButton size="sm" variant="danger" disabled={busy} onClick={askDeleteCacheNode}>
+                    Delete
+                  </PermissionButton>
+                )}
+              </div>
+            )}
+          </div>
+
+          {loading ? (
+            <div className={styles.empty}><Loading /></div>
+          ) : (
+            <>
+              {/* No chips, no band: a leaf saying `0 zones` on a line of its own
+                  was a strip of nothing above the records. */}
+              {zones.length > 0 && (
+                <div className={styles.children}>
+                  <span className={styles.childrenCount}>
+                    {zones.length === 1 ? '1 zone' : `${zones.length} zones`}
+                  </span>
+                  <Children domain={domain} zones={zones} onNavigate={navigate} />
+                </div>
+              )}
               <div className={styles.count}>
                 <span>
                   {records.length} records at <span className={styles.mono}>{nodeTitle}</span>
                 </span>
-                <div className={styles.countActs}>
-                  <Button size="sm" onClick={() => navigate(domain)}>
-                    Refresh
-                  </Button>
-                  {/*
-                  `variant="danger"`, which it did not carry: deleting a node is
-                  destructive and was drawn as a plain grey button, while `Flush`
-                  next to it was already the filled red one. Same primitive, two
-                  weights: the row-sized danger is red text that fills on hover,
-                  precisely so a destructive verb in a bar does not shout.
-                  */}
-                  {mayDelete && (
-                    <PermissionButton
-                      size="sm"
-                      variant="danger"
-                      disabled={busy}
-                      permission={isCache || canDelete ? undefined : `${TITLE[list]}.canDelete`}
-                      onClick={isCache ? askDeleteCacheNode : askDeleteDomain}
-                    >
-                      Delete
-                    </PermissionButton>
-                  )}
-                </div>
               </div>
-            )}
-
-            <div className={styles.bodyFlush}>
-              {loading ? (
-                /* The tree's placeholder above already announced this wait: two
-                   `role="status"` for one request read it out twice. */
-                <div className={styles.empty}><Loading announce={false} /></div>
-              ) : records.length > 0 ? (
-                <ResourceRecords records={records} withDnssec={isCache} node={domain} />
+              {records.length > 0 ? (
+                <ResourceRecords records={records} withDnssec node={domain} />
               ) : (
                 <div className={styles.empty}>
+                  {/* "in the tree" left with the tree: the chips are right above. */}
                   <Empty title="No records at this node">
                     {zones.length > 0
-                      ? 'This node only contains sub-domains. Open one in the tree to see its records.'
+                      ? 'This node only contains sub-domains. Open one to see its records.'
                       : 'This node has no records and no sub-domains.'}
                   </Empty>
                 </div>
               )}
-            </div>
-          </section>
+            </>
+          )}
+        </section>
+      ) : (
+        <div className={styles.split}>
+          <div className={styles.tree}>
+            <section className={styles.column} aria-label="Domain tree">
+              <div className={styles.browse}>
+                {/* The field is called "Domain" and the button "Browse". Upstream puts
+                    no label here (only the `placeholder`), so this one is an
+                    addition of ours and can be called whatever suits; what it
+                    cannot be called is the same as the button next to it, which
+                    does carry upstream's literal. Embedded under another "Domain"
+                    field, it takes the name the screen gives it. */}
+                <Field label={fieldName ?? 'Domain'}>
+                  {(id) => (
+                    <Input
+                      id={id}
+                      mono
+                      placeholder="example.com"
+                      value={field}
+                      onChange={(e) => setField(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') navigate(field)
+                      }}
+                    />
+                  )}
+                </Field>
+                {/* "Browse" and not "Go": it is upstream's literal on all three list
+                    screens (Cache, Allowed and Blocked), and it also says better
+                    what it does: it takes you to that point of the tree, it sends
+                    nothing. */}
+                <Button variant="primary" onClick={() => navigate(field)}>
+                  Browse
+                </Button>
+              </div>
+              {/*
+              Still loading is NOT the same as empty, and until 2026-09-07 it was
+              drawn the same: `node` starts null, so the first load showed "0 zones"
+              and an empty tree, the same picture a genuinely empty list shows. It is
+              the same defect that was fixed for the failure state on this very
+              screen, in the state it had not been measured in.
+
+              A first load that FAILED does not come here: it leaves `node` null too,
+              but it sets the notice, and that is what the reader has to see.
+              */}
+              {loading ? (
+                <div className={styles.body}><Loading /></div>
+              ) : (
+                <>
+                  {/* The count lives in the count bar, like the records one: in the
+                      header it looked exactly like a status pill. */}
+                  <div className={styles.count}>
+                    <span>{zones.length === 1 ? '1 zone' : `${zones.length} zones`}</span>
+                  </div>
+                  <div className={styles.body}>
+                    <Tree
+                      domain={domain}
+                      domainIdn={node?.domainIdn}
+                      zones={zones}
+                      onNavigate={navigate}
+                    />
+                  </div>
+                </>
+              )}
+            </section>
+          </div>
+
+          <div className={[styles.records, styles[list]].join(' ')}>
+            <section className={styles.column} aria-label="Records">
+              {/*
+              Cache is what the server resolved and stored; Allowed and Blocked are
+              the administrator's decisions. Three screens, one component, and until
+              this round nothing on them said which was which.
+
+              The icon and the second line are OURS (upstream has neither), and they
+              are the two channels that do not depend on the colour, which is the
+              rule `theme/tokens.css` already applies to itself in the seven
+              conditions of Logs: colour reinforces, it is never the only channel.
+              */}
+              <div className={styles.identity}>
+                <span className={styles.emblem}>
+                  <Icon name={list} size={15} />
+                </span>
+                <span className={styles.identityText}>
+                  <span className={styles.identityTitle}>{TITLE[list]}</span>
+                  <span className={styles.identitySub}>{SUBTITLE[list]}</span>
+                </span>
+              </div>
+
+              <Path domain={domain} label={nodeTitle} />
+
+              {/*
+              No count bar while the request is in flight. Saying "0 records at
+              <ROOT>" with nothing loaded yet is exactly the picture an empty list
+              shows, which is the defect the tree had fixed on 2026-09-07 and this
+              side still had.
+              */}
+              {!loading && (
+                <div className={styles.count}>
+                  <span>
+                    {records.length} records at <span className={styles.mono}>{nodeTitle}</span>
+                  </span>
+                  <div className={styles.countActs}>
+                    <Button size="sm" onClick={() => navigate(domain)}>
+                      Refresh
+                    </Button>
+                    {/*
+                    `variant="danger"`, which it did not carry: deleting a node is
+                    destructive and was drawn as a plain grey button, while `Flush`
+                    next to it was already the filled red one. Same primitive, two
+                    weights: the row-sized danger is red text that fills on hover,
+                    precisely so a destructive verb in a bar does not shout.
+                    */}
+                    {mayDelete && (
+                      <PermissionButton
+                        size="sm"
+                        variant="danger"
+                        disabled={busy}
+                        permission={canDelete ? undefined : `${TITLE[list]}.canDelete`}
+                        onClick={askDeleteDomain}
+                      >
+                        Delete
+                      </PermissionButton>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div className={styles.bodyFlush}>
+                {loading ? (
+                  /* The tree's placeholder above already announced this wait: two
+                     `role="status"` for one request read it out twice. */
+                  <div className={styles.empty}><Loading announce={false} /></div>
+                ) : records.length > 0 ? (
+                  <ResourceRecords records={records} withDnssec={false} node={domain} />
+                ) : (
+                  <div className={styles.empty}>
+                    <Empty title="No records at this node">
+                      {zones.length > 0
+                        ? 'This node only contains sub-domains. Open one in the tree to see its records.'
+                        : 'This node has no records and no sub-domains.'}
+                    </Empty>
+                  </div>
+                )}
+              </div>
+            </section>
+          </div>
         </div>
-      </div>
+
+      )}
 
       <Confirm
         open={confirmation !== null}

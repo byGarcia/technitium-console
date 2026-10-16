@@ -142,10 +142,18 @@ describe('loading is not emptiness, on either side', () => {
   */
   it('both holes show a placeholder and only one of them announces it', async () => {
     vi.spyOn(client, 'apiRequest').mockImplementation(() => pending() as never)
-    render(<Lists list="cache" token="t" />)
+    render(<Lists list="blocked" token="t" embedded />)
     await screen.findByRole('status')
     expect(screen.getAllByText('Loading…')).toHaveLength(2)
     expect(screen.getAllByRole('status')).toHaveLength(1)
+  })
+
+  /* Cache is one panel since 2026-10-16: one hole, one placeholder, announced. */
+  it('Cache has one hole, and it announces its wait', async () => {
+    vi.spyOn(client, 'apiRequest').mockImplementation(() => pending() as never)
+    render(<Cache token="t" />)
+    await screen.findByRole('status')
+    expect(screen.getAllByText('Loading…')).toHaveLength(1)
   })
 })
 

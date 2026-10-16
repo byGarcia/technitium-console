@@ -9,6 +9,9 @@ no longer current.
 It is tested on `Cache` because it is one of the three and the component is
 shared; what tells the other two apart is which endpoint they call, not how they
 treat a failure.
+
+The node is found by its role: Cache draws a child as a chip whose name is split
+at its dots (`ui/DomainName`), so its text is no longer one element.
 */
 import { render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -37,20 +40,20 @@ describe('stale data in the lists', () => {
     } as never)
     render(<Cache token="t" />)
 
-    expect(await screen.findByText('home.test')).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'home.test' })).toBeInTheDocument()
     expect(screen.queryByText(/Could not refresh/)).not.toBeInTheDocument()
   })
 
   it('when a refresh fails, the tree stays and it is reported once', async () => {
     goodThenBroken()
     const { rerender } = render(<Cache token="t" />)
-    await screen.findByText('home.test')
+    await screen.findByRole('button', { name: 'home.test' })
 
     /* Changing node is what fires the second `load`. */
     rerender(<Cache token="t2" />)
 
     await screen.findByText(/Could not refresh/)
-    expect(screen.getByText('home.test')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'home.test' })).toBeInTheDocument()
     expect(screen.getAllByRole('alert')).toHaveLength(1)
     expect(screen.queryByText(/boom/)).not.toBeInTheDocument()
   })
@@ -73,7 +76,7 @@ describe('stale data in the lists', () => {
         : ({ kind: 'ok', data: { status: 'ok', response: NODE } } as never)
     })
     const { rerender } = render(<Cache token="t" />)
-    await screen.findByText('home.test')
+    await screen.findByRole('button', { name: 'home.test' })
     rerender(<Cache token="t2" />)
     await screen.findByText(/Could not refresh/)
 
