@@ -611,6 +611,21 @@ contract and SECURITY.md.
 3. **Settings jumps to the sub-tab of the invalid field.** Upstream focuses a
    hidden input and the user sees nothing; with one panel mounted at a time,
    without that jump the alert would be impossible to resolve.
+
+   And for the same reason (one save sends the fields of all nine panes, wherever
+   you are), **Settings says what the save would change** (approved on
+   2026-10-16, `screens/settings/pending.ts`). While a field would be sent with a
+   value other than the one the server returned, the save bar reads
+   `Unsaved changes:` followed by the panes that hold one and how many fields each,
+   `General (2), Cache (1)`, in tab order, and each of those sub-tabs carries the
+   dot Lists carries, read as `<Tab>, unsaved changes` (`ui/SubTabs`'s `marks`).
+   Those two phrases are the only new words; the pane names are upstream's tab
+   labels. It compares what the save would send, with the save's own cleaning, so
+   a field put back as it was, a blank line in a list and an untouched field never
+   count; nor does a field the save would not send (outside the chosen node's
+   scope, or a proxy detail with no proxy type), nor the minutes of `Temporary
+   Disable Now`, which is not a setting. It only displays: saving, Backup,
+   Restore, Flush Cache and the blocking buttons behave exactly as before.
 4. **The "Enable DNS-over-HTTP/3" checkbox re-enables itself.** In upstream it
    stays dead until the page is reloaded because nothing re-evaluates its state:
    that is a bug of theirs, and replicating it would mean introducing the fault

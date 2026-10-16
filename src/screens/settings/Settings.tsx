@@ -17,6 +17,7 @@ import {
   type SettingsEnvelope,
 } from '../../api/settings'
 import { buildBody, formFromSettings, enabled, selectedNode, type SettingsForm } from './model'
+import { pendingByPane, pendingText } from './pending'
 import { detectReverseProxy, REDIRECT_DELAY_MS, webConsoleRedirection } from './redirect'
 import { General } from './panes/General'
 import { WebService } from './panes/WebService'
@@ -53,6 +54,14 @@ Two consequences of that to keep in mind:
   · The three permissions on the bar are different: saving requires
     `Settings.canModify`, flushing the cache `Cache.canDelete`, and backup and
     restore `Settings.canDelete` (main.js:906-930).
+
+And one consequence that is OURS (CONVENTIONS.md, deviation 3, approved on
+2026-10-16): since the save sends all nine, the bar says which panes hold
+something it would change, `Unsaved changes: General (2), Cache (1)`, and each of
+those sub-tabs carries a mark read as `unsaved changes`. Those are the only new
+words; the pane names are upstream's tab labels. What counts as a change is
+`pending.ts`'s business, and it only displays: saving, Backup, Restore, Flush
+Cache and the blocking buttons do exactly what they did.
 */
 
 export const SUB_TABS = [
@@ -156,6 +165,8 @@ export function Settings({
 
   const [settings, setSettingsState] = useState<DnsSettings | null>(null)
   const [form, setForm] = useState<SettingsForm | null>(null)
+  /** The form as the server last answered it: what the bar compares against. */
+  const [loadedForm, setLoadedForm] = useState<SettingsForm | null>(null)
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState<Notice | null>(null)
@@ -185,8 +196,10 @@ export function Settings({
   }, [token, node, onServerInfo])
 
   function apply(s: DnsSettings | null) {
+    const f = s ? formFromSettings(s) : null
     setSettingsState(s)
-    setForm(s ? formFromSettings(s) : null)
+    setForm(f)
+    setLoadedForm(f)
     setNextList(s?.blockListNextUpdatedOn)
   }
 
@@ -297,6 +310,9 @@ export function Settings({
 
     setSettingsState((a) => (a ? { ...a, temporaryDisableBlockingTill: till } : a))
     set({ enableBlocking: false })
+    /* The server switched blocking off too (BlockListZoneManager.cs:994), so the
+       unticked box is what it now holds, not an edit waiting for the save. */
+    setLoadedForm((l) => (l ? { ...l, enableBlocking: false } : l))
     setNotice({
       type: 'success',
       title: 'Blocking Disabled!',
@@ -370,6 +386,10 @@ export function Settings({
 
   const props = { f: form, set, en }
 
+  /* What the save would change, pane by pane (`pending.ts`). */
+  const pending = loadedForm == null ? [] : pendingByPane(loadedForm, form, node, SUB_TABS)
+  const pendingWords = pendingText(pending)
+
   return (
     <div className={styles.wrap}>
       {/*
@@ -390,6 +410,7 @@ export function Settings({
             tabs={SUB_TABS}
             active={active}
             onChoose={(t) => onSubChange?.(t as SubTab)}
+            marks={Object.fromEntries(pending.map((p) => [p.pane, 'unsaved changes']))}
           />
         }
         actions={
@@ -464,7 +485,13 @@ export function Settings({
         >
           Flush Cache
         </PermissionButton>
-        <div className={panelFormStyles.spacer} />
+        {/*
+        In the spacer's place, so that no button moves when it appears: wide, it is
+        the spacer; narrow, it takes the bar's first line and the spacer is back
+        (Settings.module.css).
+        */}
+        {pendingWords !== '' && <span className={styles.pending}>Unsaved changes: {pendingWords}</span>}
+        <div className={[panelFormStyles.spacer, pendingWords !== '' ? styles.besidePending : null].filter(Boolean).join(' ')} />
         <PermissionButton
           permission={canBackup ? undefined : 'Settings.canDelete'}
           onClick={() => {

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, afterEach } from 'vitest'
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Settings } from './Settings'
 import { SETTINGS } from './settings.fixture'
@@ -695,5 +695,87 @@ describe('Settings: addresses in the notes come from the loaded settings', () =>
     await userEvent.clear(screen.getByLabelText('Real IP Header'))
     expect(screen.getByText('X-Client-IP')).toBeInTheDocument()
     expect(screen.getByText('proxy_set_header X-Client-IP $remote_addr;')).toBeInTheDocument()
+  })
+})
+
+describe('Settings: what the save would change (2026-10-16)', () => {
+  const tab = (name: string | RegExp) =>
+    within(screen.getByRole('navigation', { name: 'Settings sections' })).getByRole('link', { name })
+
+  it('with nothing edited the bar says nothing and no sub-tab is marked', async () => {
+    server()
+    await mount()
+    expect(screen.queryByText(/Unsaved changes/)).not.toBeInTheDocument()
+    expect(tab('General')).toBeInTheDocument()
+    expect(tab('Cache')).toBeInTheDocument()
+  })
+
+  it('names every pane with an edit, with how many fields, and marks their sub-tabs', async () => {
+    server()
+    const { rerender } = await mount({ sub: 'General' })
+    await userEvent.clear(screen.getByLabelText('Default Record TTL'))
+    await userEvent.type(screen.getByLabelText('Default Record TTL'), '60')
+    await userEvent.click(screen.getByLabelText('Enable DNSSEC Validation'))
+
+    rerender(<Settings token="tok" sub="Cache" />)
+    await userEvent.clear(await screen.findByLabelText('Cache Maximum Entries'))
+    await userEvent.type(screen.getByLabelText('Cache Maximum Entries'), '5')
+
+    expect(screen.getByText('Unsaved changes: General (2), Cache (1)')).toBeInTheDocument()
+    expect(tab('General, unsaved changes')).toBeInTheDocument()
+    expect(tab('Cache, unsaved changes')).toBeInTheDocument()
+    expect(tab('Recursion')).toBeInTheDocument()
+  })
+
+  it('a field put back as it was stops counting', async () => {
+    server()
+    await mount({ sub: 'Cache' })
+    const field = screen.getByLabelText('Cache Maximum Entries')
+    const before = (field as HTMLInputElement).value
+    await userEvent.type(field, '0')
+    expect(screen.getByText('Unsaved changes: Cache (1)')).toBeInTheDocument()
+    await userEvent.clear(field)
+    await userEvent.type(field, before)
+    expect(screen.queryByText(/Unsaved changes/)).not.toBeInTheDocument()
+    expect(tab('Cache')).toBeInTheDocument()
+  })
+
+  it('a successful save clears it, and the save sends what it sent before', async () => {
+    const spy = server()
+    await mount({ sub: 'Cache' })
+    await userEvent.type(screen.getByLabelText('Cache Maximum Entries'), '0')
+    await userEvent.click(screen.getByRole('button', { name: 'Save Settings' }))
+    expect(await screen.findByText('Settings Saved!')).toBeInTheDocument()
+    const body = spy.mock.calls.find((c) => c[0] === 'settings/set')![1]!.body as Record<string, string>
+    expect(body.cacheMaximumEntries).toBe(`${SETTINGS.cacheMaximumEntries}0`)
+    expect(screen.queryByText(/Unsaved changes/)).not.toBeInTheDocument()
+  })
+
+  it('a refused save keeps it: nothing was saved', async () => {
+    server()
+    await mount({ sub: 'Recursion' })
+    await userEvent.clear(screen.getByLabelText('Resolver Retries'))
+    await userEvent.click(screen.getByRole('button', { name: 'Save Settings' }))
+    expect(await screen.findByText('Please enter a value for Resolver Retries.')).toBeInTheDocument()
+    expect(screen.getByText('Unsaved changes: Recursion (1)')).toBeInTheDocument()
+  })
+
+  it('disabling blocking for a while is not a pending change: the server already did it', async () => {
+    vi.spyOn(client, 'apiRequest').mockImplementation(async (path: string) => {
+      if (path === 'settings/get') return ok({ response: SETTINGS })
+      if (path === 'settings/temporaryDisableBlocking') {
+        return ok({ response: { temporaryDisableBlockingTill: '2026-08-25T14:00:00Z' } })
+      }
+      return ok({ response: {} })
+    })
+    await mount({ sub: 'Blocking' })
+    // The minutes are the button's argument, not a setting.
+    await userEvent.type(screen.getByLabelText('Blocking Temporarily Disabled Till'), '15')
+    expect(screen.queryByText(/Unsaved changes/)).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Temporary Disable Now' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Disable' }))
+    expect(await screen.findByText('Blocking Disabled!')).toBeInTheDocument()
+    expect(screen.getByLabelText('Enable Blocking')).not.toBeChecked()
+    expect(screen.queryByText(/Unsaved changes/)).not.toBeInTheDocument()
   })
 })
