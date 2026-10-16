@@ -331,153 +331,145 @@ thead th.checkCell { padding: 0; }
 thead .checkCell label { min-height: 0; }
 
 /*
-The stacking table (`stack` in `Table.tsx`, where the measurements are). Above
-560 these rules do nothing, and the two classes only mark the table.
+The stacking table (`stack` in `Table.tsx`, which decides WHEN and says why).
+These rules apply while the table carries `data-stacked`, which `Table.tsx` sets
+when the table cannot fit its wrapper, and below `--bp-stack` (560 px of
+wrapper) in any case. Without it the class only marks the table.
 
 `.lead` is what a screen puts on the cell or cells that identify its row; it
 means nothing to a table that does not stack.
+
+`position: relative` is for the header cells that leave the screen (see `.sr`
+in text.module.css: clipped, they would otherwise push the page sideways).
 */
+.stackWrap { position: relative; }
+
+.stack[data-stacked],
+.stack[data-stacked] > thead,
+.stack[data-stacked] > tbody,
+.stack[data-stacked] > tfoot { display: block; }
+
 /*
-It steps on the table's OWN width, not the window's: `--bp-stack` as a container
-query. A table that is narrow because of what sits beside it is as narrow as one on
-a phone, and Cache proved it: at 1024 its records panel is 414 px beside the tree,
-and the Data column was squeezed to 80 px there exactly as at 390. On a phone the
-two are the same thing, since the table spans the screen.
-
-The container is the wrapper, which is a block as wide as its parent. `position:
-relative` is for the header cells that leave the screen (see `.sr` in
-text.module.css: clipped, they would otherwise push the page sideways).
+The header row: its sort buttons and the select-all box, as one wrapping
+strip. A header that is only a word stays in the page for a screen reader and
+leaves the screen, because each row already writes it over its value; a header
+row with no control at all leaves the screen entirely.
 */
-.stackWrap { position: relative; container-type: inline-size; }
+.stack[data-stacked] > thead > tr {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-3) var(--s-8);
+  padding: var(--s-4) var(--s-7);
+  background: var(--pan2);
+  border-bottom: 1px solid var(--line);
+}
+.stack[data-stacked] > thead > tr > th { height: auto; padding: 0; border: 0; width: auto !important; }
+.stack[data-stacked] > thead > tr > th.checkCell label { padding: 0; }
+.stack[data-stacked] > thead:not(:has(button, input)),
+.stack[data-stacked] > thead > tr > th:not(:has(button, input)) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
 
-@container (max-width: 560px) {
-  .stack,
-  .stack > thead,
-  .stack > tbody,
-  .stack > tfoot { display: block; }
+/*
+A row: one flex container. The checkbox, the lead cells and the actions take
+`order: 1` and share the first line; the empty `::after` with `order: 2` and a
+full basis ends that line; every other cell is a fact, `order: 3`, as wide as
+its content and never wider than the row. The gap between lines is each fact's
+own top margin rather than `row-gap`, which would also open above the empty
+line and count twice.
+*/
+.stack[data-stacked] > tbody > tr,
+.stack[data-stacked] > tfoot > tr {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  column-gap: var(--s-9);
+  padding: var(--s-5) var(--s-7) var(--s-6);
+  border-bottom: 1px solid var(--line2);
+}
+.stack[data-stacked] > tbody > tr:last-child { border-bottom: 0; }
+.stack[data-stacked] > tbody > tr::after,
+.stack[data-stacked] > tfoot > tr::after { content: ''; order: 2; flex-basis: 100%; }
 
-  /*
-  The header row: its sort buttons and the select-all box, as one wrapping
-  strip. A header that is only a word stays in the page for a screen reader and
-  leaves the screen, because each row already writes it over its value; a header
-  row with no control at all leaves the screen entirely.
-  */
-  .stack > thead > tr {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--s-3) var(--s-8);
-    padding: var(--s-4) var(--s-7);
-    background: var(--pan2);
-    border-bottom: 1px solid var(--line);
-  }
-  .stack > thead > tr > th { height: auto; padding: 0; border: 0; width: auto !important; }
-  .stack > thead > tr > th.checkCell label { padding: 0; }
-  .stack > thead:not(:has(button, input)),
-  .stack > thead > tr > th:not(:has(button, input)) {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    margin: -1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
+.stack[data-stacked] > tbody > tr > td,
+.stack[data-stacked] > tfoot > tr > td {
+  order: 3;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  width: auto;
+  margin-top: var(--s-3);
+  padding: 0;
+  border: 0;
+  text-align: left;
+}
 
-  /*
-  A row: one flex container. The checkbox, the lead cells and the actions take
-  `order: 1` and share the first line; the empty `::after` with `order: 2` and a
-  full basis ends that line; every other cell is a fact, `order: 3`, as wide as
-  its content and never wider than the row. The gap between lines is each fact's
-  own top margin rather than `row-gap`, which would also open above the empty
-  line and count twice.
-  */
-  .stack > tbody > tr,
-  .stack > tfoot > tr {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: flex-start;
-    column-gap: var(--s-9);
-    padding: var(--s-5) var(--s-7) var(--s-6);
-    border-bottom: 1px solid var(--line2);
-  }
-  .stack > tbody > tr:last-child { border-bottom: 0; }
-  .stack > tbody > tr::after,
-  .stack > tfoot > tr::after { content: ''; order: 2; flex-basis: 100%; }
+/* The first line: the lead cells side by side, the actions pushed to its end.
+   A lead cell shrinks, so a long name wraps (at its dots) before it can push
+   the actions off the line. */
+.stack[data-stacked] > tbody > tr > td.lead,
+.stack[data-stacked] > tbody > tr > td.checkCell,
+.stack[data-stacked] > tbody > tr > td.actionsCell { order: 1; margin-top: 0; align-self: center; }
+.stack[data-stacked] > tbody > tr > td.actionsCell { flex: none; margin-left: auto; }
+.stack[data-stacked] > tbody > tr > td.checkCell label { min-height: 0; padding: 0; }
 
-  .stack > tbody > tr > td,
-  .stack > tfoot > tr > td {
-    order: 3;
-    flex: 0 1 auto;
-    min-width: 0;
-    max-width: 100%;
-    width: auto;
-    margin-top: var(--s-3);
-    padding: 0;
-    border: 0;
-    text-align: left;
-  }
+/*
+A fact whose cell is blank (`data-empty`, set by `labelCells`): its label with
+nothing after it was a line of noise, EXPIRY on every zone that has none,
+ANSWER on every blocked query. It leaves the screen and stays in the row,
+clipped as `.sr` is, so the cells after it keep their columns for a screen
+reader. The row's own cells are never taken out.
+*/
+.stack[data-stacked] > tbody > tr > td[data-empty]:not(.lead, .checkCell, .actionsCell) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
 
-  /* The first line: the lead cells side by side, the actions pushed to its end.
-     A lead cell shrinks, so a long name wraps (at its dots) before it can push
-     the actions off the line. */
-  .stack > tbody > tr > td.lead,
-  .stack > tbody > tr > td.checkCell,
-  .stack > tbody > tr > td.actionsCell { order: 1; margin-top: 0; align-self: center; }
-  .stack > tbody > tr > td.actionsCell { flex: none; margin-left: auto; }
-  .stack > tbody > tr > td.checkCell label { min-height: 0; padding: 0; }
+/* The "nothing here" row keeps its centred sentence across the whole row. */
+.stack[data-stacked] > tbody > tr > td.noRows { flex-basis: 100%; margin-top: 0; padding: var(--s-9) 0; text-align: center; }
 
-  /*
-  A fact whose cell is blank (`data-empty`, set by `labelCells`): its label with
-  nothing after it was a line of noise, EXPIRY on every zone that has none,
-  ANSWER on every blocked query. It leaves the screen and stays in the row,
-  clipped as `.sr` is, so the cells after it keep their columns for a screen
-  reader. The row's own cells are never taken out.
-  */
-  .stack > tbody > tr > td[data-empty]:not(.lead, .checkCell, .actionsCell) {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    margin: -1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
+/*
+The column's own header in front of each fact, in the header row's type, on
+the value's line: `# 3  TTL 3600 (1h)`. A cell whose content is a block (a
+record's Data, a scope's ranges) takes it on a line of its own above. The lead
+cells, the checkbox and the actions carry none: they are the row itself. The
+empty alternative text keeps a screen reader from reading it twice.
+*/
+.stack[data-stacked] > tbody > tr > td[data-label]:not(.lead, .checkCell, .actionsCell)::before,
+.stack[data-stacked] > tfoot > tr > td[data-label]::before {
+  content: attr(data-label);
+  content: attr(data-label) / '';
+  margin-right: var(--s-4);
+  font-family: var(--font-ui);
+  font-size: var(--text-size);
+  font-weight: var(--text-weight);
+  letter-spacing: var(--text-tracking);
+  text-transform: uppercase;
+  color: var(--mute);
+  white-space: nowrap;
+}
 
-  /* The "nothing here" row keeps its centred sentence across the whole row. */
-  .stack > tbody > tr > td.noRows { flex-basis: 100%; margin-top: 0; padding: var(--s-9) 0; text-align: center; }
-
-  /*
-  The column's own header in front of each fact, in the header row's type, on
-  the value's line: `# 3  TTL 3600 (1h)`. A cell whose content is a block (a
-  record's Data, a scope's ranges) takes it on a line of its own above. The lead
-  cells, the checkbox and the actions carry none: they are the row itself. The
-  empty alternative text keeps a screen reader from reading it twice.
-  */
-  .stack > tbody > tr > td[data-label]:not(.lead, .checkCell, .actionsCell)::before,
-  .stack > tfoot > tr > td[data-label]::before {
-    content: attr(data-label);
-    content: attr(data-label) / '';
-    margin-right: var(--s-4);
-    font-family: var(--font-ui);
-    font-size: var(--text-size);
-    font-weight: var(--text-weight);
-    letter-spacing: var(--text-tracking);
-    text-transform: uppercase;
-    color: var(--mute);
-    white-space: nowrap;
-  }
-
-  /*
-  A value that starts with a block (a record's Data, a date with its age under it,
-  a scope's ranges) would take the line under its label, one line more per fact.
-  Its first block goes inline, as a grid, whose baseline is its FIRST line's: the
-  label sits on the value's first line and the rest of the block hangs under the
-  value. A block wider than what the label leaves wraps whole to the next line,
-  which is where it was before.
-  */
-  .stack > tbody > tr > td[data-label]:not(.lead, .checkCell, .actionsCell) > :is(div, dl):first-child {
-    display: inline-grid;
-    max-width: 100%;
-  }
+/*
+A value that starts with a block (a record's Data, a date with its age under it,
+a scope's ranges) would take the line under its label, one line more per fact.
+Its first block goes inline, as a grid, whose baseline is its FIRST line's: the
+label sits on the value's first line and the rest of the block hangs under the
+value. A block wider than what the label leaves wraps whole to the next line,
+which is where it was before.
+*/
+.stack[data-stacked] > tbody > tr > td[data-label]:not(.lead, .checkCell, .actionsCell) > :is(div, dl):first-child {
+  display: inline-grid;
+  max-width: 100%;
 }

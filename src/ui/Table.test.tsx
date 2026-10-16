@@ -1,6 +1,6 @@
-import { render, screen } from '@testing-library/react'
+import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import { useState } from 'react'
 import { Table as DataTable, Th, useSort, type Keys } from './Table'
 
@@ -198,5 +198,72 @@ describe('a stacking table', () => {
     expect(screen.getByRole('cell')).not.toHaveAttribute('data-label')
     expect(screen.getByRole('cell')).not.toHaveAttribute('data-empty')
     expect(screen.getByRole('cell')).not.toHaveAttribute('role')
+  })
+})
+
+/*
+WHEN it stacks. jsdom lays nothing out, so the wrapper's two widths are given by
+hand: what it offers (`clientWidth`) and what the table, laid out as a table,
+asks of it (`scrollWidth`).
+*/
+describe('when a table stacks', () => {
+  const proto = Element.prototype
+  const saved = {
+    client: Object.getOwnPropertyDescriptor(proto, 'clientWidth')!,
+    scroll: Object.getOwnPropertyDescriptor(proto, 'scrollWidth')!,
+  }
+  afterEach(() => {
+    cleanup()
+    Object.defineProperty(proto, 'clientWidth', saved.client)
+    Object.defineProperty(proto, 'scrollWidth', saved.scroll)
+  })
+
+  /** The wrapper offers `offer`; laid out as a table, it needs `need`. */
+  function widths(offer: number, need: number) {
+    Object.defineProperty(proto, 'clientWidth', { configurable: true, get: () => offer })
+    Object.defineProperty(proto, 'scrollWidth', {
+      configurable: true,
+      // While stacked the table fits by construction; measuring takes the mark off.
+      get(this: Element) {
+        return this.querySelector(':scope > table[data-stacked]') != null ? offer : need
+      },
+    })
+  }
+
+  function Zones() {
+    return (
+      <DataTable stack header={<th>Zone</th>}>
+        <tr>
+          <td>example.net</td>
+        </tr>
+      </DataTable>
+    )
+  }
+
+  it('stays a table where it fits', () => {
+    widths(1000, 1000)
+    render(<Zones />)
+    expect(screen.getByRole('table')).not.toHaveAttribute('data-stacked')
+  })
+
+  it('stacks where the wrapper would have to scroll, at any width', () => {
+    widths(1000, 1200)
+    render(<Zones />)
+    expect(screen.getByRole('table')).toHaveAttribute('data-stacked')
+  })
+
+  it('stacks below 560 px of wrapper even when nothing scrolls', () => {
+    widths(500, 500)
+    render(<Zones />)
+    expect(screen.getByRole('table')).toHaveAttribute('data-stacked')
+  })
+
+  it('measures again on the next render, as a table and not as it was left', () => {
+    widths(1000, 1200)
+    const { rerender } = render(<Zones />)
+    expect(screen.getByRole('table')).toHaveAttribute('data-stacked')
+    widths(1000, 900)
+    rerender(<Zones />)
+    expect(screen.getByRole('table')).not.toHaveAttribute('data-stacked')
   })
 })

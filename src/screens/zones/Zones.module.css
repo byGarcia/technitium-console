@@ -31,8 +31,8 @@
    (`ui/kv.module.css`, so a DNSSEC key cannot push it out of the table), and at
    390 px the table gave it exactly that: the SOA's `ns1.example.net` stood one
    letter per line and its row ran past a thousand pixels. The minimum leaves the
-   value room for a name; the table scrolls for the rest. Below 560 the rows
-   stack (`stack` in ui/Table) and this minimum, like the zone's, stands down. */
+   value room for a name. Where the table no longer fits, the rows stack (`stack`
+   in ui/Table) and this minimum, like the zone's, stands down. */
 .dataCell { min-width: 40ch; }
 
 .ttl { composes: ttl from '../../ui/record.module.css'; }

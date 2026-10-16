@@ -51,9 +51,9 @@ list hands back an empty array, not zero children, and a detection that is right
 by accident is worse than a parameter.
 */
 /*
-`stack`: when the table's own box is narrower than `--bp-stack` (560) each row
-becomes a block, so the cells that say what a row IS stay on the screen instead of
-behind a sideways scroll.
+`stack`: when the table does not fit its panel, each row becomes a block, so the
+cells that say what a row IS stay on the screen instead of behind a sideways
+scroll. WHEN is decided further down, in `useStacking`.
 
 Measured on 2026-10-16 against the showcase at 390x844, before it:
 
@@ -72,8 +72,8 @@ Measured on 2026-10-16 against the showcase at 390x844, before it:
 Every one is the same defect. A table can only get narrower by squeezing a
 column or by scrolling, and at that width either loses the row: squeezed, a value
 breaks letter by letter; scrolled, the cells that identify the row are on one side
-and the ones that describe it on the other. So below 560 the row stops being a
-table row, by ONE rule for all of them:
+and the ones that describe it on the other. So there the row stops being a table
+row, by ONE rule for all of them:
 
     [checkbox] LEAD CELL(S) .......................... [actions]
     LABEL value   LABEL value   LABEL value
@@ -104,11 +104,8 @@ needs them as much as a desk does.
 After it, at 390: no table scrolls sideways and none breaks a word. Rows measure
 Zones 131, an A record 142 (the SOA 284), Leases 65, Recently Blocked 92, Query
 Logs 156 to 183, Users 198, Sessions 195 to 216, Scopes 190, Cluster 208 to 220,
-the negative-cache record that was 1,671 px 220. Above 560 the table is exactly
+the negative-cache record that was 1,671 px 220. A table that fits is exactly
 the table it was.
-
-It is a container query, not a media query, because a table can be narrow for
-what sits beside it (see `.stackWrap` in Table.module.css).
 */
 export function Table({
   header,
@@ -136,16 +133,11 @@ export function Table({
   tableClass?: string
   /** The footer row, when the table carries its count inside. */
   footer?: ReactNode
-  /** Rows become blocks below `--bp-stack`; the identifying cells carry `.lead`. */
+  /** Rows become blocks where the table does not fit; the identifying cells carry `.lead`. */
   stack?: boolean
 }) {
   const ref = useRef<HTMLTableElement>(null)
-
-  // After every render, because the rows are the screen's: a sort, a page or a
-  // filter hands back new cells, and React leaves alone attributes it did not set.
-  useLayoutEffect(() => {
-    if (stack && ref.current != null) labelCells(ref.current)
-  })
+  useStacking(ref, stack)
 
   const group = stack ? { role: 'rowgroup' } : {}
   return (
@@ -177,6 +169,99 @@ export function Table({
       </table>
     </div>
   )
+}
+
+/*
+WHEN a table stacks: when it does not fit its wrapper, and always below
+`--bp-stack` (560 px of wrapper).
+
+The first version was the 560 alone, as a container query, and it was a guess
+about where the tables stop fitting. Measured on 2026-10-16 it was wrong for four
+of them: at 1024 and 768 Zones scrolled 835 px of table in a 758 px panel, Users
+848, Sessions 945 and Query Logs about 930, each with its row actions or last
+columns out of sight, which is the defect the stacking exists for. No single
+width is right, because each table's natural width is its own and changes with
+its data (a long answer, a longer zone name). So the condition is the real one:
+the table is laid out as a table and, if the wrapper has to scroll to hold it
+(`scrollWidth > clientWidth`), it stacks.
+
+The 560 stays as a floor, for the one way a table fails without scrolling: a
+column whose content can shrink to nothing (`ui/kv`'s value column, which keeps a
+DNSSEC key inside its cell) is squeezed instead. That is Cache beside its tree,
+414 px at 1024, where Data went to 80 px and a record stood 1,671 px tall.
+
+How it is measured, and why it cannot loop or flicker:
+
+  · It is measured AS A TABLE every time: a stacked table has `data-stacked`
+    taken off, is read, and gets it back in the same task. The browser lays the
+    page out for the read and paints only the final state, so the in-between
+    table is never seen. Measuring the unstacked form each time makes the
+    decision a function of the width and the rows alone, never of the state it
+    is in, so a decision cannot undo itself.
+  · It runs before paint: in a layout effect after every render (new rows, a
+    sort, a page) and in a `ResizeObserver` on the wrapper, after a width change
+    only; height changes (which stacking itself causes) are ignored. The observer
+    also watches the table, so a row that grows wider in place is caught, and the
+    fonts finishing loading re-measure once.
+  · No hysteresis band is needed. The only feedback is the page's own scrollbar:
+    stacking makes the page taller, a scrollbar may appear and the wrapper loses
+    its width, which keeps the table stacked; unstacking makes it shorter, the
+    scrollbar may go and the wrapper gains width, which keeps it a table. Both
+    push the way the decision already went. A pixel of slack absorbs subpixel
+    widths.
+
+So nothing flashes on load: the first rows are laid out, measured and placed
+before the first frame that shows them.
+*/
+const STACK_BELOW = 560 // --bp-stack
+
+function measure(wrap: HTMLElement, table: HTMLTableElement): boolean {
+  if (wrap.clientWidth < STACK_BELOW) return true
+  const was = table.hasAttribute('data-stacked')
+  if (was) table.removeAttribute('data-stacked')
+  const overflows = wrap.scrollWidth > wrap.clientWidth + 1
+  if (was) table.setAttribute('data-stacked', '')
+  return overflows
+}
+
+function place(table: HTMLTableElement) {
+  const wrap = table.parentElement
+  if (wrap == null) return
+  table.toggleAttribute('data-stacked', measure(wrap, table))
+}
+
+function useStacking(ref: React.RefObject<HTMLTableElement | null>, stack: boolean) {
+  // After every render, because the rows are the screen's: a sort, a page or a
+  // filter hands back new cells, and React leaves alone attributes it did not set.
+  useLayoutEffect(() => {
+    if (!stack || ref.current == null) return
+    labelCells(ref.current)
+    place(ref.current)
+  })
+
+  useLayoutEffect(() => {
+    const table = ref.current
+    const wrap = table?.parentElement
+    if (!stack || table == null || wrap == null || typeof ResizeObserver === 'undefined') return
+    let wrapWidth = wrap.clientWidth
+    let tableWidth = table.offsetWidth
+    const observer = new ResizeObserver(() => {
+      if (wrap.clientWidth === wrapWidth && table.offsetWidth === tableWidth) return
+      place(table)
+      wrapWidth = wrap.clientWidth
+      tableWidth = table.offsetWidth
+    })
+    observer.observe(wrap)
+    observer.observe(table)
+    let live = true
+    void document.fonts?.ready.then(() => {
+      if (live) place(table)
+    })
+    return () => {
+      live = false
+      observer.disconnect()
+    }
+  }, [ref, stack])
 }
 
 /**
