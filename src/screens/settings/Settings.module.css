@@ -6,7 +6,12 @@
    shares them with DHCP, which is the other big form. What is left here is only
    what belongs to Settings and to nobody else. */
 
-.wrap { composes: screen from '../../ui/SectionHeader.module.css'; }
+.wrap {
+  composes: screen from '../../ui/SectionHeader.module.css';
+  /* The save bar's sentence asks how wide the screen is, not the window (the
+     section index's room, `ui/IndexedForm`, is a container of the same width). */
+  container-type: inline-size;
+}
 .group { composes: group from '../../ui/Form.module.css'; }
 
 /* The block-lists summary: "N allowed, M blocked", with the figures in monospace
@@ -26,3 +31,51 @@ no minimum height. `Admin.module.css` composes the same one from `ui/PanelForm`
 and that is where it belongs: the pane's form is that form.
 */
 .area { composes: area from '../../ui/PanelForm.module.css'; }
+
+/*
+The save bar's `Unsaved changes: General (2), Cache (1)` (`pending.ts`). It takes the
+spacer's place between the two groups of buttons, so the buttons stay where they
+were, and it wraps inside itself when many panes do not fit on one line.
+
+That only works while there is room between the buttons. The four buttons, their
+gaps and the bar's padding take about 520 px, so on a screen narrower than 880 px (a
+1,144 px window with the side panel, any window under its 900 px drawer step) what
+was left was a column a few words wide: measured, 226 px between `Flush Cache` and
+`Backup Settings` at 768, 246 at 1024, against 402 at 1180 and 662 at 1440.
+There the sentence goes first, on a line of its own, so it reads before the verbs
+and is never squeezed between them. It asks the screen's width (`.wrap` is the
+container), the same quantity the section index asks.
+*/
+.pending {
+  flex: 1 1 0;
+  min-width: 0;
+  margin-left: var(--s-5);
+  font-size: var(--t-4);
+  color: var(--ink);
+  overflow-wrap: break-word;
+}
+
+@container (max-width: 880px) {
+  .pending {
+    order: -1;
+    flex-basis: 100%;
+    margin-left: 0;
+  }
+}
+
+/* Wide, the sentence is the spacer, so the bar's own spacer steps aside. */
+@container (min-width: 881px) {
+  .besidePending { display: none; }
+}
+
+/*
+The form and its bar, inside `ui/IndexedForm`. The column keeps the screen's own
+spacing between the pane and the bar, which were the screen's children before the
+index arrived.
+*/
+.column {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-9);
+}

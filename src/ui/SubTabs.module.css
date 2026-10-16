@@ -34,6 +34,11 @@ marked with an edge and the rest read as ordinary links.
      only on the active one moves every tab 2 px each time it changes. */
   border-bottom: 2px solid transparent;
   white-space: nowrap;
+  /* The containing block of a mark's hidden words (`text.sr`, absolutely placed).
+     Without it they were placed against the page and not inside the strip, and a
+     marked tab beyond the strip's scroll widened the whole page: measured at 390 in
+     Settings with Cache marked, 461 px of document in a 390 px window. */
+  position: relative;
 }
 
 .tab:hover { color: var(--ink); }

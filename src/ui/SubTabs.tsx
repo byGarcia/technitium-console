@@ -33,8 +33,10 @@ each one is a different screen.
 ## A mark on a tab
 
 `marks` puts a small dot after a tab's name, with its words read as part of the
-link's name (`Lists, unsaved changes`). Only Blocking uses it, for Lists' unsaved
-changes; the words are the caller's and the caller declares them.
+link's name (`Lists, unsaved changes`). Two callers use it, both for unsaved
+changes and with the same words: Blocking for Lists, and Settings for each pane
+holding something its one save would send. The words are the caller's and the
+caller declares them.
 */
 export function SubTabs({
   label,

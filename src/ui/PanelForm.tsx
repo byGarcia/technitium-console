@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useRef, useState } from 'react'
+import { createContext, type ReactNode, useContext, useEffect, useRef, useState } from 'react'
 import { Alert } from './Alert'
 import { Button } from './Button'
 import { Empty } from './Empty'
@@ -20,6 +20,31 @@ just visually grouped. The titles come from the `well`'s `id`
 (`divSettingsGeneralRateLimiting` -> "Rate Limiting") so as not to invent new
 taxonomies.
 */
+
+/*
+A block's anchor, for a section index beside the form (`ui/SectionIndex`).
+
+The screen that draws the index wraps its blocks in `BlockAnchors` with a prefix,
+and every block WITH a title takes the id `<prefix>-<title in kebab case>`, plus
+its title in `data-section` for the screen to read the entries back in page order.
+So the index's entries are the blocks' own titles, and a block added to a pane
+appears in it without anyone writing it down twice. A block without a title gets
+nothing: an index cannot name what the screen does not name.
+
+It is a context and not a prop because nine panes and thirty-odd blocks would
+otherwise each have to remember to pass it, and DHCP, which draws no index, gets
+no ids at all.
+*/
+const AnchorPrefix = createContext<string | null>(null)
+
+export function BlockAnchors({ prefix, children }: { prefix: string; children: ReactNode }) {
+  return <AnchorPrefix.Provider value={prefix}>{children}</AnchorPrefix.Provider>
+}
+
+/** The id `BlockAnchors` gives a block with this title. */
+function blockAnchor(prefix: string, title: string): string {
+  return `${prefix}-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`
+}
 
 /*
 The title is optional on purpose.
@@ -73,6 +98,8 @@ export function Block({
   and some carry more than one control inside. What has to be counted is what the
   user sees.
   */
+  const prefix = useContext(AnchorPrefix)
+  const anchor = prefix != null && title != null ? blockAnchor(prefix, title) : undefined
   const box = useRef<HTMLDivElement>(null)
   const [howMany, setHowMany] = useState<number | null>(null)
   useEffect(() => {
@@ -98,7 +125,7 @@ export function Block({
   })
 
   return (
-    <div ref={box}>
+    <div ref={box} id={anchor} data-section={anchor != null ? title : undefined} className={anchor != null ? styles.anchor : undefined}>
       <Panel
         title={title}
         className={styles.block}

@@ -37,6 +37,15 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
   while changes are unsaved.
 - Blocking › Rules: deleting from the table no longer asks and offers Undo for a few seconds. The
   tree view and Flush still ask.
+- Settings: since Save Settings sends all nine panes, the save bar names the panes holding a change
+  it would send, with how many fields each, and their tabs are marked. A field put back as it was
+  does not count.
+- Settings › General, Web Service and Optional Protocols, and Administration › SSO, have a section
+  index: the strip Permissions shows on narrow screens, above the form at every width up to about
+  1,630 px of window, and a column beside the form above that, where it takes no width the form's
+  fields need.
+- The save bar of Settings and the other long forms no longer disappears behind a section title
+  scrolling under it.
 - The sidebar marks Blocking when blocking is off or paused, with the time it comes back.
 - Blocking's three tabs have a one-line subtitle saying what each is for.
 - Login: a cover beside the sign-in form, in both themes and at phone width. The form, its steps

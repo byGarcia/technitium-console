@@ -4,6 +4,8 @@ import { Block, Note, Notices, Warning } from '../../ui/PanelForm'
 import { Button } from '../../ui/Button'
 import { Input, Select } from '../../ui/Field'
 import { SectionHeader } from '../../ui/SectionHeader'
+import { IndexedForm } from '../../ui/IndexedForm'
+import { useSectionInView } from '../../ui/useSectionInView'
 import { Loading } from '../../ui/Empty'
 import { getSsoConfig, setSsoConfig, type SsoConfig } from '../../api/admin'
 import { appRoot } from '../../app/base'
@@ -61,24 +63,20 @@ The four sections of this form, and their four names are upstream's own: they we
 the labels of its four groups (`index.html`, the `well` of `adminTabPaneSso`).
 Nothing here is a new word.
 
-## And why there is no index beside them, which the dense-form design did ask for
+## The index, and why it took until 2026-10-16
 
-Because it costs the dense form its single geometry, and that was measured rather
-than argued. With `ui/SectionIndex` in a column here, `dev/uniformity.js` reported
-`grid-panel` at THREE signatures instead of two: `210px 354px 360px` on this
-screen against `210px 542px 360px` on Settings' eight panes. The 188 px are the
-index column and its gap.
+The dense-form design asked for an index beside these four, and it was deferred
+because a column beside the form costs the form its single geometry: with
+`ui/SectionIndex` in a column here, `dev/uniformity.js` reported `grid-panel` at
+THREE signatures (`210px 354px 360px` on this screen against `210px 542px 360px` on
+Settings). The condition written then was "on Settings and on SSO together, or on
+neither".
 
-Settings is the same archetype, is already built and deployed, and has no index:
-`SectionIndex` was left written and unwired there on purpose. Wiring it on one of
-the two dense forms and not the other means the same `Row` renders at two widths
-across the console, which is exactly what that tool exists to catch. It is the
-same call made about the padlock pill: a change that obliges rebuilding a screen
-that is already done is not one to take in passing.
-
-So the index is DEFERRED, with its condition written down: it goes on Settings and
-on SSO together, or on neither. `Permissions` does keep one, and that costs
-nothing measured: it has no `Row` grid at all.
+They got it together, through `ui/IndexedForm`: the column only where the screen
+can spare its 188 px without the controls dropping below their 1440 width, and
+Permissions' strip above the form everywhere else, which takes no width at all.
+At 1440 the row is still `210px 552px 360px`. By Settings' rule this screen earns
+one: 2,350 px at 1680, more than two windows, and four named sections.
 */
 const SECTIONS = [
   { id: 'sso-single-sign-on', label: 'Single Sign-On (SSO)' },
@@ -220,8 +218,10 @@ export function Sso({ tabs, token, onNotice }: Props) {
     })
   }
 
-  if (loading) return <Loading />
+  // The section in view, once the four are on the page.
+  const here = useSectionInView(loading ? [] : SECTIONS.map((x) => x.id))
 
+  if (loading) return <Loading />
 
   return (
     <>
@@ -245,7 +245,7 @@ export function Sso({ tabs, token, onNotice }: Props) {
       There is no `Cluster Node` here, nor a gap where one would go: that selector
       belongs to `Sessions` and to `Cluster`.
       */}
-      <div>
+      <IndexedForm sections={SECTIONS} active={here}>
         <div>
           <div id={SECTIONS[0].id}>
             <Block
@@ -560,13 +560,12 @@ export function Sso({ tabs, token, onNotice }: Props) {
           </Block>
         </div>
 
-      </div>
-
-      <div className={styles.bar}>
-        <Button variant="primary" disabled={busy} onClick={() => save()}>
-          Save Config
-        </Button>
-      </div>
+        <div className={styles.bar}>
+          <Button variant="primary" disabled={busy} onClick={() => save()}>
+            Save Config
+          </Button>
+        </div>
+      </IndexedForm>
 
       <Confirm
         open={confirm === 'authority'}

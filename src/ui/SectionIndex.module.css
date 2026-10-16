@@ -11,14 +11,49 @@ So the active one is marked with an **edge** in `--acc` and its text in `--ink`.
 It is the same pair of colours saying something else: not "this one is yours" but
 "you are here". And it leaves the fill free for what really is a choice.
 */
+/*
+Written strip first, and the column on top of it, so that one set of rules serves
+both ways of asking for the strip: below `--bp-index`, as every screen gets it, and
+always, for a screen that decides by its own width and passes `strip`
+(`.strip`, Settings and SSO beside their dense form). Before 2026-10-16 the strip
+lived inside the `max-width: 960px` query alone; a second copy of it for `.strip`
+would have been two strips to keep equal.
+
+THE STRIP. A column no longer fits beside the form, and stacking ten links on top
+of it would push the first field off the screen. The strip scrolls and **loses
+none of them**: every item is `flex: 0 0 auto` and does not wrap, so at 390 px all
+ten are still there and are reached by rolling the strip.
+
+`-webkit-overflow-scrolling` is not set: momentum scrolling has been the default
+since iOS 13 and the property no longer does anything.
+*/
 .index {
-  width: var(--index-col);
-  flex: 0 0 var(--index-col);
-  position: sticky;
-  /* Level with the form's sticky bar, so it does not slide under it while
-     scrolling. */
-  top: var(--s-9);
+  flex: none;
   align-self: start;
+  overflow-x: auto;
+  /*
+  The two that make the `overflow-x` above worth anything.
+
+  Measured at 960: without them the strip came out 991 px inside a 960 viewport
+  and **what scrolled was the page**, not the strip. A flex item does not go
+  below the width of its content while its `min-width` is `auto`, so `overflow-x`
+  never came into play: there was nothing to overflow because the parent was the
+  one giving way.
+
+  They go here and not in whoever uses it: the primitive has to survive being put
+  in a flex container, which is where it is going: beside the form.
+  */
+  min-width: 0;
+  max-width: 100%;
+  /*
+  3 px, which is exactly what the focus halo measures. An `overflow-x` that is not
+  `visible` turns `overflow-y` to `auto` as well (it is what the CSS specification
+  says when only one of the two stops being `visible`), so anything sticking out
+  above or below is clipped. With 2 px it ate 1 px of the first item's halo when it
+  took focus. A bitten halo is the only focus signal this has.
+  */
+  padding: 3px 0;
+  border-bottom: 1px solid var(--line);
 }
 
 .list {
@@ -26,8 +61,12 @@ It is the same pair of colours saying something else: not "this one is yours" bu
   margin: 0;
   padding: 0;
   display: flex;
-  flex-direction: column;
-  gap: var(--s-1);
+  flex-direction: row;
+  gap: var(--s-2);
+}
+
+.list > li {
+  flex: 0 0 auto;
 }
 
 .item {
@@ -37,10 +76,13 @@ It is the same pair of colours saying something else: not "this one is yours" bu
   padding: var(--s-4) var(--s-7);
   color: var(--mute);
   text-decoration: none;
-  border-radius: var(--r-2);
+  white-space: nowrap;
   /* The edge is ALWAYS there, transparent when it does not apply: if it only
-     appeared on the active one, all ten would move 2 px every time it changes. */
-  border-left: 2px solid transparent;
+     appeared on the active one, all ten would move 2 px every time it changes.
+     In the strip it is at the bottom: on the left it would act as a separator
+     between pills and read as a grid, not as position. */
+  border-bottom: 2px solid transparent;
+  border-radius: var(--r-2) var(--r-2) 0 0;
 }
 
 .item:hover {
@@ -62,77 +104,51 @@ set already had to fix on its own.
   box-shadow: var(--halo-focus);
 }
 
-  /* `location`, not `selected`: you are here, you have not chosen this. */
+/* `location`, not `selected`: you are here, you have not chosen this. */
 .item[aria-current='location'] {
   color: var(--ink);
   font-weight: 550;
-  border-left-color: var(--acc-ink);
+  border-bottom-color: var(--acc-ink);
   background: var(--pan2);
 }
 
 /*
-Below `--bp-index`: a horizontal strip.
-
-A column no longer fits beside the form, and stacking ten links on top of it would
-push the first field off the screen. The strip scrolls and **loses none of them**:
-every item is `flex: 0 0 auto` and does not wrap, so at 390 px all ten are still
-there and are reached by rolling the strip.
-
-`-webkit-overflow-scrolling` is not set: momentum scrolling has been the default
-since iOS 13 and the property no longer does anything.
+THE COLUMN, above `--bp-index` and unless the screen asked for the strip: beside
+the form, pinned while it scrolls, each entry on its own line with its edge on the
+left.
 */
-@media (max-width: 960px) {
-  .index {
-    width: auto;
-    flex: none;
-    position: static;
-    overflow-x: auto;
-    /*
-    The two that make the `overflow-x` above worth anything.
-
-    Measured at 960: without them the strip came out 991 px inside a 960 viewport
-    and **what scrolled was the page**, not the strip. A flex item does not go
-    below the width of its content while its `min-width` is `auto`, so `overflow-x`
-    never came into play: there was nothing to overflow because the parent was the
-    one giving way.
-
-    They go here and not in whoever uses it: the primitive has to survive being put
-    in a flex container, which is where it is going: beside the form.
-    */
-    min-width: 0;
-    max-width: 100%;
-    /*
-3 px, which is exactly what the focus halo measures.
-
-turns `auto` as well (it is what the CSS specification says when only one of the two stops
-being `visible`), so anything sticking out above or below is clipped. With 2 px it
-ate 1 px of the first item's halo when it took focus. A bitten halo is the only
-focus signal this
-    */
-    padding: 3px 0;
-    border-bottom: 1px solid var(--line);
+@media (min-width: 961px) {
+  .index:not(.strip) {
+    width: var(--index-col);
+    flex: 0 0 var(--index-col);
+    position: sticky;
+    /* Level with the form's sticky bar, so it does not slide under it while
+       scrolling. */
+    top: var(--s-9);
+    overflow-x: visible;
+    min-width: auto;
+    max-width: none;
+    padding: 0;
+    border-bottom: 0;
   }
 
-  .list {
-    flex-direction: row;
-    gap: var(--s-2);
+  .index:not(.strip) .list {
+    flex-direction: column;
+    gap: var(--s-1);
   }
 
-  .list > li {
-    flex: 0 0 auto;
+  .index:not(.strip) .list > li {
+    flex: 0 1 auto;
   }
 
-  .item {
-    white-space: nowrap;
-/* When horizontal the edge moves to the bottom: on the left it would act as a
-   separator between pills and read as a grid, not as position. */
-    border-left: 0;
-    border-bottom: 2px solid transparent;
-    border-radius: var(--r-2) var(--r-2) 0 0;
+  .index:not(.strip) .item {
+    white-space: normal;
+    border-bottom: 0;
+    border-left: 2px solid transparent;
+    border-radius: var(--r-2);
   }
 
-  .item[aria-current='location'] {
-    border-left-color: transparent;
-    border-bottom-color: var(--acc-ink);
+  .index:not(.strip) .item[aria-current='location'] {
+    border-left-color: var(--acc-ink);
   }
 }

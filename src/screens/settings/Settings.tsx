@@ -1,8 +1,11 @@
 import { ClusterNodeSelect } from '../../ui/ClusterNodeSelect'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { PermissionButton } from '../../ui/PermissionButton'
 import { SectionHeader } from '../../ui/SectionHeader'
 import { SubTabs } from '../../ui/SubTabs'
+import { IndexedForm } from '../../ui/IndexedForm'
+import { useSectionInView } from '../../ui/useSectionInView'
+import { BlockAnchors } from '../../ui/PanelForm'
 import { openDownload } from '../../api/user'
 import {
   flushCache,
@@ -17,6 +20,7 @@ import {
   type SettingsEnvelope,
 } from '../../api/settings'
 import { buildBody, formFromSettings, enabled, selectedNode, type SettingsForm } from './model'
+import { pendingByPane, pendingText } from './pending'
 import { detectReverseProxy, REDIRECT_DELAY_MS, webConsoleRedirection } from './redirect'
 import { General } from './panes/General'
 import { WebService } from './panes/WebService'
@@ -53,6 +57,14 @@ Two consequences of that to keep in mind:
   · The three permissions on the bar are different: saving requires
     `Settings.canModify`, flushing the cache `Cache.canDelete`, and backup and
     restore `Settings.canDelete` (main.js:906-930).
+
+And one consequence that is OURS (CONVENTIONS.md, deviation 3, approved on
+2026-10-16): since the save sends all nine, the bar says which panes hold
+something it would change, `Unsaved changes: General (2), Cache (1)`, and each of
+those sub-tabs carries a mark read as `unsaved changes`. Those are the only new
+words; the pane names are upstream's tab labels. What counts as a change is
+`pending.ts`'s business, and it only displays: saving, Backup, Restore, Flush
+Cache and the blocking buttons do exactly what they did.
 */
 
 export const SUB_TABS = [
@@ -68,6 +80,31 @@ export const SUB_TABS = [
 ] as const
 
 export type SubTab = (typeof SUB_TABS)[number]
+
+/*
+The panes that carry a section index (`ui/SectionIndex`, as in Administration ›
+Permissions: a column beside the form where it fits, a strip above it elsewhere,
+`ui/IndexedForm`), and why these three.
+
+Measured on 2026-10-16 at 1680 × 980, the panes' heights and their named sections
+(at 1440 they are taller still: General 5,433):
+
+    General              5,362 px  5.5 windows  10 sections
+    Optional Protocols   2,916     3.0           4
+    Web Service          2,354     2.4           5
+    Proxy & Forwarders   1,992     2.0           3
+    Cache                1,907     1.9           4
+    Blocking             1,777     1.8           0 (its blocks have no title)
+    Recursion            1,711     1.7           1
+    Logging              1,255     1.3           1
+    TSIG                   980     fits          0
+
+The rule: **more than two windows tall and at least four named sections**. Below
+two windows the scroll bar already is the index; with fewer than four entries an
+index is a list you read once. Only named sections are entries, and their names are
+the blocks' own titles (`BlockAnchors`), so the index brings no word of its own.
+*/
+const INDEXED: readonly SubTab[] = ['General', 'Web Service', 'Optional Protocols']
 
 
 /** What `updateDnsSettingsDataAndGui` takes from a settings response. */
@@ -156,6 +193,8 @@ export function Settings({
 
   const [settings, setSettingsState] = useState<DnsSettings | null>(null)
   const [form, setForm] = useState<SettingsForm | null>(null)
+  /** The form as the server last answered it: what the bar compares against. */
+  const [loadedForm, setLoadedForm] = useState<SettingsForm | null>(null)
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState<Notice | null>(null)
@@ -185,8 +224,10 @@ export function Settings({
   }, [token, node, onServerInfo])
 
   function apply(s: DnsSettings | null) {
+    const f = s ? formFromSettings(s) : null
     setSettingsState(s)
-    setForm(s ? formFromSettings(s) : null)
+    setForm(f)
+    setLoadedForm(f)
     setNextList(s?.blockListNextUpdatedOn)
   }
 
@@ -201,6 +242,24 @@ export function Settings({
   const set = useCallback((partial: Partial<SettingsForm>) => {
     setForm((f) => (f ? { ...f, ...partial } : f))
   }, [])
+
+  /*
+  The index's entries, read back from the blocks the pane drew (`data-section`,
+  `BlockAnchors`), in page order. Read after the pane is laid out, before paint, so
+  the index does not arrive a frame late.
+  */
+  const paneBox = useRef<HTMLDivElement>(null)
+  const [sections, setSections] = useState<{ id: string; label: string }[]>([])
+  const indexed = INDEXED.includes(active)
+  useLayoutEffect(() => {
+    const box = paneBox.current
+    const found =
+      indexed && box != null
+        ? [...box.querySelectorAll<HTMLElement>('[data-section]')].map((e) => ({ id: e.id, label: e.dataset.section ?? '' }))
+        : []
+    setSections((was) => (JSON.stringify(was) === JSON.stringify(found) ? was : found))
+  }, [indexed, active, loading])
+  const here = useSectionInView(sections.map((x) => x.id))
 
   if (loading) return <Loading />
   if (form == null || settings == null) {
@@ -297,6 +356,9 @@ export function Settings({
 
     setSettingsState((a) => (a ? { ...a, temporaryDisableBlockingTill: till } : a))
     set({ enableBlocking: false })
+    /* The server switched blocking off too (BlockListZoneManager.cs:994), so the
+       unticked box is what it now holds, not an edit waiting for the save. */
+    setLoadedForm((l) => (l ? { ...l, enableBlocking: false } : l))
     setNotice({
       type: 'success',
       title: 'Blocking Disabled!',
@@ -370,6 +432,10 @@ export function Settings({
 
   const props = { f: form, set, en }
 
+  /* What the save would change, pane by pane (`pending.ts`). */
+  const pending = loadedForm == null ? [] : pendingByPane(loadedForm, form, node, SUB_TABS)
+  const pendingWords = pendingText(pending)
+
   return (
     <div className={styles.wrap}>
       {/*
@@ -390,6 +456,7 @@ export function Settings({
             tabs={SUB_TABS}
             active={active}
             onChoose={(t) => onSubChange?.(t as SubTab)}
+            marks={Object.fromEntries(pending.map((p) => [p.pane, 'unsaved changes']))}
           />
         }
         actions={
@@ -406,86 +473,104 @@ export function Settings({
 
       <Notifier notice={notice} onClose={() => setNotice(null)} />
 
-      <div>
-        {active === 'General' && <General {...props} />}
-        {active === 'Web Service' && <WebService {...props} loaded={settings} />}
-        {active === 'Optional Protocols' && <OptionalProtocols {...props} loaded={settings} />}
-        {active === 'TSIG' && <Tsig {...props} />}
-        {active === 'Recursion' && <Recursion {...props} />}
-        {active === 'Cache' && <Cache {...props} />}
-        {active === 'Blocking' && (
-          <Blocking
-            {...props}
-            extra={{
-              temporaryDisableBlockingTill: settings.temporaryDisableBlockingTill,
-              blockListNextUpdatedOn: nextList,
-              onTemporaryDisable: askDisableBlocking,
-              onUpdateNow: () => setConfirm('update'),
-              hasSavedBlockLists: settings.blockListUrls != null,
-              busy,
-            }}
-          />
-        )}
-        {active === 'Proxy & Forwarders' && <ProxyForwarders {...props} />}
-        {active === 'Logging' && <Logging {...props} />}
-      </div>
+      {/*
+      The form and its bar together, with the index beside them where the screen is
+      wide enough and as a strip above them where it is not (`ui/IndexedForm`). The
+      bar stays in the form's column, so the column index and the bar never share
+      one: the index is pinned to the top of the window and the bar to the bottom.
+      */}
+      <IndexedForm sections={sections} active={here}>
+        <div className={styles.column}>
+          <BlockAnchors prefix="settings">
+            <div ref={paneBox}>
+              {active === 'General' && <General {...props} />}
+              {active === 'Web Service' && <WebService {...props} loaded={settings} />}
+              {active === 'Optional Protocols' && <OptionalProtocols {...props} loaded={settings} />}
+              {active === 'TSIG' && <Tsig {...props} />}
+              {active === 'Recursion' && <Recursion {...props} />}
+              {active === 'Cache' && <Cache {...props} />}
+              {active === 'Blocking' && (
+                <Blocking
+                  {...props}
+                  extra={{
+                    temporaryDisableBlockingTill: settings.temporaryDisableBlockingTill,
+                    blockListNextUpdatedOn: nextList,
+                    onTemporaryDisable: askDisableBlocking,
+                    onUpdateNow: () => setConfirm('update'),
+                    hasSavedBlockLists: settings.blockListUrls != null,
+                    busy,
+                  }}
+                />
+              )}
+              {active === 'Proxy & Forwarders' && <ProxyForwarders {...props} />}
+              {active === 'Logging' && <Logging {...props} />}
+            </div>
+          </BlockAnchors>
 
-      <div className={panelFormStyles.bar}>
-        {/*
-        The four verbs are still THERE without the permission, disabled and with a
-        padlock.
+          <div className={panelFormStyles.bar}>
+            {/*
+            The four verbs are still THERE without the permission, disabled and with a
+            padlock.
 
-        They used to disappear (`{canModify && …}`), and that breaks the console's
-        design rule *disabled, never hidden* twice over: the bar changed shape depending on who was looking, and
-        nobody could tell the action exists and a permission is missing.
+            They used to disappear (`{canModify && …}`), and that breaks the console's
+            design rule *disabled, never hidden* twice over: the bar changed shape depending on who was looking, and
+            nobody could tell the action exists and a permission is missing.
 
-        The permission names come from upstream and **are not deduced from the
-        button**: these four verbs ask for THREE different permissions, and `Flush
-        Cache` asks for `Cache.canDelete` (another screen's), one of the three
-        controls, among the nine compared with upstream, that "does not ask for the
-        permission of the screen whose name it carries". Backup and restore ask for
-        `Settings.canDelete`, not `canModify`, and that has to be read off upstream
-        too: a backup asking for the DELETE permission is not what anyone would
-        assume.
-        */}
-        <PermissionButton
-          variant="primary"
-          disabled={busy}
-          permission={canModify ? undefined : 'Settings.canModify'}
-          onClick={() => void save()}
-        >
-          Save Settings
-        </PermissionButton>
-        <PermissionButton
-          variant="danger"
-          disabled={busy}
-          permission={canFlushCache ? undefined : 'Cache.canDelete'}
-          onClick={() => setConfirm('flush')}
-        >
-          Flush Cache
-        </PermissionButton>
-        <div className={panelFormStyles.spacer} />
-        <PermissionButton
-          permission={canBackup ? undefined : 'Settings.canDelete'}
-          onClick={() => {
-            setSelection(initialBackupSelection())
-            setModalNotice(null)
-            setModal('backup')
-          }}
-        >
-          Backup Settings
-        </PermissionButton>
-        <PermissionButton
-          permission={canBackup ? undefined : 'Settings.canDelete'}
-          onClick={() => {
-            setSelection(initialBackupSelection())
-            setModalNotice(null)
-            setModal('restore')
-          }}
-        >
-          Restore Settings
-        </PermissionButton>
-      </div>
+            The permission names come from upstream and **are not deduced from the
+            button**: these four verbs ask for THREE different permissions, and `Flush
+            Cache` asks for `Cache.canDelete` (another screen's), one of the three
+            controls, among the nine compared with upstream, that "does not ask for the
+            permission of the screen whose name it carries". Backup and restore ask for
+            `Settings.canDelete`, not `canModify`, and that has to be read off upstream
+            too: a backup asking for the DELETE permission is not what anyone would
+            assume.
+            */}
+            <PermissionButton
+              variant="primary"
+              disabled={busy}
+              permission={canModify ? undefined : 'Settings.canModify'}
+              onClick={() => void save()}
+            >
+              Save Settings
+            </PermissionButton>
+            <PermissionButton
+              variant="danger"
+              disabled={busy}
+              permission={canFlushCache ? undefined : 'Cache.canDelete'}
+              onClick={() => setConfirm('flush')}
+            >
+              Flush Cache
+            </PermissionButton>
+            {/*
+            In the spacer's place, so that no button moves when it appears: wide, it is
+            the spacer; narrow, it takes the bar's first line and the spacer is back
+            (Settings.module.css).
+            */}
+            {pendingWords !== '' && <span className={styles.pending}>Unsaved changes: {pendingWords}</span>}
+            <div className={[panelFormStyles.spacer, pendingWords !== '' ? styles.besidePending : null].filter(Boolean).join(' ')} />
+            <PermissionButton
+              permission={canBackup ? undefined : 'Settings.canDelete'}
+              onClick={() => {
+                setSelection(initialBackupSelection())
+                setModalNotice(null)
+                setModal('backup')
+              }}
+            >
+              Backup Settings
+            </PermissionButton>
+            <PermissionButton
+              permission={canBackup ? undefined : 'Settings.canDelete'}
+              onClick={() => {
+                setSelection(initialBackupSelection())
+                setModalNotice(null)
+                setModal('restore')
+              }}
+            >
+              Restore Settings
+            </PermissionButton>
+          </div>
+        </div>
+      </IndexedForm>
 
       <Confirm
         open={confirm === 'flush'}
