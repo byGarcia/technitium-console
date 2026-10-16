@@ -33,3 +33,39 @@ horizontal.
   outline: 2px solid var(--acc-ink);
   outline-offset: -2px;
 }
+
+/*
+`wrap`: a log. One line of the file starts at the edge and its continuations hang
+`--raw-hang` characters in, so the messages keep one column. `hanging each-line`
+inverts which lines take the indent: the first and every one after a newline of the
+file stay at the edge, and only the soft-wrapped ones move. `break-word` (not
+`anywhere`) only cuts a piece wider than the whole box; the breaks inside a long
+path or URL come from the caller's `<wbr>`. See `Raw.tsx`.
+*/
+.wrap {
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  text-indent: var(--raw-hang, 0ch) hanging each-line;
+}
+
+/* `--bp-stack`: 26 characters of 43 is too much indent for a phone. */
+@media (max-width: 560px) {
+  .wrap { text-indent: 2ch hanging each-line; }
+}
+
+/*
+`fill`: the parent hands the height down. The box takes what its flex column gives
+it, never less than `--raw-height`, and the text is laid out of flow so the file
+adds nothing to the page's height. See `Raw.tsx`.
+*/
+.fill {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: var(--raw-height, 440px);
+}
+
+.fill > .text {
+  position: absolute;
+  inset: 0;
+  max-height: none;
+}
