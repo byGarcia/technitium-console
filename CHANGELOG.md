@@ -37,6 +37,8 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
   while changes are unsaved.
 - Blocking › Rules: deleting from the table no longer asks and offers Undo for a few seconds. The
   tree view and Flush still ask.
+- The save bar of Settings and the other long forms no longer disappears behind a section title
+  scrolling under it.
 - The sidebar marks Blocking when blocking is off or paused, with the time it comes back.
 - Blocking's three tabs have a one-line subtitle saying what each is for.
 - Login: a cover beside the sign-in form, in both themes and at phone width. The form, its steps

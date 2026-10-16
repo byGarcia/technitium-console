@@ -119,7 +119,12 @@ wider than its cell would overflow the whole page.
 
 /* The save bar, stuck to the bottom of the content area. It floats over the
    form, so it carries elevation: without it the content slides underneath with
-   nothing saying there are two planes. */
+   nothing saying there are two planes.
+
+   And it is drawn ABOVE the blocks' own sticky labels (`z-index: 1`, below). Without
+   a layer of its own, a label scrolling up from under it painted over it: measured on
+   2026-10-16 at 1440 in Settings › General, with `Advanced Options` entering at the
+   foot of the window the bar's four buttons were gone behind the label. */
 .bar {
   display: flex;
   align-items: center;
@@ -131,6 +136,7 @@ wider than its cell would overflow the whole page.
   background: var(--pan);
   position: sticky;
   bottom: 0;
+  z-index: var(--layer-sticky);
   box-shadow: var(--e-2), var(--edge);
 }
 
@@ -188,3 +194,4 @@ the probe read the block's first `notices` and answered about a different elemen
 A decision the instrument cannot see cannot be held.
 */
 .notices { composes: notices; }
+
