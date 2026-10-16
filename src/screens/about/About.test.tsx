@@ -89,13 +89,25 @@ describe('About', () => {
     expect(screen.getAllByText('—').length).toBeGreaterThan(0)
   })
 
-  it('it has a panel of its own for this console, apart from the server', () => {
+  it('it has a card of its own for this console, with its funding destinations', () => {
     render(<About info={info} />)
-    expect(screen.getByText('Web Console')).toBeInTheDocument()
-    expect(screen.getByText(__CONSOLE_VERSION__)).toBeInTheDocument()
-    const targets = screen.getAllByRole('link').map((a) => a.getAttribute('href'))
-    for (const path of ['', '/releases', '/issues', '/blob/main/LICENSE']) {
-      expect(targets).toContain(`https://github.com/byGarcia/technitium-console${path}`)
+    expect(screen.getByRole('heading', { name: 'technitium-console' })).toBeInTheDocument()
+    expect(screen.getByText(`Version ${__CONSOLE_VERSION__}`)).toBeInTheDocument()
+    const targets = new Set(screen.getAllByRole('link').map((a) => a.getAttribute('href')))
+    const repo = 'https://github.com/byGarcia/technitium-console'
+    for (const expected of [
+      repo,
+      `${repo}/blob/main/LICENSE`,
+      `${repo}/releases`,
+      `${repo}/issues`,
+      `${repo}/discussions`,
+      // .github/FUNDING.yml
+      'https://github.com/sponsors/byGarcia',
+      'https://ko-fi.com/bygarcia',
+      'https://liberapay.com/bygarcia',
+      'https://www.paypal.com/paypalme/adriangmolina',
+    ]) {
+      expect(targets, `missing ${expected}`).toContain(expected)
     }
   })
 })
