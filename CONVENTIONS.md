@@ -727,6 +727,25 @@ contract and SECURITY.md.
      and Protocol Types legend entries are buttons, and the week is one keyboard
      stop whose arrows move between its cells.
 
+8. **Query Logs folds its filters below 960 px** (approved on 2026-10-16;
+   `FOLD_QUERY` in `screens/logs/QueryLogs.tsx`). At 390x844 the fourteen filters
+   were one column 1,173 px tall and the first result row ended at y=1,905; at 768
+   the table still started at y=1,001. Below 960 the panel closes to its title,
+   which becomes the toggle, and `Query` closes it again; the legend keeps its seven
+   pills and puts their conditions behind its title. Above 960 nothing of this
+   exists. Its limits, and crossing one is a bug:
+   - **a folded panel says what is set**: every field that differs from what
+     `Reset` gives, by its field's own label and with the value the field shows
+     (`activeFilters`), so a filtered table never reads as the whole log;
+   - **nothing it sends changes**: the fields stay mounted while folded, and Query,
+     Export, Reset, Live Update and the pager send exactly what they sent;
+   - **a validation still lands on its field**: a folded panel opens before
+     upstream's focus (logs.js:389-424 and 612-625) moves to the field that failed.
+
+   Its words: none new. The toggles are the panel's existing title, `Filters`, and
+   the legend's, `Row colours`; the list is the fields' own labels, each followed by
+   a colon and its value.
+
 ## Four constraints the server imposes
 
 These are not preferences: break them and the console works in development and

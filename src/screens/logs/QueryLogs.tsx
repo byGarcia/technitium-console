@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { listApps, type InstalledApp } from '../../api/apps'
 import {
   ENTRIES_PER_PAGE,
@@ -30,6 +31,8 @@ import { Menu } from '../../ui/Menu'
 import tbl from '../../ui/Table.module.css'
 import { useHandoff, type QueryLogsRequest } from '../../app/handoff'
 import { useDomainAction, verbFor } from '../../lib/allow-block'
+import { useMedia } from '../../lib/use-media'
+import { Icon } from '../../ui/Icon'
 
 /*
 Logs › Query Logs (logs.js:20-101 and 270-710).
@@ -99,7 +102,7 @@ export function Clip({ text, className }: { text: string; className: string }) {
   )
 }
 
-interface Filters {
+export interface Filters {
   appName: string
   classPath: string
   pageNumber: string
@@ -118,7 +121,7 @@ interface Filters {
 
 /** `resetQueryLogsForm` (logs.js:50). The form returns to its default values and
  *  re-reads from `localStorage` how many entries per page. */
-function defaultFilters(appName: string, classPath: string): Filters {
+export function defaultFilters(appName: string, classPath: string): Filters {
   let entriesPerPage: string = ENTRIES_PER_PAGE[0]
   try {
     const saved = localStorage.getItem(ENTRIES_PER_PAGE_KEY)
@@ -200,6 +203,98 @@ export function rowClass(entry: QueryLogEntry): string {
   }
 }
 
+/*
+FOLDING, below `--bp-index` (960 px): the filter panel and the legend's conditions.
+
+At 390x844 the fourteen filters were one column of fields 1,173 px tall, the legend
+another 217 px, and the first result row ended at y=1,905: two full screens of
+scrolling before a single log. At 768 the table still started below the first
+screen (y=1,001). So under this width the panel closes to its title, `Filters`,
+as a toggle, and the table follows right under it.
+
+What it does NOT do, and each of these is the reason it is allowed:
+  - **it never hides that the results are filtered.** Closed, the panel lists every
+    field that differs from what `Reset` would give (`activeFilters`), by its own
+    label and with the value it holds. With nothing to list there is nothing under
+    the title, which is the truth: the results are the unfiltered ones;
+  - **it never leaves a validation without its field.** Upstream focuses the field
+    that failed (logs.js:389-424 and 612-625). Here a closed panel opens first, in
+    the same task (`flushSync`), so the focus lands on a field that is on screen;
+  - **it changes no request.** The fields stay mounted while closed (`hidden`, not
+    unmounted), so their values, refs and the Live Update loop are the same ones,
+    and Query, Export and Reset send exactly what they sent.
+
+It starts closed, and `Query` closes it again: that is the moment the user asks
+for results, and the results are below. Above 960 none of this exists: the title
+is a heading, not a button, and the panel is always open, as before.
+
+Why not `ui/Details`, the console's disclosure: it is a `<details>`, which cannot
+be pinned open above a width without leaving a toggle that does nothing, and a
+field inside a closed `<details>` cannot take focus. It borrows its chevron.
+*/
+export const FOLD_QUERY = '(max-width: 960px)'
+
+/** The filters that differ from what `Reset` gives, in the form's order, each with
+ *  its field's own label and its value as the field shows it. */
+export function activeFilters(f: Filters, reset: Filters): { label: string; value: string }[] {
+  const optionLabel = (list: { value: string; label: string }[], v: string) =>
+    list.find((o) => o.value === v)?.label ?? v
+  /* `datetime-local` hands over `2026-10-16T09:00`; the field draws it as a date
+     and a time, so the summary does not show the `T`. */
+  const when = (v: string) => v.replace('T', ' ')
+  const all: [keyof Filters, string, string][] = [
+    ['appName', 'App Name', f.appName],
+    ['classPath', 'Class Path', f.classPath],
+    ['start', 'From', when(f.start)],
+    ['end', 'To', when(f.end)],
+    ['descendingOrder', 'Order', f.descendingOrder === 'true' ? 'Descending' : 'Ascending'],
+    ['pageNumber', 'Page Number', f.pageNumber],
+    ['entriesPerPage', 'Logs Per Page', f.entriesPerPage],
+    ['qname', 'Domain', f.qname],
+    ['qtype', 'Type', f.qtype],
+    ['qclass', 'Class', f.qclass],
+    ['clientIpAddress', 'Client IP Address', f.clientIpAddress],
+    ['protocol', 'Protocol', optionLabel(PROTOCOLS, f.protocol)],
+    ['responseType', 'Response Type', optionLabel(RESPONSE_TYPES, f.responseType)],
+    ['rcode', 'RCODE', optionLabel(RCODES, f.rcode)],
+  ]
+  return all.filter(([key]) => f[key] !== reset[key]).map(([, label, value]) => ({ label, value }))
+}
+
+/*
+The legend of the seven (see `LEGEND_ROWS`), which folds below 960 too, but only
+its conditions: the seven pills, the vocabulary, stay on screen at every width, and
+`Row colours` becomes the toggle that adds what paints each one. At 390 the full
+legend was 217 px between the pager and the table.
+*/
+function RowLegend({ fold }: { fold: boolean }) {
+  const [open, setOpen] = useState(false)
+  const folded = fold && !open
+  return (
+    <div className={`${styles.legend}${folded ? ` ${styles.legendFolded}` : ''}`}>
+      {fold ? (
+        <button
+          type="button"
+          className={`${styles.legendTitle} ${styles.legendToggle}`}
+          aria-expanded={open}
+          onClick={() => setOpen(!open)}
+        >
+          <Icon name="chevronRight" size={12} className={styles.chevron} />
+          Row colours
+        </button>
+      ) : (
+        <span className={styles.legendTitle}>Row colours</span>
+      )}
+      {LEGEND_ROWS.map((e) => (
+        <span key={e.name} className={styles.legendItem}>
+          <span className={`${styles.tone} ${e.cls}`}>{e.name}</span>
+          <span className={styles.legendWhen}>{e.when}</span>
+        </span>
+      ))}
+    </div>
+  )
+}
+
 /** The counter's text (logs.js:594-597). */
 export function statusText(p: QueryLogPage): string {
   if (p.entries.length === 0) return '0 logs'
@@ -234,6 +329,10 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
   const [notice, setNotice] = useState<Notice | null>(null)
   const [busy, setBusy] = useState(false)
   const [live, setLive] = useState(false)
+  /* Below 960 the panel folds (see FOLD_QUERY); it starts closed. */
+  const fold = useMedia(FOLD_QUERY)
+  const [filtersOpen, setFiltersOpen] = useState(false)
+  const folded = fold && !filtersOpen
   const handoff = useHandoff()
   /* Allowing or blocking from a row reports on the page (logs.js:531 and 535
      pass no alert placeholder). */
@@ -253,6 +352,14 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
   useEffect(() => {
     filtersRef.current = f
   }, [f])
+
+  /* Upstream focuses the field that failed. A folded panel opens first, and in the
+     same task, so the field is on screen when it takes the focus; above 960 the
+     state is not read and this changes nothing. */
+  const reveal = useCallback((field: HTMLElement | null) => {
+    flushSync(() => setFiltersOpen(true))
+    field?.focus()
+  }, [])
 
   const appClasses = apps?.find((a) => a.name === f.appName)?.classPaths ?? []
 
@@ -291,7 +398,7 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
           title: 'Missing!',
           text: "Please install the 'Query Logs (Sqlite)' DNS App or any other DNS app that supports query logging feature from the Apps section.",
         })
-        appRef.current?.focus()
+        reveal(appRef.current)
         return
       }
       if (filters.classPath === '') {
@@ -300,7 +407,7 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
           title: 'Missing!',
           text: 'Please select a Class Path to query logs.',
         })
-        classRef.current?.focus()
+        reveal(classRef.current)
         return
       }
 
@@ -312,7 +419,7 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
           title: 'Missing!',
           text: "Please enter correct date and time for 'From' field.",
         })
-        since.current.focus()
+        reveal(since.current)
         return
       }
       if (until.current?.validity.badInput === true) {
@@ -321,7 +428,7 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
           title: 'Missing!',
           text: "Please enter correct date and time for 'To' field.",
         })
-        until.current.focus()
+        reveal(until.current)
         return
       }
 
@@ -338,7 +445,7 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
 
       setPage(outcome.data.response)
     },
-    [token, params],
+    [token, params, reveal],
   )
 
   const queryRef = useRef(query)
@@ -442,7 +549,7 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
         title: 'Missing!',
         text: "Please install the 'Query Logs (Sqlite)' DNS App or any other DNS app that supports query logging feature.",
       })
-      appRef.current?.focus()
+      reveal(appRef.current)
       return
     }
     if (f.classPath === '') {
@@ -451,7 +558,7 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
         title: 'Missing!',
         text: 'Please select a Class Path to query logs.',
       })
-      classRef.current?.focus()
+      reveal(classRef.current)
       return
     }
 
@@ -471,6 +578,9 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
 
   if (apps == null) return <Loading />
 
+  /* What the folded panel lists (FOLD_QUERY). */
+  const active = activeFilters(f, defaultFilters(apps[0]?.name ?? '', apps[0]?.classPaths[0] ?? ''))
+
 
   return (
     <div className={styles.wrap}>
@@ -482,7 +592,12 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
           <Button
             variant="primary"
             disabled={busy || live}
-            onClick={() => void query(f.pageNumber, false)}
+            onClick={() => {
+              /* Folded, Query closes the panel: the results are what comes next.
+                 A validation that fails opens it again on its field (`reveal`). */
+              if (fold) setFiltersOpen(false)
+              void query(f.pageNumber, false)
+            }}
           >
             Query
           </Button>
@@ -510,8 +625,34 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
       <Notifier notice={notice} onClose={() => setNotice(null)} />
 
       <div className={styles.fs}>
-        <h3 className={styles.fsTitle}>Filters</h3>
-        <div className={styles.fsIn}>
+        {fold ? (
+          <h3 className={`${styles.fsTitle} ${styles.fsTitleFold}${folded ? ` ${styles.fsTitleClosed}` : ''}`}>
+            <button
+              type="button"
+              className={styles.fsToggle}
+              aria-expanded={filtersOpen}
+              aria-controls="ql-filters"
+              aria-describedby={folded && active.length > 0 ? 'ql-filters-set' : undefined}
+              onClick={() => setFiltersOpen(!filtersOpen)}
+            >
+              <Icon name="chevronRight" size={12} className={styles.chevron} />
+              Filters
+            </button>
+          </h3>
+        ) : (
+          <h3 className={styles.fsTitle}>Filters</h3>
+        )}
+        {/* Folded, what is set, so a filtered table never reads as the whole log. */}
+        {folded && active.length > 0 && (
+          <p id="ql-filters-set" className={styles.fsSet}>
+            {active.map((a) => (
+              <span key={a.label} className={styles.fsSetItem}>
+                <span className={styles.fsSetLabel}>{a.label}:</span> {a.value}
+              </span>
+            ))}
+          </p>
+        )}
+        <div id="ql-filters" className={styles.fsIn} hidden={folded}>
           <div className={styles.group}>
             <div className={styles.groupLabel}>Source</div>
             <div className={styles.groupCtl}>
@@ -766,15 +907,7 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
           </div>
 
             {/* Always all seven, whether or not they appear on this page: see `LEGEND_ROWS`. */}
-          <div className={styles.legend}>
-            <span className={styles.legendTitle}>Row colours</span>
-            {LEGEND_ROWS.map((e) => (
-              <span key={e.name} className={styles.legendItem}>
-                <span className={`${styles.tone} ${e.cls}`}>{e.name}</span>
-                <span className={styles.legendWhen}>{e.when}</span>
-              </span>
-            ))}
-          </div>
+          <RowLegend fold={fold} />
 
           <Table
             tableClass={styles.queryTable}
