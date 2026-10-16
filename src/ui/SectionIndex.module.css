@@ -37,7 +37,10 @@ sits on the sticky layer, above those titles and with the save bar.
 */
 .index {
   flex: none;
-  align-self: start;
+  /* As wide as the column it pins over, even when its entries are narrower: in a
+     flex column (`ui/IndexedForm`) `start` shrank it to its entries, and what
+     scrolled underneath showed beside it (1440, 2026-10-16). */
+  align-self: stretch;
   position: sticky;
   top: var(--stuck-top, 0px);
   z-index: var(--layer-sticky);
@@ -135,6 +138,7 @@ left.
   .index:not(.strip) {
     width: var(--index-col);
     flex: 0 0 var(--index-col);
+    align-self: start;
     position: sticky;
     /* Level with the form's sticky bar, so it does not slide under it while
        scrolling. */
