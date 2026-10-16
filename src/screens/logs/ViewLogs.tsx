@@ -11,6 +11,7 @@ import {
 import { deleteAllStats } from '../../api/dashboard'
 import { Confirm } from '../../ui/Confirm'
 import { Raw } from '../../ui/Raw'
+import { LogText, stampWidth } from './LogText'
 import { PermissionButton } from '../../ui/PermissionButton'
 import { Button } from '../../ui/Button'
 import { SectionHeader } from '../../ui/SectionHeader'
@@ -37,6 +38,25 @@ Four things from upstream that govern this screen:
   4. **A server error is drawn INSIDE the viewer**, formatted as JSON, instead of
      as an alert (logs.js:170-172). It is not an oversight: the endpoint returns
      text and the only way to show the error is in that same space.
+
+How the file is read is design, and it is ours (upstream draws a plain `<pre>`
+that grows with the page, index.html:3272):
+
+  - **The viewer takes the window's height.** It used to be a box capped at 520 px:
+    at 1440x980 it ended at y=751 and left 229 px of empty page below it, and at
+    1024x768 it pushed the page into a 99 px scroll. Now the screen marks itself
+    `data-fills-window`, the Shell makes its body a flex column for it, and the
+    height runs down that chain (screen, split, panel, body) to `Raw`'s `fill`: the
+    panel ends one page margin above the footer (box 229-864 at 1440x980, 229-652
+    at 1024x768) and the page itself does not scroll on a desktop, whatever the
+    file's size. Its floor is 240 px, about twelve lines.
+    Stacked (720 px and below) the file list sits above it, so the page scrolls
+    anyway; there the reader is 70 % of the window, tall enough to read in, short
+    enough to leave page around it to scroll by on a touch screen, where a box
+    that took the whole screen would hold every swipe.
+  - **Long lines wrap, under their own message.** See `ui/Raw` (`wrap`) for the
+    measurement and `LogText` for the timestamp and the break points. Nothing is
+    added to the text: copying the viewer gives the file back as it came.
 */
 
 
@@ -184,7 +204,7 @@ export function ViewLogs({
   }
 
   return (
-    <div className={styles.wrap}>
+    <div className={styles.viewLogs} data-fills-window="">
       <SectionHeader
         title="Logs"
         tabs={tabs}
@@ -256,6 +276,7 @@ export function ViewLogs({
 
         {open != null && (
           <Panel
+            className={styles.reader}
             title={<span className={styles.mono}>{open}</span>}
             actions={
               <div className={styles.acts}>
@@ -274,7 +295,7 @@ export function ViewLogs({
               </div>
             }
           >
-            <Body>
+            <Body className={styles.readerBody}>
               {loadingBody ? (
                 <Loading />
               ) : (
@@ -284,8 +305,15 @@ export function ViewLogs({
                 (`logs.js:170-172`). The frame turns `--dan` so it is framed and
                 not disguised as the file's content.
                 */
-                <Raw text={`${open} log file`} height={520} tone={isError(body) ? 'error' : 'normal'}>
-                  {body ?? ''}
+                <Raw
+                  text={`${open} log file`}
+                  fill
+                  height={240}
+                  wrap
+                  hang={stampWidth(body ?? '') || 2}
+                  tone={isError(body) ? 'error' : 'normal'}
+                >
+                  <LogText text={body ?? ''} />
                 </Raw>
               )}
             </Body>

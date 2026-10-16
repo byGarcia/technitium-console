@@ -31,6 +31,28 @@ screen and a log line stops fitting anywhere.
   .split { grid-template-columns: minmax(0, 1fr); }
 }
 
+/*
+The window's height, handed down to the reader (see ViewLogs.tsx). The Shell's body
+is a flex column for a screen marked `data-fills-window`; from there each step takes
+the rest: the screen, the split under the header, the reader panel (stretched, while
+the file list keeps its own height), its body, and `Raw`'s `fill` box at the end.
+*/
+.viewLogs { composes: wrap; flex: 1 1 auto; }
+.viewLogs .split { flex: 1 1 auto; grid-template-rows: minmax(0, 1fr); }
+.reader { align-self: stretch; display: flex; flex-direction: column; }
+.readerBody { flex: 1 1 auto; display: flex; flex-direction: column; }
+
+/* Stacked under the file list: 70 % of the window, see ViewLogs.tsx. */
+@media (max-width: 720px) {
+  .viewLogs .split { grid-template-rows: auto; }
+  .readerBody { flex: none; height: 70dvh; }
+}
+
+/* The time of an entry, one step below its message: see LogText.tsx. */
+.logStamp { color: var(--faint); }
+/* A hundred lines of the file, laid out only near the screen: see LogText.tsx. */
+.logChunk { display: block; content-visibility: auto; contain-intrinsic-block-size: auto 100lh; }
+
 .pbList { padding: var(--s-5); }
 
 .logfiles { display: flex; flex-direction: column; gap: var(--s-1); }
