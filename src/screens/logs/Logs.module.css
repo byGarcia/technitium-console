@@ -130,6 +130,20 @@ table.queryTable td.answer { width: 100%; max-width: 0; min-width: 16ch; }
 @media (max-width: 1365px) {
   table.queryTable td.stamp { white-space: normal; }
 }
+/* Below `--bp-stack` the rows stack (`stack` in ui/Table, a container query on
+   the table's own width), so each cell is as wide as its value and the widths
+   above stand down: the timestamp on one line, Domain and Answer cut only where
+   the row ends, and each value on its label's line. */
+@container (max-width: 560px) {
+  table.queryTable td:first-child { padding-left: 0; }
+  table.queryTable td.stamp { white-space: nowrap; }
+  /* Answer: its label and its one cut line side by side, the line taking the
+     rest of the row (a flex item shrinks; an inline box beside a label would not). */
+  table.queryTable td.answer { display: flex; align-items: baseline; width: auto; max-width: 100%; min-width: 0; }
+  .clipAnswer { min-width: 0; }
+  .clipDomain, .clipClient { display: inline-block; max-width: 100%; vertical-align: bottom; }
+  .rtt { display: inline; }
+}
 
 /*
 Upstream's row colour code (logs.js:452-508), with the SAME mapping, drawn as a pill.

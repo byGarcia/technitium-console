@@ -173,6 +173,7 @@ export function Users({ tabs, token, cluster, onNotice }: Props) {
       ) : (
         <>
           <Table
+            stack
             header={
               <>
                 <Th field="username" sort={sort} onSort={toggle}>Username</Th>
@@ -191,7 +192,7 @@ export function Users({ tabs, token, cluster, onNotice }: Props) {
           >
             {visibleUsers.map((u) => (
               <tr key={u.username}>
-                <td>
+                <td className={tbl.lead}>
                   <button
                     type="button"
                     className={styles.link}

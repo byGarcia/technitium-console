@@ -187,6 +187,7 @@ export function Leases({ tabs, token, node = '', canModify = true, canDelete = t
       ) : (
       <>
       <Table
+        stack
         header={
           <>
             <Th field="scope" sort={sort} onSort={toggle}>Scope</Th>
@@ -207,13 +208,13 @@ export function Leases({ tabs, token, node = '', canModify = true, canDelete = t
           <tr key={`${l.scope}/${l.clientIdentifier}`}>
             <td className={styles.mono}>{l.scope}</td>
             <td className={styles.mono}>{l.hardwareAddress}</td>
-            <td className={styles.mono}>{l.address}</td>
+            <td className={`${styles.mono} ${tbl.lead}`}>{l.address}</td>
             <td>
               <Tag tone={l.type === 'Reserved' ? 'neutral' : 'ok'}>
                 {l.type}
               </Tag>
             </td>
-            <td className={styles.mono}>{l.hostName}</td>
+            <td className={`${styles.mono} ${tbl.lead}`}>{l.hostName}</td>
             <td className={styles.date}>{minuteStamp(l.leaseObtained)}</td>
             <td className={styles.date}>{minuteStamp(l.leaseExpires)}</td>
             <td className={tbl.actionsCell}>

@@ -470,6 +470,7 @@ export function ZoneList({
       </div>
 
       <Table
+        stack
         /* `tableClass` and not `className`: the first reaches the `<table>` and
            the second stays on the wrapper, which has no border. Measured: with
            `className` the `--dan` border did not appear. */
@@ -650,7 +651,7 @@ function ZoneRow(p: RowProps) {
       {/* The monospacing goes on the CELL and the button inherits it: the
           shared class says `font-family: inherit` precisely for this, and putting
           it on the button depended on which module was emitted last. */}
-      <td className={`${tbl.stacked} ${styles.zoneCell}`}>
+      <td className={`${tbl.stacked} ${tbl.lead} ${styles.zoneCell}`}>
         <button
           type="button"
           className={`${styles.zoneLink} ${tbl.entity}`}

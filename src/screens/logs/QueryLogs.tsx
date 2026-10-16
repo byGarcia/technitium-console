@@ -777,6 +777,7 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
           </div>
 
           <Table
+            stack
             tableClass={styles.queryTable}
             header={
               <>
@@ -813,10 +814,10 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
                 </td>
                 <td>{e.rcode}</td>
                 {/* logs.js:518. The root is written with a dot. */}
-                <td className={styles.mono}>
+                <td className={`${styles.mono} ${tbl.lead}`}>
                   <Clip text={e.qname === '' ? '.' : (e.qname ?? '')} className={styles.clipDomain} />
                 </td>
-                <td>{e.qtype ?? ''}</td>
+                <td className={tbl.lead}>{e.qtype ?? ''}</td>
                 <td>{e.qclass ?? ''}</td>
                 <td className={`${styles.mono} ${styles.answer}`}>
                   <Clip text={e.answer ?? ''} className={styles.clipAnswer} />

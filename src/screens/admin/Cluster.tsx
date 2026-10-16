@@ -220,6 +220,7 @@ export function Cluster({ tabs, token, cluster, node: controlledNode, onNodeChan
       ) : (
         <>
           <Table
+            stack
             header={
               <>
                 <Th field="name" sort={sort} onSort={toggle}>Node Name</Th>
@@ -242,7 +243,7 @@ export function Cluster({ tabs, token, cluster, node: controlledNode, onNodeChan
                  `State` column stays: the colour finds the row, the word says
                  which it is. Same treatment as the current session's row. */
               <tr key={n.id} className={n.state === 'Self' ? tbl.rowSelf : undefined}>
-                <td>
+                <td className={tbl.lead}>
                   {n.name}
                   {/* The node's version under its name, as `(v15.6)`: new in
                       v15.6 (cluster.js:180-183). */}
