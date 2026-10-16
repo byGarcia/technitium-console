@@ -148,6 +148,45 @@ describe('a stacking table', () => {
     expect(empty).not.toHaveAttribute('data-label')
   })
 
+  it('marks a blank cell, and not a placeholder, an icon or a control', () => {
+    render(
+      <DataTable
+        stack
+        header={
+          <>
+            <th>Expiry</th>
+            <th>Serial</th>
+            <th>Answer</th>
+            <th>Placeholder</th>
+            <th>Icon</th>
+            <th>Pick</th>
+            <th>Name</th>
+          </>
+        }
+      >
+        <tr>
+          <td></td>
+          <td>{' '}</td>
+          <td>
+            <span className="clip" />
+          </td>
+          <td>—</td>
+          <td>
+            <svg aria-label="Reserved" />
+          </td>
+          <td>
+            <input type="checkbox" aria-label="Select" />
+          </td>
+          <td>example.net</td>
+        </tr>
+      </DataTable>,
+    )
+    const blank = screen.getAllByRole('cell').map((c) => c.hasAttribute('data-empty'))
+    expect(blank).toEqual([true, true, true, false, false, false, false])
+    // Still in the row: the cells after a blank one keep their columns.
+    expect(screen.getAllByRole('cell')).toHaveLength(7)
+  })
+
   it('touches nothing on a table that does not stack', () => {
     render(
       <DataTable header={<th>Name</th>}>
@@ -157,6 +196,7 @@ describe('a stacking table', () => {
       </DataTable>,
     )
     expect(screen.getByRole('cell')).not.toHaveAttribute('data-label')
+    expect(screen.getByRole('cell')).not.toHaveAttribute('data-empty')
     expect(screen.getByRole('cell')).not.toHaveAttribute('role')
   })
 })

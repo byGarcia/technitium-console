@@ -427,6 +427,23 @@ text.module.css: clipped, they would otherwise push the page sideways).
   .stack > tbody > tr > td.actionsCell { flex: none; margin-left: auto; }
   .stack > tbody > tr > td.checkCell label { min-height: 0; padding: 0; }
 
+  /*
+  A fact whose cell is blank (`data-empty`, set by `labelCells`): its label with
+  nothing after it was a line of noise, EXPIRY on every zone that has none,
+  ANSWER on every blocked query. It leaves the screen and stays in the row,
+  clipped as `.sr` is, so the cells after it keep their columns for a screen
+  reader. The row's own cells are never taken out.
+  */
+  .stack > tbody > tr > td[data-empty]:not(.lead, .checkCell, .actionsCell) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
   /* The "nothing here" row keeps its centred sentence across the whole row. */
   .stack > tbody > tr > td.noRows { flex-basis: 100%; margin-top: 0; padding: var(--s-9) 0; text-align: center; }
 

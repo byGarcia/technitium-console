@@ -207,10 +207,26 @@ export function labelCells(table: HTMLTableElement) {
         const label = cell.colSpan === 1 ? labels[column] : undefined
         if (label) cell.setAttribute('data-label', label)
         else cell.removeAttribute('data-label')
+        if (isBlank(cell)) cell.setAttribute('data-empty', '')
+        else cell.removeAttribute('data-empty')
         column += cell.colSpan
       }
     }
   }
+}
+
+/*
+A cell with nothing to show: no text but white space, and no element that is a
+value without text (an icon, an image, a control). An empty `<span>`, the space
+Zones writes for a missing serial and an empty date are blank; the "no value"
+placeholder (an em dash) is text and is a value. In a stacked row a blank fact is
+only a label with nothing after it, so the stylesheet takes it off the screen; it
+stays in the row, so every later cell keeps its column for a screen reader.
+*/
+const VALUE_WITHOUT_TEXT = 'svg, img, input, button, select, textarea, [role="img"]'
+
+function isBlank(cell: HTMLTableCellElement): boolean {
+  return (cell.textContent ?? '').trim() === '' && cell.querySelector(VALUE_WITHOUT_TEXT) == null
 }
 
 export interface Sort {
