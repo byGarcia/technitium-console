@@ -4,6 +4,7 @@ import { fromNow, dateTime } from '../../lib/dates'
 import styles from './About.module.css'
 import { Body, Panel } from '../../ui/Panel'
 import { publicUrl } from '../../app/base'
+import { COVER_NAME } from '../LoginCover'
 
 interface Info { version: string; uptimestamp: string; dnsServerDomain: string }
 
@@ -154,30 +155,65 @@ export function About({ info }: { info?: Info }) {
         </Panel>
 
         {/*
-        This console's own panel (deviation 9 of CONVENTIONS.md, approved on
-        2026-10-16). The panel on the left is Technitium's and stays literal; until
-        now nothing on this screen said that the console itself is a separate
-        project, which version of it is running, or where to report a fault in it
-        rather than in the server. "Web Console" is the name the sidebar already
-        gives it (`app/Versions`). Every word here is ours.
+        This console's own card (deviation 9 of CONVENTIONS.md, approved on
+        2026-10-16), under Technitium's and built the same way: name and version,
+        then short sections with their destinations. Technitium's card stays
+        literal. Until now nothing on this screen said that the console is a
+        separate project, which version of it is running, where a fault in it is
+        reported (not to Technitium's support), or how to support it. The words are
+        ours and come from the README ("Support", "Licence"); the four funding
+        destinations are the ones in `.github/FUNDING.yml`.
         */}
-        <Panel title="Web Console">
+        <Panel>
           <Body>
-            <dl className={styles.kv}>
-              <dt>Version</dt><dd>{__CONSOLE_VERSION__}</dd>
-              <dt>License</dt>
-              <dd><Link href={`${CONSOLE_REPO}/blob/main/LICENSE`}>GPL-3.0-or-later</Link></dd>
-            </dl>
+            <div className={styles.head}>
+              <span className={styles.dot} aria-hidden="true" />
+              <div>
+                <h2 className={styles.h1}>{COVER_NAME}</h2>
+                <div className={styles.view}>Version {__CONSOLE_VERSION__}</div>
+              </div>
+            </div>
             <div className={styles.prose}>
-              <p className={styles.note}>
+              <p>
                 A modern administration console for Technitium DNS Server. An independent
                 project, not affiliated with or endorsed by Technitium.
               </p>
-              <ul className={styles.links}>
-                <li><Link href={CONSOLE_REPO}>Source code on GitHub</Link></li>
-                <li><Link href={`${CONSOLE_REPO}/releases`}>Releases and change log</Link></li>
-                <li><Link href={`${CONSOLE_REPO}/issues`}>Report a problem with the console</Link></li>
-              </ul>
+              <p>
+                Source code available under{' '}
+                <Link href={`${CONSOLE_REPO}/blob/main/LICENSE`}>GPL-3.0-or-later</Link>{' '}
+                on <Link href={CONSOLE_REPO}>GitHub</Link>
+              </p>
+
+              <h4><Link href={`${CONSOLE_REPO}/releases`}>What&apos;s New?</Link></h4>
+              <p>
+                Read the <Link href={`${CONSOLE_REPO}/releases`}>release notes</Link> to know
+                what&apos;s new in each version of the console.
+              </p>
+
+              <h4><Link href={`${CONSOLE_REPO}/issues`}>Report a Problem</Link></h4>
+              <p>
+                Something in the console looks wrong, or does not do what the stock console
+                does? <Link href={`${CONSOLE_REPO}/issues`}>Open an issue on GitHub</Link>. A
+                problem with the DNS server itself belongs to Technitium&apos;s support.
+              </p>
+
+              <h4><Link href={`${CONSOLE_REPO}/discussions`}>Ideas and Questions</Link></h4>
+              <p>
+                Share an idea or ask a question in{' '}
+                <Link href={`${CONSOLE_REPO}/discussions`}>GitHub Discussions</Link>.
+              </p>
+
+              <h4>Support the Console</h4>
+              <p>
+                This console is free and stays free. If it made the machine your whole network
+                resolves through nicer to look at, there is{' '}
+                <Link href="https://github.com/sponsors/byGarcia">GitHub Sponsors</Link>,{' '}
+                <Link href="https://ko-fi.com/bygarcia">Ko-fi</Link>,{' '}
+                <Link href="https://liberapay.com/bygarcia">Liberapay</Link> and{' '}
+                <Link href="https://www.paypal.com/paypalme/adriangmolina">PayPal</Link>. A{' '}
+                <Link href={CONSOLE_REPO}>star on GitHub</Link> or a good bug report is worth
+                just as much.
+              </p>
             </div>
           </Body>
         </Panel>
