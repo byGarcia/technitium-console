@@ -781,21 +781,36 @@ describe('Settings: what the save would change (2026-10-16)', () => {
 })
 
 describe('Settings: the section index (2026-10-16)', () => {
-  const index = () => screen.queryByRole('navigation', { name: 'On this page' })
+  /* Two of them, the strip and the column (`ui/IndexedForm`); CSS shows one by the
+     screen's width, and jsdom applies no CSS, so both are read and must agree. */
+  const indexes = () => screen.queryAllByRole('navigation', { name: 'On this page' })
+  const entries = () => {
+    const all = indexes().map((nav) => within(nav).getAllByRole('link').map((a) => a.textContent))
+    expect(all).toHaveLength(2)
+    expect(all[1]).toEqual(all[0])
+    return all[0]
+  }
 
   it('General lists its ten sections, by their own titles and in page order', async () => {
     server()
     await mount({ sub: 'General' })
-    const links = within(index()!).getAllByRole('link')
-    expect(links.map((a) => a.textContent)).toEqual([
+    expect(entries()).toEqual([
       'Local Parameters', 'Default Parameters', 'Software Update', 'IPv6', 'UDP Socket Pool',
       'EDNS', 'DNSSEC', 'EDNS Client Subnet', 'Rate Limiting', 'Advanced Options',
     ])
     // Each entry leads to its block.
-    for (const a of links) {
+    for (const a of within(indexes()[0]).getAllByRole('link')) {
       const target = document.getElementById(a.getAttribute('href')!.slice(1))
       expect(within(target!).getByRole('heading', { name: a.textContent! })).toBeInTheDocument()
     }
+  })
+
+  it('the strip is the primitive asked for as a strip; the column is not', async () => {
+    server()
+    await mount({ sub: 'General' })
+    const [strip, column] = indexes()
+    expect(strip.className).not.toBe(column.className)
+    expect(strip.compareDocumentPosition(screen.getByRole('heading', { name: 'Local Parameters' })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 
   it('Web Service and Optional Protocols have one; the six shorter panes do not', async () => {
@@ -803,7 +818,7 @@ describe('Settings: the section index (2026-10-16)', () => {
     for (const sub of SUB_TABS) {
       const { unmount } = render(<Settings token="tok" sub={sub} />)
       await screen.findByRole('button', { name: 'Save Settings' })
-      expect([sub, index() != null]).toEqual([sub, ['General', 'Web Service', 'Optional Protocols'].includes(sub)])
+      expect([sub, indexes().length > 0]).toEqual([sub, ['General', 'Web Service', 'Optional Protocols'].includes(sub)])
       unmount()
     }
   })
@@ -813,7 +828,7 @@ describe('Settings: the section index (2026-10-16)', () => {
     const { rerender } = await mount({ sub: 'General' })
     rerender(<Settings token="tok" sub="Web Service" />)
     await waitFor(() =>
-      expect(within(index()!).getAllByRole('link').map((a) => a.textContent)).toEqual([
+      expect(entries()).toEqual([
         'Listeners', 'Unix Domain Sockets', 'HTTPS Options', 'Reverse Proxy', 'TLS Certificate',
       ]),
     )

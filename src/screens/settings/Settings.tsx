@@ -3,7 +3,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { PermissionButton } from '../../ui/PermissionButton'
 import { SectionHeader } from '../../ui/SectionHeader'
 import { SubTabs } from '../../ui/SubTabs'
-import { SectionIndex } from '../../ui/SectionIndex'
+import { IndexedForm } from '../../ui/IndexedForm'
 import { useSectionInView } from '../../ui/useSectionInView'
 import { BlockAnchors } from '../../ui/PanelForm'
 import { openDownload } from '../../api/user'
@@ -82,11 +82,12 @@ export const SUB_TABS = [
 export type SubTab = (typeof SUB_TABS)[number]
 
 /*
-The panes that carry a section index beside them (`ui/SectionIndex`, as in
-Administration › Permissions), and why these three.
+The panes that carry a section index (`ui/SectionIndex`, as in Administration ›
+Permissions: a column beside the form where it fits, a strip above it elsewhere,
+`ui/IndexedForm`), and why these three.
 
-Measured on 2026-10-16 at 1680 × 980, the narrowest width where the index is drawn
-(Settings.module.css says why there), the panes' heights and their named sections:
+Measured on 2026-10-16 at 1680 × 980, the panes' heights and their named sections
+(at 1440 they are taller still: General 5,433):
 
     General              5,362 px  5.5 windows  10 sections
     Optional Protocols   2,916     3.0           4
@@ -473,11 +474,12 @@ export function Settings({
       <Notifier notice={notice} onClose={() => setNotice(null)} />
 
       {/*
-      The form and its bar in one column, the index in the other. The bar stays in
-      the form's column so the two sticky things never share a column: the index is
-      pinned to the top of the window and the bar to the bottom.
+      The form and its bar together, with the index beside them where the screen is
+      wide enough and as a strip above them where it is not (`ui/IndexedForm`). The
+      bar stays in the form's column, so the column index and the bar never share
+      one: the index is pinned to the top of the window and the bar to the bottom.
       */}
-      <div className={sections.length > 0 ? styles.withIndex : undefined}>
+      <IndexedForm sections={sections} active={here}>
         <div className={styles.column}>
           <BlockAnchors prefix="settings">
             <div ref={paneBox}>
@@ -568,12 +570,7 @@ export function Settings({
             </PermissionButton>
           </div>
         </div>
-        {sections.length > 0 && (
-          <div className={styles.index}>
-            <SectionIndex sections={sections} active={here} />
-          </div>
-        )}
-      </div>
+      </IndexedForm>
 
       <Confirm
         open={confirm === 'flush'}

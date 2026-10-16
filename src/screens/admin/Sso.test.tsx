@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Sso } from './Sso'
 import * as client from '../../api/client'
@@ -333,7 +333,8 @@ describe('SSO: dense form', () => {
        it too), and since 2026-09-07 the screen title is the section, `Administration`,
        with `SSO` in the bar underneath. Upstream's literal is still on the screen,
        which is what has to hold. */
-    expect(screen.getAllByText('Single Sign-On (SSO)')).toHaveLength(1)
+    // The index's entries (`ui/IndexedForm`) say it too, and they are links, not text.
+    expect(screen.getAllByText('Single Sign-On (SSO)').filter((e) => e.closest('nav') == null)).toHaveLength(1)
   })
 
   it('the two `Warning!` come BEFORE the first control, and the `Note!` after', async () => {
@@ -354,19 +355,21 @@ describe('SSO: dense form', () => {
   })
 
   /*
-  No index, and it is a decision with a measurement behind it: in a column it took
-  188 px off the control column and left the console's dense form with two
-  geometries, `210px 354px 360px` here against `210px 542px 360px` in Settings.
-  Settings is the same archetype and is already built without one. See the note
-  beside `SECTIONS` in `Sso.tsx`.
+  The index, since 2026-10-16, with Settings (`ui/IndexedForm`): a strip above the
+  form and a column beside it, of which CSS shows one by the screen's width. The
+  column never takes width the controls have at 1440. See the note beside
+  `SECTIONS` in `Sso.tsx`.
   */
-  it('does not carry a section index, which would give the dense form two widths', async () => {
+  it('carries the section index: the four blocks, by their titles, leading to their anchors', async () => {
     server()
     render(<Sso {...props} />)
     await screen.findByLabelText('Authority (Issuer)')
-    expect(screen.queryByRole('navigation', { name: 'On this page' })).not.toBeInTheDocument()
-    /* The four blocks keep their anchors: they are still places you can link to. */
-    expect(document.getElementById('sso-scopes')).not.toBeNull()
+    const [strip, column] = screen.getAllByRole('navigation', { name: 'On this page' })
+    for (const nav of [strip, column]) {
+      const links = within(nav).getAllByRole('link')
+      expect(links.map((a) => a.textContent)).toEqual(['Single Sign-On (SSO)', 'SSO User Sign Up', 'Scopes', 'Group Map (Optional)'])
+      for (const a of links) expect(document.getElementById(a.getAttribute('href')!.slice(1))).not.toBeNull()
+    }
   })
 
   /*

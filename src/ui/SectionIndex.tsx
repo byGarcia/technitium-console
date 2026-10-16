@@ -42,6 +42,7 @@ export function SectionIndex({
   sections,
   active,
   label = 'On this page',
+  strip = false,
 }: {
   /** The sections, in the order they appear on the page. */
   sections: { id: string; label: string }[]
@@ -49,9 +50,17 @@ export function SectionIndex({
   active?: string
   /** The index's name, for whoever cannot see the screen. */
   label?: string
+  /*
+  Always the strip, whatever the window. Without it the index is a column above
+  `--bp-index` and a strip below, which suits a screen whose content does not care
+  how wide the column is (Permissions). A dense form does care: its control column
+  is what the index's column would come out of, so it decides by its own width and
+  asks for the strip where the column does not fit (`ui/IndexedForm`).
+  */
+  strip?: boolean
 }) {
   return (
-    <nav className={styles.index} aria-label={label}>
+    <nav className={strip ? `${styles.index} ${styles.strip}` : styles.index} aria-label={label}>
       <ul className={styles.list}>
         {sections.map((s) => (
           <li key={s.id}>

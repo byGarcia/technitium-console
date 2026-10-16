@@ -8,8 +8,8 @@
 
 .wrap {
   composes: screen from '../../ui/SectionHeader.module.css';
-  /* The save bar's sentence and the section index below ask how wide the screen
-     is, not the window. */
+  /* The save bar's sentence asks how wide the screen is, not the window (the
+     section index's room, `ui/IndexedForm`, is a container of the same width). */
   container-type: inline-size;
 }
 .group { composes: group from '../../ui/Form.module.css'; }
@@ -69,54 +69,13 @@ container), the same quantity the section index asks.
 }
 
 /*
-The form and its bar, and beside them the section index (`INDEXED`, Settings.tsx).
-
-The column keeps the screen's own spacing between the pane and the bar, which were
-the screen's children before the index arrived.
+The form and its bar, inside `ui/IndexedForm`. The column keeps the screen's own
+spacing between the pane and the bar, which were the screen's children before the
+index arrived.
 */
 .column {
   min-width: 0;
   display: flex;
   flex-direction: column;
   gap: var(--s-9);
-}
-
-/*
-The index takes a column ONLY where the form does not need the width, and that is
-the whole decision, measured on 2026-10-16.
-
-The dense form's row is `210px 1fr var(--help-col)`, and the `1fr` is the control
-column: everything left over goes to it. Administration › Permissions puts its
-index beside it from `--bp-index` (960) up, and Permissions can, because it has no
-row grid. Here a column of `--index-col` plus its gap is 188 px taken from the
-controls: at 1440 the grid would go from `210px 552px 360px` to `210px 364px 360px`,
-which is the third signature `Sso.tsx` already refused for the same reason.
-
-So the index appears when the screen is wide enough to give the controls, beside
-it, at least what they have at 1440 without it: 552 px. The screen at 1440 is
-1,176 px wide (the window less the 216 px side panel and the 48 px of padding), so
-the line is 1,176 + 188 = **1,364 px of screen**, about a 1,628 px window. Measured
-at 1680: `210px 604px 360px` with the index, against `210px 792px 360px` without.
-It is a container query and not a window breakpoint because the quantity it
-protects is the screen's width, whatever the chrome around it takes.
-
-Below that line nothing is added, and below `--bp-index` there would be nothing
-anyway: the strip `ui/SectionIndex` turns into at 960 is not used here.
-
-A pane without an index keeps the whole width at every size: the column is
-reserved only around an index (`.withIndex`), never by the screen.
-*/
-.index { display: none; }
-
-@container (min-width: 1364px) {
-  .withIndex {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) var(--index-col);
-    gap: var(--s-10);
-    align-items: start;
-  }
-
-  /* The slot steps aside so that the index itself is the grid item, which is what
-     its own `position: sticky` needs to travel down the whole form. */
-  .index { display: contents; }
 }
