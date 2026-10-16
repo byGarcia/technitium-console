@@ -18,7 +18,19 @@ it again from meaning one screen rules over the other.
 .block {
   margin: 0 0 var(--s-9) 0;
   padding-bottom: var(--s-9);
+  /*
+  `clip`, not the panel's `hidden`. `overflow: hidden` makes the block a scroll
+  container, and a sticky child sticks inside its nearest scroll container: the
+  title below "stuck" to the block's own top, which is where it already was, so it
+  never stayed in view (found 2026-10-16, when its `top` became the strip's height
+  and the title moved 93 px down inside its block at 390). `clip` clips the same
+  corners without being a scroll container, so the title pins to the window.
+  Written as `div.block`, below, because the panel's own `overflow: hidden`
+  (`ui/Panel.module.css`) has the same weight as `.block` and may come later.
+  */
 }
+
+div.block { overflow: clip; }
 
 /* Control and suffix on the same line: "3600  seconds". */
 .inline {
@@ -179,7 +191,10 @@ label.
 */
 .block > [class*='_header_'] {
   position: sticky;
-  top: 0;
+  /* Below whatever is pinned above the form: the section index's strip
+     (`--pinned`, `ui/IndexedForm`), or the narrow screen's top bar (`--stuck-top`,
+     `app/Shell.module.css`), which hid the title underneath before 2026-10-16. */
+  top: var(--pinned, var(--stuck-top, 0px));
   z-index: 1;
   background: var(--pan);
 }
@@ -197,7 +212,7 @@ A decision the instrument cannot see cannot be held.
 
 /*
 A block with an anchor (`BlockAnchors`). Followed from the section index, it lands
-level with the index's own top (`ui/SectionIndex.module.css`), not flush against
-the window's edge.
+below whatever is pinned (the strip, the top bar) with the same 14 px the column
+keeps from the window's top (`ui/SectionIndex.module.css`), never under them.
 */
-.anchor { scroll-margin-top: var(--s-9); }
+.anchor { scroll-margin-top: calc(var(--pinned, var(--stuck-top, 0px)) + var(--s-9)); }

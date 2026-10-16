@@ -33,9 +33,12 @@ export function useSectionInView(ids: readonly string[]): string | undefined {
         // marking the last would say you are further down than you are.
         setHere(order.find((id) => seen.has(id)))
       },
-      // The band a section has to cross to count: below the top 72 px and above
-      // the bottom 60 % of the window, the part the eye is on.
-      { rootMargin: '-72px 0px -60% 0px' },
+      // The band a section has to cross to count: below the top 120 px and above
+      // the bottom 60 % of the window, the part the eye is on. 120 and not the 72 it
+      // was: on a phone the top bar and the pinned strip take 93 px, and a jump lands
+      // a section 14 px below them, so with 72 the section ABOVE it still counted
+      // and the strip marked the wrong entry (measured at 390, 2026-10-16).
+      { rootMargin: '-120px 0px -60% 0px' },
     )
     for (const el of boxes) observer.observe(el)
     return () => observer.disconnect()

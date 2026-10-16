@@ -857,6 +857,14 @@ wherever the attribute says `light`.
   */
   --help-col: 360px;     /* the help column of a dense form */
   --index-col: 172px;    /* the section index beside it */
+  /* The section index as a strip, pinned: its exact height, so whatever pins below
+     it (a dense form's block titles) starts where it ends, with no gap and no
+     overlap. 17.5 px of line (`--t-4` × 1.4), 14 of padding, the 2 px edge, the 6 px
+     kept for the focus halo and the 1 px rule make 40.5; rounded up so the line is
+     never clipped. */
+  --index-strip: 41px;
+  /* The narrow screen's top bar, the one thing pinned above the content below 900. */
+  --top-bar: 52px;
   --notice-max: 880px;   /* a notice is not any control's: it spans its section */
   --ctrl-num: 104px;     /* a numeric field */
   --area-min: 54px;      /* minimum height of a textarea */

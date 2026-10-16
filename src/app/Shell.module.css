@@ -35,6 +35,12 @@ Administration) and what gets consulted (Logs, About).
 .s2[aria-current='page'] { color:var(--acc-ink); font-weight: 550; background:var(--pan2); box-shadow: var(--edge); }
 .main { min-width:0; display:flex; flex-direction:column; min-height:100vh; }
 /*
+`--stuck-top`: how much of the window's top is already taken by something pinned,
+for whatever pins inside the content (the section index's strip, a dense form's
+block titles). Nothing on a wide screen; the top bar below 900.
+*/
+.shell { --stuck-top: 0px; }
+/*
 The header ONLY exists on a narrow screen.
 
 It carried the server's domain and the account menu, both stuck to the right
@@ -88,11 +94,11 @@ looking at it from a phone when something has stopped resolving.
 .hamburger { padding: 0; }
 
 @media (max-width: 900px) {
-  .shell { grid-template-columns: 1fr; }
+  .shell { grid-template-columns: 1fr; --stuck-top: var(--top-bar); }
 
   .rtop {
     display: flex; align-items: center; gap: var(--s-6);
-    padding: 0 var(--s-9); height: 52px;
+    padding: 0 var(--s-9); height: var(--top-bar);
     border-bottom: 1px solid var(--line); background: var(--pan);
     box-shadow: var(--edge); font-size: var(--t-4); color: var(--mute);
     position: sticky; top: 0; z-index: var(--layer-sticky);

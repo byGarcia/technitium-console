@@ -36,7 +36,7 @@ export function IndexedForm({
           <SectionIndex sections={sections} active={active} strip />
         </div>
       )}
-      <div className={on ? styles.withIndex : undefined}>
+      <div className={on ? `${styles.form} ${styles.withIndex}` : undefined}>
         <div className={styles.column}>{children}</div>
         {on && (
           <div className={styles.side}>

@@ -26,10 +26,27 @@ ten are still there and are reached by rolling the strip.
 
 `-webkit-overflow-scrolling` is not set: momentum scrolling has been the default
 since iOS 13 and the property no longer does anything.
+
+It is PINNED (2026-10-16): on a 5,400 px pane a strip that scrolls away is only an
+index at the very top, and the entry that follows the scroll is never seen. It pins
+under whatever is already pinned above the content (`--stuck-top`, the top bar on a
+narrow screen, `app/Shell.module.css`), at its exact height (`--index-strip`), so a
+dense form's block titles can pin right below it (`ui/PanelForm.module.css`). Its
+background is the page's, so what scrolls under it does not show through, and it
+sits on the sticky layer, above those titles and with the save bar.
 */
 .index {
   flex: none;
-  align-self: start;
+  /* As wide as the column it pins over, even when its entries are narrower: in a
+     flex column (`ui/IndexedForm`) `start` shrank it to its entries, and what
+     scrolled underneath showed beside it (1440, 2026-10-16). */
+  align-self: stretch;
+  position: sticky;
+  top: var(--stuck-top, 0px);
+  z-index: var(--layer-sticky);
+  height: var(--index-strip);
+  box-sizing: border-box;
+  background: var(--bg);
   overflow-x: auto;
   /*
   The two that make the `overflow-x` above worth anything.
@@ -121,6 +138,7 @@ left.
   .index:not(.strip) {
     width: var(--index-col);
     flex: 0 0 var(--index-col);
+    align-self: start;
     position: sticky;
     /* Level with the form's sticky bar, so it does not slide under it while
        scrolling. */
@@ -130,6 +148,9 @@ left.
     max-width: none;
     padding: 0;
     border-bottom: 0;
+    z-index: auto;
+    height: auto;
+    background: none;
   }
 
   .index:not(.strip) .list {
