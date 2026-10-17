@@ -8,9 +8,10 @@ Dashboard, its Top Stats modal and Query Logs call:
   · `queryDnsServer(domain, type, node)` (dnsclient.js:231-257) fills DNS Client
     (this server, the domain, the type or "A", UDP, no EDNS Client Subnet, DNSSEC
     validation unchecked), switches to it and RUNS the query.
-  · `showQueryLogs(domain, clientIp, node)` (logs.js:624-655) resets the Query
-    Logs form, fills the domain and/or the client, switches to Logs › Query Logs
-    and RUNS the query.
+  · `showQueryLogs(domain, clientIp, node, rcode, responseType)` (logs.js:629-663)
+    resets the Query Logs form, fills the domain and/or the client, and since
+    v15.6.2 the response code and/or the response type (the Dashboard's count
+    cards, logs.js:21-24), switches to Logs › Query Logs and RUNS the query.
 
 Both pick the target's cluster node only when they were given one and it is not
 the aggregate; otherwise the target keeps the node it had, which here is the one
@@ -29,16 +30,19 @@ export interface DnsClientRequest {
 }
 
 /*
-What the Dashboard's charts add to the jump (deviation 7 in CONVENTIONS.md, this
-console's own): the time window of a point of the Queries chart, and the value of a
-slice or a bar. Each is one of Query Logs' existing fields, by its name in that form,
-and written in the form's own format (`From`/`To` are `datetime-local` values in the
-browser's zone). Upstream's jump never carries them.
+The form's fields a jump fills besides the domain and the client, each by its name in
+that form and written in the form's own format (`From`/`To` are `datetime-local`
+values in the browser's zone). `rcode` and `responseType` are upstream's, from the
+Dashboard's count cards. The rest is what the Dashboard's charts add (deviation 7 in
+CONVENTIONS.md, this console's own): the time window of a point of the Queries chart,
+and the value of a slice or a bar, over the period. Upstream's jump never carries a
+time window, a protocol or a query type.
 */
 export interface QueryLogsFilters {
   start?: string
   end?: string
   responseType?: string
+  rcode?: string
   protocol?: string
   qtype?: string
 }

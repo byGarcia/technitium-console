@@ -41,6 +41,23 @@ Each card is a size container: its figure takes the smaller of its normal size
 }
 
 /*
+A card that opens Query Logs (upstream's since v15.6.2): a transparent button over
+the whole card. Hover lifts the edge to the series' colour; focus draws the halo.
+*/
+.tile { position: relative; }
+.open {
+  position: absolute;
+  inset: -1px -1px -1px -3px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: inherit;
+  cursor: pointer;
+}
+.open:hover { border-color: var(--tc, var(--acc)); }
+.open:focus-visible { outline: none; box-shadow: var(--halo-focus); }
+
+/*
 A compact card: what it is across the top; under it, how much with its share and the
 change, and the trend beside them. The text keeps the width its figure line needs
 and the trend takes the rest, up to 64 px; the text never shrinks while the trend

@@ -166,7 +166,7 @@ describe('the Edit Zone File dialog', () => {
     expect(within(dialog).getByText('The $ORIGIN and $TTL values will be automatically set if not specified.')).toBeTruthy()
     expect(
       within(dialog).getByText(
-        'Overwrite SOA serial option when used to set a lower SOA serial value than the current SOA serial will cause secondary zones to fail to sync.',
+        'Overwrite SOA serial option when used to set a lower SOA serial value than the current SOA serial will cause secondary zones to fail to sync and require a manual resync.',
       ),
     ).toBeTruthy()
   })

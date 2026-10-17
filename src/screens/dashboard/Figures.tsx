@@ -73,6 +73,7 @@ export function StatCard({
   against,
   chart,
   hero = false,
+  onOpen,
 }: {
   m: Metric
   s?: Stats
@@ -84,6 +85,9 @@ export function StatCard({
   chart?: ChartData
   /** `Total Queries`: the larger card, which also says what the change is against. */
   hero?: boolean
+  /** The card's jump to Query Logs (`Metric.open`), when it has one and Query Logs
+   *  is there to land on. */
+  onOpen?: () => void
 }) {
   const colour = `var(${tokenForLabel(m.label, 0)})`
   const share = m.pct && s ? percentage(s[m.k], total) : null
@@ -108,6 +112,12 @@ export function StatCard({
         </div>
         <Spark data={series(chart, m.series)} colour={colour} className={styles.spark} />
       </div>
+      {/* Upstream's card is a link to Query Logs (v15.6.2). Here a button laid over
+          the whole card, so the card's own reading order stays as it is; its name
+          is the card's label and its title upstream's menu text. */}
+      {onOpen && (
+        <button type="button" className={styles.open} aria-label={m.label} title="Show Query Logs" onClick={onOpen} />
+      )}
     </div>
   )
 }
