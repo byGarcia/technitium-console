@@ -12,7 +12,7 @@ sends, every text it shows and every control it offers, compared with that serve
 
 | Console | Technitium DNS Server | Notes |
 |---|---|---|
-| **1.3.x** | **15.5.x, 15.6.x** (1.3.0 checked against 15.6.1) | Current. Every screen redesigned for the phone, a Dashboard that compares periods, Cache in one panel. |
+| **1.3.x** | **15.5.x, 15.6.x** (1.3.1 checked against 15.6.2) | Current. Every screen redesigned for the phone, a Dashboard that compares periods, Cache in one panel. |
 | 1.2.x | 15.5.x, 15.6.x | Superseded by 1.3.x on the same server. Allowed and Blocked become one Blocking section, a light theme, and the console comes as an image for Docker. Supports a console folder of its own (`DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH`), so server updates leave it alone. |
 | 1.1.x | 15.5.x | Superseded by 1.2.x on the same server. If you stay on it, use 1.1.3: earlier ones flood the server from Cache, Allowed and Blocked. |
 | 1.0.0 | 15.4 | Cannot save Settings on a 15.5 server. Upgrade. |
@@ -21,6 +21,20 @@ To update, run the installer again (the same one-line command). It needs no rest
 service. On Docker, pull the image again: see [Docker](README.md#docker).
 
 ---
+
+## v1.3.1 (2026-10-17)
+
+**Technitium DNS Server 15.6.2.** The server release makes the Dashboard's figures links to Query
+Logs and rewords one warning, and this console now does the same. No API changes: all 132
+endpoints are still covered.
+
+- Dashboard: clicking Total Queries, a response code (No Error, Server Failure, NX Domain, Refused)
+  or a response type (Authoritative, Recursive, Cached, Blocked) opens Query Logs filtered to it,
+  as in 15.6.2. Clients and Dropped are not links.
+- Edit Zone File and Import Zone: the SOA serial warning now says that secondary zones will also
+  need a manual resync.
+- The note parity check now also compares the end of each note. It missed the reworded warning
+  because the old text still matched at the start.
 
 ## v1.3.0 (2026-10-16)
 

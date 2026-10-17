@@ -26,7 +26,7 @@ body:
     attributes:
       label: Technitium DNS Server version
       description: Shown at the bottom of the sidebar, next to DNS Server.
-      placeholder: "15.5.1"
+      placeholder: "15.6.2"
     validations:
       required: true
   - type: dropdown
