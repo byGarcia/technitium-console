@@ -151,7 +151,8 @@ export function EditZoneFile({
           </Alert>
           <Alert type="warning" title="Warning!">
             Overwrite SOA serial option when used to set a lower SOA serial value than the
-            current SOA serial will cause secondary zones to fail to sync.
+            current SOA serial will cause secondary zones to fail to sync and require a manual
+            resync.
           </Alert>
         </div>
       )}

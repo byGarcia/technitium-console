@@ -136,7 +136,10 @@ const prose = asWords(
     // A bare JSX expression (`{hosts.doh}`) is a value filled at runtime, not
     // prose; its name would otherwise sit between the words. Upstream's side
     // drops its runtime labels the same way (see NOTES).
-    .replace(/\{[A-Za-z_$][\w.$]*\}/g, ' '),
+    .replace(/\{[A-Za-z_$][\w.$]*\}/g, ' ')
+    // So is a template literal (`{`proxy_set_header ${realIpHeader} $remote_addr;`}`),
+    // where upstream has a `<code id="lbl…">` its script fills.
+    .replace(/\{`[^`]*`\}/g, ' '),
 )
 
 const missing = []
@@ -291,7 +294,11 @@ const missingNotes = NOTES.filter((t) => {
   if (EXCUSED_NOTES.some((e) => asWords(t).includes(` ${e} `) && words.length < 40)) return false
   const all = [words.slice(2, 10), words.slice(6, 14), words.slice(-8)].map((p) => p.join(' '))
   const runs = all.filter(distinctive)
-  return !(runs.length ? runs : all).some((p) => prose.includes(` ${p} `))
+  /* And its last eight words, always. A run proves the note is there, not that it
+     is whole: v15.6.2 added "and require a manual resync" to the end of the SOA
+     serial warning, and every run of the old text still matched. */
+  const end = words.slice(-8).join(' ')
+  return !(runs.length ? runs : all).some((p) => prose.includes(` ${p} `)) || !prose.includes(` ${end} `)
 })
 
 console.log('')

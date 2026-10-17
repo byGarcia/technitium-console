@@ -401,6 +401,13 @@ Write down here whatever you find. What is already known:
   not `cluster` (dnsclient.js:243, logs.js:634); from the Dashboard's aggregate
   the target keeps the node it had. `allowDomain`/`blockDomain` send no `node` at
   all: they always act on the server the console is on.
+- **The Dashboard's count cards are links to Query Logs since v15.6.2**
+  (index.html:205-257, logs.js:21-24). Nine of the eleven: Total Queries with no
+  filter, the four response codes filling `RCODE` and the four response types
+  filling `Response Type`; Clients and Dropped are not links. The jump passes no
+  node and no period, so Query Logs keeps its node and its empty `From`/`To`, even
+  with the Dashboard on another node or period. Here each card carries the jump
+  in `dashboard/metrics.ts` (`open`).
 - **The Top Stats modal follows the Dashboard's node and keeps its own alerts.**
   It reads `optDashboardClusterNode` for `getTop` (main.js:2932), and allowing or
   blocking from it reports in `divTopStatsAlert`, inside the modal, while the same

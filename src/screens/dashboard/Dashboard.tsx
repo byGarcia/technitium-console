@@ -6,7 +6,7 @@ import {
 import { useHandoff, type QueryLogsFilters } from '../../app/handoff'
 import { bucketsOf, changes, previousLabel, previousQuery, windowOf, type PreviousQuery } from './compare'
 import { Figure, StatCard } from './Figures'
-import { FIGURES, TOTAL, num2, percentage } from './metrics'
+import { FIGURES, TOTAL, num2, percentage, type Metric } from './metrics'
 import { Line, Placeholder, Top, hasData } from './Panels'
 import { Breakdown } from './Breakdown'
 import { Heatmap } from './Heatmap'
@@ -285,6 +285,11 @@ export function Dashboard({
         }
       : undefined
   const responseJump = byValue('responseType', responseTypeFilter)
+  /* The count cards' jump is upstream's (v15.6.2, logs.js:21-24): no node and no
+     period, only the card's response code or type, so Query Logs keeps the node it
+     had and its own empty `From`/`To`. */
+  const cardJump = (m: Metric) =>
+    canJump && m.open != null ? () => handoff?.showQueryLogs(null, null, null, m.open) : undefined
   const typeJump = byValue('qtype', queryTypeFilter)
   const protocolJump = byValue('protocol', protocolFilter)
 
@@ -388,9 +393,19 @@ export function Dashboard({
           against={against}
           chart={view?.mainChartData}
           hero
+          onOpen={cardJump(TOTAL)}
         />
         {FIGURES.map((m) => (
-          <StatCard key={m.k} m={m} s={s} total={total} changes={shift} against={against} chart={view?.mainChartData} />
+          <StatCard
+            key={m.k}
+            m={m}
+            s={s}
+            total={total}
+            changes={shift}
+            against={against}
+            chart={view?.mainChartData}
+            onOpen={cardJump(m)}
+          />
         ))}
       </div>
 

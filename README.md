@@ -129,7 +129,7 @@ deliberate deviations, are in
 
 | | |
 |---|---|
-| Checked against | Technitium DNS Server 15.6.1 |
+| Checked against | Technitium DNS Server 15.6.2 |
 | Sections | 11 |
 | Routes, each a real URL | 34 |
 | API endpoints the stock console calls, and this one calls too | 132 of 132 |

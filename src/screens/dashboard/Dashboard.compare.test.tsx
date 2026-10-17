@@ -197,3 +197,45 @@ describe('Dashboard: from a chart to Query Logs', () => {
     expect(within(screen.getByLabelText('Query Types')).queryByRole('button')).not.toBeInTheDocument()
   })
 })
+
+describe('Dashboard: from a count card to Query Logs (upstream, v15.6.2)', () => {
+  const open = (label: string) => within(screen.getByTestId('metrics')).queryByRole('button', { name: label })
+
+  it('each card hands its response code or type, with no node and no period', async () => {
+    serve()
+    const handoff = nav()
+    inShell(<Dashboard token="t" />, handoff)
+    await screen.findByTestId('chart-Queries over time')
+    const expected: [string, object][] = [
+      ['Total Queries', {}],
+      ['No Error', { rcode: 'NoError' }],
+      ['Server Failure', { rcode: 'ServerFailure' }],
+      ['NX Domain', { rcode: 'NxDomain' }],
+      ['Refused', { rcode: 'Refused' }],
+      ['Authoritative', { responseType: 'Authoritative' }],
+      ['Recursive', { responseType: 'Recursive' }],
+      ['Cached', { responseType: 'Cached' }],
+      ['Blocked', { responseType: 'Blocked' }],
+    ]
+    for (const [label] of expected) await userEvent.click(open(label)!)
+    expect(vi.mocked(handoff.showQueryLogs).mock.calls).toEqual(
+      expected.map(([, filters]) => [null, null, null, filters]),
+    )
+  })
+
+  it('Clients and Dropped are not links', async () => {
+    serve()
+    inShell(<Dashboard token="t" />)
+    await screen.findByTestId('chart-Queries over time')
+    expect(open('Clients')).not.toBeInTheDocument()
+    expect(open('Dropped')).not.toBeInTheDocument()
+    expect(within(screen.getByTestId('metrics')).getAllByRole('button')).toHaveLength(9)
+  })
+
+  it('with Query Logs out of reach no card is a link', async () => {
+    serve()
+    inShell(<Dashboard token="t" />, nav(false))
+    await screen.findByTestId('chart-Queries over time')
+    expect(within(screen.getByTestId('metrics')).queryByRole('button')).not.toBeInTheDocument()
+  })
+})
