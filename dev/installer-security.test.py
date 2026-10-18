@@ -90,6 +90,34 @@ other_writable = tree("other-writable")
 shell(f'secure_tree "{other_writable}"', ok=False)
 print("PASS root group may write, other accounts may not")
 
+# On an object with a POSIX access control list the group bits are the list's
+# mask, so root:root 0775 can be a named account that setfacl let write.
+def access_acl(named_uid, named_perm):
+    import struct
+    every = 0xFFFFFFFF  # ACL_UNDEFINED_ID: the owner, group and other entries
+    entries = [(0x01, 7, every), (0x02, named_perm, named_uid), (0x04, 5, every),
+               (0x10, named_perm | 5, every), (0x20, 5, every)]
+    return struct.pack("<I", 2) + b"".join(struct.pack("<HHI", *e) for e in entries)
+
+
+acl_root = tree("acl-writable")
+os.setxattr(acl_root, "system.posix_acl_access", access_acl(65534, 7))
+shell(f'secure_tree "{acl_root}"', ok=False)
+acl_file = tree("acl-writable-file")
+acl_file.chmod(0o775)
+(acl_file / "favicon.ico").write_text("icon")
+(acl_file / "favicon.ico").chmod(0o664)
+os.setxattr(acl_file / "favicon.ico", "system.posix_acl_access", access_acl(65534, 6))
+shell(f'secure_tree "{acl_file}"', ok=False)
+acl_parent = tree("acl-writable-parent")
+os.setxattr(acl_parent, "system.posix_acl_access", access_acl(65534, 7))
+(acl_parent / "console").mkdir()
+shell(f'secure_tree "{acl_parent / "console"}"', ok=False)
+acl_read = tree("acl-read-only")
+os.setxattr(acl_read, "system.posix_acl_access", access_acl(65534, 5))
+shell(f'secure_tree "{acl_read}"')
+print("PASS access control list that lets another account write rejected")
+
 # Root-only directories cannot make service-controlled state contents trusted.
 state = tree("state")
 state_file = state / "install.state"
