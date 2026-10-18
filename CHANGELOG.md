@@ -35,11 +35,12 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
 
 - The installer no longer trusts a group-writable root folder that carries a POSIX access control
   list: there the group bits can stand for another account that may write, and that account
-  could race root's copy and make it write or delete outside the console folder. Where `ls`
-  cannot show lists, group write is not trusted at all.
+  could race root's copy and make it write or delete outside the console folder. Where neither
+  `ls` nor `getfacl` can show lists (BusyBox without the acl package), group write is not trusted
+  at all, and the installer says how to fix it.
 - The installer no longer creates a folder just because the running server's environment names
   it. Only `/opt/technitium-console` is created that way; any other new folder has to be created
-  by the administrator or named with `--dir`.
+  by the administrator first.
 - On a Docker host, the commands the installer prints quote the Compose service names it reads,
   and strip control characters from every name it shows, so a label set in an image cannot add a
   command to the line you paste or rewrite the screen.
