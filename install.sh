@@ -227,22 +227,40 @@ refuse_links() { # folder about to be written into
 # run as root keeps that mode, so a stock web root is root:root 0664.
 # And only when nothing carries a POSIX access control list: on an object with
 # one, the group bits are the list's mask, so a group write bit on root:root can
-# be a named account that setfacl let in. `ls -l` marks such objects with a "+"
-# after the mode; an ls that cannot say (BusyBox has no --version and shows no
-# lists) is answered with "unknown", and then group write is not trusted.
+# be a named account that setfacl let in. GNU and uutils `ls -l` mark such
+# objects with a "+" after the mode (uutils for any extended attribute, which
+# errs on the safe side) and with "?" when they cannot read it. BusyBox ls
+# shows nothing, so there getfacl answers if it is installed; with neither the
+# answer is "unknown", and then group write is not trusted.
 acl_state() { # [-R] path: prints none, present or unknown
   as_all=""; [ "$1" = "-R" ] && { as_all="yes"; shift; }
-  ls --version >/dev/null 2>&1 || { printf unknown; return 0; }
-  as_list="$(ls -ld -- "$1" 2>/dev/null)" || { printf unknown; return 0; }
-  if [ -n "$as_all" ] && [ -d "$1" ]; then
-    as_list="$as_list
+  if ls --version >/dev/null 2>&1; then
+    as_list="$(ls -ld -- "$1" 2>/dev/null)" || { printf unknown; return 0; }
+    if [ -n "$as_all" ] && [ -d "$1" ]; then
+      as_list="$as_list
 $(ls -lRA -- "$1" 2>/dev/null)" || { printf unknown; return 0; }
+    fi
+    as_hit="$(printf '%s\n' "$as_list" | while IFS= read -r as_line; do
+      case "$as_line" in
+        ??????????+*) printf present; break ;;
+        ??????????\?*) printf unknown; break ;;
+      esac
+    done)"
+    printf '%s' "${as_hit:-none}"
+  elif command -v getfacl >/dev/null 2>&1; then
+    if [ -n "$as_all" ]; then
+      as_list="$(getfacl -R -P -s -c -p -- "$1" 2>/dev/null)" || { printf unknown; return 0; }
+    else
+      as_list="$(getfacl -s -c -p -- "$1" 2>/dev/null)" || { printf unknown; return 0; }
+    fi
+    [ -z "$as_list" ] && printf none || printf present
+  else
+    printf unknown
   fi
-  as_hit="$(printf '%s\n' "$as_list" | while IFS= read -r as_line; do
-    case "$as_line" in ??????????+*) printf present; break ;; esac
-  done)"
-  printf '%s' "${as_hit:-none}"
 }
+ACL_HELP="Remove the access control list or the group write bit (chmod -R g-w), or
+    use a dedicated root-owned console folder under /opt. Where ls cannot show
+    access control lists (BusyBox), installing coreutils or acl lets it check."
 
 secure_path() { # absolute directory, optionally not created yet
   case "$1" in
@@ -270,11 +288,15 @@ secure_path() { # absolute directory, optionally not created yet
     Use a dedicated root-owned console folder under /opt, or mount the console
     volume read-only in the DNS server. See $DOCKER_DOCS."
       fi
-      if [ "$((0$sp_mode & 0020))" != 0 ] && [ "$(acl_state "$sp_walk")" != none ]; then
-        die "$sp_walk is group-writable, and an access control list may let another
-    account write to it (or this system cannot show one). Root publication is
-    unsafe. Remove the list or the group write bit, or use a dedicated
-    root-owned console folder under /opt. See $DOCKER_DOCS."
+      if [ "$((0$sp_mode & 0020))" != 0 ]; then
+        case "$(acl_state "$sp_walk")" in
+          none) ;;
+          present) die "$sp_walk is group-writable and has an access control list or
+    extended attribute, which may let another account write to it. Root
+    publication is unsafe. $ACL_HELP" ;;
+          *) die "$sp_walk is group-writable, and this system cannot show whether an
+    access control list lets another account write to it. $ACL_HELP" ;;
+        esac
       fi
     fi
   done
@@ -288,7 +310,8 @@ secure_tree() { # existing tree or a directory that may be created
   [ -d "$1" ] || return 0
   # Group write on gid 0 is trusted below only when no object in the tree has
   # an access control list (see acl_state).
-  TC_ACL="$(acl_state -R "$1")" find "$1" -exec sh -c '
+  st_acl="$(acl_state -R "$1")"
+  TC_ACL="$st_acl" find "$1" -exec sh -c '
     for p do
       case "$p" in *"
 "*) printf "unsafe control character in pathname\n" >&2; exit 1 ;; esac
@@ -319,7 +342,10 @@ secure_tree() { # existing tree or a directory that may be created
         printf "special file in console tree: %s\n" "$p" >&2; exit 1
       fi
     done
-  ' sh {} + || die "unsafe console tree at $1. No files were published."
+  ' sh {} + || {
+    [ "$st_acl" = none ] && die "unsafe console tree at $1. No files were published."
+    die "unsafe console tree at $1. No files were published. $ACL_HELP"
+  }
 }
 
 safe_relative() { # a pathname read from one of our line-delimited lists
@@ -1009,8 +1035,8 @@ resolve_target() {
       # folder; anywhere else the administrator creates it or names it.
       if [ ! -e "$configured" ] && [ "$configured" != "$CONSOLE_DIR" ]; then
         die "$VAR_NAME names $configured, which does not exist yet.
-    Not creating a folder that the server's environment chose. Create it
-    yourself, or pass --dir $configured."
+    Not creating a folder that the server's environment chose. If it is the
+    one you meant, create it (sudo mkdir -m 0755 $configured) and run this again."
       fi
       if ! web_answers; then
         warn "$VAR_NAME is set, but the web console does not answer at $(web_base)."

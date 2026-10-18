@@ -193,7 +193,8 @@ drop-in under `/etc/systemd/system`; uninstall removes it again.
 **The installer requires root-owned files and folders.** The console, backup,
 installer state and every parent folder must be writable only by root (the root
 group counts as root, so a stock web root left 0664 by Technitium's own archive
-is accepted). Symbolic
+is accepted, unless an access control list lets another account in; on BusyBox
+systems that needs the acl or coreutils package to be checked). Symbolic
 links, hard links, special files and newline-containing names are refused before
 publication. A service-owned stock console can still be used with a dedicated
 `/opt/technitium-console` folder when no custom lists need copying. If custom
