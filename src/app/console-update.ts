@@ -96,6 +96,11 @@ export async function checkConsoleUpdate(token: string | null, now = Date.now())
   const stored = readStored()
   if (stored && typeof stored.at === 'number' && now - stored.at < DAY) return stored.release ?? null
 
+  // Taken before asking, not after: a server that cannot reach the endpoint
+  // holds the request for up to ten seconds, and a reload or a second tab in
+  // that time must not ask again. Until it answers, the last result stands.
+  store({ at: now, release: stored?.release ?? null })
+
   // No `node`: every node of a cluster serves its own console, so the one the
   // browser is connected to is the one that matters.
   const r = await resolve(token, {

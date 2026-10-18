@@ -806,8 +806,9 @@ contract and SECURITY.md.
       release's tag, and it is bumped together with the CHANGELOG's table. A
       console never announces a release made for a newer server than the one
       running;
-    - the endpoint announces a release only once its image is on GHCR, so that
-      Docker users who pull get it.
+    - the endpoint announces a release only once `latest` on GHCR is that
+      release's image, so that Docker users who pull get it; and a GitHub rate
+      limit is a failure, not "nothing to announce": the last good record stands.
     Its words, all OURS: `Web Console update available` and `DNS Server update
     available` (the two marks' accessible names), `New Web Console Version
     Available!`, `To update, run the installer again:`, `On Docker:`, `Release

@@ -220,6 +220,19 @@ describe('Versions: the console mark', () => {
     expect(screen.queryByRole('button', consoleMark)).not.toBeInTheDocument()
   })
 
+  /* The server's version reaches the Shell after the first render. The server's
+     own check must not run again when it does: each run is a line in its log. */
+  it("asks the server once when the server's version arrives later", async () => {
+    serverCheck({})
+    consoleRelease()
+    const spy = vi.mocked(userApi.checkForUpdate)
+    const { rerender } = render(<Versions token="t" canCheckConsole />)
+    await settle()
+    rerender(<Versions token="t" serverVersion="15.6.2" canCheckConsole />)
+    expect(await screen.findByRole('button', consoleMark)).toBeInTheDocument()
+    expect(spy).toHaveBeenCalledTimes(1)
+  })
+
   it('names the two marks apart', async () => {
     serverCheck({ updateAvailable: true, updateVersion: '16.0' })
     consoleRelease()

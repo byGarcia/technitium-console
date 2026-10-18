@@ -104,7 +104,11 @@ function source(tag: string | null, state = { reads: 0 }) {
     }
     if (url.endsWith('/package.json')) return Response.json({ technitiumServerMinimum: '15.5' })
     if (url.startsWith('https://ghcr.io/token')) return Response.json({ token: 't' })
-    return new Response(null, { status: tag === 'v1.5.0' ? 404 : 200 })
+    if (url.endsWith('/manifests/latest')) {
+      return new Response(null, { headers: { 'docker-content-digest': 'sha256:latest' } })
+    }
+    if (tag === 'v1.5.0') return new Response(null, { status: 404 })
+    return new Response(null, { headers: { 'docker-content-digest': 'sha256:latest' } })
   }) as typeof fetch
   return { fn, state }
 }

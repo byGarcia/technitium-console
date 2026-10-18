@@ -119,6 +119,18 @@ describe('checkConsoleUpdate', () => {
     expect(JSON.parse(localStorage.getItem(CONSOLE_UPDATE_KEY)!)).toEqual({ at: NOW, release: null })
   })
 
+  /* A server that cannot reach the endpoint holds the request for up to ten
+     seconds: a reload or a second tab in that time must not ask again. */
+  it('asks once while a check is still running', async () => {
+    let finish: (v: unknown) => void = () => {}
+    const spy = vi.spyOn(dnsclient, 'resolve').mockReturnValue(new Promise((r) => (finish = r)) as never)
+    const first = checkConsoleUpdate('t', NOW)
+    expect(await checkConsoleUpdate('t', NOW + 1000)).toBeNull()
+    expect(spy).toHaveBeenCalledTimes(1)
+    finish({ kind: 'error', message: 'timed out' })
+    await first
+  })
+
   it('ignores an answer without TXT', async () => {
     answers(null)
     expect(await checkConsoleUpdate('t', NOW)).toBeNull()

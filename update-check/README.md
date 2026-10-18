@@ -14,7 +14,7 @@ v=1 latest=1.4.0 server=15.5
 
 `latest` is the latest release on GitHub, the one `install.sh` installs. `server` is the oldest
 Technitium DNS Server it is made for: `technitiumServerMinimum` in that tag's `package.json`. A
-release is announced only once its Docker image is on GHCR. The format is frozen: consoles already
+release is announced only once the Docker image `latest` is that release, so that pulling gets it. The format is frozen: consoles already
 installed read only this one, and ignore keys they do not know.
 
 It reads GitHub at most once an hour and keeps the last good answer for a month, in case GitHub is

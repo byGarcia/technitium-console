@@ -47,7 +47,13 @@ export function Versions({ token, serverVersion, domain, markHidden = false, can
   const [open, setOpen] = useState(false)
   const [consoleLatest, setConsoleLatest] = useState<string | null>(null)
   const [consoleOpen, setConsoleOpen] = useState(false)
+  /* The server's *Check for update* switch and a silenced notice (with which
+     `checkForUpdate` answers `skipped`) turn both notices off. There is no
+     setting of the console's own. */
+  const [consoleCheckOn, setConsoleCheckOn] = useState(false)
 
+  /* Once per session token, as before: each call is a line in the server's log,
+     so it does not depend on anything that arrives after the first render. */
   useEffect(() => {
     let alive = true
     void (async () => {
@@ -55,18 +61,26 @@ export function Versions({ token, serverVersion, domain, markHidden = false, can
       if (!alive || r.kind !== 'ok') return
       const d = r.data as { response?: UpdateInfo }
       if (d.response?.updateAvailable) setInfo(d.response)
+      setConsoleCheckOn(d.response?.dnsServerEnableCheckForUpdate === true)
+    })()
+    return () => {
+      alive = false
+    }
+  }, [token])
 
-      /* The server's *Check for update* switch and a silenced notice (which
-         never reaches here: `checkForUpdate` answers `skipped`) turn both
-         notices off. There is no setting of the console's own. */
-      if (d.response?.dnsServerEnableCheckForUpdate !== true || !canCheckConsole) return
+  /* Runs again when the server's version arrives, which costs nothing: the
+     check keeps its answer for a day (`console-update.ts`). */
+  useEffect(() => {
+    if (!consoleCheckOn || !canCheckConsole) return
+    let alive = true
+    void (async () => {
       const release = await checkConsoleUpdate(token)
       if (alive) setConsoleLatest(newerConsole(release, __CONSOLE_VERSION__, serverVersion))
     })()
     return () => {
       alive = false
     }
-  }, [token, canCheckConsole, serverVersion])
+  }, [token, consoleCheckOn, canCheckConsole, serverVersion])
 
   /* main.js: when the feed sends no title, upstream writes this one itself. */
   const title = info?.updateTitle ?? 'New Update Available!'
