@@ -36,6 +36,8 @@ Reproduced field by field so the notice can say the same as upstream's.
 */
 export interface UpdateInfo {
   updateAvailable: boolean
+  /** False when the administrator turned *Check for update* off (WebServiceApi.cs:96). */
+  dnsServerEnableCheckForUpdate?: boolean
   updateVersion?: string | null
   currentVersion?: string | null
   updateTitle?: string | null
