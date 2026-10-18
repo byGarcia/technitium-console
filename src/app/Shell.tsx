@@ -392,6 +392,7 @@ export function Shell({
             serverVersion={info?.version}
             domain={info?.dnsServerDomain}
             markHidden={markHidden}
+            canCheckConsole={permissions?.DnsClient?.canView === true}
           />
           <Menu label={displayName} text={displayName} anchor="left" asRow>
             {(close) => (

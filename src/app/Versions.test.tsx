@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Versions } from './Versions'
 import * as userApi from '../api/user'
+import * as consoleUpdate from './console-update'
 import { wholeText } from '../test/whole-text'
 
 afterEach(() => vi.restoreAllMocks())
@@ -21,7 +22,7 @@ function withoutUpdate() {
   } as never)
 }
 
-const mark = { name: /Update/ } as const
+const mark = { name: 'DNS Server update available' } as const
 
 describe('Versions', () => {
   it('reports both versions and the server it is talking about', async () => {
@@ -131,5 +132,99 @@ describe('Versions', () => {
     expect(screen.getByRole('link', { name: 'Download Now!' })).toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'Update Instructions' })).not.toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'Read Change Logs' })).not.toBeInTheDocument()
+  })
+})
+
+describe('Versions: the console mark', () => {
+  const consoleMark = { name: 'Web Console update available' } as const
+
+  function serverCheck(response: Partial<userApi.UpdateInfo>) {
+    vi.spyOn(userApi, 'checkForUpdate').mockResolvedValue({
+      kind: 'ok',
+      data: { status: 'ok', response: { updateAvailable: false, dnsServerEnableCheckForUpdate: true, ...response } },
+    } as never)
+  }
+
+  function consoleRelease(latest = '1.4.0') {
+    return vi.spyOn(consoleUpdate, 'checkConsoleUpdate').mockResolvedValue({ latest, server: '15.5' })
+  }
+
+  const settle = () => new Promise((r) => setTimeout(r, 0))
+
+  it('shows the console mark when a newer console exists', async () => {
+    serverCheck({})
+    consoleRelease()
+    render(<Versions token="t" serverVersion="15.6.2" canCheckConsole />)
+    expect(await screen.findByRole('button', consoleMark)).toBeInTheDocument()
+    expect(screen.queryByRole('button', mark)).not.toBeInTheDocument()
+  })
+
+  it('opens the console dialog with the version jump and the commands', async () => {
+    serverCheck({})
+    consoleRelease()
+    render(<Versions token="t" serverVersion="15.6.2" canCheckConsole />)
+    await userEvent.click(await screen.findByRole('button', consoleMark))
+    const dialog = screen.getByRole('dialog')
+    expect(screen.getByRole('heading', { name: 'New Web Console Version Available!' })).toBeInTheDocument()
+    expect(dialog).toHaveTextContent(`Current Version: ${__CONSOLE_VERSION__}`)
+    expect(dialog).toHaveTextContent('Update Version: 1.4.0')
+    expect(screen.getByRole('link', { name: 'Release Notes' })).toHaveAttribute(
+      'href',
+      'https://github.com/byGarcia/technitium-console/releases/tag/v1.4.0',
+    )
+    expect(dialog).toHaveTextContent(
+      'curl -sSL https://raw.githubusercontent.com/byGarcia/technitium-console/main/install.sh | sudo sh',
+    )
+    expect(dialog).toHaveTextContent(
+      'docker compose pull technitium-console && docker compose up -d technitium-console',
+    )
+  })
+
+  it('does not mark a console that is already the latest', async () => {
+    serverCheck({})
+    consoleRelease(__CONSOLE_VERSION__)
+    render(<Versions token="t" serverVersion="15.6.2" canCheckConsole />)
+    await settle()
+    expect(screen.queryByRole('button', consoleMark)).not.toBeInTheDocument()
+  })
+
+  it('does not check without DNS Client permission', async () => {
+    serverCheck({})
+    const spy = consoleRelease()
+    render(<Versions token="t" serverVersion="15.6.2" />)
+    await settle()
+    expect(spy).not.toHaveBeenCalled()
+  })
+
+  it("does not check when the server's check is off", async () => {
+    serverCheck({ dnsServerEnableCheckForUpdate: false })
+    const spy = consoleRelease()
+    render(<Versions token="t" serverVersion="15.6.2" canCheckConsole />)
+    await settle()
+    expect(spy).not.toHaveBeenCalled()
+  })
+
+  it('does not check when the notice is silenced', async () => {
+    vi.spyOn(userApi, 'checkForUpdate').mockResolvedValue({ kind: 'skipped' })
+    const spy = consoleRelease()
+    render(<Versions token="t" serverVersion="15.6.2" canCheckConsole />)
+    await settle()
+    expect(spy).not.toHaveBeenCalled()
+  })
+
+  it('hides the console mark when the session silences the notice', async () => {
+    serverCheck({})
+    consoleRelease()
+    render(<Versions token="t" serverVersion="15.6.2" canCheckConsole markHidden />)
+    await settle()
+    expect(screen.queryByRole('button', consoleMark)).not.toBeInTheDocument()
+  })
+
+  it('names the two marks apart', async () => {
+    serverCheck({ updateAvailable: true, updateVersion: '16.0' })
+    consoleRelease()
+    render(<Versions token="t" serverVersion="15.6.2" canCheckConsole />)
+    expect(await screen.findByRole('button', consoleMark)).toBeInTheDocument()
+    expect(screen.getByRole('button', mark)).toBeInTheDocument()
   })
 })
