@@ -72,6 +72,15 @@ describe('handle', () => {
     expect((await handle(new Request(URL, { method: 'PUT', body: 'x' }), async () => RECORD)).status).toBe(405)
   })
 
+  /* A DNS query is a few dozen bytes. A larger body is not one, and is not
+     echoed back. */
+  it('refuses an oversized body', async () => {
+    const big = new Uint8Array(70000)
+    big.set(encodeQuery(RECORD_NAME, TYPE_TXT))
+    const r = await handle(new Request(URL, { method: 'POST', body: big }), async () => RECORD)
+    expect(r.status).toBe(413)
+  })
+
   it('refuses a body it cannot read', async () => {
     const r = await handle(new Request(URL, { method: 'POST', body: new Uint8Array(3) }), async () => RECORD)
     expect(r.status).toBe(400)

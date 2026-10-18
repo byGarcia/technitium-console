@@ -17,6 +17,7 @@ const FRESH_TTL = 3600
 const NOTHING_TTL = 600
 const FAILURE_TTL = 60
 const LAST_TTL = 30 * 24 * 3600
+const MAX_QUERY = 4096
 const VERSION = /^\d+\.\d+(\.\d+)?$/
 
 /* What comes back from `get` is checked before use: the cache is storage this
@@ -85,7 +86,12 @@ function fromBase64Url(text: string): Uint8Array | null {
 
 export async function handle(request: Request, find: () => Promise<Release | null>): Promise<Response> {
   let body: Uint8Array | null = null
-  if (request.method === 'POST') body = new Uint8Array(await request.arrayBuffer())
+  if (request.method === 'POST') {
+    body = new Uint8Array(await request.arrayBuffer())
+    // A query for one name is a few dozen bytes. Anything this large is not
+    // one, and is not echoed back.
+    if (body.length > MAX_QUERY) return new Response('Payload Too Large', { status: 413 })
+  }
   else if (request.method === 'GET') body = fromBase64Url(new URL(request.url).searchParams.get('dns') ?? '')
   else return new Response('Method Not Allowed', { status: 405, headers: { allow: 'GET, POST' } })
 

@@ -23,6 +23,9 @@ describe('parseQuery', () => {
     long[12] = 60
     expect(parseQuery(long)).toBeNull()
 
+    // RFC 1035: a name is at most 255 bytes on the wire.
+    expect(parseQuery(encodeQuery(Array(50).fill('abcdefgh').join('.'), 16))).toBeNull()
+
     const pointer = encodeQuery(NAME, 16)
     pointer[12] = 0xc0
     expect(parseQuery(pointer)).toBeNull()
