@@ -18,7 +18,7 @@ that works on your phone.
 |---|---|
 | ![The dashboard](docs/screenshots/dashboard.png) | ![Blocking › Overview](docs/screenshots/blocking-overview.png) |
 
-**Latest: [v1.3.1](https://github.com/byGarcia/technitium-console/releases/latest) for Technitium DNS
+**Latest: [v1.3.2](https://github.com/byGarcia/technitium-console/releases/latest) for Technitium DNS
 Server 15.5.x and 15.6.x**, with a Dashboard that moves in real time and compares periods, Allowed and Blocked as one
 Blocking section, a light theme, plus LDAP, the zone file editor and everything else 15.5 and 15.6
 brought.

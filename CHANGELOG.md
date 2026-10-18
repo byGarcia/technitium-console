@@ -13,7 +13,7 @@ also `technitiumServerMinimum` in its `package.json`, which is what the update n
 
 | Console | Technitium DNS Server | Notes |
 |---|---|---|
-| **1.3.x** | **15.5.x, 15.6.x** (1.3.1 checked against 15.6.2) | Current. Every screen redesigned for the phone, a Dashboard that compares periods, Cache in one panel. |
+| **1.3.x** | **15.5.x, 15.6.x** (1.3.2 checked against 15.6.2) | Current. Every screen redesigned for the phone, a Dashboard that compares periods, Cache in one panel. |
 | 1.2.x | 15.5.x, 15.6.x | Superseded by 1.3.x on the same server. Allowed and Blocked become one Blocking section, a light theme, and the console comes as an image for Docker. Supports a console folder of its own (`DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH`), so server updates leave it alone. |
 | 1.1.x | 15.5.x | Superseded by 1.2.x on the same server. If you stay on it, use 1.1.3: earlier ones flood the server from Cache, Allowed and Blocked. |
 | 1.0.0 | 15.4 | Cannot save Settings on a 15.5 server. Upgrade. |
@@ -23,7 +23,11 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
 
 ---
 
-## Unreleased
+## v1.3.2 (2026-10-18)
+
+**An update notice, and a hardened installer.** The console now tells you when there is a newer
+one, and an audit of the whole product tightened the installer and the release workflow. Still
+Technitium DNS Server 15.6.2: no API changes, all 132 endpoints are covered.
 
 - **The console tells you when a newer console is out**, the way the server does for itself: an
   *Update* mark next to *Web Console*, and a dialog with the release notes and the two commands
