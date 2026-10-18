@@ -14,33 +14,56 @@ import { formatRecord, readRelease, type Release } from './source.ts'
 export const RECORD_NAME = 'latest.technitium-console.pages.dev'
 const RECORD_TTL = 3600
 const FRESH_TTL = 3600
+const NOTHING_TTL = 600
+const FAILURE_TTL = 60
 const LAST_TTL = 30 * 24 * 3600
+const VERSION = /^\d+\.\d+(\.\d+)?$/
 
+/* What comes back from `get` is checked before use: the cache is storage this
+   code does not own end to end, so it is read as untrusted. */
 export interface Store {
-  get(key: string): Promise<Release | null>
-  put(key: string, value: Release, ttlSeconds: number): Promise<void>
+  get(key: string): Promise<unknown>
+  put(key: string, value: unknown, ttlSeconds: number): Promise<void>
+}
+
+function asRelease(value: unknown): Release | null {
+  const r = value as Partial<Release> | null
+  if (!r || typeof r.latest !== 'string' || typeof r.server !== 'string') return null
+  if (!/^\d+\.\d+\.\d+$/.test(r.latest) || !VERSION.test(r.server)) return null
+  return { latest: r.latest, server: r.server }
 }
 
 /*
 GitHub and GHCR are read at most once an hour. When they fail, the last good
 record keeps being served for up to a month, so an outage on their side does not
 silence every console; with nothing kept, the failure reaches the caller.
+
+"Nothing to announce" and a failure with nothing kept are cached too, for ten
+minutes and one minute. Anyone can send queries, and without that each one
+would cost GitHub two to four requests.
 */
 export async function lookup(fetchFn: typeof fetch, store: Store): Promise<Release | null> {
-  const fresh = await store.get('fresh')
-  if (fresh) return fresh
+  const fresh = (await store.get('fresh')) as { release?: unknown } | null
+  if (fresh && typeof fresh === 'object' && 'release' in fresh) {
+    if (fresh.release === null) return null
+    const release = asRelease(fresh.release)
+    if (release) return release
+  }
 
-  const last = await store.get('last')
+  const last = asRelease(await store.get('last'))
   let release: Release | null
   try {
     release = await readRelease(fetchFn, last)
   } catch (error) {
+    await store.put('fresh', { release: last }, FAILURE_TTL)
     if (last) return last
     throw error
   }
   if (release) {
-    await store.put('fresh', release, FRESH_TTL)
+    await store.put('fresh', { release }, FRESH_TTL)
     await store.put('last', release, LAST_TTL)
+  } else {
+    await store.put('fresh', { release: null }, NOTHING_TTL)
   }
   return release
 }

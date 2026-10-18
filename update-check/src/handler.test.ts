@@ -78,7 +78,7 @@ describe('handle', () => {
   })
 })
 
-function memory(initial: Record<string, Release> = {}): Store & { puts: [string, number][] } {
+function memory(initial: Record<string, unknown> = {}): Store & { puts: [string, number][] } {
   const data = new Map(Object.entries(initial))
   const puts: [string, number][] = []
   return {
@@ -93,8 +93,8 @@ function memory(initial: Record<string, Release> = {}): Store & { puts: [string,
   }
 }
 
-/* A GitHub and GHCR that answer `tag`, or 503 when `down`. Counts the releases page. */
-function source(tag: string | null, state = { reads: 0 }) {
+/* A GitHub and GHCR that answer `tag`, or 503 when it is null. Counts the releases page. */
+function source(tag: string | null, state = { reads: 0 }, pkg: unknown = { technitiumServerMinimum: '15.5' }) {
   const fn = (async (input: RequestInfo | URL) => {
     const url = String(input)
     if (url.endsWith('/releases/latest')) {
@@ -102,7 +102,7 @@ function source(tag: string | null, state = { reads: 0 }) {
       if (!tag) return new Response('', { status: 503 })
       return new Response(null, { status: 302, headers: { location: `https://github.com/x/releases/tag/${tag}` } })
     }
-    if (url.endsWith('/package.json')) return Response.json({ technitiumServerMinimum: '15.5' })
+    if (url.endsWith('/package.json')) return Response.json(pkg)
     if (url.startsWith('https://ghcr.io/token')) return Response.json({ token: 't' })
     if (url.endsWith('/manifests/latest')) {
       return new Response(null, { headers: { 'docker-content-digest': 'sha256:latest' } })
@@ -126,9 +126,44 @@ describe('lookup', () => {
     ])
   })
 
+  /* Anyone can send queries. Without a cached "nothing", each one would cost
+     GitHub two requests while the latest release has nothing to announce. */
+  it('reads once per ten minutes when there is nothing to announce', async () => {
+    const store = memory()
+    const { fn, state } = source('v1.3.1', { reads: 0 }, {})
+    expect(await lookup(fn, store)).toBeNull()
+    expect(await lookup(fn, store)).toBeNull()
+    expect(state.reads).toBe(1)
+    expect(store.puts).toEqual([['fresh', 600]])
+  })
+
+  it('backs off for a minute after a failure with nothing kept', async () => {
+    const store = memory()
+    const { fn, state } = source(null)
+    await expect(lookup(fn, store)).rejects.toThrow()
+    expect(await lookup(fn, store)).toBeNull()
+    expect(state.reads).toBe(1)
+    expect(store.puts).toEqual([['fresh', 60]])
+  })
+
+  it('ignores a cached value that is not a release', async () => {
+    const { fn, state } = source('v1.4.0')
+    const store = memory({ fresh: { release: { latest: '1.4.0<b>', server: '15.5' } }, last: 'x' })
+    expect(await lookup(fn, store)).toEqual(RECORD)
+    expect(state.reads).toBe(1)
+  })
+
   it('serves the last good record when the source fails', async () => {
     const { fn } = source(null)
     expect(await lookup(fn, memory({ last: RECORD }))).toEqual(RECORD)
+  })
+
+  it('backs off for a minute while serving the last good record', async () => {
+    const store = memory({ last: RECORD })
+    const { fn, state } = source(null)
+    await lookup(fn, store)
+    expect(await lookup(fn, store)).toEqual(RECORD)
+    expect(state.reads).toBe(1)
   })
 
   it('passes the last record on while the image is missing', async () => {
