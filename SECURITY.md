@@ -67,7 +67,9 @@ There is no bounty.
   into. It only believes a running server started by root or by the service's own account, does not
   write through symbolic links it found by itself, and removes only an unchanged drop-in it owns.
   `--uninstall` only removes the recorded folder while it still holds this console. A release
-  download is checked against the `.sha256` the release publishes; `--from` is not, and says so. If
+  download is checked against the `.sha256` the release publishes; `--from` is not, and says so.
+  `--version` takes only a release tag. On a Docker host it changes nothing and only prints
+  commands; names read from containers are quoted in them and stripped of control characters. If
   you find it writing anywhere else, that is a bug and a serious one.
 - **Piping a script from the internet into `sudo sh`** is the documented install path and it is a
   real trade-off. Download it, read it, run it. The file is POSIX shell and is meant to be read.
@@ -81,6 +83,15 @@ other write bit on files or directories, including every ancestor, and a group
 write bit only when the group is root (gid 0), as sudo does for sudoers.
 Technitium's own archive ships its files 0664, so a stock web root extracted by
 root is root:root 0664 and is accepted.
+That group bit is trusted only when no object in the tree carries a POSIX access
+control list: on one that does, the group bits are the list's mask, and can stand
+for another account that setfacl let write. The installer reads lists from the
+`+` that GNU or uutils `ls -l` shows, or from `getfacl` where ls cannot show them
+(BusyBox); with neither, group write is not trusted at all.
+A folder named by the running server's `DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH`
+is created only when it is `/opt/technitium-console`, where the README puts it:
+the service's own account can set that variable, so any other folder that does
+not exist yet has to be created by the administrator first.
 It rejects links, special files and newline-containing names before root copies
 or cleanup. It refuses unsafe ownership instead of trying to repair it while
 another account may still hold writable files open. Use a dedicated root-owned

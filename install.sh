@@ -87,6 +87,18 @@ EOF
   exit 0
 }
 
+# --version goes into the download URL, and curl resolves dot segments there:
+# "../../other/repo/releases/download/x" would fetch someone else's tarball
+# and its checksum. A tag has none of those characters.
+validate_version() { # a release tag such as v1.3.1 or v1.4.0-rc.1
+  case "$1" in
+    latest) return 0 ;;
+    ''|.*|*..*|*[!0-9A-Za-z.+-]*) return 1 ;;
+    v[0-9]*|[0-9]*) return 0 ;;
+  esac
+  return 1
+}
+
 while [ $# -gt 0 ]; do
   case "$1" in
     --uninstall) ACTION="uninstall" ;;
@@ -103,6 +115,7 @@ while [ $# -gt 0 ]; do
   esac
   shift
 done
+validate_version "$VERSION" || die "--version takes a release tag, such as v1.3.1: $VERSION"
 
 if [ "$(id -u)" != "0" ]; then
   if [ -n "$INTO_VOLUME" ]; then
@@ -212,6 +225,43 @@ refuse_links() { # folder about to be written into
 # Group write is accepted only when the group is root's own (gid 0), the rule
 # sudo applies to sudoers: Technitium's tarball ships every file 0664, and tar
 # run as root keeps that mode, so a stock web root is root:root 0664.
+# And only when nothing carries a POSIX access control list: on an object with
+# one, the group bits are the list's mask, so a group write bit on root:root can
+# be a named account that setfacl let in. GNU and uutils `ls -l` mark such
+# objects with a "+" after the mode (uutils for any extended attribute, which
+# errs on the safe side) and with "?" when they cannot read it. BusyBox ls
+# shows nothing, so there getfacl answers if it is installed; with neither the
+# answer is "unknown", and then group write is not trusted.
+acl_state() { # [-R] path: prints none, present or unknown
+  as_all=""; [ "$1" = "-R" ] && { as_all="yes"; shift; }
+  if ls --version >/dev/null 2>&1; then
+    as_list="$(ls -ld -- "$1" 2>/dev/null)" || { printf unknown; return 0; }
+    if [ -n "$as_all" ] && [ -d "$1" ]; then
+      as_list="$as_list
+$(ls -lRA -- "$1" 2>/dev/null)" || { printf unknown; return 0; }
+    fi
+    as_hit="$(printf '%s\n' "$as_list" | while IFS= read -r as_line; do
+      case "$as_line" in
+        ??????????+*) printf present; break ;;
+        ??????????\?*) printf unknown; break ;;
+      esac
+    done)"
+    printf '%s' "${as_hit:-none}"
+  elif command -v getfacl >/dev/null 2>&1; then
+    if [ -n "$as_all" ]; then
+      as_list="$(getfacl -R -P -s -c -p -- "$1" 2>/dev/null)" || { printf unknown; return 0; }
+    else
+      as_list="$(getfacl -s -c -p -- "$1" 2>/dev/null)" || { printf unknown; return 0; }
+    fi
+    [ -z "$as_list" ] && printf none || printf present
+  else
+    printf unknown
+  fi
+}
+ACL_HELP="Remove the access control list or the group write bit (chmod -R g-w), or
+    use a dedicated root-owned console folder under /opt. Where ls cannot show
+    access control lists (BusyBox), installing coreutils or acl lets it check."
+
 secure_path() { # absolute directory, optionally not created yet
   case "$1" in
     /*) ;;
@@ -238,6 +288,16 @@ secure_path() { # absolute directory, optionally not created yet
     Use a dedicated root-owned console folder under /opt, or mount the console
     volume read-only in the DNS server. See $DOCKER_DOCS."
       fi
+      if [ "$((0$sp_mode & 0020))" != 0 ]; then
+        case "$(acl_state "$sp_walk")" in
+          none) ;;
+          present) die "$sp_walk is group-writable and has an access control list or
+    extended attribute, which may let another account write to it. Root
+    publication is unsafe. $ACL_HELP" ;;
+          *) die "$sp_walk is group-writable, and this system cannot show whether an
+    access control list lets another account write to it. $ACL_HELP" ;;
+        esac
+      fi
     fi
   done
 }
@@ -248,28 +308,44 @@ secure_path() { # absolute directory, optionally not created yet
 secure_tree() { # existing tree or a directory that may be created
   secure_path "$1"
   [ -d "$1" ] || return 0
-  find "$1" -exec sh -c '
+  # Group write on gid 0 is trusted below only when no object in the tree has
+  # an access control list (see acl_state).
+  st_acl="$(acl_state -R "$1")"
+  TC_ACL="$st_acl" find "$1" -exec sh -c '
     for p do
       case "$p" in *"
 "*) printf "unsafe control character in pathname\n" >&2; exit 1 ;; esac
       [ ! -L "$p" ] || { printf "symbolic link in console tree: %s\n" "$p" >&2; exit 1; }
       if [ -d "$p" ]; then
         m=$(stat -c "%u:%g:%a" "$p") || exit 1
-        mode=${m##*:}; g=${m#*:}; g=${g%:*}; w=0002; [ "$g" = 0 ] || w=0022
+        mode=${m##*:}; g=${m#*:}; g=${g%:*}; w=0022; [ "$g" = 0 ] && [ "$TC_ACL" = none ] && w=0002
         [ "${m%%:*}" = 0 ] && [ "$((0$mode & w))" = 0 ] || {
-          printf "root-only writable namespace required: %s\n" "$p" >&2; exit 1;
+          if [ "$g" = 0 ] && [ "$TC_ACL" != none ] && [ "$((0$mode & 0020))" != 0 ]; then
+            printf "group write, with an access control list present or not visible: %s\n" "$p" >&2
+          else
+            printf "root-only writable namespace required: %s\n" "$p" >&2
+          fi
+          exit 1;
         }
       elif [ -f "$p" ]; then
         m=$(stat -c "%u:%g:%a:%h" "$p") || exit 1
-        mode=${m#*:*:}; mode=${mode%:*}; g=${m#*:}; g=${g%%:*}; w=0002; [ "$g" = 0 ] || w=0022
+        mode=${m#*:*:}; mode=${mode%:*}; g=${m#*:}; g=${g%%:*}; w=0022; [ "$g" = 0 ] && [ "$TC_ACL" = none ] && w=0002
         [ "${m%%:*}" = 0 ] && [ "$((0$mode & w))" = 0 ] && [ "${m##*:}" = 1 ] || {
-          printf "root-owned, non-shared regular file required: %s\n" "$p" >&2; exit 1;
+          if [ "$g" = 0 ] && [ "$TC_ACL" != none ] && [ "$((0$mode & 0020))" != 0 ]; then
+            printf "group write, with an access control list present or not visible: %s\n" "$p" >&2
+          else
+            printf "root-owned, non-shared regular file required: %s\n" "$p" >&2
+          fi
+          exit 1;
         }
       else
         printf "special file in console tree: %s\n" "$p" >&2; exit 1
       fi
     done
-  ' sh {} + || die "unsafe console tree at $1. No files were published."
+  ' sh {} + || {
+    [ "$st_acl" = none ] && die "unsafe console tree at $1. No files were published."
+    die "unsafe console tree at $1. No files were published. $ACL_HELP"
+  }
 }
 
 safe_relative() { # a pathname read from one of our line-delimited lists
@@ -553,8 +629,11 @@ docker_servers() {
     | awk -F'|' '$2 ~ /DnsServerApp\.dll/ { print $1 }'
 }
 dk() { docker inspect -f "$2" "$1" 2>/dev/null || true; }
-dk_label() { dk "$1" "{{index .Config.Labels \"$2\"}}"; }
-dk_env() { dk "$1" '{{range .Config.Env}}{{println .}}{{end}}' | sed -n "s/^$2=//p" | head -1; }
+# Labels and environment can come from the image, so whoever built it wrote
+# them. Control characters go before anything reaches the terminal, and the
+# values that end up in a printed command are quoted there with shq.
+dk_label() { dk "$1" "{{index .Config.Labels \"$2\"}}" | tr -d '[:cntrl:]'; }
+dk_env() { dk "$1" '{{range .Config.Env}}{{println .}}{{end}}' | sed -n "s/^$2=//p" | head -1 | tr -d '[:cntrl:]'; }
 # The source goes last and is everything after the fifth |, because a folder
 # can have a | in its name. One with a newline or another control character
 # would split the line, so docker says first whether %q leaves it as it is:
@@ -622,7 +701,7 @@ at_least_15_5() {
 dk_init_service() {
   docker ps -a --filter "label=com.docker.compose.project=$1" \
     --format '{{.Image}}|{{.Label "com.docker.compose.service"}}' 2>/dev/null \
-    | awk -F'|' '$1 ~ /technitium-console/ { print $2; exit }'
+    | awk -F'|' '$1 ~ /technitium-console/ { print $2; exit }' | tr -d '[:cntrl:]'
 }
 shq() { # a word as a shell reads it back, quoted only when it has to be
   case "$1" in
@@ -730,7 +809,8 @@ docker_steps() {
       say ""
       if [ -n "$ds_project" ]; then
         ds_init="$(dk_init_service "$ds_project")"
-        say "  $ds_dc pull ${ds_init:-technitium-console} && $ds_dc up -d ${ds_init:-technitium-console}"
+        ds_init="$(shq "${ds_init:-technitium-console}")"
+        say "  $ds_dc pull $ds_init && $ds_dc up -d $ds_init"
       else
         say "  docker pull $IMAGE_REF:latest"
         if [ "$DM_TYPE" = "volume" ] || nameable "$DM_WHERE"; then
@@ -775,7 +855,7 @@ docker_steps() {
         else
           say "    (docker reports the path resolved; your file may write it relative to itself)"
         fi
-        say "  - $ds_dc up -d $ds_service"
+        say "  - $ds_dc up -d $(shq "$ds_service")"
         say "    Its only restart: it comes back on the console its image ships."
       else
         say "  - Re-create $ds_c without -v $(shq "$DM_WHERE:/opt/technitium/dns/www$DM_RO") (its only restart)."
@@ -949,6 +1029,15 @@ resolve_target() {
     if [ -n "$configured" ]; then
       secure_tree "$configured"
       refuse_links "$configured"          # the probe below already writes into it
+      # That folder is the choice of the server's environment, which the
+      # service's own account can set, not of the administrator. One that does
+      # not exist yet is created only where the README puts this console's
+      # folder; anywhere else the administrator creates it or names it.
+      if [ ! -e "$configured" ] && [ "$configured" != "$CONSOLE_DIR" ]; then
+        die "$VAR_NAME names $configured, which does not exist yet.
+    Not creating a folder that the server's environment chose. If it is the
+    one you meant, create it (sudo mkdir -m 0755 $configured) and run this again."
+      fi
       if ! web_answers; then
         warn "$VAR_NAME is set, but the web console does not answer at $(web_base)."
         warn "Not installing where nothing can be checked. Pass --url, or --dir to decide yourself."

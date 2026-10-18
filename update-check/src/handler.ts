@@ -17,6 +17,7 @@ const FRESH_TTL = 3600
 const NOTHING_TTL = 600
 const FAILURE_TTL = 60
 const LAST_TTL = 30 * 24 * 3600
+const MAX_QUERY = 4096
 const VERSION = /^\d+\.\d+(\.\d+)?$/
 
 /* What comes back from `get` is checked before use: the cache is storage this
@@ -74,6 +75,10 @@ function message(bytes: Uint8Array<ArrayBuffer>): Response {
   })
 }
 
+function tooLarge(): Response {
+  return new Response('Payload Too Large', { status: 413 })
+}
+
 function fromBase64Url(text: string): Uint8Array | null {
   try {
     const binary = atob(text.replace(/-/g, '+').replace(/_/g, '/'))
@@ -85,8 +90,17 @@ function fromBase64Url(text: string): Uint8Array | null {
 
 export async function handle(request: Request, find: () => Promise<Release | null>): Promise<Response> {
   let body: Uint8Array | null = null
-  if (request.method === 'POST') body = new Uint8Array(await request.arrayBuffer())
-  else if (request.method === 'GET') body = fromBase64Url(new URL(request.url).searchParams.get('dns') ?? '')
+  if (request.method === 'POST') {
+    if (Number(request.headers.get('content-length') ?? 0) > MAX_QUERY) return tooLarge()
+    body = new Uint8Array(await request.arrayBuffer())
+    // A query for one name is a few dozen bytes. Anything this large is not
+    // one, and is not echoed back.
+    if (body.length > MAX_QUERY) return tooLarge()
+  } else if (request.method === 'GET') {
+    const dns = new URL(request.url).searchParams.get('dns') ?? ''
+    if (dns.length > (MAX_QUERY * 4) / 3 + 4) return tooLarge()
+    body = fromBase64Url(dns)
+  }
   else return new Response('Method Not Allowed', { status: 405, headers: { allow: 'GET, POST' } })
 
   // Without a readable question there is nothing to echo back: RFC 8484 lets a

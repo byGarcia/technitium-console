@@ -75,10 +75,18 @@ interface Stored {
   release: ConsoleRelease | null
 }
 
+/* What comes back from storage is checked like an answer: same-origin script
+   or an older format can have written anything there. */
 function readStored(): Stored | null {
   try {
     const raw = localStorage.getItem(CONSOLE_UPDATE_KEY)
-    return raw ? (JSON.parse(raw) as Stored) : null
+    const stored = raw ? (JSON.parse(raw) as Partial<Stored>) : null
+    if (!stored || typeof stored.at !== 'number') return null
+    if (stored.release === null) return { at: stored.at, release: null }
+    const r = stored.release
+    if (!r || typeof r.latest !== 'string' || typeof r.server !== 'string') return null
+    const release = parseRecord(`v=1 latest=${r.latest} server=${r.server}`)
+    return release ? { at: stored.at, release } : null
   } catch {
     return null
   }
@@ -94,7 +102,8 @@ function store(value: Stored): void {
 
 export async function checkConsoleUpdate(token: string | null, now = Date.now()): Promise<ConsoleRelease | null> {
   const stored = readStored()
-  if (stored && typeof stored.at === 'number' && now - stored.at < DAY) return stored.release ?? null
+  // A time ahead of now (a clock that was corrected) is not a fresh answer.
+  if (stored && stored.at <= now && now - stored.at < DAY) return stored.release
 
   // Taken before asking, not after: a server that cannot reach the endpoint
   // holds the request for up to ten seconds, and a reload or a second tab in

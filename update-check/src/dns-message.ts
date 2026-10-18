@@ -41,6 +41,8 @@ export function parseQuery(message: Uint8Array): DnsQuery | null {
     at += 1 + length
   }
   at += 1
+  // RFC 1035: a name is at most 255 bytes on the wire, its root included.
+  if (at - 12 > 255) return null
   if (at + 4 > message.length) return null
 
   return {

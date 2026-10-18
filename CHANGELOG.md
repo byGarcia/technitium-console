@@ -31,6 +31,28 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
   made for the server you run. It follows *Check for update* in *Settings › General*. How it works
   and what leaves your network: [README](README.md#keeping-it-up-to-date).
 
+**Security**, from an audit of the whole product:
+
+- The installer no longer trusts a group-writable root folder that carries a POSIX access control
+  list: there the group bits can stand for another account that may write, and that account
+  could race root's copy and make it write or delete outside the console folder. Where neither
+  `ls` nor `getfacl` can show lists (BusyBox without the acl package), group write is not trusted
+  at all, and the installer says how to fix it.
+- The installer no longer creates a folder just because the running server's environment names
+  it. Only `/opt/technitium-console` is created that way; any other new folder has to be created
+  by the administrator first.
+- On a Docker host, the commands the installer prints quote the Compose service names it reads,
+  and strip control characters from every name it shows, so a label set in an image cannot add a
+  command to the line you paste or rewrite the screen.
+- `--version` accepts only a release tag, so it can no longer point the download at another
+  repository's release.
+- The release workflow now unpacks the build job's artifact outside its checkout and accepts only
+  the tarball and its checksum, so nothing from the job that runs npm can replace a script the
+  release job runs.
+- Links that come from the server, such as the update notice's, are followed only when they are
+  http or https. The zone records filter no longer blanks the console on a pattern that is not a
+  valid expression. The update check refuses oversized queries and names longer than DNS allows.
+
 ## v1.3.1 (2026-10-17)
 
 **Technitium DNS Server 15.6.2.** The server release makes the Dashboard's figures links to Query

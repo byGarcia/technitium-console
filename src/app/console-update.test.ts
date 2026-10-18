@@ -131,6 +131,21 @@ describe('checkConsoleUpdate', () => {
     await first
   })
 
+  it('asks again when the stored release is not a valid one', async () => {
+    const spy = answers('v=1 latest=1.4.0 server=15.5')
+    localStorage.setItem(CONSOLE_UPDATE_KEY, JSON.stringify({ at: NOW, release: { latest: '<b>9</b>', server: '15.5' } }))
+    expect(await checkConsoleUpdate('t', NOW + HOUR)).toEqual({ latest: '1.4.0', server: '15.5' })
+    expect(spy).toHaveBeenCalledTimes(1)
+  })
+
+  /* A clock that ran ahead and was corrected must not silence the check. */
+  it('asks again when the stored time is in the future', async () => {
+    const spy = answers('v=1 latest=1.4.0 server=15.5')
+    localStorage.setItem(CONSOLE_UPDATE_KEY, JSON.stringify({ at: NOW + 30 * 24 * HOUR, release: null }))
+    await checkConsoleUpdate('t', NOW)
+    expect(spy).toHaveBeenCalledTimes(1)
+  })
+
   it('ignores an answer without TXT', async () => {
     answers(null)
     expect(await checkConsoleUpdate('t', NOW)).toBeNull()

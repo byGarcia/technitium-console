@@ -16,11 +16,27 @@ Two shapes, which is what upstream has:
 - `HelpText`, the standalone line at the foot of a panel or a dialog: "Help: …".
 */
 export function External({ href, children }: { href: string; children: ReactNode }) {
+  if (!webDestination(href)) return <span>{children}</span>
   return (
     <a href={href} target="_blank" rel="noreferrer">
       {children}
     </a>
   )
+}
+
+/*
+OURS: some destinations come from the server, such as the three links of the
+update feed, so only the web's own schemes become a link. React already blocks
+`javascript:`, and browsers block a top-level `data:`; this does not depend on
+either.
+*/
+function webDestination(href: string): boolean {
+  try {
+    const { protocol } = new URL(href, window.location.href)
+    return protocol === 'https:' || protocol === 'http:'
+  } catch {
+    return false
+  }
 }
 
 /**

@@ -91,4 +91,13 @@ describe('type filter', () => {
   it('with no filters it returns the same list, without copying it', () => {
     expect(filterBy(RECORDS, { name: '', type: '' }, 'casa.test')).toBe(RECORDS)
   })
+
+  /* The pattern is the viewer's own text, built into a RegExp the way upstream
+     builds it. One that is not a valid expression filters to nothing instead
+     of taking the whole console down with it. */
+  it('does not throw on a pattern that is not a valid expression', () => {
+    expect(() => compileNameFilter('www(*', 'example.test')).not.toThrow()
+    const records = [{ name: 'www(x.example.test', type: 'A' }] as never
+    expect(filterBy(records, { name: 'www(*', type: '' }, 'example.test')).toEqual([])
+  })
 })

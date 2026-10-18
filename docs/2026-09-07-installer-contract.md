@@ -288,6 +288,17 @@ console after any server update, is root:root 0664. The amendment above
 refused it, so upgrade and uninstall stopped on a stock file. Write by a
 non-root group or by others is still refused.
 
+*2026-10-18, after a security audit:* that group bit is trusted only when no
+object in the tree carries a POSIX access control list, because on one that
+does the group bits are the list's mask and can stand for another account. Lists
+are read from the `+` of GNU or uutils `ls -l`, or from `getfacl` where ls shows
+none (BusyBox); with neither, group write is refused, with the remedy in the
+message. And W3 narrows: a folder named by the running server's environment that
+does not exist yet is created only when it is `/opt/technitium-console`, the
+folder the README documents. The service's own account can set that variable,
+so any other new folder must be created by the administrator first. The
+offline regressions are in `dev/installer-security.test.py`.
+
 ### Where it installs
 
 - **W1 ✓** (C14) The web root is resolved, in order: `--dir`; the value of the
