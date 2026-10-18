@@ -43,7 +43,8 @@ is not an opinion.
 - **A server.** There is no backend here, no database, no account, and nothing is stored beyond the
   session token the DNS server issues.
 - **A telemetry surface.** Nothing is reported anywhere. The only host this console talks to is the
-  DNS server it is installed on.
+  DNS server it is installed on. Once a day it asks that server to look up whether a newer console
+  is out (README, *Keeping it up to date*); the request carries nothing about you or your server.
 - **A fork of the server.** The
   [pull request](https://github.com/TechnitiumSoftware/DnsServer/pull/2128) that proposed merging it
   was closed, and that was the right call: the maintainer is not a frontend developer and could not

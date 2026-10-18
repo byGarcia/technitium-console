@@ -8,7 +8,8 @@ installer downloads.
 
 A console release is built and checked against one Technitium DNS Server release: every action it
 sends, every text it shows and every control it offers, compared with that server's own console.
-**Update the console together with the server.**
+**Update the console together with the server.** The oldest server each release is made for is
+also `technitiumServerMinimum` in its `package.json`, which is what the update notice reads.
 
 | Console | Technitium DNS Server | Notes |
 |---|---|---|
@@ -21,6 +22,14 @@ To update, run the installer again (the same one-line command). It needs no rest
 service. On Docker, pull the image again: see [Docker](README.md#docker).
 
 ---
+
+## Unreleased
+
+- **The console tells you when a newer console is out**, the way the server does for itself: an
+  *Update* mark next to *Web Console*, and a dialog with the release notes and the two commands
+  to update. It asks at most once a day, through your own DNS server, and only announces releases
+  made for the server you run. It follows *Check for update* in *Settings › General*. How it works
+  and what leaves your network: [README](README.md#keeping-it-up-to-date).
 
 ## v1.3.1 (2026-10-17)
 

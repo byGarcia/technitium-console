@@ -270,6 +270,15 @@ console with it: run the installer again (on Docker,
 [the changelog](CHANGELOG.md#which-version-for-which-server) says which console goes with which
 server.
 
+**The console tells you when there is a new one.** An *Update* mark appears next to its version,
+at the foot of the side panel, with the commands to run. Only releases made for the server you run
+are announced. Your browser cannot ask GitHub (the server does not allow it), so the console asks
+your DNS server to look it up: at most once a day per browser, your server sends one HTTPS request
+to `technitium-console.pages.dev`, a small endpoint whose code is in
+[`update-check/`](update-check/). It sees your server's IP address and nothing else, and the request
+does not show in Query Logs. To turn it off, turn off *Check for update* in *Settings › General*,
+which also silences the server's own notice, or block `technitium-console.pages.dev`.
+
 ## Docker
 
 If Technitium runs in Docker, the console comes as a small image that copies it into a volume and

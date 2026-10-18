@@ -34,21 +34,25 @@ pairing here: the domain heads the block that talks about that server.
   margin-bottom: var(--s-2);
 }
 
-/* Label left, version right: the eye reads down the versions in one column. */
+/* Label left, version right: the eye reads down the versions in one column.
+   When a mark leaves no room beside the label, the version and its mark move to
+   the next line, still on the right, rather than cut "Web Console" in two. */
 .row {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   justify-content: space-between;
-  gap: var(--s-5);
+  gap: var(--s-2) var(--s-5);
   font-size: var(--t-2);
 }
 
-.name { color: var(--mute); }
+.name { color: var(--mute); white-space: nowrap; }
 
 .ver {
   display: inline-flex;
   align-items: center;
   gap: var(--s-4);
+  margin-left: auto;
 }
 
 .num { font-family: var(--font-mono); color: var(--ink); }
@@ -92,6 +96,21 @@ Amber and not the red upstream uses: in this console red is what destroys
 .to { color: var(--acc-ink); font-weight: 600; }
 .message { margin-bottom: var(--s-7); }
 .links { display: flex; flex-wrap: wrap; gap: var(--s-7); }
+
+/* The console's update commands: one line each, read and copied whole. They
+   are long, so they wrap between words rather than push the dialog wider. */
+.command {
+  display: block;
+  margin: calc(-1 * var(--s-5)) 0 var(--s-7);
+  padding: var(--s-4) var(--s-5);
+  border: 1px solid var(--line);
+  border-radius: var(--r-2);
+  background: var(--pan2);
+  font-family: var(--font-mono);
+  font-size: var(--t-1);
+  overflow-wrap: break-word;
+  user-select: all;
+}
 
 /* Upstream's two `Note!`, after the links: they explain, they do not change the
    decision. Same rule as every other `Note!` in the console. */
