@@ -52,14 +52,27 @@ jobs:
         with:
           persist-credentials: false
 
-      # Into the workspace, where the release step below picks them up by name.
+      # Outside the workspace: the artifact comes from the job that runs npm,
+      # and nothing in it may land over the checkout whose script and
+      # CHANGELOG.md the steps below use. Same place as develop-image.yml.
       - uses: actions/download-artifact@v8
         with:
           name: console-tarball
+          path: ${{ runner.temp }}/tarball
 
-      # The bytes the tarball job packed, checked before anything is published.
+      # Exactly the two files the tarball job packs, and the bytes checked
+      # against the checksum, before anything is published.
       - name: The tarball, checked against its checksum
-        run: sha256sum -c technitium-console.tar.gz.sha256
+        working-directory: ${{ runner.temp }}/tarball
+        run: |
+          set -eu
+          found="$(find . -mindepth 1 | LC_ALL=C sort | tr '\n' ' ')"
+          expected="./technitium-console.tar.gz ./technitium-console.tar.gz.sha256 "
+          if [ "$found" != "$expected" ] || [ -n "$(find . -mindepth 1 ! -type f)" ]; then
+            echo "The artifact holds something other than the tarball and its checksum: $found" >&2
+            exit 1
+          fi
+          sha256sum -c technitium-console.tar.gz.sha256
 
       # Docker's floating tags only ever move forward (latest to the highest
       # release, X.Y to the highest of its line; prereleases move neither), as
@@ -131,8 +144,8 @@ jobs:
         with:
           token: ${{ github.token }}
           files: |
-            technitium-console.tar.gz
-            technitium-console.tar.gz.sha256
+            ${{ runner.temp }}/tarball/technitium-console.tar.gz
+            ${{ runner.temp }}/tarball/technitium-console.tar.gz.sha256
           name: ${{ steps.notes.outputs.title }}
           body_path: notes.md
           generate_release_notes: true
