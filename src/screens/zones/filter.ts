@@ -52,7 +52,14 @@ export function compileNameFilter(
   // See rule 3 of the header: `.*\.` at the start is a literal asterisk.
   if (pattern.startsWith('.*\\.')) pattern = `\\*${pattern.substring(2)}`
 
-  return { domain, regex: new RegExp(`^${pattern}$`) }
+  // OURS: the viewer's own text, built the way upstream builds it, so a `(` or
+  // a `[` makes an invalid expression. It then filters to nothing instead of
+  // throwing during render, which took the whole console down.
+  try {
+    return { domain, regex: new RegExp(`^${pattern}$`) }
+  } catch {
+    return { domain, regex: /(?!)/ }
+  }
 }
 
 /**
