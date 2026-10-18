@@ -2,7 +2,7 @@
 Builds the DNS query a client would POST, for the tests. With `arcount` 1 it
 appends an empty OPT record, because Technitium sends one with every query.
 */
-export function encodeQuery(name: string, type: number, id = 0, rd = true, arcount = 0): Uint8Array {
+export function encodeQuery(name: string, type: number, id = 0, rd = true, arcount = 0): Uint8Array<ArrayBuffer> {
   const labels = name.split('.').filter((l) => l.length > 0)
   const qname = labels.reduce((n, l) => n + 1 + l.length, 1)
   const opt = arcount === 1 ? 11 : 0

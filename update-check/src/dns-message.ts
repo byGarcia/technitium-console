@@ -20,7 +20,7 @@ export interface DnsQuery {
   name: string
   type: number
   /** The question section as it came: QNAME, QTYPE and QCLASS. */
-  question: Uint8Array
+  question: Uint8Array<ArrayBuffer>
 }
 
 export function parseQuery(message: Uint8Array): DnsQuery | null {
@@ -57,7 +57,7 @@ export function buildResponse(
   query: DnsQuery,
   rcode: 0 | 1 | 2 | 3,
   txt?: { text: string; ttl: number },
-): Uint8Array {
+): Uint8Array<ArrayBuffer> {
   const strings: Uint8Array[] = []
   if (txt) {
     const bytes = new TextEncoder().encode(txt.text)
