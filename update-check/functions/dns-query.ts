@@ -5,7 +5,6 @@ which works on *.pages.dev.
 */
 
 import { handle, lookup, type Store } from '../src/handler.ts'
-import type { Release } from '../src/source.ts'
 
 function edgeCache(): Store {
   const cache = (caches as unknown as { default: Cache }).default
@@ -13,7 +12,12 @@ function edgeCache(): Store {
   return {
     async get(name) {
       const hit = await cache.match(key(name))
-      return hit ? ((await hit.json()) as Release) : null
+      if (!hit) return null
+      try {
+        return await hit.json()
+      } catch {
+        return null
+      }
     },
     async put(name, value, ttlSeconds) {
       const body = JSON.stringify(value)
