@@ -17,8 +17,9 @@ Technitium DNS Server it is made for: `technitiumServerMinimum` in that tag's `p
 release is announced only once the Docker image `latest` is that release, so that pulling gets it. The format is frozen: consoles already
 installed read only this one, and ignore keys they do not know.
 
-It reads GitHub at most once an hour and keeps the last good answer for a month, in case GitHub is
-down. It needs no secrets.
+It reads GitHub at most once an hour and keeps the last good answer for up to a month, in case
+GitHub is down. That copy lives in Cloudflare's cache, one per Cloudflare location, and can be
+evicted sooner. It needs no secrets.
 
 ## Deploying
 
