@@ -776,6 +776,42 @@ contract and SECURITY.md.
    `Ideas and questions`. `Support the Console` has one sentence, `Star on GitHub`
    and the four destinations of `.github/FUNDING.yml` as buttons. Its words are all
    ours and follow the README's `Support` and `Licence`.
+10. **The console tells you when a newer console is out** (Adrián's decision,
+    2026-10-18; `app/console-update.ts`, `app/Versions.tsx`, `update-check/`). The
+    browser cannot ask GitHub (the CSP below has no `connect-src`), so the console
+    asks its own server, with `dnsClient/resolve`, for the TXT of
+    `latest.technitium-console.pages.dev` against
+    `https://technitium-console.pages.dev/dns-query` (`protocol=HTTPS`, no DNSSEC,
+    no import). That endpoint is this repo's `update-check/`, a Cloudflare Pages
+    Function that answers `v=1 latest=X.Y.Z server=A.B`. When a newer release is
+    made for the running server, the *Web Console* row gets the same `Update`
+    mark as the server's, and a dialog with the two commands from the README. Its
+    limits, and a change that crosses one is a bug:
+    - **only that call**, and **at most once a day per browser**: the result,
+      failures included, is kept in `localStorage` under `consoleUpdateCheck`. A
+      failed call writes a line in the server's log (`DnsWebService.cs:2556`), so
+      one a day is the ceiling;
+    - **only when `user/checkForUpdate` answers `dnsServerEnableCheckForUpdate:
+      true`** and the session has *DNS Client: View*. The server's *Check for
+      update* and a silenced notice turn both notices off; there is no setting of
+      its own;
+    - **never with `node`**: every node of a cluster serves its own console;
+    - **silent on any failure**, and nothing from the answer is shown but the
+      version numbers, each checked against `^\d+\.\d+(\.\d+)?$`;
+    - **the record's format is frozen**: consoles already installed read `v=1`,
+      `latest` and `server`, and ignore keys they do not know. Grow it, never
+      change it;
+    - **`server` is the oldest Technitium a release is made for**: it is
+      `technitiumServerMinimum` in `package.json`, read by the endpoint at the
+      release's tag, and it is bumped together with the CHANGELOG's table. A
+      console never announces a release made for a newer server than the one
+      running;
+    - the endpoint announces a release only once its image is on GHCR, so that
+      Docker users who pull get it.
+    Its words, all OURS: `Web Console update available` and `DNS Server update
+    available` (the two marks' accessible names), `New Web Console Version
+    Available!`, `To update, run the installer again:`, `On Docker:`, `Release
+    Notes` and the dialog's `Note!`.
 
 ## Four constraints the server imposes
 

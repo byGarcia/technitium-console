@@ -34,21 +34,25 @@ pairing here: the domain heads the block that talks about that server.
   margin-bottom: var(--s-2);
 }
 
-/* Label left, version right: the eye reads down the versions in one column. */
+/* Label left, version right: the eye reads down the versions in one column.
+   When a mark leaves no room beside the label, the version and its mark move to
+   the next line, still on the right, rather than cut "Web Console" in two. */
 .row {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   justify-content: space-between;
-  gap: var(--s-5);
+  gap: var(--s-2) var(--s-5);
   font-size: var(--t-2);
 }
 
-.name { color: var(--mute); }
+.name { color: var(--mute); white-space: nowrap; }
 
 .ver {
   display: inline-flex;
   align-items: center;
   gap: var(--s-4);
+  margin-left: auto;
 }
 
 .num { font-family: var(--font-mono); color: var(--ink); }
