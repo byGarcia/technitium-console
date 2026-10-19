@@ -428,3 +428,41 @@ describe('DHCP › Scopes: the form', () => {
     expect(list.mock.calls.length).toBeGreaterThan(before2)
   })
 })
+
+/*
+dhcp.js:479 and 217: editing an existing scope disables the node select, and
+listing the scopes again enables it. Adding a scope leaves it alone.
+*/
+describe('DHCP: the cluster node while a scope is being edited', () => {
+  const NODES = [
+    { name: 'a.example', type: 'Primary' },
+    { name: 'b.example', type: 'Secondary' },
+  ]
+
+  it('is disabled while editing a scope and enabled again on going back', async () => {
+    const user = userEvent.setup()
+    vi.spyOn(api, 'listScopes').mockResolvedValue({ kind: 'ok', data: [SCOPE] })
+    vi.spyOn(api, 'getScope').mockResolvedValue(DETAIL)
+    render(<Dhcp token="t" sub="Scopes" nodes={NODES} clusterInitialised />)
+    await screen.findByText('Default')
+    expect(screen.getByRole('combobox', { name: 'Cluster Node' })).toBeEnabled()
+
+    await user.click(screen.getByRole('button', { name: 'Edit Scope' }))
+    await screen.findByRole('heading', { name: 'Edit Scope' })
+    expect(screen.getByRole('combobox', { name: 'Cluster Node' })).toBeDisabled()
+
+    await user.click(screen.getByRole('button', { name: 'Cancel' }))
+    await screen.findByText('Default')
+    expect(screen.getByRole('combobox', { name: 'Cluster Node' })).toBeEnabled()
+  })
+
+  it('stays enabled while adding a scope', async () => {
+    const user = userEvent.setup()
+    vi.spyOn(api, 'listScopes').mockResolvedValue({ kind: 'ok', data: [] })
+    render(<Dhcp token="t" sub="Scopes" nodes={NODES} clusterInitialised />)
+    await screen.findByText('No Scope Found')
+    await user.click(screen.getByRole('button', { name: 'Add Scope' }))
+    await screen.findByRole('heading', { name: 'Add Scope' })
+    expect(screen.getByRole('combobox', { name: 'Cluster Node' })).toBeEnabled()
+  })
+})

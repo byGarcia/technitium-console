@@ -50,6 +50,9 @@ export interface ScopesProps {
   canModify?: boolean
   /** `DhcpServer.canDelete`: deleting a scope. */
   canDelete?: boolean
+  /** Told whether the node select must be locked: while an existing scope is
+   *  being edited, as dhcp.js:479 disables it and 217 enables it again. */
+  onLockNode?: (locked: boolean) => void
 }
 
 type Editing = { title: 'Add Scope' | 'Edit Scope'; form: Form }
@@ -63,7 +66,14 @@ const KEYS: Keys<DhcpScopeRow> = {
   interface: (s) => s.interfaceAddress ?? '',
 }
 
-export function Scopes({ tabs, token, node = '', canModify = true, canDelete = true }: ScopesProps) {
+export function Scopes({
+  tabs,
+  token,
+  node = '',
+  canModify = true,
+  canDelete = true,
+  onLockNode,
+}: ScopesProps) {
   const [scopes, setScopes] = useState<DhcpScopeRow[] | null>(null)
   /*
   Whether the last load failed.
@@ -81,6 +91,12 @@ export function Scopes({ tabs, token, node = '', canModify = true, canDelete = t
   const [notice, setNotice] = useState<Notice | null>(null)
   const [busy, setBusy] = useState(false)
   const [editing, setEditing] = useState<Editing | null>(null)
+  /* Only an existing scope locks the node: Add Scope leaves it alone. */
+  const locked = editing?.title === 'Edit Scope'
+  useEffect(() => {
+    onLockNode?.(locked)
+  }, [locked, onLockNode])
+  useEffect(() => () => onLockNode?.(false), [onLockNode])
   const [confirm, setConfirm] = useState<{ action: 'disable' | 'delete'; name: string } | null>(
     null,
   )
