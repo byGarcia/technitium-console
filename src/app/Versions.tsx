@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { checkForUpdate, type UpdateInfo } from '../api/user'
 import { checkConsoleUpdate, newerConsole } from './console-update'
 import { Dialog } from '../ui/Dialog'
@@ -253,6 +253,8 @@ seconds; if the browser refuses, the line stays selectable as before.
 */
 function Command({ text: command, label }: { text: string; label: string }) {
   const [copied, setCopied] = useState(false)
+  // Inside the dialog, so its focus trap leaves the copy's selection alone.
+  const row = useRef<HTMLDivElement>(null)
   useEffect(() => {
     if (!copied) return
     const t = window.setTimeout(() => setCopied(false), 2000)
@@ -260,9 +262,9 @@ function Command({ text: command, label }: { text: string; label: string }) {
   }, [copied])
 
   return (
-    <div className={styles.commandRow}>
+    <div className={styles.commandRow} ref={row}>
       <code className={styles.command}>{command}</code>
-      <Button size="sm" aria-label={label} onClick={() => void copyText(command).then(setCopied)}>
+      <Button size="sm" aria-label={label} onClick={() => void copyText(command, row.current ?? undefined).then(setCopied)}>
         {copied ? 'Copied' : 'Copy'}
       </Button>
     </div>

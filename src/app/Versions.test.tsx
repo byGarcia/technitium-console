@@ -191,12 +191,14 @@ describe('Versions: the console mark', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Copy the installer command' }))
     expect(copy).toHaveBeenCalledWith(
       'curl -sSL https://raw.githubusercontent.com/byGarcia/technitium-console/main/install.sh | sudo sh',
+      expect.any(HTMLElement),
     )
     expect(await screen.findByRole('button', { name: 'Copy the installer command' })).toHaveTextContent('Copied')
 
     await userEvent.click(screen.getByRole('button', { name: 'Copy the Docker command' }))
     expect(copy).toHaveBeenLastCalledWith(
       'docker compose pull technitium-console && docker compose up -d technitium-console',
+      expect.any(HTMLElement),
     )
   })
 

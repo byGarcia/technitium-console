@@ -35,3 +35,18 @@ describe('copyText', () => {
     expect(await copyText('x')).toBe(false)
   })
 })
+
+describe('copyText inside a modal', () => {
+  it('puts its textarea where it is told, so a focus trap does not take the selection away', async () => {
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    let parent: Node | null = null
+    document.execCommand = vi.fn(() => {
+      parent = (document.activeElement as HTMLElement).parentNode
+      return true
+    })
+    expect(await copyText('x', host)).toBe(true)
+    expect(parent).toBe(host)
+    host.remove()
+  })
+})
