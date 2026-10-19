@@ -323,7 +323,7 @@ describe('cache: the cluster node', () => {
 
   it('Flush and Delete go to the chosen node', async () => {
     const flush = vi.spyOn(api, 'flushCache').mockResolvedValue(OK)
-    const del = vi.spyOn(api, 'deleteCacheNode').mockResolvedValue(OK)
+    const remove = vi.spyOn(api, 'deleteCacheNode').mockResolvedValue(OK)
     withNode(node({ domain: 'home.test', records: [REG_CACHE] }))
     render(<Cache token="t" nodes={NODES} clusterInitialised />)
     await screen.findByRole('button', { name: 'Delete' })
@@ -331,7 +331,7 @@ describe('cache: the cluster node', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: 'Delete' }))
     await confirm('Delete')
-    expect(del).toHaveBeenCalledWith('t', 'home.test', 'b.example')
+    expect(remove).toHaveBeenCalledWith('t', 'home.test', 'b.example')
 
     await userEvent.click(await screen.findByRole('button', { name: 'Flush Cache' }))
     await confirm('Flush Cache')
