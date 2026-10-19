@@ -143,3 +143,19 @@ export function serverListOptions(entries: QuickServer[]): string[] {
   }
   return out
 }
+
+/*
+What choosing a server does to the protocol, reproduced from `dnsclient.js:30-46`.
+Only choosing from the list does it: typing in the field leaves the protocol alone.
+
+The checks run in upstream's order and the first one wins, which matters: a QUIC
+entry also carries `:853`, and it is QUIC, not TLS. They are case-sensitive
+(`indexOf`), and a plain server keeps UDP or TCP but falls back to UDP from the
+other three.
+*/
+export function protocolForServer(item: string, current: string): string {
+  if (item.includes('QUIC')) return 'QUIC'
+  if (item.includes('TLS') || item.includes(':853')) return 'TLS'
+  if (item.includes('HTTPS') || item.includes('http://') || item.includes('https://')) return 'HTTPS'
+  return current === 'UDP' || current === 'TCP' ? current : 'UDP'
+}

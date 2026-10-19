@@ -37,3 +37,10 @@ chevron, the same treatment as in Apps.
 .raw { margin-top: var(--s-8); border-top: 1px solid var(--line); padding-top: var(--s-8); }
 .raw > * + * { margin-top: var(--s-7); }
 
+
+/* The server field and the arrow that opens its list, side by side. The field
+   takes the width; the arrow keeps its own. */
+.combo { display: flex; gap: var(--s-3); align-items: center; }
+.combo > input { flex: 1 1 auto; min-width: 0; }
+/* The arrow is as tall as the field beside it, and square. */
+.combo > div > button[aria-haspopup] { min-height: var(--field-height); min-width: var(--field-height); }

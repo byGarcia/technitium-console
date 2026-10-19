@@ -1,7 +1,7 @@
 import { Button } from './Button'
-import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode, type RefObject } from 'react'
 import styles from './Menu.module.css'
-import { Icon } from './Icon'
+import { Icon, type IconName } from './Icon'
 
 /*
 The `⋮` menu on each row. Upstream solves it with the Bootstrap 3 dropdown; here
@@ -55,6 +55,8 @@ export function Menu({
   anchor = 'right',
   asRow = false,
   quiet = false,
+  icon = 'plus',
+  alignTo,
   children,
 }: {
   /** Accessible name; it is all there is when it carries no visible label. */
@@ -80,11 +82,24 @@ export function Menu({
    * same; only the resting weight changes.
    */
   quiet?: boolean
+  /**
+   * The icon of the compact trigger, the `⋮` unless told otherwise. The DNS
+   * Client's server list hangs a chevron off its field instead, because there the
+   * menu stands for a dropdown, not for a row's actions.
+   */
+  icon?: IconName
+  /**
+   * Measure the list's edge from this element instead of the trigger, and open
+   * at least as wide as it (and no wider than the window allows on that side,
+   * since a field's entries can be long). For a trigger attached to a field: the list hangs
+   * from the whole control, as a dropdown does, not from the arrow alone.
+   */
+  alignTo?: RefObject<HTMLElement | null>
   children: (close: () => void) => ReactNode
 }) {
   const [open, setOpen] = useState(false)
   const [box, setBox] = useState<
-    { right?: number; left?: number; top?: number; bottom?: number; maxHeight: number } | null
+    { right?: number; left?: number; top?: number; bottom?: number; maxHeight: number; minWidth?: number; maxWidth?: number } | null
   >(null)
   const trigger = useRef<HTMLButtonElement>(null)
   const list = useRef<HTMLDivElement>(null)
@@ -116,14 +131,18 @@ export function Menu({
     const MARGIN = 8
     const below = window.innerHeight - r.bottom - MARGIN
     const above = r.top - MARGIN
-    const edge2 = anchor === 'left' ? { left: r.left } : { right: window.innerWidth - r.right }
+    const a = alignTo?.current?.getBoundingClientRect() ?? r
+    const edge2 = {
+      ...(anchor === 'left' ? { left: a.left } : { right: window.innerWidth - a.right }),
+      ...(alignTo ? { minWidth: a.width, maxWidth: (anchor === 'left' ? window.innerWidth - a.left : a.right) - MARGIN } : {}),
+    }
 
     setBox(
       below < above && below < 240
         ? { ...edge2, bottom: window.innerHeight - r.top + 4, maxHeight: above }
         : { ...edge2, top: r.bottom + 4, maxHeight: below },
     )
-  }, [open, anchor])
+  }, [open, anchor, alignTo])
 
   useEffect(() => {
     if (!open) return
@@ -238,7 +257,7 @@ export function Menu({
           onKeyDown={onTriggerKeyDown}
         >
           {text == null ? (
-            <Icon name="plus" size={16} />
+            <Icon name={icon} size={16} />
           ) : (
             <>
               {text}

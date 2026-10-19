@@ -108,3 +108,67 @@ describe('DNS Client', () => {
     expect(checkbox).not.toBeChecked()
   })
 })
+
+import * as quick from '../../lib/quick-lists'
+
+/*
+Issue #15: the list hung off a `<datalist>`, which the browser filters by what the
+field already holds. The field starts as "This Server {this-server}", so the
+arrow opened nothing. Upstream's is a dropdown (index.html:840-846): it shows
+every server whatever the field says, and choosing one also moves the protocol
+(dnsclient.js:24-47).
+*/
+describe('DNS Client: the server list', () => {
+  function servers() {
+    vi.spyOn(quick, 'loadQuickList').mockResolvedValue([
+      { name: 'Google', addresses: ['8.8.8.8'] },
+      { name: 'Cloudflare HTTPS', addresses: ['https://cloudflare-dns.com/dns-query (1.1.1.1)'] },
+    ] as never)
+  }
+
+  it('opens with every server, whatever the field already holds', async () => {
+    servers()
+    render(<DnsClient token="t" />)
+    await userEvent.click(await screen.findByRole('button', { name: 'Server list' }))
+    const items = await screen.findAllByRole('menuitem')
+    expect(items.map((i) => i.textContent)).toEqual([
+      'This Server {this-server}',
+      'Google {8.8.8.8}',
+      'Cloudflare HTTPS {https://cloudflare-dns.com/dns-query (1.1.1.1)}',
+    ])
+  })
+
+  it('choosing a server fills the field and the protocol follows it', async () => {
+    servers()
+    const spy = vi.spyOn(api, 'resolve').mockResolvedValue({
+      kind: 'ok', data: { status: 'ok', response: { result: {} } },
+    } as never)
+    render(<DnsClient token="t" />)
+    await userEvent.click(await screen.findByRole('button', { name: 'Server list' }))
+    await userEvent.click(await screen.findByRole('menuitem', { name: /Cloudflare HTTPS/ }))
+    expect(screen.getByLabelText('Server')).toHaveValue(
+      'Cloudflare HTTPS {https://cloudflare-dns.com/dns-query (1.1.1.1)}',
+    )
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+
+    await userEvent.type(screen.getByLabelText('Domain'), 'example.com')
+    await userEvent.click(screen.getByRole('button', { name: 'Resolve' }))
+    expect(spy.mock.calls[0][1]).toMatchObject({
+      server: 'https://cloudflare-dns.com/dns-query (1.1.1.1)',
+      protocol: 'HTTPS',
+    })
+  })
+
+  it('the field stays free text: typing does not touch the protocol', async () => {
+    servers()
+    const spy = vi.spyOn(api, 'resolve').mockResolvedValue({
+      kind: 'ok', data: { status: 'ok', response: { result: {} } },
+    } as never)
+    render(<DnsClient token="t" />)
+    await userEvent.clear(screen.getByLabelText('Server'))
+    await userEvent.type(screen.getByLabelText('Server'), 'https://doh.example/dns-query')
+    await userEvent.type(screen.getByLabelText('Domain'), 'example.com')
+    await userEvent.click(screen.getByRole('button', { name: 'Resolve' }))
+    expect(spy.mock.calls[0][1]).toMatchObject({ server: 'https://doh.example/dns-query', protocol: 'UDP' })
+  })
+})
