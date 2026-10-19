@@ -131,7 +131,8 @@ export function ZoneRecords(p: ZoneRecordsProps) {
   */
   const [nameField, setNameField] = useState('')
   const [typeField, setTypeField] = useState('')
-  const [pageField, setPageField] = useState('1')
+  /* What is typed in Page Number; `null` shows the page on screen (zone.js:3733). */
+  const [pageDraft, setPageDraft] = useState<string | null>(null)
   const [perPageField, setPerPageField] = useState(() => readPerPage(RECORDS_PER_PAGE_KEY, RECORDS_PER_PAGE, 10))
   const [nameFilter, setNameFilter] = useState('')
   const [typeFilter, setTypeFilter] = useState('')
@@ -144,8 +145,9 @@ export function ZoneRecords(p: ZoneRecordsProps) {
     setNameFilter(nameField)
     setTypeFilter(typeField)
     setPerPage(perPageField)
-    const n = pageNumber ?? Number(pageField)
+    const n = pageNumber ?? Number(pageDraft ?? page)
     setPage(Number.isNaN(n) || n === 0 ? 1 : n)
+    setPageDraft(null)
   }
 
   const load = useCallback(async () => {
@@ -177,10 +179,6 @@ export function ZoneRecords(p: ZoneRecordsProps) {
 
   const totalPages = Math.max(1, Math.ceil(visible.length / perPage))
   const currentPage = Math.min(Math.max(page, 1), totalPages)
-  /* Page Number shows the page on screen once it is drawn (zone.js:3733). */
-  useEffect(() => {
-    setPageField(String(currentPage))
-  }, [currentPage])
   const offset = (currentPage - 1) * perPage
   const onPage = sorted.slice(offset, offset + perPage)
 
@@ -519,8 +517,8 @@ export function ZoneRecords(p: ZoneRecordsProps) {
               <Input
                 id={id}
                 mono
-                value={pageField}
-                onChange={(e) => setPageField(e.target.value)}
+                value={pageDraft ?? String(currentPage)}
+                onChange={(e) => setPageDraft(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && showPage()}
               />
             )}
