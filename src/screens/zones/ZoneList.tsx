@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { readPerPage, writePerPage } from '../../lib/stored-per-page'
 import {
   deleteZone,
   deleteZones,
@@ -80,6 +81,8 @@ export interface ZoneListProps extends ZoneActions {
   refresh: number
 }
 
+const ZONES_PER_PAGE_KEY = 'optZonesPerPage'
+
 export function ZoneList({
   token,
   node = '',
@@ -130,7 +133,8 @@ export function ZoneList({
   // just like upstream, where `refreshZones` reads them at that moment.
   const [nameFilter, setNameFilter] = useState('')
   const [typeFilter, setTypeFilter] = useState('')
-  const [perPage, setPerPage] = useState(10)
+  /* Remembered under upstream's key (zone.js:626-632). */
+  const [perPage, setPerPage] = useState(() => readPerPage(ZONES_PER_PAGE_KEY, ZONES_PER_PAGE, 10))
   const [pageField, setPageField] = useState('1')
 
   const nameRef = useRef<HTMLInputElement>(null)
@@ -406,7 +410,11 @@ export function ZoneList({
         <div className={styles.fltShort}>
           <Field label="Zones Per Page">
             {(id) => (
-              <Select id={id} value={String(perPage)} onChange={(e) => setPerPage(Number(e.target.value))}>
+              <Select id={id} value={String(perPage)} onChange={(e) => {
+                const n = Number(e.target.value)
+                writePerPage(ZONES_PER_PAGE_KEY, n)
+                setPerPage(n)
+              }}>
                 {ZONES_PER_PAGE.map((n) => (
                   <option key={n} value={n}>
                     {n}
