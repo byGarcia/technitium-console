@@ -16,6 +16,7 @@ import userEvent from '@testing-library/user-event'
 import { Dashboard } from './Dashboard'
 import * as api from '../../api/dashboard'
 import { quietHours } from '../../test/quiet-hours'
+import { SlotProvider } from '../../app/ChromeSlot'
 
 /* The week by hour asks on its own; answered quiet, it adds no failure here. */
 beforeEach(() => {
@@ -164,5 +165,59 @@ describe('the custom range', () => {
     const field = screen.getByLabelText(/Start/).closest('label')!
     expect(field).toHaveTextContent('Please select a start date.')
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+})
+
+/*
+main.js:631-652: choosing Custom focuses the date that is missing, or reloads at
+once when both are already there; and a refresh with a date missing (a node
+change, refreshDashboard) says which one.
+*/
+describe('Dashboard: Custom without pressing Show', () => {
+  it('choosing it focuses the start date when it is empty', async () => {
+    const user = userEvent.setup()
+    vi.spyOn(api, 'getDashboardStats').mockResolvedValue({ kind: 'ok', data: EMPTY } as never)
+    render(<Dashboard token="t" />)
+    await user.click(await screen.findByRole('button', { name: 'Custom' }))
+    expect(screen.getByLabelText(/Start/)).toHaveFocus()
+  })
+
+  it('with both dates already filled, choosing it again reloads at once', async () => {
+    const user = userEvent.setup()
+    const spy = vi.spyOn(api, 'getDashboardStats').mockResolvedValue({ kind: 'ok', data: EMPTY } as never)
+    render(<Dashboard token="t" />)
+    await user.click(await screen.findByRole('button', { name: 'Custom' }))
+    await user.type(screen.getByLabelText(/Start/), '2026-09-01')
+    await user.type(screen.getByLabelText(/End/), '2026-09-03')
+    await user.click(screen.getByRole('button', { name: 'Last Day' }))
+    spy.mockClear()
+
+    await user.click(screen.getByRole('button', { name: 'Custom' }))
+    await vi.waitFor(() => expect(spy).toHaveBeenCalled())
+    expect(spy.mock.calls[0][1]).toBe('Custom')
+    expect(spy.mock.calls[0][2]).toBeDefined()
+  })
+
+  it('a node change with a date missing says which one', async () => {
+    const user = userEvent.setup()
+    vi.spyOn(api, 'getDashboardStats').mockResolvedValue({ kind: 'ok', data: EMPTY } as never)
+    const nodes = [
+      { name: 'a.example', type: 'Primary' },
+      { name: 'b.example', type: 'Secondary' },
+    ]
+    render(
+      <SlotProvider>
+        {(ref) => (
+          <>
+            <div ref={ref} />
+            <Dashboard token="t" nodes={nodes} clusterInitialised />
+          </>
+        )}
+      </SlotProvider>,
+    )
+    await user.click(await screen.findByRole('button', { name: 'Custom' }))
+    await user.click(await screen.findByRole('combobox'))
+    await user.click(screen.getByRole('option', { name: 'b.example (secondary)' }))
+    expect(screen.getByText('Please select a start date.')).toBeInTheDocument()
   })
 })

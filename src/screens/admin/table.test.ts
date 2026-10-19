@@ -42,3 +42,25 @@ describe('addToTable: the dropdowns of the permissions modal', () => {
     expect(addToTable(rows, 'ana', blank)).toBe(rows)
   })
 })
+
+import { mappedLocalGroup } from './table'
+
+/*
+The Group Map's Local Group is a select built with the local groups
+(auth.js:2271-2276 and 2445-2451): a mapping to a group that is not among them
+(deleted, renamed, or set by an environment variable) leaves no option selected,
+so the browser shows and saves the first one.
+*/
+describe('mappedLocalGroup', () => {
+  it('keeps a group that exists', () => {
+    expect(mappedLocalGroup('DNS Administrators', ['Administrators', 'DNS Administrators'])).toBe('DNS Administrators')
+  })
+
+  it('falls to the first group when the mapped one is not there', () => {
+    expect(mappedLocalGroup('Old Group', ['Administrators', 'DNS Administrators'])).toBe('Administrators')
+  })
+
+  it('stays empty when there are no groups to show', () => {
+    expect(mappedLocalGroup('Old Group', [])).toBe('')
+  })
+})

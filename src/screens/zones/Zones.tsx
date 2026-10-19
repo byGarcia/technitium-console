@@ -58,7 +58,13 @@ export interface ZonesProps {
   /** They inherit from Settings' global setting for the add modal. */
   useSoaSerialDateScheme?: boolean
   dnssecValidation?: boolean
+  /** The cluster's domain, when it is initialised: Add Zone preselects its catalog. */
+  clusterDomain?: string
+  /** The server's default TTLs, the record form's placeholders. */
+  recordTtls?: { defaultRecordTtl: number; defaultNsRecordTtl: number; defaultSoaRecordTtl: number }
 }
+
+const DEFAULT_TTLS = { defaultRecordTtl: 3600, defaultNsRecordTtl: 14400, defaultSoaRecordTtl: 900 }
 
 export function Zones({
   token,
@@ -68,6 +74,8 @@ export function Zones({
   canDelete,
   useSoaSerialDateScheme = false,
   dnssecValidation = false,
+  recordTtls = DEFAULT_TTLS,
+  clusterDomain,
 }: ZonesProps) {
   /* Upstream mounts a selector here (`optZonesClusterNode`) with no aggregate
      and no persistence; the parameter was already travelling. */
@@ -224,6 +232,7 @@ export function Zones({
         node={node}
         useSoaSerialDateScheme={useSoaSerialDateScheme}
         dnssecValidation={dnssecValidation}
+        clusterDomain={clusterInitialised ? clusterDomain : undefined}
         onClose={() => setModal(null)}
         onCreated={(domain, a) => {
           // Upstream opens the newly created zone, it does not go back to the list.
@@ -335,6 +344,7 @@ export function Zones({
         original={originalRecord}
         token={token}
         node={node}
+        defaults={{ ...recordTtls, dnssecValidation }}
         onClose={() => setModal(null)}
         onDone={done}
         onExpiryTtl={setModalExpiryTtl}

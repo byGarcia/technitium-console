@@ -81,3 +81,16 @@ describe('Login and api/status', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 })
+
+/* auth.js:298-300: the automatic admin/admin login that meets 2FA only focuses
+   the username; it does not open the OTP panel on an empty form. */
+describe('Login: the automatic login meets 2FA', () => {
+  it('stays on the empty form with the focus on the username', async () => {
+    vi.spyOn(statusApi, 'getStatus').mockResolvedValue({ hasDefaultCredentials: true, ssoEnabled: false })
+    const spy = vi.spyOn(client, 'apiRequest').mockResolvedValue({ kind: 'two-factor-required' })
+    render(<Login onSuccess={() => {}} />)
+    await waitFor(() => expect(spy).toHaveBeenCalled())
+    await waitFor(() => expect(screen.getByLabelText('Username')).toHaveFocus())
+    expect(screen.queryByLabelText('OTP')).not.toBeInTheDocument()
+  })
+})

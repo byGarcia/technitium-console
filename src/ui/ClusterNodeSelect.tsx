@@ -1,5 +1,15 @@
+import { createContext, useContext } from 'react'
 import { Select } from './Select'
 import { Field } from './Field'
+
+/*
+This server's name (`dnsServerDomain`), which the shell provides. With no node
+chosen, upstream's dropdown selects it (`updateClusterNodeDropDown`,
+cluster.js:1041-1051). The value a screen holds stays empty, which the server
+takes as this node, so only what the dropdown shows changes: this node's name
+instead of the empty-value dash.
+*/
+export const ThisServerName = createContext('')
 
 /*
 Which cluster node a screen is looking at.
@@ -60,12 +70,18 @@ export function ClusterNodeSelect({
   /** Upstream disables it where the node is already fixed (a zone open on one). */
   disabled?: boolean
 }) {
+  const thisServer = useContext(ThisServerName)
   if (!initialised) return null
+
+  /* Only this server's own name stands in for the empty value: it is the node the
+     empty value means. Upstream's fallback to the first node would also SEND that
+     node, so it is not drawn here without being sent. */
+  const shown = value === '' && !aggregate && nodes.some((n) => n.name === thisServer) ? thisServer : value
 
   return (
     <Field label={label}>
       {(id) => (
-        <Select id={id} value={value} disabled={disabled} onChange={(e) => onChange(e.target.value)}>
+        <Select id={id} value={shown} disabled={disabled} onChange={(e) => onChange(e.target.value)}>
           {nodeOptions(nodes, { aggregate }).map((o) => (
             <option key={o.value} value={o.value}>
               {o.label}

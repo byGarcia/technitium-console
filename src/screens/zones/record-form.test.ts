@@ -290,8 +290,8 @@ describe('parameters of an SVCB', () => {
     expect(serializeSvcParams([])).toEqual({ value: 'false' })
   })
 
-  it('an empty cell is an alert, not a row that gets ignored', () => {
-    const r = serializeSvcParams([{ key: 'alpn', value: '' }])
+  it('an empty KEY is an alert, not a row that gets ignored', () => {
+    const r = serializeSvcParams([{ key: '', value: 'h2' }])
     expect(r).toEqual({
       error: expect.objectContaining({
         text: 'Please enter a valid value in the text field in focus.',
@@ -323,11 +323,132 @@ describe('filling the form from a record', () => {
     const r = rec('SVCB', { svcPriority: 1, svcTargetName: '', svcParams: { alpn: 'h2' } })
     const f = formFromRecord(r, 'casa.test')
     expect(f.svcbTargetName).toBe('.')
-    expect(f.svcbParams).toEqual([{ key: 'alpn', value: 'h2' }])
+    expect(f.svcbParams).toEqual([{ key: 'alpn', value: 'h2', custom: false }])
   })
 
   it('the glue of an NS is shown one address per line', () => {
     const r = rec('NS', { nameServer: 'ns1' }, { glueRecords: ['10.0.0.1', '10.0.0.2'] })
     expect(formFromRecord(r, 'casa.test').nsGlue).toBe('10.0.0.1\n10.0.0.2')
+  })
+})
+
+import {
+  formForType,
+  namePlaceholder,
+  ttlDefault,
+  toggleForwarderThisServer,
+  recordDataTemplate,
+  SVCB_KEYS,
+} from './record-form'
+
+const DEFAULTS = { defaultRecordTtl: 3600, defaultNsRecordTtl: 14400, defaultSoaRecordTtl: 900, dnssecValidation: true }
+
+/* `modifyAddRecordFormByType` (zone.js:4567-4796). */
+describe('changing the record type', () => {
+  it('empties the TTL so the server applies its default, and keeps name, comments and expiry', () => {
+    const prev = { ...emptyForm(), name: 'www', ttl: '600', comments: 'c', expiryTtl: '60', value: '10.0.0.1' }
+    const f = formForType(prev, 'CNAME', DEFAULTS)
+    expect(f).toMatchObject({ type: 'CNAME', name: 'www', ttl: '', comments: 'c', expiryTtl: '60', value: '' })
+  })
+
+  it('a new form starts with an empty TTL, not 3600', () => {
+    expect(emptyForm().ttl).toBe('')
+  })
+
+  it('clears what the previous type had typed', () => {
+    const prev = { ...emptyForm(), type: 'A', value: '10.0.0.1', ptr: true, createPtrZone: true }
+    expect(formForType(prev, 'AAAA', DEFAULTS)).toMatchObject({ value: '', ptr: false, createPtrZone: false })
+  })
+
+  it('FWD: TTL 0, UDP, no "This Server", DNSSEC validation as the server, default proxy', () => {
+    const prev = { ...emptyForm(), forwarderProtocol: 'Https', forwarder: 'x', proxyType: 'Socks5', proxyAddress: 'p' }
+    expect(formForType(prev, 'FWD', DEFAULTS)).toMatchObject({
+      ttl: '0',
+      forwarderProtocol: 'Udp',
+      forwarderThisServer: false,
+      forwarder: '',
+      forwarderPriority: '',
+      forwarderDnssecValidation: true,
+      proxyType: 'DefaultProxy',
+      proxyAddress: '',
+    })
+    expect(formForType(prev, 'FWD', { ...DEFAULTS, dnssecValidation: false }).forwarderDnssecValidation).toBe(false)
+  })
+
+  it('the TTL placeholder is the server default for the type', () => {
+    expect(ttlDefault('A', DEFAULTS)).toBe('3600')
+    expect(ttlDefault('NS', DEFAULTS)).toBe('14400')
+    expect(ttlDefault('SOA', DEFAULTS)).toBe('900')
+  })
+
+  it('the Name placeholder follows the type', () => {
+    expect(namePlaceholder('A')).toBe('@')
+    expect(namePlaceholder('SRV')).toBe('_service._protocol.name')
+    expect(namePlaceholder('TLSA')).toBe('_port._protocol.name')
+    expect(namePlaceholder('SVCB')).toBe('_port._scheme.name')
+    expect(namePlaceholder('HTTPS')).toBe('_port._scheme.name')
+  })
+})
+
+/* `updateAddEditFormForwarderThisServer` (zone.js:5336-5356). */
+describe('FWD: Use "This Server"', () => {
+  it('ticking it writes this-server and forces UDP', () => {
+    const f = toggleForwarderThisServer({ ...emptyForm(), type: 'FWD', forwarder: '1.1.1.1', forwarderProtocol: 'Tls' }, true)
+    expect(f).toMatchObject({ forwarderThisServer: true, forwarder: 'this-server', forwarderProtocol: 'Udp' })
+  })
+
+  it('unticking it empties the forwarder', () => {
+    const f = toggleForwarderThisServer({ ...emptyForm(), type: 'FWD', forwarder: 'this-server', forwarderThisServer: true }, false)
+    expect(f).toMatchObject({ forwarderThisServer: false, forwarder: '' })
+  })
+
+  it('an edited record whose forwarder is this-server comes back ticked', () => {
+    const f = formFromRecord(rec('FWD', { protocol: 'Udp', forwarder: 'this-server', priority: 0 }), 'casa.test')
+    expect(f.forwarderThisServer).toBe(true)
+  })
+})
+
+/* zone.js:583-603: choosing a class path fills Record Data with its template. */
+describe('APP: the record data template', () => {
+  const apps = [
+    {
+      name: 'Split Horizon',
+      dnsApps: [
+        { classPath: 'SplitHorizon.SimpleAddress', recordDataTemplate: '{"public": []}', isAppRecordRequestHandler: true },
+        { classPath: 'SplitHorizon.AddressTranslation', recordDataTemplate: null, isAppRecordRequestHandler: false },
+      ],
+    },
+  ]
+
+  it('is the template of the class chosen', () => {
+    expect(recordDataTemplate(apps, 'Split Horizon', 'SplitHorizon.SimpleAddress')).toBe('{"public": []}')
+  })
+
+  it('is empty for a class with no template or none chosen', () => {
+    expect(recordDataTemplate(apps, 'Split Horizon', 'SplitHorizon.AddressTranslation')).toBe('')
+    expect(recordDataTemplate(apps, 'Split Horizon', '')).toBe('')
+  })
+})
+
+/* addSvcbRecordParamEditRow (zone.js:5358-5395). */
+describe('SVCB params', () => {
+  it('offers upstream keys, in its order, then Unknown', () => {
+    expect(SVCB_KEYS).toEqual(['mandatory', 'alpn', 'no-default-alpn', 'port', 'ipv4hint', 'ipv6hint', 'dohpath'])
+  })
+
+  it('a param with no value is valid: no-default-alpn has none', () => {
+    expect(serializeSvcParams([{ key: 'no-default-alpn', value: '' }])).toEqual({ value: 'no-default-alpn|' })
+  })
+
+  it('a numeric key from the server comes back as an unknown key', () => {
+    const f = formFromRecord(
+      rec('SVCB', { svcPriority: 1, svcTargetName: '.', svcParams: { alpn: 'h2', '65000': 'ab' } }),
+      'casa.test',
+    )
+    // Integer-like keys come first in a JS object, as in upstream's `for...in`.
+    expect(f.svcbParams).toEqual([
+      { key: '65000', value: 'ab', custom: true },
+      { key: 'alpn', value: 'h2', custom: false },
+    ])
   })
 })

@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { checkForUpdate, type UpdateInfo } from '../api/user'
 import { checkConsoleUpdate, newerConsole } from './console-update'
 import { Dialog } from '../ui/Dialog'
 import { External } from '../ui/External'
 import { Alert } from '../ui/Alert'
 import { DomainName } from '../ui/DomainName'
+import { Button } from '../ui/Button'
+import { copyText } from '../lib/copy-text'
 import styles from './Versions.module.css'
 import text from '../ui/text.module.css'
 
@@ -217,9 +219,9 @@ export function Versions({ token, serverVersion, domain, markHidden = false, can
           </div>
 
           <p className={styles.message}>To update, run the installer again:</p>
-          <code className={styles.command}>{INSTALL_COMMAND}</code>
+          <Command text={INSTALL_COMMAND} label="Copy the installer command" />
           <p className={styles.message}>On Docker:</p>
-          <code className={styles.command}>{DOCKER_COMMAND}</code>
+          <Command text={DOCKER_COMMAND} label="Copy the Docker command" />
 
           <div className={styles.links}>
             <External href={`https://github.com/byGarcia/technitium-console/releases/tag/v${consoleLatest}`}>
@@ -242,3 +244,29 @@ const CONSOLE_TITLE = 'New Web Console Version Available!'
 const INSTALL_COMMAND =
   'curl -sSL https://raw.githubusercontent.com/byGarcia/technitium-console/main/install.sh | sudo sh'
 const DOCKER_COMMAND = 'docker compose pull technitium-console && docker compose up -d technitium-console'
+
+/*
+OURS: a command with its Copy button. The console cannot run it (it is a web page
+and the server offers no call that replaces its files), so the shortest way is
+one click to copy and a paste on the server. The button says "Copied" for two
+seconds; if the browser refuses, the line stays selectable as before.
+*/
+function Command({ text: command, label }: { text: string; label: string }) {
+  const [copied, setCopied] = useState(false)
+  // Inside the dialog, so its focus trap leaves the copy's selection alone.
+  const row = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!copied) return
+    const t = window.setTimeout(() => setCopied(false), 2000)
+    return () => window.clearTimeout(t)
+  }, [copied])
+
+  return (
+    <div className={styles.commandRow} ref={row}>
+      <code className={styles.command}>{command}</code>
+      <Button size="sm" aria-label={label} onClick={() => void copyText(command, row.current ?? undefined).then(setCopied)}>
+        {copied ? 'Copied' : 'Copy'}
+      </Button>
+    </div>
+  )
+}

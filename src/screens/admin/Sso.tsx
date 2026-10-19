@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Block, Note, Notices, Warning } from '../../ui/PanelForm'
 import { Button } from '../../ui/Button'
 import { Input, Select } from '../../ui/Field'
@@ -9,7 +9,7 @@ import { useSectionInView } from '../../ui/useSectionInView'
 import { Loading } from '../../ui/Empty'
 import { getSsoConfig, setSsoConfig, type SsoConfig } from '../../api/admin'
 import { appRoot } from '../../app/base'
-import { serializeTable, type Cell } from './table'
+import { mappedLocalGroup, serializeTable, type Cell } from './table'
 import {
   noticeFromFailure,
   Check,
@@ -88,6 +88,9 @@ const SECTIONS = [
 export function Sso({ tabs, token, onNotice }: Props) {
   const [loading, setLoading] = useState(true)
   const [localGroups, setLocalGroups] = useState<string[]>([])
+  /* What `apply` reads: the last local groups the server sent, kept across a
+     `set` that leaves them out, without making `apply` depend on state. */
+  const localGroupsRef = useRef<string[]>([])
   const [enabled, setEnabled] = useState(false)
   const [authority, setAuthority] = useState('')
   const [clientId, setClientId] = useState('')
@@ -109,7 +112,11 @@ export function Sso({ tabs, token, onNotice }: Props) {
     setScopes(c.ssoScopes)
     setAllowSignup(c.ssoAllowSignup)
     setOnlyMapped(c.ssoAllowSignupOnlyForMappedUsers)
-    setGroupMap(c.ssoGroupMap.map((g) => ({ ...g })))
+    // A mapping to a group that is not among the local ones shows, and saves,
+    // the first of them, as upstream's select does.
+    const groups = c.localGroups ?? localGroupsRef.current
+    localGroupsRef.current = groups
+    setGroupMap(c.ssoGroupMap.map((g) => ({ ...g, localGroup: mappedLocalGroup(g.localGroup, groups) })))
     // `localGroups` only arrives on the `get`: if it does not come, the one already
     // there is kept instead of emptying the group map's dropdowns.
     if (c.localGroups != null) setLocalGroups(c.localGroups)

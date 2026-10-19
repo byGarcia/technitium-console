@@ -42,6 +42,7 @@ export function AddZone({
   node = '',
   useSoaSerialDateScheme,
   dnssecValidation,
+  clusterDomain,
   onClose,
   onCreated,
 }: {
@@ -51,6 +52,8 @@ export function AddZone({
   /** Both inherit from Settings' global setting, not from `false`. */
   useSoaSerialDateScheme: boolean
   dnssecValidation: boolean
+  /** On an initialised cluster, its catalog is preselected (zone.js:2873-2876). */
+  clusterDomain?: string
   onClose: () => void
   onCreated: (domain: string, notice: Notice) => void
 }) {
@@ -69,10 +72,19 @@ export function AddZone({
     setF(initialAddZoneForm(useSoaSerialDateScheme, dnssecValidation))
     setZoneFile(null)
     setNotice(null)
-    void listCatalogs(token, node).then((c) => setCatalogs(c ?? []))
+    void listCatalogs(token, node).then((c) => {
+      const list = c ?? []
+      setCatalogs(list)
+      /* zone.js:2871-2876 and `loadCatalogZoneNamesFrom`: the cluster's catalog
+         comes up chosen when the server lists it; otherwise the blank line. */
+      const clusterCatalog = clusterDomain ? `cluster-catalog.${clusterDomain}` : ''
+      if (clusterCatalog !== '' && list.includes(clusterCatalog)) {
+        setF((prev) => ({ ...prev, catalog: clusterCatalog }))
+      }
+    })
     void getTsigKeyNames(token, node).then(setTsigKeys)
     zoneRef.current?.focus()
-  }, [open, token, node, useSoaSerialDateScheme, dnssecValidation])
+  }, [open, token, node, useSoaSerialDateScheme, dnssecValidation, clusterDomain])
 
   const v = visibleSections(f.type, f.initializeForwarder)
   const set = <K extends keyof AddZoneForm>(k: K, value: AddZoneForm[K]) =>
@@ -80,7 +92,16 @@ export function AddZone({
 
   function changeType(type: AddZoneKind) {
     const sections = visibleSections(type, f.initializeForwarder)
-    setF((prev) => ({ ...prev, type, zone: sections.fixedZone ?? prev.zone }))
+    /* The three types with a TSIG key read the names again and start on none
+       (`loadTsigKeyNames(…, null)`, zone.js:58 and 98). */
+    const tsig = type === 'Secondary' || type === 'SecondaryForwarder' || type === 'SecondaryCatalog'
+    setF((prev) => ({
+      ...prev,
+      type,
+      zone: sections.fixedZone ?? prev.zone,
+      tsigKeyName: tsig ? '' : prev.tsigKeyName,
+    }))
+    if (tsig) void getTsigKeyNames(token, node).then(setTsigKeys)
   }
 
   async function create() {
@@ -203,7 +224,9 @@ export function AddZone({
           </GroupRow>
         )}
 
-        {v.zoneFile && (
+        {/* Hidden, not unmounted, as upstream hides it (zone.js:26-41): the input
+            keeps the file it shows across type changes. */}
+        <div hidden={!v.zoneFile}>
           <Row modal label="Import Zone File (Optional)">
             {(id) => (
               <Input
@@ -213,7 +236,7 @@ export function AddZone({
               />
             )}
           </Row>
-        )}
+        </div>
 
         {v.soaSerial && (
           <GroupRow modal label="Zone Serial">
@@ -354,7 +377,16 @@ export function AddZone({
                     <input
                       type="checkbox"
                       checked={f.useThisServer}
-                      onChange={(e) => set('useThisServer', e.target.checked)}
+                      onChange={(e) => {
+                        /* `updateAddZoneFormForwarderThisServer` (zone.js:2979-2998):
+                           ticked, the protocol goes to UDP; unticked, the field is emptied. */
+                        const on = e.target.checked
+                        setF((prev) =>
+                          on
+                            ? { ...prev, useThisServer: true, forwarderProtocol: 'Udp' }
+                            : { ...prev, useThisServer: false, forwarder: '' },
+                        )
+                      }}
                     />
                     Use &quot;This Server&quot;
                   </label>

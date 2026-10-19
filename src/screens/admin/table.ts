@@ -42,3 +42,12 @@ export function addToTable<T extends { name: string }>(
   if (rows.some((f) => f.name === selection)) return rows
   return [...rows, blank(selection)]
 }
+
+/*
+What a Group Map row's Local Group select holds once drawn (auth.js:2271-2276 and
+2445-2451): the mapped group if it is one of the local groups, otherwise the
+first of them, which is what a select with no option marked shows and sends.
+*/
+export function mappedLocalGroup(localGroup: string, groups: readonly string[]): string {
+  return groups.includes(localGroup) ? localGroup : (groups[0] ?? '')
+}

@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { Versions } from './Versions'
 import * as userApi from '../api/user'
 import * as consoleUpdate from './console-update'
+import * as copyApi from '../lib/copy-text'
 import { wholeText } from '../test/whole-text'
 
 afterEach(() => vi.restoreAllMocks())
@@ -177,6 +178,27 @@ describe('Versions: the console mark', () => {
     )
     expect(dialog).toHaveTextContent(
       'docker compose pull technitium-console && docker compose up -d technitium-console',
+    )
+  })
+
+  it('each command has a Copy button that copies it whole and says so', async () => {
+    serverCheck({})
+    consoleRelease()
+    const copy = vi.spyOn(copyApi, 'copyText').mockResolvedValue(true)
+    render(<Versions token="t" serverVersion="15.6.2" canCheckConsole />)
+    await userEvent.click(await screen.findByRole('button', consoleMark))
+
+    await userEvent.click(screen.getByRole('button', { name: 'Copy the installer command' }))
+    expect(copy).toHaveBeenCalledWith(
+      'curl -sSL https://raw.githubusercontent.com/byGarcia/technitium-console/main/install.sh | sudo sh',
+      expect.any(HTMLElement),
+    )
+    expect(await screen.findByRole('button', { name: 'Copy the installer command' })).toHaveTextContent('Copied')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Copy the Docker command' }))
+    expect(copy).toHaveBeenLastCalledWith(
+      'docker compose pull technitium-console && docker compose up -d technitium-console',
+      expect.any(HTMLElement),
     )
   })
 

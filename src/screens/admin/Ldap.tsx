@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Block, Note, Notices, Radios, Warning } from '../../ui/PanelForm'
 import { Button } from '../../ui/Button'
 import { Input, Select } from '../../ui/Field'
@@ -13,7 +13,7 @@ import {
   testLdapConnection,
   type LdapConfig,
 } from '../../api/admin'
-import { serializeTable, type Cell } from './table'
+import { mappedLocalGroup, serializeTable, type Cell } from './table'
 import {
   noticeFromFailure,
   Check,
@@ -109,6 +109,9 @@ function radioFor(option: string): string {
 export function Ldap({ tabs, token, onNotice }: Props) {
   const [loading, setLoading] = useState(true)
   const [localGroups, setLocalGroups] = useState<string[]>([])
+  /* What `apply` reads: the last local groups the server sent, kept across a
+     `set` that leaves them out, without making `apply` depend on state. */
+  const localGroupsRef = useRef<string[]>([])
   const [enabled, setEnabled] = useState(false)
   const [server, setServer] = useState('')
   const [port, setPort] = useState('')
@@ -143,7 +146,11 @@ export function Ldap({ tabs, token, onNotice }: Props) {
     setGroupAttribute(c.ldapGroupAttribute ?? '')
     setAllowSignup(c.ldapAllowSignup)
     setOnlyMapped(c.ldapAllowSignupOnlyForMappedUsers)
-    setGroupMap(c.ldapGroupMap.map((g) => ({ ...g })))
+    // A mapping to a group that is not among the local ones shows, and saves,
+    // the first of them, as upstream's select does.
+    const groups = c.localGroups ?? localGroupsRef.current
+    localGroupsRef.current = groups
+    setGroupMap(c.ldapGroupMap.map((g) => ({ ...g, localGroup: mappedLocalGroup(g.localGroup, groups) })))
     // `localGroups` only arrives on the `get`: kept when the `set` leaves it out.
     if (c.localGroups != null) setLocalGroups(c.localGroups)
   }

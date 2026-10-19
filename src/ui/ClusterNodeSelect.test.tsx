@@ -71,3 +71,31 @@ describe('ClusterNodeSelect', () => {
     expect(onChange).not.toHaveBeenCalled()
   })
 })
+
+import { ThisServerName } from './ClusterNodeSelect'
+
+/* cluster.js:1041-1047: with no node chosen, the dropdown shows this server. */
+describe('ClusterNodeSelect with no node chosen', () => {
+  const NODES = [
+    { name: 'a.example', type: 'Primary' },
+    { name: 'b.example', type: 'Secondary' },
+  ]
+
+  it('shows this server, and the screen keeps the empty value', () => {
+    render(
+      <ThisServerName.Provider value="b.example">
+        <ClusterNodeSelect nodes={NODES} initialised value="" onChange={() => {}} label="Cluster Node" />
+      </ThisServerName.Provider>,
+    )
+    expect(screen.getByRole('combobox', { name: 'Cluster Node' })).toHaveTextContent('b.example (secondary)')
+  })
+
+  it('shows the dash when this server is not among the nodes', () => {
+    render(
+      <ThisServerName.Provider value="other.example">
+        <ClusterNodeSelect nodes={NODES} initialised value="" onChange={() => {}} label="Cluster Node" />
+      </ThisServerName.Provider>,
+    )
+    expect(screen.getByRole('combobox', { name: 'Cluster Node' })).not.toHaveTextContent('example')
+  })
+})

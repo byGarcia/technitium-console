@@ -192,6 +192,16 @@ Write down here whatever you find. What is already known:
   browser had already decoded when parsing the HTML, so typing `&amp;` in a cell
   sends `&`. In React there is no intermediate HTML: replicating it would mean
   introducing the bug by hand, and that is not done.
+- **Quick Select forgets the Bypass List.** Picking a forwarder that carries a
+  SOCKS5 or HTTP proxy (Tor) ticks the proxy type and enables its address, port,
+  username and password, but not the Bypass List (main.js:594-603): it stays
+  disabled until the proxy radio is clicked again. That is an omission, not a
+  rule, and it is not replicated: here the five fields follow the proxy type.
+- **Picking the line already chosen does nothing.** A native `select` fires
+  `change` only when the value changes, and several stock lists rely on it
+  (Group Details' "None" empties Members; Quick Add would add a deleted key
+  back). `ui/Select` does the same, and the Quick Add and Quick Select lists
+  keep the line chosen, as the stock ones do, until their form loads again.
 - **A `set` can return less than its `get`, and what is missing has to be kept.**
   `admin/sso/set` does NOT bring `localGroups`: `WriteSsoConfig` only writes them
   with `includeGroups` and the `set` calls it with `false`
@@ -785,8 +795,9 @@ contract and SECURITY.md.
     no import). That endpoint is this repo's `update-check/`, a Cloudflare Pages
     Function that answers `v=1 latest=X.Y.Z server=A.B`. When a newer release is
     made for the running server, the *Web Console* row gets the same `Update`
-    mark as the server's, and a dialog with the two commands from the README. Its
-    limits, and a change that crosses one is a bug:
+    mark as the server's, and a dialog with the two commands from the README,
+    each with a Copy button (the console cannot run them: no call of the server's
+    API replaces its files). Its limits, and a change that crosses one is a bug:
     - **only that call**, and **at most once a day per browser**: the result,
       failures included, is kept in `localStorage` under `consoleUpdateCheck`. A
       failed call writes a line in the server's log (`DnsWebService.cs:2556`), so

@@ -12,7 +12,7 @@ import { About } from '../screens/about/About'
 import { Apps } from '../screens/apps/Apps'
 import { Cache } from '../screens/lists/Lists'
 import { Blocking } from '../screens/blocking/Blocking'
-import { Settings, type ServerInfo } from '../screens/settings/Settings'
+import { Settings, type RecordSettings, type ServerInfo } from '../screens/settings/Settings'
 import { Zones } from '../screens/zones/Zones'
 import { Dhcp } from '../screens/dhcp/Dhcp'
 import { Logs } from '../screens/logs/Logs'
@@ -29,6 +29,7 @@ import styles from './Shell.module.css'
 import { Icon, type IconName } from '../ui/Icon'
 import { publicUrl } from './base'
 import { Menu } from '../ui/Menu'
+import { ThisServerName } from '../ui/ClusterNodeSelect'
 import { FooterLinks } from '../ui/FooterLinks'
 import { Versions } from './Versions'
 import { BlockingMark } from './BlockingMark'
@@ -82,7 +83,15 @@ export interface ShellSession {
     dnsServerDomain: string
     permissions?: Record<string, Permission>
     clusterInitialized?: boolean
+    /** Only on an initialised cluster (WebServiceAuthApi.cs:104-106). */
+    clusterDomain?: string
     clusterNodes?: { name: string; type: string }[]
+    /* The record defaults the zone forms show (WebServiceAuthApi.cs:96-100). */
+    defaultRecordTtl?: number
+    defaultNsRecordTtl?: number
+    defaultSoaRecordTtl?: number
+    useSoaSerialDateScheme?: boolean
+    dnssecValidation?: boolean
   }
 }
 
@@ -179,6 +188,9 @@ export function Shell({
   (`updateDnsSettingsDataAndGui`, main.js:1158-1166). Settings reports them here.
   */
   const [serverInfo, setServerInfo] = useState<ServerInfo | null>(null)
+  /* The record defaults, from login until Settings loads them again
+     (main.js:1194-1196 and 1228). */
+  const [recordSettings, setRecordSettings] = useState<RecordSettings | null>(null)
   const info = session.info && serverInfo ? { ...session.info, ...serverInfo } : session.info
 
   // main.js: the document title carries the server domain and the version.
@@ -289,6 +301,7 @@ export function Shell({
 
   return (
     <HandoffContext.Provider value={handoff}>
+    <ThisServerName.Provider value={info?.dnsServerDomain ?? session.info?.dnsServerDomain ?? ''}>
     <SlotProvider>
       {(slot) => (
     <div className={styles.shell}>
@@ -523,6 +536,14 @@ export function Shell({
             clusterInitialised={session.info?.clusterInitialized === true}
             canModify={permissions?.Zones?.canModify !== false}
             canDelete={permissions?.Zones?.canDelete !== false}
+            clusterDomain={session.info?.clusterDomain}
+            useSoaSerialDateScheme={(recordSettings ?? session.info)?.useSoaSerialDateScheme === true}
+            dnssecValidation={(recordSettings ?? session.info)?.dnssecValidation !== false}
+            recordTtls={{
+              defaultRecordTtl: (recordSettings ?? session.info)?.defaultRecordTtl ?? 3600,
+              defaultNsRecordTtl: (recordSettings ?? session.info)?.defaultNsRecordTtl ?? 14400,
+              defaultSoaRecordTtl: (recordSettings ?? session.info)?.defaultSoaRecordTtl ?? 900,
+            }}
           />
         ) : current?.id === 'dhcp' ? (
           <Dhcp
@@ -566,6 +587,7 @@ export function Shell({
             canBackup={permissions?.Settings?.canDelete !== false}
             serverDomain={session.info?.dnsServerDomain}
             onServerInfo={setServerInfo}
+            onRecordSettings={setRecordSettings}
           />
         ) : null}
         </main>
@@ -637,6 +659,7 @@ export function Shell({
     </div>
       )}
     </SlotProvider>
+    </ThisServerName.Provider>
     </HandoffContext.Provider>
   )
 }
