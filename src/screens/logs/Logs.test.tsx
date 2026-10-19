@@ -680,3 +680,75 @@ describe('the row colour code', () => {
     expect(n).toMatch(/without blocking/i)
   })
 })
+
+/*
+logs.js:101-114 and 144-154: a node change re-reads View Logs' list from the new
+node and opens the same file there, or closes the viewer if that node has no file
+by that name; in Query Logs it runs the query again when there are results.
+*/
+describe('Logs: changing the cluster node', () => {
+  const NODES = [
+    { name: 'a.example', type: 'Primary' },
+    { name: 'b.example', type: 'Secondary' },
+  ]
+
+  async function pickB(user: ReturnType<typeof userEvent.setup>) {
+    await choose(user, screen.getByLabelText('Cluster Node'), 'b.example (secondary)')
+  }
+
+  it('View Logs opens the same file on the new node', async () => {
+    const user = userEvent.setup()
+    vi.spyOn(api, 'listLogFiles').mockResolvedValue({ kind: 'ok', data: FILES })
+    const text = vi.spyOn(api, 'downloadLogText').mockResolvedValue('[2026-08-26] Logging started.')
+    render(<Logs token="t" sub="View Logs" nodes={NODES} clusterInitialised />)
+    await user.click(await screen.findByText('2026-08-26'))
+    await screen.findByText('[2026-08-26] Logging started.')
+
+    await pickB(user)
+
+    await vi.waitFor(() => expect(text).toHaveBeenLastCalledWith('t', '2026-08-26', 'b.example'))
+  })
+
+  it('View Logs closes the viewer when the new node has no such file', async () => {
+    const user = userEvent.setup()
+    const list = vi.spyOn(api, 'listLogFiles').mockResolvedValue({ kind: 'ok', data: FILES })
+    vi.spyOn(api, 'downloadLogText').mockResolvedValue('[2026-08-26] Logging started.')
+    render(<Logs token="t" sub="View Logs" nodes={NODES} clusterInitialised />)
+    await user.click(await screen.findByText('2026-08-26'))
+    await screen.findByText('[2026-08-26] Logging started.')
+
+    list.mockResolvedValue({ kind: 'ok', data: [{ fileName: '2026-08-20', size: '1 KB' }] })
+    await pickB(user)
+
+    await screen.findByText('2026-08-20')
+    expect(screen.queryByText('[2026-08-26] Logging started.')).not.toBeInTheDocument()
+  })
+
+  it('Query Logs runs the query again on the new node when results are showing', async () => {
+    const user = userEvent.setup()
+    withApps([APP])
+    const spy = vi
+      .spyOn(api, 'queryLogs')
+      .mockResolvedValue({ kind: 'ok', data: { response: page() } } as never)
+    render(<Logs token="t" sub="Query Logs" nodes={NODES} clusterInitialised />)
+    await screen.findByLabelText('App Name')
+    await user.click(screen.getByRole('button', { name: 'Query' }))
+    await screen.findByText('github.com')
+
+    await pickB(user)
+
+    await vi.waitFor(() => expect(spy).toHaveBeenCalledTimes(2))
+    expect(spy.mock.calls[1][1]).toMatchObject({ node: 'b.example' })
+  })
+
+  it('Query Logs does not query by itself when there are no results yet', async () => {
+    const user = userEvent.setup()
+    withApps([APP])
+    const spy = vi.spyOn(api, 'queryLogs')
+    render(<Logs token="t" sub="Query Logs" nodes={NODES} clusterInitialised />)
+    await screen.findByLabelText('App Name')
+    await pickB(user)
+    await new Promise((r) => setTimeout(r, 50))
+    expect(spy).not.toHaveBeenCalled()
+  })
+})

@@ -453,6 +453,24 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
     queryRef.current = query
   }, [query])
 
+  /*
+  A node change runs the query again when there are results on screen
+  (logs.js:108-113), on the page the form says. With Live Update on, upstream's
+  `queryLogs()` returns at once (logs.js:386-387) and the loop picks the new node
+  up by itself.
+  */
+  const shownRef = useRef({ page, live })
+  useEffect(() => {
+    shownRef.current = { page, live }
+  }, [page, live])
+  const lastNode = useRef(node)
+  useEffect(() => {
+    if (lastNode.current === node) return
+    lastNode.current = node
+    const shown = shownRef.current
+    if (shown.page != null && !shown.live) void queryRef.current(filtersRef.current.pageNumber, false)
+  }, [node])
+
   /* Declared after `queryRef`, which the jump's arrival uses below. */
   useEffect(() => {
     let live = true
