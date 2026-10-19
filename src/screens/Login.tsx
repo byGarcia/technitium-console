@@ -75,12 +75,25 @@ export function Login({
     }
   }
 
-  /** Returns to the login after 30 s on the OTP panel, just like upstream. */
+  /*
+  Returns to the login after 30 s on the OTP panel. Upstream's timer calls
+  `showPageLogin()` (main.js:25-57), which starts the form over: username,
+  password and OTP emptied, the alert hidden, the focus on the username, and
+  `api/status` asked again for the SSO button. No auto-login: it is called
+  without `autoLogin`.
+  */
   function armOtpTimer() {
     clearOtpTimer()
     timerRef.current = setTimeout(() => {
       setOtpVisible(false)
       setTotp('')
+      setUser('')
+      setPass('')
+      setAlert(null)
+      userRef.current?.focus()
+      void getStatus().then((st) => {
+        if (st) setSsoEnabled(st.ssoEnabled)
+      })
     }, OTP_TIMEOUT_INTERVAL)
   }
 
@@ -150,6 +163,12 @@ export function Login({
     setBusy(false)
 
     if (outcome.kind === 'two-factor-required') {
+      // auth.js:298-300: an automatic login that meets 2FA only focuses the
+      // username; the OTP panel is for a login somebody typed.
+      if (auto) {
+        userRef.current?.focus()
+        return
+      }
       setOtpVisible(true)
       setTotp('')
       armOtpTimer()

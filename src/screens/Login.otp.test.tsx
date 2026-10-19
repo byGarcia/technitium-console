@@ -64,3 +64,23 @@ describe('OTP panel', () => {
     expect(screen.getByLabelText('Password')).toBeDisabled()
   })
 })
+
+/*
+The timeout calls `showPageLogin()` (main.js:25-57): it empties the username, the
+password and the OTP, hides the alert and focuses the username.
+*/
+describe('OTP timeout', () => {
+  it('leaves the whole form empty, the alert gone and the focus on the username', async () => {
+    const user = await reachOtpPanel()
+    vi.spyOn(client, 'apiRequest').mockResolvedValue({ kind: 'error', message: 'Invalid OTP value was provided.' })
+    await user.type(screen.getByLabelText('OTP'), '000000')
+    await act(async () => { await Promise.resolve() })
+    expect(screen.getByText('Invalid OTP value was provided.')).toBeInTheDocument()
+
+    await act(async () => { vi.advanceTimersByTime(31_000) })
+    expect(screen.getByLabelText('Username')).toHaveValue('')
+    expect(screen.getByLabelText('Password')).toHaveValue('')
+    expect(screen.queryByText('Invalid OTP value was provided.')).not.toBeInTheDocument()
+    expect(screen.getByLabelText('Username')).toHaveFocus()
+  })
+})
