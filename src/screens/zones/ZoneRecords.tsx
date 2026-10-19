@@ -178,7 +178,8 @@ export function ZoneRecords(p: ZoneRecordsProps) {
   const { rows: sorted, sort, toggle } = useSort(KEYS, visible)
 
   const totalPages = Math.max(1, Math.ceil(visible.length / perPage))
-  const currentPage = Math.min(Math.max(page, 1), totalPages)
+  // Past the last page, or negative, is the last page (`showEditZonePage`).
+  const currentPage = page < 0 || page > totalPages ? totalPages : Math.max(page, 1)
   const offset = (currentPage - 1) * perPage
   const onPage = sorted.slice(offset, offset + perPage)
 
@@ -195,6 +196,9 @@ export function ZoneRecords(p: ZoneRecordsProps) {
       return
     }
     await load()
+    /* After a change upstream redraws with the fields as they stand, typed but not
+       yet applied included, on the page in Page Number (zone.js:5282-5288). */
+    showPage()
     onNotice(success)
   }
 

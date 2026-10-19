@@ -862,3 +862,16 @@ describe('Settings: Quick Select keeps the line chosen', () => {
     expect(valueShown(screen.getByLabelText('Quick Select'))).toBe('Cloudflare')
   })
 })
+
+/* main.js:1194-1196 and 1228: every load of the settings, whatever the node,
+   refreshes the record defaults the zone forms read. */
+describe('Settings: the record defaults reach the zone forms', () => {
+  it('reports them on loading', async () => {
+    server({ defaultRecordTtl: 600, defaultNsRecordTtl: 7200, defaultSoaRecordTtl: 300, dnssecValidation: false })
+    const onRecordSettings = vi.fn()
+    await mount({ onRecordSettings })
+    expect(onRecordSettings).toHaveBeenCalledWith(
+      expect.objectContaining({ defaultRecordTtl: 600, defaultNsRecordTtl: 7200, defaultSoaRecordTtl: 300, dnssecValidation: false }),
+    )
+  })
+})

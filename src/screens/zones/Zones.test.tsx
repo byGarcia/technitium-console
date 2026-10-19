@@ -433,3 +433,23 @@ describe('records view: the filters apply on Go', () => {
     expect(screen.getByLabelText('Page Number')).toHaveValue('1')
   })
 })
+
+describe('records view: Page Number', () => {
+  /* showEditZonePage: past the last page, or negative, is the last page. */
+  it('a negative page goes to the last one', async () => {
+    const many = Array.from({ length: 11 }, (_, i) => ({
+      ...A_RECORD,
+      name: `h${i}.casa.test`,
+      rData: { ipAddress: `10.0.0.${i}` },
+    }))
+    server({ 'zones/records/get': { zone: ZONE, records: many } })
+    draw()
+    await userEvent.click(await screen.findByRole('button', { name: 'casa.test' }))
+    await screen.findAllByText('of 11 records (page 1 of 2)', { exact: false })
+
+    await userEvent.clear(screen.getByLabelText('Page Number'))
+    await userEvent.type(screen.getByLabelText('Page Number'), '-1')
+    await userEvent.click(screen.getByRole('button', { name: 'Go' }))
+    expect(screen.getAllByText('of 11 records (page 2 of 2)', { exact: false }).length).toBeGreaterThan(0)
+  })
+})

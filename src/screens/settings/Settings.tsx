@@ -118,6 +118,30 @@ function serverInfoOf(s: DnsSettings): ServerInfo {
   return { dnsServerDomain: s.dnsServerDomain, version: s.version, uptimestamp: s.uptimestamp }
 }
 
+/*
+What the zone forms read from the settings: `loadDnsSettings` rewrites the
+session's default TTLs on every load, whatever the node (main.js:1194-1196), and
+Add Zone and the FWD record read the DNSSEC and serial-scheme boxes the same load
+fills (main.js:1228, zone.js:2825, 2836, 4746).
+*/
+export interface RecordSettings {
+  defaultRecordTtl: number
+  defaultNsRecordTtl: number
+  defaultSoaRecordTtl: number
+  useSoaSerialDateScheme: boolean
+  dnssecValidation: boolean
+}
+
+function recordSettingsOf(s: DnsSettings): RecordSettings {
+  return {
+    defaultRecordTtl: s.defaultRecordTtl,
+    defaultNsRecordTtl: s.defaultNsRecordTtl,
+    defaultSoaRecordTtl: s.defaultSoaRecordTtl,
+    useSoaSerialDateScheme: s.useSoaSerialDateScheme,
+    dnssecValidation: s.dnssecValidation,
+  }
+}
+
 export interface SettingsProps {
   /** The cluster nodes, for the node selector. */
   nodes?: { name: string; type: string }[]
@@ -142,6 +166,8 @@ export interface SettingsProps {
    * draw. Called under the same conditions upstream calls it.
    */
   onServerInfo?: (info: ServerInfo) => void
+  /** Every load and save, any node: what the zone forms read (`RecordSettings`). */
+  onRecordSettings?: (s: RecordSettings) => void
 }
 
 export function Settings({
@@ -155,6 +181,7 @@ export function Settings({
   clusterInitialised = false,
   serverDomain,
   onServerInfo,
+  onRecordSettings,
 }: SettingsProps) {
   /*
   Settings is one of only two screens that offer the aggregate and remember the
@@ -217,11 +244,12 @@ export function Settings({
         sessionDomain.current = s.dnsServerDomain
         onServerInfo?.(serverInfoOf(s))
       }
+      onRecordSettings?.(recordSettingsOf(s))
       reverseProxy.current = detectReverseProxy(window.location, s)
     }
     apply(s)
     setLoading(false)
-  }, [token, node, onServerInfo])
+  }, [token, node, onServerInfo, onRecordSettings])
 
   function apply(s: DnsSettings | null) {
     const f = s ? formFromSettings(s) : null
@@ -275,6 +303,7 @@ export function Settings({
       sessionDomain.current = envelope.response.dnsServerDomain
       onServerInfo?.(serverInfoOf(envelope.response))
     }
+    onRecordSettings?.(recordSettingsOf(envelope.response))
     apply(envelope.response)
   }
 

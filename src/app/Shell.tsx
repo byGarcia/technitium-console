@@ -12,7 +12,7 @@ import { About } from '../screens/about/About'
 import { Apps } from '../screens/apps/Apps'
 import { Cache } from '../screens/lists/Lists'
 import { Blocking } from '../screens/blocking/Blocking'
-import { Settings, type ServerInfo } from '../screens/settings/Settings'
+import { Settings, type RecordSettings, type ServerInfo } from '../screens/settings/Settings'
 import { Zones } from '../screens/zones/Zones'
 import { Dhcp } from '../screens/dhcp/Dhcp'
 import { Logs } from '../screens/logs/Logs'
@@ -188,6 +188,9 @@ export function Shell({
   (`updateDnsSettingsDataAndGui`, main.js:1158-1166). Settings reports them here.
   */
   const [serverInfo, setServerInfo] = useState<ServerInfo | null>(null)
+  /* The record defaults, from login until Settings loads them again
+     (main.js:1194-1196 and 1228). */
+  const [recordSettings, setRecordSettings] = useState<RecordSettings | null>(null)
   const info = session.info && serverInfo ? { ...session.info, ...serverInfo } : session.info
 
   // main.js: the document title carries the server domain and the version.
@@ -534,12 +537,12 @@ export function Shell({
             canModify={permissions?.Zones?.canModify !== false}
             canDelete={permissions?.Zones?.canDelete !== false}
             clusterDomain={session.info?.clusterDomain}
-            useSoaSerialDateScheme={session.info?.useSoaSerialDateScheme === true}
-            dnssecValidation={session.info?.dnssecValidation !== false}
+            useSoaSerialDateScheme={(recordSettings ?? session.info)?.useSoaSerialDateScheme === true}
+            dnssecValidation={(recordSettings ?? session.info)?.dnssecValidation !== false}
             recordTtls={{
-              defaultRecordTtl: session.info?.defaultRecordTtl ?? 3600,
-              defaultNsRecordTtl: session.info?.defaultNsRecordTtl ?? 14400,
-              defaultSoaRecordTtl: session.info?.defaultSoaRecordTtl ?? 900,
+              defaultRecordTtl: (recordSettings ?? session.info)?.defaultRecordTtl ?? 3600,
+              defaultNsRecordTtl: (recordSettings ?? session.info)?.defaultNsRecordTtl ?? 14400,
+              defaultSoaRecordTtl: (recordSettings ?? session.info)?.defaultSoaRecordTtl ?? 900,
             }}
           />
         ) : current?.id === 'dhcp' ? (
@@ -584,6 +587,7 @@ export function Shell({
             canBackup={permissions?.Settings?.canDelete !== false}
             serverDomain={session.info?.dnsServerDomain}
             onServerInfo={setServerInfo}
+            onRecordSettings={setRecordSettings}
           />
         ) : null}
         </main>
