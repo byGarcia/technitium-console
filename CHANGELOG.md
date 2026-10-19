@@ -13,7 +13,7 @@ also `technitiumServerMinimum` in its `package.json`, which is what the update n
 
 | Console | Technitium DNS Server | Notes |
 |---|---|---|
-| **1.3.x** | **15.5.x, 15.6.x** (1.3.2 checked against 15.6.2) | Current. Every screen redesigned for the phone, a Dashboard that compares periods, Cache in one panel. |
+| **1.3.x** | **15.5.x, 15.6.x** (1.3.3 checked against 15.6.2) | Current. Every screen redesigned for the phone, a Dashboard that compares periods, Cache in one panel. |
 | 1.2.x | 15.5.x, 15.6.x | Superseded by 1.3.x on the same server. Allowed and Blocked become one Blocking section, a light theme, and the console comes as an image for Docker. Supports a console folder of its own (`DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH`), so server updates leave it alone. |
 | 1.1.x | 15.5.x | Superseded by 1.2.x on the same server. If you stay on it, use 1.1.3: earlier ones flood the server from Cache, Allowed and Blocked. |
 | 1.0.0 | 15.4 | Cannot save Settings on a 15.5 server. Upgrade. |
@@ -22,6 +22,42 @@ To update, run the installer again (the same one-line command). It needs no rest
 service. On Docker, pull the image again: see [Docker](README.md#docker).
 
 ---
+
+## v1.3.3 (2026-10-19)
+
+**Behaves like the stock console in every place a census found it did not.** After a report that
+the DNS Client server list did not open, every change and click handler of the stock console was
+compared with this one, and each difference found was fixed. Still Technitium DNS Server 15.6.2:
+no API changes.
+
+- **DNS Client: the server list opens again.** The arrow next to *Server* showed nothing, because
+  the browser filtered the list by the text already in the field. It now always lists every
+  server, and choosing one also sets the protocol, as the stock console does. Reported by @JF62 in
+  [#15](https://github.com/byGarcia/technitium-console/issues/15).
+- **DNSSEC: Add Key works with its defaults.** It opened as a Key Signing Key with an automatic
+  rollover of 30 days, which the server refuses. The rollover now exists only for a Zone Signing
+  Key and follows how the key is generated, in Add Key and in Sign Zone.
+- **Cluster: the node selects act on the node chosen.** Zones reloads its list from the node (and
+  stays on its page), Cache lists, flushes and deletes on it, View Logs and Query Logs follow it,
+  and DHCP locks the node while a scope is being edited. With no node chosen they show this server
+  instead of a dash.
+- **Records: the add and edit form does what the stock one does on its own.** Changing the type
+  empties the previous type's fields and leaves the TTL empty so the server applies its default
+  (it was sent as 3600, wrong for NS). FWD records get *Use "This Server"*, APP records fill
+  *Record Data* from the class's template, and SVCB parameters offer the known keys again. The
+  records filters apply on *Go*, with a *Page Number* field, as in the stock console.
+- **Zones:** *Zones Per Page* and *Records Per Page* are remembered, and up to 500 records per page
+  are offered again. Zone Options' tabs and override boxes follow the catalog chosen. Add Zone
+  preselects the cluster's catalog, reads the TSIG keys again for a secondary, and keeps a chosen
+  zone file when the zone type changes, as Import Zone does when switching to the text editor.
+- **Quick lists.** *None* in the TSIG Quick Add empties the list instead of adding a key named
+  `none`; *None* in the forwarders' Quick Select also goes back to UDP; and picking the line
+  already chosen in any list does nothing, as in a native select.
+- **Login:** the 30 second OTP timeout starts the form over, and the automatic login of a fresh
+  install no longer opens the OTP panel. **SSO and LDAP:** a group map to a local group that no
+  longer exists shows and saves the first group, as the stock console does. **Dashboard:**
+  *Custom* reloads at once when both dates are already set.
+- **The update dialog has a Copy button** beside each command.
 
 ## v1.3.2 (2026-10-18)
 
