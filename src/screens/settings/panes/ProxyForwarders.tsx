@@ -31,6 +31,10 @@ export function ProxyForwarders({ f, set, en }: PaneProps) {
   still points at a "Quick Select list" that was not there.
   */
   const [quick, setQuick] = useState<QuickForwarder[]>([])
+  /* The line chosen stays shown, as upstream's select does (it goes back to blank
+     only when the settings load, main.js:1566), so picking it again changes
+     nothing: `ui/Select` fires no change for the option already chosen. */
+  const [quickChoice, setQuickChoice] = useState('')
   useEffect(() => {
     let alive = true
     void loadQuickList<QuickForwarder>('quick-forwarders-list').then((e) => alive && setQuick(e))
@@ -119,8 +123,9 @@ export function ProxyForwarders({ f, set, en }: PaneProps) {
           {(id) => (
             <Select
               id={id}
-              value=""
+              value={quickChoice}
               onChange={(ev) => {
+                setQuickChoice(ev.target.value)
                 const patch = quickForwarderPatch(ev.target.value, quick)
                 if (patch) set(patch)
               }}

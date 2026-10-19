@@ -68,10 +68,14 @@ export function ZoneOptions({
   const [notice, setNotice] = useState<Notice | null>(null)
   const [loading, setLoading] = useState(false)
   const [busy, setBusy] = useState(false)
+  /* Quick Add's line stays shown, as upstream's select does; it is rebuilt blank
+     each time the options load (zone.js:2100). */
+  const [quickTsig, setQuickTsig] = useState('')
 
   useEffect(() => {
     if (!open) return
     setNotice(null)
+    setQuickTsig('')
     setLoading(true)
     void getZoneOptions(token, zone, node).then((r) => {
       setLoading(false)
@@ -375,10 +379,11 @@ export function ZoneOptions({
                     <Select
                       id={id}
                       disabled={e.zoneTransferLocked}
-                      value=""
-                      onChange={(ev) =>
+                      value={quickTsig}
+                      onChange={(ev) => {
+                        setQuickTsig(ev.target.value)
                         set('zoneTransferTsigKeyNames', applyQuickTsigKey(f.zoneTransferTsigKeyNames, ev.target.value))
-                      }
+                      }}
                     >
                       <option value="" />
                       <option value="none">None</option>
