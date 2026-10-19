@@ -130,12 +130,18 @@ export function Zones({
 
       {/* Draws nothing without a cluster. Upstream has one for the list and a
           second for the records view (`optEditZoneClusterNode`); both read the
-          same state here, since it is the same question. */}
+          same state here, since it is the same question. The list's reloads
+          the list (index.html:436); the records view's is always disabled
+          (index.html:548). */}
       <ClusterNodeSelect
         nodes={nodes}
         initialised={clusterInitialised}
         value={node}
-        onChange={setNode}
+        onChange={(n) => {
+          setNode(n)
+          refreshList()
+        }}
+        disabled={open != null}
         label="Cluster Node"
       />
 

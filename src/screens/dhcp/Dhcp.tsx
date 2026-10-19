@@ -54,6 +54,7 @@ export function Dhcp({
   /* Which node this screen reads. Upstream mounts a selector here
      and the parameter was already travelling empty. */
   const [node, setNode] = useState<string>(() => '')
+  const [nodeLocked, setNodeLocked] = useState(false)
   const requested = (sub ?? 'Leases') as SubTab
   const active: SubTab = SUB_TABS.includes(requested) ? requested : 'Leases'
 
@@ -81,10 +82,18 @@ export function Dhcp({
         initialised={clusterInitialised}
         value={node}
         onChange={setNode}
+        disabled={nodeLocked}
         label="Cluster Node"
       />
       {active === 'Scopes' ? (
-        <Scopes tabs={tabs} token={token} node={node} canModify={canModify} canDelete={canDelete} />
+        <Scopes
+          tabs={tabs}
+          token={token}
+          node={node}
+          canModify={canModify}
+          canDelete={canDelete}
+          onLockNode={setNodeLocked}
+        />
       ) : (
         <Leases tabs={tabs} token={token} node={node} canModify={canModify} canDelete={canDelete} />
       )}

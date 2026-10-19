@@ -11,7 +11,8 @@ import {
   HASHES_RSA,
   NX_PROOFS,
   RSA_KEY_SIZES,
-  defaultCurve,
+  curveFor,
+  signZoneZskRollover,
 } from './dnssec-options'
 import type { Notice } from '../types'
 import styles from '../Zones.module.css'
@@ -33,7 +34,8 @@ that gets lost when "cleaning up" a form.
 interface SignZoneForm {
   algorithm: Algorithm
   hashAlgorithm: string
-  curve: string
+  ecdsaCurve: string
+  eddsaCurve: string
   kskGeneration: string
   kskKeySize: string
   pemKskPrivateKey: string
@@ -51,7 +53,8 @@ function initial(): SignZoneForm {
   return {
     algorithm: 'ECDSA',
     hashAlgorithm: 'SHA256',
-    curve: 'P256',
+    ecdsaCurve: 'P256',
+    eddsaCurve: 'ED25519',
     kskGeneration: 'Automatic',
     kskKeySize: '2048',
     pemKskPrivateKey: '',
@@ -95,7 +98,7 @@ export function SignZone({
     setF((prev) => ({ ...prev, [k]: value }))
 
   function changeAlgorithm(algorithm: Algorithm) {
-    setF((prev) => ({ ...prev, algorithm, curve: defaultCurve(algorithm) }))
+    set('algorithm', algorithm)
   }
 
   async function sign() {
@@ -108,7 +111,7 @@ export function SignZone({
         hashAlgorithm: f.hashAlgorithm,
         kskKeySize: f.kskKeySize,
         zskKeySize: f.zskKeySize,
-        curve: f.curve,
+        curve: curveFor(f.algorithm, f),
         // The PEMs only make sense with "Use Specified Private Key", but upstream
         // always sends them: if they are empty, they travel empty.
         pemKskPrivateKey: f.kskGeneration === 'UseSpecified' ? f.pemKskPrivateKey : '',
@@ -180,7 +183,11 @@ export function SignZone({
         ) : (
           <Field label={f.algorithm === 'EDDSA' ? 'EdDSA Curve' : 'ECDSA Curve'}>
             {(id) => (
-              <Select id={id} value={f.curve} onChange={(e) => set('curve', e.target.value)}>
+              <Select
+                id={id}
+                value={curveFor(f.algorithm, f)}
+                onChange={(e) => set(f.algorithm === 'EDDSA' ? 'eddsaCurve' : 'ecdsaCurve', e.target.value)}
+              >
                 {curves.map((c) => (
                   <option key={c.value} value={c.value}>
                     {c.label}
@@ -201,7 +208,7 @@ export function SignZone({
           generation={f.kskGeneration}
           size={f.kskKeySize}
           pem={f.pemKskPrivateKey}
-          onGeneration={(v) => set('kskGeneration', v)}
+          onGeneration={(v) => setF((prev) => ({ ...prev, kskGeneration: v, pemKskPrivateKey: '' }))}
           onSize={(v) => set('kskKeySize', v)}
           onPem={(v) => set('pemKskPrivateKey', v)}
         />
@@ -216,7 +223,15 @@ export function SignZone({
           generation={f.zskGeneration}
           size={f.zskKeySize}
           pem={f.pemZskPrivateKey}
-          onGeneration={(v) => set('zskGeneration', v)}
+          onGeneration={(v) =>
+            // zone.js:412-430: the rollover follows the generation, and the PEM is cleared.
+            setF((prev) => ({
+              ...prev,
+              zskGeneration: v,
+              pemZskPrivateKey: '',
+              zskRolloverDays: signZoneZskRollover(v),
+            }))
+          }
           onSize={(v) => set('zskKeySize', v)}
           onPem={(v) => set('pemZskPrivateKey', v)}
         />

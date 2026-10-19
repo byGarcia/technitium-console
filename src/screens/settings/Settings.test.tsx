@@ -834,3 +834,31 @@ describe('Settings: the section index (2026-10-16)', () => {
     )
   })
 })
+
+import * as quickLists from '../../lib/quick-lists'
+import { chooseIn } from '../../test/dropdown'
+
+/*
+Upstream's Quick Select keeps the line chosen (main.js:541, blank again only on
+load at 1566), and a native select fires no change for it again: picking the
+same entry twice does not overwrite what was edited in between.
+*/
+describe('Settings: Quick Select keeps the line chosen', () => {
+  it('picking the same forwarder again leaves the edited list alone', async () => {
+    const user = userEvent.setup()
+    server()
+    vi.spyOn(quickLists, 'loadQuickList').mockResolvedValue([
+      { name: 'Cloudflare', addresses: ['1.1.1.1'] },
+    ] as never)
+    await mount({ sub: 'Proxy & Forwarders' })
+    await chooseIn(user, 'Quick Select', 'Cloudflare')
+    const forwarders = screen.getByRole('textbox', { name: 'Forwarders' })
+    expect(forwarders).toHaveValue('1.1.1.1\n')
+
+    await user.clear(forwarders)
+    await user.type(forwarders, '9.9.9.9')
+    await chooseIn(user, 'Quick Select', 'Cloudflare')
+    expect(forwarders).toHaveValue('9.9.9.9')
+    expect(valueShown(screen.getByLabelText('Quick Select'))).toBe('Cloudflare')
+  })
+})

@@ -206,3 +206,22 @@ describe('filling the form', () => {
     expect(f.queryAccessNetworkACL).toBe('10.0.0.0/8\n192.168.0.0/16')
   })
 })
+
+import { applyQuickTsigKey } from './options'
+
+/* zone.js:604-624: Quick Add next to the TSIG key names. */
+describe('applyQuickTsigKey', () => {
+  it('"None" empties the list instead of adding a key named none', () => {
+    expect(applyQuickTsigKey('key1\nkey2\n', 'none')).toBe('')
+  })
+
+  it('appends a key with its line break, and not twice', () => {
+    expect(applyQuickTsigKey('', 'key1')).toBe('key1\n')
+    expect(applyQuickTsigKey('key1\n', 'key2')).toBe('key1\nkey2\n')
+    expect(applyQuickTsigKey('key1\nkey2\n', 'key1')).toBe('key1\nkey2\n')
+  })
+
+  it('the blank line does nothing', () => {
+    expect(applyQuickTsigKey('key1\n', '')).toBe('key1\n')
+  })
+})

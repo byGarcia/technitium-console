@@ -230,6 +230,9 @@ export function Lists({
   onChanged?: () => void
 }) {
   const [clusterNode, setClusterNode] = useState<string>('')
+  /* Read by `load` through a ref, so choosing a node does not rebuild it (and
+     re-run the mount effect that reads the root). */
+  const cacheNode = useRef('')
 
   const [node, setNode] = useState<ListNode | null>(null)
   const [field, setField] = useState('')
@@ -281,7 +284,7 @@ export function Lists({
     async (domain: string, up?: boolean, fromPrimary = false) => {
       /* other-zones.js:269 and 434: after a change, Allowed and Blocked are read
          back from the PRIMARY node, where the change was made. Cache never is. */
-      const node = fromPrimary && list !== 'cache' ? primary.current : ''
+      const node = list === 'cache' ? cacheNode.current : fromPrimary ? primary.current : ''
       const outcome = await listNode(list, token, domain, up ? 'up' : undefined, node)
       if (outcome.kind === 'ok') {
         setNode(outcome.data)
@@ -364,7 +367,7 @@ export function Lists({
       label: 'Flush Cache',
       action: () =>
         mutate(
-          () => flushCache(token),
+          () => flushCache(token, clusterNode),
           {
             type: 'success',
             title: 'Flushed!',
@@ -383,7 +386,7 @@ export function Lists({
       label: 'Delete',
       action: () =>
         mutate(
-          () => deleteCacheNode(token, nodeTitle),
+          () => deleteCacheNode(token, nodeTitle, clusterNode),
           {
             type: 'success',
             title: 'Deleted!',
@@ -434,13 +437,18 @@ export function Lists({
     <>
       {/* The node selector exists only on Cache: upstream has none on Allowed or
           Blocked (index.html:712, `optCachedZonesClusterNode`, is the only one).
-          Its value is still not sent; that is a known gap, out of scope here. */}
+          Changing it reloads the open domain from that node, and the list, Flush
+          and Delete all go to it (other-zones.js:20-61, 106). */}
       {isCache && !embedded && (
         <ClusterNodeSelect
           nodes={nodes}
           initialised={clusterInitialised}
           value={clusterNode}
-          onChange={setClusterNode}
+          onChange={(n) => {
+            cacheNode.current = n
+            setClusterNode(n)
+            void load(domain)
+          }}
           label="Cluster Node"
         />
       )}

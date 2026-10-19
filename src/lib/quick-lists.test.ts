@@ -136,3 +136,22 @@ describe('protocolForServer', () => {
     expect(protocolForServer('quic.example', 'TCP')).toBe('TCP')
   })
 })
+
+import { quickForwarderPatch } from './quick-lists'
+
+/* main.js:541-608: what each line of Quick Select does to the form. */
+describe('quickForwarderPatch', () => {
+  const entries = [{ name: 'Cloudflare', protocol: 'TLS', addresses: ['cloudflare-dns.com (1.1.1.1:853)'] }]
+
+  it('the blank line changes nothing', () => {
+    expect(quickForwarderPatch('', entries)).toBeNull()
+  })
+
+  it('"None" empties the forwarders AND puts the protocol back to UDP', () => {
+    expect(quickForwarderPatch('none', entries)).toEqual({ forwarders: '', forwarderProtocol: 'Udp' })
+  })
+
+  it('an entry applies as applyQuickForwarder', () => {
+    expect(quickForwarderPatch('Cloudflare', entries)).toEqual(applyQuickForwarder(entries[0]))
+  })
+})

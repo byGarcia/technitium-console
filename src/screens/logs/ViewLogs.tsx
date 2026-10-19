@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   deleteAllLogs,
   deleteLog,
@@ -104,18 +104,43 @@ export function ViewLogs({
   const [confirm, setConfirm] = useState<Confirmation | null>(null)
 
   // A failure on load is not drawn as an empty list; see `dhcp/Leases`.
-  const load = useCallback(async () => {
+  const load = useCallback(async (): Promise<LogFile[] | null> => {
     const r = await listLogFiles(token, node)
     if (r.kind === 'ok') {
       setFiles(r.data)
-      return
+      return r.data
     }
     setFiles([])
     setNotice(noticeFromFailure(r))
+    return null
   }, [token, node])
 
+  /*
+  The list is read again whenever the node changes, and an open file follows it
+  (logs.js:101-106 and 144-154): the same name is opened on the new node, or the
+  viewer closes if that node has no file by that name. Read through a ref so the
+  effect does not run again on opening a file.
+  */
+  const openRef = useRef(open)
   useEffect(() => {
-    void load()
+    openRef.current = open
+  }, [open])
+  const viewRef = useRef<(fileName: string) => Promise<void>>(async () => {})
+  useEffect(() => {
+    let live = true
+    void (async () => {
+      const list = await load()
+      const was = openRef.current
+      if (!live || was == null || list == null) return
+      if (list.some((f) => f.fileName === was)) void viewRef.current(was)
+      else {
+        setOpen(null)
+        setBody(null)
+      }
+    })()
+    return () => {
+      live = false
+    }
   }, [load])
 
   async function view(fileName: string) {
@@ -126,6 +151,9 @@ export function ViewLogs({
     setLoadingBody(false)
     setBody(text)
   }
+  useEffect(() => {
+    viewRef.current = view
+  })
 
   async function download() {
     if (open == null) return

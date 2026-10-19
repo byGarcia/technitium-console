@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { readPerPage, writePerPage } from '../../lib/stored-per-page'
 import {
   deleteZone,
   deleteZones,
@@ -80,6 +81,8 @@ export interface ZoneListProps extends ZoneActions {
   refresh: number
 }
 
+const ZONES_PER_PAGE_KEY = 'optZonesPerPage'
+
 export function ZoneList({
   token,
   node = '',
@@ -130,7 +133,8 @@ export function ZoneList({
   // just like upstream, where `refreshZones` reads them at that moment.
   const [nameFilter, setNameFilter] = useState('')
   const [typeFilter, setTypeFilter] = useState('')
-  const [perPage, setPerPage] = useState(10)
+  /* Remembered under upstream's key (zone.js:626-632). */
+  const [perPage, setPerPage] = useState(() => readPerPage(ZONES_PER_PAGE_KEY, ZONES_PER_PAGE, 10))
   const [pageField, setPageField] = useState('1')
 
   const nameRef = useRef<HTMLInputElement>(null)
@@ -197,8 +201,19 @@ export function ZoneList({
   useEffect(() => {
     loadRef.current = load
   }, [load])
+  /*
+  A refresh (after a change, or a new node) asks for the page in the Page Number
+  field, as `refreshZones()` with no page does (zone.js:666-670). The field holds
+  the page on screen once a load lands (zone.js:938), so the list stays where it
+  was; on mount it says 1.
+  */
+  const pageFieldRef = useRef(pageField)
   useEffect(() => {
-    void loadRef.current(1)
+    pageFieldRef.current = pageField
+  }, [pageField])
+  useEffect(() => {
+    const n = Number(pageFieldRef.current)
+    void loadRef.current(pageFieldRef.current === '' || Number.isNaN(n) ? 1 : n)
   }, [refresh])
 
   function goTo(page: number) {
@@ -406,7 +421,11 @@ export function ZoneList({
         <div className={styles.fltShort}>
           <Field label="Zones Per Page">
             {(id) => (
-              <Select id={id} value={String(perPage)} onChange={(e) => setPerPage(Number(e.target.value))}>
+              <Select id={id} value={String(perPage)} onChange={(e) => {
+                const n = Number(e.target.value)
+                writePerPage(ZONES_PER_PAGE_KEY, n)
+                setPerPage(n)
+              }}>
                 {ZONES_PER_PAGE.map((n) => (
                   <option key={n} value={n}>
                     {n}

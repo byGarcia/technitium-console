@@ -294,3 +294,47 @@ describe('Blocked', () => {
     )
   })
 })
+
+/*
+Cache's node select (index.html:712-713): changing it reloads the open domain
+from that node, and the list, Flush and Delete all go to it
+(other-zones.js:20-61, 106).
+*/
+describe('cache: the cluster node', () => {
+  const NODES = [
+    { name: 'a.example', type: 'Primary' },
+    { name: 'b.example', type: 'Secondary' },
+  ]
+
+  async function pickB() {
+    await userEvent.click(await screen.findByRole('combobox', { name: 'Cluster Node' }))
+    await userEvent.click(screen.getByRole('option', { name: 'b.example (secondary)' }))
+  }
+
+  it('changing it reloads the open domain from that node', async () => {
+    const list = withNode(node({ domain: 'home.test', records: [REG_CACHE] }))
+    render(<Cache token="t" nodes={NODES} clusterInitialised />)
+    await screen.findByRole('button', { name: 'Delete' })
+    await pickB()
+    const last = list.mock.calls[list.mock.calls.length - 1]
+    expect(last[2]).toBe('home.test')
+    expect(last[4]).toBe('b.example')
+  })
+
+  it('Flush and Delete go to the chosen node', async () => {
+    const flush = vi.spyOn(api, 'flushCache').mockResolvedValue(OK)
+    const remove = vi.spyOn(api, 'deleteCacheNode').mockResolvedValue(OK)
+    withNode(node({ domain: 'home.test', records: [REG_CACHE] }))
+    render(<Cache token="t" nodes={NODES} clusterInitialised />)
+    await screen.findByRole('button', { name: 'Delete' })
+    await pickB()
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Delete' }))
+    await confirm('Delete')
+    expect(remove).toHaveBeenCalledWith('t', 'home.test', 'b.example')
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Flush Cache' }))
+    await confirm('Flush Cache')
+    expect(flush).toHaveBeenCalledWith('t', 'b.example')
+  })
+})

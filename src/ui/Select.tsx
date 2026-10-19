@@ -180,7 +180,9 @@ export function Select({
   function choose(i: number) {
     const o = options[i]
     if (o == null || o.disabled || !visible.includes(i)) return
-    onChange?.({ target: { value: o.value } })
+    /* As the native element: `change` only when the value changes. Picking the
+       option already chosen just closes the list. */
+    if (o.value !== String(value)) onChange?.({ target: { value: o.value } })
     close()
   }
 

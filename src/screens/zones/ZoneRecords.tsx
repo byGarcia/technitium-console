@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { readPerPage, writePerPage } from '../../lib/stored-per-page'
 import {
   deletionBody,
   stateChangeBody,
@@ -50,7 +51,9 @@ the zone list would break and this one would not, or the other way round; that i
 why both are written by hand and kept apart.
 */
 
-const RECORDS_PER_PAGE = [10, 25, 50] as const
+/* index.html:620-627. Remembered under upstream's key (zone.js:634-640). */
+const RECORDS_PER_PAGE = [10, 25, 50, 100, 250, 500] as const
+const RECORDS_PER_PAGE_KEY = 'optEditZoneRecordsPerPage'
 
 export interface ZoneRecordsProps {
   zone: string
@@ -123,7 +126,7 @@ export function ZoneRecords(p: ZoneRecordsProps) {
 
   const [nameFilter, setNameFilter] = useState('')
   const [typeFilter, setTypeFilter] = useState('')
-  const [perPage, setPerPage] = useState(10)
+  const [perPage, setPerPage] = useState(() => readPerPage(RECORDS_PER_PAGE_KEY, RECORDS_PER_PAGE, 10))
   const [page, setPage] = useState(1)
 
   const load = useCallback(async () => {
@@ -491,7 +494,12 @@ export function ZoneRecords(p: ZoneRecordsProps) {
               <Select
                 id={id}
                 value={String(perPage)}
-                onChange={(e) => { setPerPage(Number(e.target.value)); setPage(1) }}
+                onChange={(e) => {
+                  const n = Number(e.target.value)
+                  writePerPage(RECORDS_PER_PAGE_KEY, n)
+                  setPerPage(n)
+                  setPage(1)
+                }}
               >
                 {RECORDS_PER_PAGE.map((n) => (
                   <option key={n} value={n}>

@@ -34,7 +34,8 @@ import {
   NX_PROOFS,
   RSA_KEY_SIZES,
   KEY_TYPES,
-  defaultCurve,
+  addKeyRollover,
+  curveFor,
 } from './dnssec-options'
 import type { Notice, Confirmation } from '../types'
 import tbl from '../../../ui/Table.module.css'
@@ -253,7 +254,7 @@ export function DnssecProperties({
             algorithm: newKey.algorithm,
             hashAlgorithm: newKey.hashAlgorithm,
             keySize: newKey.keySize,
-            curve: newKey.curve,
+            curve: curveFor(newKey.algorithm, newKey),
             pemPrivateKey: newKey.generation === 'UseSpecified' ? newKey.pem : '',
             rolloverDays: newKey.rolloverDays,
           },
@@ -397,9 +398,10 @@ export function DnssecProperties({
                   <Select
                     id={id}
                     value={newKey.keyType}
-                    onChange={(e) =>
-                      setNewKey((k) => ({ ...k, keyType: e.target.value as KeyKind }))
-                    }
+                    onChange={(e) => {
+                      const keyType = e.target.value as KeyKind
+                      setNewKey((k) => ({ ...k, keyType, rolloverDays: addKeyRollover(keyType, k.generation) }))
+                    }}
                   >
                     {KEY_TYPES.map((t) => (
                       <option key={t.value} value={t.value}>
@@ -417,7 +419,7 @@ export function DnssecProperties({
                     value={newKey.algorithm}
                     onChange={(e) => {
                       const algorithm = e.target.value as Algorithm
-                      setNewKey((k) => ({ ...k, algorithm, curve: defaultCurve(algorithm) }))
+                      setNewKey((k) => ({ ...k, algorithm }))
                     }}
                   >
                     {ALGORITHMS.map((a) => (
@@ -450,8 +452,11 @@ export function DnssecProperties({
                   {(id) => (
                     <Select
                       id={id}
-                      value={newKey.curve}
-                      onChange={(e) => setNewKey((k) => ({ ...k, curve: e.target.value }))}
+                      value={curveFor(newKey.algorithm, newKey)}
+                      onChange={(e) => {
+                        const v = e.target.value
+                        setNewKey((k) => (k.algorithm === 'EDDSA' ? { ...k, eddsaCurve: v } : { ...k, ecdsaCurve: v }))
+                      }}
                     >
                       {(newKey.algorithm === 'EDDSA' ? EDDSA_CURVES : ECDSA_CURVES).map((c) => (
                         <option key={c.value} value={c.value}>
@@ -470,7 +475,15 @@ export function DnssecProperties({
                       type="radio"
                       name="addKeyGeneration"
                       checked={newKey.generation === g.value}
-                      onChange={() => setNewKey((k) => ({ ...k, generation: g.value }))}
+                      onChange={() =>
+                        // zone.js:501-526: the rollover follows, and the PEM is cleared.
+                        setNewKey((k) => ({
+                          ...k,
+                          generation: g.value,
+                          pem: '',
+                          rolloverDays: addKeyRollover(k.keyType, g.value),
+                        }))
+                      }
                     />
                     {g.label}
                   </label>
@@ -520,26 +533,31 @@ MII...
                 </>
               )}
 
-              <Field label="Automatic Key Rollover">
-                {(id) => (
-                  <div className={styles.inline}>
-                    <Input
-                      placeholder="days"
-                      id={id}
-                      mono
-                      className={styles.short}
-                      value={newKey.rolloverDays}
-                      onChange={(e) => setNewKey((k) => ({ ...k, rolloverDays: e.target.value }))}
-                    />
-                    <span className={styles.suffix}>
-                      days (valid range 0-365; default 30; set 0 to disable)
-                    </span>
+              {/* Only a ZSK has an automatic rollover (zone.js:448-466). */}
+              {newKey.keyType === 'ZoneSigningKey' && (
+                <>
+                  <Field label="Automatic Key Rollover">
+                    {(id) => (
+                      <div className={styles.inline}>
+                        <Input
+                          placeholder="days"
+                          id={id}
+                          mono
+                          className={styles.short}
+                          value={newKey.rolloverDays}
+                          onChange={(e) => setNewKey((k) => ({ ...k, rolloverDays: e.target.value }))}
+                        />
+                        <span className={styles.suffix}>
+                          days (valid range 0-365; default 30; set 0 to disable)
+                        </span>
+                      </div>
+                    )}
+                  </Field>
+                  <div className={styles.help}>
+                    The frequency at which the DNS Server must automatically rollover the key.
                   </div>
-                )}
-              </Field>
-              <div className={styles.help}>
-                The frequency at which the DNS Server must automatically rollover the key.
-              </div>
+                </>
+              )}
 
               <div>
                 <Button variant="primary" disabled={busy} onClick={addKey}>
@@ -648,7 +666,8 @@ interface NewKey {
   keyType: KeyKind
   algorithm: Algorithm
   hashAlgorithm: string
-  curve: string
+  ecdsaCurve: string
+  eddsaCurve: string
   keySize: string
   generation: string
   pem: string
@@ -660,11 +679,13 @@ function initialNewKey(): NewKey {
     keyType: 'KeySigningKey',
     algorithm: 'ECDSA',
     hashAlgorithm: 'SHA256',
-    curve: 'P256',
-    keySize: '2048',
+    ecdsaCurve: 'P256',
+    eddsaCurve: 'ED25519',
+    // zone.js:6915 and 6920: 1024 bits, and no rollover for the KSK it opens with.
+    keySize: '1024',
     generation: 'Automatic',
     pem: '',
-    rolloverDays: '30',
+    rolloverDays: '0',
   }
 }
 

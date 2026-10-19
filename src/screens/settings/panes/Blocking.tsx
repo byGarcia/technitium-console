@@ -57,6 +57,9 @@ export function nextUpdateText(iso: string | null | undefined): string {
 
 export function Blocking({ f, set, en, extra }: PaneProps & { extra: BlockingExtra }) {
   const off = !en.blocking
+  /* The line chosen stays shown, as upstream's select does (blank again only when
+     the settings load, main.js:1499), so picking it again changes nothing. */
+  const [quickChoice, setQuickChoice] = useState('')
 
   /*
   The known block lists, offered beside the field they fill. Upstream's control
@@ -233,9 +236,10 @@ export function Blocking({ f, set, en, extra }: PaneProps & { extra: BlockingExt
           <Select
             id={id}
             disabled={off}
-            value=""
+            value={quickChoice}
             onChange={(ev) => {
               const chosen = ev.target.value
+              setQuickChoice(chosen)
               if (chosen === '') return
               if (chosen === 'none') {
                 set({ blockListUrls: '' })
