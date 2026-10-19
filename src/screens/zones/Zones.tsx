@@ -58,7 +58,11 @@ export interface ZonesProps {
   /** They inherit from Settings' global setting for the add modal. */
   useSoaSerialDateScheme?: boolean
   dnssecValidation?: boolean
+  /** The server's default TTLs, the record form's placeholders. */
+  recordTtls?: { defaultRecordTtl: number; defaultNsRecordTtl: number; defaultSoaRecordTtl: number }
 }
+
+const DEFAULT_TTLS = { defaultRecordTtl: 3600, defaultNsRecordTtl: 14400, defaultSoaRecordTtl: 900 }
 
 export function Zones({
   token,
@@ -68,6 +72,7 @@ export function Zones({
   canDelete,
   useSoaSerialDateScheme = false,
   dnssecValidation = false,
+  recordTtls = DEFAULT_TTLS,
 }: ZonesProps) {
   /* Upstream mounts a selector here (`optZonesClusterNode`) with no aggregate
      and no persistence; the parameter was already travelling. */
@@ -335,6 +340,7 @@ export function Zones({
         original={originalRecord}
         token={token}
         node={node}
+        defaults={{ ...recordTtls, dnssecValidation }}
         onClose={() => setModal(null)}
         onDone={done}
         onExpiryTtl={setModalExpiryTtl}

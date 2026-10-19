@@ -18,9 +18,17 @@ import {
 } from './add-zone'
 import {
   RECORD_TYPES,
+  SVCB_KEYS,
   buildRecordBody,
+  formForType,
   formFromRecord,
   emptyForm,
+  namePlaceholder,
+  recordDataTemplate,
+  toggleForwarderThisServer,
+  ttlDefault,
+  type RecordApp,
+  type RecordDefaults,
   type RecordForm,
   type RecordMode,
 } from '../record-form'
@@ -65,19 +73,28 @@ export interface AddEditRecordProps {
   original?: ResourceRecord | null
   token: string | null
   node?: string
+  /** The server's defaults: TTL placeholders and FWD's DNSSEC validation. */
+  defaults?: RecordDefaults
   onClose: () => void
   onDone: (a: Notice) => void
   /** The expiry TTL is reported because the row's "Disable" button uses it. */
   onExpiryTtl: (v: string) => void
 }
 
+const FALLBACK_DEFAULTS: RecordDefaults = {
+  defaultRecordTtl: 3600,
+  defaultNsRecordTtl: 14400,
+  defaultSoaRecordTtl: 900,
+  dnssecValidation: true,
+}
+
 export function AddEditRecord(p: AddEditRecordProps) {
   const [f, setF] = useState<RecordForm>(emptyForm)
   const [notice, setNotice] = useState<Notice | null>(null)
   const [busy, setBusy] = useState(false)
-  const [apps, setApps] = useState<string[]>([])
-  const [classes, setClasses] = useState<string[]>([])
+  const [apps, setApps] = useState<RecordApp[]>([])
   const nameRef = useRef<HTMLInputElement>(null)
+  const defaults = p.defaults ?? FALLBACK_DEFAULTS
 
   const editing = p.mode === 'update'
   const hiddenTypes = p.zoneInfo ? typesHiddenWhenAdding(p.zoneInfo.type, p.zoneInfo.dnssecStatus) : []
@@ -88,20 +105,30 @@ export function AddEditRecord(p: AddEditRecordProps) {
     if (editing && p.original) {
       setF(formFromRecord(p.original, p.zone))
     } else {
-      const initial = emptyForm()
-      // The first visible type, not a blind "A": on a signed Primary the
-      // dropdown starts the same, but on a Forwarder the hidden ones change.
-      const first = RECORD_TYPES.find((t) => t !== 'SOA' && !hiddenTypes.includes(t))
-      initial.type = first ?? 'A'
-      setF(initial)
+      /*
+      `showAddRecordModal` (zone.js:4489-4506): a reverse zone opens on PTR, and
+      otherwise the dropdown keeps the type it was left on (add or edit), unless
+      that was SOA. A type this zone hides falls to the first visible one.
+      */
+      setF((prev) => {
+        const reverse = p.zone.endsWith('.in-addr.arpa') || p.zone.endsWith('.ip6.arpa')
+        const first = RECORD_TYPES.find((t) => t !== 'SOA' && !hiddenTypes.includes(t)) ?? 'A'
+        const last = prev.type !== 'SOA' && !hiddenTypes.includes(prev.type) ? prev.type : first
+        return formForType(emptyForm(), reverse ? 'PTR' : last, defaults)
+      })
     }
     setNotice(null)
     nameRef.current?.focus()
-    // `hiddenTypes` is recalculated on every render; depending on it would loop.
+    // `hiddenTypes` and `defaults` are recalculated on every render; depending on
+    // them would loop.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [p.open, p.mode, p.original, p.zone])
 
-  // `loadAddRecordModalAppNames`: only the apps that handle APP records.
+  /*
+  `loadAddRecordModalAppNames` (zone.js:4511-4566): the apps are read once, when
+  the form turns to APP; changing the app only rebuilds the class paths from that
+  list (zone.js:561-581).
+  */
   useEffect(() => {
     if (!p.open || f.type !== 'APP') return
     void listApps(p.token, p.node ?? '').then((outcome) => {
@@ -110,15 +137,13 @@ export function AddEditRecord(p: AddEditRecordProps) {
       const withHandler = (outcome.data.response.apps ?? []).filter((a) =>
         (a.dnsApps ?? []).some((d) => d.isAppRecordRequestHandler),
       )
-      setApps(withHandler.map((a) => a.name))
-      const chosen = withHandler.find((a) => a.name === f.appName)
-      setClasses(
-        (chosen?.dnsApps ?? [])
-          .filter((d) => d.isAppRecordRequestHandler)
-          .map((d) => d.classPath),
-      )
+      setApps(withHandler.map((a) => ({ name: a.name, dnsApps: a.dnsApps ?? [] })))
     })
-  }, [p.open, f.type, f.appName, p.token, p.node])
+  }, [p.open, f.type, p.token, p.node])
+
+  const classes = (apps.find((a) => a.name === f.appName)?.dnsApps ?? [])
+    .filter((d) => d.isAppRecordRequestHandler)
+    .map((d) => d.classPath)
 
   const set = <K extends keyof RecordForm>(k: K, value: RecordForm[K]) =>
     setF((prev) => ({ ...prev, [k]: value }))
@@ -182,7 +207,7 @@ export function AddEditRecord(p: AddEditRecordProps) {
                 id={id}
                 mono
                 ref={nameRef}
-                placeholder="@"
+                placeholder={namePlaceholder(f.type)}
                 value={f.name}
                 onChange={(e) => set('name', e.target.value)}
               />
@@ -198,7 +223,11 @@ export function AddEditRecord(p: AddEditRecordProps) {
               className={styles.medium}
               disabled={editing}
               value={f.type}
-              onChange={(e) => set('type', e.target.value)}
+              onChange={(e) => {
+                const type = e.target.value
+                setNotice(null)
+                setF((prev) => formForType(prev, type, defaults))
+              }}
             >
               {RECORD_TYPES.filter(
                 // SOA only appears on edit; the rest according to the zone type.
@@ -219,16 +248,32 @@ export function AddEditRecord(p: AddEditRecordProps) {
                 id={id}
                 mono
                 className={styles.short}
-                placeholder="3600"
+                placeholder={ttlDefault(f.type, defaults)}
+                // FWD's TTL is fixed at 0 (zone.js:4729-4730).
+                disabled={f.type === 'FWD'}
                 value={f.ttl}
                 onChange={(e) => set('ttl', e.target.value)}
               />
-              <span className={styles.suffix}>seconds (default 3600)</span>
+              <span className={styles.suffix}>seconds (default {ttlDefault(f.type, defaults)})</span>
             </div>
           )}
         </Field>
 
-        <TypeFields f={f} set={set} apps={apps} classes={classes} editing={editing} />
+        <TypeFields
+          f={f}
+          set={set}
+          setF={setF}
+          apps={apps.map((a) => a.name)}
+          classes={classes}
+          onApp={(appName) =>
+            // zone.js:561-581: the class paths are rebuilt (none chosen) and the data emptied.
+            setF((prev) => ({ ...prev, appName, classPath: '', recordData: '' }))
+          }
+          onClass={(classPath) =>
+            setF((prev) => ({ ...prev, classPath, recordData: recordDataTemplate(apps, prev.appName, classPath) }))
+          }
+          editing={editing}
+        />
 
         {/* "Overwrite" only exists when adding. */}
         {!editing && (
@@ -276,12 +321,15 @@ export function AddEditRecord(p: AddEditRecordProps) {
 interface FieldsProps {
   f: RecordForm
   set: <K extends keyof RecordForm>(k: K, value: RecordForm[K]) => void
+  setF: (update: (prev: RecordForm) => RecordForm) => void
   apps: string[]
   classes: string[]
+  onApp: (appName: string) => void
+  onClass: (classPath: string) => void
   editing: boolean
 }
 
-function TypeFields({ f, set, apps, classes, editing }: FieldsProps) {
+function TypeFields({ f, set, setF, apps, classes, onApp, onClass, editing }: FieldsProps) {
   const text = (
     label: string,
     key: keyof RecordForm,
@@ -327,9 +375,12 @@ function TypeFields({ f, set, apps, classes, editing }: FieldsProps) {
             Add reverse (PTR) record
           </label>
           <label className={styles.chk}>
+            {/* Enabled only while the PTR box is ticked (zone.js:543-546); unticking
+                the PTR does not untick it. */}
             <input
               type="checkbox"
               checked={f.createPtrZone}
+              disabled={!f.ptr}
               onChange={(e) => set('createPtrZone', e.target.checked)}
             />
             Create reverse zone if it does not exists
@@ -514,20 +565,47 @@ MII...
             <div className={styles.groupTitle}>Params</div>
             {f.svcbParams.map((param, i) => (
               <div key={i} className={styles.inline}>
-                <Input
-                  mono
-                  aria-label={`Param key ${i + 1}`}
-                  value={param.key}
-                  onChange={(e) =>
-                    set(
-                      'svcbParams',
-                      f.svcbParams.map((x, j) => (j === i ? { ...x, key: e.target.value } : x)),
-                    )
-                  }
-                />
+                {/* zone.js:5358-5385: a dropdown of the known keys; "Unknown" turns
+                    the row into a key number and an empty hex string. */}
+                {param.custom ? (
+                  <Input
+                    mono
+                    aria-label={`Param key ${i + 1}`}
+                    placeholder="key number"
+                    value={param.key}
+                    onChange={(e) =>
+                      set(
+                        'svcbParams',
+                        f.svcbParams.map((x, j) => (j === i ? { ...x, key: e.target.value } : x)),
+                      )
+                    }
+                  />
+                ) : (
+                  <Select
+                    aria-label={`Param key ${i + 1}`}
+                    value={param.key}
+                    onChange={(e) => {
+                      const key = e.target.value
+                      set(
+                        'svcbParams',
+                        f.svcbParams.map((x, j) =>
+                          j !== i ? x : key === 'Unknown' ? { key: '', value: '', custom: true } : { ...x, key },
+                        ),
+                      )
+                    }}
+                  >
+                    {SVCB_KEYS.map((k) => (
+                      <option key={k} value={k}>
+                        {k}
+                      </option>
+                    ))}
+                    <option value="Unknown">Unknown</option>
+                  </Select>
+                )}
                 <Input
                   mono
                   aria-label={`Param value ${i + 1}`}
+                  placeholder={param.custom ? 'hex string' : undefined}
                   value={param.value}
                   onChange={(e) =>
                     set(
@@ -545,7 +623,8 @@ MII...
               </div>
             ))}
             <div>
-              <Button onClick={() => set('svcbParams', [...f.svcbParams, { key: '', value: '' }])}>
+              {/* A new row opens on the dropdown's first key (zone.js:5374). */}
+              <Button onClick={() => set('svcbParams', [...f.svcbParams, { key: 'mandatory', value: '' }])}>
                 Add Param
               </Button>
             </div>
@@ -597,16 +676,43 @@ MII...
                   type="radio"
                   name="recordForwarderProtocol"
                   checked={f.forwarderProtocol === x.value}
+                  disabled={f.forwarderThisServer}
                   onChange={() => set('forwarderProtocol', x.value)}
                 />
                 {x.label}
               </label>
             ))}
           </GroupRow>
-          {text('Forwarder', 'forwarder', {
-            mono: true,
-            placeholder: forwarderExample(f.forwarderProtocol),
-          })}
+          {/* `updateAddEditFormForwarderThisServer` (zone.js:5336-5356): ticked, the
+              forwarder is `this-server`, fixed, on UDP, and the proxy goes away. */}
+          <label className={styles.chk}>
+            <input
+              type="checkbox"
+              checked={f.forwarderThisServer}
+              onChange={(e) => {
+                const on = e.target.checked
+                setF((prev) => toggleForwarderThisServer(prev, on))
+              }}
+            />
+            Use &quot;This Server&quot;
+          </label>
+          <div className={styles.help}>
+            When using &quot;This Server&quot;, if a record does not exists in the zone then the request is
+            forwarded to the DNS Server&apos;s resolver internally. This allows you to override any record for
+            the forwarded domain name or control its DNSSEC validation.
+          </div>
+          <Field label="Forwarder">
+            {(id) => (
+              <Input
+                id={id}
+                mono
+                placeholder={forwarderExample(f.forwarderProtocol)}
+                disabled={f.forwarderThisServer}
+                value={f.forwarder}
+                onChange={(e) => set('forwarder', e.target.value)}
+              />
+            )}
+          </Field>
           {text('Forwarder Priority', 'forwarderPriority', { mono: true, short: true, placeholder: '0' })}
           <div className={styles.help}>
             Forwarders are sorted by priority value i.e. forwarder with low priority value will be
@@ -621,67 +727,69 @@ MII...
             />
             Enable DNSSEC Validation
           </label>
-          <GroupRow modal label="Network Proxy">
-            {PROXY_TYPES.map((x) => (
-              <label key={x.value} className={styles.chk}>
-                <input
-                  type="radio"
-                  name="recordProxyType"
-                  checked={f.proxyType === x.value}
-                  onChange={() => set('proxyType', x.value)}
-                />
-                {x.label}
-              </label>
-            ))}
-            <Field label="Proxy Server Address">
-              {(id) => (
-                <Input
-                  placeholder="domain name or IP address"
-                  id={id}
-                  mono
-                  disabled={!proxyEditable(f.proxyType)}
-                  value={f.proxyAddress}
-                  onChange={(e) => set('proxyAddress', e.target.value)}
-                />
-              )}
-            </Field>
-            <Field label="Proxy Server Port">
-              {(id) => (
-                <Input
-                  placeholder="port"
-                  id={id}
-                  mono
-                  className={styles.short}
-                  disabled={!proxyEditable(f.proxyType)}
-                  value={f.proxyPort}
-                  onChange={(e) => set('proxyPort', e.target.value)}
-                />
-              )}
-            </Field>
-            <Field label="Proxy Server Username">
-              {(id) => (
-                <Input
-                  placeholder="username"
-                  id={id}
-                  disabled={!proxyEditable(f.proxyType)}
-                  value={f.proxyUsername}
-                  onChange={(e) => set('proxyUsername', e.target.value)}
-                />
-              )}
-            </Field>
-            <Field label="Proxy Server Password">
-              {(id) => (
-                <Input
-                  placeholder="password"
-                  id={id}
-                  type="password"
-                  disabled={!proxyEditable(f.proxyType)}
-                  value={f.proxyPassword}
-                  onChange={(e) => set('proxyPassword', e.target.value)}
-                />
-              )}
-            </Field>
-          </GroupRow>
+          {!f.forwarderThisServer && (
+            <GroupRow modal label="Network Proxy">
+              {PROXY_TYPES.map((x) => (
+                <label key={x.value} className={styles.chk}>
+                  <input
+                    type="radio"
+                    name="recordProxyType"
+                    checked={f.proxyType === x.value}
+                    onChange={() => set('proxyType', x.value)}
+                  />
+                  {x.label}
+                </label>
+              ))}
+              <Field label="Proxy Server Address">
+                {(id) => (
+                  <Input
+                    placeholder="domain name or IP address"
+                    id={id}
+                    mono
+                    disabled={!proxyEditable(f.proxyType)}
+                    value={f.proxyAddress}
+                    onChange={(e) => set('proxyAddress', e.target.value)}
+                  />
+                )}
+              </Field>
+              <Field label="Proxy Server Port">
+                {(id) => (
+                  <Input
+                    placeholder="port"
+                    id={id}
+                    mono
+                    className={styles.short}
+                    disabled={!proxyEditable(f.proxyType)}
+                    value={f.proxyPort}
+                    onChange={(e) => set('proxyPort', e.target.value)}
+                  />
+                )}
+              </Field>
+              <Field label="Proxy Server Username">
+                {(id) => (
+                  <Input
+                    placeholder="username"
+                    id={id}
+                    disabled={!proxyEditable(f.proxyType)}
+                    value={f.proxyUsername}
+                    onChange={(e) => set('proxyUsername', e.target.value)}
+                  />
+                )}
+              </Field>
+              <Field label="Proxy Server Password">
+                {(id) => (
+                  <Input
+                    placeholder="password"
+                    id={id}
+                    type="password"
+                    disabled={!proxyEditable(f.proxyType)}
+                    value={f.proxyPassword}
+                    onChange={(e) => set('proxyPassword', e.target.value)}
+                  />
+                )}
+              </Field>
+            </GroupRow>
+          )}
         </>
       )
 
@@ -695,7 +803,7 @@ MII...
                 id={id}
                 disabled={editing}
                 value={f.appName}
-                onChange={(e) => set('appName', e.target.value)}
+                onChange={(e) => onApp(e.target.value)}
               >
                 <option value="" />
                 {apps.map((a) => (
@@ -712,7 +820,7 @@ MII...
                 id={id}
                 disabled={editing}
                 value={f.classPath}
-                onChange={(e) => set('classPath', e.target.value)}
+                onChange={(e) => onClass(e.target.value)}
               >
                 <option value="" />
                 {classes.map((c) => (
@@ -741,7 +849,7 @@ MII...
       return (
         <>
           {text('RR Type', 'unknownType', { mono: true, short: true, placeholder: 'type' })}
-          {text('Value', 'value', { mono: true })}
+          {text('RDATA', 'value', { mono: true, placeholder: 'hex string' })}
         </>
       )
   }

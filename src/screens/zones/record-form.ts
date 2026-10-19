@@ -34,7 +34,13 @@ export const RECORD_TYPES = [
 export interface SvcbParam {
   key: string
   value: string
+  /** "Unknown" in the key dropdown: the key is typed as a number. */
+  custom?: boolean
 }
+
+/* The key dropdown of an SVCB param, in upstream's order (zone.js:5374-5381);
+   "Unknown" follows them and turns the key into a number field. */
+export const SVCB_KEYS = ['mandatory', 'alpn', 'no-default-alpn', 'port', 'ipv4hint', 'ipv6hint', 'dohpath'] as const
 
 export interface RecordForm {
   name: string
@@ -111,6 +117,8 @@ export interface RecordForm {
   caaValue: string
 
   forwarderProtocol: string
+  /** "Use \"This Server\"": the forwarder is `this-server` and cannot be typed. */
+  forwarderThisServer: boolean
   forwarder: string
   forwarderPriority: string
   forwarderDnssecValidation: boolean
@@ -129,7 +137,9 @@ export interface RecordForm {
 
 export function emptyForm(): RecordForm {
   return {
-    name: '', type: 'A', ttl: '3600', overwrite: false, comments: '', expiryTtl: '',
+    // Empty, not 3600: upstream leaves it empty with the server's default as the
+    // placeholder, and an empty TTL makes the server apply its own (zone.js:4357).
+    name: '', type: 'A', ttl: '', overwrite: false, comments: '', expiryTtl: '',
     value: '', ptr: false, createPtrZone: false,
     nsNameServer: '', nsGlue: '',
     soaPrimaryNameServer: '', soaResponsiblePerson: '', soaSerial: '', soaRefresh: '',
@@ -148,7 +158,7 @@ export function emptyForm(): RecordForm {
     svcbAutoIpv6Hint: false,
     uriPriority: '', uriWeight: '', uri: '',
     caaFlags: '', caaTag: '', caaValue: '',
-    forwarderProtocol: 'Udp', forwarder: '', forwarderPriority: '',
+    forwarderProtocol: 'Udp', forwarderThisServer: false, forwarder: '', forwarderPriority: '',
     forwarderDnssecValidation: false, proxyType: 'DefaultProxy', proxyAddress: '',
     proxyPort: '', proxyUsername: '', proxyPassword: '',
     appName: '', classPath: '', recordData: '',
@@ -245,7 +255,12 @@ export function formFromRecord(r: ResourceRecord, zone: string): RecordForm {
       f.svcbPriority = s(d.svcPriority)
       f.svcbTargetName = s(d.svcTargetName) === '' ? '.' : s(d.svcTargetName)
       const params = (d.svcParams ?? {}) as Record<string, unknown>
-      f.svcbParams = Object.entries(params).map(([key, value]) => ({ key, value: s(value) }))
+      // A numeric key is one the dropdown does not name (zone.js:5363).
+      f.svcbParams = Object.entries(params).map(([key, value]) => ({
+        key,
+        value: s(value),
+        custom: key !== '' && Number.isFinite(Number(key)),
+      }))
       f.svcbAutoIpv4Hint = d.autoIpv4Hint === true
       f.svcbAutoIpv6Hint = d.autoIpv6Hint === true
       break
@@ -266,6 +281,7 @@ export function formFromRecord(r: ResourceRecord, zone: string): RecordForm {
     case 'FWD':
       f.forwarderProtocol = s(d.protocol)
       f.forwarder = s(d.forwarder)
+      f.forwarderThisServer = f.forwarder === 'this-server'
       f.forwarderPriority = s(d.priority)
       f.forwarderDnssecValidation = d.dnssecValidation === true
       f.proxyType = s(d.proxyType)
@@ -329,9 +345,11 @@ export function serializeSvcParams(
   rows: SvcbParam[],
 ): { value: string } | { error: RecordError } {
   const r = serializeTable(
-    rows.map((row) =>
-      [row.key, row.value].map((value) => ({ type: 'text' as const, value })),
-    ),
+    // The value cell is `data-optional` (zone.js:5383): `no-default-alpn` has none.
+    rows.map((row) => [
+      { type: 'text' as const, value: row.key },
+      { type: 'text' as const, value: row.value, optional: true },
+    ]),
   )
   if (!r.ok) {
     return { error: { title: r.failure.title, text: r.failure.text, field: 'svcbParams' } }
@@ -872,4 +890,78 @@ export function buildRecordBody(
       ...p,
     },
   }
+}
+
+/** The server's defaults the form shows, from the session info (WebServiceAuthApi.cs:96-100). */
+export interface RecordDefaults {
+  defaultRecordTtl: number
+  defaultNsRecordTtl: number
+  defaultSoaRecordTtl: number
+  dnssecValidation: boolean
+}
+
+/*
+What changing the type does to the form, from `modifyAddRecordFormByType`
+(zone.js:4567-4796): the fields of the type are emptied, the TTL is emptied so the
+server applies its default, and FWD starts at TTL 0, UDP, no "This Server", the
+default proxy and the server's DNSSEC validation. The name, the comments, the
+expiry and "Overwrite" are not the type's and stay.
+*/
+export function formForType(prev: RecordForm, type: string, d: RecordDefaults): RecordForm {
+  return {
+    ...emptyForm(),
+    name: prev.name,
+    overwrite: prev.overwrite,
+    comments: prev.comments,
+    expiryTtl: prev.expiryTtl,
+    type,
+    ttl: type === 'FWD' ? '0' : '',
+    forwarderDnssecValidation: d.dnssecValidation,
+  }
+}
+
+/** The TTL placeholder and its "default" text, per type (zone.js:4573, 4624, 4637). */
+export function ttlDefault(type: string, d: RecordDefaults): string {
+  if (type === 'NS') return String(d.defaultNsRecordTtl)
+  if (type === 'SOA') return String(d.defaultSoaRecordTtl)
+  return String(d.defaultRecordTtl)
+}
+
+/** The Name placeholder, per type (zone.js:4569, 4664, 4697, 4706). */
+export function namePlaceholder(type: string): string {
+  switch (type) {
+    case 'SRV':
+      return '_service._protocol.name'
+    case 'TLSA':
+      return '_port._protocol.name'
+    case 'SVCB':
+    case 'HTTPS':
+      return '_port._scheme.name'
+    default:
+      return '@'
+  }
+}
+
+/*
+"Use \"This Server\"" on an FWD record (zone.js:5336-5356): ticked, the forwarder
+becomes `this-server` and the protocol UDP; unticked, the forwarder is emptied.
+*/
+export function toggleForwarderThisServer(f: RecordForm, on: boolean): RecordForm {
+  return on
+    ? { ...f, forwarderThisServer: true, forwarder: 'this-server', forwarderProtocol: 'Udp' }
+    : { ...f, forwarderThisServer: false, forwarder: '' }
+}
+
+/** An installed app as the APP record form needs it. */
+export interface RecordApp {
+  name: string
+  dnsApps: { classPath: string; recordDataTemplate?: string | null; isAppRecordRequestHandler: boolean }[]
+}
+
+/* What choosing a class path writes in Record Data: its template, or nothing
+   (zone.js:583-603). */
+export function recordDataTemplate(apps: RecordApp[], appName: string, classPath: string): string {
+  const app = apps.find((a) => a.name === appName)
+  const dnsApp = app?.dnsApps.find((d) => d.classPath === classPath)
+  return dnsApp?.recordDataTemplate ?? ''
 }

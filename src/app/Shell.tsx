@@ -83,6 +83,12 @@ export interface ShellSession {
     permissions?: Record<string, Permission>
     clusterInitialized?: boolean
     clusterNodes?: { name: string; type: string }[]
+    /* The record defaults the zone forms show (WebServiceAuthApi.cs:96-100). */
+    defaultRecordTtl?: number
+    defaultNsRecordTtl?: number
+    defaultSoaRecordTtl?: number
+    useSoaSerialDateScheme?: boolean
+    dnssecValidation?: boolean
   }
 }
 
@@ -523,6 +529,13 @@ export function Shell({
             clusterInitialised={session.info?.clusterInitialized === true}
             canModify={permissions?.Zones?.canModify !== false}
             canDelete={permissions?.Zones?.canDelete !== false}
+            useSoaSerialDateScheme={session.info?.useSoaSerialDateScheme === true}
+            dnssecValidation={session.info?.dnssecValidation !== false}
+            recordTtls={{
+              defaultRecordTtl: session.info?.defaultRecordTtl ?? 3600,
+              defaultNsRecordTtl: session.info?.defaultNsRecordTtl ?? 14400,
+              defaultSoaRecordTtl: session.info?.defaultSoaRecordTtl ?? 900,
+            }}
           />
         ) : current?.id === 'dhcp' ? (
           <Dhcp
