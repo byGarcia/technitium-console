@@ -212,9 +212,11 @@ describe('records of a zone', () => {
   it('the name filter is exact: \"w\" does not find \"www\"', async () => {
     const { user } = await openZone()
     await user.type(screen.getByLabelText('Name'), 'w')
+    await user.click(screen.getByRole('button', { name: 'Go' }))
     expect(await screen.findByText('No Record Found')).toBeTruthy()
 
     await user.type(screen.getByLabelText('Name'), 'ww')
+    await user.click(screen.getByRole('button', { name: 'Go' }))
     await waitFor(() => expect(screen.queryByText('No Record Found')).toBeNull())
   })
 
@@ -403,5 +405,31 @@ describe('zones: the cluster node', () => {
     draw({ nodes: NODES, clusterInitialised: true })
     await userEvent.click(await screen.findByRole('button', { name: 'casa.test' }))
     await waitFor(() => expect(screen.getByRole('combobox', { name: 'Cluster Node' })).toBeDisabled())
+  })
+})
+
+/*
+The records view's filters, as index.html:600-631 and showEditZonePage
+(zone.js:3594-3735): Name, Type, Page Number and Records Per Page apply on Go (or
+on a page link), not as they are typed; the Page Number shows the page on screen.
+*/
+describe('records view: the filters apply on Go', () => {
+  it('typing a name filters nothing until Go is pressed', async () => {
+    server({
+      'zones/records/get': {
+        zone: ZONE,
+        records: [A_RECORD, { ...A_RECORD, name: 'mail.casa.test', rData: { ipAddress: '10.0.0.2' } }],
+      },
+    })
+    draw()
+    await userEvent.click(await screen.findByRole('button', { name: 'casa.test' }))
+    await screen.findAllByText('1-2 (2) of 2 records (page 1 of 1)', { exact: false })
+
+    await userEvent.type(screen.getByLabelText('Name'), 'www')
+    expect(screen.getAllByText('1-2 (2) of 2 records (page 1 of 1)', { exact: false }).length).toBeGreaterThan(0)
+
+    await userEvent.click(screen.getByRole('button', { name: 'Go' }))
+    expect(screen.getAllByText('1-1 (1) of 1 records (page 1 of 1)', { exact: false }).length).toBeGreaterThan(0)
+    expect(screen.getByLabelText('Page Number')).toHaveValue('1')
   })
 })

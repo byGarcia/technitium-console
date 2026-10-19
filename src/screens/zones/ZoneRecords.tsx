@@ -124,10 +124,29 @@ export function ZoneRecords(p: ZoneRecordsProps) {
   const [busy, setBusy] = useState(false)
   const [hideDnssecRecords, setHideDnssecRecords] = useState(readHideDnssec)
 
+  /*
+  What is typed and what is applied are kept apart: upstream reads the four
+  fields only in `showEditZonePage` (zone.js:3594-3610), run by Go or by a page
+  link, so typing a filter changes nothing on screen until then.
+  */
+  const [nameField, setNameField] = useState('')
+  const [typeField, setTypeField] = useState('')
+  const [pageField, setPageField] = useState('1')
+  const [perPageField, setPerPageField] = useState(() => readPerPage(RECORDS_PER_PAGE_KEY, RECORDS_PER_PAGE, 10))
   const [nameFilter, setNameFilter] = useState('')
   const [typeFilter, setTypeFilter] = useState('')
-  const [perPage, setPerPage] = useState(() => readPerPage(RECORDS_PER_PAGE_KEY, RECORDS_PER_PAGE, 10))
+  const [perPage, setPerPage] = useState(perPageField)
   const [page, setPage] = useState(1)
+
+  /** `showEditZonePage(pageNumber)`: the fields applied, on that page or the
+   *  one in Page Number (0 or empty is 1). */
+  function showPage(pageNumber?: number) {
+    setNameFilter(nameField)
+    setTypeFilter(typeField)
+    setPerPage(perPageField)
+    const n = pageNumber ?? Number(pageField)
+    setPage(Number.isNaN(n) || n === 0 ? 1 : n)
+  }
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -158,6 +177,10 @@ export function ZoneRecords(p: ZoneRecordsProps) {
 
   const totalPages = Math.max(1, Math.ceil(visible.length / perPage))
   const currentPage = Math.min(Math.max(page, 1), totalPages)
+  /* Page Number shows the page on screen once it is drawn (zone.js:3733). */
+  useEffect(() => {
+    setPageField(String(currentPage))
+  }, [currentPage])
   const offset = (currentPage - 1) * perPage
   const onPage = sorted.slice(offset, offset + perPage)
 
@@ -330,7 +353,7 @@ export function ZoneRecords(p: ZoneRecordsProps) {
   /* Here the last page is calculated on the client: the records are all
      loaded, there is no need to ask the server. */
   const pagination = (
-    <Pagination window={pg} current={currentPage} last={totalPages} onGoTo={setPage} />
+    <Pagination window={pg} current={currentPage} last={totalPages} onGoTo={(n) => showPage(n)} />
   )
 
   return (
@@ -471,8 +494,9 @@ export function ZoneRecords(p: ZoneRecordsProps) {
               <Input
                 id={id}
                 placeholder="abc or a* or *b* or a?c"
-                value={nameFilter}
-                onChange={(e) => { setNameFilter(e.target.value); setPage(1) }}
+                value={nameField}
+                onChange={(e) => setNameField(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && showPage()}
               />
             )}
           </Field>
@@ -482,8 +506,22 @@ export function ZoneRecords(p: ZoneRecordsProps) {
             {(id) => (
               <Input
                 id={id}
-                value={typeFilter}
-                onChange={(e) => { setTypeFilter(e.target.value); setPage(1) }}
+                value={typeField}
+                onChange={(e) => setTypeField(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && showPage()}
+              />
+            )}
+          </Field>
+        </div>
+        <div className={styles.fltShort}>
+          <Field label="Page Number">
+            {(id) => (
+              <Input
+                id={id}
+                mono
+                value={pageField}
+                onChange={(e) => setPageField(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && showPage()}
               />
             )}
           </Field>
@@ -493,12 +531,12 @@ export function ZoneRecords(p: ZoneRecordsProps) {
             {(id) => (
               <Select
                 id={id}
-                value={String(perPage)}
+                value={String(perPageField)}
                 onChange={(e) => {
+                  // Remembered at once (zone.js:634-636); applied on Go.
                   const n = Number(e.target.value)
                   writePerPage(RECORDS_PER_PAGE_KEY, n)
-                  setPerPage(n)
-                  setPage(1)
+                  setPerPageField(n)
                 }}
               >
                 {RECORDS_PER_PAGE.map((n) => (
@@ -510,6 +548,9 @@ export function ZoneRecords(p: ZoneRecordsProps) {
             )}
           </Field>
         </div>
+        <Button variant="primary" onClick={() => showPage()}>
+          Go
+        </Button>
       </div>
 
       <div className={styles.count}>
