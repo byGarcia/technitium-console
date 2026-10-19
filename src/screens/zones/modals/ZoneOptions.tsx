@@ -15,6 +15,8 @@ import {
   aclEditable,
   applyQuickTsigKey,
   buildOptionsBody,
+  chooseCatalog,
+  liveOptionsState,
   optionsState,
   formFromOptions,
   notifyWithList,
@@ -89,7 +91,8 @@ export function ZoneOptions({
     })
   }, [open, token, zone, node])
 
-  const e: OptionsState | null = response ? optionsState(response) : null
+  /* The tabs and the overrides follow the form's catalog (zone.js:199-286). */
+  const e: OptionsState | null = response ? (f ? liveOptionsState(response, f) : optionsState(response)) : null
 
   const set = <K extends keyof OptionsForm>(k: K, value: OptionsForm[K]) =>
     setF((prev) => (prev == null ? prev : { ...prev, [k]: value }))
@@ -164,7 +167,10 @@ export function ZoneOptions({
                           id={id}
                           disabled={e.catalogLocked}
                           value={f.catalog}
-                          onChange={(ev) => set('catalog', ev.target.value)}
+                          onChange={(ev) => {
+                            const catalog = ev.target.value
+                            setF((prev) => (prev == null ? prev : chooseCatalog(prev, catalog)))
+                          }}
                         >
                           <option value="" />
                           {(e.catalogLocked && f.catalog !== ''

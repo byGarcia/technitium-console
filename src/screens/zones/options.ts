@@ -569,3 +569,36 @@ export function applyQuickTsigKey(current: string, chosen: string): string {
   if (chosen === 'none') return ''
   return current.indexOf(chosen) < 0 ? current + chosen + '\n' : current
 }
+
+/*
+Choosing a catalog in the form (zone.js:199-202): the three overrides are
+unticked, whatever was chosen.
+*/
+export function chooseCatalog(f: OptionsForm, catalog: string): OptionsForm {
+  return {
+    ...f,
+    catalog,
+    overrideCatalogQueryAccess: false,
+    overrideCatalogZoneTransfer: false,
+    overrideCatalogNotify: false,
+  }
+}
+
+/*
+The state the modal draws once the form has been touched. Which tabs show and
+whether the overrides can be ticked follow the catalog and the overrides in the
+FORM (zone.js:199-286), worked out with the same rules as on loading. The locks
+on the access fields are kept from the answer the modal loaded: upstream's
+handlers never change them.
+*/
+export function liveOptionsState(r: ZoneOptions, f: OptionsForm): OptionsState {
+  const loaded = optionsState(r)
+  const live = optionsState({
+    ...r,
+    catalog: f.catalog === '' ? null : f.catalog,
+    overrideCatalogQueryAccess: f.overrideCatalogQueryAccess,
+    overrideCatalogZoneTransfer: f.overrideCatalogZoneTransfer,
+    overrideCatalogNotify: f.overrideCatalogNotify,
+  })
+  return { ...loaded, tabs: live.tabs, overrideLocked: live.overrideLocked }
+}

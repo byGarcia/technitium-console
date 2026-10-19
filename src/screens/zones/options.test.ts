@@ -225,3 +225,45 @@ describe('applyQuickTsigKey', () => {
     expect(applyQuickTsigKey('key1\n', '')).toBe('key1\n')
   })
 })
+
+import { liveOptionsState, chooseCatalog } from './options'
+
+/*
+zone.js:199-286: choosing a catalog in the form unticks the three overrides,
+enables or disables them and hides or shows the tabs the catalog takes over;
+ticking an override shows its tab again. The tabs follow the form, not the
+answer the modal loaded.
+*/
+describe('Zone Options: the catalog in the form', () => {
+  const primary = options({ availableCatalogZoneNames: ['cat.test'] })
+
+  it('choosing a catalog unticks the overrides', () => {
+    const f = formFromOptions(options({ catalog: 'cat.test', overrideCatalogQueryAccess: true, availableCatalogZoneNames: ['cat.test', 'b.test'] }))
+    expect(chooseCatalog(f, 'b.test')).toMatchObject({
+      catalog: 'b.test',
+      overrideCatalogQueryAccess: false,
+      overrideCatalogZoneTransfer: false,
+      overrideCatalogNotify: false,
+    })
+  })
+
+  it('a Primary that joins a catalog hides the three tabs and enables the overrides', () => {
+    const f = chooseCatalog(formFromOptions(primary), 'cat.test')
+    const e = liveOptionsState(primary, f)
+    expect(e.tabs).toEqual(['General', 'Dynamic Updates'])
+    expect(e.overrideLocked).toBe(false)
+  })
+
+  it('ticking an override shows its tab again', () => {
+    const f = { ...chooseCatalog(formFromOptions(primary), 'cat.test'), overrideCatalogZoneTransfer: true }
+    expect(liveOptionsState(primary, f).tabs).toEqual(['General', 'Zone Transfer', 'Dynamic Updates'])
+  })
+
+  it('leaving the catalog shows the tabs again and disables the overrides', () => {
+    const inCat = options({ catalog: 'cat.test', availableCatalogZoneNames: ['cat.test'] })
+    const f = chooseCatalog(formFromOptions(inCat), '')
+    const e = liveOptionsState(inCat, f)
+    expect(e.tabs).toEqual(['General', 'Query Access', 'Zone Transfer', 'Notify', 'Dynamic Updates'])
+    expect(e.overrideLocked).toBe(true)
+  })
+})
