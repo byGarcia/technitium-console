@@ -795,8 +795,9 @@ contract and SECURITY.md.
     no import). That endpoint is this repo's `update-check/`, a Cloudflare Pages
     Function that answers `v=1 latest=X.Y.Z server=A.B`. When a newer release is
     made for the running server, the *Web Console* row gets the same `Update`
-    mark as the server's, and a dialog with the two commands from the README. Its
-    limits, and a change that crosses one is a bug:
+    mark as the server's, and a dialog with the two commands from the README,
+    each with a Copy button (the console cannot run them: no call of the server's
+    API replaces its files). Its limits, and a change that crosses one is a bug:
     - **only that call**, and **at most once a day per browser**: the result,
       failures included, is kept in `localStorage` under `consoleUpdateCheck`. A
       failed call writes a line in the server's log (`DnsWebService.cs:2556`), so
