@@ -155,7 +155,10 @@ export function ImportZone({
           </label>
         </GroupRow>
 
-        {mode === 'File' ? (
+        {/* Both stay mounted and the other one is hidden, as upstream does
+            (zone.js:184-197): the file input keeps the file it shows, so going
+            File, Text, File neither forgets it nor uploads a file it no longer shows. */}
+        <div hidden={mode !== 'File'}>
           <Row modal label="Zone File">
             {(id) => (
               <Input
@@ -166,7 +169,8 @@ export function ImportZone({
               />
             )}
           </Row>
-        ) : (
+        </div>
+        <div hidden={mode !== 'Text'}>
           <div className={frm.mrowCtl}>
             <LabeledTextarea
               label="Text Editor"
@@ -180,7 +184,7 @@ export function ImportZone({
               Enter the records to be imported above in standard zone file format.
             </div>
           </div>
-        )}
+        </div>
 
         <Alert type="info" title="Note!">
           The $ORIGIN and $TTL values will be automatically set if not specified.

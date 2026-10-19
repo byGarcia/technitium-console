@@ -82,6 +82,8 @@ export interface ShellSession {
     dnsServerDomain: string
     permissions?: Record<string, Permission>
     clusterInitialized?: boolean
+    /** Only on an initialised cluster (WebServiceAuthApi.cs:104-106). */
+    clusterDomain?: string
     clusterNodes?: { name: string; type: string }[]
     /* The record defaults the zone forms show (WebServiceAuthApi.cs:96-100). */
     defaultRecordTtl?: number
@@ -529,6 +531,7 @@ export function Shell({
             clusterInitialised={session.info?.clusterInitialized === true}
             canModify={permissions?.Zones?.canModify !== false}
             canDelete={permissions?.Zones?.canDelete !== false}
+            clusterDomain={session.info?.clusterDomain}
             useSoaSerialDateScheme={session.info?.useSoaSerialDateScheme === true}
             dnssecValidation={session.info?.dnssecValidation !== false}
             recordTtls={{
