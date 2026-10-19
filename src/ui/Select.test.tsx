@@ -236,3 +236,29 @@ describe('Select with an optgroup', () => {
     expect(screen.queryByText('More lists')).toBeNull()
   })
 })
+
+/*
+A native `select` fires `change` only when the value changes. Picking the option
+that is already chosen does nothing there, and the console's lists that act on
+change (Group Details' "None" empties Members) relied on that.
+*/
+describe('Select: choosing the current option', () => {
+  it('does not fire onChange, by click or by keyboard', async () => {
+    const changed: string[] = []
+    render(
+      <Select aria-label="Pick" value="one" onChange={(e) => changed.push(e.target.value)}>
+        <option value="one">One</option>
+        <option value="two">Two</option>
+      </Select>,
+    )
+    await userEvent.click(screen.getByRole('combobox', { name: 'Pick' }))
+    await userEvent.click(screen.getByRole('option', { name: 'One' }))
+    expect(screen.queryByRole('listbox')).toBeNull()
+    await userEvent.click(screen.getByRole('combobox', { name: 'Pick' }))
+    await userEvent.keyboard('{Enter}')
+    expect(changed).toEqual([])
+    await userEvent.click(screen.getByRole('combobox', { name: 'Pick' }))
+    await userEvent.click(screen.getByRole('option', { name: 'Two' }))
+    expect(changed).toEqual(['two'])
+  })
+})
