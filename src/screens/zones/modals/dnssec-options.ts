@@ -56,7 +56,24 @@ export const GENERATIONS = [
   { value: 'UseSpecified', label: 'Use Specified Private Key' },
 ]
 
-/** Each algorithm's default curve, exactly as `showSignZoneModal` leaves it. */
-export function defaultCurve(algorithm: string): string {
-  return algorithm === 'EDDSA' ? 'ED25519' : 'P256'
+
+/*
+The automatic rollover Add Key sets by itself, from zone.js:448-523. Only a ZSK
+has one (the field is hidden for a KSK), and only a generated ZSK starts at 30:
+changing the key type or the generation rewrites the field. The server refuses
+any rollover but 0 on a KSK (DnssecPrivateKey.cs:458).
+*/
+export function addKeyRollover(keyType: string, generation: string): string {
+  return keyType === 'ZoneSigningKey' && generation === 'Automatic' ? '30' : '0'
+}
+
+/* The same for Sign Zone's ZSK (zone.js:412-430): its generation rewrites it. */
+export function signZoneZskRollover(generation: string): string {
+  return generation === 'Automatic' ? '30' : '0'
+}
+
+/* One curve per family, as upstream's two selects: switching algorithm and back
+   keeps what was picked in each. */
+export function curveFor(algorithm: string, c: { ecdsaCurve: string; eddsaCurve: string }): string {
+  return algorithm === 'EDDSA' ? c.eddsaCurve : c.ecdsaCurve
 }
