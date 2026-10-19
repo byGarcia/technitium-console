@@ -201,8 +201,19 @@ export function ZoneList({
   useEffect(() => {
     loadRef.current = load
   }, [load])
+  /*
+  A refresh (after a change, or a new node) asks for the page in the Page Number
+  field, as `refreshZones()` with no page does (zone.js:666-670). The field holds
+  the page on screen once a load lands (zone.js:938), so the list stays where it
+  was; on mount it says 1.
+  */
+  const pageFieldRef = useRef(pageField)
   useEffect(() => {
-    void loadRef.current(1)
+    pageFieldRef.current = pageField
+  }, [pageField])
+  useEffect(() => {
+    const n = Number(pageFieldRef.current)
+    void loadRef.current(pageFieldRef.current === '' || Number.isNaN(n) ? 1 : n)
   }, [refresh])
 
   function goTo(page: number) {

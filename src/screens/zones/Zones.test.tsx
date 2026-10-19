@@ -384,6 +384,20 @@ describe('zones: the cluster node', () => {
     })
   })
 
+  it('the list reloads on the page it was on, as refreshZones() reads the page field', async () => {
+    const spy = server({ 'zones/list': { zones: [ZONE], pageNumber: 2, totalPages: 3, totalZones: 21 } })
+    draw({ nodes: NODES, clusterInitialised: true })
+    await screen.findByRole('button', { name: 'casa.test' })
+
+    await userEvent.click(screen.getByRole('combobox', { name: 'Cluster Node' }))
+    await userEvent.click(screen.getByRole('option', { name: 'b.example (secondary)' }))
+
+    await waitFor(() => {
+      const calls = spy.mock.calls.filter((c) => c[0] === 'zones/list')
+      expect(calls.at(-1)![1]?.body).toMatchObject({ node: 'b.example', pageNumber: '2' })
+    })
+  })
+
   it('inside a zone the node cannot be changed', async () => {
     server()
     draw({ nodes: NODES, clusterInitialised: true })
