@@ -29,6 +29,7 @@ import styles from './Shell.module.css'
 import { Icon, type IconName } from '../ui/Icon'
 import { publicUrl } from './base'
 import { Menu } from '../ui/Menu'
+import { ThisServerName } from '../ui/ClusterNodeSelect'
 import { FooterLinks } from '../ui/FooterLinks'
 import { Versions } from './Versions'
 import { BlockingMark } from './BlockingMark'
@@ -297,6 +298,7 @@ export function Shell({
 
   return (
     <HandoffContext.Provider value={handoff}>
+    <ThisServerName.Provider value={info?.dnsServerDomain ?? session.info?.dnsServerDomain ?? ''}>
     <SlotProvider>
       {(slot) => (
     <div className={styles.shell}>
@@ -653,6 +655,7 @@ export function Shell({
     </div>
       )}
     </SlotProvider>
+    </ThisServerName.Provider>
     </HandoffContext.Provider>
   )
 }
