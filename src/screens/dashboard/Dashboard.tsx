@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   RANGE_LABEL, RANGES, getDashboardStats,
   type DashboardStats, type Range, type Stats, type TopKind,
@@ -102,6 +102,8 @@ export function Dashboard({
   const [start, setStart] = useState('')
   const [end, setEnd] = useState('')
   const [requested, setRequested] = useState<{ start: string; end: string } | null>(null)
+  const startRef = useRef<HTMLInputElement>(null)
+  const endRef = useRef<HTMLInputElement>(null)
   /*
   The previous period, for each figure's change (deviation 7, `compare.ts`). It
   belongs to ONE response: `for` is the response it was asked for, with its period
@@ -319,7 +321,16 @@ export function Dashboard({
             active={range}
             onChoose={(r) => {
               setRange(r)
-              if (r !== 'Custom') setRequested(null)
+              if (r !== 'Custom') {
+                setRequested(null)
+                return
+              }
+              /* main.js:631-646: Custom focuses the date that is missing, or
+                 reloads at once when both are already there. No message yet:
+                 that comes with Show, or with a refresh (below). */
+              if (start === '') window.setTimeout(() => startRef.current?.focus(), 0)
+              else if (end === '') window.setTimeout(() => endRef.current?.focus(), 0)
+              else setRequested(rangeInstants(start, end))
             }}
           />
         </div>
@@ -330,6 +341,7 @@ export function Dashboard({
           <label>
             Start
             <input
+              ref={startRef}
               type="date"
               value={start}
               aria-invalid={missingRange === MSG_START || undefined}
@@ -340,6 +352,7 @@ export function Dashboard({
           <label>
             End
             <input
+              ref={endRef}
               type="date"
               value={end}
               aria-invalid={missingRange === MSG_END || undefined}
@@ -373,7 +386,12 @@ export function Dashboard({
           initialised={clusterInitialised}
           aggregate
           value={node}
-          onChange={setNode}
+          onChange={(n) => {
+            setNode(n)
+            /* A node change is a `refreshDashboard()` (main.js:2398-2414): on
+               Custom with a date missing it says which one, as Show does. */
+            if (range === 'Custom') setMissingRange(whatIsMissing(start, end))
+          }}
         />
       </InChrome>
 
