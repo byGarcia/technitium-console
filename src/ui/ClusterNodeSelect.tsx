@@ -49,6 +49,7 @@ export function ClusterNodeSelect({
   value,
   onChange,
   label = 'Node',
+  disabled = false,
 }: {
   nodes: ClusterNode[]
   initialised: boolean
@@ -56,13 +57,15 @@ export function ClusterNodeSelect({
   value: string
   onChange: (node: string) => void
   label?: string
+  /** Upstream disables it where the node is already fixed (a zone open on one). */
+  disabled?: boolean
 }) {
   if (!initialised) return null
 
   return (
     <Field label={label}>
       {(id) => (
-        <Select id={id} value={value} onChange={(e) => onChange(e.target.value)}>
+        <Select id={id} value={value} disabled={disabled} onChange={(e) => onChange(e.target.value)}>
           {nodeOptions(nodes, { aggregate }).map((o) => (
             <option key={o.value} value={o.value}>
               {o.label}

@@ -358,3 +358,36 @@ describe('modals', () => {
     })
   })
 })
+
+/*
+index.html:436 reloads the list when its node changes (`refreshZones()`), and the
+records view's node select (index.html:548) is always disabled: a zone is opened
+on a node and read there.
+*/
+describe('zones: the cluster node', () => {
+  const NODES = [
+    { name: 'a.example', type: 'Primary' },
+    { name: 'b.example', type: 'Secondary' },
+  ]
+
+  it('changing the node reloads the list from that node', async () => {
+    const spy = server()
+    draw({ nodes: NODES, clusterInitialised: true })
+    await screen.findByRole('button', { name: 'casa.test' })
+
+    await userEvent.click(screen.getByRole('combobox', { name: 'Cluster Node' }))
+    await userEvent.click(screen.getByRole('option', { name: 'b.example (secondary)' }))
+
+    await waitFor(() => {
+      const calls = spy.mock.calls.filter((c) => c[0] === 'zones/list')
+      expect(calls.at(-1)![1]?.body).toMatchObject({ node: 'b.example' })
+    })
+  })
+
+  it('inside a zone the node cannot be changed', async () => {
+    server()
+    draw({ nodes: NODES, clusterInitialised: true })
+    await userEvent.click(await screen.findByRole('button', { name: 'casa.test' }))
+    await waitFor(() => expect(screen.getByRole('combobox', { name: 'Cluster Node' })).toBeDisabled())
+  })
+})
