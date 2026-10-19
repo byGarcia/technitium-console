@@ -231,6 +231,18 @@ describe('SSO: the send', () => {
     expect(body(spy).ssoGroupMap).toBe('dns-admins|Administrators')
   })
 
+  /* auth.js:2271-2276: a mapping to a group that is not among the local ones
+     leaves no option marked, so the select shows and sends the first group. */
+  it('a mapping to a missing local group shows and saves the first one', async () => {
+    const spy = server({ ssoGroupMap: [{ remoteGroup: 'dns-admins', localGroup: 'Old Group' }] })
+    const user = userEvent.setup()
+    render(<Sso {...props} />)
+
+    expect(await screen.findByLabelText('Local Group 1')).toHaveTextContent('Administrators')
+    await user.click(screen.getByRole('button', { name: 'Save Config' }))
+    expect(body(spy).ssoGroupMap).toBe('dns-admins|Administrators')
+  })
+
   it('it alerts with the upstream literal on saving', async () => {
     const onNotice = vi.fn()
     server()
