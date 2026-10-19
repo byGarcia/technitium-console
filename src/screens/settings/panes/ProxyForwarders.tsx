@@ -12,7 +12,7 @@ import {
 } from '../parts'
 import { Field } from '../../../ui/Field'
 import { Select } from '../../../ui/Select'
-import { applyQuickForwarder, loadQuickList, type QuickForwarder } from '../../../lib/quick-lists'
+import { loadQuickList, quickForwarderPatch, type QuickForwarder } from '../../../lib/quick-lists'
 import type { PaneProps } from './types'
 
 /*
@@ -121,14 +121,8 @@ export function ProxyForwarders({ f, set, en }: PaneProps) {
               id={id}
               value=""
               onChange={(ev) => {
-                const chosen = ev.target.value
-                if (chosen === '') return
-                if (chosen === 'none') {
-                  set({ forwarders: '' })
-                  return
-                }
-                const entry = quick.find((q) => q.name === chosen)
-                if (entry) set(applyQuickForwarder(entry))
+                const patch = quickForwarderPatch(ev.target.value, quick)
+                if (patch) set(patch)
               }}
             >
               <option value="" />

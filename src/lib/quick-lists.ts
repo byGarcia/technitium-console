@@ -143,3 +143,18 @@ export function serverListOptions(entries: QuickServer[]): string[] {
   }
   return out
 }
+
+/*
+One line of Quick Select, as main.js:541-608 handles it: the blank line does
+nothing, "None" empties the forwarders and puts the protocol back to UDP, and an
+entry applies as above. `null` means nothing to change.
+*/
+export function quickForwarderPatch(
+  chosen: string,
+  entries: QuickForwarder[],
+): Record<string, string> | null {
+  if (chosen === '') return null
+  if (chosen === 'none') return { forwarders: '', forwarderProtocol: 'Udp' }
+  const entry = entries.find((q) => q.name === chosen)
+  return entry ? applyQuickForwarder(entry) : null
+}

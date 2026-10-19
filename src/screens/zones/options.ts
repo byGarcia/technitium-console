@@ -557,3 +557,15 @@ export function notifyWithList(value: string): boolean {
     value === 'SeparateNameServersForCatalogAndMemberZones'
   )
 }
+
+/*
+Quick Add next to the TSIG key names, from zone.js:604-624. "None" empties the
+list; a key is appended with its line break unless the text already holds it
+(upstream checks with `indexOf`, so a key whose name is part of another counts
+as present, and that is kept).
+*/
+export function applyQuickTsigKey(current: string, chosen: string): string {
+  if (chosen === '') return current
+  if (chosen === 'none') return ''
+  return current.indexOf(chosen) < 0 ? current + chosen + '\n' : current
+}

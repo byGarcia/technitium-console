@@ -13,6 +13,7 @@ import {
   XFR_PROTOCOLS,
   TRANSFERS,
   aclEditable,
+  applyQuickTsigKey,
   buildOptionsBody,
   optionsState,
   formFromOptions,
@@ -375,12 +376,9 @@ export function ZoneOptions({
                       id={id}
                       disabled={e.zoneTransferLocked}
                       value=""
-                      onChange={(ev) => {
-                        const v = ev.target.value
-                        if (v === '') return
-                        const current = f.zoneTransferTsigKeyNames
-                        set('zoneTransferTsigKeyNames', current === '' ? v : `${current}\n${v}`)
-                      }}
+                      onChange={(ev) =>
+                        set('zoneTransferTsigKeyNames', applyQuickTsigKey(f.zoneTransferTsigKeyNames, ev.target.value))
+                      }
                     >
                       <option value="" />
                       <option value="none">None</option>
