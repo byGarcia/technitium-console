@@ -192,6 +192,16 @@ Write down here whatever you find. What is already known:
   browser had already decoded when parsing the HTML, so typing `&amp;` in a cell
   sends `&`. In React there is no intermediate HTML: replicating it would mean
   introducing the bug by hand, and that is not done.
+- **Quick Select forgets the Bypass List.** Picking a forwarder that carries a
+  SOCKS5 or HTTP proxy (Tor) ticks the proxy type and enables its address, port,
+  username and password, but not the Bypass List (main.js:594-603): it stays
+  disabled until the proxy radio is clicked again. That is an omission, not a
+  rule, and it is not replicated: here the five fields follow the proxy type.
+- **Picking the line already chosen does nothing.** A native `select` fires
+  `change` only when the value changes, and several stock lists rely on it
+  (Group Details' "None" empties Members; Quick Add would add a deleted key
+  back). `ui/Select` does the same, and the Quick Add and Quick Select lists
+  keep the line chosen, as the stock ones do, until their form loads again.
 - **A `set` can return less than its `get`, and what is missing has to be kept.**
   `admin/sso/set` does NOT bring `localGroups`: `WriteSsoConfig` only writes them
   with `includeGroups` and the `set` calls it with `false`
