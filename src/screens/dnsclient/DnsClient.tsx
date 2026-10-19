@@ -5,8 +5,9 @@ import { PROTOCOLS, TYPES, prepareServer, resolve } from '../../api/dnsclient'
 import { type AlertType } from '../../ui/Alert'
 import { Button } from '../../ui/Button'
 import { Check } from '../../ui/Check'
-import { LabeledInput, LabeledSelect } from '../../ui/Field'
-import { loadQuickList, serverListOptions, type QuickServer } from '../../lib/quick-lists'
+import { Field, Input, LabeledInput, LabeledSelect } from '../../ui/Field'
+import { Menu } from '../../ui/Menu'
+import { loadQuickList, protocolForServer, serverListOptions, type QuickServer } from '../../lib/quick-lists'
 import { SectionHeader } from '../../ui/SectionHeader'
 import { Empty } from '../../ui/Empty'
 import { Raw } from '../../ui/Raw'
@@ -52,6 +53,7 @@ export function DnsClient({
   field and lost the list. The field stays free text: the list only fills it.
   */
   const [servers, setServers] = useState<string[]>([])
+  const combo = useRef<HTMLDivElement>(null)
   useEffect(() => {
     let alive = true
     void loadQuickList<QuickServer>('dnsclient-server-list').then(
@@ -164,21 +166,38 @@ export function DnsClient({
       */}
       <div className={styles.flt}>
         <div className={styles.width}>
-          <LabeledInput
-            label="Server"
-            mono
-            value={server}
-            onChange={(e) => setServer(e.target.value)}
-            list="dnsclient-servers"
-          />
-          {/* A datalist and not a select: upstream's control is a text field with
-              a dropdown attached, so an address that is not on the list can still
-              be typed. Replacing it with a select would take that away. */}
-          <datalist id="dnsclient-servers">
-            {servers.map((s) => (
-              <option key={s} value={s} />
-            ))}
-          </datalist>
+          {/*
+          A field with a menu hanging off it, as upstream's (`index.html:840-846`):
+          the field stays free text, and the arrow opens EVERY server whatever the
+          field holds. It was a `<datalist>`, and the browser filters a datalist by
+          the field's text, so with the default "This Server {this-server}" in
+          place the arrow showed nothing (issue #15). A select would lose the
+          free text. Choosing also moves the protocol (`dnsclient.js:30-46`).
+          */}
+          <Field label="Server">
+            {(id) => (
+              <div className={styles.combo} ref={combo}>
+                <Input id={id} mono value={server} onChange={(e) => setServer(e.target.value)} />
+                <Menu label="Server list" icon="chevronDown" anchor="left" alignTo={combo}>
+                  {(close) =>
+                    servers.map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => {
+                          setServer(s)
+                          setProtocol((p) => protocolForServer(s, p))
+                          close()
+                        }}
+                      >
+                        {s}
+                      </button>
+                    ))
+                  }
+                </Menu>
+              </div>
+            )}
+          </Field>
         </div>
         <div className={styles.medium}>
           <LabeledInput label="Domain" placeholder="example.com" mono value={domain} onChange={(e) => setDomain(e.target.value)} />

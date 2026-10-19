@@ -105,3 +105,34 @@ describe('serverListOptions', () => {
     expect(serverListOptions([{ name: '', addresses: ['9.9.9.9'] }])).toEqual([THIS_SERVER, '9.9.9.9'])
   })
 })
+
+import { protocolForServer } from './quick-lists'
+
+/* dnsclient.js:30-46, checked in this order: the first match wins. */
+describe('protocolForServer', () => {
+  it('QUIC wins over the :853 that a QUIC entry also carries', () => {
+    expect(protocolForServer('Quad9 Secure QUIC {dns.quad9.net (9.9.9.9:853)}', 'UDP')).toBe('QUIC')
+  })
+
+  it('TLS by name or by port 853', () => {
+    expect(protocolForServer('Cloudflare TLS {cloudflare-dns.com (1.1.1.1:853)}', 'UDP')).toBe('TLS')
+    expect(protocolForServer('dns.example (192.0.2.1:853)', 'TCP')).toBe('TLS')
+  })
+
+  it('HTTPS by name or by a URL', () => {
+    expect(protocolForServer('Cloudflare HTTPS {https://cloudflare-dns.com/dns-query (1.1.1.1)}', 'UDP')).toBe('HTTPS')
+    expect(protocolForServer('http://doh.example/dns-query', 'UDP')).toBe('HTTPS')
+  })
+
+  it('a plain server keeps UDP or TCP and falls back to UDP from anything else', () => {
+    expect(protocolForServer('Google {8.8.8.8}', 'TCP')).toBe('TCP')
+    expect(protocolForServer('Google {8.8.8.8}', 'UDP')).toBe('UDP')
+    expect(protocolForServer('Google {8.8.8.8}', 'HTTPS')).toBe('UDP')
+    expect(protocolForServer('This Server {this-server}', 'QUIC')).toBe('UDP')
+  })
+
+  /* Upstream uses `indexOf`, so the match is case-sensitive. */
+  it('matches case-sensitively, as upstream does', () => {
+    expect(protocolForServer('quic.example', 'TCP')).toBe('TCP')
+  })
+})
