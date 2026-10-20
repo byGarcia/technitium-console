@@ -52,6 +52,10 @@ the file list keeps its own height), its body, and `Raw`'s `fill` box at the end
 .logStamp { color: var(--faint); }
 /* A hundred lines of the file, laid out only near the screen: see LogText.tsx. */
 .logChunk { display: block; content-visibility: auto; contain-intrinsic-block-size: auto 100lh; }
+/* A run of zero bytes, laid out zero wide and on one line: see LogText.tsx. `clip`
+   and not `hidden`: Chromium leaves what `hidden` cuts out of a selection, and the
+   run is the file's own text, copied with the rest. */
+.logNul { display: inline-block; inline-size: 0; overflow: clip; white-space: pre; vertical-align: top; }
 
 .pbList { padding: var(--s-5); }
 

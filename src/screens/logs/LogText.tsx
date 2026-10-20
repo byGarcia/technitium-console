@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef } from 'react'
 import styles from './Logs.module.css'
 
 /*
-The server log as the viewer draws it: the same characters, with two things the
+The server log as the viewer draws it: the same characters, with three things the
 browser cannot see on its own.
 
 1. **Where an entry's time ends.** Every line the server writes starts with
@@ -21,16 +21,30 @@ browser cannot see on its own.
    .NET writes into a stack trace. Only words longer than `LONG` get them: a
    shorter one fits a continuation line even on a phone, and every `<wbr>` is a
    node to lay out.
+3. **Where the file is only zero bytes.** A file the server was writing when the
+   power went can come back with a run of NULs where the lost part was. Each
+   NUL is drawn a fraction of a pixel wide and none of them is a break, so
+   wrapped, a run of 160,000 left 268 px of blank above the first entry at 1440
+   (Firefox and Chromium) and pushed that entry to the right edge (issue #20).
+   Upstream's `<pre>` does not wrap: there the run is one line, off to the side,
+   and the file reads from the top. Each run goes in a `<span>` laid out zero wide
+   (`.logNul`), so it takes no room and the line after it reads as a clean one; a
+   timestamp right after a leading run is still a timestamp, and `stampWidth`
+   looks past it.
 
-Neither adds a character. `<span>` and `<wbr>` carry no text, so the DOM's text,
-what is copied and what a screen reader reads are the file byte for byte, `\r\n`
-included. Measured in Chromium on the showcase's log of 2026-10-15 (86,809
-characters, 13 of its line ends `\r\n`) and on a 2 MB file made of it: selecting
-the viewer and copying gives what it gave before this change, the response
-without its final newline, which a browser never copies out of a `<pre>`.
+None of them adds a character. Each `<span>` holds the file's own characters and a
+`<wbr>` carries none, so the DOM's text, what is copied and what a screen reader
+reads are the file byte for byte, `\r\n` included. Measured in Chromium on the
+showcase's log of 2026-10-15 (86,809 characters, 13 of its line ends `\r\n`) and
+on a 2 MB file made of it: selecting the viewer and copying gives what it gave
+before this change, the response without its final newline, which a browser
+never copies out of a `<pre>`.
 */
 
 const STAMP = /^\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} (?:UTC|Local)\] /
+/* The same, behind the zero bytes a lost write can leave at the start. */
+const LEADING_STAMP = /^\0*(\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} (?:UTC|Local)\] )/
+const NULS = /(\0+)/
 
 /* A word this short fits a continuation line down to a 320 px phone (33
    characters, 2 of them indent), so it never needs a break of its own. */
@@ -42,7 +56,7 @@ const CHUNK = 100
 
 /** The width of the log's timestamp prefix in characters, 0 if it has none. */
 export function stampWidth(text: string): number {
-  return STAMP.exec(text)?.[0].length ?? 0
+  return LEADING_STAMP.exec(text)?.[1].length ?? 0
 }
 
 /*
@@ -52,7 +66,7 @@ nodes, `<span>` and `<wbr>` are created, never HTML parsed from the file.
 */
 export function logNodes(
   text: string,
-  { stamp: stampClass, chunk: chunkClass }: { stamp: string; chunk: string },
+  { stamp: stampClass, chunk: chunkClass, nul: nulClass }: { stamp: string; chunk: string; nul: string },
 ): DocumentFragment {
   const doc = document.createDocumentFragment()
   let out: HTMLElement | DocumentFragment = doc
@@ -60,6 +74,13 @@ export function logNodes(
   const flush = () => {
     if (plain) out.append(plain)
     plain = ''
+  }
+  const zeros = (run: string) => {
+    flush()
+    const span = document.createElement('span')
+    span.className = nulClass
+    span.textContent = run
+    out.append(span)
   }
 
   const lines = text.split(/(?<=\n)/)
@@ -71,28 +92,39 @@ export function logNodes(
       doc.append(out)
     }
     let rest = line
-    const stamp = STAMP.exec(line)?.[0]
+    const lead = /^\0+/.exec(rest)?.[0]
+    if (lead) {
+      zeros(lead)
+      rest = rest.slice(lead.length)
+    }
+    const stamp = STAMP.exec(rest)?.[0]
     if (stamp) {
       flush()
       const span = document.createElement('span')
       span.className = stampClass
       span.textContent = stamp
       out.append(span)
-      rest = line.slice(stamp.length)
+      rest = rest.slice(stamp.length)
     }
-    for (const word of rest.split(/(\s+)/)) {
-      if (word.length <= LONG || /\s/.test(word)) {
-        plain += word
+    for (const part of rest.split(NULS)) {
+      if (part[0] === '\0') {
+        zeros(part)
         continue
       }
-      const pieces = word.split(SEPARATOR)
-      pieces.forEach((piece, i) => {
-        plain += piece
-        if (i < pieces.length - 1) {
-          flush()
-          out.append(document.createElement('wbr'))
+      for (const word of part.split(/(\s+)/)) {
+        if (word.length <= LONG || /\s/.test(word)) {
+          plain += word
+          continue
         }
-      })
+        const pieces = word.split(SEPARATOR)
+        pieces.forEach((piece, i) => {
+          plain += piece
+          if (i < pieces.length - 1) {
+            flush()
+            out.append(document.createElement('wbr'))
+          }
+        })
+      }
     }
   }
   flush()
@@ -122,7 +154,7 @@ React owns the `<span>` and never its children.
 export function LogText({ text }: { text: string }) {
   const ref = useRef<HTMLSpanElement>(null)
   useLayoutEffect(() => {
-    ref.current?.replaceChildren(logNodes(text, { stamp: styles.logStamp, chunk: styles.logChunk }))
+    ref.current?.replaceChildren(logNodes(text, { stamp: styles.logStamp, chunk: styles.logChunk, nul: styles.logNul }))
   }, [text])
   return <span ref={ref} />
 }
