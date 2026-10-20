@@ -9,7 +9,7 @@ import { describe, expect, it } from 'vitest'
 import { render } from '@testing-library/react'
 import { LogText, logNodes, stampWidth } from './LogText'
 
-const CLASSES = { stamp: 'stamp', chunk: 'chunk' }
+const CLASSES = { stamp: 'stamp', chunk: 'chunk', nul: 'nul' }
 
 const LOG = [
   '[2026-10-16 06:06:32 UTC] Logging started.',
@@ -75,6 +75,42 @@ describe('the server log in the viewer', () => {
     expect(chunks.map((c) => c.className)).toEqual(['chunk', 'chunk', 'chunk'])
     expect(chunks.map((c) => c.textContent?.split('\n').length)).toEqual([101, 101, 51])
     expect(chunks[1].textContent?.startsWith('line 100\r\n')).toBe(true)
+  })
+
+  /*
+  A file the server was writing when the power went can come back with a run of
+  zero bytes where the lost part was. Wrapped, that invisible run filled the
+  viewer with blank lines above the first entry (issue #20).
+  */
+  describe('a run of zero bytes', () => {
+    const ZEROS = '\0'.repeat(5000)
+    const FILE = `${ZEROS}[2026-10-20 14:43:06 Local] Check for update was done\n[2026-10-20 14:44:00 Local] Logging stopped.\n`
+
+    it('is its own element, so it takes no room', () => {
+      const runs = [...logNodes(FILE, CLASSES).querySelectorAll('.nul')]
+      expect(runs.map((r) => r.textContent)).toEqual([ZEROS])
+    })
+
+    it('stays in the text, byte for byte', () => {
+      const { container } = render(<LogText text={FILE} />)
+      expect(container.textContent).toBe(FILE)
+    })
+
+    it('in front of a timestamp still lets the timestamp be one', () => {
+      const stamps = [...logNodes(FILE, CLASSES).querySelectorAll('.stamp')].map((s) => s.textContent)
+      expect(stamps).toEqual(['[2026-10-20 14:43:06 Local] ', '[2026-10-20 14:44:00 Local] '])
+    })
+
+    it('in front of the first timestamp does not change the hanging indent', () => {
+      expect(stampWidth(FILE)).toBe(28)
+    })
+
+    it('inside a line is set apart too, and the words around it are kept', () => {
+      const line = `cut short\0\0\0[2026-10-20 14:45:42 Local] Logging started.`
+      const nodes = logNodes(line, CLASSES)
+      expect([...nodes.querySelectorAll('.nul')].map((r) => r.textContent)).toEqual(['\0\0\0'])
+      expect(nodes.textContent).toBe(line)
+    })
   })
 
   /* Built from text nodes, never parsed: a log line is data. */
