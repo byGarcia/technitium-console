@@ -13,7 +13,7 @@ also `technitiumServerMinimum` in its `package.json`, which is what the update n
 
 | Console | Technitium DNS Server | Notes |
 |---|---|---|
-| **1.3.x** | **15.5.x, 15.6.x** (1.3.3 checked against 15.6.2) | Current. Every screen redesigned for the phone, a Dashboard that compares periods, Cache in one panel. |
+| **1.3.x** | **15.5.x, 15.6.x** (1.3.4 checked against 15.6.2) | Current. Every screen redesigned for the phone, a Dashboard that compares periods, Cache in one panel. |
 | 1.2.x | 15.5.x, 15.6.x | Superseded by 1.3.x on the same server. Allowed and Blocked become one Blocking section, a light theme, and the console comes as an image for Docker. Supports a console folder of its own (`DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH`), so server updates leave it alone. |
 | 1.1.x | 15.5.x | Superseded by 1.2.x on the same server. If you stay on it, use 1.1.3: earlier ones flood the server from Cache, Allowed and Blocked. |
 | 1.0.0 | 15.4 | Cannot save Settings on a 15.5 server. Upgrade. |
@@ -22,6 +22,20 @@ To update, run the installer again (the same one-line command). It needs no rest
 service. On Docker, pull the image again: see [Docker](README.md#docker).
 
 ---
+
+## v1.3.4 (2026-10-21)
+
+**Two display fixes, both reported by users.** Still Technitium DNS Server 15.6.2: no API changes.
+
+- **View Logs: a log file reads from the top again.** A file that starts with a run of zero bytes,
+  which an unclean shutdown can leave, showed an empty viewer until you scrolled down. That run now
+  takes no room; Download still gives you the file exactly as it is. Reported by @Colossus5000 in
+  [#20](https://github.com/byGarcia/technitium-console/issues/20).
+- **Top Clients: no stray dot under an address, and the count on its line.** A client with no
+  resolved name, which is most IPv6 clients, showed a `.` under its address. The stock console
+  writes it there; this one now leaves that line out, in the Dashboard's card and in the Top 1000
+  list. The Queries count and the row menu sit on the client's line again. Reported by @armgenio in
+  [#22](https://github.com/byGarcia/technitium-console/issues/22).
 
 ## v1.3.3 (2026-10-19)
 
