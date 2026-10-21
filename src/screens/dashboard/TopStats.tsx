@@ -25,7 +25,9 @@ there are.
 **A client is drawn with more things than a domain**: under the name goes the
 domain it resolved, and if the server was rate-limiting it the row is marked and
 the name carries "(rate limited)" after it. Both fields only come in
-`TopClients`.
+`TopClients`. A client with no domain gets no second line: upstream writes "."
+there, and users read it as a stray trailing dot (issue #22). It is a written
+deviation, see CONVENTIONS.md.
 
 **Each row carries the panel's own menu** (`TopRowMenu`), and the modal is asked
 for with the Dashboard's node, as upstream reads `optDashboardClusterNode`
@@ -128,10 +130,8 @@ export function TopStats({
                   {f.name}
                   {f.rateLimited ? ' (rate limited)' : ''}
                 </span>
-                {isClient && (
-                  <span className={styles.topDomain}>
-                    {f.domain === '' || f.domain == null ? '.' : f.domain}
-                  </span>
+                {isClient && f.domain != null && f.domain !== '' && (
+                  <span className={styles.topDomain}>{f.domain}</span>
                 )}
               </td>
               <td className={styles.topCount}>{f.hits.toLocaleString()}</td>

@@ -62,7 +62,7 @@ The two fields only exist in `TopClients`. Checked against v15.4.
 export interface TopEntry {
   name: string
   hits: number
-  /** Only on clients: the domain it resolved. Empty is drawn as ".". */
+  /** Only on clients: the domain it resolved. Empty draws no domain line (#22). */
   domain?: string
   /** Only on clients. */
   rateLimited?: boolean
