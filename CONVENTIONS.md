@@ -824,6 +824,13 @@ contract and SECURITY.md.
     available` (the two marks' accessible names), `New Web Console Version
     Available!`, `To update, run the installer again:`, `On Docker:`, `Release
     Notes` and the dialog's `Note!`.
+11. **A client with no domain shows no "."** (Adrián's decision, 2026-10-21;
+    issue #22). Upstream writes `.` under a top client whose `domain` comes
+    empty (`main.js:2799`, `main.js:2955`), the root, which is what every client
+    with no PTR gets: most IPv6 clients. Users read it as a stray trailing dot on
+    the address. The Dashboard's Top Clients card and the Top 1000 modal draw no
+    domain line for it instead; a client with a domain still shows it. Nothing
+    else changes: the same call, the same rows, the same name and menu.
 
 ## Four constraints the server imposes
 

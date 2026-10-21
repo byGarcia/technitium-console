@@ -207,7 +207,11 @@ hundred rows inside a dialog that scrolls.
 */
 .topTable { composes: table from '../../ui/Table.module.css'; }
 .topTable thead th { position: sticky; top: 0; }
-.topTable td { vertical-align: top; }
+/* The count and the menu sit on the name's line, as in upstream's Bootstrap table.
+   `tbody` is not decoration: `.table td` has the same weight and comes later in the
+   bundle, so with `.topTable td` alone it won and the count floated between the
+   name and the domain under it. */
+.topTable tbody td { vertical-align: top; }
 /*
 The footer's "Total Domains: N" is the same count any other table in the console
 carries (`ui/count.module.css`), even though here it travels in a `tfoot`.

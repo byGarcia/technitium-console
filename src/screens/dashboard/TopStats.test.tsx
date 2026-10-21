@@ -52,11 +52,24 @@ describe('modal Top Stats', () => {
     expect(await screen.findByText('pc.home.test')).toBeTruthy()
   })
 
-  it('a client with no domain is drawn as the root', async () => {
-    mockTop({ topClients: CLIENTS })
-    render(<TopStats type="TopClients" range="LastHour" token="t" onClose={() => {}} />)
-    await screen.findByText('pc.home.test')
-    expect(screen.getByText('.')).toBeTruthy()
+  it('a client with no domain gets no second line, not the "." upstream writes (#22)', async () => {
+    mockTop({
+      topClients: [
+        ...CLIENTS,
+        { name: 'fdc9:22b6:f9c3:0:25b4:f959:277c:8393', domain: '', hits: 7 },
+        { name: '10.0.0.3', hits: 3 },
+      ],
+    })
+    const { container } = render(
+      <TopStats type="TopClients" range="LastHour" token="t" onClose={() => {}} />,
+    )
+    const v6 = await screen.findByText('fdc9:22b6:f9c3:0:25b4:f959:277c:8393')
+    expect(screen.queryByText('.')).toBeNull()
+    expect(v6.closest('td')!.children).toHaveLength(1)
+    expect(screen.getByText('10.0.0.3').closest('td')!.children).toHaveLength(1)
+    // The client that has one keeps it.
+    expect(screen.getByText('pc.home.test').closest('td')!.children).toHaveLength(2)
+    expect(container.ownerDocument.body.textContent).not.toMatch(/8393\./)
   })
 
   it('a rate-limited client says so after the name', async () => {

@@ -77,4 +77,14 @@ describe('Dashboard Top five presentation', () => {
     expect(blocked.querySelector<HTMLElement>(`.${styles.topBar} > i`)?.style.width).toBe('0%')
     expect(within(blocked).getByRole('button', { name: 'Actions for ads.test' })).toBeInTheDocument()
   })
+
+  it('draws a client with no domain as its address alone, without upstream\'s "." (#22)', async () => {
+    await draw({
+      ...DATA,
+      topClients: [{ name: 'fdc9:22b6:f9c3:0:bdf8:816d:e971:9acf', domain: '', hits: 217 }],
+    })
+    const clients = panel('Top Clients')
+    expect(clients.querySelector(`.${styles.topDomain}`)).toBeNull()
+    expect(clients.querySelector(`.${styles.n}`)).toHaveAttribute('title', 'fdc9:22b6:f9c3:0:bdf8:816d:e971:9acf')
+  })
 })
