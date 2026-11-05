@@ -4,7 +4,7 @@ import { Alert } from '../../../ui/Alert'
 import { Button } from '../../../ui/Button'
 import { Dialog } from '../../../ui/Dialog'
 import type { Notice } from '../types'
-import styles from '../Zones.module.css'
+import styles from './UnsignZone.module.css'
 import { noticeFromFailure } from '../../../lib/notice'
 import { Notifier } from '../../../ui/Notifier'
 
@@ -65,6 +65,7 @@ export function UnsignZone({
     >
       <Notifier notice={notice} onClose={() => setNotice(null)} />
 
+      <div className={styles.notices}>
       <Alert type="warning" title="Warning!">
         Unsigning the zone without removing all DS records from its parent zone will cause
         DNSSEC validating recursive resolvers to mark the zone as bogus and fail to resolve it.
@@ -89,8 +90,11 @@ export function UnsignZone({
         Unsigning the zone will permanently delete all of the private keys associated with
         it. Consider taking a backup before proceeding.
       </Alert>
+      </div>
 
-      <p className={styles.paragraph}>Are you sure you want to proceed to unsign the zone now?</p>
+      {/* The question the four notices lead to, set apart from them and in ink:
+          it is what the red button answers. */}
+      <p className={styles.question}>Are you sure you want to proceed to unsign the zone now?</p>
     </Dialog>
   )
 }

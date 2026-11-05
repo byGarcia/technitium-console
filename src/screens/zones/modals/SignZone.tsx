@@ -15,10 +15,9 @@ import {
   signZoneZskRollover,
 } from './dnssec-options'
 import type { Notice } from '../types'
-import styles from '../Zones.module.css'
+import l from './layout.module.css'
 import { HelpText, External } from '../../../ui/External'
 import { DNSSEC_HELP, RFC_NSEC3_ITERATIONS, RFC_NSEC3_SALT } from '../references'
-import { GroupRow } from '../../../ui/Form'
 import { noticeFromFailure } from '../../../lib/notice'
 import { Notifier } from '../../../ui/Notifier'
 
@@ -142,6 +141,8 @@ export function SignZone({
     <Dialog
       open={open}
       onOpenChange={(o) => !o && onClose()}
+      /* Upstream's 780, the step of its long forms: two key blocks side by side. */
+      size="medium"
       title={`Sign Zone - ${zone === '.' ? '<root>' : zone}`}
       actions={
         <>
@@ -153,195 +154,221 @@ export function SignZone({
     >
       <Notifier notice={notice} onClose={() => setNotice(null)} />
 
-      <div className={styles.fields}>
-        <GroupRow modal label="DNSKEY Algorithm">
-          {ALGORITHMS.map((a) => (
-            <label key={a.value} className={styles.chk}>
-              <input
-                type="radio"
-                name="signAlgorithm"
-                checked={f.algorithm === a.value}
-                onChange={() => changeAlgorithm(a.value as Algorithm)}
-              />
-              {a.label}
-            </label>
-          ))}
-        </GroupRow>
-
-        {isRsa ? (
-          <Field label="Hash Algorithm">
-            {(id) => (
-              <Select id={id} value={f.hashAlgorithm} onChange={(e) => set('hashAlgorithm', e.target.value)}>
-                {HASHES_RSA.map((h) => (
-                  <option key={h.value} value={h.value}>
-                    {h.label}
-                  </option>
+      <div className={l.content}>
+        <section className={l.section}>
+          {/* What the keys are: the algorithm and its hash or curve, on one row. */}
+          <div className={l.rowFit}>
+            <div className={l.group}>
+              <div className={l.groupLabel}>DNSKEY Algorithm</div>
+              <div className={l.across}>
+                {ALGORITHMS.map((a) => (
+                  <label key={a.value} className={l.check}>
+                    <input
+                      type="radio"
+                      name="signAlgorithm"
+                      checked={f.algorithm === a.value}
+                      onChange={() => changeAlgorithm(a.value as Algorithm)}
+                    />
+                    {a.label}
+                  </label>
                 ))}
-              </Select>
-            )}
-          </Field>
-        ) : (
-          <Field label={f.algorithm === 'EDDSA' ? 'EdDSA Curve' : 'ECDSA Curve'}>
-            {(id) => (
-              <Select
-                id={id}
-                value={curveFor(f.algorithm, f)}
-                onChange={(e) => set(f.algorithm === 'EDDSA' ? 'eddsaCurve' : 'ecdsaCurve', e.target.value)}
-              >
-                {curves.map((c) => (
-                  <option key={c.value} value={c.value}>
-                    {c.label}
-                  </option>
-                ))}
-              </Select>
-            )}
-          </Field>
-        )}
-
-        <SigningKey
-          title="Key Signing Key (KSK)"
-          name="signKsk"
-          isRsa={isRsa}
-          sizeLabel="KSK Size"
-          sizeHelp="bits (recommended 2048)"
-          pemLabel="KSK Private Key"
-          generation={f.kskGeneration}
-          size={f.kskKeySize}
-          pem={f.pemKskPrivateKey}
-          onGeneration={(v) => setF((prev) => ({ ...prev, kskGeneration: v, pemKskPrivateKey: '' }))}
-          onSize={(v) => set('kskKeySize', v)}
-          onPem={(v) => set('pemKskPrivateKey', v)}
-        />
-
-        <SigningKey
-          title="Zone Signing Key (ZSK)"
-          name="signZsk"
-          isRsa={isRsa}
-          sizeLabel="ZSK Size"
-          sizeHelp="bits (default 1280)"
-          pemLabel="ZSK Private Key"
-          generation={f.zskGeneration}
-          size={f.zskKeySize}
-          pem={f.pemZskPrivateKey}
-          onGeneration={(v) =>
-            // zone.js:412-430: the rollover follows the generation, and the PEM is cleared.
-            setF((prev) => ({
-              ...prev,
-              zskGeneration: v,
-              pemZskPrivateKey: '',
-              zskRolloverDays: signZoneZskRollover(v),
-            }))
-          }
-          onSize={(v) => set('zskKeySize', v)}
-          onPem={(v) => set('pemZskPrivateKey', v)}
-        />
-
-        <GroupRow modal label="Proof of Non-Existence">
-          {NX_PROOFS.map((n) => (
-            <div key={n.value}>
-              <label className={styles.chk}>
-                <input
-                  type="radio"
-                  name="signNxProof"
-                  checked={f.nxProof === n.value}
-                  onChange={() => set('nxProof', n.value as NxProof)}
-                />
-                {n.label}
-              </label>
-              <div className={styles.help}>{n.help}</div>
+              </div>
             </div>
-          ))}
-        </GroupRow>
 
-        {f.nxProof === 'NSEC3' && (
-          <>
-            <Field label="NSEC3 Iterations">
-              {(id) => (
-                <div className={styles.inline}>
-                  <Input
-                    placeholder="iterations"
+            {isRsa ? (
+              <Field label="Hash Algorithm">
+                {(id) => (
+                  <Select id={id} value={f.hashAlgorithm} onChange={(e) => set('hashAlgorithm', e.target.value)}>
+                    {HASHES_RSA.map((h) => (
+                      <option key={h.value} value={h.value}>
+                        {h.label}
+                      </option>
+                    ))}
+                  </Select>
+                )}
+              </Field>
+            ) : (
+              <Field label={f.algorithm === 'EDDSA' ? 'EdDSA Curve' : 'ECDSA Curve'}>
+                {(id) => (
+                  <Select
                     id={id}
-                    mono
-                    className={styles.short}
-                    value={f.iterations}
-                    onChange={(e) => set('iterations', e.target.value)}
-                  />
-                  <span className={styles.suffix}>(valid range 0-50, recommended 0)</span>
-                </div>
-              )}
-            </Field>
-            <div className={styles.help}>
-              The number of iterations used by NSEC3 for hashing the domain names. It is recommended
-              to use 0 iterations since more iterations will increase computational costs for both
-              the DNS Server and resolver while not providing much value against &quot;zone
-              walking&quot; [<External href={RFC_NSEC3_ITERATIONS}>RFC 9276</External>].
-            </div>
-            <Field label="NSEC3 Salt Length">
-              {(id) => (
-                <div className={styles.inline}>
-                  <Input
-                    placeholder="length"
-                    id={id}
-                    mono
-                    className={styles.short}
-                    value={f.saltLength}
-                    onChange={(e) => set('saltLength', e.target.value)}
-                  />
-                  <span className={styles.suffix}>bytes (valid range 0-32, recommended 0)</span>
-                </div>
-              )}
-            </Field>
-            <div className={styles.help}>
-              The number of bytes of random salt to generate to be used with the NSEC3 hash
-              computation. It is recommended to not use salt by setting the length to 0
-              [<External href={RFC_NSEC3_SALT}>RFC 9276</External>].
-            </div>
-          </>
-        )}
+                    value={curveFor(f.algorithm, f)}
+                    onChange={(e) => set(f.algorithm === 'EDDSA' ? 'eddsaCurve' : 'ecdsaCurve', e.target.value)}
+                  >
+                    {curves.map((c) => (
+                      <option key={c.value} value={c.value}>
+                        {c.label}
+                      </option>
+                    ))}
+                  </Select>
+                )}
+              </Field>
+            )}
+          </div>
 
-        <Field label="DNSKEY TTL">
-          {(id) => (
-            <div className={styles.inline}>
-              <Input
-                placeholder="ttl"
-                id={id}
-                mono
-                className={styles.short}
-                value={f.dnsKeyTtl}
-                onChange={(e) => set('dnsKeyTtl', e.target.value)}
-              />
-              <span className={styles.suffix}>seconds (default 3600/1h)</span>
+          {/* The two keys, as a pair. */}
+          <div className={`${l.row2} ${l.pair}`}>
+            <SigningKey
+              title="Key Signing Key (KSK)"
+              name="signKsk"
+              isRsa={isRsa}
+              sizeLabel="KSK Size"
+              sizeHelp="bits (recommended 2048)"
+              pemLabel="KSK Private Key"
+              generation={f.kskGeneration}
+              size={f.kskKeySize}
+              pem={f.pemKskPrivateKey}
+              onGeneration={(v) => setF((prev) => ({ ...prev, kskGeneration: v, pemKskPrivateKey: '' }))}
+              onSize={(v) => set('kskKeySize', v)}
+              onPem={(v) => set('pemKskPrivateKey', v)}
+            />
+
+            <SigningKey
+              title="Zone Signing Key (ZSK)"
+              name="signZsk"
+              isRsa={isRsa}
+              sizeLabel="ZSK Size"
+              sizeHelp="bits (default 1280)"
+              pemLabel="ZSK Private Key"
+              generation={f.zskGeneration}
+              size={f.zskKeySize}
+              pem={f.pemZskPrivateKey}
+              onGeneration={(v) =>
+                // zone.js:412-430: the rollover follows the generation, and the PEM is cleared.
+                setF((prev) => ({
+                  ...prev,
+                  zskGeneration: v,
+                  pemZskPrivateKey: '',
+                  zskRolloverDays: signZoneZskRollover(v),
+                }))
+              }
+              onSize={(v) => set('zskKeySize', v)}
+              onPem={(v) => set('pemZskPrivateKey', v)}
+            />
+          </div>
+        </section>
+
+        <section className={l.section}>
+          <div className={l.title}>Proof of Non-Existence</div>
+          <div className={l.choices}>
+            {NX_PROOFS.map((n) => (
+              <div key={n.value} className={l.choice}>
+                <label className={l.check}>
+                  <input
+                    type="radio"
+                    name="signNxProof"
+                    checked={f.nxProof === n.value}
+                    onChange={() => set('nxProof', n.value as NxProof)}
+                  />
+                  {n.label}
+                </label>
+                <div className={l.help}>{n.help}</div>
+              </div>
+            ))}
+          </div>
+
+          {f.nxProof === 'NSEC3' && (
+            <div className={l.row2}>
+              <div className={l.field}>
+                <Field label="NSEC3 Iterations">
+                  {(id) => (
+                    <div className={l.inline}>
+                      <Input
+                        placeholder="iterations"
+                        id={id}
+                        mono
+                        className={l.short}
+                        value={f.iterations}
+                        onChange={(e) => set('iterations', e.target.value)}
+                      />
+                      <span className={l.suffix}>(valid range 0-50, recommended 0)</span>
+                    </div>
+                  )}
+                </Field>
+                <div className={l.help}>
+                  The number of iterations used by NSEC3 for hashing the domain names. It is recommended
+                  to use 0 iterations since more iterations will increase computational costs for both
+                  the DNS Server and resolver while not providing much value against &quot;zone
+                  walking&quot; [<External href={RFC_NSEC3_ITERATIONS}>RFC 9276</External>].
+                </div>
+              </div>
+              <div className={l.field}>
+                <Field label="NSEC3 Salt Length">
+                  {(id) => (
+                    <div className={l.inline}>
+                      <Input
+                        placeholder="length"
+                        id={id}
+                        mono
+                        className={l.short}
+                        value={f.saltLength}
+                        onChange={(e) => set('saltLength', e.target.value)}
+                      />
+                      <span className={l.suffix}>bytes (valid range 0-32, recommended 0)</span>
+                    </div>
+                  )}
+                </Field>
+                <div className={l.help}>
+                  The number of bytes of random salt to generate to be used with the NSEC3 hash
+                  computation. It is recommended to not use salt by setting the length to 0
+                  [<External href={RFC_NSEC3_SALT}>RFC 9276</External>].
+                </div>
+              </div>
             </div>
           )}
-        </Field>
-        <div className={styles.help}>
-          The TTL value to be used for DNSKEY records. A lower value will allow quicker addition or
-          rollover to a new DNS Key at the cost of increased frequency of DNSKEY queries by
-          resolvers.
-        </div>
+        </section>
 
-        <Field label="ZSK Automatic Rollover">
-          {(id) => (
-            <div className={styles.inline}>
-              <Input
-                placeholder="days"
-                id={id}
-                mono
-                className={styles.short}
-                value={f.zskRolloverDays}
-                onChange={(e) => set('zskRolloverDays', e.target.value)}
-              />
-              <span className={styles.suffix}>days (valid range 0-365; default 30; set 0 to disable)</span>
+        <section className={l.section}>
+          <div className={l.row2}>
+            <div className={l.field}>
+              <Field label="DNSKEY TTL">
+                {(id) => (
+                  <div className={l.inline}>
+                    <Input
+                      placeholder="ttl"
+                      id={id}
+                      mono
+                      className={l.short}
+                      value={f.dnsKeyTtl}
+                      onChange={(e) => set('dnsKeyTtl', e.target.value)}
+                    />
+                    <span className={l.suffix}>seconds (default 3600/1h)</span>
+                  </div>
+                )}
+              </Field>
+              <div className={l.help}>
+                The TTL value to be used for DNSKEY records. A lower value will allow quicker addition or
+                rollover to a new DNS Key at the cost of increased frequency of DNSKEY queries by
+                resolvers.
+              </div>
             </div>
-          )}
-        </Field>
-        <div className={styles.help}>
-          The frequency at which the DNS Server must automatically rollover the Zone Signing Key
-          (ZSK).
-        </div>
 
-        {/* The link upstream closes `modalDnssecSignZone` with. */}
-        <HelpText href={DNSSEC_HELP}>Help: How To Secure Your Domain Name With DNSSEC</HelpText>
+            <div className={l.field}>
+              <Field label="ZSK Automatic Rollover">
+                {(id) => (
+                  <div className={l.inline}>
+                    <Input
+                      placeholder="days"
+                      id={id}
+                      mono
+                      className={l.short}
+                      value={f.zskRolloverDays}
+                      onChange={(e) => set('zskRolloverDays', e.target.value)}
+                    />
+                    <span className={l.suffix}>days (valid range 0-365; default 30; set 0 to disable)</span>
+                  </div>
+                )}
+              </Field>
+              <div className={l.help}>
+                The frequency at which the DNS Server must automatically rollover the Zone Signing Key
+                (ZSK).
+              </div>
+            </div>
+          </div>
+
+          {/* The link upstream closes `modalDnssecSignZone` with. */}
+          <HelpText href={DNSSEC_HELP}>Help: How To Secure Your Domain Name With DNSSEC</HelpText>
+        </section>
       </div>
     </Dialog>
   )
@@ -376,54 +403,56 @@ function SigningKey({
   onPem: (v: string) => void
 }) {
   return (
-    <div className={styles.group}>
-      <div className={styles.groupTitle}>{title}</div>
-      {GENERATIONS.map((g) => (
-        <label key={g.value} className={styles.chk}>
-          <input
-            type="radio"
-            name={name}
-            checked={generation === g.value}
-            onChange={() => onGeneration(g.value)}
-          />
-          {g.label}
-        </label>
-      ))}
+    <div className={l.block}>
+      <div className={l.title}>{title}</div>
+      <div className={l.group}>
+        {GENERATIONS.map((g) => (
+          <label key={g.value} className={l.check}>
+            <input
+              type="radio"
+              name={name}
+              checked={generation === g.value}
+              onChange={() => onGeneration(g.value)}
+            />
+            {g.label}
+          </label>
+        ))}
+      </div>
 
       {/* The size only applies to RSA and only with automatic generation. */}
       {isRsa && generation === 'Automatic' && (
         <Field label={sizeLabel}>
           {(id) => (
-            <div className={styles.inline}>
-              <Select id={id} className={styles.short} value={size} onChange={(e) => onSize(e.target.value)}>
+            <div className={l.inline}>
+              <Select id={id} className={l.short} value={size} onChange={(e) => onSize(e.target.value)}>
                 {RSA_KEY_SIZES.map((t) => (
                   <option key={t} value={t}>
                     {t}
                   </option>
                 ))}
               </Select>
-              <span className={styles.suffix}>{sizeHelp}</span>
+              <span className={l.suffix}>{sizeHelp}</span>
             </div>
           )}
         </Field>
       )}
 
       {generation === 'UseSpecified' && (
-        <Field label={pemLabel}>
-          {(id) => (
-            <Textarea
-              id={id}
-              mono
-              className={styles.area}
-              spellCheck={false}
-              value={pem}
-              onChange={(e) => onPem(e.target.value)}
-            />
-          )}
-        </Field>
-      )}
-      {generation === 'UseSpecified' && (
-        <div className={styles.help}>Enter a private key in PEM format.</div>
+        <div className={l.field}>
+          <Field label={pemLabel}>
+            {(id) => (
+              <Textarea
+                id={id}
+                mono
+                className={l.area}
+                spellCheck={false}
+                value={pem}
+                onChange={(e) => onPem(e.target.value)}
+              />
+            )}
+          </Field>
+          <div className={l.help}>Enter a private key in PEM format.</div>
+        </div>
       )}
     </div>
   )

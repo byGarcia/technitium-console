@@ -12,6 +12,11 @@ look alike and are not the same thing, so the caller decides.
 `compact` is the smaller strip that sits on a title's line (the Dashboard's period,
 beside its title) instead of on a line of its own.
 
+`flat` draws a tab group as a row of words over a rule, the chosen one underlined,
+the way `SubTabs` draws a section's screens: the zone options dialog, whose five
+tabs are the dialog's sections and not a value picked from a few. Only the look
+changes; the semantics are still `asTabs`'s.
+
 `live` names the option whose figures refresh by themselves (the Dashboard's and
 Blocking's Last Hour, every minute). While it is the chosen one it carries a
 beating dot: the screen is live, and nothing else on it says so. Drawn, not text.
@@ -23,6 +28,7 @@ export function Segmented<T extends string>({
   label,
   asTabs = false,
   compact = false,
+  flat = false,
   live,
 }: {
   options: { id: T; label: string }[]
@@ -32,11 +38,12 @@ export function Segmented<T extends string>({
   label: string
   asTabs?: boolean
   compact?: boolean
+  flat?: boolean
   live?: T
 }) {
   return (
     <div
-      className={`${styles.secs}${compact ? ` ${styles.compact}` : ''}`}
+      className={`${styles.secs}${compact ? ` ${styles.compact}` : ''}${flat ? ` ${styles.flat}` : ''}`}
       role={asTabs ? 'tablist' : 'group'}
       aria-label={label}
     >

@@ -1,0 +1,51 @@
+/*
+Zone Options' own pieces. The rest of its layout is the zone dialogs' one
+(`layout.module.css`).
+*/
+
+/*
+The tabs sit on the dialog's head, the whole width of the dialog, and stay
+there while a long tab scrolls under them: Dynamic Updates with its Security
+Policy runs past the dialog's height, and from its foot the other four tabs
+were out of sight. The strip comes up into the body's top padding only when it
+is the body's first child: with an alert above it, it stays below the alert.
+A sticky box stops at its scroller's padding edge, not at its border, so `top`
+takes the body's top padding back to reach the hairline under the title.
+*/
+.tabs {
+  position: sticky;
+  top: calc(-1 * var(--s-10));
+  z-index: 1;
+  margin: 0 calc(-1 * var(--s-11));
+  padding: 0 var(--s-11);
+  background: var(--pan);
+}
+.tabs:first-child { margin-top: calc(-1 * var(--s-10)); padding-top: var(--s-3); }
+
+/*
+A floor for the tab's height, so switching between a short tab and a long one
+does not make the dialog jump: the dialog is centred, so every change of height
+moved the tabs under the pointer. Most tabs pass it; Notify and General do not.
+*/
+.panel { min-height: min(56vh, 540px); }
+
+/* Quick Add picks one key name: it does not need the textarea's width. */
+.quick { max-width: 320px; }
+
+/* The Security Policy rows: key, domain and types aligned in columns, the row's
+   Remove at the end. At the dialog's narrow width each row stacks. */
+.policies { display: flex; flex-direction: column; gap: var(--s-5); }
+.policy {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) minmax(0, 0.8fr) auto;
+  gap: var(--s-5);
+  align-items: center;
+}
+@media (max-width: 720px) {
+  .policy {
+    grid-template-columns: minmax(0, 1fr);
+    padding-bottom: var(--s-5);
+    border-bottom: 1px solid var(--line2);
+  }
+  .policy > :last-child { justify-self: start; }
+}

@@ -1,0 +1,114 @@
+/*
+THE ZONE DIALOGS' INNER LAYOUT (Zone Options, Permissions, Sign Zone, Unsign
+Zone, DNSSEC Properties, View DS Info), redrawn on 2026-11-05 to the record
+form's (`AddEditRecord`, `.recHead` and `.recData` in `Zones.module.css`).
+
+The same four pieces in all six, and nothing here is a new word: a block's title
+is always a label the dialog already had.
+
+  · a FIELD is its label above its control and its help right under it, as one
+    unit (`.field`). Before, the help was the field's sibling in the form's gap,
+    as far from its field as from the next one, so it read as belonging to both;
+  · a SECTION is a part of the dialog under a hairline and a small-caps title
+    (`.section`), the way Settings divides a pane;
+  · a BLOCK is the tinted step the record form gives the type's own fields
+    (`.block`): what belongs to one key, one policy, one choice;
+  · a CHOICE LIST is a group of radios that each carry an explanation
+    (`.choices`): one bordered list, one row per option, its explanation under
+    its label and not under its radio, the chosen row tinted.
+
+Labels are above their control everywhere. Two dialogs put some on the left
+(`GroupRow`'s 180 px column) and the rest on top, so the eye changed lanes from
+one field to the next.
+*/
+
+/* The dialog's content: blocks with the air of independent things between them. */
+.content { display: flex; flex-direction: column; gap: var(--s-10); }
+
+/* A field and its help, as one thing. */
+.field { display: flex; flex-direction: column; gap: var(--s-4); min-width: 0; }
+/* A one-line pick (a zone, a key name) gains nothing from the dialog's whole
+   width: the same 420 px cap as a dialog row's control (`ui/Form`'s `.mrow`). */
+.narrow { max-width: 420px; }
+
+/* Two or three short fields on one line; they stack where the dialog narrows
+   (the same 720 as the record form's `.recHead`). */
+.row2,
+.row3,
+.rowFit { display: grid; gap: var(--s-8) var(--s-10); align-items: start; }
+.row2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.row3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+/* The first column as wide as what it holds (a row of radios), the second the rest. */
+.rowFit { grid-template-columns: auto minmax(0, 1fr); }
+/* Two blocks that are a pair (KSK and ZSK): the same height, side by side. */
+.pair { align-items: stretch; }
+@media (max-width: 720px) {
+  .row2,
+  .row3,
+  .rowFit { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* A part of the dialog: a hairline, its title, its fields. */
+.section { display: flex; flex-direction: column; gap: var(--s-8); padding-top: var(--s-10); border-top: 1px solid var(--line2); }
+.section:first-child { padding-top: 0; border-top: 0; }
+.title { composes: smallCaps from '../../../ui/label.module.css'; }
+
+/* The tinted step, as the record form's type block. */
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-8);
+  padding: var(--s-9) var(--s-10) var(--s-10);
+  border: 1px solid var(--line2);
+  border-radius: var(--r-3);
+  background: color-mix(in srgb, var(--pan2) 70%, transparent);
+}
+
+/* A group's label: the field label's type (`ui/Field`'s `.label`), for a group of
+   radios, which no single control owns. */
+.groupLabel { font-size: var(--t-2); color: var(--mute); font-weight: 550; letter-spacing: 0.01em; }
+.group { display: flex; flex-direction: column; gap: var(--s-4); min-width: 0; }
+
+/* Short radios side by side: an algorithm, a protocol, a way of generating. */
+.across { display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-11); }
+
+/*
+The choice list. Each row is one radio, its label in ink and its explanation
+under the label, indented past the radio, so the six explanations of Query Access
+read as six answers and not as one paragraph. The chosen row takes a faint amber
+wash: amber is what is active.
+*/
+.choices {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line2);
+  border-radius: var(--r-3);
+  background: var(--pan);
+  overflow: hidden;
+}
+.choice { padding: var(--s-5) var(--s-8) var(--s-6); transition: background var(--t-fast); }
+.choice + .choice { border-top: 1px solid var(--line2); }
+.choice:has(input:checked) { background: color-mix(in srgb, var(--acc) 7%, transparent); }
+.choice .help { margin-left: calc(var(--ctrl) + var(--s-6)); }
+.choice > label { font-weight: 550; }
+
+/* The row of a radio or a checkbox: `ui/Check`'s, where its minimum height lives. */
+.check { composes: check from '../../../ui/Check.module.css'; }
+/* A checkbox's explanation, under its label and not under its box. */
+.checkHelp { composes: help; margin-left: calc(var(--ctrl) + var(--s-6)); }
+
+/* The help under a field: `Zones.module.css`'s `.help`, same colour and line. */
+.help { composes: withCode from '../../../ui/text.module.css'; font-size: var(--t-3); color: var(--mute); line-height: 1.55; }
+
+/* A control with its unit after it, wrapping under it when the cell is narrow. */
+.inline { composes: inline from '../../../ui/PanelForm.module.css'; flex-wrap: wrap; row-gap: var(--s-2); }
+.suffix { composes: trailer from '../../../ui/text.module.css'; }
+.short { width: 110px; }
+.area { min-height: 110px; resize: vertical; }
+
+/* What a section does, after its fields: the zone screens' row of actions
+   (`Zones.module.css`), from the start of the line instead of its end. */
+.acts { composes: acts from '../Zones.module.css'; justify-content: flex-start; }
+
+/* The prose that opens a dialog. */
+.paragraph { composes: paragraph from '../Zones.module.css'; margin: 0; }

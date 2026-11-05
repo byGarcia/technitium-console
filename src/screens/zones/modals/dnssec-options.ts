@@ -1,3 +1,4 @@
+import type { KeyState } from '../../../api/dnssec'
 /*
 The dropdowns of the two DNSSEC forms (signing a zone and adding a key). **The
 label and the value do NOT match**: you see "SHA256 (default)" and `SHA256`
@@ -76,4 +77,18 @@ export function signZoneZskRollover(generation: string): string {
    keeps what was picked in each. */
 export function curveFor(algorithm: string, c: { ecdsaCurve: string; eddsaCurve: string }): string {
   return algorithm === 'EDDSA' ? c.eddsaCurve : c.ecdsaCurve
+}
+
+/*
+A key's state as a pill's tone, so a column or a list of keys reads by tone
+before it is read: the key in service is `ok`, the two on their way to it
+`info`, the two on their way out `dan`, and one that only exists on this server
+(`Generated`) has no tone. Only the look: the word is the state's own.
+*/
+export const KEY_STATE_TONE: Partial<Record<KeyState, 'ok' | 'info' | 'dan'>> = {
+  Active: 'ok',
+  Ready: 'info',
+  Published: 'info',
+  Retired: 'dan',
+  Revoked: 'dan',
 }
