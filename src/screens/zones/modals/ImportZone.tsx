@@ -3,14 +3,13 @@ import { importZone } from '../../../api/zones'
 import { Alert } from '../../../ui/Alert'
 import { Button } from '../../../ui/Button'
 import { Dialog } from '../../../ui/Dialog'
-import { LabeledTextarea } from '../../../ui/Field'
+import { Check } from '../../../ui/Check'
+import { Field, Input, Textarea } from '../../../ui/Field'
 import type { Notice } from '../types'
-import styles from '../Zones.module.css'
-import frm from '../../../ui/Form.module.css'
-import { GroupRow, Row } from '../../../ui/Form'
+import z from './zone-dialog.module.css'
+import { Group, Tile } from './zone-dialog'
 import { noticeFromFailure } from '../../../lib/notice'
 import { Notifier } from '../../../ui/Notifier'
-import { Input } from '../../../ui/Field'
 
 /*
 `modalImportZone` (zone.js:1318 and 1342 in v15.5.1). v15.5 renamed its title
@@ -105,61 +104,50 @@ export function ImportZone({
     >
       <Notifier notice={notice} onClose={() => setNotice(null)} />
 
-      <div className={styles.fields}>
-        <GroupRow modal label="Import Options">
-          <label className={styles.chk}>
-            <input type="checkbox" checked={overwrite} onChange={(e) => setOverwrite(e.target.checked)} />
-            Overwrite Existing Records
-          </label>
-          <div className={styles.help}>
-            Enable this option to overwrite existing records for the record types being imported.
-          </div>
-          <label className={styles.chk}>
-            <input type="checkbox" checked={overwriteZone} onChange={(e) => setOverwriteZone(e.target.checked)} />
-            Overwrite Zone
-          </label>
-          <div className={styles.help}>
-            Enable this option to delete all existing records from the zone before importing new records.
-          </div>
-          <label className={styles.chk}>
-            <input
-              type="checkbox"
+      {/*
+      Redrawn on 2026-11-05, same controls in upstream's order: the three import
+      options as one list with each help under its box, how the file is handed
+      over as two tiles, then the file or the editor, then upstream's two notes.
+      Every label sits above its control (`zone-dialog.module.css`).
+      */}
+      <div className={z.form}>
+        <Group label="Import Options">
+          <div className={`${z.block} ${z.list}`}>
+            <Check
+              label="Overwrite Existing Records"
+              checked={overwrite}
+              onChange={setOverwrite}
+              help="Enable this option to overwrite existing records for the record types being imported."
+            />
+            <Check
+              label="Overwrite Zone"
+              checked={overwriteZone}
+              onChange={setOverwriteZone}
+              help="Enable this option to delete all existing records from the zone before importing new records."
+            />
+            <Check
+              label="Overwrite SOA Serial"
               checked={overwriteSoaSerial}
-              onChange={(e) => setOverwriteSoaSerial(e.target.checked)}
+              onChange={setOverwriteSoaSerial}
+              help="Enable this option to overwrite existing SOA record serial with the imported SOA record serial."
             />
-            Overwrite SOA Serial
-          </label>
-          <div className={styles.help}>
-            Enable this option to overwrite existing SOA record serial with the imported SOA record serial.
           </div>
-        </GroupRow>
+        </Group>
 
-        <GroupRow modal label="Import Type">
-          <label className={styles.chk}>
-            <input
-              type="radio"
-              name="importType"
-              checked={mode === 'File'}
-              onChange={() => setMode('File')}
-            />
+        <Group label="Import Type" radios={z.tiles}>
+          <Tile name="importType" icon="upload" checked={mode === 'File'} onChange={() => setMode('File')}>
             Zone File
-          </label>
-          <label className={styles.chk}>
-            <input
-              type="radio"
-              name="importType"
-              checked={mode === 'Text'}
-              onChange={() => setMode('Text')}
-            />
+          </Tile>
+          <Tile name="importType" icon="edit" checked={mode === 'Text'} onChange={() => setMode('Text')}>
             Text Editor
-          </label>
-        </GroupRow>
+          </Tile>
+        </Group>
 
         {/* Both stay mounted and the other one is hidden, as upstream does
             (zone.js:184-197): the file input keeps the file it shows, so going
             File, Text, File neither forgets it nor uploads a file it no longer shows. */}
         <div hidden={mode !== 'File'}>
-          <Row modal label="Zone File">
+          <Field label="Zone File">
             {(id) => (
               <Input
                 id={id}
@@ -168,22 +156,24 @@ export function ImportZone({
                 onChange={(e) => setZoneFile(e.target.files?.[0] ?? null)}
               />
             )}
-          </Row>
+          </Field>
         </div>
         <div hidden={mode !== 'Text'}>
-          <div className={frm.mrowCtl}>
-            <LabeledTextarea
-              label="Text Editor"
-              mono
-              className={`${styles.areaTall} ${styles.noWrap}`}
-              spellCheck={false}
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-            />
-            <div className={styles.help}>
-              Enter the records to be imported above in standard zone file format.
-            </div>
-          </div>
+          <Field label="Text Editor">
+            {(id) => (
+              <>
+                <Textarea
+                  id={id}
+                  mono
+                  className={z.editor}
+                  spellCheck={false}
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                />
+                <div className={z.help}>Enter the records to be imported above in standard zone file format.</div>
+              </>
+            )}
+          </Field>
         </div>
 
         <Alert type="info" title="Note!">

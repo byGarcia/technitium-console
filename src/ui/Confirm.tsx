@@ -3,7 +3,7 @@ import { Button } from './Button'
 import { Check } from './Check'
 import { Dialog } from './Dialog'
 import styles from './Confirm.module.css'
-import text from './text.module.css'
+import { Icon } from './Icon'
 
 /*
 The "are you sure?" step.
@@ -77,11 +77,21 @@ export function Confirm({
       close="Cancel"
       size="compact"
     >
-      {/* `pre-wrap`: there are multi-line confirmations (the Zones ones), and
-          without this they read as one run-on paragraph on one screen and not on
-          another. */}
-      <div className={text.paragraph} style={{ whiteSpace: 'pre-wrap' }}>
-        {body}
+      {/*
+      The question beside a badge of its tone (2026-11-05): a destructive one is
+      red, the triangle and the solid red verb in the footer (`ui/Button`), so it
+      reads as dangerous before it is read; any other is the note in amber, the
+      colour of its verb. The
+      question is the dialog's text, so it is drawn in ink, not muted.
+      */}
+      <div className={styles.ask} data-tone={variant}>
+        <span className={styles.badge}>
+          <Icon name={variant === 'danger' ? 'warning' : 'about'} size={18} />
+        </span>
+        {/* `pre-wrap`: there are multi-line confirmations (the Zones ones), and
+            without this they read as one run-on paragraph on one screen and not on
+            another. */}
+        <div className={styles.question}>{body}</div>
       </div>
     </Dialog>
   )
