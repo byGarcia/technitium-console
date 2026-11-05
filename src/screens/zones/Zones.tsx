@@ -1,5 +1,5 @@
 import { ClusterNodeSelect } from '../../ui/ClusterNodeSelect'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { ResourceRecord, ZoneDetails } from '../../api/records'
 import { Confirm } from '../../ui/Confirm'
 import { ZoneList } from './ZoneList'
@@ -18,6 +18,7 @@ import { DnssecProperties } from './modals/DnssecProperties'
 import { ViewDs } from './modals/ViewDs'
 import type { Notice, Confirmation } from './types'
 import { Notifier } from '../../ui/Notifier'
+import { dropZoneParam, onZonesTrail, readZoneParam, writeZone } from './zone-url'
 
 /*
 The whole Zones section: the list, a zone's view and the ten modals.
@@ -80,7 +81,8 @@ export function Zones({
   /* Upstream mounts a selector here (`optZonesClusterNode`) with no aggregate
      and no persistence; the parameter was already travelling. */
   const [node, setNode] = useState<string>('')
-  const [open, setOpen] = useState<string | null>(null)
+  /* The open zone starts from the bar (`/zones/?zone=…`); see `zone-url.ts`. */
+  const [open, setOpen] = useState<string | null>(() => readZoneParam())
   const [notice, setNotice] = useState<Notice | null>(null)
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null)
   const [modal, setModal] = useState<ModalId | null>(null)
@@ -107,6 +109,65 @@ export function Zones({
 
   const refreshList = () => setListRefresh((n) => n + 1)
   const refreshZone = () => setZoneRefresh((n) => n + 1)
+
+  /*
+  THE OPEN ZONE IN THE ADDRESS BAR, an addition (upstream never touches the URL;
+  `zone-url.ts` says why and how). What the user does is pushed in the handlers
+  below; these effects keep the bar and the screen saying the same thing.
+
+  The bar follows the state, replacing: it puts the zone back after StrictMode's
+  rehearsal unmount took it out, and it corrects a zone that failed to open.
+  */
+  useEffect(() => {
+    if (readZoneParam() !== open) writeZone(open, true)
+  }, [open])
+
+  /* And the state follows the bar: back and forward between the list and a zone.
+     A `popstate` towards another section is the Shell's, which unmounts this. */
+  useEffect(() => {
+    function onChanged() {
+      if (!onZonesTrail()) return
+      const zone = readZoneParam()
+      // As opening one from the list does, a zone opens with no notice left over.
+      if (zone != null) setNotice(null)
+      setOpen(zone)
+    }
+    window.addEventListener('popstate', onChanged)
+    return () => window.removeEventListener('popstate', onChanged)
+  }, [])
+
+  /*
+  Out of the section the zone goes too, the way Blocking drops `?rule=`, because
+  the Shell writes the next route with the search the bar holds. Unlike Blocking,
+  it is taken out a moment LATER, from the next route (`/about/?zone=…`): the
+  Shell's write runs in the same flush as this cleanup, so by the microtask the
+  zone's own entry is already behind it in the history, intact, and the back
+  button returns to the zone. StrictMode's rehearsal unmount mounts again before
+  the microtask, and the ref says so.
+  */
+  const mounted = useRef(false)
+  useEffect(() => {
+    mounted.current = true
+    return () => {
+      mounted.current = false
+      queueMicrotask(() => {
+        if (!mounted.current) dropZoneParam()
+      })
+    }
+  }, [])
+
+  /** Opening a zone is a navigation: it gets its own history entry. */
+  function openZone(zone: string) {
+    setOpen(zone)
+    writeZone(zone)
+  }
+
+  /** And so is going back to the list from the breadcrumb. */
+  function showList() {
+    setOpen(null)
+    writeZone(null)
+    refreshList()
+  }
 
   function openModal(id: ModalId, zone: string, type = '') {
     setModalZone(zone)
@@ -164,7 +225,7 @@ export function Zones({
           onAdd={() => openModal('add', '')}
           onOpen={(z) => {
             setNotice(null)
-            setOpen(z)
+            openZone(z)
           }}
           onEditZoneFile={(z) => openModal('editZoneFile', z)}
           onImport={(z) => openModal('import', z)}
@@ -176,12 +237,20 @@ export function Zones({
         />
       ) : (
         <ZoneRecords
+          /* Keyed: back from one zone to another is a fresh view, not the
+             previous zone's filters over the next one's records. */
+          key={open}
           zone={open}
           token={token}
           node={node}
           canModify={canModify}
           canDelete={canDelete}
-          onBack={() => {
+          onBack={showList}
+          onUnavailable={() => {
+            /* Upstream's `showEditZone` shows the list again when the zone cannot
+               be read (zone.js:3583-3585), with the error already raised. The
+               entry is replaced: a zone that does not open is not a place to go
+               back to. */
             setOpen(null)
             refreshList()
           }}
@@ -236,7 +305,7 @@ export function Zones({
         onClose={() => setModal(null)}
         onCreated={(domain, a) => {
           // Upstream opens the newly created zone, it does not go back to the list.
-          setOpen(domain === '' ? '.' : domain)
+          openZone(domain === '' ? '.' : domain)
           setNotice(a)
         }}
       />
