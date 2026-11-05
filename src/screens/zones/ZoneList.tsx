@@ -23,7 +23,7 @@ import { Field, Input, Select } from '../../ui/Field'
 import { SectionHeader } from '../../ui/SectionHeader'
 import { DomainName } from '../../ui/DomainName'
 import { Tag, type TagTone } from '../../ui/Tag'
-import { Menu, Separator } from '../../ui/Menu'
+import { Menu, MenuItem, Separator } from '../../ui/Menu'
 import { minuteStamp as date } from '../../lib/dates'
 import { statusText, pageWindow } from '../../lib/pagination'
 import tbl from '../../ui/Table.module.css'
@@ -321,13 +321,10 @@ export function ZoneList({
     onNotice({ type: 'success', title: 'Zone Exported!', text: 'Zone file was exported successfully.' })
   }
 
+  /* Only reachable with something ticked: the button is disabled otherwise (the
+     selection bar's comment, below), so upstream's `Missing!` alert for an empty
+     selection has no path left to it. */
   function deleteChecked() {
-    if (checkedOnes.length === 0) {
-      // A plain `alert()` in upstream, not a `showAlert` of the screen.
-      onNotice({ type: 'warning', title: 'Missing!', text: 'Please select one or more zones to delete.' })
-      return
-    }
-
     const list = zones
       .filter((z) => checkedOnes.includes(z.name))
       .map((z) => (z.nameIdn == null ? (z.name === '' ? '.' : z.name) : `${z.nameIdn} (${z.name})`))
@@ -466,12 +463,14 @@ export function ZoneList({
           like a screen-level action, next to the one that creates a zone, and nothing
           said it worked on the ticked rows.
 
-          The bar is ALWAYS drawn and the button is always enabled, which is not what
-          the drawing shows in its loading artboard: with nothing ticked, upstream
-          answers a click with `Please select one or more zones to delete.`, and that
-          is behaviour, not decoration. A bar that only appeared with a selection would
-          take that path off the screen; the drawing does not get to remove an
-          upstream answer.
+          The bar is ALWAYS drawn, and the button in it is disabled until a zone is
+          ticked (Adrián's decision, 2026-11-05; a deliberate deviation in
+          CONVENTIONS.md). Upstream keeps it enabled and answers a click on an empty
+          selection with an `alert()`, `Please select one or more zones to delete.`
+          (zone.js:1139 on upstream master). This console used to replicate that,
+          but a verb glued to the count it acts on can say "nothing to act on" by
+          itself, without making you click to be told. Disabled and not hidden, as everywhere here: a bar
+          that only appeared with a selection would hide where the verb lives.
 
           The select-all checkbox is NOT repeated here. The drawing has one in the bar
           and another in the table header; two controls doing the same thing is what
@@ -486,7 +485,7 @@ export function ZoneList({
                   {checkedOnes.length === 0 ? state : `${checkedOnes.length} of ${zones.length} zones selected`}
                 </span>
               )}
-              <Button lead="trash" variant="danger" disabled={!canDelete || busy} onClick={deleteChecked}>
+              <Button lead="trash" variant="danger" disabled={!canDelete || busy || checkedOnes.length === 0} onClick={deleteChecked}>
                 Delete Zones
               </Button>
             </End>
@@ -768,67 +767,80 @@ function ZoneRow(p: RowProps) {
           <Menu label={`Actions for ${name}`}>
             {(close) => (
               <>
+                {/*
+                Up to eleven entries in upstream's order (zone.js:827-890 on
+                upstream master), cut into five groups by what they act on:
+                opening the zone, its state, its data going in and out, who may
+                touch it and how it behaves, and the one with no undo. Upstream
+                draws only the last divider (zone.js:889); the groups follow its
+                sequence instead of reordering it, so nothing moves from where
+                upstream puts it, and a group the zone's type leaves empty takes
+                its separator with it (ui/Menu, `Separator`).
+                */}
                 {/* v15.5 splits the first entry by type (zone.js:829-839 in
                     v15.5.1): a zone whose records you can edit gets "Edit
                     Zone" and "Edit Zone File"; any other gets "View Zone",
                     which opens the same screen. */}
                 {EDITABLE.includes(z.type) ? (
                   <>
-                    <button type="button" onClick={() => { close(); p.onOpen(name) }}>
+                    <MenuItem icon="edit" onClick={() => { close(); p.onOpen(name) }}>
                       Edit Zone
-                    </button>
-                    <button type="button" onClick={() => { close(); p.onEditZoneFile(name) }}>
+                    </MenuItem>
+                    <MenuItem icon="file" onClick={() => { close(); p.onEditZoneFile(name) }}>
                       Edit Zone File
-                    </button>
+                    </MenuItem>
                   </>
                 ) : (
-                  <button type="button" onClick={() => { close(); p.onOpen(name) }}>
+                  <MenuItem icon="eye" onClick={() => { close(); p.onOpen(name) }}>
                     View Zone
-                  </button>
+                  </MenuItem>
                 )}
+                <Separator />
                 {/* Upstream's literals: "Enable" and "Disable", not "… Zone"
                     (zone.js:841-842). */}
                 {z.disabled ? (
-                  <button type="button" disabled={!p.canModify || p.busy} onClick={() => { close(); p.onEnable(z) }}>
+                  <MenuItem icon="power" disabled={!p.canModify || p.busy} onClick={() => { close(); p.onEnable(z) }}>
                     Enable
-                  </button>
+                  </MenuItem>
                 ) : (
-                  <button type="button" disabled={!p.canModify || p.busy} onClick={() => { close(); p.onDisable(z) }}>
+                  <MenuItem icon="power" disabled={!p.canModify || p.busy} onClick={() => { close(); p.onDisable(z) }}>
                     Disable
-                  </button>
+                  </MenuItem>
                 )}
                 {RESYNC.includes(z.type) && (
-                  <button type="button" disabled={!p.canModify} onClick={() => { close(); p.onResync(z) }}>
+                  <MenuItem icon="refresh" disabled={!p.canModify} onClick={() => { close(); p.onResync(z) }}>
                     Resync
-                  </button>
+                  </MenuItem>
                 )}
+                <Separator />
                 {IMPORT.includes(z.type) && (
-                  <button type="button" disabled={!p.canModify} onClick={() => { close(); p.onImport(name) }}>
+                  <MenuItem icon="upload" disabled={!p.canModify} onClick={() => { close(); p.onImport(name) }}>
                     Import Zone
-                  </button>
+                  </MenuItem>
                 )}
                 {EXPORT.includes(z.type) && (
-                  <button type="button" onClick={() => { close(); void p.onExport(z) }}>
+                  <MenuItem icon="download" onClick={() => { close(); void p.onExport(z) }}>
                     Export Zone
-                  </button>
+                  </MenuItem>
                 )}
                 {CONVERT.includes(z.type) && (
-                  <button type="button" disabled={!p.canModify} onClick={() => { close(); p.onConvert(name, z.type) }}>
+                  <MenuItem icon="convert" disabled={!p.canModify} onClick={() => { close(); p.onConvert(name, z.type) }}>
                     Convert Zone
-                  </button>
+                  </MenuItem>
                 )}
                 {CLONE.includes(z.type) && (
-                  <button type="button" disabled={!p.canModify} onClick={() => { close(); p.onClone(name) }}>
+                  <MenuItem icon="copy" disabled={!p.canModify} onClick={() => { close(); p.onClone(name) }}>
                     Clone Zone
-                  </button>
+                  </MenuItem>
                 )}
-                <button type="button" onClick={() => { close(); p.onPermissions(name) }}>
+                <Separator />
+                <MenuItem icon="admin" onClick={() => { close(); p.onPermissions(name) }}>
                   Permissions
-                </button>
+                </MenuItem>
                 {WITH_OPTIONS.includes(z.type) && (
-                  <button type="button" disabled={!p.canModify || p.busy} onClick={() => { close(); p.onOptions(name) }}>
+                  <MenuItem icon="settings" disabled={!p.canModify || p.busy} onClick={() => { close(); p.onOptions(name) }}>
                     Zone Options
-                  </button>
+                  </MenuItem>
                 )}
                 {/*
                 Delete goes back into the menu, and this time with a reason. It
@@ -839,9 +851,9 @@ function ZoneRow(p: RowProps) {
                 in this console.
                 */}
                 <Separator />
-                <button type="button" data-variant="danger" disabled={!p.canDelete} onClick={() => { close(); p.onDelete(z) }}>
+                <MenuItem icon="trash" tone="danger" disabled={!p.canDelete} onClick={() => { close(); p.onDelete(z) }}>
                   Delete Zone
-                </button>
+                </MenuItem>
               </>
             )}
           </Menu>

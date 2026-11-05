@@ -93,15 +93,23 @@ describe('zone list', () => {
     expect(last![1]?.body).toMatchObject({ filterName: 'ca' })
   })
 
-  it('\"Delete Zones\" with nothing checked alerts instead of calling the server', async () => {
+  /* A deliberate deviation (CONVENTIONS.md): upstream keeps the button enabled
+     and answers an empty selection with an alert (zone.js:1139). Here it is
+     disabled until a zone is ticked, and never hidden. */
+  it('\"Delete Zones\" is disabled with nothing checked, and enabled once a zone is', async () => {
     const user = userEvent.setup()
     const spy = server()
     draw()
     await screen.findByRole('button', { name: 'casa.test' })
 
-    await user.click(screen.getByRole('button', { name: 'Delete Zones' }))
-    expect(await screen.findByText('Please select one or more zones to delete.')).toBeTruthy()
+    const button = screen.getByRole('button', { name: 'Delete Zones' })
+    expect(button).toBeDisabled()
+    await user.click(button)
+    expect(screen.queryByText('Please select one or more zones to delete.')).toBeNull()
     expect(spy.mock.calls.find((c) => c[0] === 'zones/delete')).toBeUndefined()
+
+    await user.click(screen.getByLabelText('Select casa.test'))
+    expect(screen.getByRole('button', { name: 'Delete Zones' })).toBeEnabled()
   })
 
   it('disabling a zone asks first, with the upstream text', async () => {

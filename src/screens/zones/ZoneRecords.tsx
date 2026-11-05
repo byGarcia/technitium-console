@@ -27,7 +27,7 @@ import { DataCell } from './DataCell'
 import { ZoneOverview } from './ZoneOverview'
 import { recordColour, zoneColour } from './zone-colours'
 import { dateTime, dateWithAge } from '../../lib/dates'
-import { Menu } from '../../ui/Menu'
+import { Menu, MenuItem, Separator } from '../../ui/Menu'
 import { filterBy } from './filter'
 import { statusText, pageWindow } from '../../lib/pagination'
 import { rowActions, recordCells, relativeName, hideDnssec, type Cell } from './record-view'
@@ -454,49 +454,58 @@ export function ZoneRecords(p: ZoneRecordsProps) {
             <Menu size="md" label="Zone actions" text="Options">
               {(close) => (
                 <>
+                  {/* The same groups as the row menu in the zone list
+                      (ZoneList, the row's `Menu`), in the order this menu
+                      already had: the zone as a file or its refresh (a zone
+                      has one or the other, never both: zone-view.ts), its data
+                      in and out, and how it behaves and who may touch it.
+                      Enable, Disable and Delete are not in here: they are the
+                      header's own group, after this menu. */}
                   {/* The FIRST entry of upstream's Options menu (index.html:574
                       in v15.5.1). Not gated by permission: upstream shows it to
                       anyone who can open the zone, the read needs only
                       Zones: View, and it is the save that the server refuses. */}
                   {head?.editZoneFile && (
-                    <button type="button" onClick={() => { close(); p.onEditZoneFile(zone) }}>
+                    <MenuItem icon="file" onClick={() => { close(); p.onEditZoneFile(zone) }}>
                       Edit Zone File
-                    </button>
+                    </MenuItem>
                   )}
                   {head?.resync && (
-                    <button type="button" disabled={!p.canModify} onClick={() => { close(); resync() }}>
+                    <MenuItem icon="refresh" disabled={!p.canModify} onClick={() => { close(); resync() }}>
                       Resync
-                    </button>
+                    </MenuItem>
                   )}
+                  <Separator />
                   {head?.runImport && (
-                    <button type="button" disabled={!p.canModify} onClick={() => { close(); p.onImport(zone) }}>
+                    <MenuItem icon="upload" disabled={!p.canModify} onClick={() => { close(); p.onImport(zone) }}>
                       Import Zone
-                    </button>
+                    </MenuItem>
                   )}
                   {head?.runExport && (
-                    <button type="button" onClick={() => { close(); void runExport() }}>
+                    <MenuItem icon="download" onClick={() => { close(); void runExport() }}>
                       Export Zone
-                    </button>
+                    </MenuItem>
                   )}
                   {head?.convert && (
-                    <button type="button" disabled={!p.canModify} onClick={() => { close(); p.onConvert(zone, zoneInfo.type) }}>
+                    <MenuItem icon="convert" disabled={!p.canModify} onClick={() => { close(); p.onConvert(zone, zoneInfo.type) }}>
                       Convert Zone
-                    </button>
+                    </MenuItem>
                   )}
                   {head?.clone && (
-                    <button type="button" disabled={!p.canModify} onClick={() => { close(); p.onClone(zone) }}>
+                    <MenuItem icon="copy" disabled={!p.canModify} onClick={() => { close(); p.onClone(zone) }}>
                       Clone Zone
-                    </button>
+                    </MenuItem>
                   )}
+                  <Separator />
                   {head?.options && (
-                    <button type="button" disabled={!p.canModify} onClick={() => { close(); p.onOptions(zone) }}>
+                    <MenuItem icon="settings" disabled={!p.canModify} onClick={() => { close(); p.onOptions(zone) }}>
                       Zone Options
-                    </button>
+                    </MenuItem>
                   )}
                   {head?.permissions && (
-                    <button type="button" onClick={() => { close(); p.onPermissions(zone) }}>
+                    <MenuItem icon="admin" onClick={() => { close(); p.onPermissions(zone) }}>
                       Permissions
-                    </button>
+                    </MenuItem>
                   )}
                 </>
               )}
@@ -689,13 +698,14 @@ export function ZoneRecords(p: ZoneRecordsProps) {
                             list. */}
                         <Menu label={`Actions for ${relativeName(r.name, zone)} ${r.type}`}>
                           {(close) => (
-                            <button data-variant="danger"
-                              type="button"
+                            <MenuItem
+                              icon="trash"
+                              tone="danger"
                               disabled={actions.editingOnly || !p.canDelete || busy}
                               onClick={() => { close(); removeRecord(r) }}
                             >
                               Delete Record
-                            </button>
+                            </MenuItem>
                           )}
                         </Menu>
                       </div>

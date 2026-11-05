@@ -54,8 +54,38 @@ with `::before`, so it is not text: the button's name stays the account's name.
 }
 .row[data-initial] { justify-content: flex-start; gap: 0; }
 .row[data-initial] > svg { margin-left: auto; }
-.menuList { position:fixed; overflow-y:auto; z-index: var(--layer-float); min-width:170px; padding: var(--s-3); background:var(--pan2); border:1px solid var(--btn-line); border-radius: var(--r-3); box-shadow: var(--e-2), var(--edge); display:flex; flex-direction:column; }
-.sep { height:1px; margin: var(--s-2) var(--s-3); background:var(--line); }
+.menuList { position:fixed; overflow-y:auto; z-index: var(--layer-float); min-width:170px; padding: var(--s-3); background:var(--pan2); border:1px solid var(--btn-line); border-radius: var(--r-3); box-shadow: var(--e-2), var(--edge); display:flex; flex-direction:column; animation: menu-in var(--t-fast); }
+
+/*
+THE ENTRANCE (2026-11-05): the list fades in and travels four pixels from the
+trigger, upwards when it opened above it (`data-side`, set in Menu.tsx).
+
+Only while it runs: there is no fill mode, so at rest the list carries no
+`transform`. A transformed box becomes the containing block of every
+`position: fixed` descendant, and what opens from inside a menu item measures
+itself against the window, not against the list (the reason the dialog's own
+entrance is written the same way, ui/Dialog.module.css).
+*/
+@keyframes menu-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes menu-in-up {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+.menuList[data-side='up'] { animation-name: menu-in-up; }
+@media (prefers-reduced-motion: reduce) {
+  .menuList { animation: none; }
+}
+
+.sep { flex: none; height:1px; margin: var(--s-3) var(--s-5); background:var(--line); }
+/* A group that came out empty for this row leaves no line of its own (the
+   `Separator` comment, Menu.tsx): not at the top, not twice in a row, and not
+   at the bottom, where the last one with no item after it goes. */
+.sep:first-child,
+.sep + .sep,
+.sep:not(:has(~ :not(.sep))) { display: none; }
 .menuList button { text-align:left; border:0; background:transparent; color:var(--ink); /* Longhands and not the `font:` shorthand: `inherit` is not valid as a
      component of a shorthand (only as the whole value), so the declaration was
      invalid and the browser dropped it. The menu items had always carried the
@@ -67,6 +97,17 @@ with `::before`, so it is not text: the button's name stays the account's name.
 .menuList button:hover,
 .menuList button:focus-visible { background:var(--hover-strong); color:var(--ink); }
 .menuList button:disabled { opacity:.4; cursor:default; }
+
+/*
+The item with an icon (`MenuItem`). The icon is in `--mute` so the words lead
+and the icon only marks the place; under the pointer or the focus it takes the
+item's ink, and a destructive item's icon is as red as its label.
+*/
+.menuList .item { display: flex; align-items: center; gap: var(--s-5); padding-left: var(--s-5); }
+.menuList .item > svg { flex: none; color: var(--mute); }
+.menuList .item:hover:not(:disabled) > svg,
+.menuList .item:focus-visible > svg,
+.menuList .item[data-variant='danger'] > svg { color: currentColor; }
 /* The items are ink at rest: in `--mute` a menu read as disabled. The box is the
    raised step (`--pan2`), like the Select's list, so it stands off the panel it
    opens over instead of sharing its colour. */
