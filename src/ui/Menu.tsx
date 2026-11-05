@@ -1,5 +1,5 @@
 import { Button } from './Button'
-import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode, type RefObject } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type ButtonHTMLAttributes, type KeyboardEvent as ReactKeyboardEvent, type ReactNode, type RefObject } from 'react'
 import styles from './Menu.module.css'
 import { Icon, type IconName } from './Icon'
 
@@ -278,6 +278,9 @@ export function Menu({
           aria-label={label}
           ref={list}
           style={box}
+          /* Which way it opened, so the entrance slides from the trigger and not
+             towards it (Menu.module.css, THE ENTRANCE). */
+          data-side={box.bottom != null ? 'up' : 'down'}
           onKeyDown={onListKeyDown}
         >
           {children(() => setOpen(false))}
@@ -287,6 +290,46 @@ export function Menu({
   )
 }
 
+/*
+A separator between two groups of items. A call site writes one between every
+pair of groups whether or not the groups end up with anything in them, because
+which items a menu holds often depends on the row (a zone's type decides five of
+its eleven). The stylesheet hides the separator that would come first, last or
+right after another one, so a group that came out empty leaves no double line.
+*/
 export function Separator() {
   return <div className={styles.sep} role="separator" />
+}
+
+/*
+An item with a leading icon, for the long menus (2026-11-05). Eleven entries in
+the same grey, with nothing but the words to tell them apart, made the zone's
+row menu a list you read from the top every time; an icon per verb and the
+groups between separators let the eye land on the one it wants.
+
+It is still a plain button, so everything above applies to it unchanged: the menu
+finds it, gives it `role="menuitem"` when it is enabled and puts it in the arrow
+order. The icon is decorative (`Icon` is `aria-hidden`), so the item's name is
+its label, exactly the literal upstream writes.
+
+`tone="danger"` is the `data-variant="danger"` the stylesheet already paints red.
+There is no amber tone on purpose: `--warn` is the accent's amber, and in this
+console amber means "this is the action", the opposite of "careful".
+*/
+export function MenuItem({
+  icon,
+  tone,
+  children,
+  ...rest
+}: {
+  icon: IconName
+  tone?: 'danger'
+  children: ReactNode
+} & Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'type' | 'children'>) {
+  return (
+    <button type="button" className={styles.item} data-variant={tone} {...rest}>
+      <Icon name={icon} size={16} />
+      {children}
+    </button>
+  )
 }

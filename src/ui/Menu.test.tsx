@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { Menu } from './Menu'
+import { Menu, MenuItem, Separator } from './Menu'
 
 /*
 For this piece, jsdom can only answer half: there is no layout, so
@@ -161,6 +161,49 @@ describe('Menu', () => {
       await user.click(screen.getByRole('button', { name: 'Options' }))
       await user.keyboard('{Tab}')
       expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    })
+  })
+
+  /*
+  The item with an icon is still a plain button to the menu: the icon is
+  decorative, so the name is the label alone, the keyboard order is the same and
+  the separators between groups are not stops.
+  */
+  describe('items with an icon, in groups', () => {
+    function Grouped() {
+      return (
+        <Menu label="Options" text="Options">
+          {() => (
+            <>
+              <MenuItem icon="edit">Edit Zone</MenuItem>
+              <Separator />
+              <MenuItem icon="power" disabled>Disable</MenuItem>
+              <Separator />
+              <MenuItem icon="trash" tone="danger">Delete Zone</MenuItem>
+            </>
+          )}
+        </Menu>
+      )
+    }
+
+    it('are menu items named by their label, and the arrows skip the separators', async () => {
+      const user = userEvent.setup()
+      render(<Grouped />)
+      await user.click(screen.getByRole('button', { name: 'Options' }))
+      expect(screen.getAllByRole('menuitem').map((e) => e.textContent)).toEqual(['Edit Zone', 'Delete Zone'])
+      expect(screen.getAllByRole('separator')).toHaveLength(2)
+      expect(screen.getByRole('menuitem', { name: 'Edit Zone' })).toHaveFocus()
+      await user.keyboard('{ArrowDown}')
+      expect(screen.getByRole('menuitem', { name: 'Delete Zone' })).toHaveFocus()
+    })
+
+    it('the destructive tone is the red the stylesheet paints', async () => {
+      const user = userEvent.setup()
+      render(<Grouped />)
+      await user.click(screen.getByRole('button', { name: 'Options' }))
+      expect(screen.getByRole('menuitem', { name: 'Delete Zone' })).toHaveAttribute('data-variant', 'danger')
+      expect(screen.getByRole('menuitem', { name: 'Edit Zone' })).not.toHaveAttribute('data-variant')
+      expect(screen.getByRole('menuitem', { name: 'Delete Zone' })).toHaveAttribute('type', 'button')
     })
   })
 })
