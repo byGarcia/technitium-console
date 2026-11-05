@@ -110,7 +110,9 @@ describe('zone list', () => {
     draw()
     await screen.findByRole('button', { name: 'casa.test' })
 
-    await user.click(screen.getByRole('button', { name: 'Disable Zone' }))
+    /* Disable lives in the row menu, under upstream's literal (zone.js:843). */
+    await user.click(screen.getByRole('button', { name: 'Actions for casa.test' }))
+    await user.click(screen.getByRole('menuitem', { name: 'Disable' }))
     expect(
       await screen.findByText("Are you sure you want to disable the zone 'casa.test'?"),
     ).toBeTruthy()
@@ -176,12 +178,15 @@ describe('zone list', () => {
   })
 
   it('without modify permission you can neither add nor disable', async () => {
+    const user = userEvent.setup()
     server()
     draw({ canModify: false })
     await screen.findByRole('button', { name: 'casa.test' })
 
     expect(screen.getByRole('button', { name: 'Add Zone' })).toHaveProperty('disabled', true)
-    expect(screen.getByRole('button', { name: 'Disable Zone' })).toHaveProperty('disabled', true)
+    await user.click(screen.getByRole('button', { name: 'Actions for casa.test' }))
+    /* A disabled entry is not a `menuitem` (ui/Menu): it is the plain button, off. */
+    expect(screen.getByRole('button', { name: 'Disable' })).toHaveProperty('disabled', true)
   })
 })
 

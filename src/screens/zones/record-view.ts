@@ -1,5 +1,5 @@
 import type { ResourceRecord } from '../../api/records'
-import { dateWithAge, dateTime, minuteStamp } from '../../lib/dates'
+import { dateWithAge, minuteStamp } from '../../lib/dates'
 
 /*
 What gets drawn in each record's "Data" cell. A replica of
@@ -413,11 +413,15 @@ export function recordFooter(r: ResourceRecord, now?: number): { label: string; 
     pairs.push({ label: 'Expires On:', value: dateWithAge(expires.toISOString(), now) })
   }
 
-  // `0001-01-01T00:00:00` is "never", and there upstream does NOT put the age.
+  /*
+  `0001-01-01T00:00:00` is "never". Upstream writes the date too,
+  `0001-01-01 00:00:00 (never)`, which is .NET's empty date and reads as a broken
+  value; here it is the word alone (an exception, 2026-11-05).
+  */
   const never = r.lastUsedOn === '0001-01-01T00:00:00'
   pairs.push({
     label: 'Last Used:',
-    value: never ? `${dateTime(r.lastUsedOn)} (never)` : dateWithAge(r.lastUsedOn, now),
+    value: never ? 'never' : dateWithAge(r.lastUsedOn, now),
   })
 
   if (r.lastModified !== '0001-01-01T00:00:00' && r.lastModified !== '0001-01-01T00:00:00Z') {

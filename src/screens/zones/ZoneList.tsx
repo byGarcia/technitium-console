@@ -26,7 +26,7 @@ import { Menu, Separator } from '../../ui/Menu'
 import { minuteStamp as date } from '../../lib/dates'
 import { statusText, pageWindow } from '../../lib/pagination'
 import tbl from '../../ui/Table.module.css'
-import { RowAction, Th, useSort, type Keys, Table } from '../../ui/Table'
+import { Th, useSort, type Keys, Table } from '../../ui/Table'
 import styles from './Zones.module.css'
 import type { Notice, Confirmation } from './types'
 import { Pagination } from '../../ui/Pagination'
@@ -363,6 +363,13 @@ export function ZoneList({
   const { rows: visibleZones, sort, toggle } = useSort(KEYS, zones)
 
   const allChecked = zones.length > 0 && checkedOnes.length === zones.length
+  /*
+  The Expiry column only when a zone on this page has an expiry (2026-11-05).
+  Only secondary and stub zones carry one, so on most servers it was a column
+  blank from top to bottom, taking width from the zone's name. When it shows it
+  is the same column, and it sorts the same way.
+  */
+  const withExpiry = zones.some((z) => z.expiry != null)
 
   // The last page is asked for with -1: the server works it out itself.
   const pagination = <Pagination window={pg} current={pageNumber} last={-1} onGoTo={goTo} />
@@ -400,36 +407,6 @@ export function ZoneList({
                 {ZONE_TYPES.map((t) => (
                   <option key={t} value={t}>
                     {t}
-                  </option>
-                ))}
-              </Select>
-            )}
-          </Field>
-        </div>
-        <div className={styles.fltShort}>
-          <Field label="Page Number">
-            {(id) => (
-              <Input
-                id={id}
-                mono
-                value={pageField}
-                onChange={(e) => setPageField(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
-              />
-            )}
-          </Field>
-        </div>
-        <div className={styles.fltShort}>
-          <Field label="Zones Per Page">
-            {(id) => (
-              <Select id={id} value={String(perPage)} onChange={(e) => {
-                const n = Number(e.target.value)
-                writePerPage(ZONES_PER_PAGE_KEY, n)
-                setPerPage(n)
-              }}>
-                {ZONES_PER_PAGE.map((n) => (
-                  <option key={n} value={n}>
-                    {n}
                   </option>
                 ))}
               </Select>
@@ -522,20 +499,20 @@ export function ZoneList({
             >
               Serial
             </Th>
-            <Th field="expiry" sort={sort} onSort={toggle} style={{ width: 110 }}>Expiry</Th>
+            {withExpiry && <Th field="expiry" sort={sort} onSort={toggle} style={{ width: 140 }}>Expiry</Th>}
             <Th field="modified" sort={sort} onSort={toggle} style={{ width: 150 }}>
               Last Modified
             </Th>
-            {/* The actions column reserved 230 px with three labels inside;
-                with icons 120 is enough and the 110 left over go to the data,
-                which is what the table is about. */}
-            <th style={{ width: 120 }} />
+            {/* One `⋮` per row, as upstream has it (zone.js:828): the menu
+                carries every action, Enable or Disable and Zone Options
+                included. */}
+            <th style={{ width: 52 }} />
           </>
         }
       >
         {visibleZones.length === 0 ? (
           <tr>
-            <td colSpan={10} className={tbl.noRows}>
+            <td colSpan={withExpiry ? 10 : 9} className={tbl.noRows}>
               No Zone Found
             </td>
           </tr>
@@ -545,6 +522,7 @@ export function ZoneList({
               key={z.name}
               zone={z}
               index={firstRow + i}
+              withExpiry={withExpiry}
               checked={checkedOnes.includes(z.name)}
               stale={stale}
               busy={busy}
@@ -570,9 +548,48 @@ export function ZoneList({
         )}
       </Table>
 
+      {/*
+      The page fields live with the pagination they belong to (2026-11-05). They
+      shared the filter row with Name and Type, so the row read as five filters
+      when two of them only say which slice of the list to show. They are the
+      same fields: Enter in either, or Go up in the filter row, reads all four at
+      once, as `refreshZones` does.
+      */}
       <div className={`${styles.count} ${styles.countFoot}`}>
         <span>{state}</span>
-        {pagination}
+        <div className={styles.paging}>
+          <div className={styles.fltShort}>
+            <Field label="Page Number">
+              {(id) => (
+                <Input
+                  id={id}
+                  mono
+                  value={pageField}
+                  onChange={(e) => setPageField(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
+                />
+              )}
+            </Field>
+          </div>
+          <div className={styles.fltShort}>
+            <Field label="Zones Per Page">
+              {(id) => (
+                <Select id={id} value={String(perPage)} onChange={(e) => {
+                  const n = Number(e.target.value)
+                  writePerPage(ZONES_PER_PAGE_KEY, n)
+                  setPerPage(n)
+                }}>
+                  {ZONES_PER_PAGE.map((n) => (
+                    <option key={n} value={n}>
+                      {n}
+                    </option>
+                  ))}
+                </Select>
+              )}
+            </Field>
+          </div>
+          {pagination}
+        </div>
       </div>
         </>
       )}
@@ -583,6 +600,7 @@ export function ZoneList({
 interface RowProps {
   zone: Zone
   index: number
+  withExpiry: boolean
   checked: boolean
   /** With stale data the row is not selectable. */
   stale: boolean
@@ -640,16 +658,18 @@ function ZoneRow(p: RowProps) {
           : 'neutral'
 
   /*
-  The catalog the zone is a MEMBER of, and nothing else.
-
-  Before, if the zone was itself a catalog, it got a tag with its own name: the
-  cell said `catalog.test` twice in a row and the `Type` column already said
-  "Catalog". It informed of nothing. Upstream draws the tag only when there is
-  membership (`zone.js:796`: `if (zones[i].catalog != null)`), so that was an
-  addition of ours, not parity.
+  The tag under the zone's name, as upstream draws it (zone.js:796-809): the
+  catalog the zone is a member of, in grey; or, when the zone IS a catalog, its own
+  name in blue (`label-info`). An earlier version dropped the second as an
+  addition of ours: it is upstream's, and it is back. Both are names, not states,
+  so they keep the pill (`pill`) instead of the dot a state takes.
   */
   const catalogLabel =
-    z.catalog != null ? { text: z.catalog, tone: 'neutral' as TagTone } : null
+    z.catalog != null
+      ? { text: z.catalog, tone: 'neutral' as TagTone }
+      : z.type === 'Catalog' || z.type === 'SecondaryCatalog'
+        ? { text: name, tone: 'info' as TagTone }
+        : null
 
   return (
     <tr>
@@ -681,7 +701,7 @@ function ZoneRow(p: RowProps) {
         </button>
         {catalogLabel && (
           <div className={styles.tags}>
-            <Tag tone={catalogLabel.tone}>{catalogLabel.text}</Tag>
+            <Tag tone={catalogLabel.tone} pill>{catalogLabel.text}</Tag>
           </div>
         )}
       </td>
@@ -702,7 +722,7 @@ function ZoneRow(p: RowProps) {
         server cannot re-sign it, which is not the same as being signed.
         */}
         {!signed ? (
-          <Tag>Unsigned</Tag>
+          <span className={styles.quiet}>Unsigned</span>
         ) : z.hasDnssecPrivateKeys ? (
           <Tag tone="info">Signed</Tag>
         ) : (
@@ -712,25 +732,11 @@ function ZoneRow(p: RowProps) {
       <td>
         <Tag tone={stateTone}>{state}</Tag>
       </td>
-      <td className={styles.mono}>{z.soaSerial ?? ' '}</td>
-      <td className={styles.mono}>{date(z.expiry)}</td>
+      <td className={`${styles.mono} ${styles.serial}`}>{z.soaSerial ?? ' '}</td>
+      {p.withExpiry && <td className={styles.mono}>{date(z.expiry)}</td>}
       <td className={`${styles.mono} ${tbl.meta}`}>{date(z.lastModified)}</td>
       <td className={tbl.actionsCell}>
         <div className={tbl.actions}>
-          <RowAction
-            icon="settings"
-            name="Zone Options"
-            disabled={!p.canModify || p.busy || !WITH_OPTIONS.includes(z.type)}
-            onClick={() => p.onOptions(name)}
-          />
-          {/* The same icon for both states: which one applies is said by the
-              "Status" column, three columns to the left. */}
-          <RowAction
-            icon="power"
-            name={z.disabled ? 'Enable Zone' : 'Disable Zone'}
-            disabled={!p.canModify || p.busy}
-            onClick={() => (z.disabled ? p.onEnable(z) : p.onDisable(z))}
-          />
           <Menu label={`Actions for ${name}`}>
             {(close) => (
               <>
@@ -750,6 +756,17 @@ function ZoneRow(p: RowProps) {
                 ) : (
                   <button type="button" onClick={() => { close(); p.onOpen(name) }}>
                     View Zone
+                  </button>
+                )}
+                {/* Upstream's literals: "Enable" and "Disable", not "… Zone"
+                    (zone.js:841-842). */}
+                {z.disabled ? (
+                  <button type="button" disabled={!p.canModify || p.busy} onClick={() => { close(); p.onEnable(z) }}>
+                    Enable
+                  </button>
+                ) : (
+                  <button type="button" disabled={!p.canModify || p.busy} onClick={() => { close(); p.onDisable(z) }}>
+                    Disable
                   </button>
                 )}
                 {RESYNC.includes(z.type) && (
@@ -780,6 +797,11 @@ function ZoneRow(p: RowProps) {
                 <button type="button" onClick={() => { close(); p.onPermissions(name) }}>
                   Permissions
                 </button>
+                {WITH_OPTIONS.includes(z.type) && (
+                  <button type="button" disabled={!p.canModify || p.busy} onClick={() => { close(); p.onOptions(name) }}>
+                    Zone Options
+                  </button>
+                )}
                 {/*
                 Delete goes back into the menu, and this time with a reason. It
                 was in the row so it would cost one click just as on the zone's

@@ -333,19 +333,29 @@ function TypeFields({ f, set, setF, apps, classes, onApp, onClass, editing }: Fi
   const text = (
     label: string,
     key: keyof RecordForm,
-    options: { mono?: boolean; short?: boolean; placeholder?: string } = {},
+    options: { mono?: boolean; short?: boolean; placeholder?: string; suffix?: string } = {},
   ) => (
     <Field label={label}>
-      {(id) => (
-        <Input
-          id={id}
-          mono={options.mono}
-          className={options.short ? styles.short : undefined}
-          placeholder={options.placeholder}
-          value={String(f[key] ?? '')}
-          onChange={(e) => set(key, e.target.value as never)}
-        />
-      )}
+      {(id) => {
+        const input = (
+          <Input
+            id={id}
+            mono={options.mono}
+            className={options.short ? styles.short : undefined}
+            placeholder={options.placeholder}
+            value={String(f[key] ?? '')}
+            onChange={(e) => set(key, e.target.value as never)}
+          />
+        )
+        return options.suffix == null ? (
+          input
+        ) : (
+          <div className={styles.inline}>
+            {input}
+            <span className={styles.suffix}>{options.suffix}</span>
+          </div>
+        )
+      }}
     </Field>
   )
 
@@ -414,10 +424,11 @@ function TypeFields({ f, set, setF, apps, classes, onApp, onClass, editing }: Fi
           {text('Primary Name Server', 'soaPrimaryNameServer', { mono: true })}
           {text('Responsible Person', 'soaResponsiblePerson', { mono: true, placeholder: 'email address' })}
           {text('Serial', 'soaSerial', { mono: true, short: true })}
-          {text('Refresh', 'soaRefresh', { mono: true, short: true })}
-          {text('Retry', 'soaRetry', { mono: true, short: true })}
-          {text('Expire', 'soaExpire', { mono: true, short: true })}
-          {text('Minimum', 'soaMinimum', { mono: true, short: true })}
+          {/* `seconds` after the four timers, as upstream writes it (index.html:4542-4569). */}
+          {text('Refresh', 'soaRefresh', { mono: true, short: true, suffix: 'seconds' })}
+          {text('Retry', 'soaRetry', { mono: true, short: true, suffix: 'seconds' })}
+          {text('Expire', 'soaExpire', { mono: true, short: true, suffix: 'seconds' })}
+          {text('Minimum', 'soaMinimum', { mono: true, short: true, suffix: 'seconds' })}
           <label className={styles.chk}>
             <input
               type="checkbox"

@@ -54,6 +54,7 @@ export function SectionHeader({
   title,
   subtitle,
   labels,
+  titleAction,
   actions,
   tabs,
 }: {
@@ -69,6 +70,9 @@ export function SectionHeader({
   subtitle?: string
   /** STATE pills. Counts go in the count bar. */
   labels?: ReactNode
+  /** A control that belongs to the title itself, drawn right after it: a
+   *  zone's refresh, where upstream puts it (index.html:555). */
+  titleAction?: ReactNode
   /** Action bar, always top right. */
   actions?: ReactNode
   /**
@@ -95,7 +99,14 @@ export function SectionHeader({
             <Icon name="chevronRight" size={12} className={styles.sep} />
           </nav>
         )}
-        <h1 className={styles.title}>{title}</h1>
+        {titleAction != null ? (
+          <div className={styles.titleRow}>
+            <h1 className={styles.title}>{title}</h1>
+            {titleAction}
+          </div>
+        ) : (
+          <h1 className={styles.title}>{title}</h1>
+        )}
         {subtitle != null && <p className={styles.subtitle}>{subtitle}</p>}
         {labels != null && <div className={styles.tags}>{labels}</div>}
       </div>

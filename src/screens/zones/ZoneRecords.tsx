@@ -24,7 +24,7 @@ import { Button } from '../../ui/Button'
 import { DomainName } from '../../ui/DomainName'
 import { Field, Input, Select } from '../../ui/Field'
 import { DataCell } from './DataCell'
-import { minuteStamp as date } from '../../lib/dates'
+import { dateTime, dateWithAge } from '../../lib/dates'
 import { Menu, Separator } from '../../ui/Menu'
 import { filterBy } from './filter'
 import { statusText, pageWindow } from '../../lib/pagination'
@@ -35,6 +35,7 @@ import { Empty, Loading } from '../../ui/Empty'
 import { Chip, Tag } from '../../ui/Tag'
 import tbl from '../../ui/Table.module.css'
 import { RowAction, Th, useSort, type Keys, Table } from '../../ui/Table'
+import { type TagTone } from '../../ui/Tag'
 import styles from './Zones.module.css'
 import type { Notice, Confirmation } from './types'
 import { Pagination } from '../../ui/Pagination'
@@ -141,9 +142,10 @@ export function ZoneRecords(p: ZoneRecordsProps) {
 
   /** `showEditZonePage(pageNumber)`: the fields applied, on that page or the
    *  one in Page Number (0 or empty is 1). */
-  function showPage(pageNumber?: number) {
+  function showPage(pageNumber?: number, typeOverride?: string) {
     setNameFilter(nameField)
-    setTypeFilter(typeField)
+    setTypeFilter(typeOverride ?? typeField)
+    if (typeOverride != null) setTypeField(typeOverride)
     setPerPage(perPageField)
     const n = pageNumber ?? Number(pageDraft ?? page)
     setPage(Number.isNaN(n) || n === 0 ? 1 : n)
@@ -176,6 +178,21 @@ export function ZoneRecords(p: ZoneRecordsProps) {
   }, [records, hideDnssecRecords, zoneInfo, nameFilter, typeFilter, zoneInfo])
 
   const { rows: sorted, sort, toggle } = useSort(KEYS, visible)
+
+  /*
+  WHAT THE ZONE HOLDS, by type (an exception, 2026-11-05): `A 14 · NS 1 · SOA 1`,
+  counted from the records already loaded, after Hide DNSSEC Records and before
+  the Name and Type filters, so it describes the zone and not the page. Pressing a
+  type puts it in the Type field and runs Go, the same as typing it; pressing the
+  one already applied empties the field and runs Go.
+  */
+  const byType = useMemo(() => {
+    const signed = isSigned(zoneInfo?.dnssecStatus)
+    const base = hideDnssecRecords && signed ? hideDnssec(records) : records
+    const counts = new Map<string, number>()
+    for (const r of base) counts.set(r.type, (counts.get(r.type) ?? 0) + 1)
+    return [...counts.entries()]
+  }, [records, hideDnssecRecords, zoneInfo])
 
   const totalPages = Math.max(1, Math.ceil(visible.length / perPage))
   // Past the last page, or negative, is the last page (`showEditZonePage`).
@@ -349,6 +366,25 @@ export function ZoneRecords(p: ZoneRecordsProps) {
 
   const state = zoneState(zoneInfo as unknown as Zone)
   const signed = isSigned(zoneInfo.dnssecStatus)
+  /* The header's tones, upstream's (zone.js:3286-3303). */
+  const stateTone: TagTone =
+    state === 'Disabled'
+      ? 'neutral'
+      : state === 'Sync Failed' || state === 'Notify Failed'
+        ? 'warn'
+        : state === 'Expired' || state === 'Validation Failed'
+          ? 'dan'
+          : 'ok'
+  /* The catalog tag: membership in grey, or the catalog's own name in blue
+     (zone.js:3240-3256). */
+  const catalogTag =
+    zoneInfo.catalog != null
+      ? { text: zoneInfo.catalog, tone: 'neutral' as TagTone }
+      : zoneInfo.type === 'Catalog' || zoneInfo.type === 'SecondaryCatalog'
+        ? { text: zone, tone: 'info' as TagTone }
+        : null
+  /* `nameIdn (zone)` when the zone has one (zone.js:3566-3569). */
+  const title = zoneInfo.nameIdn != null ? `${zoneInfo.nameIdn} (${zone})` : zone === '.' ? '<root>' : zone
   const text = statusText(offset + 1, onPage.length, visible.length, currentPage, totalPages, 'records')
   const pg = pageWindow(currentPage, totalPages)
 
@@ -363,21 +399,42 @@ export function ZoneRecords(p: ZoneRecordsProps) {
       <SectionHeader
         section="Zones"
         onBack={p.onBack}
-        title={zone === '.' ? '<root>' : zone}
+        title={title}
+        titleAction={
+          /* Upstream's refresh beside the title (index.html:555): it reads the
+             zone again and shows it with the page and filters as they are typed,
+             `showEditZone(zone, page, name, type)`. */
+          <RowAction
+            icon="refresh"
+            name="Refresh"
+            disabled={busy || loading}
+            onClick={() => void load().then(() => showPage())}
+          />
+        }
         labels={
           <>
+            <Tag tone={stateTone}>{state}</Tag>
             <Tag>{typeLabel(zoneInfo.type)}</Tag>
-            <Tag tone={state === 'Enabled' ? 'ok' : 'neutral'}>{state}</Tag>
             {signed && (
-              <Tag tone="info">DNSSEC</Tag>
+              <Tag tone={zoneInfo.hasDnssecPrivateKeys ? 'info' : 'neutral'} pill>DNSSEC</Tag>
             )}
-            {zoneInfo.catalog != null && <Tag>{zoneInfo.catalog}</Tag>}
+            {catalogTag && <Tag tone={catalogTag.tone} pill>{catalogTag.text}</Tag>}
+            {/* The secondary's expiry, under the title with its seconds, where
+                upstream writes it (zone.js:3262-3265). */}
+            {zoneInfo.expiry != null && <span className={styles.fact}>Expiry: {dateTime(zoneInfo.expiry)}</span>}
+            {/* An exception (2026-11-05): the serial and the last change, which
+                the same answer carries and upstream shows only in the list. */}
+            {zoneInfo.soaSerial != null && <span className={styles.fact}>Serial <b>{zoneInfo.soaSerial}</b></span>}
+            {zoneInfo.lastModified != null && (
+              <span className={styles.fact}>Last Modified: {dateWithAge(zoneInfo.lastModified)}</span>
+            )}
           </>
         }
         actions={
           <>
             {head?.addRecord && (
               <Button
+                lead="add"
                 variant="primary"
                 disabled={!p.canModify || busy}
                 onClick={() => p.onAddRecord(zoneInfo, records)}
@@ -386,19 +443,19 @@ export function ZoneRecords(p: ZoneRecordsProps) {
               </Button>
             )}
             {zoneInfo.disabled ? (
-              <Button disabled={!p.canModify || busy} onClick={doEnableZone}>
+              <Button lead="power" disabled={!p.canModify || busy} onClick={doEnableZone}>
                 Enable Zone
               </Button>
             ) : (
-              <Button disabled={!p.canModify || busy} onClick={doDisableZone}>
+              <Button lead="power" disabled={!p.canModify || busy} onClick={doDisableZone}>
                 Disable Zone
               </Button>
             )}
-            <Button variant="danger" disabled={!p.canDelete || busy} onClick={removeZone}>
+            <Button lead="trash" variant="danger" disabled={!p.canDelete || busy} onClick={removeZone}>
               Delete Zone
             </Button>
 
-            <Menu label="Zone actions" text="Options">
+            <Menu size="md" label="Zone actions" text="Options">
               {(close) => (
                 <>
                   {/* The FIRST entry of upstream's Options menu (index.html:574
@@ -450,7 +507,7 @@ export function ZoneRecords(p: ZoneRecordsProps) {
             </Menu>
 
             {head?.dnssec && (
-              <Menu label="DNSSEC actions" text="DNSSEC">
+              <Menu size="md" label="DNSSEC actions" text="DNSSEC">
                 {(close) => (
                   <>
                     {head.sign && (
@@ -470,7 +527,7 @@ export function ZoneRecords(p: ZoneRecordsProps) {
                     )}
                     {head.properties && (
                       <button type="button" disabled={!p.canModify} onClick={() => { close(); p.onDnssecProperties(zone) }}>
-                        DNSSEC Properties
+                        Properties
                       </button>
                     )}
                     {head.unsign && (
@@ -516,45 +573,27 @@ export function ZoneRecords(p: ZoneRecordsProps) {
             )}
           </Field>
         </div>
-        <div className={styles.fltShort}>
-          <Field label="Page Number">
-            {(id) => (
-              <Input
-                id={id}
-                mono
-                value={pageDraft ?? String(currentPage)}
-                onChange={(e) => setPageDraft(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && showPage()}
-              />
-            )}
-          </Field>
-        </div>
-        <div className={styles.fltShort}>
-          <Field label="Records Per Page">
-            {(id) => (
-              <Select
-                id={id}
-                value={String(perPageField)}
-                onChange={(e) => {
-                  // Remembered at once (zone.js:634-636); applied on Go.
-                  const n = Number(e.target.value)
-                  writePerPage(RECORDS_PER_PAGE_KEY, n)
-                  setPerPageField(n)
-                }}
-              >
-                {RECORDS_PER_PAGE.map((n) => (
-                  <option key={n} value={n}>
-                    {n}
-                  </option>
-                ))}
-              </Select>
-            )}
-          </Field>
-        </div>
         <Button variant="primary" onClick={() => showPage()}>
           Go
         </Button>
       </div>
+
+      {byType.length > 0 && (
+        <div className={styles.types} role="group" aria-label="Records by type">
+          {byType.map(([t, n]) => (
+            <button
+              key={t}
+              type="button"
+              className={styles.typeChip}
+              aria-pressed={typeFilter.toUpperCase() === t}
+              onClick={() => showPage(1, typeFilter.toUpperCase() === t ? '' : t)}
+            >
+              <span className={styles.typeName}>{t}</span>
+              <span className={styles.typeCount}>{n}</span>
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className={styles.count}>
         <span>{text}</span>
@@ -586,17 +625,19 @@ export function ZoneRecords(p: ZoneRecordsProps) {
         ) : (
           onPage.map((r, i) => {
             const actions = rowActions(zoneInfo.type, r.type)
+            /* A run of records with one owner draws the name once: the rows under
+               it carry it too, faded out, for the screen reader and for the
+               stacked card, where each record stands alone. */
+            const repeat = i > 0 && onPage[i - 1].name === r.name
             return (
-              <tr key={`${r.name}|${r.type}|${offset + i}`}>
+              <tr key={`${r.name}|${r.type}|${offset + i}`} className={repeat ? styles.repeat : undefined}>
                 <td className={styles.num2}>{offset + i + 1}</td>
-                <td className={`${styles.mono} ${tbl.lead}`}><DomainName name={relativeName(r.name, zone)} /></td>
+                <td className={`${styles.mono} ${tbl.lead} ${styles.owner}`}><DomainName name={relativeName(r.name, zone)} /></td>
                 <td className={tbl.lead}>
-                  <Chip>{r.type}</Chip>
-                  {r.disabled && (
-                    <div className={styles.tags}>
-                      <Tag>Disabled</Tag>
-                    </div>
-                  )}
+                  <span className={styles.typeCell}>
+                    <Chip>{r.type}</Chip>
+                    {r.disabled && <Tag>Disabled</Tag>}
+                  </span>
                 </td>
                 <td className={styles.ttl}>
                   {r.ttl} <small>({r.ttlString})</small>
@@ -641,15 +682,48 @@ export function ZoneRecords(p: ZoneRecordsProps) {
         )}
       </Table>
 
+      {/* The page fields beside the pagination they set (see ZoneList). */}
       <div className={`${styles.count} ${styles.countFoot}`}>
         <span>{text}</span>
-        {pagination}
+        <div className={styles.paging}>
+          <div className={styles.fltShort}>
+            <Field label="Page Number">
+              {(id) => (
+                <Input
+                  id={id}
+                  mono
+                  value={pageDraft ?? String(currentPage)}
+                  onChange={(e) => setPageDraft(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && showPage()}
+                />
+              )}
+            </Field>
+          </div>
+          <div className={styles.fltShort}>
+            <Field label="Records Per Page">
+              {(id) => (
+                <Select
+                  id={id}
+                  value={String(perPageField)}
+                  onChange={(e) => {
+                    // Remembered at once (zone.js:634-636); applied on Go.
+                    const n = Number(e.target.value)
+                    writePerPage(RECORDS_PER_PAGE_KEY, n)
+                    setPerPageField(n)
+                  }}
+                >
+                  {RECORDS_PER_PAGE.map((n) => (
+                    <option key={n} value={n}>
+                      {n}
+                    </option>
+                  ))}
+                </Select>
+              )}
+            </Field>
+          </div>
+          {pagination}
+        </div>
       </div>
-
-      {/* The secondary zone's expiry, which upstream draws next to the title. */}
-      {'expiry' in zoneInfo && (zoneInfo as { expiry?: string }).expiry != null && (
-        <div className={styles.meta}>Expiry: {date((zoneInfo as { expiry?: string }).expiry)}</div>
-      )}
     </>
   )
 }

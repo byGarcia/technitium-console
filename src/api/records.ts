@@ -59,6 +59,16 @@ export interface ZoneDetails {
   catalog?: string | null
   notifyFailed?: boolean
   notifyFailedFor?: string[]
+  /* What upstream's zone header also reads from this same object
+     (zone.js:3199-3300): the IDN name for the title, the state chain for the
+     status tag, whether the signing keys are here, and the expiry. */
+  nameIdn?: string
+  hasDnssecPrivateKeys?: boolean
+  lastModified?: string
+  expiry?: string
+  isExpired?: boolean
+  validationFailed?: boolean
+  syncFailed?: boolean
 }
 
 export interface ZoneRecordsData {

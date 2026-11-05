@@ -30,9 +30,11 @@ changes.
 */
 export type TagTone = 'neutral' | 'ok' | 'warn' | 'dan' | 'info' | 'acc'
 
-export function Tag({ tone = 'neutral', children }: { tone?: TagTone; children: ReactNode }) {
+/** `pill` keeps the filled capsule on a toned tag that names something instead of
+ *  saying a state (a catalog's name): a state is a dot and its word. */
+export function Tag({ tone = 'neutral', pill = false, children }: { tone?: TagTone; pill?: boolean; children: ReactNode }) {
   return (
-    <span className={`${styles.tag}${tone === 'neutral' ? '' : ` ${styles[tone]}`}`}>
+    <span className={`${styles.tag}${tone === 'neutral' ? '' : ` ${styles[tone]}`}${pill ? ` ${styles.pill}` : ''}`}>
       {children}
     </span>
   )

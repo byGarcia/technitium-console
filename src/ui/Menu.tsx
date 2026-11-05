@@ -56,6 +56,7 @@ export function Menu({
   asRow = false,
   quiet = false,
   icon = 'plus',
+  size = 'sm',
   alignTo,
   children,
 }: {
@@ -63,6 +64,9 @@ export function Menu({
   label: string
   /** Visible text. Without it, the button is the compact `⋮` of a row. */
   text?: string
+  /** A labelled trigger beside full-size buttons (a zone's Options and DNSSEC)
+   *  takes their size; in a panel header or a row it stays small. */
+  size?: 'md' | 'sm'
   /**
    * Fired on open, for the menu that needs to know the server state right before
    * showing its options. Upstream does the same with the Dashboard's blocking
@@ -248,7 +252,7 @@ export function Menu({
       ) : (
         <Button
           ref={trigger}
-          size="sm"
+          size={text == null ? 'sm' : size}
           className={quiet && text == null ? styles.quiet : undefined}
           icon={text == null}
           aria-haspopup="menu"

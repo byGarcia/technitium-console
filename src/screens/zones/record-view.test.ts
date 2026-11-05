@@ -132,7 +132,7 @@ describe('the footer of the cell', () => {
 
   it('\"never\" carries no age after it', () => {
     const p = recordFooter(rec('A', {}), NOW)
-    expect(p.find((x) => x.label === 'Last Used:')?.value).toContain('(never)')
+    expect(p.find((x) => x.label === 'Last Used:')?.value).toBe('never')
   })
 
   it('the last modification does carry it', () => {

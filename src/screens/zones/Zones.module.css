@@ -14,10 +14,21 @@
 /* The count is `ui/count.module.css`'s: see there for why. */
 .count { composes: bar above from '../../ui/count.module.css'; }
 .countFoot { margin-top: var(--gap-group); margin-bottom: 0; }
+/* The foot: the count on the left, and on the right the page fields with the
+   pagination they set (2026-11-05). The labels sit above their fields, so the
+   pagination is aligned to the fields' foot. */
+.countFoot { align-items: flex-end; flex-wrap: wrap; row-gap: var(--s-5); }
+.paging { display: flex; align-items: flex-end; gap: var(--s-7); flex-wrap: wrap; margin-left: auto; }
+.paging .fltShort { width: 110px; }
 .mono { composes: mono from '../../ui/text.module.css'; }
 
 /* Table */
 .num2 { color:var(--faint); font-family:var(--font-mono); font-variant-numeric:tabular-nums; }
+/* What is the absence of something, said quietly: "Unsigned" in the DNSSEC column
+   is text in `--faint`, not a pill, so the signed zones are the ones that stand out. */
+.quiet { font-size: var(--t-3); color: var(--faint); }
+/* A serial is a number to compare down the column. */
+.serial { font-variant-numeric: tabular-nums; text-align: right; }
 
 /* A zone's name is a domain: that part does belong here, and it goes on the cell
    so the button inherits it. It wraps at its dots (`ui/DomainName`), and the
@@ -38,10 +49,57 @@
 .ttl { composes: ttl from '../../ui/record.module.css'; }
 
 .kv { composes: kv from '../../ui/kv.module.css'; }
+/* Short pairs side by side (DataCell, `flow`): label muted, value in mono. */
+.flow { display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-10); margin: 0; }
+.pair { display: inline-flex; align-items: baseline; gap: var(--s-4); min-width: 0; }
+.pair dt { font-size: var(--t-3); color: var(--mute); white-space: nowrap; }
+.pair dd { margin: 0; min-width: 0; }
 .val { font:var(--t-4)/1.45 var(--font-mono); color:var(--ink); word-break:break-word; }
 .key { composes: key from '../../ui/record.module.css'; }
 .showIt { composes: showIt from '../../ui/record.module.css'; }
 .meta { composes: meta from '../../ui/record.module.css'; }
+/* A record's dates on one line, each pair kept whole, separated by a dot. */
+.footLine { display: flex; flex-wrap: wrap; column-gap: var(--s-8); row-gap: var(--s-1); }
+.footLine > span + span::before { content: '·'; margin-right: var(--s-8); margin-left: calc(-1 * var(--s-4)); color: var(--line); }
+
+/* A zone's facts in its header, beside the state tags: quiet text, the value in ink. */
+.fact { font-size: var(--t-3); color: var(--mute); align-self: center; }
+.fact b { font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+
+/*
+What the zone holds, by type (`ZoneRecords.tsx`, WHAT THE ZONE HOLDS). A row of
+small joined chips: the type in mono, its count after it. The applied one takes
+the active fill and amber, like a chosen period.
+*/
+.types { display: flex; flex-wrap: wrap; gap: var(--s-3); margin-bottom: var(--s-7); }
+.typeChip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-4);
+  padding: var(--s-2) var(--s-5);
+  border: 1px solid var(--btn-line);
+  border-radius: var(--r-2);
+  background: var(--btn);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--t-3);
+  cursor: pointer;
+  transition: background var(--t-fast), border-color var(--t-fast);
+}
+.typeChip:hover { background: var(--btn-hover); border-color: var(--line-hover); }
+.typeChip[aria-pressed='true'] { background: var(--seg-active); border-color: var(--acc-ink); color: var(--acc-ink); }
+.typeName { font-family: var(--font-mono); font-weight: 600; }
+.typeCount { color: var(--mute); font-variant-numeric: tabular-nums; }
+.typeChip[aria-pressed='true'] .typeCount { color: inherit; }
+
+/* The type and, when it applies, the Disabled pill on one line. */
+.typeCell { display: inline-flex; align-items: center; gap: var(--s-3); flex-wrap: wrap; }
+
+/* A run of records with one owner: the name is drawn once (see ZoneRecords). The
+   faded name stays in the DOM, and the stacked card shows it again. */
+.repeat > .owner { color: transparent; }
+.repeat > td { border-top-color: transparent; }
+[data-stacked] .repeat > .owner { color: inherit; }
 
 /* Dropdown menu for row and header actions */
 
