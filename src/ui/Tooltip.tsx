@@ -1,5 +1,5 @@
 import { cloneElement, useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
-import type { ReactElement, ReactNode } from 'react'
+import type { ReactElement, ReactNode, RefObject } from 'react'
 import { place, type Placed, type Placement } from './tooltip-place'
 import styles from './Tooltip.module.css'
 
@@ -57,50 +57,81 @@ rect and painted fixed, nothing can clip it.
 It closes on Escape, on blur and on pointer-out; it does not need to close on an
 outside click, because it never takes the pointer.
 */
-export function Tooltip({
+/*
+## The hook, for a trigger that cannot take a wrapper
+
+`useTooltip` is the same machine without the `<span>`, for the three places where
+one more element would be wrong: the `⋮` menu trigger, whose group styles reach
+exactly one level down (`ui/Table.module.css`, `.actions > * > button`); a stacked
+bar's segment, which is a flex item sized by its own `flex-grow`; and a fact in a
+`<dl>`, where a `<span>` between the `div` and its `dt`/`dd` is not valid HTML.
+The caller puts `events` on the trigger, `describedBy()` on whatever is described,
+and `bubble` anywhere inside the trigger's own tree (it is `position: fixed`, so
+where it sits in the DOM does not move it). The two-cause rule, Escape, scroll and
+the placement are this one code path for both.
+
+## `describe`, and when it is false
+
+By default the bubble DESCRIBES its trigger. When its text is the trigger's own
+name (an icon's label: `Edit Record`, `Next`), describing it would make a screen
+reader say the name twice, "Edit Record, button, Edit Record", on every row. Then
+`describe={false}`: the bubble is drawn for the eye only (`aria-hidden`) and the
+name stays where it already was, in `aria-label`.
+*/
+export function useTooltip({
   text,
   placement = 'right',
-  children,
+  anchor,
+  describe = true,
+  off = false,
 }: {
-  /** The text that already exists somewhere else: the icon's label, the missing permission. */
   text: ReactNode
-  /** Which side of the trigger it hangs from. The rail wants `right`. */
   placement?: Placement
-  /** The trigger, which keeps its own accessible name. */
-  children: ReactElement<{ 'aria-describedby'?: string }>
+  /** What the bubble is measured against: the trigger's box. */
+  anchor: RefObject<HTMLElement | null>
+  /** False when the text is the trigger's own name: see above. */
+  describe?: boolean
+  /** Kept shut while true: a menu trigger while its menu is open. */
+  off?: boolean
 }) {
   const id = useId()
   /* Two causes, not one: the pointer and the focus leave independently. */
   const [hovered, setHovered] = useState(false)
   const [focused, setFocused] = useState(false)
-  const open = hovered || focused
+  const open = (hovered || focused) && !off
   const [box, setBox] = useState<Placed | null>(null)
-  const wrap = useRef<HTMLSpanElement>(null)
   const bubble = useRef<HTMLSpanElement>(null)
-
-  /* What the trigger already carried, plus ours. If it carried nothing, only
-     ours; and its own is never lost. */
-  const previous = children.props['aria-describedby']
-  const describedBy = [previous, id].filter(Boolean).join(' ')
 
   /*
   Two passes, and they are needed: to place the bubble you have to know how big it
   is, and to measure it you have to have drawn it. It is drawn with no position
-  (invisible, so it does not jump) and placed as soon as it is measured.
+  (invisible, so it does not jump) and placed as soon as it is measured. The text
+  is a dependency because it can change while open (`Disable Record` becomes
+  `Enable Record` under the pointer) and a longer text is a wider bubble.
+
+  It is measured at the viewport's corner, never where it happens to be. A fixed
+  box shrinks to the room between its left edge and the window's, so measured
+  beside a row's last action (`Actions for 0.30.172.in-addr.arpa`) it came out
+  102 px wide and three lines tall, and was then placed with that shape.
   */
   useLayoutEffect(() => {
-    if (!open || !wrap.current || !bubble.current) return
-    const t = wrap.current.getBoundingClientRect()
+    if (!open || !anchor.current || !bubble.current) return
+    const t = anchor.current.getBoundingClientRect()
+    bubble.current.style.top = '0px'
+    bubble.current.style.left = '0px'
     const b = bubble.current.getBoundingClientRect()
-    setBox(
-      place({
-        trigger: { top: t.top, left: t.left, width: t.width, height: t.height },
-        bubble: { top: 0, left: 0, width: b.width, height: b.height },
-        viewport: { top: 0, left: 0, width: window.innerWidth, height: window.innerHeight },
-        placement,
-      }),
-    )
-  }, [open, placement])
+    const placed = place({
+      trigger: { top: t.top, left: t.left, width: t.width, height: t.height },
+      bubble: { top: 0, left: 0, width: b.width, height: b.height },
+      viewport: { top: 0, left: 0, width: window.innerWidth, height: window.innerHeight },
+      placement,
+    })
+    /* Put back by hand as well: if the place is the one it already had, React
+       sees no change in `style` and would leave it at the corner. */
+    bubble.current.style.top = `${placed.top}px`
+    bubble.current.style.left = `${placed.left}px`
+    setBox(placed)
+  }, [open, placement, anchor, text])
 
   /* On closing it forgets the position: if it were kept, the next opening would
      draw one frame in last time's place. */
@@ -126,38 +157,72 @@ export function Tooltip({
     }
   }, [open])
 
-  return (
-    <span
-      ref={wrap}
-      className={styles.wrap}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      onFocus={() => setFocused(true)}
-      onBlur={() => setFocused(false)}
-    >
-      {/*
-        `aria-describedby` is a LIST of ids separated by spaces, and always was:
-        that is why it is concatenated rather than assigned. A control already
-        described by its own help lost that description the moment you pointed at
-        it.
+  return {
+    open,
+    /** For the trigger (or the wrapper that is its box). */
+    events: {
+      onMouseEnter: () => setHovered(true),
+      onMouseLeave: () => setHovered(false),
+      onFocus: () => setFocused(true),
+      onBlur: () => setFocused(false),
+    },
+    /*
+    `aria-describedby` is a LIST of ids separated by spaces, and always was: that
+    is why it is concatenated rather than assigned. A control already described by
+    its own help lost that description the moment you pointed at it.
 
-        And only while the bubble exists: pointing at a node that is not in the DOM
-        describes nothing, and some readers announce the dangling id. On closing
-        nothing is cloned, so the original attribute comes back intact.
-      */}
-      {open ? cloneElement(children, { 'aria-describedby': describedBy }) : children}
-      {open && (
-        <span
-          ref={bubble}
-          id={id}
-          role="tooltip"
-          className={styles.bubble}
-          data-placement={box?.placement ?? placement}
-          style={box ? { top: box.top, left: box.left } : { visibility: 'hidden' }}
-        >
-          {text}
-        </span>
-      )}
+    And only while the bubble exists: pointing at a node that is not in the DOM
+    describes nothing, and some readers announce the dangling id. Closed, the
+    original comes back intact.
+    */
+    describedBy: (previous?: string): string | undefined =>
+      open && describe ? [previous, id].filter(Boolean).join(' ') : previous,
+    bubble: open ? (
+      <span
+        ref={bubble}
+        id={id}
+        role="tooltip"
+        aria-hidden={describe ? undefined : true}
+        className={styles.bubble}
+        data-placement={box?.placement ?? placement}
+        style={box ? { top: box.top, left: box.left } : { top: 0, left: 0, visibility: 'hidden' }}
+      >
+        {text}
+      </span>
+    ) : null,
+  }
+}
+
+export function Tooltip({
+  text,
+  placement = 'right',
+  describe = true,
+  children,
+}: {
+  /** The text that already exists somewhere else: the icon's label, the missing permission. */
+  text: ReactNode
+  /** Which side of the trigger it hangs from. The rail wants `right`. */
+  placement?: Placement
+  /** False when `text` is the trigger's own name (see `useTooltip`). */
+  describe?: boolean
+  /** The trigger, which keeps its own accessible name. */
+  children: ReactElement<{ 'aria-describedby'?: string }>
+}) {
+  const wrap = useRef<HTMLSpanElement>(null)
+  const tip = useTooltip({
+    text,
+    placement,
+    anchor: wrap,
+    describe,
+  })
+  const previous = children.props['aria-describedby']
+  const describedBy = tip.describedBy(previous)
+
+  return (
+    <span ref={wrap} className={styles.wrap} {...tip.events}>
+      {/* On closing nothing is cloned, so the original attribute comes back intact. */}
+      {describedBy !== previous ? cloneElement(children, { 'aria-describedby': describedBy }) : children}
+      {tip.bubble}
     </span>
   )
 }

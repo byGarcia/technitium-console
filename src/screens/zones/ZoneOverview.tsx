@@ -4,8 +4,10 @@ import { Panel } from '../../ui/Panel'
 import { Tag } from '../../ui/Tag'
 import { DomainName } from '../../ui/DomainName'
 import type { ZoneHeader } from './zone-view'
-import type { CSSProperties, ReactNode } from 'react'
+import { useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { Icon } from '../../ui/Icon'
+import { useTooltip } from '../../ui/Tooltip'
+import { useCountUp } from '../../ui/useCountUp'
 import { recordColour } from './zone-colours'
 import styles from './ZoneOverview.module.css'
 
@@ -19,19 +21,113 @@ export function Card({ title, colour, children }: { title: string; colour: strin
   )
 }
 
-/** How a whole splits, as one bar of coloured segments, widest first. */
-export function StackBar({ parts, label }: { parts: { key: string; value: number; colour: string }[]; label: string }) {
+/** A big figure, which counts up once as its card comes in (`ui/useCountUp`). */
+export function Count({ value }: { value: number }) {
+  return <>{useCountUp(value)}</>
+}
+
+export interface Part {
+  key: string
+  /** The words the screen already writes for it: `A`, `Primary`, `Enabled`. */
+  name: string
+  value: number
+  colour: string
+}
+
+/*
+How a whole splits, as one bar of coloured segments.
+
+Each segment shows its own words in the tooltip, `A 4` or `Enabled 12`: the same
+text its chip or its fact already writes, and the bar's `aria-label` already
+says, so nothing new is read. A segment is not a tab stop (the bar is one image to
+a reader, and the chips beside it are the keyboard's way to the same types), so
+its bubble is drawn for the pointer and the eye (`describe: false`).
+
+`hot` is the type lit from outside, by hovering or focusing its chip; a segment
+under the pointer lights itself. Either way the others dim a little, so the eye
+goes from the chip to its share of the bar.
+*/
+export function StackBar({
+  parts,
+  label,
+  hot = null,
+  onHot,
+}: {
+  parts: Part[]
+  label: string
+  hot?: string | null
+  onHot?: (key: string | null) => void
+}) {
+  const [own, setOwn] = useState<string | null>(null)
   const total = parts.reduce((n, p) => n + p.value, 0)
   if (total === 0) return null
+  const lit = own ?? hot
+  const light = (key: string | null) => {
+    setOwn(key)
+    onHot?.(key)
+  }
   return (
-    <div className={styles.stack} role="img" aria-label={label}>
+    <div className={styles.stack} role="img" aria-label={label} data-hot={lit != null || undefined}>
       {parts
         .filter((p) => p.value > 0)
         .map((p) => (
-          <span key={p.key} className={styles.segment} style={{ flexGrow: p.value, background: p.colour }} />
+          <Segment key={p.key} part={p} lit={lit === p.key} onHot={light} />
         ))}
     </div>
   )
+}
+
+function Segment({ part, lit, onHot }: { part: Part; lit: boolean; onHot: (key: string | null) => void }) {
+  const ref = useRef<HTMLSpanElement>(null)
+  const tip = useTooltip({ text: `${part.name} ${part.value}`, placement: 'top', anchor: ref, describe: false })
+  return (
+    <span
+      ref={ref}
+      className={styles.segment}
+      data-hot={lit || undefined}
+      style={{ flexGrow: part.value, background: part.colour }}
+      onMouseEnter={() => { tip.events.onMouseEnter(); onHot(part.key) }}
+      onMouseLeave={() => { tip.events.onMouseLeave(); onHot(null) }}
+    >
+      {tip.bubble}
+    </span>
+  )
+}
+
+/*
+Not used since restart, and why it is not "never".
+
+The one fact on these cards whose meaning is not on the screen: the server keeps
+`lastUsedOn` in memory only, so the figure counts the records that have answered
+nothing SINCE THE LAST START. The tooltip says so in one sentence, new text that is
+part of deviation 12 in CONVENTIONS.md. The fact is a tab stop for it, with its
+label underlined in dots as the sign that it has more to say, and it is described
+by the bubble (this text is not its name).
+*/
+const NOT_USED_WHY = "The server keeps a record's last use in memory only, so a restart clears it."
+
+function NotUsed({ value }: { value: number }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const tip = useTooltip({ text: NOT_USED_WHY, placement: 'top', anchor: ref })
+  return (
+    <div ref={ref} className={styles.explained} tabIndex={0} aria-describedby={tip.describedBy()} {...tip.events}>
+      <dt>Not used since restart</dt>
+      <dd>
+        {value}
+        {tip.bubble}
+      </dd>
+    </div>
+  )
+}
+
+/** The chips' side of `hot`: hovering or focusing a chip lights its segment. */
+export function hotEvents(key: string, setHot: (key: string | null) => void) {
+  return {
+    onMouseEnter: () => setHot(key),
+    onMouseLeave: () => setHot(null),
+    onFocus: () => setHot(key),
+    onBlur: () => setHot(null),
+  }
 }
 
 /*
@@ -85,6 +181,7 @@ export interface ZoneOverviewProps {
 
 export function ZoneOverview(p: ZoneOverviewProps) {
   const { zone, info, records, head } = p
+  const [hot, setHot] = useState<string | null>(null)
   const disabled = records.filter((r) => r.disabled).length
   const neverUsed = records.filter((r) => r.lastUsedOn === NEVER).length
   const soa = records.find((r) => r.type === 'SOA' && apex(r, zone))
@@ -108,10 +205,12 @@ export function ZoneOverview(p: ZoneOverviewProps) {
     <div className={styles.grid}>
       <Card title="Records" colour="var(--ch-total)">
         <div className={styles.body}>
-          <div className={styles.figure}>{records.length}</div>
+          <div className={styles.figure}><Count value={records.length} /></div>
           <StackBar
             label={p.byType.map(([t, n]) => `${t} ${n}`).join(', ')}
-            parts={p.byType.map(([t, n]) => ({ key: t, value: n, colour: recordColour(t) }))}
+            parts={p.byType.map(([t, n]) => ({ key: t, name: t, value: n, colour: recordColour(t) }))}
+            hot={hot}
+            onHot={setHot}
           />
           {p.byType.length > 0 && (
             <div className={styles.types} role="group" aria-label="Records by type">
@@ -122,7 +221,9 @@ export function ZoneOverview(p: ZoneOverviewProps) {
                   className={styles.typeChip}
                   style={{ '--sw': recordColour(t) } as CSSProperties}
                   aria-pressed={p.activeType.toUpperCase() === t}
+                  data-hot={hot === t || undefined}
                   onClick={() => p.onType(p.activeType.toUpperCase() === t ? '' : t)}
+                  {...hotEvents(t, setHot)}
                 >
                   <span className={styles.typeName}>{t}</span>
                   <span className={styles.typeCount}>{n}</span>
@@ -135,10 +236,7 @@ export function ZoneOverview(p: ZoneOverviewProps) {
               <dt>Disabled</dt>
               <dd>{disabled}</dd>
             </div>
-            <div>
-              <dt>Not used since restart</dt>
-              <dd>{neverUsed}</dd>
-            </div>
+            <NotUsed value={neverUsed} />
           </dl>
         </div>
       </Card>

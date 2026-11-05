@@ -52,3 +52,17 @@ is given.
 `data-placement` stays: it says where the bubble REALLY ended up (it may have
 flipped), and it is the hook for an arrow, if it ever gets one.
 */
+
+/*
+It arrives with a fade, never a slide: a moving bubble is a second thing to
+follow, and `top`/`left` are the arithmetic's, not an animation's. The fade runs
+once on opening, under the curve every other control uses, and not at all for
+whoever asks the system for less motion.
+*/
+@media (prefers-reduced-motion: no-preference) {
+  .bubble { animation: tip-in 120ms cubic-bezier(0.2, 0.9, 0.3, 1); }
+}
+
+@keyframes tip-in {
+  from { opacity: 0; }
+}

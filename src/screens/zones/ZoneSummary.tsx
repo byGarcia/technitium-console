@@ -1,8 +1,8 @@
 import { typeLabel, zoneNameOf, zoneState, type Zone } from '../../api/zones'
 import { fromNow } from '../../lib/dates'
-import type { CSSProperties } from 'react'
+import { useState, type CSSProperties } from 'react'
 import { Icon } from '../../ui/Icon'
-import { Card, StackBar } from './ZoneOverview'
+import { Card, Count, StackBar, hotEvents } from './ZoneOverview'
 import { zoneColour } from './zone-colours'
 import styles from './ZoneOverview.module.css'
 
@@ -34,6 +34,9 @@ export function ZoneSummary({
   activeType: string
   onType: (type: string) => void
 }) {
+  /* The type, and the health state, lit by hovering its chip or fact (`StackBar`). */
+  const [hot, setHot] = useState<string | null>(null)
+  const [hotHealth, setHotHealth] = useState<string | null>(null)
   const types = new Map<string, number>()
   for (const z of zones) types.set(z.type, (types.get(z.type) ?? 0) + 1)
 
@@ -53,9 +56,9 @@ export function ZoneSummary({
   )
 
   const health = [
-    { key: 'Enabled', value: enabled, colour: 'var(--ok)' },
-    { key: 'Problems', value: problems, colour: 'var(--warn)' },
-    { key: 'Disabled', value: disabled, colour: 'var(--ch-drop)' },
+    { key: 'Enabled', name: 'Enabled', value: enabled, colour: 'var(--ok)' },
+    { key: 'Problems', name: 'Problems', value: problems, colour: 'var(--warn)' },
+    { key: 'Disabled', name: 'Disabled', value: disabled, colour: 'var(--ch-drop)' },
   ]
   const share = signable.length === 0 ? 0 : signed.length / signable.length
 
@@ -63,10 +66,12 @@ export function ZoneSummary({
     <div className={styles.grid}>
       <Card title="All Zones" colour="var(--ch-total)">
         <div className={styles.body}>
-          <div className={styles.figure}>{zones.length}</div>
+          <div className={styles.figure}><Count value={zones.length} /></div>
           <StackBar
             label={[...types.entries()].map(([t, n]) => `${typeLabel(t)} ${n}`).join(', ')}
-            parts={[...types.entries()].map(([t, n]) => ({ key: t, value: n, colour: zoneColour(t) }))}
+            parts={[...types.entries()].map(([t, n]) => ({ key: t, name: typeLabel(t), value: n, colour: zoneColour(t) }))}
+            hot={hot}
+            onHot={setHot}
           />
           {types.size > 0 && (
             <div className={styles.types} role="group" aria-label="Zones by type">
@@ -77,7 +82,9 @@ export function ZoneSummary({
                   className={styles.typeChip}
                   style={{ '--sw': zoneColour(t) } as CSSProperties}
                   aria-pressed={activeType === t}
+                  data-hot={hot === t || undefined}
                   onClick={() => onType(activeType === t ? '' : t)}
+                  {...hotEvents(t, setHot)}
                 >
                   <span className={styles.typeLabel}>{typeLabel(t)}</span>
                   <span className={styles.typeCount}>{n}</span>
@@ -92,15 +99,22 @@ export function ZoneSummary({
         <div className={styles.body}>
           <dl className={`${styles.facts} ${styles.factsLarge}`}>
             {health.map((h) => (
-              <div key={h.key}>
+              <div key={h.key} data-hot={hotHealth === h.key || undefined} {...hotEvents(h.key, setHotHealth)}>
                 <dt>
                   <span className={styles.dot} style={{ background: h.colour }} /> {h.key}
                 </dt>
-                <dd className={h.key === 'Problems' && h.value > 0 ? styles.bad : undefined}>{h.value}</dd>
+                <dd className={h.key === 'Problems' && h.value > 0 ? styles.bad : undefined}>
+                  <Count value={h.value} />
+                </dd>
               </div>
             ))}
           </dl>
-          <StackBar label={health.map((h) => `${h.key} ${h.value}`).join(', ')} parts={health} />
+          <StackBar
+            label={health.map((h) => `${h.key} ${h.value}`).join(', ')}
+            parts={health}
+            hot={hotHealth}
+            onHot={setHotHealth}
+          />
         </div>
       </Card>
 
@@ -111,7 +125,7 @@ export function ZoneSummary({
               <Icon name="shield" size={22} />
             </span>
             <div className={styles.figure}>
-              {signed.length}
+              <Count value={signed.length} />
               <span className={styles.of}> of {signable.length}</span>
             </div>
           </div>
