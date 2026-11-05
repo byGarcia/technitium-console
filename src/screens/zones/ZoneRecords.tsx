@@ -66,6 +66,8 @@ export interface ZoneRecordsProps {
   canModify: boolean
   canDelete: boolean
   onBack: () => void
+  /** The zone could not be read and there is nothing to draw (`Zones.tsx`). */
+  onUnavailable?: () => void
   onNotice: (a: Notice) => void
   onConfirm: (c: Confirmation) => void
   onAddRecord: (zoneInfo: ZoneDetails, records: ResourceRecord[]) => void
@@ -359,6 +361,14 @@ export function ZoneRecords(p: ZoneRecordsProps) {
     setHideDnssecRecords(blank)
     writeHideDnssec(blank)
   }
+
+  /* Nothing was ever drawn and the read failed: the list takes over, as upstream's
+     `showEditZone` does on its `error`. A later failure keeps the zone on screen. */
+  const unavailable = !loading && zoneInfo == null
+  const onUnavailable = p.onUnavailable
+  useEffect(() => {
+    if (unavailable) onUnavailable?.()
+  }, [unavailable, onUnavailable])
 
   if (loading && zoneInfo == null) {
     return <Loading>Loading zone…</Loading>
