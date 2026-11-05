@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type Ref } from 'react'
 import { Icon } from './Icon'
+import { useMedia } from '../lib/use-media'
 import { PermissionButton } from './PermissionButton'
 import styles from './Toast.module.css'
 
@@ -26,6 +27,15 @@ What it owes, and why:
   gone, and the browser would leave it on the page's body.
 - **It moves only for those who want motion**: it rises into place, and with
   `prefers-reduced-motion` it simply appears.
+
+Redrawn on 2026-11-05 as a notification card: the raised surface with the dialog's
+hairline, a tinted badge with a tick (every message it carries says something was
+done), the message in ink, and a thin bar that drains over `duration`. The bar is
+a picture of the clock, so it follows the clock's rules: it is not drawn while the
+clock is held (pointer, focus or `hold`), and it starts again whole when the clock
+does, because so does the clock. Closing it leaves for 160 ms a COPY, `inert` and
+`aria-hidden`, that sinks and fades; the live region itself is emptied at once, as
+before. No copy under `prefers-reduced-motion`, nor without `matchMedia` (the tests).
 */
 
 export interface ToastAction {
@@ -87,6 +97,17 @@ export function Toast({
     }
   }
 
+  /* What was on screen, kept for the copy that leaves. */
+  const motion = useMedia('(prefers-reduced-motion: no-preference)')
+  const [shown, setShown] = useState<{ message: ReactNode; action?: ToastAction } | null>(null)
+  const [leaving, setLeaving] = useState<{ message: ReactNode; action?: ToastAction } | null>(null)
+  if (open && (shown?.message !== message || shown?.action !== action)) setShown({ message, action })
+  if (!open && shown != null) {
+    setShown(null)
+    if (motion) setLeaving(shown)
+  }
+  if (open && leaving != null) setLeaving(null)
+
   const paused = pointer || focused || hold
   useEffect(() => {
     if (!open || paused) return
@@ -106,48 +127,85 @@ export function Toast({
   }, [hasAction])
 
   return (
-    <div
-      ref={box}
-      className={open ? styles.toast : styles.closed}
-      onMouseEnter={() => setPointer(true)}
-      onMouseLeave={() => setPointer(false)}
-      onFocus={() => {
-        hadFocus.current = true
-        setFocused(true)
-      }}
-      onBlur={(e) => {
-        const to = e.relatedTarget as Node | null
-        if (to != null && box.current?.contains(to)) return
-        setFocused(false)
-        if (to != null) hadFocus.current = false
-      }}
-      onKeyDown={(e) => {
-        if (e.key === 'Escape' && open) {
-          e.preventDefault()
-          dismiss.current()
-        }
-      }}
-    >
-      <p className={styles.text} role="status">
-        {message}
-      </p>
-      {open && action != null && (
-        <PermissionButton
-          ref={actionRef}
-          size="sm"
-          variant="primary"
-          disabled={action.disabled}
-          permission={action.permission}
-          onClick={action.onClick}
+    <>
+      <div
+        ref={box}
+        className={open ? styles.toast : styles.closed}
+        onMouseEnter={() => setPointer(true)}
+        onMouseLeave={() => setPointer(false)}
+        onFocus={() => {
+          hadFocus.current = true
+          setFocused(true)
+        }}
+        onBlur={(e) => {
+          const to = e.relatedTarget as Node | null
+          if (to != null && box.current?.contains(to)) return
+          setFocused(false)
+          if (to != null) hadFocus.current = false
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape' && open) {
+            e.preventDefault()
+            dismiss.current()
+          }
+        }}
+      >
+        {open && (
+          <span className={styles.badge}>
+            <Icon name="check" size={14} />
+          </span>
+        )}
+        <p className={styles.text} role="status">
+          {message}
+        </p>
+        {open && action != null && (
+          <PermissionButton
+            ref={actionRef}
+            size="sm"
+            variant="primary"
+            disabled={action.disabled}
+            permission={action.permission}
+            onClick={action.onClick}
+          >
+            {action.label}
+          </PermissionButton>
+        )}
+        {open && (
+          <button type="button" className={styles.close} aria-label="Dismiss" title="Dismiss" onClick={() => dismiss.current()}>
+            <Icon name="close" size={14} />
+          </button>
+        )}
+        {open && !paused && (
+          <span
+            key={`${String(timerKey)}|${duration}`}
+            className={styles.timer}
+            style={{ animationDuration: `${duration}ms` }}
+          />
+        )}
+      </div>
+      {leaving != null && (
+        <div
+          className={`${styles.toast} ${styles.leaving}`}
+          aria-hidden="true"
+          inert
+          onAnimationEnd={(e) => {
+            if (e.target === e.currentTarget) setLeaving(null)
+          }}
         >
-          {action.label}
-        </PermissionButton>
+          <span className={styles.badge}>
+            <Icon name="check" size={14} />
+          </span>
+          <p className={styles.text}>{leaving.message}</p>
+          {leaving.action != null && (
+            <PermissionButton size="sm" variant="primary" disabled={leaving.action.disabled} permission={leaving.action.permission}>
+              {leaving.action.label}
+            </PermissionButton>
+          )}
+          <span className={styles.close}>
+            <Icon name="close" size={14} />
+          </span>
+        </div>
       )}
-      {open && (
-        <button type="button" className={styles.close} aria-label="Dismiss" title="Dismiss" onClick={() => dismiss.current()}>
-          <Icon name="close" size={14} />
-        </button>
-      )}
-    </div>
+    </>
   )
 }

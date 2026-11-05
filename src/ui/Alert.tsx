@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Icon, type IconName } from './Icon'
 import styles from './Alert.module.css'
 
@@ -14,6 +14,27 @@ And **success alerts dismiss themselves after five seconds**, as they do there
 (`common.js:213-217`, `success` only). It was missing: it was a real behavioural
 difference, and a noticeable one, because a "Settings Saved!" that never goes away
 ends up covering the next alert.
+
+## Two looks, one component (redrawn 2026-11-05)
+
+What tells them apart is whether the alert can be closed, because that is what
+already separates the two jobs it does:
+
+  · **the result** (`onDismiss`, which is the `Notifier`'s: "Zone Enabled!",
+    "Error!"): a card on the panel surface, its title on a line of its own and its
+    text in the secondary ink, a tinted badge with the type's icon, and, when it
+    is a success that will go by itself, a thin bar that drains over the same five
+    seconds the timer counts. It slides in when it arrives.
+  · **the notice** (no `onDismiss`: the forms' `Note!` and `Warning!`, the stale
+    data strip): a soft wash of the type's colour with a hairline of it, the same
+    badge, and the title running into the text as upstream's `<b>` does.
+
+Neither paints the text in the type's colour any more: the badge carries the type,
+the text stays in ink, and a long paragraph no longer reads as a link.
+
+The bar is a picture of the timer, not a second one: it does not pause under the
+pointer because upstream's timer does not, and it restarts with the same props
+that restart the timer.
 */
 export type AlertType = 'success' | 'info' | 'warning' | 'danger'
 
@@ -48,11 +69,14 @@ export function Alert({
   type,
   title,
   children,
+  action,
   onDismiss,
 }: {
   type: AlertType
   title: string
   children?: ReactNode
+  /** A control that answers the alert (the stale strip's `Retry`), drawn at its end. */
+  action?: ReactNode
   onDismiss?: () => void
 }) {
   // The dismiss callback is kept in a ref: the places that pass it write a new
@@ -70,15 +94,41 @@ export function Alert({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [type, title, children])
 
+  const result = onDismiss != null
+  const timed = result && type === 'success'
+
+  /* A new result in the same place draws itself again: the entrance and the bar
+     start over with the same three props that restart the timer. Adjusted while
+     rendering, as React advises for state that follows a prop.
+
+     Only a result: its text is the `Notifier`'s string. A notice's children are
+     often markup written anew on every render of its screen, and redrawing on that
+     would rebuild the notice (and drop the focus from a link inside it) at every
+     keystroke in the form around it. */
+  const [shown, setShown] = useState({ type, title, children, run: 0 })
+  if (result && (shown.type !== type || shown.title !== title || shown.children !== children)) {
+    setShown({ type, title, children, run: shown.run + 1 })
+  }
+
   return (
-    <div className={`${styles.alert} ${styles[type]}`} role="alert">
+    <div
+      key={shown.run}
+      className={`${styles.alert} ${styles[type]}${result ? ` ${styles.result}` : ''}`}
+      role="alert"
+    >
+      <span className={styles.badge}>
+        <Icon name={ICON_BY_TYPE[type]} size={14} />
+      </span>
+      <div className={styles.body}>
+        <b className={styles.title}>{title}</b> {children}
+      </div>
+      {action != null && <div className={styles.action}>{action}</div>}
       {onDismiss && (
         <button type="button" className={styles.close} aria-label="Close" onClick={onDismiss}>
           <Icon name="close" size={14} />
         </button>
       )}
-      <Icon name={ICON_BY_TYPE[type]} size={15} className={styles.icon} />
-      <b>{title}</b> {children}
+      {timed && <span className={styles.timer} style={{ animationDuration: `${AUTO_DISMISS_MS}ms` }} />}
     </div>
   )
 }

@@ -1,10 +1,10 @@
 /*
 The five semantic tones: background, border and text for each.
 
-Two components apply them, the alert (`ui/Alert`) and the pill (`ui/Tag`), and they
-were written in both, with different names for the same thing
-(`success/warning/danger` against `ok/warn/dan`). Twelve declarations for four
-decisions, and adding a fifth tone meant remembering both files.
+The pill (`ui/Tag`) and the empty state's error (`ui/Empty`) apply them. The alert
+(`ui/Alert`) did too until its redraw on 2026-11-05: it stopped painting its text
+in the tone and keeps only the tone itself, through `--notice-tone`, mixed into
+its wash and its badge. The colours are still the same five tokens.
 
 The fifth WITH A CLASS (`acc`) arrived on 2026-09-03 with the pill that names the
 master switch. Fifth here and sixth in `Tag`, which is no contradiction: `neutral`
