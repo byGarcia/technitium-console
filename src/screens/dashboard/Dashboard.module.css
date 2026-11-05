@@ -36,6 +36,8 @@ Each card is a size container: its figure takes the smaller of its normal size
 (`--size`) and what fits (`--fit`, below), so a long figure never spills out.
 */
 .tile {
+  /* It rises under the pointer when it opens Query Logs (`raise`, ui/Panel). */
+  composes: raise from '../../ui/Panel.module.css';
   container-type: inline-size;
   min-width: 0;
   background: var(--pan);

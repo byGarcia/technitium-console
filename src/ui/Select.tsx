@@ -437,7 +437,7 @@ export function Select({
       </button>
 
       {open && place && (searchable ? (
-        <div ref={list} className={`${styles.list} ${styles.searching}`} style={place}>
+        <div ref={list} className={`${styles.list} ${styles.searching}`} style={place} data-up={box?.up ? 'true' : undefined}>
           <input
             ref={search}
             type="text"
@@ -469,6 +469,7 @@ export function Select({
           role="listbox"
           className={styles.list}
           style={place}
+          data-up={box?.up ? 'true' : undefined}
         >
           {lines}
         </div>

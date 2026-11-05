@@ -78,12 +78,31 @@ export function Loading({
   without the role. It is not a way to skip the announcement; a screen with a
   single hole has no reason to touch this.
   */
+  /*
+  ## What the eye gets: a skeleton (2026-11-05)
+
+  The slot is drawn as bars where the content will be, with a soft light passing
+  over them, instead of a grey "Loading…" in the middle of an empty space: a
+  skeleton says the shape of what is coming, and a word in a void read as a page
+  that had nothing to show. The text is still here, whole and unchanged, for the
+  screen reader (and for the tests that read it); only its picture changed. The
+  bars carry no text of their own and are hidden from the accessibility tree.
+
+  Five bars where a table or a region will appear, two in the one-line slot of a
+  panel (`compact`). Under `prefers-reduced-motion` the light does not pass.
+  */
+  const bars = compact ? 2 : 5
   return (
     <div
       role={announce ? 'status' : undefined}
-      className={`${styles.loading}${compact ? ` ${styles.line}` : ''}`}
+      className={`${styles.loading}${compact ? ` ${styles.loadingCompact}` : ''}`}
     >
-      {children}
+      <span className={styles.loadingText}>{children}</span>
+      <span className={styles.skeleton} aria-hidden="true">
+        {Array.from({ length: bars }, (_, i) => (
+          <span key={i} className={styles.bar} />
+        ))}
+      </span>
     </div>
   )
 }
