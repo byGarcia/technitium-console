@@ -1,0 +1,4 @@
+/* The time of the last good data is one thing to read: it does not break at the
+   hyphens of its date (measured at 390 px, "2026-" ended one line and "11-05" began
+   the next). */
+.when { white-space: nowrap; }

@@ -595,8 +595,6 @@ wherever the attribute says `light`.
   --ch-clients: #b88b21;
   /* The fill under a line: 18 % disappears on white, 35 % reads as on charcoal. */
   --ch-fade: 59;
-  /* A Note! reads as prose: the ink, with the word and the icon in blue. */
-  --note-ink: var(--ink);
 
   --ch-1: #227cbb;  --ch-2: #1fa580;  --ch-3: #6446af;  --ch-4: #d47d01;
   --ch-5: #19a2a3;  --ch-6: #9a0559;  --ch-7: #e43b66;  --ch-8: #886000;
