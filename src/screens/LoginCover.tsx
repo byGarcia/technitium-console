@@ -15,7 +15,10 @@ being true. No screenshot and no figure is drawn here, because the panel is show
 before anyone has logged in and anything resembling data would be invented.
 
 The look is the project's social banner: a thin amber rule, the name in Plex
-Mono with an amber dot, an Archivo headline and a dig-style answer block.
+Mono with an amber dot, an Archivo headline and a dig-style answer block. Behind
+them (2026-11-05) a backdrop that draws nothing a reader could take for data: a
+faint grid drifting one cell at a time and a soft amber glow, both decorative,
+hidden from screen readers, and still under `prefers-reduced-motion`.
 */
 
 export const COVER_NAME = 'technitium-console'
@@ -32,6 +35,11 @@ export const COVER_RECORDS: readonly { key: string; value: string }[] = [
 export function LoginCover() {
   return (
     <aside className={styles.cover}>
+      <div className={styles.backdrop} aria-hidden="true">
+        <span className={styles.grid} />
+        <span className={styles.glow} />
+      </div>
+
       <p className={styles.name}>
         <span className={styles.dot} aria-hidden="true" />
         <span>{COVER_NAME}</span>
