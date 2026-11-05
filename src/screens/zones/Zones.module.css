@@ -2,24 +2,9 @@
 .tags { composes: tags from '../../ui/SectionHeader.module.css'; }
 .acts { display:flex; gap: var(--s-4); flex-wrap:wrap; justify-content:flex-end; }
 
-/* Breadcrumbs: back to the list from a zone */
+/* The Type filter in the zone list's toolbar (ui/DataTable). */
+.filterMedium { width: 220px; }
 
-/* Filter bar */
-.flt { display:flex; gap: var(--s-7); align-items:flex-end; flex-wrap:wrap; margin-bottom: var(--gap-block); }
-.filterWide { flex:1; min-width:220px; }
-.filterMedium { width:190px; }
-.fltShort { width:120px; }
-
-/* Count and pagination */
-/* The count is `ui/count.module.css`'s: see there for why. */
-.count { composes: bar above from '../../ui/count.module.css'; }
-.countFoot { margin-top: var(--gap-group); margin-bottom: 0; }
-/* The foot: the count on the left, and on the right the page fields with the
-   pagination they set (2026-11-05). The labels sit above their fields, so the
-   pagination is aligned to the fields' foot. */
-.countFoot { align-items: flex-end; flex-wrap: wrap; row-gap: var(--s-5); }
-.paging { display: flex; align-items: flex-end; gap: var(--s-7); flex-wrap: wrap; margin-left: auto; }
-.paging .fltShort { width: 110px; }
 .mono { composes: mono from '../../ui/text.module.css'; }
 
 /* Table */
@@ -133,15 +118,6 @@ button at the other end. It is not a `Panel`: a bar with a border and a backgrou
 would read as a region of the screen, and this is a strip between the filter and
 the table.
 */
-.selection {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--s-8);
-  padding: var(--s-5) 0;
-  font-size: var(--t-4);
-  color: var(--mute);
-}
 
 /* The gap between a zone's everyday actions and the ones that act on the whole
    zone (ZoneRecords' header). */
@@ -205,3 +181,9 @@ the table.
 /* A zone type with the dot of its colour. */
 .ztype { display: inline-flex; align-items: center; gap: var(--s-4); }
 .zdot { width: 7px; height: 7px; border-radius: 2px; flex: none; }
+
+/* The fields in a DataTable's toolbar and foot (ui/DataTable), each its width. */
+.typeField { width: 170px; }
+.pageField { width: 150px; }
+.perPage { width: 200px; }
+.pageField input { text-align: center; }

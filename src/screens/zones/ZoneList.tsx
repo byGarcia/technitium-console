@@ -31,6 +31,7 @@ import { Th, useSort, type Keys, Table } from '../../ui/Table'
 import styles from './Zones.module.css'
 import type { Notice, Confirmation } from './types'
 import { Pagination } from '../../ui/Pagination'
+import { DataTable, DataFoot, End, Grow } from '../../ui/DataTable'
 import { ZoneSummary } from './ZoneSummary'
 import { zoneColour } from './zone-colours'
 import { noticeFromFailure } from '../../lib/notice'
@@ -404,41 +405,6 @@ export function ZoneList({
         />
       )}
 
-      <div className={styles.flt}>
-        <div className={styles.filterWide}>
-          <Field label="Name">
-            {(id) => (
-              <Input
-                id={id}
-                ref={nameRef}
-                search
-                placeholder="abc or a* or *b* or a?c"
-                value={nameFilter}
-                onChange={(e) => setNameFilter(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
-              />
-            )}
-          </Field>
-        </div>
-        <div className={styles.filterMedium}>
-          <Field label="Type">
-            {(id) => (
-              <Select id={id} value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
-                <option value="" />
-                {ZONE_TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </Select>
-            )}
-          </Field>
-        </div>
-        <Button variant="primary" disabled={busy} onClick={applyFilters}>
-          Go
-        </Button>
-      </div>
-
       {/*
       The stale-data strip. It goes ABOVE the table and not inside it: what has
       gone stale is the whole list, not a row.
@@ -451,169 +417,205 @@ export function ZoneList({
       */}
       {stale && <StaleData since={lastGood} onRetry={() => void load(pageNumber)} />}
 
-      {!loaded ? (
-        <Loading />
-      ) : (
-        <>
       {/*
-      The selection bar: what is selected, and the verb that acts on it.
-
-      `Delete Zones` used to live in the header, next to `Add Zone`, and the
-      Zones design moved it here and said why: **the button
-      lives glued to the number that says how much it acts on**. Up there it read
-      like a screen-level action, next to the one that creates a zone, and nothing
-      said it worked on the ticked rows.
-
-      The bar is ALWAYS drawn and the button is always enabled, which is not what
-      the drawing shows in its loading artboard: with nothing ticked, upstream
-      answers a click with `Please select one or more zones to delete.`, and that
-      is behaviour, not decoration. A bar that only appeared with a selection would
-      take that path off the screen; the drawing does not get to remove an
-      upstream answer.
-
-      The select-all checkbox is NOT repeated here. The drawing has one in the bar
-      and another in the table header; two controls doing the same thing is what
-      this console removes everywhere else, and the table's is the one the rows
-      align with.
+      The list, its toolbar and its foot as one card (`ui/DataTable`, 2026-11-05).
+      The selection's count and its verb sit at the toolbar's end: see below.
       */}
-      <div className={styles.selection}>
-        <span>
-          {checkedOnes.length === 0
-            ? state
-            : `${checkedOnes.length} of ${zones.length} zones selected`}
-        </span>
-        <Button lead="trash" variant="danger" disabled={!canDelete || busy} onClick={deleteChecked}>
-          Delete Zones
-        </Button>
-      </div>
-
-      <Table
-        stack
-        /* `tableClass` and not `className`: the first reaches the `<table>` and
-           the second stays on the wrapper, which has no border. Measured: with
-           `className` the `--dan` border did not appear. */
-        tableClass={stale ? styles.stale : undefined}
-        header={
+      <DataTable
+        toolbar={
           <>
-            {/* The checkbox is 18 px; it is pressed from anywhere in its cell. */}
-            <th style={{ width: 38 }} className={tbl.checkCell}>
-              <label>
-                <input
-                  disabled={stale}
-                  type="checkbox"
-                  aria-label="Select all zones"
-                  checked={allChecked}
-                  onChange={(e) => setChecked(e.target.checked ? zones.map((z) => z.name) : [])}
-                />
-              </label>
-            </th>
-            <th style={{ width: 34 }}>#</th>
-            <Th field="zone" sort={sort} onSort={toggle}>Zone</Th>
-            <Th field="type" sort={sort} onSort={toggle} style={{ width: 120 }}>Type</Th>
-            <Th field="dnssec" sort={sort} onSort={toggle} style={{ width: 90 }}>DNSSEC</Th>
-            <Th field="status" sort={sort} onSort={toggle} style={{ width: 120 }}>Status</Th>
-            <Th
-              field="serial"
-              sort={sort}
-              onSort={toggle}
-              style={{ width: 110, textAlign: 'right' }}
-            >
-              Serial
-            </Th>
-            {withExpiry && <Th field="expiry" sort={sort} onSort={toggle} style={{ width: 140 }}>Expiry</Th>}
-            <Th field="modified" sort={sort} onSort={toggle} style={{ width: 150 }}>
-              Last Modified
-            </Th>
-            {/* One `⋮` per row, as upstream has it (zone.js:828): the menu
-                carries every action, Enable or Disable and Zone Options
-                included. */}
-            <th style={{ width: 52 }} />
+            <Grow>
+              <Field inline label="Name">
+                {(id) => (
+                  <Input
+                    id={id}
+                    ref={nameRef}
+                    search
+                    placeholder="abc or a* or *b* or a?c"
+                    value={nameFilter}
+                    onChange={(e) => setNameFilter(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
+                  />
+                )}
+              </Field>
+            </Grow>
+            <div className={styles.filterMedium}>
+              <Field inline label="Type">
+                {(id) => (
+                  <Select id={id} value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
+                    <option value="" />
+                    {ZONE_TYPES.map((t) => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
+                    ))}
+                  </Select>
+                )}
+              </Field>
+            </div>
+            <Button variant="primary" disabled={busy} onClick={applyFilters}>
+              Go
+            </Button>
+      
+          {/*
+          The selection bar: what is selected, and the verb that acts on it.
+
+          `Delete Zones` used to live in the header, next to `Add Zone`, and the
+          Zones design moved it here and said why: **the button
+          lives glued to the number that says how much it acts on**. Up there it read
+          like a screen-level action, next to the one that creates a zone, and nothing
+          said it worked on the ticked rows.
+
+          The bar is ALWAYS drawn and the button is always enabled, which is not what
+          the drawing shows in its loading artboard: with nothing ticked, upstream
+          answers a click with `Please select one or more zones to delete.`, and that
+          is behaviour, not decoration. A bar that only appeared with a selection would
+          take that path off the screen; the drawing does not get to remove an
+          upstream answer.
+
+          The select-all checkbox is NOT repeated here. The drawing has one in the bar
+          and another in the table header; two controls doing the same thing is what
+          this console removes everywhere else, and the table's is the one the rows
+          align with.
+          */}
+            <End>
+              {/* The status above the table as well as under it, as upstream draws
+                  it (zone.js:923); the selection's count while rows are ticked. */}
+              {loaded && (
+                <span>
+                  {checkedOnes.length === 0 ? state : `${checkedOnes.length} of ${zones.length} zones selected`}
+                </span>
+              )}
+              <Button lead="trash" variant="danger" disabled={!canDelete || busy} onClick={deleteChecked}>
+                Delete Zones
+              </Button>
+            </End>
           </>
         }
+        foot={
+          loaded ? (
+            <DataFoot count={state}>
+              <div className={styles.pageField}>
+                <Field inline label="Page Number">
+                  {(id) => (
+                    <Input
+                      id={id}
+                      mono
+                      value={pageField}
+                      onChange={(e) => setPageField(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
+                    />
+                  )}
+                </Field>
+              </div>
+              <div className={styles.perPage}>
+                <Field inline label="Zones Per Page">
+                  {(id) => (
+                    <Select id={id} value={String(perPage)} onChange={(e) => {
+                      const n = Number(e.target.value)
+                      writePerPage(ZONES_PER_PAGE_KEY, n)
+                      setPerPage(n)
+                    }}>
+                      {ZONES_PER_PAGE.map((n) => (
+                        <option key={n} value={n}>
+                          {n}
+                        </option>
+                      ))}
+                    </Select>
+                  )}
+                </Field>
+              </div>
+              {pagination}
+            </DataFoot>
+          ) : undefined
+        }
       >
-        {visibleZones.length === 0 ? (
-          <tr>
-            <td colSpan={withExpiry ? 10 : 9} className={tbl.noRows}>
-              No Zone Found
-            </td>
-          </tr>
+        {!loaded ? (
+          <Loading />
         ) : (
-          visibleZones.map((z, i) => (
-            <ZoneRow
-              key={z.name}
-              zone={z}
-              index={firstRow + i}
-              withExpiry={withExpiry}
-              checked={checkedOnes.includes(z.name)}
-              stale={stale}
-              busy={busy}
-              canModify={canModify}
-              canDelete={canDelete}
-              onCheck={(v) =>
-                setChecked((m) => (v ? [...m, z.name] : m.filter((n) => n !== z.name)))
-              }
-              onOpen={onOpen}
-              onEditZoneFile={onEditZoneFile}
-              onEnable={enable}
-              onDisable={disable}
-              onDelete={remove}
-              onResync={resync}
-              onImport={onImport}
-              onExport={runExport}
-              onConvert={onConvert}
-              onClone={onClone}
-              onPermissions={onPermissions}
-              onOptions={onOptions}
-            />
-          ))
-        )}
-      </Table>
-
-      {/*
-      The page fields live with the pagination they belong to (2026-11-05). They
-      shared the filter row with Name and Type, so the row read as five filters
-      when two of them only say which slice of the list to show. They are the
-      same fields: Enter in either, or Go up in the filter row, reads all four at
-      once, as `refreshZones` does.
-      */}
-      <div className={`${styles.count} ${styles.countFoot}`}>
-        <span>{state}</span>
-        <div className={styles.paging}>
-          <div className={styles.fltShort}>
-            <Field label="Page Number">
-              {(id) => (
-                <Input
-                  id={id}
-                  mono
-                  value={pageField}
-                  onChange={(e) => setPageField(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
+          <Table
+            stack
+            /* `tableClass` and not `className`: the first reaches the `<table>` and
+               the second stays on the wrapper, which has no border. Measured: with
+               `className` the `--dan` border did not appear. */
+            tableClass={stale ? styles.stale : undefined}
+            header={
+              <>
+                {/* The checkbox is 18 px; it is pressed from anywhere in its cell. */}
+                <th style={{ width: 38 }} className={tbl.checkCell}>
+                  <label>
+                    <input
+                      disabled={stale}
+                      type="checkbox"
+                      aria-label="Select all zones"
+                      checked={allChecked}
+                      onChange={(e) => setChecked(e.target.checked ? zones.map((z) => z.name) : [])}
+                    />
+                  </label>
+                </th>
+                <th style={{ width: 34 }}>#</th>
+                <Th field="zone" sort={sort} onSort={toggle}>Zone</Th>
+                <Th field="type" sort={sort} onSort={toggle} style={{ width: 120 }}>Type</Th>
+                <Th field="dnssec" sort={sort} onSort={toggle} style={{ width: 90 }}>DNSSEC</Th>
+                <Th field="status" sort={sort} onSort={toggle} style={{ width: 120 }}>Status</Th>
+                <Th
+                  field="serial"
+                  sort={sort}
+                  onSort={toggle}
+                  style={{ width: 110, textAlign: 'right' }}
+                >
+                  Serial
+                </Th>
+                {withExpiry && <Th field="expiry" sort={sort} onSort={toggle} style={{ width: 140 }}>Expiry</Th>}
+                <Th field="modified" sort={sort} onSort={toggle} style={{ width: 150 }}>
+                  Last Modified
+                </Th>
+                {/* One `⋮` per row, as upstream has it (zone.js:828): the menu
+                    carries every action, Enable or Disable and Zone Options
+                    included. */}
+                <th style={{ width: 52 }} />
+              </>
+            }
+          >
+            {visibleZones.length === 0 ? (
+              <tr>
+                <td colSpan={withExpiry ? 10 : 9} className={tbl.noRows}>
+                  No Zone Found
+                </td>
+              </tr>
+            ) : (
+              visibleZones.map((z, i) => (
+                <ZoneRow
+                  key={z.name}
+                  zone={z}
+                  index={firstRow + i}
+                  withExpiry={withExpiry}
+                  checked={checkedOnes.includes(z.name)}
+                  stale={stale}
+                  busy={busy}
+                  canModify={canModify}
+                  canDelete={canDelete}
+                  onCheck={(v) =>
+                    setChecked((m) => (v ? [...m, z.name] : m.filter((n) => n !== z.name)))
+                  }
+                  onOpen={onOpen}
+                  onEditZoneFile={onEditZoneFile}
+                  onEnable={enable}
+                  onDisable={disable}
+                  onDelete={remove}
+                  onResync={resync}
+                  onImport={onImport}
+                  onExport={runExport}
+                  onConvert={onConvert}
+                  onClone={onClone}
+                  onPermissions={onPermissions}
+                  onOptions={onOptions}
                 />
-              )}
-            </Field>
-          </div>
-          <div className={styles.fltShort}>
-            <Field label="Zones Per Page">
-              {(id) => (
-                <Select id={id} value={String(perPage)} onChange={(e) => {
-                  const n = Number(e.target.value)
-                  writePerPage(ZONES_PER_PAGE_KEY, n)
-                  setPerPage(n)
-                }}>
-                  {ZONES_PER_PAGE.map((n) => (
-                    <option key={n} value={n}>
-                      {n}
-                    </option>
-                  ))}
-                </Select>
-              )}
-            </Field>
-          </div>
-          {pagination}
-        </div>
-      </div>
-        </>
-      )}
+              ))
+            )}
+          </Table>
+        )}
+      </DataTable>
     </>
   )
 }

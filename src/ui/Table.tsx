@@ -141,7 +141,7 @@ export function Table({
 
   const group = stack ? { role: 'rowgroup' } : {}
   return (
-    <div className={[styles.wrap, stack && styles.stackWrap, className].filter(Boolean).join(' ')}>
+    <div data-table-wrap className={[styles.wrap, stack && styles.stackWrap, className].filter(Boolean).join(' ')}>
       <table
         ref={ref}
         role={stack ? 'table' : undefined}

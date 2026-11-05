@@ -12,7 +12,7 @@ is given a body (panel, border and corners) instead of being left floating.
 */
 .wrap {
   overflow-x: auto;
-  border: 1px solid var(--line);
+  border: 1px solid var(--line2);
   border-radius: var(--r-4);
   background: var(--pan);
   box-shadow: var(--e-1), var(--edge);
@@ -20,10 +20,15 @@ is given a body (panel, border and corners) instead of being left floating.
 
 .table { border-collapse: collapse; width: 100%; }
 
-/* The header sits on the raised step: it separates the labels from the data
-   without needing another rule line. */
+/*
+THE TABLE, redrawn on 2026-11-05 to the register of the tables this console is
+compared with: the header a quiet band halfway between the panel and the raised
+step, its labels a little lighter, every cell with more room on the sides (16 px
+at the table's edges), and the hover a veil you see without it competing with
+the data. The structure is the same: these rules only change how it looks.
+*/
 .table thead th {
-  background: var(--pan2);
+  background: color-mix(in srgb, var(--pan2) 60%, var(--pan));
   text-align: left;
   /* The same label as a panel title: see `--text-*` in tokens. The table
      header was at `--t-2` when the `--t-1` token itself has said, ever since it
@@ -33,15 +38,15 @@ is given a body (panel, border and corners) instead of being left floating.
   letter-spacing: var(--text-tracking);
   color: var(--mute);
   font-weight: var(--text-weight);
-  padding: var(--s-5) var(--s-7);
-  border-bottom: 1px solid var(--line);
+  padding: var(--s-5) var(--s-8);
+  border-bottom: 1px solid var(--line2);
   white-space: nowrap;
   /* A single height for every header; see `--row-header`. */
   height: var(--row-header);
 }
 
 .table td {
-  padding: var(--s-6) var(--s-7);
+  padding: var(--s-7) var(--s-8);
   border-bottom: 1px solid var(--line2);
   vertical-align: middle;
   color: var(--ink);
@@ -66,7 +71,9 @@ the tint.
 .table tbody tr:last-child td { border-bottom: 0; }
 
 .table tbody tr { transition: background var(--t-fast); }
-.table tbody tr:hover { background: var(--hover); }
+.table tbody tr:hover { background: var(--nav-hover); }
+.table thead th:first-child, .table td:first-child { padding-left: var(--s-10); }
+.table thead th:last-child, .table td:last-child { padding-right: var(--s-10); }
 
 /*
 Columns have rules, and until now they did not: all ten were left-aligned,

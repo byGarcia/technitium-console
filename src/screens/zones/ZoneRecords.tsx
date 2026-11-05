@@ -41,6 +41,7 @@ import { type TagTone } from '../../ui/Tag'
 import styles from './Zones.module.css'
 import type { Notice, Confirmation } from './types'
 import { Pagination } from '../../ui/Pagination'
+import { DataTable, DataFoot, End, Grow } from '../../ui/DataTable'
 import { noticeFromFailure } from '../../lib/notice'
 
 /*
@@ -541,170 +542,171 @@ export function ZoneRecords(p: ZoneRecordsProps) {
         />
       )}
 
-      <div className={styles.flt}>
-        <div className={styles.filterWide}>
-          <Field label="Name">
-            {(id) => (
-              <Input
-                id={id}
-                search
-                placeholder="abc or a* or *b* or a?c"
-                value={nameField}
-                onChange={(e) => setNameField(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && showPage()}
-              />
-            )}
-          </Field>
-        </div>
-        <div className={styles.fltShort}>
-          <Field label="Type">
-            {(id) => (
-              <Input
-                id={id}
-                value={typeField}
-                onChange={(e) => setTypeField(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && showPage()}
-              />
-            )}
-          </Field>
-        </div>
-        <Button variant="primary" onClick={() => showPage()}>
-          Go
-        </Button>
-      </div>
-
-      <div className={styles.count}>
-        <span>{text}</span>
-        {pagination}
-      </div>
-
-      <Table
-        stack
-        header={
+      {/* The records, their toolbar and their foot as one card (`ui/DataTable`). */}
+      <DataTable
+        toolbar={
           <>
-            <th style={{ width: 34 }}>#</th>
-            <Th field="name" sort={sort} onSort={toggle} style={{ width: 110 }}>Name</Th>
-            <Th field="type" sort={sort} onSort={toggle} style={{ width: 80 }}>Type</Th>
-            <Th field="ttl" sort={sort} onSort={toggle} style={{ width: 110 }}>TTL</Th>
-            <Th field="data" sort={sort} onSort={toggle}>Data</Th>
-            {/* The actions column reserved 230 px with three labels inside;
-                with icons 120 is enough and the 110 left over go to the data,
-                which is what the table is about. */}
-            <th style={{ width: 120 }} />
+            <Grow>
+              <Field inline label="Name">
+                {(id) => (
+                  <Input
+                    id={id}
+                    search
+                    placeholder="abc or a* or *b* or a?c"
+                    value={nameField}
+                    onChange={(e) => setNameField(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && showPage()}
+                  />
+                )}
+              </Field>
+            </Grow>
+            <div className={styles.typeField}>
+              <Field inline label="Type">
+                {(id) => (
+                  <Input
+                    id={id}
+                    value={typeField}
+                    onChange={(e) => setTypeField(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && showPage()}
+                  />
+                )}
+              </Field>
+            </div>
+            <Button variant="primary" onClick={() => showPage()}>
+              Go
+            </Button>
+      
+            {/* The status above the table as well as under it, as upstream draws it. */}
+            <End>
+              <span>{text}</span>
+            </End>
           </>
         }
-      >
-        {onPage.length === 0 ? (
-          <tr>
-            <td colSpan={6} className={tbl.noRows}>
-              No Record Found
-            </td>
-          </tr>
-        ) : (
-          onPage.map((r, i) => {
-            const actions = rowActions(zoneInfo.type, r.type)
-            /* A run of records with one owner draws the name once: the rows under
-               it carry it too, faded out, for the screen reader and for the
-               stacked card, where each record stands alone. */
-            const repeat = i > 0 && onPage[i - 1].name === r.name
-            return (
-              <tr key={`${r.name}|${r.type}|${offset + i}`} className={repeat ? styles.repeat : undefined}>
-                <td className={styles.num2}>{offset + i + 1}</td>
-                <td className={`${styles.mono} ${tbl.lead} ${styles.owner}`}><DomainName name={relativeName(r.name, zone)} /></td>
-                <td className={tbl.lead}>
-                  <span className={styles.typeCell}>
-                    <span className={styles.rtype} style={{ '--rt': recordColour(r.type) } as CSSProperties}>
-                      {r.type}
-                    </span>
-                    {r.disabled && <Tag>Disabled</Tag>}
-                  </span>
-                </td>
-                <td className={styles.ttl}>
-                  {r.ttl} <small>({r.ttlString})</small>
-                </td>
-                <td className={styles.dataCell}>
-                  <DataCell record={r} notifyFailedFor={zoneInfo.notifyFailedFor} />
-                </td>
-                <td className={tbl.actionsCell}>
-                  {!actions.hidden && (
-                    <div className={tbl.actions}>
-                      <RowAction
-                        icon="edit"
-                        name="Edit Record"
-                        disabled={!p.canModify || busy}
-                        onClick={() => p.onEditRecord(zoneInfo, r, records)}
-                      />
-                      <RowAction
-                        icon="power"
-                        name={r.disabled ? 'Enable Record' : 'Disable Record'}
-                        disabled={actions.editingOnly || !p.canModify || busy}
-                        onClick={() => setRecordState(r, !r.disabled)}
-                      />
-                      {/* Delete, inside the menu: the same rule as in the zone
-                          list. */}
-                      <Menu label={`Actions for ${relativeName(r.name, zone)} ${r.type}`}>
-                        {(close) => (
-                          <button data-variant="danger"
-                            type="button"
-                            disabled={actions.editingOnly || !p.canDelete || busy}
-                            onClick={() => { close(); removeRecord(r) }}
-                          >
-                            Delete Record
-                          </button>
-                        )}
-                      </Menu>
-                    </div>
+        foot={
+          <DataFoot count={text}>
+              <div className={styles.pageField}>
+                <Field inline label="Page Number">
+                  {(id) => (
+                    <Input
+                      id={id}
+                      mono
+                      value={pageDraft ?? String(currentPage)}
+                      onChange={(e) => setPageDraft(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && showPage()}
+                    />
                   )}
-                </td>
-              </tr>
-            )
-          })
-        )}
-      </Table>
-
-      {/* The page fields beside the pagination they set (see ZoneList). */}
-      <div className={`${styles.count} ${styles.countFoot}`}>
-        <span>{text}</span>
-        <div className={styles.paging}>
-          <div className={styles.fltShort}>
-            <Field label="Page Number">
-              {(id) => (
-                <Input
-                  id={id}
-                  mono
-                  value={pageDraft ?? String(currentPage)}
-                  onChange={(e) => setPageDraft(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && showPage()}
-                />
-              )}
-            </Field>
-          </div>
-          <div className={styles.fltShort}>
-            <Field label="Records Per Page">
-              {(id) => (
-                <Select
-                  id={id}
-                  value={String(perPageField)}
-                  onChange={(e) => {
-                    // Remembered at once (zone.js:634-636); applied on Go.
-                    const n = Number(e.target.value)
-                    writePerPage(RECORDS_PER_PAGE_KEY, n)
-                    setPerPageField(n)
-                  }}
-                >
-                  {RECORDS_PER_PAGE.map((n) => (
-                    <option key={n} value={n}>
-                      {n}
-                    </option>
-                  ))}
-                </Select>
-              )}
-            </Field>
-          </div>
-          {pagination}
-        </div>
-      </div>
-
+                </Field>
+              </div>
+              <div className={styles.perPage}>
+                <Field inline label="Records Per Page">
+                  {(id) => (
+                    <Select
+                      id={id}
+                      value={String(perPageField)}
+                      onChange={(e) => {
+                        // Remembered at once (zone.js:634-636); applied on Go.
+                        const n = Number(e.target.value)
+                        writePerPage(RECORDS_PER_PAGE_KEY, n)
+                        setPerPageField(n)
+                      }}
+                    >
+                      {RECORDS_PER_PAGE.map((n) => (
+                        <option key={n} value={n}>
+                          {n}
+                        </option>
+                      ))}
+                    </Select>
+                  )}
+                </Field>
+              </div>
+            {pagination}
+          </DataFoot>
+        }
+      >
+        <Table
+          stack
+          header={
+            <>
+              <th style={{ width: 34 }}>#</th>
+              <Th field="name" sort={sort} onSort={toggle} style={{ width: 110 }}>Name</Th>
+              <Th field="type" sort={sort} onSort={toggle} style={{ width: 80 }}>Type</Th>
+              <Th field="ttl" sort={sort} onSort={toggle} style={{ width: 110 }}>TTL</Th>
+              <Th field="data" sort={sort} onSort={toggle}>Data</Th>
+              {/* The actions column reserved 230 px with three labels inside;
+                  with icons 120 is enough and the 110 left over go to the data,
+                  which is what the table is about. */}
+              <th style={{ width: 120 }} />
+            </>
+          }
+        >
+          {onPage.length === 0 ? (
+            <tr>
+              <td colSpan={6} className={tbl.noRows}>
+                No Record Found
+              </td>
+            </tr>
+          ) : (
+            onPage.map((r, i) => {
+              const actions = rowActions(zoneInfo.type, r.type)
+              /* A run of records with one owner draws the name once: the rows under
+                 it carry it too, faded out, for the screen reader and for the
+                 stacked card, where each record stands alone. */
+              const repeat = i > 0 && onPage[i - 1].name === r.name
+              return (
+                <tr key={`${r.name}|${r.type}|${offset + i}`} className={repeat ? styles.repeat : undefined}>
+                  <td className={styles.num2}>{offset + i + 1}</td>
+                  <td className={`${styles.mono} ${tbl.lead} ${styles.owner}`}><DomainName name={relativeName(r.name, zone)} /></td>
+                  <td className={tbl.lead}>
+                    <span className={styles.typeCell}>
+                      <span className={styles.rtype} style={{ '--rt': recordColour(r.type) } as CSSProperties}>
+                        {r.type}
+                      </span>
+                      {r.disabled && <Tag>Disabled</Tag>}
+                    </span>
+                  </td>
+                  <td className={styles.ttl}>
+                    {r.ttl} <small>({r.ttlString})</small>
+                  </td>
+                  <td className={styles.dataCell}>
+                    <DataCell record={r} notifyFailedFor={zoneInfo.notifyFailedFor} />
+                  </td>
+                  <td className={tbl.actionsCell}>
+                    {!actions.hidden && (
+                      <div className={tbl.actions}>
+                        <RowAction
+                          icon="edit"
+                          name="Edit Record"
+                          disabled={!p.canModify || busy}
+                          onClick={() => p.onEditRecord(zoneInfo, r, records)}
+                        />
+                        <RowAction
+                          icon="power"
+                          name={r.disabled ? 'Enable Record' : 'Disable Record'}
+                          disabled={actions.editingOnly || !p.canModify || busy}
+                          onClick={() => setRecordState(r, !r.disabled)}
+                        />
+                        {/* Delete, inside the menu: the same rule as in the zone
+                            list. */}
+                        <Menu label={`Actions for ${relativeName(r.name, zone)} ${r.type}`}>
+                          {(close) => (
+                            <button data-variant="danger"
+                              type="button"
+                              disabled={actions.editingOnly || !p.canDelete || busy}
+                              onClick={() => { close(); removeRecord(r) }}
+                            >
+                              Delete Record
+                            </button>
+                          )}
+                        </Menu>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              )
+            })
+          )}
+        </Table>
+      </DataTable>
     </>
   )
 }

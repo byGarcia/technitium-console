@@ -57,6 +57,11 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
   many are signed and the last change; a zone opens with cards for its records, its SOA, its name
   servers and its DNSSEC, which carries the DNSSEC actions. Record and zone types each have a
   colour, the same everywhere. Disable Zone and Delete Zone move to the foot of the zone's page.
+- **Tables redrawn.** Every table has a lighter header, more room at its edges and a quieter hover;
+  the pagination is a row of flat buttons with the current page in amber. Zones and a zone's records
+  are one card each: the filters and the selection's verb in a toolbar on top, the count, the page
+  fields and the pagination in a foot below. Dialogs are redrawn too, and the breadcrumb ends with
+  the page you are on.
 - **Destructive buttons are outlined in red at rest** across the console, and the four that were
   plain grey (a DNSSEC key's Delete, Delete Record, and two Remove buttons) now are too.
 

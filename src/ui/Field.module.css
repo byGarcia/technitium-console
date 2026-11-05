@@ -10,6 +10,9 @@ the cursor is.
 */
 
 .field { display: flex; flex-direction: column; gap: var(--s-4); }
+.field.inline { flex-direction: row; align-items: center; gap: var(--s-5); min-width: 0; }
+.field.inline > .label { white-space: nowrap; font-size: var(--t-3); }
+.field.inline > :not(.label) { flex: 1; min-width: 0; }
 
 .label {
   font-size: var(--t-2);

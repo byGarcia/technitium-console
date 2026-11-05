@@ -1,0 +1,47 @@
+/*
+The data table's card (`DataTable.tsx`): the frame carries the border, the corners
+and the panel; the table inside drops its own (`[data-table-wrap]`, set by
+`ui/Table`), so there is one box and not a box in a box.
+*/
+.frame {
+  border: 1px solid var(--line2);
+  border-radius: var(--r-4);
+  background: var(--pan);
+  box-shadow: var(--e-1);
+  overflow: hidden;
+  min-width: 0;
+}
+
+.frame [data-table-wrap] {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-5) var(--s-7);
+  padding: var(--s-7) var(--s-10);
+  border-bottom: 1px solid var(--line2);
+}
+
+.grow { flex: 1 1 260px; min-width: 0; }
+.end { display: flex; align-items: center; gap: var(--s-6); margin-left: auto; font-size: var(--t-3); color: var(--mute); }
+
+.foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-5) var(--s-8);
+  padding: var(--s-6) var(--s-10);
+  border-top: 1px solid var(--line2);
+  font-size: var(--t-3);
+  color: var(--mute);
+}
+
+.count { font-variant-numeric: tabular-nums; }
+.paging { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-5) var(--s-8); margin-left: auto; }
