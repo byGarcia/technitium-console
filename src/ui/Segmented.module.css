@@ -99,3 +99,38 @@ stays here, where the class lives, for every place that uses the control.)
   }
   .option { flex: none; }
 }
+
+/*
+The flat strip (`flat` in `Segmented.tsx`): words over a rule, the chosen one in
+amber and underlined, the rest plain. It is `SubTabs`'s drawing, for the same
+reason: the other tabs are still there, they are the dialog's other sections, so
+the chosen one is marked with an edge and not with a fill. The rule is an inset
+shadow and the edge is always there, transparent when it does not apply, so a
+change of tab moves nothing.
+*/
+.flat {
+  display: flex;
+  gap: var(--s-10);
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: inset 0 -1px 0 var(--line2);
+}
+
+.flat .option {
+  padding: var(--s-6) var(--s-1);
+  border-bottom: 2px solid transparent;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.flat .option + .option { box-shadow: none; }
+.flat .option:hover { background: transparent; color: var(--ink); }
+
+.flat .option[aria-pressed='true'],
+.flat .option[aria-selected='true'] {
+  background: transparent;
+  color: var(--acc-ink);
+  border-bottom-color: var(--acc-ink);
+  font-weight: 600;
+}

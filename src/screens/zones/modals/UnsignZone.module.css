@@ -1,0 +1,17 @@
+/*
+Unsign Zone: four notices and the question they lead to.
+*/
+
+/* The notices as one run, closer to each other than to the question. */
+.notices { display: flex; flex-direction: column; gap: var(--s-5); }
+
+/* The question, under a hairline and in ink: it is what the button answers. */
+.question {
+  margin: 0;
+  padding-top: var(--s-10);
+  border-top: 1px solid var(--line2);
+  font-size: var(--t-4);
+  font-weight: 550;
+  color: var(--ink);
+  line-height: 1.55;
+}
