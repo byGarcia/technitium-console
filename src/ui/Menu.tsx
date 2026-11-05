@@ -2,6 +2,7 @@ import { Button } from './Button'
 import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode, type RefObject } from 'react'
 import styles from './Menu.module.css'
 import { Icon, type IconName } from './Icon'
+import { useTooltip } from './Tooltip'
 
 /*
 The `⋮` menu on each row. Upstream solves it with the Bootstrap 3 dropdown; here
@@ -107,6 +108,16 @@ export function Menu({
   >(null)
   const trigger = useRef<HTMLButtonElement>(null)
   const list = useRef<HTMLDivElement>(null)
+  /*
+  The compact trigger is only an icon, so it shows its name (`Actions for
+  example.org`) in the console's tooltip, on hover and on focus. Its events go on
+  the button itself and not on a wrapper: the row's actions group styles exactly
+  one level down, and this button already sits one level down, inside the `div`.
+  It never describes (the text is the name) and stays shut while the menu is open,
+  so it cannot cover the list.
+  */
+  const tip = useTooltip({ text: label, placement: 'top', anchor: trigger, describe: false, off: open })
+  const compact = !asRow && text == null
 
   /*
   The list is `position: fixed`, measured from the trigger, and NOT absolute
@@ -260,6 +271,7 @@ export function Menu({
           aria-label={label}
           onClick={toggleOpen}
           onKeyDown={onTriggerKeyDown}
+          {...(compact ? tip.events : {})}
         >
           {text == null ? (
             <Icon name={icon} size={16} />
@@ -271,6 +283,7 @@ export function Menu({
           )}
         </Button>
       )}
+      {compact && tip.bubble}
       {open && box && (
         <div
           className={styles.menuList}

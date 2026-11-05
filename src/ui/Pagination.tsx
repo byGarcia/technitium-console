@@ -1,4 +1,5 @@
 import { Icon } from './Icon'
+import { Tooltip } from './Tooltip'
 import styles from './Pagination.module.css'
 import type { Pagination as Window } from '../lib/pagination'
 
@@ -14,6 +15,10 @@ The only thing that really differed between the three is HOW the last page is
 asked for: the zone list and Query Logs send `-1` and let the server resolve it
 (which is what upstream does), and a zone's records compute it client-side because
 they have them all. That is why `last` is a parameter and not hard-coded.
+
+The four arrows are icons, so each shows its name in the console's tooltip on hover
+and on focus, the same word its `aria-label` already carries. The page numbers do
+not: a tooltip saying `3` over a `3` is noise.
 */
 export function Pagination({
   window,
@@ -30,19 +35,23 @@ export function Pagination({
   return (
     <span className={styles.pg}>
       {window.first && (
-        <button type="button" className={styles.pgb} aria-label="First" onClick={() => onGoTo(1)}>
-          <Icon name="first" size={14} />
-        </button>
+        <Tooltip text="First" placement="top" describe={false}>
+          <button type="button" className={styles.pgb} aria-label="First" onClick={() => onGoTo(1)}>
+            <Icon name="first" size={14} />
+          </button>
+        </Tooltip>
       )}
       {window.previous != null && (
-        <button
-          type="button"
-          className={styles.pgb}
-          aria-label="Previous"
-          onClick={() => onGoTo(window.previous!)}
-        >
-          <Icon name="chevronLeft" size={14} />
-        </button>
+        <Tooltip text="Previous" placement="top" describe={false}>
+          <button
+            type="button"
+            className={styles.pgb}
+            aria-label="Previous"
+            onClick={() => onGoTo(window.previous!)}
+          >
+            <Icon name="chevronLeft" size={14} />
+          </button>
+        </Tooltip>
       )}
       {window.pages.map((p) => (
         <button
@@ -56,19 +65,23 @@ export function Pagination({
         </button>
       ))}
       {window.next != null && (
-        <button
-          type="button"
-          className={styles.pgb}
-          aria-label="Next"
-          onClick={() => onGoTo(window.next!)}
-        >
-          <Icon name="chevronRight" size={14} />
-        </button>
+        <Tooltip text="Next" placement="top" describe={false}>
+          <button
+            type="button"
+            className={styles.pgb}
+            aria-label="Next"
+            onClick={() => onGoTo(window.next!)}
+          >
+            <Icon name="chevronRight" size={14} />
+          </button>
+        </Tooltip>
       )}
       {window.last && (
-        <button type="button" className={styles.pgb} aria-label="Last" onClick={() => onGoTo(last)}>
-          <Icon name="last" size={14} />
-        </button>
+        <Tooltip text="Last" placement="top" describe={false}>
+          <button type="button" className={styles.pgb} aria-label="Last" onClick={() => onGoTo(last)}>
+            <Icon name="last" size={14} />
+          </button>
+        </Tooltip>
       )}
     </span>
   )

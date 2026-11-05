@@ -291,7 +291,8 @@ single edge, so the keyboard could not see which action it was on.
    draws no group: empty, its border was a two-pixel box at the row's end. */
 .actions:empty { display: none; }
 
-.actions > *:hover:not(:disabled),
+/* A tooltip's wrapper is a direct child too: it does not light up over a disabled action. */
+.actions > *:hover:not(:disabled, :has(> :disabled)),
 .actions > * > button:hover:not(:disabled) { background: var(--hover-strong) !important; }
 .actions > *:disabled,
 .actions > * > button:disabled { color: var(--faint); }
@@ -313,7 +314,8 @@ something you have to filter out in order to read the data.
 
 With an icon the column drops to ~100 px and the 140 left over go to the table.
 No action loses its name: it goes in `aria-label` (so the keyboard and the screen
-reader announce it just the same) and in `title`, which is the tooltip on hover.
+reader announce it just the same) and in the tooltip (`ui/Tooltip`), on hover
+and on keyboard focus.
 And the `⋮` menu carries EVERY action with its text, delete included, so no name
 lives only inside a drawing.
 */
