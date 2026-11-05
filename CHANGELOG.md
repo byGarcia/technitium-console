@@ -62,6 +62,24 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
   are one card each: the filters and the selection's verb in a toolbar on top, the count, the page
   fields and the pagination in a foot below. Dialogs are redrawn too, and the breadcrumb ends with
   the page you are on.
+- **Zones: the open zone is in the address bar** (`/zones/?zone=example.org`), so a reload, a
+  bookmark, a shared link and the back and forward buttons return to it.
+- **Zone menus are easier to scan:** the row menu and a zone's Options menu are split into groups,
+  each entry has an icon and Delete stays red. "Delete Zones" is disabled until a zone is selected.
+- **Icon-only buttons show their name** in the console's own tooltip, on hover and on keyboard
+  focus. The Zones summary cards come in with one short entrance and light the segment of the type
+  you point at.
+- **Results float in the bottom right corner** as a card with a coloured icon and a bar that runs
+  out over the five seconds a success stays; form notices get a soft tint and the same icon.
+- **Loading shows skeleton bars**, dropdown lists open with a short fade, and the Dashboard figures
+  rise slightly under the pointer.
+- **Query Logs: the results are one card**, with Query, Export, Reset and Live Update in its toolbar
+  and the count, Page Number, Logs Per Page and the pages in its foot.
+- **The Zones dialogs are redrawn inside:** labels above their fields, zone types and import sources
+  as tiles, a type's own fields in one block, DNSSEC key states as coloured pills, and confirmations
+  with a badge of their tone, red when the action is destructive.
+- **The login screen is redrawn:** the form on a floating card, a full-width Login button with a
+  ring while it works, and a quiet backdrop on the cover. Nothing the form does has changed.
 - **Destructive buttons are outlined in red at rest** across the console, and the four that were
   plain grey (a DNSSEC key's Delete, Delete Record, and two Remove buttons) now are too.
 

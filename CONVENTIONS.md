@@ -692,8 +692,11 @@ contract and SECURITY.md.
      logged in yet and anything that looks like data would be invented;
    - **it calls nothing**: no endpoint, no asset beyond the fonts the console
      already ships, and its colours are theme tokens measured on `--field` by
-     `dev/theme-contrast.mjs`. Its only motion is the answer rows settling in,
-     and `prefers-reduced-motion` removes it.
+     `dev/theme-contrast.mjs`. Its motion is the screen's one entrance (name,
+     headline with the form's card, the answer rows one beat apart) and a
+     decorative backdrop behind it, a faint grid drifting and an amber glow
+     breathing, hidden from screen readers and clear of the text (2026-11-05);
+     `prefers-reduced-motion` removes all of it.
 
 7. **The Dashboard compares and jumps** (Adrián's decision, 2026-10-15). It adds
    two things to the stock Dashboard (`screens/dashboard/compare.ts`, `jump.ts`):
@@ -773,6 +776,10 @@ contract and SECURITY.md.
      Export, Reset, Live Update and the pager send exactly what they sent;
    - **a validation still lands on its field**: a folded panel opens before
      upstream's focus (logs.js:389-424 and 612-625) moves to the field that failed.
+
+   Since 2026-11-05 Page Number and Logs Per Page sit in the results card's foot
+   (`ui/DataTable`) instead of the panel, and the folded summary still lists them
+   when they differ from what `Reset` gives.
 
    Its words: none new. The toggles are the panel's existing title, `Filters`, and
    the legend's, `Row colours`; the list is the fields' own labels, each followed by
@@ -862,6 +869,35 @@ contract and SECURITY.md.
       its header: the same buttons and confirmations, one click as before.
     - **Each record type and zone type has a series colour** (`zone-colours.ts`),
       taken from the Dashboard's `--ch-*`; the type is always written beside it.
+    - **One sentence explains "Not used since restart"** in its tooltip: "The
+      server keeps a record's last use in memory only, so a restart clears it."
+13. **The open zone is in the address bar** (Adrián's request, 2026-11-05).
+    Upstream's `showEditZone` swaps two `div`s and never touches the URL, so a
+    reload always lands on the zone list. Opening a zone here pushes
+    `/zones/?zone=<name>` (the root is `.`), and Back, Forward, a reload or a copied
+    link return to it. It is a query string on the existing `/zones/` folder and not
+    `/zones/<name>/` on purpose: the server answers every path that is not a real
+    file, `/api/` or `/sso/` with an empty 404 (`DnsWebService.cs`, the `default:`
+    branch of its route handler), and zones are created at run time, so no build
+    can ship their folders. Measured on 2026-11-05: `/zones/example.net/` 404,
+    `/zones/?zone=example.net` 200. Loading such an address opens the zone without
+    a history entry; a zone that cannot be read shows the list again, as upstream
+    does on its `error` (zone.js:3583-3585). Leaving the section takes `?zone=` out
+    of the next route. `screens/zones/zone-url.ts`.
+14. **"Delete Zones" waits for a selection** (Adrián's decision, 2026-11-05).
+    Upstream keeps the bulk delete button enabled and answers a click with nothing
+    ticked with an `alert()`, "Please select one or more zones to delete."
+    (zone.js:1139). Here it is disabled until at least one zone is ticked, so the
+    empty case shows without a click. Disabled, never hidden. With a selection it
+    asks the same confirmation, sends the same `zones/delete` and reports the same
+    success and partial-failure alerts.
+15. **A screen's result floats in the bottom right corner** (Adrián's decision,
+    2026-11-05). Upstream writes an action's result at the top of the section; here
+    a page's result (`ui/Notifier`) floats over the page at the bottom right, where
+    several stack, so nothing under it moves. A result inside a dialog stays in the
+    dialog, and the login form's stays in the form. The texts, the five seconds of
+    a success and the close button are the same.
+
 
 ## Four constraints the server imposes
 
