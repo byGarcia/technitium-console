@@ -83,14 +83,13 @@ the panel so tall that at 1440x980 the results started at y=842, with one row on
 screen: the table, which is what the screen is for, was below the fold.
 
 Now each group carries its name ABOVE its fields and the groups flow side by side,
-wrapping as the width runs out: two bands at 1440 instead of five rows (Source,
-Mode and Paging; then Query and Response), so the table starts at y=629. Nothing
-is collapsed or hidden at this width: the same fifteen controls, the same labels and
-options. Below 960 the whole panel folds instead (see `.fsToggle` below).
-Two things moved: `Live Update` went to the screen's header (QueryLogs.tsx says
-why), and Paging now follows Mode in the document, which is also the tab order.
-The grouping is the one decided below (the MODE group keeps its four fields and
-its edge together).
+wrapping as the width runs out: two bands at 1440 instead of five rows (Source
+and Mode; then Query and Response), so the table starts high on the first screen.
+Nothing is collapsed or hidden at this width. Below 960 the whole panel folds
+instead (see `.fsToggle` below). What left the panel, and where it went (2026-11-05,
+QueryLogs.tsx says why): Query, Export, Reset and `Live Update` to the results'
+toolbar, and `Page Number` and `Logs Per Page` (the Paging group) to the results'
+foot, beside the pager. The MODE group keeps its fields and its edge together.
 */
 .fsIn {
   display: flex; flex-wrap: wrap; align-items: flex-start;
@@ -147,8 +146,17 @@ is either the list of what is set, which brings its own, or the panel's edge.
 .fsSetItem { min-width: 0; overflow-wrap: break-word; }
 .fsSetLabel { color: var(--mute); }
 
-/* The count is `ui/count.module.css`'s: see there for why. */
-.count { composes: bar above from '../../ui/count.module.css'; }
+/*
+The results' card (`ui/DataTable` in QueryLogs.tsx). The toolbar's actions keep
+the gap the section header gave them. In the foot, Page Number takes the width of
+Zones' own; Logs Per Page is narrower than Zones Per Page because its label is.
+*/
+/* The actions start the toolbar from the left, as Zones' filters do; they wrap
+   as a group and the status keeps the far end (`End`). */
+.runActs { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-4); }
+.pageField { width: 150px; }
+.pageField input { text-align: center; }
+.perPage { width: 170px; }
 .mono { composes: mono from '../../ui/text.module.css'; }
 .nowrap { white-space: nowrap; }
 /*
@@ -259,12 +267,13 @@ Complete, and not "the ones on this page": a legend that changes with the data
 shows six colours on one page and four on the next, and stops being a vocabulary
 to become a summary of what is in front of you.
 */
+/* Inside the results' card it is a band under the toolbar, on the card's own
+   surface and over a hairline, as the toolbar is: not a box in a box. */
 .legend {
   display: flex; flex-wrap: wrap; align-items: center;
   gap: var(--s-5) var(--s-9);
-  padding: var(--s-7) var(--s-9);
-  margin-bottom: var(--s-7);
-  border: 1px solid var(--line); border-radius: var(--r-3); background: var(--pan);
+  padding: var(--s-6) var(--s-10);
+  border-bottom: 1px solid var(--line2);
 }
 .legendTitle {
   font-size: var(--t-1); font-weight: 600; letter-spacing: 0.09em;
@@ -313,7 +322,7 @@ one pill per group.
 /* The edge needs room to its left, and it takes it from the gap BEFORE the group
    (the negative margin cancels the padding): a group that grew when the mode
    switched on would push its neighbours to another band. */
-/* The switch in the header: centred on the buttons beside it. */
+/* The switch in the toolbar: centred on the buttons beside it. */
 .live { display: inline-flex; align-items: center; padding-left: var(--s-5); }
 
 .byMode {

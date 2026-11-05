@@ -15,7 +15,7 @@ import {
   type QueryLogsParams,
 } from '../../api/logs'
 import { Button } from '../../ui/Button'
-import { Input, Select } from '../../ui/Field'
+import { Field, Input, Select } from '../../ui/Field'
 import { SectionHeader } from '../../ui/SectionHeader'
 import { toIso, dateTime } from './dates'
 import { Loading } from '../../ui/Empty'
@@ -25,6 +25,7 @@ import { Table } from '../../ui/Table'
 import styles from './Logs.module.css'
 import { pageWindow } from '../../lib/pagination'
 import { Pagination } from '../../ui/Pagination'
+import { DataTable, DataFoot, End } from '../../ui/DataTable'
 import { noticeFromFailure, type Notice } from '../../lib/notice'
 import { Notifier } from '../../ui/Notifier'
 import { Menu } from '../../ui/Menu'
@@ -606,38 +607,6 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
         title="Logs"
         tabs={tabs}
         labels={f.appName !== '' ? <Tag>app: {f.appName}</Tag> : undefined}
-        actions={<>
-          <Button lead="search"
-            variant="primary"
-            disabled={busy || live}
-            onClick={() => {
-              /* Folded, Query closes the panel: the results are what comes next.
-                 A validation that fails opens it again on its field (`reveal`). */
-              if (fold) setFiltersOpen(false)
-              void query(f.pageNumber, false)
-            }}
-          >
-            Query
-          </Button>
-          <Button lead="download" disabled={busy} onClick={() => void runExport()}>
-            Export
-          </Button>
-          <Button onClick={restart}>Reset</Button>
-          {/*
-          "Live Update" is a MODE of the whole screen, not a filter: it governs
-          Query, the four fields of the Mode group and the table at once. So it
-          sits with the screen's actions and is drawn as `ui/Check`'s switch,
-          which this console uses for a state that stays put. Underneath it is
-          the same checkbox with the same label, in upstream's place in the
-          order (after Reset, index.html:3565-3569), and the same handler.
-
-          Not wrapped in `.field`: `dev/uniformity.js` caught that once, when it
-          turned the label into an 11 px grey one.
-          */}
-          <span className={styles.live}>
-            <Check toggle label="Live Update" checked={live} onChange={toggleLive} />
-          </span>
-        </>}
       />
 
       <Notifier notice={notice} onClose={() => setNotice(null)} />
@@ -708,18 +677,18 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
           </div>
 
           {/*
-          The MODE group: the FOUR fields "Live Update" turns off, together. The
-          switch itself is in the header, with the screen's actions (see there).
+          The MODE group: the fields "Live Update" turns off, together. The switch
+          itself is in the results' toolbar, with the screen's actions (see there).
 
-          They used to be spread about (`From`, `To` and `Order` in "Period", and
-          `Page Number` at the end of "Response"), so the off signal jumped from one
-          group to another and had to be repeated. Together, the edge runs down
-          them once and **one** pill is enough for all four, which is the
-          `Settings` master-switch rule.
+          They used to be spread about (`From`, `To` and `Order` in "Period"), so the
+          off signal jumped from one group to another and had to be repeated.
+          Together, the edge runs down them once and **one** pill is enough, which
+          is the `Settings` master-switch rule.
 
-          And `Logs Per Page` stays OUT on purpose, in its own group: it is the
-          only one the mode does NOT turn off and the only one remembered between
-          sessions. Putting it here would say it is turned off, and it is not.
+          `Page Number`, the fourth field the mode turns off, sat here until
+          2026-11-05 and moved to the results' foot, beside the pager it belongs
+          with; there it is drawn disabled while the mode is on, as before. And
+          `Logs Per Page`, the one the mode does NOT turn off, went with it.
           */}
           <div className={`${styles.group}${live ? ` ${styles.byMode}` : ''}`}>
             <div className={styles.groupLabel}>
@@ -774,44 +743,9 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
                   <option value="true">Descending</option>
                 </Select>
               </div>
-              <div className={styles.field} style={fieldWidth(90)}>
-                <label htmlFor="ql-pageNumber">Page Number</label>
-                <Input
-                  id="ql-pageNumber"
-                  type="number"
-                  disabled={live}
-                  value={f.pageNumber}
-                  onChange={(e) => set({ pageNumber: e.target.value })}
-                />
-              </div>
             </div>
           </div>
 
-          {/* On its own, and not in "Response", because it is not a search
-              criterion: it is how many rows fit. And it is the only control on
-              this screen that survives a `Reset`: it is re-read from
-              `localStorage`. It follows Mode, next to Order and Page Number,
-              and that is also where it fits: Source, Mode and Paging make the
-              first band at 1440, Query and Response the second. */}
-          <div className={styles.group}>
-            <div className={styles.groupLabel}>Paging</div>
-            <div className={styles.groupCtl}>
-              <div className={styles.field} style={fieldWidth(100)}>
-                <label htmlFor="ql-entriesPerPage">Logs Per Page</label>
-                <Select
-                  id="ql-entriesPerPage"
-                  value={f.entriesPerPage}
-                  onChange={(e) => saveEntriesPerPage(e.target.value)}
-                >
-                  {ENTRIES_PER_PAGE.map((n) => (
-                    <option key={n} value={n}>
-                      {n}
-                    </option>
-                  ))}
-                </Select>
-              </div>
-            </div>
-          </div>
           <div className={styles.group}>
             <div className={styles.groupLabel}>Query</div>
             <div className={styles.groupCtl}>
@@ -912,113 +846,214 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
         </div>
       </div>
 
-      {page != null && (
-        <>
-          <div className={styles.count}>
-            <span>{statusText(page)}</span>
+      {/*
+      The results as one card (`ui/DataTable`, 2026-11-05), the way Zones draws its
+      list: the screen's actions in the toolbar, the table, and the count with the
+      paging in the foot. The page reads top to bottom as it is used: the filters,
+      then what runs them, then what they found.
+
+        · The toolbar: Query, Export, Reset and Live Update, upstream's buttons in
+          upstream's order (index.html:3565-3569), with the same handlers. They
+          sat in the section header; there they were a screen away from the
+          filters at 1440, and under the folded panel they now come right after
+          its title. At its end, the status, because upstream writes it above the
+          table as well as under it (`tableQueryLogsTopStatus`, logs.js:589).
+        · The foot: the status again (`tableQueryLogsFooterStatus`, logs.js:592),
+          the pager once, as Zones draws it (upstream repeats it too), and the two
+          fields that say WHICH page, Page Number and Logs Per Page, beside the
+          pager that moves between pages. They were in the filter panel's Mode
+          and Paging groups; they are the same fields, with the same labels, the
+          same values and the same behaviour (Live Update still disables Page
+          Number, and Logs Per Page is still remembered), now with their labels
+          on their line (`Field inline`).
+
+      The card is drawn before the first query too, with its toolbar and its two
+      fields, because the buttons and the fields are part of the form and upstream
+      shows them all from the start; the status, the pager, the legend and the
+      table only arrive with a result, as upstream's `divQueryLogsTable` does.
+      */}
+      <DataTable
+        toolbar={
+          <>
+            <div className={styles.runActs}>
+              <Button lead="search"
+                variant="primary"
+                disabled={busy || live}
+                onClick={() => {
+                  /* Folded, Query closes the panel: the results are what comes next.
+                     A validation that fails opens it again on its field (`reveal`). */
+                  if (fold) setFiltersOpen(false)
+                  void query(f.pageNumber, false)
+                }}
+              >
+                Query
+              </Button>
+              <Button lead="download" disabled={busy} onClick={() => void runExport()}>
+                Export
+              </Button>
+              <Button onClick={restart}>Reset</Button>
+              {/*
+              "Live Update" is a MODE of the whole screen, not a filter: it governs
+              Query, the Mode group, Page Number and the table at once. So it sits
+              with the screen's actions and is drawn as `ui/Check`'s switch, which
+              this console uses for a state that stays put. Underneath it is the
+              same checkbox with the same label, in upstream's place in the order
+              (after Reset, index.html:3565-3569), and the same handler.
+
+              Not wrapped in `.field`: `dev/uniformity.js` caught that once, when it
+              turned the label into an 11 px grey one.
+              */}
+              <span className={styles.live}>
+                <Check toggle label="Live Update" checked={live} onChange={toggleLive} />
+              </span>
+            </div>
+            {page != null && (
+              <End>
+                <span>{statusText(page)}</span>
+              </End>
+            )}
+          </>
+        }
+        foot={
+          <DataFoot count={page != null ? statusText(page) : null}>
+            <div className={styles.pageField}>
+              <Field inline label="Page Number">
+                {(id) => (
+                  <Input
+                    id={id}
+                    type="number"
+                    disabled={live}
+                    value={f.pageNumber}
+                    onChange={(e) => set({ pageNumber: e.target.value })}
+                  />
+                )}
+              </Field>
+            </div>
+            {/* The only control on this screen that survives a `Reset`: it is
+                re-read from `localStorage`. And the only one of the page's two
+                that Live Update leaves alone. */}
+            <div className={styles.perPage}>
+              <Field inline label="Logs Per Page">
+                {(id) => (
+                  <Select
+                    id={id}
+                    value={f.entriesPerPage}
+                    onChange={(e) => saveEntriesPerPage(e.target.value)}
+                  >
+                    {ENTRIES_PER_PAGE.map((n) => (
+                      <option key={n} value={n}>
+                        {n}
+                      </option>
+                    ))}
+                  </Select>
+                )}
+              </Field>
+            </div>
             {/* logs.js:589. "Last" is asked for with -1; the server resolves it. */}
-            <Pagination
-              window={pageWindow(page.pageNumber, page.totalPages)}
-              current={page.pageNumber}
-              last={-1}
-              onGoTo={(n) => void query(String(n), false)}
-            />
-          </div>
-
+            {page != null && (
+              <Pagination
+                window={pageWindow(page.pageNumber, page.totalPages)}
+                current={page.pageNumber}
+                last={-1}
+                onGoTo={(n) => void query(String(n), false)}
+              />
+            )}
+          </DataFoot>
+        }
+      >
+        {page != null && (
+          <>
             {/* Always all seven, whether or not they appear on this page: see `LEGEND_ROWS`. */}
-          <RowLegend fold={fold} />
+            <RowLegend fold={fold} />
 
-          <Table
-            stack
-            tableClass={styles.queryTable}
-            header={
-              <>
-                <th>#</th>
-                <th>Timestamp</th>
-                <th>Client IP Address</th>
-                <th>Protocol</th>
-                <th>Response Type</th>
-                <th>RCODE</th>
-                <th>Domain</th>
-                <th>Type</th>
-                <th>Class</th>
-                <th>Answer</th>
-                <th className={tbl.actionsCell} />
-              </>
-            }
-          >
-            {page.entries.map((e) => (
-              <tr key={e.rowNumber} className={rowClass(e)}>
-                <td className={styles.mono}>{e.rowNumber}</td>
-                <td className={`${styles.mono} ${styles.stamp}`}>
-                  <Stamp text={dateTime(e.timestamp)} />
-                </td>
-                <td className={styles.mono}>
-                  <Clip text={e.clientIpAddress} className={styles.clipClient} />
-                </td>
-                <td>{e.protocol}</td>
-                <td>
-                  {/* The row's colour, in this cell: see `.tone` in Logs.module.css. */}
-                  <span className={styles.tone}>{e.responseType}</span>
-                  {e.responseRtt != null && (
-                    <div className={styles.rtt}>({e.responseRtt.toFixed(2)} ms)</div>
-                  )}
-                </td>
-                <td>{e.rcode}</td>
-                {/* logs.js:518. The root is written with a dot. */}
-                <td className={`${styles.mono} ${tbl.lead}`}>
-                  <Clip text={e.qname === '' ? '.' : (e.qname ?? '')} className={styles.clipDomain} />
-                </td>
-                <td className={tbl.lead}>{e.qtype ?? ''}</td>
-                <td>{e.qclass ?? ''}</td>
-                <td className={`${styles.mono} ${styles.answer}`}>
-                  <Clip text={e.answer ?? ''} className={styles.clipAnswer} />
-                </td>
-                <td className={tbl.actionsCell}>
-                  <Menu label={`Actions for row ${e.rowNumber}`}>
-                    {(close) => {
-                      const verb = verbFor(e.responseType)
-                      const key = String(e.rowNumber)
-                      /* The domain is the row's `qname` as it came (the root is
-                         the empty string, not the dot drawn above). */
-                      const domain = e.qname ?? ''
-                      return (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              close()
-                              /* Upstream writes the type into the handler as text,
-                                 so a missing one travels as "null", not as no type. */
-                              handoff?.queryDnsServer(domain, String(e.qtype), node)
-                            }}
-                          >
-                            Query DNS Server
-                          </button>
-                          <button
-                            type="button"
-                            disabled={action.isBusy(key)}
-                            onClick={() => {
-                              close()
-                              void action.run(key, verb, domain)
-                            }}
-                          >
-                            {verb}
-                          </button>
-                        </>
-                      )
-                    }}
-                  </Menu>
-                </td>
-              </tr>
-            ))}
-          </Table>
-
-          <div className={styles.count}>
-            <span>{statusText(page)}</span>
-          </div>
-        </>
-      )}
+              <Table
+                stack
+                tableClass={styles.queryTable}
+                header={
+                  <>
+                    <th>#</th>
+                    <th>Timestamp</th>
+                    <th>Client IP Address</th>
+                    <th>Protocol</th>
+                    <th>Response Type</th>
+                    <th>RCODE</th>
+                    <th>Domain</th>
+                    <th>Type</th>
+                    <th>Class</th>
+                    <th>Answer</th>
+                    <th className={tbl.actionsCell} />
+                  </>
+                }
+              >
+                {page.entries.map((e) => (
+                  <tr key={e.rowNumber} className={rowClass(e)}>
+                    <td className={styles.mono}>{e.rowNumber}</td>
+                    <td className={`${styles.mono} ${styles.stamp}`}>
+                      <Stamp text={dateTime(e.timestamp)} />
+                    </td>
+                    <td className={styles.mono}>
+                      <Clip text={e.clientIpAddress} className={styles.clipClient} />
+                    </td>
+                    <td>{e.protocol}</td>
+                    <td>
+                      {/* The row's colour, in this cell: see `.tone` in Logs.module.css. */}
+                      <span className={styles.tone}>{e.responseType}</span>
+                      {e.responseRtt != null && (
+                        <div className={styles.rtt}>({e.responseRtt.toFixed(2)} ms)</div>
+                      )}
+                    </td>
+                    <td>{e.rcode}</td>
+                    {/* logs.js:518. The root is written with a dot. */}
+                    <td className={`${styles.mono} ${tbl.lead}`}>
+                      <Clip text={e.qname === '' ? '.' : (e.qname ?? '')} className={styles.clipDomain} />
+                    </td>
+                    <td className={tbl.lead}>{e.qtype ?? ''}</td>
+                    <td>{e.qclass ?? ''}</td>
+                    <td className={`${styles.mono} ${styles.answer}`}>
+                      <Clip text={e.answer ?? ''} className={styles.clipAnswer} />
+                    </td>
+                    <td className={tbl.actionsCell}>
+                      <Menu label={`Actions for row ${e.rowNumber}`}>
+                        {(close) => {
+                          const verb = verbFor(e.responseType)
+                          const key = String(e.rowNumber)
+                          /* The domain is the row's `qname` as it came (the root is
+                             the empty string, not the dot drawn above). */
+                          const domain = e.qname ?? ''
+                          return (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  close()
+                                  /* Upstream writes the type into the handler as text,
+                                     so a missing one travels as "null", not as no type. */
+                                  handoff?.queryDnsServer(domain, String(e.qtype), node)
+                                }}
+                              >
+                                Query DNS Server
+                              </button>
+                              <button
+                                type="button"
+                                disabled={action.isBusy(key)}
+                                onClick={() => {
+                                  close()
+                                  void action.run(key, verb, domain)
+                                }}
+                              >
+                                {verb}
+                              </button>
+                            </>
+                          )
+                        }}
+                      </Menu>
+                    </td>
+                  </tr>
+                ))}
+              </Table>
+          </>
+        )}
+      </DataTable>
     </div>
   )
 }
