@@ -831,6 +831,22 @@ contract and SECURITY.md.
     the address. The Dashboard's Top Clients card and the Top 1000 modal draw no
     domain line for it instead; a client with a domain still shows it. Nothing
     else changes: the same call, the same rows, the same name and menu.
+12. **Zones says what a zone holds** (Adrián's decision, 2026-11-05). Four
+    differences, all reading data the same calls already bring:
+    - **A summary of the zone by type** above the records (`A 14 · NS 1 · SOA 1`),
+      counted from `zones/records/get` after Hide DNSSEC Records and before the
+      Name and Type filters. Pressing a type writes it in the Type field and runs
+      Go, exactly as typing it would; pressing the applied one empties the field
+      and runs Go. `ZoneRecords.tsx`, WHAT THE ZONE HOLDS.
+    - **The serial and the last change in the zone's header** (`Serial 16`,
+      `Last Modified: …`), from the `zone` object of the same answer. Upstream
+      shows them only in the zone list.
+    - **`Last Used: never`** for a record never used, where upstream writes
+      `0001-01-01 00:00:00 (never)`, .NET's empty date (`record-view.ts`).
+    - **The DNSSEC column says `Unsigned`, `Signed` or `Signed, no keys`.**
+      Upstream leaves the cell empty for an unsigned zone and writes `DNSSEC`,
+      blue or grey by `hasDnssecPrivateKeys` (zone.js:721-731). This one predates
+      2026-11-05 and is registered here because it was never written down.
 
 ## Four constraints the server imposes
 
