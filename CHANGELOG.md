@@ -45,6 +45,14 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
 - **The period picker** is a joined group of buttons, with the chosen one in amber text instead of
   a solid amber block.
 - Links inside upstream's texts (such as "RFC 8806" in Add Zone) take the theme's colour.
+- **Zones, redesigned to read at a glance.** The list keeps only Name and Type above it, with the
+  page fields beside the pagination, shows Expiry only when a zone has one, and puts every action in
+  one row menu in upstream's order. A zone shows its state, type, serial and last change under its
+  title, a summary of its records by type that filters when pressed, and compact records: an SOA on
+  two lines, the dates on one quiet line, `never` instead of an empty date, and one owner name per
+  run of records. Fixed on the way: the refresh beside a zone's title, the IDN title, the status
+  colours, the expiry with its seconds, the catalog's own name, `Properties` in the DNSSEC menu
+  and the `seconds` after the SOA timers.
 
 ## v1.3.4 (2026-10-21)
 
