@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { listApps } from '../../../api/apps'
 import {
   addRecord,
@@ -35,6 +35,7 @@ import {
 import { typesHiddenWhenAdding } from '../zone-view'
 import type { Notice } from '../types'
 import styles from '../Zones.module.css'
+import { recordColour } from '../zone-colours'
 import { GroupRow } from '../../../ui/Form'
 import { noticeFromFailure } from '../../../lib/notice'
 import { Notifier } from '../../../ui/Notifier'
@@ -199,7 +200,14 @@ export function AddEditRecord(p: AddEditRecordProps) {
     >
       <Notifier notice={notice} onClose={() => setNotice(null)} />
 
-      <div className={styles.fields}>
+      {/*
+      The record form in three blocks (2026-11-05), the same fields in upstream's
+      order: what the record is (Name, Type and TTL on one row), what it holds
+      (the type's own fields, under the type in its colour), and how it is kept
+      (Comments and Expiry TTL). It was one column of eleven stacked fields where
+      nothing said which ones belonged together.
+      */}
+      <div className={styles.recHead}>
         <Field label="Name">
           {(id) => (
             <div className={styles.inline}>
@@ -243,7 +251,7 @@ export function AddEditRecord(p: AddEditRecordProps) {
 
         <Field label="TTL">
           {(id) => (
-            <div className={styles.inline}>
+            <div className={`${styles.inline} ${styles.wrapSuffix}`}>
               <Input
                 id={id}
                 mono
@@ -259,6 +267,11 @@ export function AddEditRecord(p: AddEditRecordProps) {
           )}
         </Field>
 
+      </div>
+
+      <section className={styles.recData} style={{ '--rt': recordColour(f.type) } as CSSProperties}>
+        <span className={styles.recType}>{f.type}</span>
+        <div className={styles.fields}>
         <TypeFields
           f={f}
           set={set}
@@ -282,6 +295,10 @@ export function AddEditRecord(p: AddEditRecordProps) {
             Overwrite existing records
           </label>
         )}
+        </div>
+      </section>
+
+      <div className={styles.fields}>
 
         <Field label="Comments">
           {(id) => (

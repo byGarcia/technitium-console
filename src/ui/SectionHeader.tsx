@@ -97,6 +97,9 @@ export function SectionHeader({
               <span className={styles.ctx}>{section}</span>
             )}
             <Icon name="chevronRight" size={12} className={styles.sep} />
+            {/* Where you are, the trail's last step (2026-11-05): the trail used
+                to stop at the chevron, a path that led nowhere. */}
+            <span className={styles.here} aria-current="page">{title}</span>
           </nav>
         )}
         {titleAction != null ? (

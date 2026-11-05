@@ -143,15 +143,51 @@ the table.
   color: var(--mute);
 }
 
-/* The foot of a zone's page: what acts on the whole zone and is hard to take back,
-   apart from everything above it by a hairline (ZoneRecords). */
-.zoneFoot {
+/* The gap between a zone's everyday actions and the ones that act on the whole
+   zone (ZoneRecords' header). */
+.actSep { width: 1px; align-self: stretch; margin: var(--s-2) var(--s-3); background: var(--line); }
+
+/* The zone's type in the header: a pill tinted with its series colour. */
+.ztag {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--s-1) var(--s-5);
+  border-radius: var(--r-full);
+  background: color-mix(in srgb, var(--rt) 18%, transparent);
+  color: var(--rt);
+  font-size: var(--t-1);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+/* The record form's blocks (AddEditRecord). What the record is, on one row: Name
+   takes what is left, Type and TTL their own width; on a narrow dialog they stack. */
+.recHead { display: grid; grid-template-columns: minmax(0, 1fr) 150px minmax(170px, 0.7fr); gap: var(--s-8); align-items: start; }
+@media (max-width: 720px) { .recHead { grid-template-columns: minmax(0, 1fr); } }
+.recHead .medium { width: 100%; }
+/* A suffix that may go under its field when the cell is narrow, still in the cell. */
+.wrapSuffix { flex-wrap: wrap; row-gap: var(--s-2); }
+
+/* What the record holds: a block on the raised step, headed by its type in the
+   type's colour (zone-colours.ts), so the fields that change with the type read
+   as the type's. */
+.recData {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--s-5);
-  margin-top: var(--gap-block);
-  padding-top: var(--gap-group);
-  border-top: 1px solid var(--line2);
+  flex-direction: column;
+  gap: var(--s-8);
+  padding: var(--s-9) var(--s-10) var(--s-10);
+  border: 1px solid var(--line2);
+  border-radius: var(--r-3);
+  background: color-mix(in srgb, var(--pan2) 70%, transparent);
+}
+.recType {
+  align-self: flex-start;
+  padding: var(--s-1) var(--s-5);
+  border-radius: var(--r-1);
+  background: color-mix(in srgb, var(--rt) 16%, transparent);
+  color: var(--rt);
+  font: 600 var(--t-2)/1.5 var(--font-mono);
+  letter-spacing: 0.03em;
 }
 
 /* A record type in its series colour (zone-colours.ts): the word in the colour,

@@ -59,6 +59,8 @@ button.ctx:hover { color: var(--acc-ink); }
 
 .sep { color: var(--faint); flex: none; }
 
+.here { font-size: var(--t-4); color: var(--ink); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
 .titleRow { display: flex; align-items: center; gap: var(--s-5); min-width: 0; }
 
 .tags {

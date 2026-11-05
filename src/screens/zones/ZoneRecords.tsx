@@ -25,7 +25,7 @@ import { DomainName } from '../../ui/DomainName'
 import { Field, Input, Select } from '../../ui/Field'
 import { DataCell } from './DataCell'
 import { ZoneOverview } from './ZoneOverview'
-import { recordColour } from './zone-colours'
+import { recordColour, zoneColour } from './zone-colours'
 import { dateTime, dateWithAge } from '../../lib/dates'
 import { Menu } from '../../ui/Menu'
 import { filterBy } from './filter'
@@ -419,7 +419,10 @@ export function ZoneRecords(p: ZoneRecordsProps) {
         labels={
           <>
             <Tag tone={stateTone}>{state}</Tag>
-            <Tag>{typeLabel(zoneInfo.type)}</Tag>
+            {/* The zone's type in its series colour (zone-colours.ts), as in the list. */}
+            <span className={styles.ztag} style={{ '--rt': zoneColour(zoneInfo.type) } as CSSProperties}>
+              {typeLabel(zoneInfo.type)}
+            </span>
             {signed && (
               <Tag tone={zoneInfo.hasDnssecPrivateKeys ? 'info' : 'neutral'} pill>DNSSEC</Tag>
             )}
@@ -497,6 +500,22 @@ export function ZoneRecords(p: ZoneRecordsProps) {
                 </>
               )}
             </Menu>
+            {/* What acts on the whole zone and is hard to take back: in the header,
+                where it is always in view, but as its own group after Options,
+                and Delete outlined in red (ui/Button, THE DESTRUCTIVE ONE). */}
+            <span className={styles.actSep} aria-hidden="true" />
+            {zoneInfo.disabled ? (
+              <Button lead="power" disabled={!p.canModify || busy} onClick={doEnableZone}>
+                Enable Zone
+              </Button>
+            ) : (
+              <Button lead="power" disabled={!p.canModify || busy} onClick={doDisableZone}>
+                Disable Zone
+              </Button>
+            )}
+            <Button lead="trash" variant="danger" disabled={!p.canDelete || busy} onClick={removeZone}>
+              Delete Zone
+            </Button>
 
           </>
         }
@@ -686,27 +705,6 @@ export function ZoneRecords(p: ZoneRecordsProps) {
         </div>
       </div>
 
-      {/*
-      What acts on the whole zone and is hard to take back, at the foot of its page
-      (2026-11-05), the way the consoles this one is compared with keep it: out of
-      the header, where it sat between Add Record and Options and weighed the same.
-      The same buttons, the same confirmations.
-      */}
-      <div className={styles.zoneFoot}>
-            {zoneInfo.disabled ? (
-            <Button lead="power" disabled={!p.canModify || busy} onClick={doEnableZone}>
-              Enable Zone
-            </Button>
-          ) : (
-            <Button lead="power" disabled={!p.canModify || busy} onClick={doDisableZone}>
-              Disable Zone
-            </Button>
-          )}
-          <Button lead="trash" variant="danger" disabled={!p.canDelete || busy} onClick={removeZone}>
-            Delete Zone
-          </Button>
-
-      </div>
     </>
   )
 }

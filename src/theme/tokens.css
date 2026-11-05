@@ -796,6 +796,7 @@ wherever the attribute says `light`.
   --r-2: 6px;   /* row button, menu item                        (6,7) */
   --r-3: 8px;   /* field, notice, inner block                    (8,9) */
   --r-4: 10px;  /* panel, card, table                       (10,12) */
+  --r-5: 14px;  /* a dialog: the one surface that floats over the page   */
   --r-full: 999px;
 
   /* ── Focus ──────────────────────────────────────────────────────────── */
