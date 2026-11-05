@@ -179,6 +179,25 @@ what is needed.
 */
 .gap { margin-bottom: calc(var(--gap-block) - var(--gap, 0px)); }
 
+/* The floating results' corner (`Notifier`, Where it appears): bottom right, the
+   newest at the bottom, each as wide as a card and no wider; on a phone, the full
+   width less the gutter. The region lets clicks through where it is empty. */
+.region {
+  position: fixed;
+  z-index: var(--layer-notice);
+  right: var(--s-11);
+  bottom: var(--s-11);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+  width: min(400px, calc(100vw - 2 * var(--s-10)));
+  pointer-events: none;
+}
+.region:empty { display: none; }
+@media (max-width: 560px) { .region { right: var(--s-10); bottom: var(--s-10); } }
+.floating { pointer-events: auto; }
+.floating > * { max-width: none; box-shadow: var(--e-2); }
+
 /*
 The result on its way out (`Notifier` keeps a copy of it, inert and hidden from
 assistive technology, for exactly this long). It fades, rises a little, and the

@@ -1,5 +1,5 @@
 import * as RadixDialog from '@radix-ui/react-dialog'
-import type { ReactNode } from 'react'
+import { createContext, type ReactNode } from 'react'
 import { Button } from './Button'
 import { Icon } from './Icon'
 import styles from './Dialog.module.css'
@@ -17,6 +17,9 @@ Here the order belongs to the component, not to whoever uses it:
 `Dialog` and always goes last, in the corner upstream had it in all 40 of its
 modals. That way no new modal can pick its own order again.
 */
+
+/** True inside a dialog: a `Notifier` there stays in the dialog, beside what it is about. */
+export const InDialog = createContext(false)
 
 export function Dialog({
   open,
@@ -65,7 +68,7 @@ export function Dialog({
               <Icon name="close" size={16} />
             </RadixDialog.Close>
           </div>
-          <div className={styles.body}>{children}</div>
+          <div className={styles.body}><InDialog.Provider value={true}>{children}</InDialog.Provider></div>
           <div className={styles.foot}>
             {actions}
             <Button onClick={() => onOpenChange(false)}>{close}</Button>

@@ -244,7 +244,7 @@ export function Login({
           {/* The card has three bands, as a dialog has: the mark on top, the
               alert and the form in the body, the links at the foot. */}
           <div className={styles.body}>
-            <Notifier notice={alert} onClose={() => setAlert(null)} />
+            <Notifier inline notice={alert} onClose={() => setAlert(null)} />
 
             <form
               className={styles.form}

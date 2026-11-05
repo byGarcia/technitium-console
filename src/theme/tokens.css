@@ -789,6 +789,7 @@ wherever the attribute says `light`.
   --layer-drawer: 30;     /* and the drawer, over its veil */
   --layer-float: 40;     /* dropdowns: row menu, Select, account menu */
   --layer-dialog: 50;   /* the modal and its veil, above absolutely everything */
+  --layer-notice: 60;   /* a page's floating result (ui/Notifier): it may arrive while a dialog closes */
 
   --r-1: 4px;   /* colour swatch, tiny chip                   (4,5) */
   --r-2: 6px;   /* row button, menu item                        (6,7) */
