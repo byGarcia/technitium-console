@@ -37,6 +37,7 @@ import { useBlockingMark } from '../screens/blocking/blocking-state'
 import { Confirm } from '../ui/Confirm'
 import { Notifier } from '../ui/Notifier'
 import type { Notice } from '../lib/notice'
+import { COVER_NAME } from '../screens/LoginCover'
 import {
   silenceUpdateNotification,
   unsilenceUpdateNotification,
@@ -316,7 +317,7 @@ export function Shell({
 
       <aside className={styles.side} data-open={drawer}>
         <div className={styles.sbrand}>
-          <img className={styles.mark} src={publicUrl('img/logo.png')} alt="" width={22} height={22} /> Technitium
+          <img className={styles.mark} src={publicUrl('img/logo.svg')} alt="" width={22} height={22} /><span className={styles.brandName}>{COVER_NAME}</span>
         </div>
         <nav className={styles.slist} role="navigation" aria-label="Sections">
           {/*
@@ -480,7 +481,7 @@ export function Shell({
             <Icon name="menu" size={18} />
           </button>
           <span className={styles.topBrand}>
-            <img className={styles.mark} src={publicUrl('img/logo.png')} alt="" width={22} height={22} /> Technitium
+            <img className={styles.mark} src={publicUrl('img/logo.svg')} alt="" width={22} height={22} /><span className={styles.brandName}>{COVER_NAME}</span>
           </span>
         </header>
 

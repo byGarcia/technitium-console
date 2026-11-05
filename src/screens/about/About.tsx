@@ -72,7 +72,7 @@ export function About({ info }: { info?: Info }) {
             {/* Technitium's logo, not an initial of ours. Upstream puts it right
                 here (`index.html:3483`) and the file travels in `public/img/`
                 since the scaffolding: we had it and were not using it. */}
-            <img className={styles.mark} src={publicUrl('img/logo.png')} alt="" width={38} height={38} />
+            <img className={styles.mark} src={publicUrl('img/logo.svg')} alt="" width={38} height={38} />
             <div>
               <h2 className={styles.h1}>Technitium DNS Server</h2>
               <div className={styles.view}>Version {info?.version ?? '—'}</div>

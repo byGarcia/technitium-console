@@ -237,7 +237,7 @@ export function Login({
       <main className={styles.page}>
         <div className={styles.card}>
           <h1 className={styles.brand}>
-            <img className={styles.mark} src={publicUrl('img/logo.png')} alt="" width={28} height={28} />
+            <img className={styles.mark} src={publicUrl('img/logo.svg')} alt="" width={28} height={28} />
             <span className={styles.name}>Technitium DNS Server</span>
           </h1>
 
