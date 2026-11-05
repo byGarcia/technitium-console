@@ -1,0 +1,141 @@
+/*
+THE INSIDE OF THE ZONE DIALOGS (Add Zone, Import Zone, Convert Zone, Clone Zone,
+Edit Zone File), redrawn on 2026-11-05 in the language of the record form
+(`AddEditRecord`, `.recHead` and `.recData` in `../Zones.module.css`).
+
+One placement for every label: ABOVE its control, in the field label's own type
+(`ui/Field`). Add Zone had "Zone" stacked over its field and every other row
+behind a 180 px label column, so the first field and the rest of the form read
+as two forms. A group of radios or checkboxes carries the same label, a `div`
+and not a `<label>` (it governs no single control, as upstream's has no `for`).
+
+What a choice is (a zone type, an import source, a conversion target) is drawn
+as a grid of tiles, the chosen one in the accent; what follows from that choice
+goes in one block on the raised step, as the record form puts a type's fields.
+Nothing here changes a field, a text or an order: only where they sit.
+*/
+
+/* The dialog's column. Wider steps than the body's own gap: these are sections,
+   not lines of one list. */
+.form { display: flex; flex-direction: column; gap: var(--s-10); }
+
+/* A label over what it labels: a field, or a group of choices. */
+.group { display: flex; flex-direction: column; gap: var(--s-4); min-width: 0; }
+.label { composes: label from '../../../ui/Field.module.css'; }
+
+/* The help under a control: the console's help role, same size and colour. */
+.help {
+  composes: withCode from '../../../ui/text.module.css';
+  font-size: var(--t-3);
+  color: var(--mute);
+  line-height: 1.55;
+}
+.help p { margin: 0; }
+.help p + p { margin-top: var(--s-3); }
+
+/* A checkbox or a radio with its words: the console's check row. */
+.chk { composes: check from '../../../ui/Check.module.css'; }
+
+/* A list of addresses: one per line, as tall as a few of them. */
+.area { width: 100%; min-height: 110px; resize: vertical; }
+
+/* ── Choices as tiles ──────────────────────────────────────────────────── */
+
+.tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-4); }
+.tiles3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.tiles1 { grid-template-columns: minmax(0, 1fr); }
+@media (max-width: 560px) {
+  .tiles, .tiles3 { grid-template-columns: minmax(0, 1fr); }
+}
+
+/*
+One radio and its words. The whole tile is the `<label>`, so it is the target;
+the chosen one takes the accent's tint and border, which is what the radio
+itself says in amber. A disabled tile (Convert Zone's) keeps its place and fades.
+*/
+.tile {
+  display: flex;
+  align-items: center;
+  gap: var(--s-6);
+  min-height: var(--field-height);
+  padding: var(--s-5) var(--s-8);
+  border: 1px solid var(--line2);
+  border-radius: var(--r-3);
+  background: var(--field);
+  font-size: var(--t-4);
+  color: var(--ink);
+  line-height: 1.35;
+  cursor: pointer;
+  transition: background var(--t-fast), border-color var(--t-fast);
+}
+.tile input { flex: none; margin: 0; }
+.tile:hover:not(:has(input:disabled)) { border-color: var(--line-ctrl); }
+.tile:has(input:checked) { border-color: var(--acc-bd); background: var(--acc-tint); }
+.tile:has(input:focus-visible) { outline: var(--focus); outline-offset: 1px; }
+.tile:has(input:disabled) { cursor: default; opacity: 0.45; }
+.tileText { min-width: 0; flex: 1; }
+.tileIcon { flex: none; display: inline-flex; color: var(--faint); }
+.tile:has(input:checked) .tileIcon { color: var(--acc-ink); }
+@media (prefers-reduced-motion: reduce) { .tile { transition: none; } }
+
+/* A zone type's dot, in its series colour (`zone-colours.ts`). Decorative: the
+   type's name is always written beside it. */
+.dot { width: var(--s-5); height: var(--s-5); border-radius: var(--r-1); flex: none; background: var(--zt); }
+
+/* Radios that are a setting and not a choice of form (a protocol, a proxy):
+   in a run that wraps, not one per line. A grid of equal columns was tried and
+   cut "DNS-over-UDP (default)" in two at 720 px; a run keeps each option whole. */
+.run { display: flex; flex-wrap: wrap; column-gap: var(--s-11); row-gap: var(--s-1); }
+
+/* ── The block ─────────────────────────────────────────────────────────── */
+
+/* What follows from the choice above it: the record form's `.recData` box. Its
+   border takes a little of the chosen type's colour (`--zt`, set by Add Zone),
+   the same colour as the dot of the tile it follows from. */
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-10);
+  padding: var(--s-9) var(--s-10) var(--s-10);
+  border: 1px solid color-mix(in srgb, var(--zt, var(--line2)) 30%, var(--line2));
+  border-radius: var(--r-3);
+  background: color-mix(in srgb, var(--pan2) 70%, transparent);
+}
+.block[hidden] { display: none; }
+
+/* A list of options inside a block: each with its help, a hairline between. */
+.list { gap: 0; padding-block: var(--s-3); }
+.list > * { padding-block: var(--s-6); }
+.list > * + * { border-top: 1px solid var(--line2); }
+
+/* Two fields on a line (the proxy's address and port, its user and password). */
+.pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--s-8); }
+.pairShort { grid-template-columns: minmax(0, 1fr) var(--ctrl-num); }
+@media (max-width: 560px) {
+  .pair, .pairShort { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ── Clone Zone ────────────────────────────────────────────────────────── */
+
+/* From one zone to the other, on one line: source, arrow, new. */
+.cloneRow { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: var(--s-8); align-items: end; }
+.arrow { display: inline-flex; align-items: center; height: var(--field-height); color: var(--faint); }
+@media (max-width: 560px) {
+  .cloneRow { grid-template-columns: minmax(0, 1fr); }
+  .arrow { display: none; }
+}
+
+/* The source is read, not typed: a value on the panel, not a hole in it. */
+.readOnly {
+  background-color: transparent;
+  box-shadow: none;
+  border-style: dashed;
+  color: var(--mute);
+}
+
+/* ── The zone-file editors (Import Zone's text editor, Edit Zone File) ────── */
+
+/* They do not wrap (upstream's `white-space: nowrap`): a zone file is read by
+   columns. Edit Zone File's is the whole dialog, so it takes the height. */
+.editor { composes: areaTall noWrap from '../Zones.module.css'; width: 100%; font-size: var(--t-3); line-height: 1.6; tab-size: 8; }
+.editorTall { min-height: min(52vh, 460px); }

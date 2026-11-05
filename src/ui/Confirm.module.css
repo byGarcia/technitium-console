@@ -9,7 +9,7 @@ Drawn as one more row, the two are indistinguishable at a glance, and this is th
 only screen in the console where an action can leave the system split in two.
 
 So it goes at the end of the body, in a box of its own, and when the box is ticked
-the box ARMS: a `--dan` rule down its side and the fill that goes with it. The
+the box ARMS: a `--dan` border all round and the fill that goes with it. The
 verb in the footer does not change, because upstream does not change it and a
 design cannot invent a second verb.
 
@@ -22,15 +22,72 @@ left to do by hand; it sits after the block, where this console puts every `Note
 */
 .force {
   border: 1px solid var(--line);
-  border-left: 3px solid var(--line);
   border-radius: var(--r-3);
   padding: var(--s-6) var(--s-8);
   background: var(--pan2);
-  transition: border-color var(--t-fast), background var(--t-fast);
+  transition: border-color var(--t-fast), background var(--t-fast), box-shadow var(--t-fast);
 }
 
+/*
+Armed, the WHOLE box turns: its border to `--dan`, its fill to the danger tint
+and a soft ring of the same red around it. It was a 3 px red rule down the left
+side, the side-stripe the design rules ban (2026-11-05): a stripe marks one edge
+of a box and says nothing about the box, and here the box is the warning.
+*/
 .force[data-armed='true'] {
   border-color: var(--dan);
-  border-left-color: var(--dan);
-  background: var(--dan-fill);
+  background: var(--dan-bg);
+  box-shadow: 0 0 0 3px var(--dan-tint);
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .force { transition: none; }
+}
+
+/*
+THE QUESTION (`Confirm`): a badge of the confirmation's tone and, beside it, the
+question in ink at the body size. The badge is the tone before the words: red
+with the notice triangle for a destructive one; for the rest, the note in the
+accent, the colour of the verb it asks for.
+The verb in the footer says the same in its own colour (`ui/Button`: a
+destructive one in a dialog is solid red).
+*/
+.ask {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--s-9);
+  align-items: start;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--r-full);
+  border: 1px solid var(--acc-bd);
+  background: var(--acc-bg);
+  color: var(--acc-ink);
+}
+
+.ask[data-tone='danger'] .badge {
+  border-color: var(--dan-bd);
+  background: var(--dan-bg);
+  color: var(--dan);
+  box-shadow: 0 0 0 4px var(--dan-tint);
+}
+
+/* `pre-wrap` keeps the Zones confirmations' blank line and their list of zones,
+   one per line. It starts on the badge's middle when it is a single line. */
+.question {
+  margin: 0;
+  padding-top: var(--s-5);
+  font-size: var(--t-5);
+  line-height: 1.55;
+  color: var(--ink);
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+
+.question b { font-weight: 650; }

@@ -4,8 +4,9 @@ import { Alert } from '../../../ui/Alert'
 import { Button } from '../../../ui/Button'
 import { Dialog } from '../../../ui/Dialog'
 import type { Notice } from '../types'
-import styles from '../Zones.module.css'
-import { GroupRow } from '../../../ui/Form'
+import z from './zone-dialog.module.css'
+import { Group, Tile } from './zone-dialog'
+import { zoneColour } from '../zone-colours'
 import { noticeFromFailure } from '../../../lib/notice'
 import { Notifier } from '../../../ui/Notifier'
 
@@ -109,21 +110,23 @@ export function ConvertZone({
     >
       <Notifier notice={notice} onClose={() => setNotice(null)} />
 
-      <div className={styles.fields}>
-        <GroupRow modal label="Convert To">
+      {/* The three destinations as tiles, each with its type's colour; the ones
+          this source cannot go to keep their place, faded (2026-11-05). */}
+      <div className={z.form}>
+        <Group label="Convert To" radios={`${z.tiles} ${z.tiles1}`}>
           {(['Primary', 'Forwarder', 'Catalog'] as ConversionTarget[]).map((d) => (
-            <label key={d} className={styles.chk}>
-              <input
-                type="radio"
-                name="convertTo"
-                disabled={!table.enabled2.includes(d)}
-                checked={target === d}
-                onChange={() => setTarget(d)}
-              />
+            <Tile
+              key={d}
+              name="convertTo"
+              colour={zoneColour(d)}
+              disabled={!table.enabled2.includes(d)}
+              checked={target === d}
+              onChange={() => setTarget(d)}
+            >
               {LABELS[d]}
-            </label>
+            </Tile>
           ))}
-        </GroupRow>
+        </Group>
 
         <Alert type="info" title="Note!">
           The conversion process may take a while depending on the number of records the zone

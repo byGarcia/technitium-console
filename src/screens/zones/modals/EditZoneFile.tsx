@@ -4,10 +4,10 @@ import { Alert } from '../../../ui/Alert'
 import { Button } from '../../../ui/Button'
 import { Dialog } from '../../../ui/Dialog'
 import { Loading } from '../../../ui/Empty'
-import { LabeledTextarea } from '../../../ui/Field'
+import { Check } from '../../../ui/Check'
+import { Field, Textarea } from '../../../ui/Field'
 import type { Notice } from '../types'
-import styles from '../Zones.module.css'
-import frm from '../../../ui/Form.module.css'
+import z from './zone-dialog.module.css'
 import { noticeFromFailure } from '../../../lib/notice'
 import { Notifier } from '../../../ui/Notifier'
 
@@ -119,32 +119,27 @@ export function EditZoneFile({
       {loading && <Loading>Loading zone file…</Loading>}
 
       {loaded && (
-        <div className={styles.fields}>
-          <div className={frm.mrowCtl}>
-            <LabeledTextarea
-              label="Zone File Editor"
-              mono
-              className={`${styles.areaTall} ${styles.noWrap}`}
-              spellCheck={false}
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-            />
-          </div>
-
-          <div className={frm.mrowCtl}>
-            <label className={styles.chk}>
-              <input
-                type="checkbox"
-                checked={overwriteSoaSerial}
-                onChange={(e) => setOverwriteSoaSerial(e.target.checked)}
+        <div className={z.form}>
+          {/* The editor is the dialog: it takes the height (2026-11-05). */}
+          <Field label="Zone File Editor">
+            {(id) => (
+              <Textarea
+                id={id}
+                mono
+                className={`${z.editor} ${z.editorTall}`}
+                spellCheck={false}
+                value={text}
+                onChange={(e) => setText(e.target.value)}
               />
-              Overwrite SOA Serial
-            </label>
-            <div className={styles.help}>
-              Enable this option to overwrite existing SOA record serial with the SOA record serial
-              specified in the zone file editor.
-            </div>
-          </div>
+            )}
+          </Field>
+
+          <Check
+            label="Overwrite SOA Serial"
+            checked={overwriteSoaSerial}
+            onChange={setOverwriteSoaSerial}
+            help="Enable this option to overwrite existing SOA record serial with the SOA record serial specified in the zone file editor."
+          />
 
           <Alert type="info" title="Note!">
             The $ORIGIN and $TTL values will be automatically set if not specified.

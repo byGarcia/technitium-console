@@ -4,7 +4,8 @@ import { Button } from '../../../ui/Button'
 import { Dialog } from '../../../ui/Dialog'
 import { LabeledInput } from '../../../ui/Field'
 import type { Notice } from '../types'
-import styles from '../Zones.module.css'
+import { Icon } from '../../../ui/Icon'
+import z from './zone-dialog.module.css'
 import { noticeFromFailure } from '../../../lib/notice'
 import { Notifier } from '../../../ui/Notifier'
 
@@ -71,9 +72,13 @@ export function CloneZone({
       }
     >
       <Notifier notice={notice} onClose={() => setNotice(null)} />
-      <div className={styles.fields}>
+      {/* From the source to the new zone, on one line at width (2026-11-05). */}
+      <div className={z.cloneRow}>
         {/* The source is read-only: upstream keeps it in a hidden input. */}
-        <LabeledInput label="Source Zone" mono readOnly value={zone} />
+        <LabeledInput label="Source Zone" mono readOnly className={z.readOnly} value={zone} />
+        <span className={z.arrow} aria-hidden="true">
+          <Icon name="chevronRight" size={16} />
+        </span>
         <LabeledInput
           label="New Zone"
           placeholder="example.com"
