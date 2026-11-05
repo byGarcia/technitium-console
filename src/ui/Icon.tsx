@@ -31,10 +31,17 @@ export type IconName =
   | 'first' | 'last' | 'close' | 'menu' | 'plus' | 'sort' | 'back' | 'check'
   | 'edit' | 'power' | 'card' | 'convert' | 'warning' | 'lock'
   | 'moveUp' | 'moveDown'
-  | 'add' | 'trash' | 'refresh' | 'search' | 'download' | 'upload' | 'run' | 'store' | 'key' | 'save'
+  | 'shield' | 'add' | 'trash' | 'refresh' | 'search' | 'download' | 'upload' | 'run' | 'store' | 'key' | 'save'
 
 const PATHS: Record<IconName, ReactElement> = {
   // ── Leading a button's label (`ui/Button`, `lead`), 2026-11-05 ──────────
+  /* A shield with a tick: a zone's DNSSEC (Zones, the DNSSEC card). */
+  shield: (
+    <>
+      <path d="M12 3 5 6v5.5c0 4.2 2.9 8 7 9.5 4.1-1.5 7-5.3 7-9.5V6z" />
+      <path d="m9 12 2 2 4-4" />
+    </>
+  ),
   /* A cross: add something to a list (Add Zone, Add block list…). */
   add: (
     <>

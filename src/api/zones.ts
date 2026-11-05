@@ -97,6 +97,20 @@ export const ZONE_TYPES = ['Primary','Secondary','Stub','Forwarder','SecondaryFo
 /** Page sizes of upstream's dropdown (index.html, `optZonesPerPage`). */
 export const ZONES_PER_PAGE = [10, 25, 50, 100, 250, 500] as const
 
+/**
+ * `zones/list` with no page: the server answers EVERY zone the user may see, and
+ * leaves out `totalZones` and `totalPages` (WebServiceZonesApi.cs). The zone list's
+ * summary (deviation 12) reads it to count across all zones, not just the page.
+ * About 230 bytes per zone before compression.
+ */
+export async function listAllZones(token: string | null, node = ''): Promise<Zone[] | null> {
+  const outcome = await apiRequest<{ response: { zones: Zone[] } }>('zones/list', {
+    token,
+    body: { node },
+  })
+  return outcome.kind === 'ok' ? outcome.data.response.zones : null
+}
+
 export async function listZones(
   token: string | null,
   options: {

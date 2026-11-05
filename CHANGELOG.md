@@ -53,6 +53,12 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
   run of records. Fixed on the way: the refresh beside a zone's title, the IDN title, the status
   colours, the expiry with its seconds, the catalog's own name, `Properties` in the DNSSEC menu
   and the `seconds` after the SOA timers.
+- **Zones at a glance.** The zone list opens with cards for all zones by type, their health, how
+  many are signed and the last change; a zone opens with cards for its records, its SOA, its name
+  servers and its DNSSEC, which carries the DNSSEC actions. Record and zone types each have a
+  colour, the same everywhere. Disable Zone and Delete Zone move to the foot of the zone's page.
+- **Destructive buttons are outlined in red at rest** across the console, and the four that were
+  plain grey (a DNSSEC key's Delete, Delete Record, and two Remove buttons) now are too.
 
 ## v1.3.4 (2026-10-21)
 

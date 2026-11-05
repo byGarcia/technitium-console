@@ -207,7 +207,7 @@ function PermissionsTable({
                 </td>
               ))}
               <td>
-                <Button
+                <Button variant="danger"
                   size="sm"
                   onClick={() => onChange(rows.filter((_, j) => j !== i))}
                 >

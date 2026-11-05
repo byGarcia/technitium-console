@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { readPerPage, writePerPage } from '../../lib/stored-per-page'
 import {
   deletionBody,
@@ -24,15 +24,17 @@ import { Button } from '../../ui/Button'
 import { DomainName } from '../../ui/DomainName'
 import { Field, Input, Select } from '../../ui/Field'
 import { DataCell } from './DataCell'
+import { ZoneOverview } from './ZoneOverview'
+import { recordColour } from './zone-colours'
 import { dateTime, dateWithAge } from '../../lib/dates'
-import { Menu, Separator } from '../../ui/Menu'
+import { Menu } from '../../ui/Menu'
 import { filterBy } from './filter'
 import { statusText, pageWindow } from '../../lib/pagination'
 import { rowActions, recordCells, relativeName, hideDnssec, type Cell } from './record-view'
 import { zoneHeader, isSigned, writeHideDnssec, readHideDnssec } from './zone-view'
 import { SectionHeader } from '../../ui/SectionHeader'
 import { Empty, Loading } from '../../ui/Empty'
-import { Chip, Tag } from '../../ui/Tag'
+import { Tag } from '../../ui/Tag'
 import tbl from '../../ui/Table.module.css'
 import { RowAction, Th, useSort, type Keys, Table } from '../../ui/Table'
 import { type TagTone } from '../../ui/Tag'
@@ -186,13 +188,16 @@ export function ZoneRecords(p: ZoneRecordsProps) {
   type puts it in the Type field and runs Go, the same as typing it; pressing the
   one already applied empties the field and runs Go.
   */
-  const byType = useMemo(() => {
+  const shown = useMemo(() => {
     const signed = isSigned(zoneInfo?.dnssecStatus)
-    const base = hideDnssecRecords && signed ? hideDnssec(records) : records
+    return hideDnssecRecords && signed ? hideDnssec(records) : records
+  }, [records, hideDnssecRecords, zoneInfo])
+  const byType = useMemo(() => {
+    const base = shown
     const counts = new Map<string, number>()
     for (const r of base) counts.set(r.type, (counts.get(r.type) ?? 0) + 1)
     return [...counts.entries()]
-  }, [records, hideDnssecRecords, zoneInfo])
+  }, [shown])
 
   const totalPages = Math.max(1, Math.ceil(visible.length / perPage))
   // Past the last page, or negative, is the last page (`showEditZonePage`).
@@ -442,19 +447,6 @@ export function ZoneRecords(p: ZoneRecordsProps) {
                 Add Record
               </Button>
             )}
-            {zoneInfo.disabled ? (
-              <Button lead="power" disabled={!p.canModify || busy} onClick={doEnableZone}>
-                Enable Zone
-              </Button>
-            ) : (
-              <Button lead="power" disabled={!p.canModify || busy} onClick={doDisableZone}>
-                Disable Zone
-              </Button>
-            )}
-            <Button lead="trash" variant="danger" disabled={!p.canDelete || busy} onClick={removeZone}>
-              Delete Zone
-            </Button>
-
             <Menu size="md" label="Zone actions" text="Options">
               {(close) => (
                 <>
@@ -506,45 +498,29 @@ export function ZoneRecords(p: ZoneRecordsProps) {
               )}
             </Menu>
 
-            {head?.dnssec && (
-              <Menu size="md" label="DNSSEC actions" text="DNSSEC">
-                {(close) => (
-                  <>
-                    {head.sign && (
-                      <button type="button" disabled={!p.canModify} onClick={() => { close(); p.onSign(zone) }}>
-                        Sign Zone
-                      </button>
-                    )}
-                    {head.toggleDnssecRecords && (
-                      <button type="button" onClick={() => { close(); toggleDnssec() }}>
-                        {hideDnssecRecords ? 'Show DNSSEC Records' : 'Hide DNSSEC Records'}
-                      </button>
-                    )}
-                    {head.viewDs && (
-                      <button type="button" onClick={() => { close(); p.onViewDs(zone) }}>
-                        View DS Info
-                      </button>
-                    )}
-                    {head.properties && (
-                      <button type="button" disabled={!p.canModify} onClick={() => { close(); p.onDnssecProperties(zone) }}>
-                        Properties
-                      </button>
-                    )}
-                    {head.unsign && (
-                      <>
-                        <Separator />
-                        <button type="button" disabled={!p.canModify} onClick={() => { close(); p.onUnsign(zone) }}>
-                          Unsign Zone
-                        </button>
-                      </>
-                    )}
-                  </>
-                )}
-              </Menu>
-            )}
           </>
         }
       />
+
+      {head && (
+        <ZoneOverview
+          zone={zone}
+          info={zoneInfo}
+          records={shown}
+          head={head}
+          hideDnssecRecords={hideDnssecRecords}
+          canModify={p.canModify}
+          busy={busy}
+          onSign={() => p.onSign(zone)}
+          onUnsign={() => p.onUnsign(zone)}
+          onViewDs={() => p.onViewDs(zone)}
+          onProperties={() => p.onDnssecProperties(zone)}
+          onToggleDnssecRecords={toggleDnssec}
+          byType={byType}
+          activeType={typeFilter}
+          onType={(t) => showPage(1, t)}
+        />
+      )}
 
       <div className={styles.flt}>
         <div className={styles.filterWide}>
@@ -577,23 +553,6 @@ export function ZoneRecords(p: ZoneRecordsProps) {
           Go
         </Button>
       </div>
-
-      {byType.length > 0 && (
-        <div className={styles.types} role="group" aria-label="Records by type">
-          {byType.map(([t, n]) => (
-            <button
-              key={t}
-              type="button"
-              className={styles.typeChip}
-              aria-pressed={typeFilter.toUpperCase() === t}
-              onClick={() => showPage(1, typeFilter.toUpperCase() === t ? '' : t)}
-            >
-              <span className={styles.typeName}>{t}</span>
-              <span className={styles.typeCount}>{n}</span>
-            </button>
-          ))}
-        </div>
-      )}
 
       <div className={styles.count}>
         <span>{text}</span>
@@ -635,7 +594,9 @@ export function ZoneRecords(p: ZoneRecordsProps) {
                 <td className={`${styles.mono} ${tbl.lead} ${styles.owner}`}><DomainName name={relativeName(r.name, zone)} /></td>
                 <td className={tbl.lead}>
                   <span className={styles.typeCell}>
-                    <Chip>{r.type}</Chip>
+                    <span className={styles.rtype} style={{ '--rt': recordColour(r.type) } as CSSProperties}>
+                      {r.type}
+                    </span>
                     {r.disabled && <Tag>Disabled</Tag>}
                   </span>
                 </td>
@@ -664,7 +625,7 @@ export function ZoneRecords(p: ZoneRecordsProps) {
                           list. */}
                       <Menu label={`Actions for ${relativeName(r.name, zone)} ${r.type}`}>
                         {(close) => (
-                          <button
+                          <button data-variant="danger"
                             type="button"
                             disabled={actions.editingOnly || !p.canDelete || busy}
                             onClick={() => { close(); removeRecord(r) }}
@@ -723,6 +684,28 @@ export function ZoneRecords(p: ZoneRecordsProps) {
           </div>
           {pagination}
         </div>
+      </div>
+
+      {/*
+      What acts on the whole zone and is hard to take back, at the foot of its page
+      (2026-11-05), the way the consoles this one is compared with keep it: out of
+      the header, where it sat between Add Record and Options and weighed the same.
+      The same buttons, the same confirmations.
+      */}
+      <div className={styles.zoneFoot}>
+            {zoneInfo.disabled ? (
+            <Button lead="power" disabled={!p.canModify || busy} onClick={doEnableZone}>
+              Enable Zone
+            </Button>
+          ) : (
+            <Button lead="power" disabled={!p.canModify || busy} onClick={doDisableZone}>
+              Disable Zone
+            </Button>
+          )}
+          <Button lead="trash" variant="danger" disabled={!p.canDelete || busy} onClick={removeZone}>
+            Delete Zone
+          </Button>
+
       </div>
     </>
   )

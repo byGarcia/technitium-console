@@ -797,7 +797,7 @@ function KeyRow({
       <td className={tbl.actionsCell}>
         <div className={tbl.actions}>
           {a.remove && (
-            <Button size="sm" disabled={busy} onClick={onDelete}>
+            <Button variant="danger" size="sm" disabled={busy} onClick={onDelete}>
               Delete
             </Button>
           )}

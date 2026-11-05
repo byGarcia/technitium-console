@@ -84,9 +84,10 @@ light. It was `filter: brightness(0.90)`, which darkened the ink with the fill.
 /*
 THE DESTRUCTIVE ONE, in two tiers (2026-11-05).
 
-On a page ("Delete Zones", "Flush Cache", a row's "Remove") it is the neutral
-button with its label in red, and it fills with red under the pointer and on
-keyboard focus: the moment you are about to press it. The page-level ones open a
+On a page ("Delete Zones", "Flush Cache", a row's "Remove") it is OUTLINED in red,
+its border and its label (Adrián's decision, 2026-11-05: a destructive button
+must read as one at rest, not only under the pointer), and it fills with red
+under the pointer and on keyboard focus: the moment you are about to press it. The page-level ones open a
 confirmation ("Delete Zones" lists the zones, "Flush Cache" asks), and a row's
 "Remove" in Blocking › Lists only changes what Save will send. The decision is
 taken in the dialog, so that is where red is solid from the start (`ui/Confirm`,
@@ -99,7 +100,7 @@ repeats on every row) and compete with the amber primary.
 */
 .danger {
   background: var(--btn);
-  border-color: var(--btn-line);
+  border-color: var(--dan);
   color: var(--dan);
   font-weight: 500;
 }

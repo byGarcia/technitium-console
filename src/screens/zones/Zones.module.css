@@ -66,32 +66,6 @@
 .fact { font-size: var(--t-3); color: var(--mute); align-self: center; }
 .fact b { font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
 
-/*
-What the zone holds, by type (`ZoneRecords.tsx`, WHAT THE ZONE HOLDS). A row of
-small joined chips: the type in mono, its count after it. The applied one takes
-the active fill and amber, like a chosen period.
-*/
-.types { display: flex; flex-wrap: wrap; gap: var(--s-3); margin-bottom: var(--s-7); }
-.typeChip {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--s-4);
-  padding: var(--s-2) var(--s-5);
-  border: 1px solid var(--btn-line);
-  border-radius: var(--r-2);
-  background: var(--btn);
-  color: var(--ink);
-  font: inherit;
-  font-size: var(--t-3);
-  cursor: pointer;
-  transition: background var(--t-fast), border-color var(--t-fast);
-}
-.typeChip:hover { background: var(--btn-hover); border-color: var(--line-hover); }
-.typeChip[aria-pressed='true'] { background: var(--seg-active); border-color: var(--acc-ink); color: var(--acc-ink); }
-.typeName { font-family: var(--font-mono); font-weight: 600; }
-.typeCount { color: var(--mute); font-variant-numeric: tabular-nums; }
-.typeChip[aria-pressed='true'] .typeCount { color: inherit; }
-
 /* The type and, when it applies, the Disabled pill on one line. */
 .typeCell { display: inline-flex; align-items: center; gap: var(--s-3); flex-wrap: wrap; }
 
@@ -168,3 +142,30 @@ the table.
   font-size: var(--t-4);
   color: var(--mute);
 }
+
+/* The foot of a zone's page: what acts on the whole zone and is hard to take back,
+   apart from everything above it by a hairline (ZoneRecords). */
+.zoneFoot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-5);
+  margin-top: var(--gap-block);
+  padding-top: var(--gap-group);
+  border-top: 1px solid var(--line2);
+}
+
+/* A record type in its series colour (zone-colours.ts): the word in the colour,
+   on a tint of it, so a column of types reads by colour before it is read. */
+.rtype {
+  display: inline-block;
+  padding: var(--s-1) var(--s-4);
+  border-radius: var(--r-1);
+  background: color-mix(in srgb, var(--rt) 16%, transparent);
+  color: var(--rt);
+  font: 600 var(--t-1)/1.5 var(--font-mono);
+  letter-spacing: 0.03em;
+}
+
+/* A zone type with the dot of its colour. */
+.ztype { display: inline-flex; align-items: center; gap: var(--s-4); }
+.zdot { width: 7px; height: 7px; border-radius: 2px; flex: none; }

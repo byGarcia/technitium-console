@@ -9,6 +9,7 @@ import {
   typeLabel,
   exportZone,
   listZones,
+  listAllZones,
   zoneNameOf,
   resyncZone,
   ZONE_TYPES,
@@ -30,6 +31,8 @@ import { Th, useSort, type Keys, Table } from '../../ui/Table'
 import styles from './Zones.module.css'
 import type { Notice, Confirmation } from './types'
 import { Pagination } from '../../ui/Pagination'
+import { ZoneSummary } from './ZoneSummary'
+import { zoneColour } from './zone-colours'
 import { noticeFromFailure } from '../../lib/notice'
 
 /*
@@ -101,6 +104,8 @@ export function ZoneList({
   refresh,
 }: ZoneListProps) {
   const [zones, setZones] = useState<Zone[]>([])
+  /* Every zone, for the summary over the list (`ZoneSummary`). */
+  const [allZones, setAllZones] = useState<Zone[] | null>(null)
   /*
   Whether the first load has come back at all. `zones` starts as an empty array,
   so without this the wait was drawn exactly like a server with no zones: "1-0 (0)
@@ -140,11 +145,11 @@ export function ZoneList({
   const nameRef = useRef<HTMLInputElement>(null)
 
   const load = useCallback(
-    async (page: number) => {
+    async (page: number, typeOverride?: string) => {
       setBusy(true)
       const r = await listZones(token, {
         filterName: nameFilter,
-        filterType: typeFilter,
+        filterType: typeOverride ?? typeFilter,
         pageNumber: page,
         zonesPerPage: perPage,
         node,
@@ -175,6 +180,11 @@ export function ZoneList({
       }
 
       const data = r.data
+      /* The summary is read with every list read, so a change made from the list
+         shows in its figures at once. A failed summary keeps the last one. */
+      void listAllZones(token, node).then((all) => {
+        if (all != null) setAllZones(all)
+      })
       setStale(false)
       setLastGood(new Date().toISOString())
       setZones(data.zones)
@@ -382,6 +392,17 @@ export function ZoneList({
             Add Zone
           </Button></>}
       />
+
+      {allZones != null && (
+        <ZoneSummary
+          zones={allZones}
+          activeType={typeFilter}
+          onType={(t) => {
+            setTypeFilter(t)
+            void load(1, t)
+          }}
+        />
+      )}
 
       <div className={styles.flt}>
         <div className={styles.filterWide}>
@@ -708,7 +729,12 @@ function ZoneRow(p: RowProps) {
       {/* The type goes as text and not as a capsule: with Type, DNSSEC and
           Status all in capsules, three consecutive columns of pills read as a
           single smear and none of the three stood out. */}
-      <td className={tbl.meta}>{typeLabel(z.type)}</td>
+      <td className={tbl.meta}>
+        <span className={styles.ztype}>
+          <span className={styles.zdot} style={{ background: zoneColour(z.type) }} />
+          {typeLabel(z.type)}
+        </span>
+      </td>
       <td>
         {/*
         Upstream leaves the cell EMPTY when the zone is not signed

@@ -542,6 +542,7 @@ export function ZoneOptions({
                         />
                         <Button
                           size="sm"
+                          variant="danger"
                           onClick={() =>
                             set(
                               'updateSecurityPolicies',

@@ -625,7 +625,7 @@ MII...
                     )
                   }
                 />
-                <Button
+                <Button variant="danger"
                   size="sm"
                   onClick={() => set('svcbParams', f.svcbParams.filter((_, j) => j !== i))}
                 >

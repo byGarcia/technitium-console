@@ -847,6 +847,21 @@ contract and SECURITY.md.
       Upstream leaves the cell empty for an unsigned zone and writes `DNSSEC`,
       blue or grey by `hasDnssecPrivateKeys` (zone.js:721-731). This one predates
       2026-11-05 and is registered here because it was never written down.
+    - **The zone list opens with four cards** (`ZoneSummary.tsx`): all zones by
+      type (pressing a type sets the Type filter and runs Go), Health (Enabled,
+      the zones with a problem in upstream's states, Disabled), DNSSEC (signed
+      of signable) and the last zone changed. They read ONE `zones/list` with no
+      page, the only call this deviation adds: every zone the user may see,
+      about 230 bytes each, under the Zones: View the list already needs.
+    - **A zone's page opens with four cards** (`ZoneOverview.tsx`) drawn from the
+      `records/get` already loaded: Records (by type, Disabled, and Not used
+      since restart, because the server keeps `lastUsedOn` in memory only), the
+      apex SOA, the apex Name Servers, and DNSSEC. The DNSSEC menu's actions are
+      that card's buttons, with upstream's literals and the same dialogs.
+    - **Disable Zone and Delete Zone sit at the foot of a zone's page**, not in
+      its header: the same buttons and confirmations, one click as before.
+    - **Each record type and zone type has a series colour** (`zone-colours.ts`),
+      taken from the Dashboard's `--ch-*`; the type is always written beside it.
 
 ## Four constraints the server imposes
 
