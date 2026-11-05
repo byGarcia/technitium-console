@@ -57,7 +57,8 @@ export function PermissionButton({
   const verb = (action ?? '').replace(/^can/, '')
   return (
     <Tooltip text={`Requires ${section}: ${verb}`}>
-      <Button {...rest} disabled>
+      {/* The lock replaces a leading icon: when both apply, the lock wins (DESIGN). */}
+      <Button {...rest} lead={undefined} disabled>
         <Icon name="lock" size={13} />
         {children}
       </Button>

@@ -13,7 +13,7 @@ A library cannot be brought in: the server's CSP is `default-src 'self'` with no
 `font-src` (DnsWebService.cs:1969-1975), so no CDN and no icon font. They go as
 inline SVG, which is also what lets them inherit the text colour.
 
-24 grid, 1.75 stroke and round caps, the same for all twenty-one.
+24 grid, 1.75 stroke and round caps, the same for all of them.
 */
 
 const STROKE = {
@@ -31,8 +31,86 @@ export type IconName =
   | 'first' | 'last' | 'close' | 'menu' | 'plus' | 'sort' | 'back' | 'check'
   | 'edit' | 'power' | 'card' | 'convert' | 'warning' | 'lock'
   | 'moveUp' | 'moveDown'
+  | 'add' | 'trash' | 'refresh' | 'search' | 'download' | 'upload' | 'run' | 'store' | 'key' | 'save'
 
 const PATHS: Record<IconName, ReactElement> = {
+  // ── Leading a button's label (`ui/Button`, `lead`), 2026-11-05 ──────────
+  /* A cross: add something to a list (Add Zone, Add block list…). */
+  add: (
+    <>
+      <path d="M12 5v14" />
+      <path d="M5 12h14" />
+    </>
+  ),
+  /* A bin: what empties or removes (Flush Cache, Delete Zones). */
+  trash: (
+    <>
+      <path d="M4 7h16" />
+      <path d="M10 11v6M14 11v6" />
+      <path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12" />
+      <path d="M9 7V4h6v3" />
+    </>
+  ),
+  /* Two turning arrows: read again (Refresh, Update Now). */
+  refresh: (
+    <>
+      <path d="M20 11a8 8 0 0 0-14.6-4.5L4 8" />
+      <path d="M4 4v4h4" />
+      <path d="M4 13a8 8 0 0 0 14.6 4.5L20 16" />
+      <path d="M20 20v-4h-4" />
+    </>
+  ),
+  /* A lens: look something up (Query, Browse, Check). */
+  search: (
+    <>
+      <circle cx="11" cy="11" r="6.5" />
+      <path d="m20 20-4.2-4.2" />
+    </>
+  ),
+  /* Out of the console (Export, Backup Settings). */
+  download: (
+    <>
+      <path d="M12 4v11" />
+      <path d="m7 10 5 5 5-5" />
+      <path d="M5 20h14" />
+    </>
+  ),
+  /* Into the console (Import, Restore Settings, Install from file). */
+  upload: (
+    <>
+      <path d="M12 20V9" />
+      <path d="m7 14 5-5 5 5" />
+      <path d="M5 4h14" />
+    </>
+  ),
+  /* Send it off (Resolve). */
+  run: <path d="M7 5v14l11-7z" />,
+  /* Four tiles: a catalogue to pick from (App Store). */
+  store: (
+    <>
+      <rect x="4" y="4" width="6.5" height="6.5" rx="1.5" />
+      <rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5" />
+      <rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5" />
+      <rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5" />
+    </>
+  ),
+  /* A key: a credential (Create Token). */
+  key: (
+    <>
+      <circle cx="8" cy="15" r="4" />
+      <path d="m11 12 8-8" />
+      <path d="m16 7 3 3" />
+    </>
+  ),
+  /* A disk: keep what changed (Save Settings). */
+  save: (
+    <>
+      <path d="M5 4h11l3 3v13H5z" />
+      <path d="M8 4v5h7V4" />
+      <path d="M8 20v-6h8v6" />
+    </>
+  ),
+
   // ── Sections ───────────────────────────────────────────────────────────
   /* A panel with its readings: the dashboard. */
   dashboard: (

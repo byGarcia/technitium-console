@@ -8,11 +8,10 @@ appearance, and any change to the pagination took the tabs down with it.
 */
 .secs {
   display: inline-flex;
-  padding: var(--s-1);
-  gap: var(--s-1);
-  background: var(--pan2);
-  border: 1px solid var(--line);
+  background: var(--btn);
+  border: 1px solid var(--btn-line);
   border-radius: var(--r-3);
+  overflow: hidden;
 }
 
 /* Longhands and not the `font:` shorthand: `inherit` is not valid as a component
@@ -24,21 +23,54 @@ appearance, and any change to the pagination took the tabs down with it.
   line-height: 1;
   padding: var(--s-4) var(--s-8);
   border: 0;
-  border-radius: var(--r-2);
+  border-radius: 0;
   background: transparent;
   color: var(--mute);
   cursor: pointer;
   white-space: nowrap;
+  transition: background var(--t-fast), color var(--t-fast);
 }
 
-.option:hover { color: var(--ink); }
+/*
+A JOINED GROUP of flat buttons (2026-11-05), the way the consoles it is compared
+with draw a choice of a few. Each option is divided from the next by the group's
+own line, and the chosen one is a lighter fill with its label in amber: amber is
+what is active, and a solid amber block here was the loudest thing on the
+Dashboard, louder than any action on it.
+*/
+.option + .option { box-shadow: inset 1px 0 0 var(--btn-line); }
+
+.option:hover { color: var(--ink); background: var(--nav-hover); }
+
+/* Inside, because the group's `overflow: hidden` would clip an outside ring. */
+.option:focus-visible { outline: var(--focus); outline-offset: -2px; }
 
 .option[aria-pressed='true'],
 .option[aria-selected='true'] {
-  background: var(--acc);
-  color: var(--on-acc);
-  font-weight: 550;
+  background: var(--seg-active);
+  color: var(--acc-ink);
+  font-weight: 600;
 }
+
+/* The live period (`live` in `Segmented.tsx`): a dot that beats while it is chosen. */
+.live::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: var(--s-4);
+  vertical-align: 1px;
+  border-radius: 50%;
+  background: var(--ok);
+  animation: live 2.4s ease-out infinite;
+}
+
+@keyframes live {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ok) 55%, transparent); }
+  70%, 100% { box-shadow: 0 0 0 7px transparent; }
+}
+
+@media (prefers-reduced-motion: reduce) { .live::before { animation: none; } }
 
 /* The strip on a title's line: shorter, so the title still leads. */
 .compact .option { padding: var(--s-2) var(--s-6); font-size: var(--t-3); line-height: 1.4; }

@@ -27,8 +27,8 @@ magazine kicker, which is decoration, and this is navigation.
 
 .title {
   margin: 0;
-  font-size: var(--t-7);
-  font-weight: 600;
+  font-size: var(--t-title);
+  font-weight: 650;
   letter-spacing: -0.025em;
   color: var(--ink);
   word-break: break-word;

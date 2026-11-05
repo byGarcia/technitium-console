@@ -337,6 +337,7 @@ export function Overview({
         actions={
           <Segmented
             label="Period"
+            live="LastHour"
             options={PERIODS.map((r) => ({ id: r, label: RANGE_LABEL[r] }))}
             active={range}
             onChoose={setRange}

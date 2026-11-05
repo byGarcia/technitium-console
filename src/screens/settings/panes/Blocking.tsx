@@ -275,7 +275,7 @@ export function Blocking({ f, set, en, extra }: PaneProps & { extra: BlockingExt
           <span className={styles.val}>
             {nextUpdateText(extra.blockListNextUpdatedOn)}
           </span>
-          <Button
+          <Button lead="refresh"
             disabled={!extra.hasSavedBlockLists || extra.busy}
             onClick={extra.onUpdateNow}
           >

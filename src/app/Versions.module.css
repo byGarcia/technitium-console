@@ -12,9 +12,9 @@ Upstream keeps the server's domain in the panel title next to "DNS Server". Same
 pairing here: the domain heads the block that talks about that server.
 */
 .block {
-  border: 1px solid var(--line);
+  border: 1px solid var(--line2);
   border-radius: var(--r-3);
-  background: var(--pan2);
+  background: transparent;
   padding: var(--s-5) var(--s-6);
   display: flex;
   flex-direction: column;
@@ -34,28 +34,31 @@ pairing here: the domain heads the block that talks about that server.
   margin-bottom: var(--s-2);
 }
 
-/* Label left, version right: the eye reads down the versions in one column.
-   When a mark leaves no room beside the label, the version and its mark move to
-   the next line, still on the right, rather than cut "Web Console" in two. */
+/*
+Label left, version right: the eye reads down the versions in one column.
+
+The update mark gets a strip of its own, the card's full width, right under the
+version it is about (2026-11-05). It used to sit beside the version, and with
+"DNS Server", the mark and "15.6.1" there was no room in 216 px: the version and
+its mark dropped to a second line on their own, a half-broken row. Now the label
+and its version always keep their line, and the strip reads as the notice it is.
+`.ver` is `display: contents` so its two children take part in the row's flex
+directly: the version stays on the label's line, the mark wraps under both.
+*/
 .row {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
   justify-content: space-between;
-  gap: var(--s-2) var(--s-5);
+  gap: var(--s-3) var(--s-5);
   font-size: var(--t-2);
 }
 
 .name { color: var(--mute); white-space: nowrap; }
 
-.ver {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--s-4);
-  margin-left: auto;
-}
+.ver { display: contents; }
 
-.num { font-family: var(--font-mono); color: var(--ink); }
+.num { font-family: var(--font-mono); color: var(--ink); margin-left: auto; }
 
 /*
 The mark rides on the version it is about, which is the whole point of putting
@@ -66,25 +69,37 @@ Amber and not the red upstream uses: in this console red is what destroys
 (Delete Zones, Flush Cache) and an available update destroys nothing.
 */
 .mark {
+  order: 3;
+  flex: 1 0 100%;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 1px var(--s-4) 1px var(--s-3);
-  border: 1px solid var(--acc-ink);
-  border-radius: 999px;
-  background: transparent;
+  justify-content: center;
+  gap: var(--s-3);
+  padding: var(--s-2) var(--s-4);
+  border: 0;
+  border-radius: var(--r-2);
+  background: var(--acc-tint);
   color: var(--acc-ink);
   font: inherit;
-  font-size: var(--t-1);
-  
+  font-size: var(--t-2);
+  font-weight: 600;
   line-height: 1.6;
   cursor: pointer;
+  transition: background var(--t-fast);
 }
 
 .mark:hover,
-.mark:focus-visible { background: color-mix(in srgb, var(--acc) 14%, transparent); }
+.mark:focus-visible { background: var(--acc-tint-strong); }
 
-.dot { width: 5px; height: 5px; border-radius: 50%; background: var(--acc-ink); }
+.dot { width: 5px; height: 5px; border-radius: 50%; background: var(--acc-ink); animation: live 2.4s ease-out infinite; }
+
+/* The same beat as the Dashboard's live period (`ui/Segmented`, `.live`). */
+@keyframes live {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--acc-ink) 55%, transparent); }
+  70%, 100% { box-shadow: 0 0 0 6px transparent; }
+}
+
+@media (prefers-reduced-motion: reduce) { .dot { animation: none; } }
 
 /* Inside the dialog. */
 .jump {

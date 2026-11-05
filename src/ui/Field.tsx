@@ -19,10 +19,15 @@ export type InputProps = InputHTMLAttributes<HTMLInputElement> & {
   ref?: Ref<HTMLInputElement>
 }
 
-export function Input({ mono, className, ...rest }: InputProps) {
+/*
+`search` draws a magnifying glass inside a field that filters or looks something up
+(Zones' and a zone's Name, Cache's and Blocking's Domain, Query Logs' Domain). It
+is a background image, so it adds no element and changes nothing the field says.
+*/
+export function Input({ mono, search, className, ...rest }: InputProps & { search?: boolean }) {
   return (
     <input
-      className={[styles.input, mono ? styles.mono : '', className].filter(Boolean).join(' ')}
+      className={[styles.input, mono ? styles.mono : '', search ? styles.search : '', className].filter(Boolean).join(' ')}
       {...rest}
     />
   )

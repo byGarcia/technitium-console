@@ -1,5 +1,6 @@
 import type { ButtonHTMLAttributes, Ref } from 'react'
 import styles from './Button.module.css'
+import { Icon, type IconName } from './Icon'
 
 export type ButtonVariant = 'primary' | 'secondary' | 'danger'
 
@@ -12,14 +13,18 @@ export function Button({
   variant = 'secondary',
   size = 'md',
   icon = false,
+  lead,
   className,
   ref,
+  children,
   ...rest
 }: ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: ButtonVariant
   size?: 'md' | 'sm'
   /** No label: an icon only. The width comes from the icon, not from text. */
   icon?: boolean
+  /** An icon before the label. Decorative: the label is still the button's name. */
+  lead?: IconName
   ref?: Ref<HTMLButtonElement>
 }) {
   return (
@@ -31,6 +36,13 @@ export function Button({
         .filter(Boolean)
         .join(' ')}
       {...rest}
-    />
+    >
+      {lead && (
+        <span className={styles.lead}>
+          <Icon name={lead} size={15} />
+        </span>
+      )}
+      {children}
+    </button>
   )
 }

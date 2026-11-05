@@ -65,3 +65,12 @@ the cursor is.
 @media (prefers-reduced-motion: reduce) {
   .input { transition: none; }
 }
+
+/* The field that looks something up (`search` in `Field.tsx`): the glyph is the
+   token `--glyph-search`, in `--faint`, and the text starts after it. */
+.search {
+  padding-left: calc(var(--s-7) + 22px);
+  background-image: var(--glyph-search);
+  background-repeat: no-repeat;
+  background-position: var(--s-7) 50%;
+}

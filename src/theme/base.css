@@ -282,3 +282,11 @@ textarea:focus {
   input[type='checkbox'],
   input[type='radio'] { transition: none; }
 }
+
+/*
+A link nobody styled. Upstream's texts carry links inside them ("RFC 8806" in Add
+Zone) and they came out in the browser's own blue and visited purple: the one
+colour on the screen that belonged to no theme. Every link a component draws sets
+its own colour with a class, which wins over this.
+*/
+a { color: var(--acc-ink); text-underline-offset: 2px; }

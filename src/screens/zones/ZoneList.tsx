@@ -371,7 +371,7 @@ export function ZoneList({
     <>
       <SectionHeader
         title="Zones"
-        actions={<><Button variant="primary" disabled={!canModify || busy} onClick={onAdd}>
+        actions={<><Button lead="add" variant="primary" disabled={!canModify || busy} onClick={onAdd}>
             Add Zone
           </Button></>}
       />
@@ -383,6 +383,7 @@ export function ZoneList({
               <Input
                 id={id}
                 ref={nameRef}
+                search
                 placeholder="abc or a* or *b* or a?c"
                 value={nameFilter}
                 onChange={(e) => setNameFilter(e.target.value)}
@@ -483,7 +484,7 @@ export function ZoneList({
             ? state
             : `${checkedOnes.length} of ${zones.length} zones selected`}
         </span>
-        <Button variant="danger" disabled={!canDelete || busy} onClick={deleteChecked}>
+        <Button lead="trash" variant="danger" disabled={!canDelete || busy} onClick={deleteChecked}>
           Delete Zones
         </Button>
       </div>

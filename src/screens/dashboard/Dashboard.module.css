@@ -27,6 +27,11 @@ A figure's colour is the colour of ITS SERIES in the chart, said with an edge an
 not with the square swatch a legend uses: the swatch already means "a series" in the
 `Queries` legend, and a card is that series' total.
 
+The edge is a straight bar INSIDE the card, clear of its corners (2026-11-05). It
+was the card's own `border-left: 3px`, and a thick border on a rounded box bends
+with the corner into a bracket: eleven of them in a row were the rainbow of an
+admin template. The trend carries the same colour, filled, so the bar can be thin.
+
 Each card is a size container: its figure takes the smaller of its normal size
 (`--size`) and what fits (`--fit`, below), so a long figure never spills out.
 */
@@ -35,26 +40,40 @@ Each card is a size container: its figure takes the smaller of its normal size
   min-width: 0;
   background: var(--pan);
   border: 1px solid var(--line2);
-  border-left: 3px solid var(--tc, var(--acc));
   border-radius: var(--r-3);
   box-shadow: var(--e-1), var(--edge);
 }
 
+.tile::before {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  left: 0;
+  top: var(--s-8);
+  bottom: var(--s-8);
+  width: 2px;
+  border-radius: 0 2px 2px 0;
+  background: var(--tc, var(--acc));
+  pointer-events: none;
+}
+
 /*
 A card that opens Query Logs (upstream's since v15.6.2): a transparent button over
-the whole card. Hover lifts the edge to the series' colour; focus draws the halo.
+the whole card, laid exactly on the card's 1 px border. Hover tints that border
+with the series' colour and lifts the card a veil; focus draws the halo.
 */
 .tile { position: relative; }
 .open {
   position: absolute;
-  inset: -1px -1px -1px -3px;
+  inset: -1px;
   padding: 0;
   background: transparent;
   border: 1px solid transparent;
   border-radius: inherit;
   cursor: pointer;
+  transition: border-color var(--t-fast), background var(--t-fast);
 }
-.open:hover { border-color: var(--tc, var(--acc)); }
+.open:hover { border-color: color-mix(in srgb, var(--tc, var(--acc)) 60%, transparent); background: var(--nav-hover); }
 .open:focus-visible { outline: none; box-shadow: var(--halo-focus); }
 
 /*
@@ -67,7 +86,7 @@ line: nothing is cut and nothing overlaps.
 .fig { padding: var(--s-4) var(--s-7); }
 .body { display:flex; align-items:flex-end; justify-content: space-between; gap: var(--s-5); }
 .text { flex: 0 1 auto; min-width: min-content; }
-.fig .spark { flex: 1 0 var(--s-12); max-width: calc(2 * var(--s-12)); height: calc(var(--s-11) + var(--s-1)); }
+.fig .spark { flex: 1 1 auto; min-width: var(--s-12); margin-left: var(--s-3); height: calc(var(--s-11) + var(--s-1)); }
 
 /* `Total Queries`: label, figure, change, and its trend along the foot. */
 .hero {
@@ -81,7 +100,7 @@ line: nothing is cut and nothing overlaps.
 /* "vs previous hour" goes under its change rather than out of the card. */
 .hero .ctx { white-space: normal; }
 
-.tile .k { font-size: var(--t-1); font-weight: 600; color:var(--mute); text-transform:uppercase; letter-spacing:.05em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.tile .k { font-size: var(--t-4); font-weight: 500; color:var(--mute); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .line { display:flex; flex-wrap:wrap; align-items:baseline; column-gap: var(--s-3); min-width: 0; }
 
 /*
@@ -94,7 +113,10 @@ before 110, Safari before 16) cannot work the `min()` out, and the figure takes 
 parent's size.
 */
 .v { --fit: calc((100cqi - var(--len, 1) * 1px) / (var(--len, 1) * 0.62)); white-space: nowrap; }
-.tile .v { --size: var(--t-6); font:600 var(--t-6)/1.3 var(--font-mono); font-size: min(var(--size), var(--fit)); letter-spacing:-.01em; color:var(--ink); }
+/* The figures are in the interface's face with tabular digits (2026-11-05): in
+   monospace a dashboard reads as a terminal. Mono stays for what is data to be
+   compared character by character: domains, addresses, records. */
+.tile .v { --size: var(--t-6); font:650 var(--t-6)/1.3 var(--font-ui); font-variant-numeric: tabular-nums; font-size: min(var(--size), var(--fit)); letter-spacing:-.02em; color:var(--ink); }
 
 /*
 `Total Queries` at 30 px, a deliberate local exception: the type scale ends at
@@ -130,8 +152,8 @@ leaves.
 /* `Server`: six counts in three columns. */
 .counters { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap: var(--s-3); }
 .cnt { container-type: inline-size; min-width: 0; padding: var(--s-3) var(--s-7); background:var(--pan2); border-radius: var(--r-2); }
-.cnt .v { --size: var(--t-5); font:600 var(--t-5)/1.3 var(--font-mono); font-size: min(var(--size), var(--fit)); color:var(--ink); }
-.cnt .k { font-size: var(--t-1); font-weight: 600; color:var(--mute); text-transform:uppercase; letter-spacing:.07em; }
+.cnt .v { --size: var(--t-5); font:650 var(--t-5)/1.3 var(--font-ui); font-variant-numeric: tabular-nums; font-size: min(var(--size), var(--fit)); color:var(--ink); }
+.cnt .k { font-size: var(--t-3); font-weight: 500; color:var(--mute); }
 
 /*
 The four in one row: the three top lists in upstream's order, and the three
@@ -184,7 +206,7 @@ The three breakdowns: each a title, a stacked bar and its legend (`Breakdown.tsx
 .breakdown { padding-top: var(--s-8); }
 .parts { display:flex; flex-direction:column; gap: var(--s-8); padding: 0 var(--s-8) var(--s-7); }
 .part { min-width: 0; }
-.partTitle { margin: 0 0 var(--s-3); font-size: var(--t-1); font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--mute); }
+.partTitle { margin: 0 0 var(--s-3); font-size: var(--t-4); font-weight: 600; color: var(--ink); }
 .stack { display:flex; gap: var(--s-1); height: var(--s-6); border-radius: var(--r-1); overflow:hidden; }
 .segment { display:block; flex-basis: 0; min-width: var(--s-1); height: 100%; padding: 0; border: 0; border-radius: 0; }
 button.segment { cursor: pointer; }

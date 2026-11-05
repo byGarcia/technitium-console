@@ -236,6 +236,7 @@ export function Menu({
           ref={trigger}
           type="button"
           className={styles.row}
+          data-initial={typeof text === 'string' ? text.trim().charAt(0).toUpperCase() || undefined : undefined}
           aria-haspopup="menu"
           aria-expanded={open}
           onClick={toggleOpen}

@@ -183,15 +183,17 @@ with nothing.
 .sort:hover { color: var(--ink); }
 
 /*
-The sort arrow is only visible when it is needed: on the active column, on hover
-and when reached with the keyboard. With all nine headers carrying their little
-arrow at once, the label row was a line of symbols competing with the data and
-saying nothing, because "this is sortable" is the same on all of them.
+The sort arrow is always there, quiet, and full on the active column, on hover
+and when reached with the keyboard. It used to be invisible at rest (all nine
+arrows at once read as a line of symbols), but then nothing said which headers
+sort until the pointer found them; at a little under half strength it says so
+without competing with the data, as the tables this console is compared with
+do (2026-11-05).
 */
 .arrow {
   display: inline-flex;
   color: var(--faint);
-  opacity: 0;
+  opacity: 0.45;
   transition: opacity var(--t-fast);
 }
 
@@ -242,11 +244,10 @@ space and copes with one row having three actions and the next one five.
 .actions {
   display: inline-flex;
   align-items: stretch;
-  border: 1px solid var(--line);
+  border: 1px solid var(--btn-line);
   border-radius: var(--r-2);
   overflow: hidden;
-  background: var(--pan2);
-  box-shadow: var(--edge);
+  background: var(--btn);
 }
 
 /*
@@ -269,7 +270,15 @@ Options" and "Disable Zone" with radius 0 and transparent background, and the
   font-size: var(--t-4);
 }
 
-.actions > * + * { border-left: 1px solid var(--line) !important; }
+.actions > * + * { border-left: 1px solid var(--btn-line) !important; }
+
+/*
+The focus ring is drawn INSIDE the button. The group's `overflow: hidden` (which
+keeps the corners round) clipped the 2 px outline down to one amber sliver on a
+single edge, so the keyboard could not see which action it was on.
+*/
+.actions > *:focus-visible,
+.actions > * > button:focus-visible { outline: var(--focus); outline-offset: -2px; }
 
 /* A row with no action to offer (a cache record with neither Glue nor RRSIG)
    draws no group: empty, its border was a two-pixel box at the row's end. */
@@ -280,12 +289,12 @@ Options" and "Disable Zone" with radius 0 and transparent background, and the
 .actions > *:disabled,
 .actions > * > button:disabled { color: var(--faint); }
 
-/* Delete keeps its colour, but inside the group: it is not filled with red,
-   because a row with a red block turns the table into an alarm. */
+/* Delete keeps its colour inside the group, and fills with red only under the
+   pointer, as every destructive button does (`ui/Button`, THE DESTRUCTIVE ONE). */
 .actions > [data-variant='danger'] { color: var(--dan); font-weight: 500; }
 .actions > [data-variant='danger']:hover:not(:disabled) {
-  background: var(--dan-fill) !important;
-  color: var(--on-dan);
+  background: var(--dan-solid) !important;
+  color: var(--on-dan-solid);
 }
 
 /*

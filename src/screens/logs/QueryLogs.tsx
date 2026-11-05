@@ -607,7 +607,7 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
         tabs={tabs}
         labels={f.appName !== '' ? <Tag>app: {f.appName}</Tag> : undefined}
         actions={<>
-          <Button
+          <Button lead="search"
             variant="primary"
             disabled={busy || live}
             onClick={() => {
@@ -619,7 +619,7 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
           >
             Query
           </Button>
-          <Button disabled={busy} onClick={() => void runExport()}>
+          <Button lead="download" disabled={busy} onClick={() => void runExport()}>
             Export
           </Button>
           <Button onClick={restart}>Reset</Button>
@@ -820,6 +820,7 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
                 <Input
                   id="ql-qname"
                   mono
+                  search
                   placeholder="example.com or *.com"
                   value={f.qname}
                   onChange={(e) => set({ qname: e.target.value })}

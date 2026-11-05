@@ -23,6 +23,29 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
 
 ---
 
+## Unreleased
+
+**Flat controls and a calmer chrome.** Design only: every control, text and step is the same.
+
+- **Buttons are flat**, with no shine or bevel. The neutral one is a step lighter than the panel
+  it sits on, so it no longer disappears in a panel header or a dialog footer. Under the pointer the
+  primary button no longer grows a grey ring and the destructive one keeps its colour.
+- **Destructive buttons in two tiers.** On a page ("Delete Zones", "Flush Cache", "Remove") they are
+  neutral with a red label and fill with red under the pointer; the button that confirms in a
+  dialog is solid red.
+- **Icons on the main actions** (Add Zone, Flush Cache, Query, Export, Backup and Restore
+  Settings, and more), a magnifying glass in the fields that look something up, and the sort arrow
+  always visible in table headers.
+- **States as a dot and a word** (`Enabled`, `Active`) instead of a filled pill.
+- **Sidebar:** its own darker layer, the current section marked with an amber bar instead of a solid
+  amber block, the three groups divided, and an update notice that no longer breaks its line.
+- **Dashboard:** the figure cards drop their curved coloured edge for a straight bar, read in the
+  interface's face, and mark the latest reading on each trend. Last Hour shows a live dot while it
+  refreshes by itself. A card's hover outline now sits on its border.
+- **The period picker** is a joined group of buttons, with the chosen one in amber text instead of
+  a solid amber block.
+- Links inside upstream's texts (such as "RFC 8806" in Add Zone) take the theme's colour.
+
 ## v1.3.4 (2026-10-21)
 
 **Two display fixes, both reported by users.** Still Technitium DNS Server 15.6.2: no API changes.

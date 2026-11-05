@@ -495,6 +495,7 @@ export function ZoneRecords(p: ZoneRecordsProps) {
             {(id) => (
               <Input
                 id={id}
+                search
                 placeholder="abc or a* or *b* or a?c"
                 value={nameField}
                 onChange={(e) => setNameField(e.target.value)}

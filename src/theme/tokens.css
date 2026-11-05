@@ -44,9 +44,9 @@ before `data-theme` is set and with any value nobody declared.
   color-scheme: dark;
 
   /* ── Color ──────────────────────────────────────────────────────────── */
-  --bg: #111315;
-  --pan: #191c1f;
-  --pan2: #212529;
+  --bg: #17191d;
+  --pan: #1d2024;
+  --pan2: #24282d;
   /*
   THE SURFACE RAMP. In a dark interface elevation is NOT told by the shadow
   (black on near-black is invisible) but by the surface RISING in light. The old
@@ -58,37 +58,40 @@ before `data-theme` is set and with any value nobody declared.
   Measured against the dark consoles that do have material (GitHub, Linear and
   Vercel separate panel from raised by 1.09-1.14), the ramp:
 
-    canvas → panel            1.09
-    panel  → raised           1.11   (was 1.04)
+    canvas → panel            1.08
+    panel  → raised           1.10   (was 1.04)
     panel  → row hover        1.23   (was 1.03)
     panel  → sunken field     1.12
     panel  → border           1.49   (was 1.22)
 
   And it is NEUTRAL CHARCOAL, not near-black blue. The canvas was `#0b0e14`: nine
   points more blue than red, with a luminance of 0.0044. That reads as a terminal,
-  not as a product. `#111315` leaves the difference at four points and rises to
-  0.0064, which is the register of consoles that read as professional.
+  not as a product. `#111315` left the difference at four points and rose to
+  0.0064. Since 2026-11-05 it is `#17191d` (0.0097): a near-black canvas under
+  flat controls read as a hole, and the step up is what lets the sidebar sit a
+  layer below it (`--side`).
 
   Technitium's amber stays exactly as it is: it is THEIR brand, not ours, and over
-  this charcoal it gives 8.38:1.
+  this charcoal it gives 8.62:1.
   */
   --ink: #e8eaec;
   --mute: #9aa1a8;
   /*
   `--faint` was `#5d6779` and gave 2.70-3.34:1: it met the 4.5:1 for normal text
   on no surface at all, and it was being used for the `(4h)` of a TTL, the "2
-  hours ago" and the field placeholders. Raised, it gives 4.41-5.45:1 and meets it
-  everywhere. It is still the most muted of the three steps, only now legible.
+  hours ago" and the field placeholders. Raised, it gives 4.51-5.57:1 (the worst
+  on a neutral button, `--btn`) and meets it everywhere. It is still the most
+  muted of the three steps, only now legible.
   */
-  --faint: #868e96;
+  --faint: #8a9299;
   /*
   The faintest text a coloured Query Logs row carries: the response time under
   `Response Type`. In dark it IS `--faint`; in light the row colour darkens the
   ground enough to take `--faint` under 4.5:1, so light gives it a step of its own.
   */
   --faint-on-tint: var(--faint);
-  --line: #333a41;
-  --line2: #24282d;
+  --line: #373d44;
+  --line2: #272b31;
   --acc: #f5a524;
   /*
   AMBER AS INK, and AMBER AS A FILL, are two tokens since 2026-10-01. `--acc` is
@@ -310,7 +313,7 @@ before `data-theme` is set and with any value nobody declared.
   --ch-1: #38bdf8;  --ch-2: #34d399;  --ch-3: #a78bfa;  --ch-4: #fb923c;
   --ch-5: #2dd4bf;  --ch-6: #f472b6;  --ch-7: #f87171;  --ch-8: #facc15;
   --info-bg: #0d1730;  --info-bd: #1e3a8a;
-  --field: #0d0f11;
+  --field: #131518;
   /*
   HOVER IS A VEIL, NOT A COLOUR. It was a fixed `#282d32`, and that is why it was
   visible or not depending on where it landed: 1.34:1 over the canvas, 1.23 over a
@@ -338,11 +341,11 @@ before `data-theme` is set and with any value nobody declared.
   converging them would be a visual change, and that is a decision of its own.
   */
   --selection: rgba(245, 165, 36, 0.28);  /* text selection: the accent, translucent */
-  --line-hover: #2f3846;    /* a button's border and the scrollbar thumb, under the pointer */
+  --line-hover: #4a525b;    /* a button's border and the scrollbar thumb, under the pointer */
   --line-ctrl: #3a465b;     /* a field's border under the pointer; a checkbox's at rest */
   /* A field's border at rest. The value of `--line` here; light needs it apart,
      because there the border is what tells a field from the panel (light block). */
-  --line-field: #333a41;
+  --line-field: #373d44;
   --field-focus: #0e131b;   /* a `ui/Field` input while it has the focus */
   /* The veil behind what covers the page: the side drawer on a narrow screen,
      and the dialog, which darkens more because it is modal. */
@@ -351,15 +354,22 @@ before `data-theme` is set and with any value nobody declared.
 
   /* ── Material ───────────────────────────────────────────────────────── */
   /*
-  The console had no elevation language: zero gradients and four shadows, all four
-  on things that float. Everything was flat panels with a 1 px border, and that is
-  why it read as having no material.
+  FLAT CONTROLS, since 2026-11-05. The console went through a material phase: a
+  white shine fading down every filled control, a 1 px reflection on top of every
+  raised surface, an inset shadow in every field and a two-layer shadow under
+  every panel. Next to the consoles it is compared with (NetBird, Vercel, Linear,
+  GitHub) that read as dated, and it did not cure what made the screens look flat,
+  which was the contrast between layers and a hierarchy every control shared.
 
-  Three heights and nothing more. Each shadow carries an offset AND a blur (a halo
-  with no offset is decoration, not depth) and goes in two layers: a short contact
-  that settles the element and a diffuse one that lifts it off.
+  So the depth now comes from the SURFACE RAMP above and from one accent: controls
+  are a flat fill with a 1 px border, a panel is a step of light over the canvas,
+  and only what floats (a menu, a dialog) keeps a shadow. The tokens stay, so
+  every `box-shadow` list that names them still parses; in dark they are empty.
+
+  `0 0 #0000` and not `none`: these go inside `box-shadow` lists, where `none` is
+  not a valid member and would drop the whole declaration.
   */
-  --e-1: 0 1px 2px rgba(0, 0, 0, 0.35), 0 8px 24px rgba(0, 0, 0, 0.22);
+  --e-1: 0 0 #0000;
   --e-2: 0 2px 6px rgba(0, 0, 0, 0.4), 0 12px 30px rgba(0, 0, 0, 0.45);
   --e-3: 0 4px 12px rgba(0, 0, 0, 0.45), 0 24px 64px rgba(0, 0, 0, 0.6);
 
@@ -367,16 +377,9 @@ before `data-theme` is set and with any value nobody declared.
   --shadow-menu: var(--e-2);
   --shadow-modal: var(--e-3);
 
-  /*
-  The light edge. A raised surface catches some light from above; that 1 px
-  reflection is what separates it from the background without having to raise the
-  shadow. It goes as `inset` so it takes no room in the box.
-  */
-  --edge: inset 0 1px 0 rgba(255, 255, 255, 0.055);
-  --edge-strong: inset 0 1px 0 rgba(255, 255, 255, 0.12);
-
-  /* The sunken look: a field is a hole in the surface, not a sticker. */
-  --sunken: inset 0 1px 2px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(0, 0, 0, 0.2);
+  --edge: 0 0 #0000;
+  --edge-strong: 0 0 #0000;
+  --sunken: 0 0 #0000;
 
   /* A field's focus is not just a border: it is a halo that lifts it. */
   --halo-focus: 0 0 0 3px rgba(245, 165, 36, 0.18);
@@ -387,16 +390,47 @@ before `data-theme` is set and with any value nobody declared.
   /* The switch's knob: a contact shadow, so it sits on its track. */
   --shadow-knob: 0 1px 2px rgba(0, 0, 0, 0.5);
 
+  /* The shines are gone with the rest of the material (see FLAT CONTROLS). */
+  --shine-btn: none;
+  --shine-primary: none;
+  --shine-danger: none;
+  --shine-check: none;
+
   /*
-  THE SHINE. A filled control catches light from above like a raised surface does,
-  as a translucent white fading downwards over its fill. The stronger the fill,
-  the more light it takes: barely any on a neutral button, most on the amber one
-  and on a ticked checkbox. They go before the fill: `var(--shine-btn), var(--pan2)`.
+  THE CONTROL LAYER, since 2026-11-05. What a neutral control is drawn with, and
+  the sidebar's own layer. Measured on this ramp:
+
+    --btn on the panel        1.15   a neutral button, a row's action group, a
+                                     joined segmented control
+    --btn-line on --btn       1.29   its border; `--line-hover` (1.66) under the pointer
+    --side under the canvas   1.05   the sidebar sits one layer BELOW the content
+    --nav-active on --side    1.39   the current section; ink on it 11.03:1,
+                                     `--mute` 5.09, `--faint` 4.21 (not used there)
+
+  `--acc-hover` is the primary button under the pointer. It LIGHTENS here (the
+  amber was darkened by a `filter` before, which darkened its ink with it) and
+  darkens in light, where a lighter amber would vanish into the white.
+
+  `--dan-solid` is red as a fill: a destructive button under the pointer and the
+  one that confirms in a dialog. White on it is 4.72:1; `--dan` (text) on `--btn`
+  is 5.14.
   */
-  --shine-btn: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0) 60%);
-  --shine-primary: linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0) 65%);
-  --shine-danger: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0) 65%);
-  --shine-check: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0) 60%);
+  --side: #131417;
+  --btn: #272b31;
+  --btn-hover: #2e3339;
+  --btn-line: #383f46;
+  --acc-hover: #ffb43d;
+  --acc-tint: rgba(245, 165, 36, 0.14);
+  --acc-tint-strong: rgba(245, 165, 36, 0.24);
+  --dan-solid: #d13d3d;
+  --dan-solid-hover: #bd3434;
+  --on-dan-solid: #ffffff;
+  --dan-tint: rgba(248, 113, 113, 0.12);
+  --nav-hover: rgba(255, 255, 255, 0.04);
+  --nav-active: #2b3036;
+  --nav-active-line: #353b42;
+  --tag-neutral: #2a2f35;
+  --seg-active: #343a41;
 
   /*
   THE DRAWN GLYPHS. The dropdown's chevron and the checkbox's tick and dash are
@@ -415,6 +449,8 @@ before `data-theme` is set and with any value nobody declared.
   --glyph-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238b95a7' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   --glyph-tick: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231a1205' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m20 6-11 11-5-5'/%3E%3C/svg%3E");
   --glyph-dash: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231a1205' stroke-width='3.5' stroke-linecap='round'%3E%3Cpath d='M6 12h12'/%3E%3C/svg%3E");
+  /* The magnifying glass of a field that looks something up, in `--faint`. */
+  --glyph-search: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='15' height='15' viewBox='0 0 24 24' fill='none' stroke='%238a9299' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='6.5'/%3E%3Cpath d='m20 20-4.2-4.2'/%3E%3C/svg%3E");
   --glyph-tick-ok: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23052e26' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m20 6-11 11-5-5'/%3E%3C/svg%3E");
 }
 
@@ -591,12 +627,11 @@ wherever the attribute says `light`.
   black hole behind the dialog. The shadows are soft and cool-neutral; on light
   they, with the border, are the elevation.
 
-  White shines are invisible on white, so the ones on light surfaces are `none`
-  (`--shine-btn`, `--shine-danger`) and the ones on the amber fill keep their
-  white, which still catches the light there. `--edge` stays a white top inset (it
-  sits inside `box-shadow` lists, so it cannot be `none`) and on light it reads as
-  a faint bevel on the raised controls. The text selection and the focus and
-  hover halos stay brand amber, translucent: ink on the selection is 13.19:1.
+  The shines, the top edge and the sunken inset are empty here too since
+  2026-11-05 (FLAT CONTROLS, dark block); the elevation shadows stay, because on
+  light the shadow and the border are what lift a white panel off the grey
+  canvas. The text selection and the focus and hover halos stay brand amber,
+  translucent: ink on the selection is 13.19:1.
 
   The glyphs: the chevron is `#66707a`, 4.83:1 on a field; the tick and the dash
   are `--on-acc` on the amber; the granted permission's tick is `--ok-bg`
@@ -611,19 +646,43 @@ wherever the attribute says `light`.
   --e-3: 0 4px 12px rgba(16, 20, 24, 0.1), 0 24px 64px rgba(16, 20, 24, 0.22);
   --shadow-menu: var(--e-2);
   --shadow-modal: var(--e-3);
-  --edge: inset 0 1px 0 rgba(255, 255, 255, 0.7);
-  --edge-strong: inset 0 1px 0 rgba(255, 255, 255, 0.3);
-  --sunken: inset 0 1px 2px rgba(16, 20, 24, 0.07);
+  --edge: 0 0 #0000;
+  --edge-strong: 0 0 #0000;
+  --sunken: 0 0 #0000;
   --halo-focus: 0 0 0 3px rgba(245, 165, 36, 0.3);
   --halo-hover: 0 0 0 3px rgba(245, 165, 36, 0.2);
   --shadow-knob: 0 1px 2px rgba(16, 20, 24, 0.3);
   --shine-btn: none;
-  --shine-primary: linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0) 65%);
+  --shine-primary: none;
   --shine-danger: none;
-  --shine-check: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0) 60%);
+  --shine-check: none;
+  /*
+  THE CONTROL LAYER on light (see the dark block). The sidebar stays the panel's
+  white; the neutral button is white on its own 1.60:1 border, which is the line
+  that has to tell it from the white panel it often sits on. The amber darkens
+  under the pointer. `--dan-solid` carries white at 5.47:1.
+  */
+  --side: var(--pan);
+  --btn: #ffffff;
+  --btn-hover: #f5f6f8;
+  --btn-line: #c9cdd2;
+  --acc-hover: #e8961a;
+  --acc-tint: rgba(245, 165, 36, 0.16);
+  --acc-tint-strong: rgba(245, 165, 36, 0.28);
+  --dan-solid: #c4322d;
+  --dan-solid-hover: #a82a26;
+  --on-dan-solid: #ffffff;
+  --dan-tint: rgba(180, 35, 24, 0.08);
+  --nav-hover: rgba(16, 20, 24, 0.04);
+  --nav-active: #eceef1;
+  --nav-active-line: #dfe2e6;
+  --tag-neutral: #eef0f3;
+  --seg-active: #e4e7eb;
   --glyph-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2366707a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   --glyph-tick: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231a1205' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m20 6-11 11-5-5'/%3E%3C/svg%3E");
   --glyph-dash: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231a1205' stroke-width='3.5' stroke-linecap='round'%3E%3Cpath d='M6 12h12'/%3E%3C/svg%3E");
+  /* The magnifying glass of a field that looks something up, in `--faint`. */
+  --glyph-search: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='15' height='15' viewBox='0 0 24 24' fill='none' stroke='%235f656c' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='6.5'/%3E%3Cpath d='m20 20-4.2-4.2'/%3E%3C/svg%3E");
   --glyph-tick-ok: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23e7f6ee' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m20 6-11 11-5-5'/%3E%3C/svg%3E");
 }
 
@@ -670,6 +729,9 @@ wherever the attribute says `light`.
   --t-5: 14px;    /* block title, panel subtitle                      (15) */
   --t-6: 17px;    /* counter figure                               (16,17) */
   --t-7: 22px;    /* section title                             (19,21,22) */
+  /* The page's own title, one step over `--t-7` since 2026-11-05: with flat
+     controls a 22 px title sat at the weight of the panels under it. */
+  --t-title: 26px;
   /* The one display size, and only the login cover's headline uses it
      (`screens/LoginCover`, 2026-10-15). It is a ceiling: the cover scales the
      headline with the viewport between `--t-7` and this. */

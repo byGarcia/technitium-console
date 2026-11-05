@@ -175,7 +175,7 @@ export function Leases({ tabs, token, node = '', canModify = true, canDelete = t
       <SectionHeader
         title="DHCP"
         tabs={tabs}
-        actions={<><Button onClick={() => void load()}>Refresh</Button></>}
+        actions={<><Button lead="refresh" onClick={() => void load()}>Refresh</Button></>}
       />
 
       <Notifier notice={notice} onClose={() => setNotice(null)} />

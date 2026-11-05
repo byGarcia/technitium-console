@@ -154,6 +154,7 @@ export function AddDomainBar({
                 ref={entry}
                 mono
                 className={styles.bad}
+                search
                 placeholder="example.com"
                 value={field}
                 aria-invalid={problem != null || undefined}
@@ -181,7 +182,7 @@ export function AddDomainBar({
           >
             Allow
           </PermissionButton>
-          <PermissionButton
+          <PermissionButton lead="search"
             type="button"
             disabled={checking}
             permission={checkNeed}

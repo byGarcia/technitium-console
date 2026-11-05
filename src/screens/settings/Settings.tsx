@@ -554,7 +554,7 @@ export function Settings({
             too: a backup asking for the DELETE permission is not what anyone would
             assume.
             */}
-            <PermissionButton
+            <PermissionButton lead="save"
               variant="primary"
               disabled={busy}
               permission={canModify ? undefined : 'Settings.canModify'}
@@ -562,7 +562,7 @@ export function Settings({
             >
               Save Settings
             </PermissionButton>
-            <PermissionButton
+            <PermissionButton lead="trash"
               variant="danger"
               disabled={busy}
               permission={canFlushCache ? undefined : 'Cache.canDelete'}
@@ -577,7 +577,7 @@ export function Settings({
             */}
             {pendingWords !== '' && <span className={styles.pending}>Unsaved changes: {pendingWords}</span>}
             <div className={[panelFormStyles.spacer, pendingWords !== '' ? styles.besidePending : null].filter(Boolean).join(' ')} />
-            <PermissionButton
+            <PermissionButton lead="download"
               permission={canBackup ? undefined : 'Settings.canDelete'}
               onClick={() => {
                 setSelection(initialBackupSelection())
@@ -587,7 +587,7 @@ export function Settings({
             >
               Backup Settings
             </PermissionButton>
-            <PermissionButton
+            <PermissionButton lead="upload"
               permission={canBackup ? undefined : 'Settings.canDelete'}
               onClick={() => {
                 setSelection(initialBackupSelection())

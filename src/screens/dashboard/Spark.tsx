@@ -43,13 +43,23 @@ export function Spark({ data, className, colour }: { data: number[]; className?:
     run.push(`${(i * step).toFixed(2)},${(30 - (v / max) * 28).toFixed(2)}`)
   })
   if (run.length > 0) runs.push(run)
+  /*
+  THE LIVE EDGE (2026-11-05): a dot on the latest reading, when the latest minute
+  has one. It is HTML over the drawing and not an SVG circle, because the drawing
+  stretches (`preserveAspectRatio="none"`) and a circle in it would be an ellipse.
+  */
+  const lastValue = data[data.length - 1]
+  const end = Number.isFinite(lastValue) ? { x: 100, y: ((30 - (lastValue / max) * 28) / 32) * 100 } : null
   return (
-    <svg
+    <span
       className={`${styles.spark}${className != null ? ` ${className}` : ''}`}
       style={colour != null ? { color: colour } : undefined}
+      aria-hidden="true"
+    >
+    <svg
+      className={styles.draw}
       viewBox="0 0 100 32"
       preserveAspectRatio="none"
-      aria-hidden="true"
     >
       {runs.map((points, i) => {
         const first = points[0].split(',')[0]
@@ -62,5 +72,7 @@ export function Spark({ data, className, colour }: { data: number[]; className?:
         )
       })}
     </svg>
+      {end && <span className={styles.end} style={{ left: `${end.x}%`, top: `${end.y}%` }} />}
+    </span>
   )
 }

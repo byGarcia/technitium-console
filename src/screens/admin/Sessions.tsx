@@ -131,7 +131,7 @@ export function Sessions({ tabs, token, cluster, node: controlledNode, onNodeCha
         title="Administration"
         tabs={tabs}
         actions={<>{canCreateToken && (
-            <Button variant="primary" onClick={() => setCreate(true)}>
+            <Button lead="key" variant="primary" onClick={() => setCreate(true)}>
               Create Token
             </Button>
           )}

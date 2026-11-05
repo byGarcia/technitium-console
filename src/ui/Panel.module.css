@@ -23,8 +23,11 @@ The TITLE is not the table's any more (see `.title`).
 }
 
 /*
-The header sits on the raised step, just like the table's `thead`: it separates
-the label from the content without spending another rule line.
+The header sits on the panel itself, over a hairline (2026-11-05). It used to sit
+on the raised step, like a table's `thead`, and that is where most neutral
+buttons live ("More", "Blocking"): the button and the band were the same colour,
+and the button read as a bare outline. A table keeps its band; a panel's title
+does not need one to be read as the title.
 
 It is `flex` because many of them carry an action on the right ("More",
 "Blocking"), and the ones that do not never notice.
@@ -35,8 +38,8 @@ It is `flex` because many of them carry an action on the right ("More",
   justify-content: space-between;
   gap: var(--s-7);
   padding: var(--s-6) var(--s-9);
-  border-bottom: 1px solid var(--line);
-  background: var(--pan2);
+  border-bottom: 1px solid var(--line2);
+  background: transparent;
 }
 
 /*

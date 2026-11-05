@@ -462,7 +462,7 @@ export function Lists({
           subtitle={isCache ? SUBTITLE.cache : undefined}
           actions={
             isCache ? (
-              <Button variant="danger" disabled={busy} onClick={askFlushCache}>
+              <Button lead="trash" variant="danger" disabled={busy} onClick={askFlushCache}>
                 Flush Cache
               </Button>
             ) : undefined
@@ -494,6 +494,7 @@ export function Lists({
                 <Input
                   id={id}
                   mono
+                  search
                   placeholder="example.com"
                   value={field}
                   onChange={(e) => setField(e.target.value)}
@@ -503,7 +504,7 @@ export function Lists({
                 />
               )}
             </Field>
-            <Button variant="primary" onClick={() => navigate(field)}>
+            <Button lead="search" variant="primary" onClick={() => navigate(field)}>
               Browse
             </Button>
           </div>
@@ -514,7 +515,7 @@ export function Lists({
                 Hidden while the first read is in flight, as the count bar was. */}
             {!loading && (
               <div className={styles.countActs}>
-                <Button size="sm" onClick={() => navigate(domain)}>
+                <Button lead="refresh" size="sm" onClick={() => navigate(domain)}>
                   Refresh
                 </Button>
                 {mayDelete && (
@@ -576,6 +577,7 @@ export function Lists({
                     <Input
                       id={id}
                       mono
+                      search
                       placeholder="example.com"
                       value={field}
                       onChange={(e) => setField(e.target.value)}
@@ -589,7 +591,7 @@ export function Lists({
                     screens (Cache, Allowed and Blocked), and it also says better
                     what it does: it takes you to that point of the tree, it sends
                     nothing. */}
-                <Button variant="primary" onClick={() => navigate(field)}>
+                <Button lead="search" variant="primary" onClick={() => navigate(field)}>
                   Browse
                 </Button>
               </div>
@@ -661,7 +663,7 @@ export function Lists({
                     {records.length} records at <span className={styles.mono}>{nodeTitle}</span>
                   </span>
                   <div className={styles.countActs}>
-                    <Button size="sm" onClick={() => navigate(domain)}>
+                    <Button lead="refresh" size="sm" onClick={() => navigate(domain)}>
                       Refresh
                     </Button>
                     {/*

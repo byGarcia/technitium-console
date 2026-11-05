@@ -25,6 +25,38 @@ one thing on one screen and another on the next.
 .acc  { composes: acc  from './tones.module.css'; }
 
 /*
+A STATE IS A DOT AND ITS WORD (2026-11-05). A toned pill (`Enabled`, `Active`,
+`Disabled`) drops its fill and its border and becomes its word in the tone's
+colour after a dot of the same colour, the way the tables this console is
+compared with mark a state: a column of filled capsules read as a column of
+buttons. The neutral pill (`Unsigned`, an app's name) keeps a quiet fill and
+loses its border, because it marks a kind, not a state.
+*/
+.tag { border-color: transparent; background: var(--tag-neutral); }
+
+.tag.ok, .tag.warn, .tag.dan, .tag.info, .tag.acc {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding-left: 0;
+  padding-right: 0;
+  background: transparent;
+  border-color: transparent;
+  font-size: var(--t-3);
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.tag.ok::before, .tag.warn::before, .tag.dan::before, .tag.info::before, .tag.acc::before {
+  content: '';
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/*
 The code chip: a record type (`A`, `SOA`), an app's class. It is not a state pill
 (it judges nothing), so it is neither round nor coloured.
 */

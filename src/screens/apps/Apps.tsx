@@ -181,10 +181,10 @@ export function Apps({ token }: { token: string | null }) {
         }
         actions={
           <>
-            <Button variant="primary" onClick={() => setModal({ kind: 'store' })}>
+            <Button lead="store" variant="primary" onClick={() => setModal({ kind: 'store' })}>
               App Store
             </Button>
-            <Button onClick={() => setModal({ kind: 'install' })}>Install from file</Button>
+            <Button lead="upload" onClick={() => setModal({ kind: 'install' })}>Install from file</Button>
           </>
         }
       />

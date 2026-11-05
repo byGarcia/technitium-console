@@ -219,7 +219,7 @@ export function DnsClient({
               THIRD name for the same gesture, and the only one in the console
               that came out at 34 px high. */}
         <Check label="Enable DNSSEC Validation" checked={dnssec} onChange={setDnssec} />
-        <Button variant="primary" disabled={busy} onClick={() => void fire(false)}>
+        <Button lead="run" variant="primary" disabled={busy} onClick={() => void fire(false)}>
           Resolve
         </Button>
         <Button disabled={busy} onClick={() => void fire(true)}>

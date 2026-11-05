@@ -30,10 +30,33 @@ Two classes against Button's one, so the order the modules load in does not deci
   font-size: var(--t-4);
   cursor: pointer;
 }
-.row:hover { background: var(--hover-strong); }
-.menuList { position:fixed; overflow-y:auto; z-index: var(--layer-float); min-width:170px; padding: var(--s-3); background:var(--pan); border:1px solid var(--line); border-radius: var(--r-3); box-shadow: var(--e-2), var(--edge); display:flex; flex-direction:column; }
+.row:hover { background: var(--nav-hover); }
+/*
+The account's initial in a circle before its name (2026-11-05), as the account
+row of the consoles it is compared with carries. It is drawn from `data-initial`
+with `::before`, so it is not text: the button's name stays the account's name.
+*/
+.row[data-initial]::before {
+  content: attr(data-initial);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 26px;
+  height: 26px;
+  margin-right: var(--s-5);
+  border-radius: 50%;
+  background: var(--acc-tint);
+  box-shadow: inset 0 0 0 1px var(--acc-tint-strong);
+  color: var(--acc-ink);
+  font-size: var(--t-3);
+  font-weight: 650;
+}
+.row[data-initial] { justify-content: flex-start; gap: 0; }
+.row[data-initial] > svg { margin-left: auto; }
+.menuList { position:fixed; overflow-y:auto; z-index: var(--layer-float); min-width:170px; padding: var(--s-3); background:var(--pan2); border:1px solid var(--btn-line); border-radius: var(--r-3); box-shadow: var(--e-2), var(--edge); display:flex; flex-direction:column; }
 .sep { height:1px; margin: var(--s-2) var(--s-3); background:var(--line); }
-.menuList button { text-align:left; border:0; background:transparent; color:var(--mute); /* Longhands and not the `font:` shorthand: `inherit` is not valid as a
+.menuList button { text-align:left; border:0; background:transparent; color:var(--ink); /* Longhands and not the `font:` shorthand: `inherit` is not valid as a
      component of a shorthand (only as the whole value), so the declaration was
      invalid and the browser dropped it. The menu items had always carried the
      browser's default size and weight (13 px) instead of the console's. */
@@ -44,6 +67,9 @@ Two classes against Button's one, so the order the modules load in does not deci
 .menuList button:hover,
 .menuList button:focus-visible { background:var(--hover-strong); color:var(--ink); }
 .menuList button:disabled { opacity:.4; cursor:default; }
+/* The items are ink at rest: in `--mute` a menu read as disabled. The box is the
+   raised step (`--pan2`), like the Select's list, so it stands off the panel it
+   opens over instead of sharing its colour. */
 
 /*
 Destructive things get marked, and here they were not.
@@ -59,13 +85,14 @@ a single signal that it was one.
 It goes red and not amber for a measured reason, not a taste one: `--warn` is
 `rgb(251,191,36)` and `--acc` is `rgb(245,165,36)` (both are the same amber), so an
 orange option would read as the accent colour, which in this console means "this
-is the recommended action". Exactly the opposite. `--dan` gives 6.19:1 over the
-menu background.
+is the recommended action". Exactly the opposite. Under the pointer it takes a
+red tint, not a solid fill: a menu item is not yet the decision, the dialog it
+opens is (`ui/Button`, THE DESTRUCTIVE ONE).
 */
 .menuList button[data-variant='danger'] { color: var(--dan); }
 
 .menuList button[data-variant='danger']:hover,
 .menuList button[data-variant='danger']:focus-visible {
-  background: var(--dan-fill);
-  color: var(--on-dan);
+  background: var(--dan-tint);
+  color: var(--dan);
 }

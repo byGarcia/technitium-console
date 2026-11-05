@@ -16,19 +16,25 @@ depending on the table.
   min-height: var(--field-height);
   padding: var(--s-4) var(--s-8);
   border-radius: var(--r-2);
-  border: 1px solid var(--line);
-  background: var(--shine-btn), var(--pan2);
+  border: 1px solid var(--btn-line);
+  background: var(--btn);
   color: var(--ink);
   cursor: pointer;
   font-weight: 500;
   font-family: inherit;
   white-space: nowrap;
-  box-shadow: var(--edge);
-  transition: border-color var(--t-fast), background var(--t-fast);
+  transition: border-color var(--t-fast), background var(--t-fast), color var(--t-fast);
 }
 
-.btn:hover:not(:disabled) { border-color: var(--line-hover); }
-.btn:active:not(:disabled) { box-shadow: var(--sunken); }
+/*
+The hover is the neutral button's only. As `.btn:hover:not(:disabled)` it weighed
+(0,3,0) and beat `.primary` and `.danger` (0,1,0): under the pointer the amber
+button grew a blue-grey ring and the red one lost its red border. And the ring it
+drew, the old `--line-hover`, had LESS contrast than the border at rest, so on the
+neutral button the hover could not be seen at all.
+*/
+.btn:not(.primary):not(.danger):hover:not(:disabled) { background: var(--btn-hover); border-color: var(--line-hover); }
+.btn:active:not(:disabled) { filter: brightness(0.95); }
 
 .btn:disabled { opacity: 0.5; cursor: default; }
 .btn:focus-visible { outline: var(--focus); outline-offset: var(--focus-offset); }
@@ -38,7 +44,7 @@ depending on the table.
   font-size: var(--t-3);
   font-weight: 400;
   padding: var(--s-3) var(--s-6);
-  color: var(--mute);
+  color: var(--ink);
   /* A row's button is not in a form row: it keeps its own size. */
   min-height: 0;
 }
@@ -52,6 +58,9 @@ Dashboard's custom range.
 */
 .sm:not(.primary):not(.danger):hover:not(:disabled) { color: var(--ink); }
 
+/* The icon that leads a label (`lead`): it names nothing, the label does. */
+.lead { display: inline-flex; flex: none; margin-left: calc(-1 * var(--s-1)); }
+
 /* A button that stays pressed (the "Glue" and "RRSIG" filters) says so with the
    accent colour, not only with `aria-pressed`. */
 .btn[aria-pressed='true'] { color: var(--acc-ink); border-color: var(--acc-ink); }
@@ -60,52 +69,56 @@ Dashboard's custom range.
    text is dark and not white for a measured reason: white over `#f5a524` gives
    2.04:1 and does not even reach the large-text minimum; dark gives 9.09:1. */
 .primary {
-  background: var(--shine-primary), var(--acc);
+  background: var(--acc);
   border-color: var(--acc);
   color: var(--on-acc);
   font-weight: 550;
-  box-shadow: var(--edge-strong);
 }
 
 /*
-The primary's hover LIGHTENED by 6 %, and over `--acc` that gives 1.108:1, below
-the 1.20 this console settled on when fixing `--hover`, and the same order of
-magnitude as that defect. Lightening further does not fit: the red channel of
-`#f5a524` is already at 245 and saturates before reaching the threshold. It
-darkens instead, which is the only thing that gets there. And the
-`border-color: var(--acc)` goes, since that was what the button was already worth
-at rest: it did nothing.
+The primary's hover is its own token, `--acc-hover`: lighter in dark, darker in
+light. It was `filter: brightness(0.90)`, which darkened the ink with the fill.
 */
-.primary:hover:not(:disabled) { filter: brightness(0.90); }  /* 1.240:1 */
+.primary:hover:not(:disabled) { background: var(--acc-hover); border-color: var(--acc-hover); }
 
 /*
-The destructive one is FILLED. It only tinted the border, so the "Delete" in
-"Delete Cluster" weighed the same as the "Close" beside it, while the "Add" of a
-harmless modal was a solid amber block: the most consequential button on the
-screen was the quietest, and this console has no undo anywhere.
+THE DESTRUCTIVE ONE, in two tiers (2026-11-05).
+
+On a page ("Delete Zones", "Flush Cache", a row's "Remove") it is the neutral
+button with its label in red, and it fills with red under the pointer and on
+keyboard focus: the moment you are about to press it. The page-level ones open a
+confirmation ("Delete Zones" lists the zones, "Flush Cache" asks), and a row's
+"Remove" in Blocking › Lists only changes what Save will send. The decision is
+taken in the dialog, so that is where red is solid from the start (`ui/Confirm`,
+`ui/Dialog`: the `.danger` inside a `[role='dialog']`).
+
+It was filled everywhere with `--dan-fill`, a maroon at 1.04:1 from the panel: it
+read as an unfinished outline. Filled with a real red on the page it would sit on
+the screen all the time ("Delete Zones" shows with nothing checked, "Remove"
+repeats on every row) and compete with the amber primary.
 */
 .danger {
-  background: var(--shine-danger), var(--dan-fill);
-  border-color: var(--dan);
-  color: var(--on-dan);
+  background: var(--btn);
+  border-color: var(--btn-line);
+  color: var(--dan);
+  font-weight: 500;
+}
+
+.danger:hover:not(:disabled),
+.danger:focus-visible {
+  background: var(--dan-solid);
+  border-color: var(--dan-solid);
+  color: var(--on-dan-solid);
+}
+
+[role='dialog'] .danger:not(.sm) {
+  background: var(--dan-solid);
+  border-color: var(--dan-solid);
+  color: var(--on-dan-solid);
   font-weight: 550;
 }
 
-/*
-Not in a table ROW: there "Delete" repeats once per row and a red block per row
-turns the table into an alarm. It stays as red text, and the fill appears on hover
-and on keyboard focus.
-*/
-.sm.danger {
-  background: var(--pan2);
-  border-color: var(--line);
-  color: var(--dan);
-  font-weight: 400;
-}
-
-.sm.danger:hover:not(:disabled),
-.sm.danger:focus-visible {
-  background: var(--dan-fill);
-  border-color: var(--dan);
-  color: var(--on-dan);
+[role='dialog'] .danger:not(.sm):hover:not(:disabled) {
+  background: var(--dan-solid-hover);
+  border-color: var(--dan-solid-hover);
 }

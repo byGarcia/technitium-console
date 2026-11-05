@@ -316,6 +316,7 @@ export function Dashboard({
         <div className={styles.period}>
           <Segmented
             label="Period"
+            live="LastHour"
             compact
             options={RANGES.map((r) => ({ id: r, label: RANGE_LABEL[r] }))}
             active={range}

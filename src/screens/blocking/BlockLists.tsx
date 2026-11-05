@@ -659,7 +659,7 @@ export function BlockLists({
                   Next update{interval != null && interval > 0 ? ` · every ${interval} h` : ''}
                 </span>
               </div>
-              <PermissionButton
+              <PermissionButton lead="refresh"
                 permission={modifyNeed}
                 disabled={busy || !hasSaved}
                 onClick={() => setAskUpdate(true)}
@@ -709,10 +709,10 @@ export function BlockLists({
                   />
                 )}
               </Field>
-              <PermissionButton variant="primary" permission={modifyNeed} disabled={loading} onClick={() => add('block')}>
+              <PermissionButton lead="add" variant="primary" permission={modifyNeed} disabled={loading} onClick={() => add('block')}>
                 Add block list
               </PermissionButton>
-              <PermissionButton permission={modifyNeed} disabled={loading} onClick={() => add('allow')}>
+              <PermissionButton lead="add" permission={modifyNeed} disabled={loading} onClick={() => add('allow')}>
                 Add allow list
               </PermissionButton>
               {/* The URL's own sentences stay under it, in the URL's column. */}
@@ -789,7 +789,7 @@ export function BlockLists({
               </Table>
             )}
             <div className={styles.foot}>
-              <PermissionButton size="sm" permission={modifyNeed} disabled={loading || edit?.group === 'new'}
+              <PermissionButton lead="add" size="sm" permission={modifyNeed} disabled={loading || edit?.group === 'new'}
                 onClick={() => setEditing({ group: 'new', value: '', problem: null })}>
                 Add group
               </PermissionButton>

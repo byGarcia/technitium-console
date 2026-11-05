@@ -11,6 +11,10 @@ look alike and are not the same thing, so the caller decides.
 
 `compact` is the smaller strip that sits on a title's line (the Dashboard's period,
 beside its title) instead of on a line of its own.
+
+`live` names the option whose figures refresh by themselves (the Dashboard's and
+Blocking's Last Hour, every minute). While it is the chosen one it carries a
+beating dot: the screen is live, and nothing else on it says so. Drawn, not text.
 */
 export function Segmented<T extends string>({
   options,
@@ -19,6 +23,7 @@ export function Segmented<T extends string>({
   label,
   asTabs = false,
   compact = false,
+  live,
 }: {
   options: { id: T; label: string }[]
   active: T
@@ -27,6 +32,7 @@ export function Segmented<T extends string>({
   label: string
   asTabs?: boolean
   compact?: boolean
+  live?: T
 }) {
   return (
     <div
@@ -38,7 +44,7 @@ export function Segmented<T extends string>({
         <button
           key={o.id}
           type="button"
-          className={styles.option}
+          className={`${styles.option}${live != null && o.id === live && o.id === active ? ` ${styles.live}` : ''}`}
           role={asTabs ? 'tab' : undefined}
           aria-selected={asTabs ? o.id === active : undefined}
           aria-pressed={asTabs ? undefined : o.id === active}
