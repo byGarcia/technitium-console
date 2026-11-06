@@ -438,6 +438,30 @@ describe('Logs › Query Logs: the form', () => {
       vi.useRealTimers()
     }
   })
+
+  it('with "Live Update" on, the pagination asks for nothing, as upstream leaves its links dead', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    try {
+      const user = userEvent.setup({ delay: null })
+      withApps([APP])
+      const spy = vi.spyOn(api, 'queryLogs').mockResolvedValue({
+        kind: 'ok',
+        data: { response: page({ totalPages: 5, totalEntries: 120 }) },
+      } as never)
+      render(<Logs token="t" sub="Query Logs" />)
+      await vi.waitFor(() => expect(screen.queryByLabelText('App Name')).toBeInTheDocument())
+
+      await user.click(screen.getByLabelText('Live Update'))
+      await vi.waitFor(() => expect(spy).toHaveBeenCalledTimes(1))
+
+      await user.click(screen.getAllByRole('button', { name: 'Last' })[0])
+      await user.click(screen.getAllByRole('button', { name: 'Next' })[0])
+      expect(spy).toHaveBeenCalledTimes(1)
+      expect(spy.mock.calls.every((c) => c[1].pageNumber === '1')).toBe(true)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
 })
 
 describe('Logs › Query Logs: the table', () => {

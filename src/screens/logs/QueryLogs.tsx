@@ -330,6 +330,10 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
   const [notice, setNotice] = useState<Notice | null>(null)
   const [busy, setBusy] = useState(false)
   const [live, setLive] = useState(false)
+  /* What the Live Update switch says right now, for the guard at the top of
+     `query`: set in the same handler as the switch, so a click on the
+     pagination one frame after it already sees it. */
+  const liveRef = useRef(false)
   /* Below 960 the panel folds (see FOLD_QUERY); it starts closed. */
   const fold = useMedia(FOLD_QUERY)
   const [filtersOpen, setFiltersOpen] = useState(false)
@@ -390,6 +394,10 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
 
   const query = useCallback(
     async (pageNumber: string, live: boolean) => {
+      /* logs.js:386-387. Any query that is not the loop's own does nothing
+         while Live Update is checked: the pagination's links included, which
+         upstream draws and leaves dead. */
+      if (!live && liveRef.current) return
       const filters = filtersRef.current
 
       // The app and the class, in that order (logs.js:389-401).
@@ -552,9 +560,11 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
     if (checked) {
       // logs.js:34-42. Pins page and order, and empties the date range.
       set({ pageNumber: '1', descendingOrder: 'true', start: '', end: '' })
+      liveRef.current = true
       setLive(true)
       return
     }
+    liveRef.current = false
     setLive(false)
     restart()
   }
