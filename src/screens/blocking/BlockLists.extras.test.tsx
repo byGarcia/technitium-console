@@ -115,7 +115,8 @@ describe('Save and Update Now', () => {
     serve()
     const save = vi.spyOn(settings, 'setSettings').mockImplementation(async () => {
       order.push('settings/set')
-      return ok({ server: 'x', response: { blockListUrls: [`#${HOSTS}`, HOSTS], blockListUpdateIntervalHours: 24, blockListNextUpdatedOn: NEXT } })
+      // No schedule: the save does not start the server's own reload, so Update Now is asked.
+      return ok({ server: 'x', response: { blockListUrls: [`#${HOSTS}`, HOSTS], blockListUpdateIntervalHours: 0, blockListNextUpdatedOn: NEXT } })
     })
     draw()
     await change()
@@ -133,13 +134,26 @@ describe('Save and Update Now', () => {
   it('cancelling the confirmation leaves the save done and updates nothing', async () => {
     const { force } = serve()
     vi.spyOn(settings, 'setSettings').mockResolvedValue(
-      ok({ server: 'x', response: { blockListUrls: [`#${HOSTS}`], blockListUpdateIntervalHours: 24, blockListNextUpdatedOn: NEXT } }),
+      ok({ server: 'x', response: { blockListUrls: [`#${HOSTS}`, HOSTS], blockListUpdateIntervalHours: 0, blockListNextUpdatedOn: NEXT } }),
     )
     draw()
     await change()
     await userEvent.click(screen.getByRole('button', { name: 'Save and Update Now' }))
     await userEvent.click(await screen.findByRole('button', { name: 'Cancel' }))
     expect(screen.getByText('DNS Server settings were saved successfully.')).toBeInTheDocument()
+    expect(force).not.toHaveBeenCalled()
+  })
+
+  it('a save that already has the server downloading the lists asks for no second download', async () => {
+    const { force } = serve()
+    vi.spyOn(settings, 'setSettings').mockResolvedValue(
+      ok({ server: 'x', response: { blockListUrls: [`#${HOSTS}`, HOSTS], blockListUpdateIntervalHours: 24, blockListNextUpdatedOn: NEXT } }),
+    )
+    draw()
+    await change()
+    await userEvent.click(screen.getByRole('button', { name: 'Save and Update Now' }))
+    expect(await screen.findByText('DNS Server settings were saved successfully.')).toBeInTheDocument()
+    expect(screen.queryByText('Are you sure to force download and update the block lists?')).toBeNull()
     expect(force).not.toHaveBeenCalled()
   })
 

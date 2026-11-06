@@ -28,10 +28,10 @@ describe('the zone a name belongs to', () => {
     expect(zoneForName('myexample.lan', ZONES)).toBeNull()
   })
 
-  it('is the zone itself for its apex, and the root holds what nothing else does', () => {
+  it('is the zone itself for its apex, and the root never takes what nothing else holds', () => {
     expect(zoneForName('example.lan', ZONES)?.name).toBe('example.lan')
     expect(subDomainOf('example.lan', 'example.lan')).toBe('@')
-    expect(zoneForName('host.nowhere', [...ZONES, z('', 'Forwarder')])?.name).toBe('')
+    expect(zoneForName('host.nowhere', [...ZONES, z('', 'Forwarder')])).toBeNull()
   })
 
   it('is none when no zone holds it', () => {
@@ -110,5 +110,13 @@ describe('the plan', () => {
     )
     const internal = planQuickAdd(input('localhost', '127.0.0.2'), [z('localhost', 'Primary', { internal: true })], 3600)
     expect(internal.ok).toBe(false)
+  })
+})
+
+describe('quick add: never the root zone', () => {
+  it('leaves a name no other zone holds to the refusal, not to a root forwarder', () => {
+    const zones = [{ name: '', type: 'Forwarder' }, { name: 'home.lan', type: 'Primary' }] as never
+    expect(zoneForName('nas.office', zones)).toBeNull()
+    expect(zoneForName('nas.home.lan', zones)).toMatchObject({ name: 'home.lan' })
   })
 })

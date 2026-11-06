@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { useCallback, useEffect, useId, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import {
   deleteScope,
   disableScope,
@@ -220,7 +220,10 @@ export function Scopes({
 
   // The hook goes BEFORE any return: otherwise it would stop being called as soon
   // as the table is loading.
-  const usage = new Map((scopes ?? []).map((s) => [s.name, leases == null ? null : scopeUsage(s, leases)]))
+  const usage = useMemo(
+    () => new Map((scopes ?? []).map((s) => [s.name, leases == null ? null : scopeUsage(s, leases)])),
+    [scopes, leases],
+  )
   const { rows: sortedScopes, sort, toggle } = useSort(sortKeys(usage), scopes ?? [])
   const visibleScopes = sortedScopes.filter(
     (s) =>

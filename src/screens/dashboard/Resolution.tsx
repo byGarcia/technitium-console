@@ -73,13 +73,13 @@ function Diagram({ flow, open }: { flow: NonNullable<ReturnType<typeof flowOf>>;
   const scaleHow = (i: number) => (flow.how[i].count === 0 ? 0 : howAt[i].h / flow.how[i].count)
   const scaleWhat = (j: number) => (flow.what[j].count === 0 ? 0 : whatAt[j].h / flow.what[j].count)
 
-  /* The left column is one bar: the bands to the kinds stack down it in their order. */
-  const room = H - GAP * Math.max(0, flow.how.length - 1)
+  /* The left column is one bar, the whole height: the bands to the kinds stack down
+     all of it in their order, each as thick as its share. */
   const allBands: { a: number; b: number }[] = []
   {
     let y = 0
     for (const n of flow.how) {
-      const h = (n.count / flow.total) * room
+      const h = (n.count / flow.total) * H
       allBands.push({ a: y, b: y + h })
       y += h
     }

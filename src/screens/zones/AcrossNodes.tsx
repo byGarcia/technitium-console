@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { readNodeZones, typeLabel } from '../../api/zones'
+import { noticeFromFailure } from '../../lib/notice'
 import type { ClusterNode } from '../../ui/ClusterNodeSelect'
 import { Button } from '../../ui/Button'
 import { Loading } from '../../ui/Empty'
@@ -91,7 +92,7 @@ export function AcrossNodes({
           node,
           outcome: {
             ok: false,
-            message: r.kind === 'error' ? (r.message ?? 'Unknown error.') : 'Invalid token or session expired.',
+            message: noticeFromFailure(r).text,
           },
         }
       }),

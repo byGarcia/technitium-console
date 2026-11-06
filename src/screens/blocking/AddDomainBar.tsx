@@ -110,9 +110,13 @@ export function AddDomainBar({
   */
   const [own, setOwn] = useState<{ rules: Rule[] | null; failed: boolean } | undefined>(undefined)
   const ownAsked = useRef(0)
+  const retryFor = useRef<string | null>(null)
   const wantsOwn = rules === undefined && (blockedNeed == null || allowedNeed == null)
   useEffect(() => {
-    if (!wantsOwn || own !== undefined || field.trim() === '') return
+    /* A read that failed is tried again on the next name typed. */
+    if (!wantsOwn || (own !== undefined && !own.failed) || field.trim() === '') return
+    if (own?.failed === true && own.rules === null && ownAsked.current > 0 && retryFor.current === field) return
+    retryFor.current = field
     const mine = ++ownAsked.current
     setOwn({ rules: null, failed: false })
     const read = (list: DomainList, may: boolean) => (may ? readRuleExport(list, token) : null)

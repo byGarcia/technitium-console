@@ -33,3 +33,10 @@ describe('How a query is resolved', () => {
     expect(at).toEqual([{ y: 0, h: 75 }, { y: 85, h: 25 }])
   })
 })
+
+describe('How a query is resolved: the review fixes', () => {
+  it('opens Blocked filtered only when all its queries are of the plain Blocked kind', () => {
+    expect(flowOf([e('Blocked', 'NxDomain')]).how[0].value).toBe('Blocked')
+    expect(flowOf([e('Blocked', 'NxDomain'), e('UpstreamBlocked', 'NxDomain')]).how[0].value).toBeNull()
+  })
+})

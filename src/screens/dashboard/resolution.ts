@@ -47,7 +47,15 @@ export function flowOf(entries: readonly QueryLogEntry[] | null | undefined): Fl
     const j = WHAT.findIndex((w) => w.match((e.rcode ?? '').toLowerCase()))
     links[i][j]++
   }
-  const how = HOW.map((h, i) => ({ value: h.value, label: h.label, tone: h.tone, count: links[i].reduce((a, b) => a + b, 0) }))
+  /* `Blocked` holds three kinds and Query Logs filters by one: it opens filtered only
+     when every blocked query in the sample is of the plain `Blocked` kind. */
+  const upstreamBlocked = list.some((e) => (e.responseType ?? '').toLowerCase().startsWith('upstreamblocked'))
+  const how = HOW.map((h, i) => ({
+    value: h.value === 'Blocked' && upstreamBlocked ? null : h.value,
+    label: h.label,
+    tone: h.tone,
+    count: links[i].reduce((a, b) => a + b, 0),
+  }))
   const what = WHAT.map((w, j) => ({ value: w.value, label: w.label, tone: w.tone, count: links.reduce((a, row) => a + row[j], 0) }))
   /* Empty kinds are left out, and their rows and columns with them. */
   const keepHow = how.map((n) => n.count > 0)

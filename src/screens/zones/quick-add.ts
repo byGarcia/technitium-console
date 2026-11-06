@@ -63,7 +63,10 @@ export function zoneForName(name: string, zones: Zone[]): Zone | null {
   let bestLength = -1
   for (const z of zones) {
     const zone = z.name.toLowerCase()
-    const holds = zone === '' || host === zone || host.endsWith(`.${zone}`)
+    /* Never the root zone (`.`): a root Forwarder that sends everything upstream would
+       otherwise take every name the other zones do not hold. */
+    if (zone === '' || zone === '.') continue
+    const holds = host === zone || host.endsWith(`.${zone}`)
     if (holds && zone.length > bestLength) {
       best = z
       bestLength = zone.length

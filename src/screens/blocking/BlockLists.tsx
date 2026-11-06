@@ -471,6 +471,8 @@ export function BlockLists({
   const serverUrls = useRef<string[]>([])
   /** `blockListNextUpdatedOn` as the server last answered it. */
   const serverNext = useRef<string | null>(null)
+  /* Set by a Save whose URL change started the server's own reload (Save and Update Now). */
+  const saveStartedReload = useRef(false)
   const mounted = useRef(true)
   useEffect(() => {
     mounted.current = true
@@ -661,7 +663,10 @@ export function BlockLists({
     const interval = r.data.response.blockListUpdateIntervalHours ?? 0
     const canUpdate = r.data.response.blockListUrls != null
     if (!changed) return canUpdate
-    if (urls.length > 0 && interval > 0) setReloading({ from: answered })
+    if (urls.length > 0 && interval > 0) {
+      setReloading({ from: answered })
+      saveStartedReload.current = true
+    }
     else {
       setReloading(null)
       void readCounts()
@@ -675,7 +680,11 @@ export function BlockLists({
   lists (`hasSaved`), so a Save that empties them stops there.
   */
   async function saveAndUpdate() {
-    if (await save()) setAskUpdate(true)
+    saveStartedReload.current = false
+    const canUpdate = await save()
+    /* A change of the URLs with a schedule on already has the server downloading the
+       lists (`reloading`): a second, forced download on top would repeat it. */
+    if (canUpdate && !saveStartedReload.current) setAskUpdate(true)
   }
 
   async function updateNow() {

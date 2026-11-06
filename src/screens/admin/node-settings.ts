@@ -68,7 +68,7 @@ export const SETTING_ROWS: SettingRow[] = [
   { key: 'version', group: 'Identity', label: 'Version', compared: true, read: (s) => s.version ?? '' },
   { key: 'upSince', group: 'Identity', label: 'Up Since', compared: false, read: (s) => minuteStamp(s.uptimestamp) },
 
-  { key: 'endPoints', group: 'Resolution', label: 'DNS Server Local End Points', compared: true, read: (s) => lines(s.dnsServerLocalEndPoints) },
+  { key: 'endPoints', group: 'Resolution', label: 'DNS Server Local End Points', compared: false, read: (s) => lines(s.dnsServerLocalEndPoints) },
   { key: 'recursion', group: 'Resolution', label: 'Recursion', compared: true, read: (s) => RECURSION(s.recursion) },
   { key: 'dnssec', group: 'Resolution', label: 'DNSSEC Validation', compared: true, read: (s) => onOff(s.dnssecValidation) },
   { key: 'ipv6', group: 'Resolution', label: 'IPv6 Support', compared: true, read: (s) => IPV6(s.ipv6Mode) },
