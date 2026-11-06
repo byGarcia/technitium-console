@@ -161,7 +161,10 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
   address, host name, scope), its last query, Open in Query Logs and Copy IP, and from its latest
   500 queries the blocked share, the cache hit rate, the median response time, its activity over
   time, its top and top blocked domains, its protocols and record types and its latest queries.
-  Without a query logging app it still lists the clients and says why the rest is missing.
+  From the card you can let the client bypass blocking or exempt it from rate limiting (Settings'
+  Blocking Bypass List and QPM Limit Bypass List, after a confirmation), and reserve its DHCP
+  lease or make it dynamic again, as DHCP › Leases does. Without a query logging app it still
+  lists the clients and says why the rest is missing.
 - **Choosing a file is a drop zone** in every dialog that takes one (an app's zip, a zone file, a
   settings backup): drop the file or click to choose it, and it shows its name and size.
 - **Dialogs are one surface**, without the lines under the title and over the buttons. A

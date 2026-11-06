@@ -4,6 +4,7 @@ import {
   type DashboardStats, type Range, type TopEntry,
 } from '../../api/dashboard'
 import { listLeases, type DhcpLease } from '../../api/dhcp'
+import { readSettings, type DnsSettings } from '../../api/settings'
 import { InChrome } from '../../app/ChromeSlot'
 import { ClusterNodeSelect, AGGREGATE, type ClusterNode } from '../../ui/ClusterNodeSelect'
 import { SectionHeader } from '../../ui/SectionHeader'
@@ -22,7 +23,7 @@ import { LAST_HOUR_REFRESH_MS } from '../dashboard/useLive'
 import { SAMPLE } from '../blocking/blocked-sample'
 import { useLoggingApp, type LoggingApp } from '../blocking/logging-app'
 import { LockedBody } from '../blocking/Locked'
-import { missing, requiresText, type Permissions } from '../blocking/permissions'
+import { missing, requiresText, type Need, type Permissions } from '../blocking/permissions'
 import { pageOf } from '../blocking/rules-model'
 import {
   FILTERS, LIMIT, PER_PAGE, busiest, clientRows, filterCounts, label, leaseFor, matchesFilter,
@@ -30,6 +31,8 @@ import {
 } from './clients-model'
 import { useQuerySample, type QuerySample } from './query-sample'
 import { ClientCard } from './ClientCard'
+import { ClientActions, type SettingsRead } from './ClientActions'
+import { settingsNode } from './client-actions'
 import { ClientList } from './ClientList'
 import { WhoUses } from './WhoUses'
 import styles from './Clients.module.css'
@@ -50,7 +53,10 @@ same row menus. It asks the server nothing upstream's console does not already a
     1,000 queries of every type (`SAMPLE`, the Blocked by client card's size), and
     for the open client the newest 500 of its own (`ClientCard.tsx`);
   · `dhcp/leases/list` (DHCP's call), only with `DhcpServer: View`, for the open
-    client's lease, matched by address.
+    client's lease, matched by address;
+  · `settings/get` (Settings' call), only with `Settings: View`, for the two bypass
+    lists the card's Actions show and change (`ClientActions.tsx`, which sends
+    `settings/set` and DHCP's two conversions).
 
 LAID OUT as master and detail. On a wide screen (above `--bp-wide`, 1180 px): the
 header, the strip, the "Who uses your DNS" bar, then the list as a column at the
@@ -101,12 +107,14 @@ const CLIENT = 'client'
 export const CLIENT_PARAMS = [Q, FILTER, SORT, PAGE, CLIENT]
 
 /*
-The DHCP leases, for the open client's MAC address, host name and scope: DHCP's own
-call, once per token and node, never without `DhcpServer: View`. A failure leaves
-the card without a lease, as a client no lease hands an address to.
+The DHCP leases, for the open client's MAC address, host name, scope and lease
+action: DHCP's own call, once per token and node and again after a conversion, never
+without `DhcpServer: View`. A failure leaves the card without a lease, as a client no
+lease hands an address to.
 */
-function useLeases(token: string | null, node: string, enabled: boolean): DhcpLease[] | null {
+function useLeases(token: string | null, node: string, enabled: boolean): [DhcpLease[] | null, () => void] {
   const [leases, setLeases] = useState<DhcpLease[] | null>(null)
+  const [round, setRound] = useState(0)
   useEffect(() => {
     if (!enabled) return
     let live = true
@@ -116,8 +124,30 @@ function useLeases(token: string | null, node: string, enabled: boolean): DhcpLe
     return () => {
       live = false
     }
-  }, [token, node, enabled])
-  return enabled ? leases : null
+  }, [token, node, enabled, round])
+  return [enabled ? leases : null, () => setRound((n) => n + 1)]
+}
+
+/*
+Settings' two bypass lists, for the card's Actions (`ClientActions.tsx`): `settings/get`
+on the node where they live (`settingsNode`), once per token and node, never without
+`Settings: View`. A save hands back the settings as the server keeps them, and they
+replace these.
+*/
+function useBypassSettings(token: string | null, node: string, need: Need | undefined): [SettingsRead, (s: DnsSettings) => void] {
+  const [read, setRead] = useState<SettingsRead>({ kind: 'loading' })
+  useEffect(() => {
+    if (need != null) return
+    let live = true
+    setRead({ kind: 'loading' })
+    void readSettings(token, node).then((r) => {
+      if (live) setRead(r.kind === 'ok' ? { kind: 'ok', data: r.data } : { kind: 'failed' })
+    })
+    return () => {
+      live = false
+    }
+  }, [token, node, need])
+  return [need != null ? { kind: 'locked', need } : read, (data) => setRead({ kind: 'ok', data })]
 }
 
 export function Clients({
@@ -171,9 +201,12 @@ export function Clients({
 
   const app = useLoggingApp(token, logsNeed == null)
   const aggregate = clusterInitialised && node === AGGREGATE
-  /* Logs and leases are one node's: with the aggregate, the connected one. */
-  const logNode = aggregate ? '' : node
-  const leases = useLeases(token, logNode, dhcpNeed == null && statsNeed == null)
+  /* Logs and leases are one node's: with the aggregate, or without a cluster, the
+     connected one. */
+  const logNode = !clusterInitialised || node === AGGREGATE ? '' : node
+  const [leases, reloadLeases] = useLeases(token, logNode, dhcpNeed == null && statsNeed == null)
+  const listsNode = settingsNode(clusterInitialised)
+  const [bypass, setBypass] = useBypassSettings(token, listsNode, missing(permissions, 'Settings.canView'))
 
   const hadData = useRef(false)
   const asked = useRef(0)
@@ -309,6 +342,21 @@ export function Clients({
       refreshOn={stats}
       onNotice={setNotice}
       heading={!narrow}
+      actions={
+        <ClientActions
+          ip={selectedRow.ip}
+          token={token}
+          settings={bypass}
+          onSettings={setBypass}
+          settingsNode={listsNode}
+          settingsNeed={missing(permissions, 'Settings.canModify')}
+          lease={leaseFor(leases, selectedRow.ip)}
+          dhcpNode={logNode}
+          dhcpNeed={missing(permissions, 'DhcpServer.canModify')}
+          onLeaseChanged={reloadLeases}
+          onNotice={setNotice}
+        />
+      }
     />
   )
 
