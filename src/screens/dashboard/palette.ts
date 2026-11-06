@@ -57,6 +57,10 @@ export function nodeToken(index: number): string {
   return CYCLE[index % CYCLE.length] ?? '--ch-1'
 }
 
+/** Which token a chart's series is painted with, by its label and position. The
+ *  default is `tokenForLabel`; the Queries compared by node give each node its own. */
+export type Series = (label: string, index: number) => string
+
 /*
 No colour fallback here, on purpose. The tokens are always there (`tokens.css`
 goes into the same bundle as this file, through `ThemeProvider`), so a fallback
@@ -69,6 +73,10 @@ export function readPalette(css: CSSStyleDeclaration) {
     /** The colour for a series, by its name and, failing that, by its position. */
     forLabel(label: string, index: number): string {
       return get(tokenForLabel(label, index))
+    },
+    /** The value of a colour token, for a chart whose series pick their own (`Series`). */
+    token(name: string): string {
+      return get(name)
     },
     ink: get('--mute'),
     faint: get('--faint'),

@@ -1708,6 +1708,31 @@ contract and SECURITY.md.
       (`dashboard/palette.ts`, `nodeToken`), the colour deviation 36 gives its line.
     Its words, OURS, are declared in the header comment of `CacheAcross.tsx`.
 
+36. **The Dashboard's Queries are compared by node** (Adrián's decision, 2026-11-06;
+    `screens/dashboard/compare-nodes.ts`, `Dashboard.tsx`). On an initialised cluster with
+    the aggregate (`Cluster`) chosen, `Compare nodes` in the Queries card's header draws one
+    line per node: that node's own `Total` for the period, read with the request the
+    Dashboard already makes (`dashboard/stats/get`, the same `type`, `utc` and, for Custom,
+    `start` and `end`) once per node with that node's `node`. The aggregate's line is
+    hidden while comparing; the eleven figures and everything else stay the aggregate's.
+    Each node's line is laid on the aggregate's buckets by the instants the server wrote,
+    so a bucket a node has no reading for is a gap, not a zero. Off by default and kept per
+    browser in `localStorage` (`dashboardCompareNodes`), as the node choice is kept in
+    `dashboardClusterNode`. Its limits, and crossing one is a bug:
+    - **only `dashboard/stats/get`**, read again with each answer of the period on screen:
+      a period or a reload asks every node once more, nothing else does;
+    - **Last Hour stays live for the aggregate only** (deviation 5): the figures move every
+      2 seconds as before, and the compared lines move with the minute reload, never with
+      the live counters;
+    - **a node that fails is left out of the chart** and named under it (`Left out: could
+      not read N.`); with none read the card says it could not load, as for any failure;
+    - **without a cluster, or on one node, nothing changes**: no switch and no read, even
+      with the choice left on;
+    - each node keeps the series colour of its place in the session's list of nodes, the
+      one deviation 35 gives it in Cache, whichever other node failed. A point of a line
+      opens Query Logs for its bucket, as the aggregate's does (deviation 7).
+    Its words, OURS: `Compare nodes` and `Left out: could not read N.` (`Dashboard.tsx`).
+
 ## Four constraints the server imposes
 
 These are not preferences: break them and the console works in development and

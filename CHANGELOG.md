@@ -33,6 +33,10 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
   for the records on every node or on some nodes only. A node that cannot be read says so in its
   column. Flush Cache and Delete still act on the node chosen, and the view is kept in the address
   bar (`?nodes=all`).
+- **Queries compared by node:** on a cluster with `Cluster` chosen, `Compare nodes` in the
+  Dashboard's Queries card draws one line per node, each node's own total for the period, in the
+  colour it has in Cache. A node that cannot be read is left out and named under the chart. The
+  lines reload with the minute reload, and the choice is remembered in the browser.
 - **Buttons are flat**, with no shine or bevel. The neutral one is a step lighter than the panel
   it sits on, so it no longer disappears in a panel header or a dialog footer. Under the pointer the
   primary button no longer grows a grey ring and the destructive one keeps its colour.
