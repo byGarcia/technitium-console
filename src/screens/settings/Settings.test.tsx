@@ -780,58 +780,179 @@ describe('Settings: what the save would change (2026-10-16)', () => {
   })
 })
 
-describe('Settings: the section index (2026-10-16)', () => {
-  /* Two of them, the strip and the column (`ui/IndexedForm`); CSS shows one by the
-     screen's width, and jsdom applies no CSS, so both are read and must agree. */
-  const indexes = () => screen.queryAllByRole('navigation', { name: 'On this page' })
-  const entries = () => {
-    const all = indexes().map((nav) => within(nav).getAllByRole('link').map((a) => a.textContent))
-    expect(all).toHaveLength(2)
-    expect(all[1]).toEqual(all[0])
-    return all[0]
-  }
+describe('Settings: one form (2026-11-06)', () => {
+  const menu = () => screen.getByRole('navigation', { name: 'Settings sections' })
+  const blockLinks = () =>
+    within(menu())
+      .getAllByRole('link')
+      .filter((a) => a.getAttribute('href')!.startsWith('#'))
+      .map((a) => a.textContent)
 
-  it('General lists its ten sections, by their own titles and in page order', async () => {
+  it('the header is the pane: Settings as the path, the sub-section as the title', async () => {
+    server()
+    await mount({ sub: 'Cache' })
+    expect(screen.getByRole('heading', { level: 1, name: 'Cache' })).toBeInTheDocument()
+    const trail = screen.getByRole('navigation', { name: 'Breadcrumb' })
+    expect(trail).toHaveTextContent('Settings')
+    expect(within(trail).getByText('Cache')).toHaveAttribute('aria-current', 'page')
+  })
+
+  it('the menu lists the nine sub-sections as links to their routes, the current one marked as the page', async () => {
+    server()
+    const onSubChange = vi.fn()
+    await mount({ sub: 'Recursion', onSubChange })
+    const links = SUB_TABS.map((t) => within(menu()).getByRole('link', { name: t }))
+    expect(links.map((a) => a.getAttribute('href'))).toEqual([
+      '/settings/general/', '/settings/web-service/', '/settings/optional-protocols/', '/settings/tsig/',
+      '/settings/recursion/', '/settings/cache/', '/settings/blocking/', '/settings/proxy-forwarders/', '/settings/logging/',
+    ])
+    expect(links.filter((a) => a.getAttribute('aria-current') === 'page').map((a) => a.textContent)).toEqual(['Recursion'])
+    await userEvent.click(within(menu()).getByRole('link', { name: 'Logging' }))
+    expect(onSubChange).toHaveBeenCalledWith('Logging')
+  })
+
+  it('under General it lists its ten blocks, by their own titles, in page order, each leading to its block', async () => {
     server()
     await mount({ sub: 'General' })
-    expect(entries()).toEqual([
+    expect(blockLinks()).toEqual([
       'Local Parameters', 'Default Parameters', 'Software Update', 'IPv6', 'UDP Socket Pool',
       'EDNS', 'DNSSEC', 'EDNS Client Subnet', 'Rate Limiting', 'Advanced Options',
     ])
-    // Each entry leads to its block.
-    for (const a of within(indexes()[0]).getAllByRole('link')) {
+    for (const a of within(menu()).getAllByRole('link').filter((x) => x.getAttribute('href')!.startsWith('#'))) {
       const target = document.getElementById(a.getAttribute('href')!.slice(1))
       expect(within(target!).getByRole('heading', { name: a.textContent! })).toBeInTheDocument()
     }
   })
 
-  it('the strip is the primitive asked for as a strip; the column is not', async () => {
-    server()
-    await mount({ sub: 'General' })
-    const [strip, column] = indexes()
-    expect(strip.className).not.toBe(column.className)
-    expect(strip.compareDocumentPosition(screen.getByRole('heading', { name: 'Local Parameters' })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-  })
-
-  it('Web Service and Optional Protocols have one; the six shorter panes do not', async () => {
+  it('a pane lists its blocks when it has two titled ones or more, and none otherwise', async () => {
     server()
     for (const sub of SUB_TABS) {
       const { unmount } = render(<Settings token="tok" sub={sub} />)
       await screen.findByRole('button', { name: 'Save Settings' })
-      expect([sub, indexes().length > 0]).toEqual([sub, ['General', 'Web Service', 'Optional Protocols'].includes(sub)])
+      const titled = document.querySelectorAll('main [data-section], [data-section]').length
+      expect([sub, blockLinks().length]).toEqual([sub, titled > 1 ? titled : 0])
       unmount()
     }
   })
 
-  it('switching pane brings that pane entries, not the previous ones', async () => {
+  it('switching pane brings that pane blocks, not the previous ones', async () => {
     server()
     const { rerender } = await mount({ sub: 'General' })
     rerender(<Settings token="tok" sub="Web Service" />)
     await waitFor(() =>
-      expect(entries()).toEqual([
-        'Listeners', 'Unix Domain Sockets', 'HTTPS Options', 'Reverse Proxy', 'TLS Certificate',
-      ]),
+      expect(blockLinks()).toEqual(['Listeners', 'Unix Domain Sockets', 'HTTPS Options', 'Reverse Proxy', 'TLS Certificate']),
     )
+  })
+
+  it('Backup, Restore and Flush Cache sit in the header; Save Settings in the bar at the foot', async () => {
+    server()
+    await mount()
+    const bar = screen.getByRole('region', { name: 'Save' })
+    expect(within(bar).getByRole('button', { name: 'Save Settings' })).toBeInTheDocument()
+    for (const name of ['Backup Settings', 'Restore Settings', 'Flush Cache']) {
+      const button = screen.getByRole('button', { name })
+      expect(bar.contains(button)).toBe(false)
+      expect(button.compareDocumentPosition(screen.getByLabelText('DNS Server Domain')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    }
+  })
+
+  it('the bar is always there, and says so when nothing would change', async () => {
+    server()
+    await mount()
+    expect(within(screen.getByRole('region', { name: 'Save' })).getByText('No unsaved changes')).toBeInTheDocument()
+  })
+})
+
+describe('Settings: search settings (2026-11-06)', () => {
+  const menu = () => screen.getByRole('navigation', { name: 'Settings sections' })
+  const search = () => screen.getByRole('searchbox', { name: 'Search settings' })
+  /* What the search hides is marked on the row; the CSS makes it `display: none`,
+     which jsdom does not apply. */
+  const out = (label: string) =>
+    screen.getAllByText(label, { selector: 'label' })[0].closest('[data-unit]')!.hasAttribute('data-search-out')
+
+  afterEach(() => window.history.replaceState(null, '', '/'))
+
+  it('narrows the pane to the rows its words find, in their label or their help, and hides the blocks left empty', async () => {
+    server()
+    await mount({ sub: 'General' })
+    await userEvent.type(search(), 'record ttl')
+    expect(out('Default Record TTL')).toBe(false)
+    expect(out('Default NS Record TTL')).toBe(false)
+    expect(out('DNS Server Domain')).toBe(true)
+    const local = document.getElementById('settings-local-parameters')!
+    expect(local).toHaveAttribute('data-search-out')
+    expect(document.getElementById('settings-default-parameters')).not.toHaveAttribute('data-search-out')
+  })
+
+  it('finds a row by its help text, not by the value it holds', async () => {
+    server()
+    await mount({ sub: 'General' })
+    await userEvent.type(search(), 'fully qualified')
+    expect(out('DNS Server Domain')).toBe(false)
+    await userEvent.clear(search())
+    await userEvent.type(search(), 'ref.technitium-ui.test')
+    expect(out('DNS Server Domain')).toBe(true)
+  })
+
+  it('says in the menu how many it found in each sub-section, and nothing for the ones with none', async () => {
+    server()
+    await mount({ sub: 'General' })
+    await userEvent.type(search(), 'serve stale')
+    const cache = within(menu()).getByRole('link', { name: /^Cache/ })
+    expect(cache.textContent).toMatch(/^Cache, \d+ (match|matches)$/)
+    expect(within(menu()).getByRole('link', { name: 'TSIG' })).toHaveAttribute('data-none')
+  })
+
+  it('with nothing found here it says so, and the other panes still count', async () => {
+    server()
+    await mount({ sub: 'TSIG' })
+    await userEvent.type(search(), 'serve stale')
+    expect(screen.getByText('No settings in TSIG match “serve stale”.')).toBeInTheDocument()
+  })
+
+  it('keeps the words in the address bar as ?q=, reads them on arrival and drops them when the screen goes', async () => {
+    server()
+    window.history.replaceState(null, '', '/settings/general/?q=dnssec')
+    const { unmount } = await mount({ sub: 'General' })
+    expect(search()).toHaveValue('dnssec')
+    expect(out('DNS Server Domain')).toBe(true)
+    await userEvent.clear(search())
+    expect(window.location.search).toBe('')
+    await userEvent.type(search(), 'ttl')
+    expect(window.location.search).toBe('?q=ttl')
+    unmount()
+    expect(window.location.search).toBe('')
+  })
+
+  it('Escape empties it and every row is back', async () => {
+    server()
+    await mount({ sub: 'General' })
+    await userEvent.type(search(), 'ttl')
+    expect(out('DNS Server Domain')).toBe(true)
+    await userEvent.keyboard('{Escape}')
+    expect(search()).toHaveValue('')
+    expect(out('DNS Server Domain')).toBe(false)
+  })
+
+  it('hides nothing from the save: a hidden field is sent as it was', async () => {
+    const spy = server()
+    await mount({ sub: 'General' })
+    await userEvent.type(search(), 'ttl')
+    await userEvent.click(screen.getByRole('button', { name: 'Save Settings' }))
+    expect(await screen.findByText('Settings Saved!')).toBeInTheDocument()
+    const body = spy.mock.calls.find((c) => c[0] === 'settings/set')![1]!.body as Record<string, string>
+    expect(body.dnsServerDomain).toBe(SETTINGS.dnsServerDomain)
+  })
+
+  it('asks the server nothing, and the panes it counts out of sight load no Quick Select list', async () => {
+    const spy = server()
+    const lists = vi.spyOn(quickLists, 'loadQuickList').mockResolvedValue([])
+    await mount({ sub: 'General' })
+    const calls = spy.mock.calls.length
+    await userEvent.type(search(), 'forwarder')
+    expect(spy.mock.calls.length).toBe(calls)
+    expect(lists).not.toHaveBeenCalled()
   })
 })
 

@@ -1,9 +1,17 @@
 import { useId, type ReactNode } from 'react'
 import { Tag } from './Tag'
+import { FoldHelp } from './FoldHelp'
 import frm from './Form.module.css'
 
 /*
 A form row: label on the left, control on the right.
+
+On a page (not `modal`) the help sits UNDER THE LABEL, folded to one line with a
+`more` (`ui/FoldHelp`), and an editable table drops under its label and help to
+take the row's whole width (2026-11-06, CONVENTIONS.md deviation
+22). It used to have a third column of its own at the far right, 800 px from the
+field it explained. The grid is in `Form.module.css`; the markup keeps the label,
+the help and the control as the row's three children, in reading order.
 
 It was written by hand 38 times, and on top of that existed TWICE as a component
 (in `screens/settings/parts.tsx` and in `screens/dhcp/parts.tsx`, byte-identical
@@ -46,7 +54,7 @@ export function Row({
 }) {
   const id = useId()
   return (
-    <div className={`${modal ? frm.mrow : frm.row}${dependsOn != null ? ` ${frm.dependent}` : ''}`}>
+    <div className={`${modal ? frm.mrow : frm.row}${dependsOn != null ? ` ${frm.dependent}` : ''}`} data-unit={modal ? undefined : ''}>
       {/*
       The pill goes OUTSIDE the `<label>`, and this was measured before being left
       this way.
@@ -70,6 +78,9 @@ export function Row({
           <Tag tone="acc">Needs {dependsOn}</Tag>
         </div>
       )}
+      {/* On a PAGE the help is the label's sibling and comes before the control,
+          so it reads in the order it is drawn: label, what it means, the field. */}
+      {!modal && help != null && <FoldHelp className={`${frm.rowHelp} ${frm.help}`}>{help}</FoldHelp>}
       <div className={modal ? frm.mrowCtl : frm.rowCtl}>
         {children(id)}
         {/* In the MODAL the help stays nested in the control's cell, which is
@@ -77,10 +88,6 @@ export function Row({
             design measured a form, not a dialog. */}
         {modal && help != null && <div className={frm.help}>{help}</div>}
       </div>
-      {/* In the PANEL it is the control's sibling, and that is why it can take up
-          its own column. It is the structural change the third column asks for:
-          while it was inside the cell, no grid rule could get it out. */}
-      {!modal && help != null && <div className={`${frm.rowHelp} ${frm.help}`}>{help}</div>}
     </div>
   )
 }
@@ -110,21 +117,19 @@ export function GroupRow({
 }) {
   const labelId = useId()
   return (
-    <div className={modal ? frm.mrow : frm.row}>
+    <div className={modal ? frm.mrow : frm.row} data-unit={modal ? undefined : ''}>
       <div className={modal ? frm.mrowLabel : frm.rowLabel} id={role != null ? labelId : undefined}>
         {label}
       </div>
+      {/* Same as in `Row`, and for the same reason: `GroupRow` draws on the SAME
+          `.row` grid, so its help goes under its label too. */}
+      {!modal && help != null && <FoldHelp className={`${frm.rowHelp} ${frm.help}`}>{help}</FoldHelp>}
       <div className={modal ? frm.mrowCtl : frm.rowCtl}>
         <div className={frm.group} role={role} aria-labelledby={role != null ? labelId : undefined}>
           {children}
         </div>
         {modal && help != null && <div className={frm.help}>{help}</div>}
       </div>
-      {/* Same as in `Row`, and for the same reason: `GroupRow` draws on the SAME
-          `.row` grid, and twenty places pass it help. If its own stayed nested,
-          two rows of the same panel would put the same thing in two places and
-          the third column would be empty in every other one. */}
-      {!modal && help != null && <div className={`${frm.rowHelp} ${frm.help}`}>{help}</div>}
     </div>
   )
 }
