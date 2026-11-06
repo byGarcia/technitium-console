@@ -1,0 +1,59 @@
+/*
+Queries Across Nodes (deviation 40): a sentence, one bar split by node in each
+node's colour, and a line per node with its count and its share, figures in
+columns so they read down.
+*/
+.panel { margin-top: var(--s-9); }
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-6);
+  padding: var(--s-7) var(--s-9);
+}
+
+.note { margin: 0; font-size: var(--t-3); color: var(--mute); }
+
+.bar {
+  display: flex;
+  gap: 2px;
+  height: var(--s-5);
+  border-radius: var(--r-1);
+  overflow: hidden;
+  background: var(--line2);
+}
+.segment { flex-basis: 0; min-width: 3px; background: var(--nd); }
+
+.list { margin: 0; padding: 0; list-style: none; }
+.list > li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 4.5ch;
+  align-items: center;
+  gap: var(--s-7);
+  padding: var(--s-4) 0;
+  border-top: 1px solid var(--line2);
+}
+.list > li:first-child { border-top: 0; }
+
+.node {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-3);
+  min-width: 0;
+  font-family: var(--font-mono);
+  color: var(--ink);
+  overflow-wrap: break-word;
+}
+.node::before {
+  content: '';
+  flex: none;
+  width: var(--s-4);
+  height: var(--s-4);
+  border-radius: var(--r-1);
+  background: var(--nd);
+}
+.count { font-variant-numeric: tabular-nums; color: var(--mute); text-align: right; }
+.percent { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--ink); text-align: right; }
+
+.failed { margin: 0; font-size: var(--t-3); color: var(--mute); overflow-wrap: break-word; }
+.failedNode { font-family: var(--font-mono); color: var(--ink); }

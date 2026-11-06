@@ -54,9 +54,12 @@ export interface AdminProps {
    *  `settings/get`, which is Settings' permission, not Administration's
    *  (deviation 31). Nothing else here is told a permission. */
   canViewSettings?: boolean
+  /** `Dashboard.canView`: the Cluster sub-tab's Queries Across Nodes card reads
+   *  `dashboard/stats/get` (deviation 40). */
+  canViewDashboard?: boolean
 }
 
-export function Admin({ token, sub, canViewSettings = true }: AdminProps) {
+export function Admin({ token, sub, canViewSettings = true, canViewDashboard = true }: AdminProps) {
   const [notice, setNotice] = useState<Notice | null>(null)
   const [cluster, setCluster] = useState<ClusterState | null>(null)
   /*
@@ -139,6 +142,7 @@ export function Admin({ token, sub, canViewSettings = true }: AdminProps) {
           onCluster={toCluster}
           onNotice={notify}
           canViewSettings={canViewSettings}
+          canViewDashboard={canViewDashboard}
         />
       )}
     </div>

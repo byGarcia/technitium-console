@@ -881,6 +881,7 @@ export function Shell({
             sub={currentSub ?? 'Sessions'}
             onSubChange={setSub}
             canViewSettings={permissions?.Settings?.canView !== false}
+            canViewDashboard={permissions?.Dashboard?.canView !== false}
           />
         ) : current?.id === 'settings' ? (
           /* main.js:906-930: three different permissions in a single bar:
