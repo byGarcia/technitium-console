@@ -114,6 +114,10 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
   cards for the page on screen (response types, RCODE, top clients and names) that set the matching
   filter, keeps its filters inside the results card, draws each entry on one line with the rest
   under Details, and keeps the query and the open file in the address bar so a link reproduces them.
+- **Settings reads as one form:** one menu at the left with the nine sub-sections, the current
+  one's blocks and a search that narrows the rows and counts matches in every sub-section; each
+  field's help sits under its label, folded to one line; the save bar stays at the foot of the
+  window and says what would change; Backup, Restore and Flush Cache move to the header.
 - **Administration reads like the rest of the console.** Permissions is one matrix of sections by
   groups and users, about a third of its old height, and opens a section's dialog from its row.
   Users, Groups and Sessions are data tables with a search, one line per row with Details, and the

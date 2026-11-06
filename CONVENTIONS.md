@@ -664,13 +664,12 @@ contract and SECURITY.md.
 
    And for the same reason (one save sends the fields of all nine panes, wherever
    you are), **Settings says what the save would change** (approved on
-   2026-10-16, `screens/settings/pending.ts`). While a field would be sent with a
-   value other than the one the server returned, the save bar reads
-   `Unsaved changes:` followed by the panes that hold one and how many fields each,
-   `General (2), Cache (1)`, in tab order, and each of those sub-tabs carries the
-   dot Lists carries, read as `<Tab>, unsaved changes` (`ui/SubTabs`'s `marks`).
-   Those two phrases are the only new words; the pane names are upstream's tab
-   labels. It compares what the save would send, with the save's own cleaning, so
+   2026-10-16, `screens/settings/pending.ts`). The save bar, always at the foot of
+   the window (deviation 22), reads `Unsaved changes:` followed by the panes that
+   hold one and how many fields each, `General (2), Cache (1)`, in tab order, or
+   `No unsaved changes`; each of those panes carries the dot Lists carries in the
+   Settings menu, read as `<Tab>, unsaved changes`. The pane names are upstream's
+   tab labels. It compares what the save would send, with the save's own cleaning, so
    a field put back as it was, a blank line in a list and an untouched field never
    count; nor does a field the save would not send (outside the chosen node's
    scope, or a proxy detail with no proxy type), nor the minutes of `Temporary
@@ -1312,6 +1311,39 @@ contract and SECURITY.md.
     Its words, all OURS: `Profile`, `Security`, `Account`, `Password` as block titles,
     `2FA` before the header's status, `from`, `All`, `Details`, `Session type`, `N of M
     sessions, TYPE only`.
+22. **Settings reads as one form** (Adrián's decision, 2026-11-06). Upstream draws nine
+    tabs over one long form whose help sits under each field. Here:
+    - **One menu at the left of the form** (`screens/settings/SettingsMenu.tsx`) holds the
+      nine sub-sections (real links to their routes, `aria-current="page"`, the dot of
+      deviation 3) and, under the current one, its titled blocks as in-page anchors
+      (`#settings-<title>`, the one in view `aria-current="location"`, only when the pane
+      has two or more). It replaces the row of sub-tabs and the second row of block links
+      (`ui/SectionIndex`) that looked like tabs and only scrolled. Under 960 px of screen it
+      folds into a bar at the top: the current sub-section and block as a button that opens
+      the same list, and the search.
+    - **Search settings** at the top of the menu (`search.ts`) narrows the current pane to
+      the rows and notices whose label, help or options' text hold every word typed, hides
+      the blocks left empty and paints the matches (CSS Custom Highlight API). It searches
+      what the form says, not field values. The other eight panes are drawn out of sight
+      (`hidden`, `inert`, reading no Quick list) only so each sub-section in the menu can
+      say how many matches it has. It asks the server nothing, changes no field, and a
+      hidden field is still saved. The words are in the address bar as `?q=`
+      (`lib/url-state.ts`): written by replacing the entry, read on arrival, kept when
+      moving between sub-sections, dropped when the screen goes.
+    - **Each row reads label, help, control**: the help under the label as one muted line,
+      a longer one cut at its end with `more` (and `less`), the whole text always in the
+      document (`ui/FoldHelp`); an editable table drops under its label and help. It is the
+      panel-form kit's row (`ui/Form`), so every page form built on it (Administration's
+      SSO, LDAP and Cluster, DHCP's scope) reads the same.
+    - **The header is the pane** (`Settings ›` and the sub-section as the title), with
+      **Backup Settings, Restore Settings and Flush Cache** at its right; **Save Settings**
+      stays in a bar pinned to the foot of the window for the whole screen. Same calls,
+      permissions, confirmations and texts.
+    - The block headers carry no count of their rows. Quick Add and Quick Select are rows
+      like their neighbours.
+    Its words, all OURS: `Search settings`, `more`, `less`, `No unsaved changes`, `No
+    settings in <Section> match "<q>".`, `match` / `matches` (read after a sub-section's
+    name), `Save` (the bar's region name).
 23. **Administration reads like the rest** (Adrián's decision, 2026-11-06). Every call,
     confirmation, alert text, validation and its order, and every dialog are the ones
     they were; what changes is the layout and what is drawn from data the screen already
