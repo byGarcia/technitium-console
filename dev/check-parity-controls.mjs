@@ -414,6 +414,7 @@ const DEVIATION_OWN_LABELS = new Map([
   ['Copy the installer command', { file: 'app/Versions.tsx', why: 'the console update dialog (deviation 10)' }],
   ['Copy the Docker command', { file: 'app/Versions.tsx', why: 'the console update dialog (deviation 10)' }],
   ['Kind', { file: 'screens/apps/Apps.tsx', why: 'the installed apps filter (deviation 17)' }],
+  ['Sort by', { file: 'screens/clients/ClientList.tsx', why: 'the Clients list order (deviation 25)' }],
 ])
 const onlyInOwnFile = (label) =>
   (LABEL_FILES.get(label) ?? []).every((f) => f === join(SOURCE, DEVIATION_OWN_LABELS.get(label).file))

@@ -151,15 +151,17 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
   **Blocked by client**, the clients behind the latest 1,000 blocked queries with a jump to their
   Query Logs, and the query types they asked for. It reads the same query logs Recently Blocked
   reads.
-- **A Clients page**, first under Monitoring: every client of the period (the stock Dashboard's
-  Top Clients, up to 1,000) in one table with its name, its share of the queries and how many of
-  its latest queries were blocked, searchable and sortable, with the search, the order, the page
-  and the open client kept in the address bar. A strip on top counts the clients and names the
-  most active and the most blocked, with the blocked share of the latest 1,000 queries. Opening a
-  client shows, from its latest 500 queries, the domains it asks for most, the ones it gets
-  blocked, its query and response types and when it last asked, with Show Query Logs and each
-  domain's usual menu. Without a query logging app it still lists the clients and says why the
-  rest is missing.
+- **A Clients page**, first under Monitoring. A strip counts the clients and names the most
+  active and the most blocked, with the blocked share of the latest 1,000 queries; a bar shows who
+  uses your DNS, the busiest clients side by side by their share, a click opening one. The list
+  shows every client of the period (the stock Dashboard's Top Clients, up to 1,000) with its
+  queries, how much of its latest queries was blocked and a `Heavy blocking` tag, with a search,
+  filters (`Heavy blocking`, `Quiet`) and an order, all kept in the address bar. A client opens as
+  a card beside the list on a wide screen, or as its own page on a narrow one: its DHCP lease (MAC
+  address, host name, scope), its last query, Open in Query Logs and Copy IP, and from its latest
+  500 queries the blocked share, the cache hit rate, the median response time, its activity over
+  time, its top and top blocked domains, its protocols and record types and its latest queries.
+  Without a query logging app it still lists the clients and says why the rest is missing.
 - **Choosing a file is a drop zone** in every dialog that takes one (an app's zip, a zone file, a
   settings backup): drop the file or click to choose it, and it shows its name and size.
 - **Dialogs are one surface**, without the lines under the title and over the buttons. A

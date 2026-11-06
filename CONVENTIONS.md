@@ -1522,12 +1522,13 @@ contract and SECURITY.md.
     sub-section, `Blocking › Settings` in the two links that pointed to Settings ›
     Blocking.
 
-25. **The Clients page** (Adrián's decision, 2026-11-06; `src/screens/clients/`). Upstream
+25. **The Clients page** (Adrián's decisions, 2026-11-06; `src/screens/clients/`). Upstream
     has no such screen: it is Blocking › Overview's Blocked by client card grown into a page,
     built from that card's and the Dashboard's pieces (`useLoggingApp`, `countByClient`,
-    `BLOCKED_TYPES`, `TopRowMenu`, the top lists' rows, `ui/StatCard`, `ui/DataTable`). It is a
-    section of its own, `clients`, first under `Monitoring` in the sidebar, and needs
-    `Dashboard: View`, the permission of its main calls. What it shows:
+    `BLOCKED_TYPES`, `TopRowMenu`, the top lists' rows, `Line`, Query Logs' `rowClass` pill,
+    `ui/StatCard`, `ui/DataTable`). It is a section of its own, `clients`, first under
+    `Monitoring` in the sidebar, and needs `Dashboard: View`, the permission of its main calls.
+    What it shows:
     - **the header**: `Clients`, a subtitle (`CLIENTS_SUBTITLE`) and the Dashboard's five fixed
       periods (no Custom) with Last Hour's live dot, read again a minute after each answer,
       never with a hidden tab (the clients do not move with the live counters, deviation 5);
@@ -1535,62 +1536,61 @@ contract and SECURITY.md.
     - **a strip** of four cells: `Clients` (`totalClients` of `stats/get`), `Most Active` (the
       first of the period's Top Clients, its queries and share of `totalQueries`), `Most
       Blocked` and `Blocked Share`, both from the log sample;
-    - **the table**: `dashboard/stats/getTop` with `statsType=TopClients` and `limit=1000`,
-      exactly what upstream's More sends (main.js:2939), one line per client: the address, its
-      name (`domain`), its share of the period's queries as a bar and a percentage, its queries,
-      and its blocked queries in the sample (the "no value" placeholder when the client is not in the
-      sample, which is not zero). The search (address or name, Top Stats' `matchesTop`), the order and the page
-      are in the address bar (`?q=`, `?sort=` as a column name, `-` before it for descending,
-      `?page=`), with the open client (`?client=`), written by replacing the entry and dropped
-      when the page goes. Figures sort as figures and addresses in natural order (`10.0.0.2`
-      before `10.0.0.10`), with upstream's click rule (ascending unless already ascending);
-    - **a client's details**, under its row: `logs/query` filtered by `clientIpAddress`, the
-      newest 500 entries of every type, counted into its five most asked and five most blocked
-      domains (each with Top Domains' or Top Blocked Domains' menu), its query and response
-      types as stacked bars, and its last query's time. `Show Query Logs` jumps for the client.
+    - **Who uses your DNS** (`WhoUses.tsx`): the period's 20 busiest clients as one bar, each
+      segment its share of `totalQueries`, its name inside when it has 6 % of the bar (not on a
+      phone), a click opening that client, and the caption with the total and how much of the
+      traffic they cover;
+    - **the list** (`ClientList.tsx`): `dashboard/stats/getTop` with `statsType=TopClients`
+      and `limit=1000`, exactly what upstream's More sends (main.js:2939), one line per
+      client: its initial (as the account row draws it), name and address, its tags, its
+      queries in the period, `N% blocked` of its queries in the sample and a thin bar of that
+      split. Two tags, each a rule the code states (`clients-model.ts`, THE TWO TAGS): `Heavy
+      blocking`, a fifth or more of its queries in the sample blocked over at least ten of
+      them, and upstream's own `rateLimited` as `Rate limited`; nothing the data cannot prove
+      (the server does not say when it first saw a client, so there is no "New"). Filter
+      chips with their counts, `All`, `Heavy blocking` (only with a sample) and `Quiet` (under
+      1 % of the period's queries), and a `Sort by` of `Most queries`, `Most blocked` and
+      `Name`. The search (`?q=`), the filter (`?filter=`), the order (`?sort=`), the page
+      (`?page=`) and the open client (`?client=`) are in the address bar, written by replacing
+      the entry, each default left out, all dropped when the page goes;
+    - **master and detail**: above `--bp-wide` (1180 px) the list is a 380 px column and the
+      open client's card sits beside it, the list's first client open when `?client=` names
+      none (and the bar stays clean); at 1180 and under the list takes the width and opening a
+      client shows its card instead, under a `Clients ›` trail that comes back, as a zone's
+      page does;
+    - **the card** (`ClientCard.tsx`): its name (or address) and tags; its address and, when a
+      DHCP lease hands it out (`dhcp/leases/list`, read only with `DhcpServer: View`, matched
+      by address), the lease's MAC address, host name and scope; its last query's age;
+      `Open in Query Logs` (the Top Clients jump) and `Copy IP`. Then, from `logs/query`
+      filtered by `clientIpAddress`, its newest 500 entries of every type: `Queries`,
+      `Blocked` (the three classes), `Cache hit rate` (`Cached` over all) and `Median response
+      time` (the median `responseRtt` of the entries that carry one, the cell left out when
+      none does); its activity over the sample's own span in 24 slices, Total and Blocked, on
+      the Dashboard's line; its five most asked and five most blocked domains, each with Top
+      Domains' or Top Blocked Domains' menu; its protocols as a stacked bar and its record
+      types as bars; and its ten latest queries (age with the time in its title, domain,
+      type, Query Logs' coloured response pill, and `responseRtt` in ms or the "no value"
+      placeholder). The log entries carry no node (checked against v15.6.1 on 2026-11-06), so
+      there is no "answered by" in a cluster: the aggregate reads the connected node's log.
 
     **The log sample** is the newest 1,000 queries of every response type (`logs/query` through
     the query logs app, Query Logs' own call), read again with each answer of `stats/get`. It is
     not the period, and every figure drawn from it says what it is based on (`In the last N
-    queries`, `on <node>` with the cluster aggregate: logs are one node's). Blocked is the three
-    classes `totalBlocked` adds up. Without a query logs app the two sample cells become one
-    that says why, once, with upstream's sentence and a link to Apps; the table drops its
-    Blocked column and a client's details say `No query logging app`. Without `Logs: View`
-    each sample cell and the details keep their place, locked, and nothing reads the log.
+    queries`, `In the latest N queries` on the card, `on <node>` with the cluster aggregate:
+    logs are one node's). Without a query logs app the two sample cells become one that says
+    why, once, with upstream's sentence and a link to Apps; the list keeps its queries, loses
+    `Heavy blocking` and the blocked share, and the card says `No query logging app` under its
+    head. Without `Logs: View` each sample cell and the card's body keep their place, locked,
+    and nothing reads the log.
 
     Its limits, and crossing one is a bug: only endpoints upstream's console already calls
-    (`dashboard/stats/get`, `dashboard/stats/getTop`, `apps/list`, `logs/query`), nothing
-    written to the server, upstream's actions and jumps only. Its words, all OURS and declared
-    in the header comments of `Clients.tsx` and `ClientDetail.tsx`: the subtitle, `Most
-    Active`, `Most Blocked`, `Blocked Share`, `N queries, X% of total`, `N blocked in the last
-    N queries`, `In the last N queries`, `Blocked: in the last N queries`, `The N most active
-    are listed`, `Last query`, `No queries.`, `No queries from this client.`, `No clients for
-    this period.`, `N clients` with `, K shown`, the column names `Client`, `Name`, `Share`,
-    `Queries` and `Blocked`, and `Details`. The page's folder is generated from `SECTIONS`.
-26. **A command palette** (Adrián's decision, 2026-11-06; `app/palette/`). Ctrl+K (⌘K
-    on a Mac), the `Search or jump to…` field under the brand, or the search button
-    in the narrow top bar opens one field over the screen. Empty, it lists the last
-    five entries run (kept in this browser, `paletteRecent`) and the first pages;
-    typing narrows every section and sub-section the user can see, Settings' panes,
-    the zones (`zones/list`, read when it opens, at most once a minute, only with
-    `Zones` visible) and the account menu's entries, plus the three themes and
-    Logout. Text that reads as a name adds the steps that take it: `Check <name> in
-    Blocking` (Blocking › Overview's check, through `?check=`, which the bar reads
-    once and drops), `Resolve <name> in DNS Client` and `Search Query Logs for
-    <name>` (the row menus' own hand-offs), `Find <name> in Cache` (`?domain=`),
-    `Search your rules for <name>` (`?q=`); an address adds `Search Query Logs for
-    client <address>`; any text adds `Search settings for <text>`. A zone or page
-    that answers comes before those steps. It calls nothing itself and changes
-    nothing: every entry lands on a screen that does what it always did. A jump
-    with parameters remounts the screen so it reads them even when it was already
-    open, and writes the address back a task later because a screen may take its
-    own parameters out as it goes (`app/Shell.tsx`, `paletteJump`). A combobox over
-    a listbox: the focus stays in the field, the arrows move `aria-activedescendant`,
-    Enter runs, Escape closes.
-    Its words, all OURS: `Search or jump to…`, `Search`, `Results`, the group names
-    (`Recent`, `Zones`, `Pages`, `Actions`, `Account`), `Page`, every action
-    sentence above, `Use the light theme`, `Use the dark theme`, `Use the system
-    theme`, `No matches for "<text>".`, `to move`, `to open`, `to close`.
+    (`dashboard/stats/get`, `dashboard/stats/getTop`, `apps/list`, `logs/query`,
+    `dhcp/leases/list`), nothing written to the server, upstream's actions and jumps only. Its
+    words, all OURS and declared in the header comments of `Clients.tsx`, `ClientList.tsx`,
+    `ClientCard.tsx` and `WhoUses.tsx`, among them the subtitle, the strip's cells, `Who uses
+    your DNS` and its sentences, the two tags, the filters and orders with `Sort by` (listed
+    in `dev/check-parity-controls.mjs`), `N% blocked`, `Open in Query Logs`, `Copy IP`, the
+    card's four figures and its section titles. The page's folder is generated from `SECTIONS`.
 
 ## Four constraints the server imposes
 
