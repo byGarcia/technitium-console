@@ -46,9 +46,10 @@ side by side read as two shares. It is not coloured up or down: more blocked que
 are not good or bad by themselves, and red and green would say they were.
 
 What it is compared with is said once, in the `Total Queries` card (`long`), and in
-full to assistive technology and on hover on every card.
+full to assistive technology and on hover on every card. Blocking › Overview's strip
+draws the same object for its Total Queries and Blocked.
 */
-function Change({ ratio, against, long = false }: { ratio?: number; against: string; long?: boolean }) {
+export function Change({ ratio, against, long = false }: { ratio?: number; against: string; long?: boolean }) {
   if (ratio == null) return null
   const text = formatChange(ratio)
   const arrow = text.startsWith('+') ? '\u25b2 ' : text.startsWith('\u2212') ? '\u25bc ' : ''

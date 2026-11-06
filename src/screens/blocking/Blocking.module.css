@@ -4,16 +4,6 @@ What the three Blocking tabs share. Every value is a token of theme/tokens.css.
 .stack { display: flex; flex-direction: column; gap: var(--gap-block); }
 .row2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-9); }
 .row21 { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: var(--s-9); }
-
-/*
-A panel whose content sits in its middle. A grid row stretches its panels to the
-tallest one, and a headerless panel puts its air on top (ui/Panel `.noHeader`): the
-content stayed high with a band under it. Here the body's own padding is the only
-air, the same on every side, and the free height splits above and below. Written
-under `.stack` to outweigh ui/Panel's own body padding, which weighs one class.
-*/
-.stack .centred { display: flex; flex-direction: column; justify-content: center; padding-top: 0; }
-
 /* The strip of stat cards (`ui/StatCard`) inside the column: the column's gap is
    its space, not the strip's own margin as well. */
 .stack .inStack { margin-bottom: 0; }
@@ -26,14 +16,25 @@ under `.stack` to outweigh ui/Panel's own body padding, which weighs one class.
 /* A menu entry without its permission (`LockedItem`): the padlock beside the verb. */
 .lockedItem { display: inline-flex; align-items: center; gap: var(--s-3); }
 
-/* The add bar: one field, Block first because Enter blocks. */
-.add { display: flex; align-items: flex-end; gap: var(--s-5); }
-.add > :first-child { flex: 1; min-width: 0; }
+/* The command bar (`AddDomainBar`): its title, one field, Block first because Enter
+   blocks, Allow and Check, on one line. */
+.stack .commandBody { padding: var(--s-7) var(--s-9); }
+.add { display: flex; align-items: center; gap: var(--s-5); }
+.commandTitle { margin: 0 var(--s-5) 0 0; font-size: var(--t-5); font-weight: 600; color: var(--ink); white-space: nowrap; }
+.commandField { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+
+/* Said to assistive technology, not drawn: the field's name `Domain`. */
+.offscreen { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+/* `--bp-index`: the title takes its own line, the field and the verbs share the next. */
+@media (max-width: 960px) {
+  .add { flex-wrap: wrap; }
+  .commandTitle { flex-basis: 100%; }
+}
 
 /* `--bp-stack`. */
 @media (max-width: 560px) {
-  .add { flex-wrap: wrap; }
-  .add > :first-child { flex-basis: 100%; }
+  .commandField { flex-basis: 100%; }
 }
 
 /* The check's sentence under the domain field when it cannot answer, with the field's

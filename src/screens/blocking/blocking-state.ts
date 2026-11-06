@@ -5,10 +5,10 @@ import { onSettingsChanged } from '../../lib/settings-signal'
 import { missing, type Permissions } from './permissions'
 
 /*
-Whether blocking is on, read where the Overview's status block reads it
+Whether blocking is on, read where the Overview's header status reads it
 (`settings/get`: `enableBlocking` and `temporaryDisableBlockingTill`, on the node the
 console is connected to). OURS, as that block is. Two places draw it, so it lives
-here: the block itself (`StatusPanel.tsx`) and the sidebar's mark on Blocking
+here: the status in the Overview's header (`BlockingStatus.tsx`) and the sidebar's mark on Blocking
 (`app/Shell.tsx`), which nothing else on the page would keep current.
 
 When it reads:
@@ -116,9 +116,9 @@ or unreadable, and without `Settings.canView`. The visible word is short; the
 accessible name and the title say the rest, with the time a pause ends. OURS:
 `Off`, `Paused`, `Blocking, disabled`, `Blocking, paused until <time>`.
 
-The tone follows the Overview's block: paused is amber ("yours to lift") only with
-`Settings.canModify`, since the padlock wins; disabled is neutral, as the block's
-mark is.
+Paused is amber ("yours to lift") only with `Settings.canModify`, since the padlock
+wins, as in the Overview's header; disabled is neutral here, while that header's pill
+draws it red (2026-11-06).
 */
 export interface BlockingMark {
   text: string

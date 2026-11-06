@@ -140,6 +140,13 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
   line per row with the rest under Details, and Rules' tree is the same card with a trail to the
   node and its view kept in the address bar. The Dashboard's Top 1000 list gets a search, and
   editable tables (TSIG keys, group maps) take the table look.
+- **Blocking's Overview shows more:** whether blocking is on sits in the header beside the period,
+  as a pill (green, amber with the time it comes back, red) with the same Disable menu; checking,
+  blocking or allowing a domain is one bar across the page; Total Queries and Blocked show their
+  change against the previous period, as on the Dashboard; and the Blocked share ring gives way to
+  **Blocked by client**, the clients behind the latest 1,000 blocked queries with a jump to their
+  Query Logs, and the query types they asked for. It reads the same query logs Recently Blocked
+  reads.
 - **Choosing a file is a drop zone** in every dialog that takes one (an app's zip, a zone file, a
   settings backup): drop the file or click to choose it, and it shows its name and size.
 - **Dialogs are one surface**, without the lines under the title and over the buttons. A

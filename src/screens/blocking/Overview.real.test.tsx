@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { percentage } from '../dashboard/Dashboard'
 import { REAL, realServer } from '../../test/real-blocking'
 import { Overview } from './Overview'
+import { countByClient, countByType } from './blocked-sample'
 import { wholeText } from '../../test/whole-text'
 
 /*
@@ -17,7 +18,7 @@ const drawn = vi.hoisted(() => new Map<string, { labels: string[]; datasets: { l
 
 vi.mock('../dashboard/Chart', () => ({
   Chart: ({ aria, data }: { aria: string; data: never }) => {
-    drawn.set(aria.startsWith('Blocked share') ? 'ring' : 'bars', data)
+    drawn.set('bars', data)
     return <div role="img" aria-label={aria} />
   },
 }))
@@ -79,8 +80,25 @@ describe('Overview against the harness', () => {
     // The server's own totals: the series add up to the figures above them.
     expect(blocked.reduce((a, b) => a + b, 0)).toBe(day.stats.totalBlocked)
     expect(total.reduce((a, b) => a + b, 0)).toBe(day.stats.totalQueries)
-    expect(screen.getByRole('img', { name: `Blocked share: ${percentage(day.stats.totalBlocked, day.stats.totalQueries)}` }))
-      .toBeInTheDocument()
+    expect(screen.getByText(`${percentage(day.stats.totalBlocked, day.stats.totalQueries)} of total`)).toBeInTheDocument()
+  })
+
+  it('Blocked by client counts the clients and the types of the newest blocked queries', async () => {
+    const entries = [
+      ...REAL.logsBlocked.response.entries,
+      ...REAL.logsUpstreamBlocked.response.entries,
+      ...REAL.logsUpstreamBlockedCached.response.entries,
+    ]
+    const clients = countByClient(entries)
+    expect(clients.length).toBeGreaterThan(0)
+    render(<Overview token="T" permissions={undefined} />)
+    const panel = (await screen.findByRole('heading', { name: 'Blocked by client' })).parentElement!.parentElement!
+    expect(await within(panel).findByText(`In the last ${entries.length.toLocaleString()} blocked queries`)).toBeInTheDocument()
+    for (const c of clients.slice(0, 5)) {
+      expect(within(panel).getByRole('img', { name: `${c.ip}: ${c.count.toLocaleString()} blocked` })).toBeInTheDocument()
+    }
+    const types = within(panel).getByRole('region', { name: 'Blocked by type' })
+    for (const t of countByType(entries)) expect(types).toHaveTextContent(t.type)
   })
 
   it('the top tables list the domains the server ranked, with their hits', async () => {
