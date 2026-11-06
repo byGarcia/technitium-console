@@ -53,7 +53,17 @@ function Explained({ label, value, why }: { label: string; value: number; why: s
   )
 }
 
-export function CacheSummary({ records }: { records: DnsRecord[] }) {
+export function CacheSummary({
+  records,
+  activeType,
+  onType,
+}: {
+  records: DnsRecord[]
+  /** The type the records table is narrowed to, `''` for none. */
+  activeType: string
+  /** Pressing a type narrows the table to it; pressing the pressed one clears it. */
+  onType: (type: string) => void
+}) {
   /* The type, and the DNSSEC state, lit by hovering its key or its fact (`StackBar`). */
   const [hotType, setHotType] = useState<string | null>(null)
   const [hotState, setHotState] = useState<string | null>(null)
@@ -81,23 +91,25 @@ export function CacheSummary({ records }: { records: DnsRecord[] }) {
             onHot={setHotType}
           />
           {types.length > 0 && (
-            /* A key, not a filter: Cache has no filter to drive, so a type here
-               lights its share of the bar and does nothing else. */
-            <ul className={`${statStyles.types} ${styles.keys}`} aria-label="Records by type">
+            /* Each type narrows the records table to it, as a zone's Records card
+               does; the table says so in its foot. */
+            <div className={statStyles.types} role="group" aria-label="Records by type">
               {types.map(([t, n]) => (
-                <li
+                <button
                   key={t}
-                  className={styles.typeKey}
+                  type="button"
+                  className={statStyles.typeChip}
                   style={{ '--sw': recordColour(t) } as CSSProperties}
+                  aria-pressed={activeType === t}
                   data-hot={hotType === t || undefined}
-                  onMouseEnter={() => setHotType(t)}
-                  onMouseLeave={() => setHotType(null)}
+                  onClick={() => onType(activeType === t ? '' : t)}
+                  {...hotEvents(t, setHotType)}
                 >
                   <span className={statStyles.typeName}>{t}</span>
                   <span className={statStyles.typeCount}>{n}</span>
-                </li>
+                </button>
               ))}
-            </ul>
+            </div>
           )}
           <dl className={statStyles.facts}>
             <Explained label="Negative" value={negative} why={NEGATIVE_WHY} />

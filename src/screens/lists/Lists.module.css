@@ -115,19 +115,6 @@ second clickable path would be behaviour upstream does not have. So it is a
 .pathSep { color: var(--faint); opacity: 0.6; }
 .pathHere { color: var(--ink); font-weight: 650; }
 
-/*
-CACHE, ONE PANEL (2026-10-16). Cache leaves the two-column split: the tree
-column becomes two bands inside the records panel (the crumbs that go up and the
-chips that go down, `CacheNav.tsx`), so the screen has one place to look and
-the records get the full width. The identity colour stays as the panel's top
-rule, the same `--ch-cache` as before; the band that repeated "Cache" under the
-section title is gone, and its sentence is the header's subtitle.
-*/
-.cachePanel {
-  composes: panel from '../../ui/Panel.module.css';
-  border-top: 3px solid var(--ch-cache);
-  margin-bottom: var(--gap-block);
-}
 
 /* The wait for the first read, in the place the cards and the table will take:
    `ui/Empty`'s skeleton inside a card of the table's weight. */
@@ -136,63 +123,21 @@ section title is gone, and its sentence is the header's subtitle.
   padding: var(--s-8) var(--s-10);
 }
 
-/* The field takes the width; Browse stays its own size beside it. */
+/*
+CACHE, LIKE A ZONE (2026-11-06, deviation 16). The node is the header (path,
+name, Refresh, Delete), its cards follow, and ONE card moves and shows: the
+Domain field and Browse in the table's toolbar, the zones under the node as a
+band of chips, and the records one line each. The field takes the toolbar's
+width; Browse stays its own size beside it.
+*/
 .search {
   display: flex;
   gap: var(--s-5);
-  align-items: flex-end;
-  padding: var(--s-8) var(--s-9);
-  border-bottom: 1px solid var(--line);
+  align-items: center;
+  min-width: 0;
 }
 .search > div { flex: 1; min-width: 0; }
 
-/* The node's line: where you are on the left, what you can do to it on the right. */
-.where {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: var(--s-5) var(--s-8);
-  padding: var(--s-5) var(--s-9);
-  border-bottom: 1px solid var(--line2);
-  background: var(--pan2);
-}
-.crumbs {
-  display: flex;
-  align-items: center;
-  gap: var(--s-3);
-  min-width: 0;
-  font: var(--t-4) var(--font-mono);
-}
-.crumbList {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--s-1) var(--s-3);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  min-width: 0;
-}
-.crumbList > li { display: flex; align-items: center; gap: var(--s-3); min-width: 0; }
-/*
-An ancestor is a link-weight button: muted until pointed at, never boxed. Boxing
-it would make three ancestors look like three actions on the same footing as
-Refresh and Delete beside them. `.hitArea` gives the 24 px target without
-growing the line.
-*/
-.crumb {
-  composes: hitArea from '../../ui/interaction.module.css';
-  border: 0;
-  padding: 0;
-  background: transparent;
-  font: inherit;
-  color: var(--mute);
-  cursor: pointer;
-  text-align: left;
-}
-.crumb:hover { color: var(--acc-ink); text-decoration: underline; }
-.crumbHere { color: var(--ink); font-weight: 650; }
 
 /*
 The children. A chip per name, wrapping, with the count in front as its label.
@@ -280,31 +225,6 @@ cards and use its classes; what is here is only what Cache draws and Zones does 
   letter-spacing: 0.03em;
 }
 
-/* The Records card's types: the look of `ui/StatCard`'s type chip, without its
-   button. Cache has no filter for a type to drive, so a key only lights its share
-   of the bar under the pointer. */
-.typeKey {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--s-4);
-  padding: var(--s-2) var(--s-5);
-  border: 1px solid var(--btn-line);
-  border-radius: var(--r-2);
-  background: var(--btn);
-  color: var(--ink);
-  font-size: var(--t-3);
-  transition: border-color var(--t-fast);
-}
-.typeKey::before {
-  content: '';
-  width: var(--s-5);
-  height: var(--s-5);
-  border-radius: var(--s-1);
-  background: var(--sw);
-  flex: none;
-}
-.typeKey[data-hot] { border-color: color-mix(in srgb, var(--sw) 70%, var(--btn-line)); }
-ul.keys { margin-bottom: 0; padding: 0; list-style: none; }
 
 /* Time Left: the next to expire is the card's figure, its label over it and its
    record's type beside it. */
@@ -433,3 +353,10 @@ and scrolls inside), so the records are not always below the fold.
   .split { grid-template-columns: minmax(0, 1fr); gap: var(--s-8); }
   .tree .body { max-height: 250px; }
 }
+
+/* A record's Details, open: its row loses the line under it so the two read as
+   one, and the detail line sits indented on the panel's quieter surface. */
+.openRow > td { border-bottom-color: transparent; }
+.detailRow > td { padding-top: 0; background: var(--pan2); }
+.detailRow .meta { margin-top: var(--s-3); }
+.detailLabel { margin-top: var(--s-6); font-size: var(--t-2); color: var(--faint); }

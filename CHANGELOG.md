@@ -84,10 +84,13 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
   plain grey (a DNSSEC key's Delete, Delete Record, and two Remove buttons) now are too.
 - **The sidebar says technitium-console**, beside Technitium's own logo, now a vector file of
   the same mark so it stays sharp on high-density screens.
-- **Cache says what the open node holds:** cards for its records by type, the time left before
-  the next one expires and how many are stale, their DNSSEC states and the servers that answered,
-  all read from the answer already on screen. Record types are coloured in the table, and a record
-  kept past its TTL is marked `Stale`.
+- **Cache reads like a zone.** The open node is the header (its path, every step of which goes
+  back up, and its name with Refresh, Delete and Flush Cache), then cards for its records by type,
+  the time left before the next one expires and how many are stale, their DNSSEC states and the
+  servers that answered, all read from the answer already on screen. Below, one card holds the
+  Domain field, the zones under the node and its records, one line each with the rest under
+  *Details*. Pressing a record type on the cards narrows the table to it, and a record kept past its
+  TTL is marked `Stale`.
 - **Apps opens with four cards** (installed apps and their store status, classes by kind, what
   serves Query Logs, what APP records can use). The installed apps and the App Store are tables,
   with a Kind filter and a search, and each kind of DNS app has its own colour. The installed list

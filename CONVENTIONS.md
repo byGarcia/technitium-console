@@ -920,14 +920,29 @@ contract and SECURITY.md.
     several stack, so nothing under it moves. A result inside a dialog stays in the
     dialog, and the login form's stays in the form. The texts, the five seconds of
     a success and the close button are the same.
-16. **Cache says what a node holds** (Adrián's decision, 2026-11-06). Upstream dumps a
-    node's records as JSON (other-zones.js:157). Here, over the records table, up to four
-    cards (`screens/lists/CacheSummary.tsx`, `cache-facts.ts`) read only the records of
-    the `cache/list` answer already on screen: no call is added, and they follow the
-    node exactly as the table does.
-    - **Records**: how many, by type in each type's series colour (`zones/zone-colours`),
-      with a key that only lights its share of the bar (Cache has no filter for it to
-      drive), and `Negative`: the records whose `rData` is the server's special cache
+16. **Cache says what a node holds, and reads like a zone** (Adrián's decision,
+    2026-11-06). Upstream dumps a node's records as JSON (other-zones.js:157) under a flat
+    list of `[refresh]`, `[up]` and the children. Here the screen is laid out as a zone's:
+    - **The node is the header.** Its path (`Cache › com › google.com`, every step but
+      the last opening that ancestor with `direction=up`, as upstream's `[up]` does) and
+      its name as the title, with Refresh beside it; Delete (the node) and Flush Cache at
+      the right. At the root the title is the section's, `Cache`, with no path; the root
+      is still called `<ROOT>` in the table's foot.
+    - **The Domain field and Browse sit in the records card's toolbar**, the zones under
+      the node in a band of chips under it (the first 40, then `Show all N` / `Show
+      fewer`: the root holds every top-level domain asked for), and the records under
+      that, ONE line each: type, TTL, data and DNSSEC, with the rest (where it came
+      from, when it was used, a name server's health, its glue and RRSIG) under the
+      row's `Details`. The two `Glue` and `RRSIG` buttons are gone into it.
+    - Up to four cards between the header and that card
+      (`screens/lists/CacheSummary.tsx`, `cache-facts.ts`) read only the records of the
+      `cache/list` answer already on screen: no call is added, and they follow the node
+      exactly as the table does.
+    - **Records**: how many, by type in each type's series colour (`zones/zone-colours`).
+      Pressing a type narrows the table to it, pressing it again clears it; the foot
+      says `N of M records at <node>, TYPE only`. It is drawn from the answer on screen
+      and asks the server nothing; a new node starts unfiltered. And `Negative`: the
+      records whose `rData` is the server's special cache
       record (`dataType: DnsSpecialCacheRecordData`) with a `data` starting
       `NegativeCache:`. Always drawn; an empty node says 0.
     - **Time Left**: the record that leaves the cache first and how soon, the longest
@@ -943,10 +958,11 @@ contract and SECURITY.md.
     - A card whose data the node lacks is not drawn.
     - In the records table, shared with Allowed and Blocked, a record type is drawn in
       its series colour, and a cache record with `ttl: "0 (0s)"` carries a `Stale` tag.
-    - The records sit in `ui/DataTable` with their count in its foot; Flush Cache,
-      Delete, Refresh, the crumbs and the chips send exactly what they sent.
+      Allowed and Blocked keep their two-line rows.
+    - Flush Cache, Delete, Refresh, the path and the chips send exactly what they sent.
     Its words, all OURS: `Records`, `Time Left`, `Next to expire`, `Longest`, `Stale`,
-    `Negative`, `Answered By`, `N more`, and the two tooltips "Its TTL has run out.
+    `Negative`, `Answered By`, `N more`, `Details`, `Show all N`, `Show fewer`, `N of M
+    records at <node>, TYPE only`, `Cache` as the path's first step, and the two tooltips "Its TTL has run out.
     The server keeps it for Serve Stale and shows its TTL as 0 (0s)." and "A cached
     answer that the name, or a record of that type, does not exist."
 17. **Apps says what the apps are** (Adrián's decision, 2026-11-06). Everything

@@ -51,6 +51,7 @@ a state other times and a setting others.
 export function SectionHeader({
   section,
   onBack,
+  path,
   title,
   subtitle,
   labels,
@@ -64,6 +65,9 @@ export function SectionHeader({
    *  path: there used to be a "← Zones" above and a "ZONES" below, two elements
    *  saying the same thing two centimetres apart. */
   onBack?: () => void
+  /** A deeper path than one step (Cache's nodes, 2026-11-06): every step but the
+   *  last opens that place, and the title closes the trail. Replaces `section`. */
+  path?: { label: ReactNode; onOpen: () => void }[]
   /** The most specific name: the sub-tab if there is one, otherwise the section. */
   title: string
   /** What the screen is for, in one sentence. Blocking only: see above. */
@@ -87,7 +91,20 @@ export function SectionHeader({
     <>
     <div className={styles.hrow}>
       <div className={styles.left}>
-        {section != null && (
+        {path != null && path.length > 0 && (
+          <nav className={styles.trail} aria-label="Breadcrumb">
+            {path.map((step, i) => (
+              <span key={i} className={styles.step}>
+                <button type="button" className={styles.ctx} onClick={step.onOpen}>
+                  {step.label}
+                </button>
+                <Icon name="chevronRight" size={12} className={styles.sep} />
+              </span>
+            ))}
+            <span className={styles.here} aria-current="page">{title}</span>
+          </nav>
+        )}
+        {path == null && section != null && (
           <nav className={styles.trail} aria-label="Breadcrumb">
             {onBack != null ? (
               <button type="button" className={styles.ctx} onClick={onBack}>

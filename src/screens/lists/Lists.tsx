@@ -20,12 +20,14 @@ import { Field, Input, LabeledTextarea } from '../../ui/Field'
 import { SectionHeader } from '../../ui/SectionHeader'
 import { Empty, Loading } from '../../ui/Empty'
 import { StaleData } from '../StaleData'
-import { Tree } from './Tree'
+import { Tree, ancestors } from './Tree'
 import { Path } from './Path'
-import { Crumbs, Children } from './CacheNav'
+import { Children } from './CacheNav'
 import { ResourceRecords } from './Records'
 import { CacheSummary } from './CacheSummary'
-import { DataTable, DataFoot } from '../../ui/DataTable'
+import { DataTable, DataFoot, Grow } from '../../ui/DataTable'
+import { RowAction } from '../../ui/Table'
+import { DomainName } from '../../ui/DomainName'
 import styles from './Lists.module.css'
 import { noticeFromFailure, type Notice } from '../../lib/notice'
 import { Notifier } from '../../ui/Notifier'
@@ -59,6 +61,10 @@ export interface Confirmation {
   label: string
   action: () => Promise<void>
 }
+
+/* At the root the cache holds every top-level domain asked for: hundreds of
+   chips. The first ones are shown, and the rest one press away. */
+const CHILDREN_SHOWN = 40
 
 const TITLE: Record<List, string> = { cache: 'Cache', allowed: 'Allowed', blocked: 'Blocked' }
 
@@ -238,6 +244,10 @@ export function Lists({
 
   const [node, setNode] = useState<ListNode | null>(null)
   const [field, setField] = useState('')
+  /* Cache: the record type the table is narrowed to (`CacheSummary`), and whether
+     every zone under the node is shown or only the first CHILDREN_SHOWN. */
+  const [cacheType, setCacheType] = useState('')
+  const [allChildren, setAllChildren] = useState(false)
   const [notice, setNotice] = useState<Notice | null>(null)
   /* Where this screen's alerts go: the host's notifier when it gives one, its own
      otherwise. Read through a ref so `load` does not change with every render. */
@@ -352,11 +362,16 @@ export function Lists({
   const nodeTitle = domain === '' ? '<ROOT>' : (node?.domainIdn ?? domain)
   const zones = node?.zones ?? []
   const records = node?.records ?? []
+  /* Cache: the records of the type pressed on the Records card, or all. */
+  const typed = cacheType === '' ? records : records.filter((r) => r.type === cacheType)
 
   // Cache: Delete hangs off the NODE. Allowed/Blocked: off there being records.
   const mayDelete = isCache ? domain !== '' : records.length > 0
 
   function navigate(d: string, up?: boolean) {
+    // A new node starts unfiltered and with its zones folded.
+    setCacheType('')
+    setAllChildren(false)
     void load(d, up)
   }
 
@@ -455,19 +470,44 @@ export function Lists({
         />
       )}
 
-      {/* On Cache the identity band's second line moves up under the title: the
-          screen is one panel now, and a band naming the panel under a header
-          naming the screen said "Cache" twice in 60 px. Same words. */}
-      {!embedded && (
+      {!embedded && !isCache && <SectionHeader title={TITLE[list]} />}
+
+      {/*
+      Cache reads like a zone (2026-11-06, deviation 16): where you are, what the
+      node holds, then its records. The header is the node itself: the path to it
+      (every step opens that ancestor, upstream's `[up]`), its name as the title
+      with Refresh beside it, and the two actions that delete, Delete for the node
+      and Flush Cache for everything. At the root the title is the section's.
+      */}
+      {isCache && (
         <SectionHeader
-          title={TITLE[list]}
-          subtitle={isCache ? SUBTITLE.cache : undefined}
+          path={
+            domain === ''
+              ? undefined
+              : [
+                  { label: 'Cache', onOpen: () => navigate('', true) },
+                  ...ancestors(domain).map((a) => ({
+                    label: <DomainName name={a} />,
+                    onOpen: () => navigate(a, true),
+                  })),
+                ]
+          }
+          title={domain === '' ? TITLE.cache : nodeTitle}
+          subtitle={domain === '' ? SUBTITLE.cache : undefined}
+          titleAction={
+            <RowAction icon="refresh" name="Refresh" disabled={loading} onClick={() => navigate(domain)} />
+          }
           actions={
-            isCache ? (
+            <>
+              {!loading && mayDelete && (
+                <PermissionButton lead="trash" variant="danger" disabled={busy} onClick={askDeleteCacheNode}>
+                  Delete
+                </PermissionButton>
+              )}
               <Button lead="trash" variant="danger" disabled={busy} onClick={askFlushCache}>
                 Flush Cache
               </Button>
-            ) : undefined
+            </>
           }
         />
       )}
@@ -478,100 +518,93 @@ export function Lists({
 
       {isCache ? (
         /*
-        Cache, top to bottom in the order you use it (2026-11-06, deviation 16): the
-        navigator (type a name, see where you are and go up, see what hangs below
-        and go down; `CacheNav.tsx` says why each move is the one upstream makes),
-        then what the open node holds at a glance (`CacheSummary.tsx`), then its
-        records in one card with their count at the foot (`ui/DataTable`).
+        Under the header, what the node holds at a glance (`CacheSummary.tsx`), and
+        then ONE card that both moves and shows: the Domain field and Browse in its
+        toolbar, the zones under the node as chips, and the node's records, one line
+        each with the rest under Details. A type pressed on the Records card narrows
+        the table to it.
 
-        The cards and the table read the same `cache/list` answer, the one the
-        navigator already asked for: nothing on this screen asks for more.
+        The cards and the table read the same `cache/list` answer the move asked
+        for: nothing on this screen asks for more.
         */
-        <>
-          <section className={styles.cachePanel} aria-label="Cache">
-            <div className={styles.search}>
-              <Field label={fieldName ?? 'Domain'}>
-                {(id) => (
-                  <Input
-                    id={id}
-                    mono
-                    search
-                    placeholder="example.com"
-                    value={field}
-                    onChange={(e) => setField(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') navigate(field)
-                    }}
-                  />
-                )}
-              </Field>
-              <Button lead="search" variant="primary" onClick={() => navigate(field)}>
-                Browse
-              </Button>
-            </div>
-
-            <div className={styles.where}>
-              <Crumbs domain={domain} label={nodeTitle} onNavigate={navigate} />
-              {/* Refresh and Delete act on the node, so they sit on the node's line.
-                  Hidden while the first read is in flight, as the count bar was. */}
-              {!loading && (
-                <div className={styles.countActs}>
-                  <Button lead="refresh" size="sm" onClick={() => navigate(domain)}>
-                    Refresh
-                  </Button>
-                  {mayDelete && (
-                    <PermissionButton lead="trash" size="sm" variant="danger" disabled={busy} onClick={askDeleteCacheNode}>
-                      Delete
-                    </PermissionButton>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* No chips, no band: a leaf saying `0 zones` on a line of its own
-                was a strip of nothing above the records. */}
-            {!loading && zones.length > 0 && (
-              <div className={styles.children}>
-                <span className={styles.childrenCount}>
-                  {zones.length === 1 ? '1 zone' : `${zones.length} zones`}
-                </span>
-                <Children domain={domain} zones={zones} onNavigate={navigate} />
-              </div>
-            )}
-          </section>
-
-          {loading ? (
-            <div className={styles.waiting}><Loading /></div>
-          ) : (
-            <>
-              <CacheSummary records={records} />
-              <DataTable
-                foot={
-                  <DataFoot
-                    count={
+        loading ? (
+          <div className={styles.waiting}><Loading /></div>
+        ) : (
+          <>
+            <CacheSummary records={records} activeType={cacheType} onType={setCacheType} />
+            <DataTable
+              toolbar={
+                <Grow>
+                  <div className={styles.search}>
+                    <Field inline label={fieldName ?? 'Domain'}>
+                      {(id) => (
+                        <Input
+                          id={id}
+                          mono
+                          search
+                          placeholder="example.com"
+                          value={field}
+                          onChange={(e) => setField(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') navigate(field)
+                          }}
+                        />
+                      )}
+                    </Field>
+                    <Button lead="search" variant="primary" onClick={() => navigate(field)}>
+                      Browse
+                    </Button>
+                  </div>
+                </Grow>
+              }
+              foot={
+                <DataFoot
+                  count={
+                    cacheType === '' ? (
                       <>
                         {records.length} records at <span className={styles.mono}>{nodeTitle}</span>
                       </>
-                    }
+                    ) : (
+                      <>
+                        {typed.length} of {records.length} records at{' '}
+                        <span className={styles.mono}>{nodeTitle}</span>, {cacheType} only
+                      </>
+                    )
+                  }
+                />
+              }
+            >
+              {zones.length > 0 && (
+                <div className={styles.children}>
+                  <span className={styles.childrenCount}>
+                    {zones.length === 1 ? '1 zone' : `${zones.length} zones`}
+                  </span>
+                  <Children
+                    domain={domain}
+                    zones={allChildren || zones.length <= CHILDREN_SHOWN ? zones : zones.slice(0, CHILDREN_SHOWN)}
+                    onNavigate={navigate}
                   />
-                }
-              >
-                {records.length > 0 ? (
-                  <ResourceRecords records={records} withDnssec node={domain} />
-                ) : (
-                  <div className={styles.empty}>
-                    {/* "in the tree" left with the tree: the chips are right above. */}
-                    <Empty title="No records at this node">
-                      {zones.length > 0
-                        ? 'This node only contains sub-domains. Open one to see its records.'
-                        : 'This node has no records and no sub-domains.'}
-                    </Empty>
-                  </div>
-                )}
-              </DataTable>
-            </>
-          )}
-        </>
+                  {zones.length > CHILDREN_SHOWN && (
+                    <button type="button" className={styles.showIt} onClick={() => setAllChildren((v) => !v)}>
+                      {allChildren ? 'Show fewer' : `Show all ${zones.length}`}
+                    </button>
+                  )}
+                </div>
+              )}
+              {typed.length > 0 ? (
+                <ResourceRecords records={typed} withDnssec compact node={domain} />
+              ) : (
+                <div className={styles.empty}>
+                  <Empty title="No records at this node">
+                    {zones.length > 0
+                      ? 'This node only contains sub-domains. Open one to see its records.'
+                      : 'This node has no records and no sub-domains.'}
+                  </Empty>
+                </div>
+              )}
+            </DataTable>
+          </>
+        )
       ) : (
         <div className={styles.split}>
           <div className={styles.tree}>

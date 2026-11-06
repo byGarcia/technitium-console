@@ -20,6 +20,7 @@ magazine kicker, which is decoration, and this is navigation.
 */
 .trail {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--s-3);
   margin-bottom: var(--s-2);
@@ -58,6 +59,8 @@ button.ctx { cursor: pointer; }
 button.ctx:hover { color: var(--acc-ink); }
 
 .sep { color: var(--faint); flex: none; }
+/* One step of a deeper path and its chevron, kept together (`path`). */
+.step { display: inline-flex; align-items: center; gap: inherit; min-width: 0; }
 
 .here { font-size: var(--t-4); color: var(--ink); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 

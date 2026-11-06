@@ -34,17 +34,26 @@ describe('the cache node cards', () => {
   it('count the records by type', async () => {
     answering(GITHUB)
     render(<Cache token="t" />)
-    const types = await screen.findByRole('list', { name: 'Records by type' })
-    const keys = within(types).getAllByRole('listitem').map((li) => li.textContent)
+    const types = await screen.findByRole('group', { name: 'Records by type' })
+    const keys = within(types).getAllByRole('button').map((b) => b.textContent)
     expect(keys).toEqual(['A1', 'NS8', 'SOA1', 'MX1', 'TXT3', 'AAAA1', 'DS1'])
     expect(screen.getByRole('img', { name: 'A 1, NS 8, SOA 1, MX 1, TXT 3, AAAA 1, DS 1' })).toBeInTheDocument()
   })
 
-  it('a type key is not a button: Cache has no filter for it to drive', async () => {
-    answering(GITHUB)
+  it('a type narrows the table to it, says so at the foot, and pressed again clears it', async () => {
+    const spy = answering(GITHUB)
     render(<Cache token="t" />)
-    const types = await screen.findByRole('list', { name: 'Records by type' })
-    expect(within(types).queryAllByRole('button')).toHaveLength(0)
+    const types = await screen.findByRole('group', { name: 'Records by type' })
+    const ns = within(types).getByRole('button', { name: /^NS/ })
+    await userEvent.click(ns)
+    expect(ns).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getAllByRole('row').slice(1)).toHaveLength(8)
+    expect(screen.getByText(/8 of 16 records at/)).toBeInTheDocument()
+    await userEvent.click(ns)
+    expect(ns).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getAllByRole('row').slice(1)).toHaveLength(16)
+    // The filter is drawn from the answer on screen: nothing more is asked.
+    expect(spy).toHaveBeenCalledTimes(1)
   })
 
   it('say what leaves first, the longest time left, and how many are stale', async () => {
@@ -93,13 +102,13 @@ describe('the cache node cards', () => {
     answering({ domain: 'com', zones: ['github.com'], records: [] }, GITHUB)
     render(<Cache token="t" />)
     await userEvent.click(await screen.findByRole('button', { name: 'github.com' }))
-    expect(await screen.findByRole('list', { name: 'Records by type' })).toBeInTheDocument()
+    expect(await screen.findByRole('group', { name: 'Records by type' })).toBeInTheDocument()
   })
 
   it('ask the server for nothing beyond the node itself', async () => {
     const spy = vi.spyOn(client, 'apiRequest').mockResolvedValue({ kind: 'ok', data: { status: 'ok', response: GITHUB } } as never)
     render(<Cache token="t" />)
-    await screen.findByRole('list', { name: 'Records by type' })
+    await screen.findByRole('group', { name: 'Records by type' })
     expect(spy.mock.calls.map((c) => c[0])).toEqual(['cache/list'])
   })
 })
@@ -108,7 +117,7 @@ describe('the records table', () => {
   it('marks a stale record beside its TTL', async () => {
     answering(GITHUB)
     render(<Cache token="t" />)
-    await screen.findByRole('list', { name: 'Records by type' })
+    await screen.findByRole('group', { name: 'Records by type' })
     const rows = screen.getAllByRole('row').slice(1)
     expect(within(rows[0]).getByText('Stale')).toBeInTheDocument()
     expect(within(rows[1]).queryByText('Stale')).toBeNull()

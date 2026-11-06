@@ -1,6 +1,6 @@
 /*
-Cache's one panel (2026-10-16): the crumbs go up, the chips go down, and both
-send exactly what the tree sent. The tree stays the navigation of Allowed and
+Cache moves like a zone (2026-11-06): the header's path goes up, the chips go
+down, and both send exactly what the tree sent. The tree stays the navigation of Allowed and
 Blocked, which `Lists.tree.test.tsx` keeps covering.
 */
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -31,27 +31,35 @@ describe('Cache moves through one band', () => {
   it('an ancestor in the crumbs goes up with direction=up, as the [up] link does', async () => {
     const spy = answering(node({ domain: 'www.google.com' }))
     render(<Cache token="t" />)
-    const crumbs = await screen.findByRole('navigation', { name: 'Node' })
+    const crumbs = await screen.findByRole('navigation', { name: 'Breadcrumb' })
     await userEvent.click(within(crumbs).getByRole('button', { name: 'google.com' }))
     const up = spy.mock.calls.find((c) => c[2] === 'google.com')
     expect(up?.[3]).toBe('up')
   })
 
-  it('<ROOT> in the crumbs goes back to the root, also upwards', async () => {
+  it('Cache, the first step of the path, goes back to the root, also upwards', async () => {
     const spy = answering(node({ domain: 'com' }))
     render(<Cache token="t" />)
-    const crumbs = await screen.findByRole('navigation', { name: 'Node' })
-    await userEvent.click(within(crumbs).getByRole('button', { name: '<ROOT>' }))
+    const crumbs = await screen.findByRole('navigation', { name: 'Breadcrumb' })
+    await userEvent.click(within(crumbs).getByRole('button', { name: 'Cache' }))
     const calls = spy.mock.calls.filter((c) => c[2] === '')
     expect(calls[calls.length - 1][3]).toBe('up')
   })
 
-  it('the open node is the last crumb and is not a button', async () => {
+  it('the open node is the last step of the path and the title, and is not a button', async () => {
     answering(node({ domain: 'google.com' }))
     render(<Cache token="t" />)
-    const crumbs = await screen.findByRole('navigation', { name: 'Node' })
+    const crumbs = await screen.findByRole('navigation', { name: 'Breadcrumb' })
     expect(within(crumbs).queryByRole('button', { name: 'google.com' })).toBeNull()
-    expect(crumbs.querySelector('[aria-current="location"]')).toHaveTextContent('google.com')
+    expect(crumbs.querySelector('[aria-current="page"]')).toHaveTextContent('google.com')
+    expect(screen.getByRole('heading', { level: 1, name: 'google.com' })).toBeInTheDocument()
+  })
+
+  it('at the root there is no path and the title is the section', async () => {
+    answering(node({ zones: ['com'] }))
+    render(<Cache token="t" />)
+    expect(await screen.findByRole('heading', { level: 1, name: 'Cache' })).toBeInTheDocument()
+    expect(screen.queryByRole('navigation', { name: 'Breadcrumb' })).toBeNull()
   })
 
   it('a chip opens its child with the full name and no direction', async () => {

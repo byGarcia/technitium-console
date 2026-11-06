@@ -1,4 +1,3 @@
-import { ancestors } from './Tree'
 import { DomainName } from '../../ui/DomainName'
 import { Icon } from '../../ui/Icon'
 import styles from './Lists.module.css'
@@ -23,57 +22,6 @@ children. The same three moves are here, each where it reads:
 Nothing is sent that the tree did not send, and the tree is still the
 navigation of Allowed and Blocked inside Rules, which this does not touch.
 */
-
-/** Where you are, and the way back up. The open node is the last crumb and is
- *  not a button: there is nowhere to go from it but where you already are. */
-export function Crumbs({
-  domain,
-  label,
-  onNavigate,
-}: {
-  /** The open node. Empty string is the root. */
-  domain: string
-  /** What to call it: the IDN form when there is one. */
-  label: string
-  onNavigate: (domain: string, up?: boolean) => void
-}) {
-  const chain = ancestors(domain)
-  const atRoot = domain === ''
-
-  return (
-    <nav className={styles.crumbs} aria-label="Node">
-      {/* `Node` is the word the path already used: no new one. */}
-      <span className={styles.pathLabel}>Node</span>
-      <ol className={styles.crumbList}>
-        <li>
-          {atRoot ? (
-            <span className={styles.crumbHere} aria-current="location">&lt;ROOT&gt;</span>
-          ) : (
-            <button type="button" className={styles.crumb} onClick={() => onNavigate('', true)}>
-              &lt;ROOT&gt;
-            </button>
-          )}
-        </li>
-        {chain.map((parent) => (
-          <li key={parent}>
-            <span className={styles.pathSep} aria-hidden="true">&rsaquo;</span>
-            <button type="button" className={styles.crumb} onClick={() => onNavigate(parent, true)}>
-              <DomainName name={parent} />
-            </button>
-          </li>
-        ))}
-        {!atRoot && (
-          <li>
-            <span className={styles.pathSep} aria-hidden="true">&rsaquo;</span>
-            <span className={styles.crumbHere} aria-current="location">
-              <DomainName name={label} />
-            </span>
-          </li>
-        )}
-      </ol>
-    </nav>
-  )
-}
 
 /*
 The children of the open node, as chips that open it.

@@ -56,7 +56,8 @@ describe('the path says where you are', () => {
     withNode(node({ zones: ['com'] }))
     render(<Cache token="t" />)
     await screen.findByText('com')
-    expect(screen.getByText('Node').parentElement).toHaveTextContent('<ROOT>')
+    expect(screen.getByRole('heading', { level: 1, name: 'Cache' })).toBeInTheDocument()
+    expect(screen.getByText('<ROOT>')).toBeInTheDocument()
   })
 
   /*
@@ -212,7 +213,7 @@ describe('loading the tree', () => {
     ;(await screen.findByRole('button', { name: 'com' })).click()
     await screen.findByRole('button', { name: 'example' })
     await new Promise((r) => setTimeout(r, 200))
-    expect(screen.getByText('Node').parentElement).toHaveTextContent('com')
+    expect(screen.getByRole('heading', { level: 1, name: 'com' })).toBeInTheDocument()
     expect(spy.mock.calls.filter((c) => c[2] === '')).toHaveLength(1)
   })
 })

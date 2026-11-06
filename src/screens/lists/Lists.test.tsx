@@ -120,9 +120,13 @@ describe('records table', () => {
     expect(screen.getByText('(3m38s)')).toBeInTheDocument()
   })
 
-  it('it keeps the response metadata on the grey line', async () => {
+  it('it keeps the response metadata on the grey line, under the record Details on Cache', async () => {
     withNode(node({ domain: 'example.com', records: [REG_CACHE] }))
     render(<Cache token="t" />)
+    const details = await screen.findByRole('button', { name: 'Details' })
+    expect(screen.queryByText(/via 8\.8\.8\.8/)).toBeNull()
+    await userEvent.click(details)
+    expect(details).toHaveAttribute('aria-expanded', 'true')
     const meta = await screen.findByText(/via 8\.8\.8\.8/)
     expect(meta).toHaveTextContent('179 bytes')
     expect(meta).toHaveTextContent('43 ms')
