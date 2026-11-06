@@ -139,14 +139,35 @@ export function ZoneList({
   // just like upstream, where `refreshZones` reads them at that moment.
   const [nameFilter, setNameFilter] = useState('')
   const [typeFilter, setTypeFilter] = useState('')
+  /* The type the list on screen was loaded with: the summary's pressed chip. */
+  const [appliedType, setAppliedType] = useState('')
   /* Remembered under upstream's key (zone.js:626-632). */
   const [perPage, setPerPage] = useState(() => readPerPage(ZONES_PER_PAGE_KEY, ZONES_PER_PAGE, 10))
   const [pageField, setPageField] = useState('1')
 
   const nameRef = useRef<HTMLInputElement>(null)
 
+  /*
+  The summary reads every zone (`listAllZones`), so it is NOT read with every
+  page or Go: only on an outside refresh (mount, a new node, a change made in a
+  dialog: `refresh`) and after a change made from the list. It runs beside the paged read, and only the newest
+  answer lands (`summarySeq`), so a slow answer for another node never paints
+  over the current one.
+  */
+  const summaryWanted = useRef(true)
+  const summarySeq = useRef(0)
+
   const load = useCallback(
     async (page: number, typeOverride?: string) => {
+      if (summaryWanted.current) {
+        summaryWanted.current = false
+        const seq = ++summarySeq.current
+        void listAllZones(token, node).then((all) => {
+          if (seq !== summarySeq.current) return
+          /* A failed summary is not drawn: the cards would count another moment. */
+          setAllZones(all)
+        })
+      }
       setBusy(true)
       const r = await listZones(token, {
         filterName: nameFilter,
@@ -181,11 +202,7 @@ export function ZoneList({
       }
 
       const data = r.data
-      /* The summary is read with every list read, so a change made from the list
-         shows in its figures at once. A failed summary keeps the last one. */
-      void listAllZones(token, node).then((all) => {
-        if (all != null) setAllZones(all)
-      })
+      setAppliedType(typeOverride ?? typeFilter)
       setStale(false)
       setLastGood(new Date().toISOString())
       setZones(data.zones)
@@ -223,6 +240,7 @@ export function ZoneList({
     pageFieldRef.current = pageField
   }, [pageField])
   useEffect(() => {
+    summaryWanted.current = true
     const n = Number(pageFieldRef.current)
     void loadRef.current(pageFieldRef.current === '' || Number.isNaN(n) ? 1 : n)
   }, [refresh])
@@ -249,6 +267,7 @@ export function ZoneList({
       onNotice(noticeFromFailure(outcome))
       return
     }
+    summaryWanted.current = true
     await load(pageNumber)
     onNotice(success)
   }
@@ -394,7 +413,7 @@ export function ZoneList({
       {allZones != null && (
         <ZoneSummary
           zones={allZones}
-          activeType={typeFilter}
+          activeType={appliedType}
           onType={(t) => {
             setTypeFilter(t)
             void load(1, t)

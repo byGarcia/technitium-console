@@ -1,3 +1,4 @@
+import { isSigned } from './zone-view'
 import { typeLabel, zoneNameOf, zoneState, type Zone } from '../../api/zones'
 import { fromNow } from '../../lib/dates'
 import { useState, type CSSProperties } from 'react'
@@ -46,7 +47,7 @@ export function ZoneSummary({
 
   /* Only Primary and Secondary zones carry `dnssecStatus`: the ones that can be signed. */
   const signable = zones.filter((z) => z.dnssecStatus != null)
-  const signed = signable.filter((z) => z.dnssecStatus === 'SignedWithNSEC' || z.dnssecStatus === 'SignedWithNSEC3')
+  const signed = signable.filter((z) => isSigned(z.dnssecStatus))
   const noKeys = signed.filter((z) => z.hasDnssecPrivateKeys === false).length
 
   const latest = zones.reduce<Zone | null>(
