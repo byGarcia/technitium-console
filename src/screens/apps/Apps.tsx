@@ -10,24 +10,29 @@ import { type AlertType } from '../../ui/Alert'
 import { Button } from '../../ui/Button'
 import { SectionHeader } from '../../ui/SectionHeader'
 import { AppConfig } from './AppConfig'
-import { AppCard } from './AppCard'
+import { AppRow } from './AppRow'
+import { AppsSummary } from './AppsSummary'
+import { KINDS, kindsOf } from './app-kinds'
 import { InstallApp } from './InstallApp'
 import { StoreApps } from './StoreApps'
 import { UpdateApp } from './UpdateApp'
 import { Empty, Failure, Loading } from '../../ui/Empty'
-import { Tag } from '../../ui/Tag'
-import { useSort } from '../../ui/Table'
-import { Icon } from '../../ui/Icon'
+import { Table, Th, useSort } from '../../ui/Table'
+import tbl from '../../ui/Table.module.css'
+import { DataFoot, DataTable } from '../../ui/DataTable'
+import { Field, Select } from '../../ui/Field'
 import styles from './Apps.module.css'
 import { noticeFromFailure } from '../../lib/notice'
 import { Notifier } from '../../ui/Notifier'
 import { Confirm } from '../../ui/Confirm'
 
 /*
-A replica of the Apps tab (apps.js + index.html:807-835).
+A replica of the Apps tab (apps.js + index.html:807-835), redrawn on 2026-11-06 in
+the language Zones got (deviation 17 in CONVENTIONS.md): four cards that say what
+the apps are (`AppsSummary.tsx`), then the installed apps as a table in one card
+with its toolbar and foot (`ui/DataTable`), one row per app (`AppRow.tsx`).
 
-Two things from upstream that are kept even though the redesign mockup shows only
-three buttons per card:
+Two things from upstream that are kept:
 
   1. "Update" and "Store Update" are DIFFERENT actions (apps.js:130-131). The
      first uploads your own zip; the second downloads the store's version.
@@ -37,10 +42,11 @@ three buttons per card:
      `recordDataTemplate` (apps.js:74-113). That template is what gets copied to
      write an APP record; without it the screen loses real usefulness.
 
-What is NOT here: the Enabled/Disabled badge nor the mockup's "Enable" button.
-The API has no such concept (neither `apps/list` nor `WriteAppAsJson` bring
-anything like it), and an installed app is always active. Inventing it would be
-adding functionality.
+What is NOT here: an Enabled/Disabled state. The API has no such concept (neither
+`apps/list` nor `WriteAppAsJson` bring anything like it), and an installed app is
+always active. Inventing it would be adding functionality.
+
+Every call, confirmation, alert and validation is the one this screen already had.
 */
 export interface AlertState { type: AlertType; title: string; text: string }
 
@@ -62,6 +68,7 @@ export function Apps({ token }: { token: string | null }) {
   /** Whether the last load failed: the gap is not drawn as an empty one. */
   const [failure, setFailure] = useState(false)
   const [pendingUninstall, setPendingUninstall] = useState<string | null>(null)
+  const [kindFilter, setKindFilter] = useState('')
 
   const reload = useCallback(async () => {
     const outcome = await listApps(token)
@@ -149,22 +156,20 @@ export function Apps({ token }: { token: string | null }) {
     setModal({ kind: 'config', name, config: outcome.data.response.config ?? '' })
   }
 
-  // The installed-apps count no longer goes in the header: the header pill
-  // is for STATE, and a count that looked exactly like it was one of the
-  // inconsistencies. What is left here is what really is state: there are updates.
-  const withUpdate = (apps ?? []).filter((a) => a.updateAvailable).length
+  /*
+  The Kind filter (deviation 17): a kind of the apps' classes, set from the toolbar
+  or by pressing a kind in the Classes card. It only narrows what the table draws;
+  nothing is asked of the server.
+  */
+  const visible = kindFilter === '' ? (apps ?? []) : (apps ?? []).filter((a) => kindsOf(a).includes(kindFilter))
 
   /*
   Upstream's installed list is a table and its `Installed Apps` header sorts it
-  (`sortTable('tableAppsBody', 0)`). This is a card grid and not a table, so the
-  control could not be a column header, but dropping it was not an option either:
-  it is the second sort this screen had lost, and `dev/check-parity-sort.mjs` now
-  counts them.
-
-  Same hook as every sortable column in the console, and the same affordance the
-  store next door uses.
+  (`sortTable('tableAppsBody', 0)`). It is a table here as well, with that same
+  header as its sortable column: the same hook as every sortable column in the
+  console. `dev/check-parity-sort.mjs` counts it.
   */
-  const { rows: sortedApps, toggle } = useSort({ name: (a: InstalledApp) => a.name }, apps ?? [])
+  const { rows: sortedApps, sort, toggle } = useSort({ name: (a: InstalledApp) => a.name }, visible)
 
   return (
     <>
@@ -172,13 +177,6 @@ export function Apps({ token }: { token: string | null }) {
 
       <SectionHeader
         title="Apps"
-        labels={
-          withUpdate > 0 ? (
-            <Tag tone="warn">
-              {withUpdate === 1 ? '1 update available' : `${withUpdate} updates available`}
-            </Tag>
-          ) : undefined
-        }
         actions={
           <>
             <Button lead="store" variant="primary" onClick={() => setModal({ kind: 'store' })}>
@@ -193,47 +191,75 @@ export function Apps({ token }: { token: string | null }) {
         <Loading />
       ) : failure ? (
           /* Solid and with no invitation: whether there are apps is not known, so
-             the store is not offered. The server's message goes in the notice
-             above. */
+             the store is not offered, and no card is drawn: a count of an answer
+             that never came would be invented. The server's message goes in the
+             notice. */
         <Failure>Could not load the installed apps.</Failure>
-      ) : apps.length === 0 ? (
-        <Empty
-          title="No apps installed"
-          actions={
-            <Button variant="primary" onClick={() => setModal({ kind: 'store' })}>
-              Open App Store
-            </Button>
-          }
-        >
-          DNS Apps add behaviour to the server (query logging, advanced blocking, split horizon)
-          without touching the base configuration. Open the store to see what is available.
-        </Empty>
       ) : (
         <>
-        <div className={styles.sortRow}>
-          <button
-            type="button"
-            className={styles.sortBy}
-            aria-label="Sort by name"
-            onClick={() => toggle('name')}
-          >
-            Installed Apps
-            <Icon name="sort" size={12} />
-          </button>
-        </div>
-        <ul className={styles.apps}>
-          {sortedApps.map((app) => (
-            <AppCard
-              key={app.name}
-              app={app}
-              busy={busy === app.name}
-              onConfig={() => void openConfig(app.name)}
-              onUpdate={() => setModal({ kind: 'update', name: app.name })}
-              onStoreUpdate={() => void updateFromStore(app)}
-              onUninstall={() => setPendingUninstall(app.name)}
-            />
-          ))}
-        </ul>
+          <AppsSummary apps={apps} activeKind={kindFilter} onKind={setKindFilter} />
+          {apps.length === 0 ? (
+            <Empty
+              title="No apps installed"
+              actions={
+                <Button variant="primary" onClick={() => setModal({ kind: 'store' })}>
+                  Open App Store
+                </Button>
+              }
+            >
+              DNS Apps add behaviour to the server (query logging, advanced blocking, split horizon)
+              without touching the base configuration. Open the store to see what is available.
+            </Empty>
+          ) : (
+            <DataTable
+              toolbar={
+                <div className={styles.kindField}>
+                  <Field inline label="Kind">
+                    {(id) => (
+                      <Select id={id} value={kindFilter} onChange={(e) => setKindFilter(e.target.value)}>
+                        <option value="" />
+                        {KINDS.map((k) => (
+                          <option key={k} value={k}>
+                            {k}
+                          </option>
+                        ))}
+                      </Select>
+                    )}
+                  </Field>
+                </div>
+              }
+              /* Upstream's footer, `Total Apps: N` (apps.js:41): every installed app,
+                 whatever the Kind filter leaves on screen. */
+              foot={<DataFoot count={`Total Apps: ${apps.length}`} />}
+            >
+              <Table
+                stack
+                tableClass={styles.rows}
+                header={
+                  <>
+                    <Th field="name" sort={sort} onSort={toggle}>Installed Apps</Th>
+                    <th className={styles.kindHead}>Kind</th>
+                    <th className={tbl.actionsCell} />
+                  </>
+                }
+                isEmpty={sortedApps.length === 0}
+                emptyText="No Apps Found"
+                columns={3}
+              >
+                {sortedApps.map((app) => (
+                  <AppRow
+                    key={app.name}
+                    app={app}
+                    busy={busy === app.name}
+                    onConfig={() => void openConfig(app.name)}
+                    onUpdate={() => setModal({ kind: 'update', name: app.name })}
+                    onStoreUpdate={() => void updateFromStore(app)}
+                    onUninstall={() => setPendingUninstall(app.name)}
+                  />
+                ))}
+              </Table>
+            </DataTable>
+          )}
         </>
       )}
 

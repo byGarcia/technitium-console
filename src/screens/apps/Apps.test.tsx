@@ -52,18 +52,27 @@ function withStore(storeApps: StoreApp[]) {
     .mockResolvedValue({ kind: 'ok', data: { status: 'ok', response: { storeApps } } } as never)
 }
 
+/* One installed app is one row of the installed table, named by the app. */
 function card(name: string) {
-  return within(screen.getByRole('listitem', { name: name }))
+  return within(screen.getByRole('row', { name: name }))
 }
 
 /*
-`Uninstall` lives in the card's menu since 2026-09-07, which is where every other
+`Uninstall` lives in the row's menu since 2026-09-07, which is where every other
 destructive verb that repeats once per item lives (`ui/Menu`). Opening it is part
 of the action now, so the tests open it.
 */
 async function openMenu(name: string) {
-  await userEvent.click(card(name).getByRole('button', { name: `Actions: ${name}` }))
+  await userEvent.click(card(name).getByRole('button', { name: `Actions for ${name}` }))
   return within(await screen.findByRole('menu'))
+}
+
+/* The names of the installed table's rows, in the order drawn. */
+function rowNames() {
+  return screen
+    .getAllByRole('row')
+    .map((r) => r.getAttribute('aria-label'))
+    .filter((n): n is string => n != null)
 }
 
 describe('Apps: installed list', () => {
@@ -78,53 +87,43 @@ describe('Apps: installed list', () => {
       { ...UP_TO_DATE, name: 'Auto PTR' },
     ])
     render(<Apps token="t" />)
-    await screen.findByRole('listitem', { name: 'Auto PTR' })
+    await screen.findByRole('row', { name: 'Auto PTR' })
 
-    const names = () => screen.getAllByRole('listitem').map((li) => li.getAttribute('aria-label'))
-    expect(names()).toEqual(['Zone Alias', 'Auto PTR'])
+    expect(rowNames()).toEqual(['Zone Alias', 'Auto PTR'])
 
-    const sort = screen.getByRole('button', { name: 'Sort by name' })
+    const sort = screen.getByRole('button', { name: /Installed Apps/ })
     await userEvent.click(sort)
-    expect(names()).toEqual(['Auto PTR', 'Zone Alias'])
+    expect(rowNames()).toEqual(['Auto PTR', 'Zone Alias'])
     await userEvent.click(sort)
-    expect(names()).toEqual(['Zone Alias', 'Auto PTR'])
+    expect(rowNames()).toEqual(['Zone Alias', 'Auto PTR'])
   })
 
-  it('it draws one card per app, with name, version and description', async () => {
+  it('it draws one row per app, with name, upstream version label and description', async () => {
     withApps([UP_TO_DATE, WITH_UPDATE])
     render(<Apps token="t" />)
 
-    expect(await screen.findByRole('listitem', { name: 'What Is My Dns' })).toBeInTheDocument()
-    expect(card('What Is My Dns').getByText(/v9\.0/)).toBeInTheDocument()
+    expect(await screen.findByRole('row', { name: 'What Is My Dns' })).toBeInTheDocument()
+    expect(card('What Is My Dns').getByText('Version 9.0')).toBeInTheDocument()
+    // Two lines at rest, and whole again inside More Details.
     expect(
-      card('What Is My Dns').getByText('Returns the IP address of the user DNS Server.'),
-    ).toBeInTheDocument()
+      card('What Is My Dns').getAllByText('Returns the IP address of the user DNS Server.'),
+    ).toHaveLength(2)
   })
 
-  it('it announces in the header how many apps have an update', async () => {
+  /* Upstream's footer, apps.js:41. */
+  it('the foot counts the installed apps with the upstream text', async () => {
     withApps([UP_TO_DATE, WITH_UPDATE])
     render(<Apps token="t" />)
 
-    expect(await screen.findByText('1 update available')).toBeInTheDocument()
-    // The installed count is gone: the header pill is for STATE, and counting
-    // rows with that same look was an inconsistency.
-    expect(screen.queryByText(/^\d+ installed$/)).not.toBeInTheDocument()
-  })
-
-  it('with no updates it does not show the pill', async () => {
-    withApps([UP_TO_DATE])
-    render(<Apps token="t" />)
-
-    await screen.findByRole('listitem', { name: 'What Is My Dns' })
-    expect(screen.queryByText(/update available/)).not.toBeInTheDocument()
+    expect(await screen.findByText('Total Apps: 2')).toBeInTheDocument()
   })
 
   it('it announces the new version and offers \"Store Update\" only if there is one', async () => {
     withApps([UP_TO_DATE, WITH_UPDATE])
     render(<Apps token="t" />)
 
-    await screen.findByRole('listitem', { name: 'NO DATA' })
-    expect(card('NO DATA').getByText('Update v6.0')).toBeInTheDocument()
+    await screen.findByRole('row', { name: 'NO DATA' })
+    expect(card('NO DATA').getByText('Update 6.0')).toBeInTheDocument()
     expect(card('NO DATA').getByRole('button', { name: 'Store Update' })).toBeInTheDocument()
     expect(
       card('What Is My Dns').queryByRole('button', { name: 'Store Update' }),
@@ -139,10 +138,10 @@ describe('Apps: installed list', () => {
   the one that cannot be undone. `ui/Menu` is where this console puts that, on
   every other collection it has.
   */
-  it('each card offers Config and Update, and keeps Uninstall in its menu', async () => {
+  it('each row offers Config and Update, and keeps Uninstall in its menu', async () => {
     withApps([UP_TO_DATE])
     render(<Apps token="t" />)
-    await screen.findByRole('listitem', { name: 'What Is My Dns' })
+    await screen.findByRole('row', { name: 'What Is My Dns' })
 
     for (const n of ['Config', 'Update']) {
       expect(card('What Is My Dns').getByRole('button', { name: n })).toBeInTheDocument()
@@ -152,17 +151,21 @@ describe('Apps: installed list', () => {
     ).not.toBeInTheDocument()
 
     const menu = await openMenu('What Is My Dns')
-    expect(menu.getByRole('menuitem', { name: 'Uninstall' })).toBeInTheDocument()
+    for (const n of ['Config', 'Update', 'Uninstall']) {
+      expect(menu.getByRole('menuitem', { name: n })).toBeInTheDocument()
+    }
+    expect(menu.queryByRole('menuitem', { name: 'Store Update' })).not.toBeInTheDocument()
   })
 
   it('the detail shows the class, its labels and the data template', async () => {
     withApps([UP_TO_DATE])
     render(<Apps token="t" />)
-    await screen.findByRole('listitem', { name: 'What Is My Dns' })
+    await screen.findByRole('row', { name: 'What Is My Dns' })
 
     await userEvent.click(card('What Is My Dns').getByText('More Details'))
     expect(card('What Is My Dns').getByText('NoData.App')).toBeInTheDocument()
-    expect(card('What Is My Dns').getByText('APP Record')).toBeInTheDocument()
+    // Once in the Kind column and once under the class.
+    expect(card('What Is My Dns').getAllByText('APP Record')).toHaveLength(2)
     expect(card('What Is My Dns').getByText(/blockedTypes/)).toBeInTheDocument()
   })
 
@@ -194,7 +197,7 @@ describe('Apps: uninstalling', () => {
     withApps([UP_TO_DATE])
     const spy = vi.spyOn(api, 'uninstallApp')
     render(<Apps token="t" />)
-    await screen.findByRole('listitem', { name: 'What Is My Dns' })
+    await screen.findByRole('row', { name: 'What Is My Dns' })
 
     const menu = await openMenu('What Is My Dns')
     await userEvent.click(menu.getByRole('menuitem', { name: 'Uninstall' }))
@@ -212,7 +215,7 @@ describe('Apps: uninstalling', () => {
       .spyOn(api, 'uninstallApp')
       .mockResolvedValue({ kind: 'ok', data: { status: 'ok' } } as never)
     render(<Apps token="t" />)
-    await screen.findByRole('listitem', { name: 'What Is My Dns' })
+    await screen.findByRole('row', { name: 'What Is My Dns' })
 
     const menu = await openMenu('What Is My Dns')
     await userEvent.click(menu.getByRole('menuitem', { name: 'Uninstall' }))
@@ -233,7 +236,7 @@ describe('Apps: Store Update from the card', () => {
       .spyOn(api, 'downloadAndUpdate')
       .mockResolvedValue({ kind: 'ok', data: { status: 'ok' } } as never)
     render(<Apps token="t" />)
-    await screen.findByRole('listitem', { name: 'NO DATA' })
+    await screen.findByRole('row', { name: 'NO DATA' })
 
     await userEvent.click(card('NO DATA').getByRole('button', { name: 'Store Update' }))
     expect(spy.mock.calls[0][1]).toBe('NO DATA')
@@ -254,7 +257,7 @@ describe('Apps: config of the app', () => {
       data: { status: 'ok', response: { config: '{ "a": 1 }' } },
     } as never)
     render(<Apps token="t" />)
-    await screen.findByRole('listitem', { name: 'What Is My Dns' })
+    await screen.findByRole('row', { name: 'What Is My Dns' })
 
     await userEvent.click(card('What Is My Dns').getByRole('button', { name: 'Config' }))
     expect(spy.mock.calls[0][1]).toBe('What Is My Dns')
@@ -270,7 +273,7 @@ describe('Apps: config of the app', () => {
       data: { status: 'ok', response: { config: null } },
     } as never)
     render(<Apps token="t" />)
-    await screen.findByRole('listitem', { name: 'What Is My Dns' })
+    await screen.findByRole('row', { name: 'What Is My Dns' })
 
     await userEvent.click(card('What Is My Dns').getByRole('button', { name: 'Config' }))
     expect(await screen.findByLabelText('Config File')).toHaveValue('')
@@ -286,7 +289,7 @@ describe('Apps: config of the app', () => {
       .spyOn(api, 'setAppConfig')
       .mockResolvedValue({ kind: 'ok', data: { status: 'ok' } } as never)
     render(<Apps token="t" />)
-    await screen.findByRole('listitem', { name: 'What Is My Dns' })
+    await screen.findByRole('row', { name: 'What Is My Dns' })
 
     await userEvent.click(card('What Is My Dns').getByRole('button', { name: 'Config' }))
     await userEvent.type(await screen.findByLabelText('Config File'), 'hello')
@@ -342,7 +345,7 @@ describe('Apps: update from file', () => {
     withApps([UP_TO_DATE])
     const spy = vi.spyOn(api, 'updateApp')
     render(<Apps token="t" />)
-    await screen.findByRole('listitem', { name: 'What Is My Dns' })
+    await screen.findByRole('row', { name: 'What Is My Dns' })
 
     await userEvent.click(card('What Is My Dns').getByRole('button', { name: 'Update' }))
     expect(await screen.findByLabelText('App Name')).toHaveValue('What Is My Dns')
@@ -404,13 +407,14 @@ describe('Apps: the store', () => {
 
     const names = () =>
       within(screen.getByRole('dialog'))
-        .getAllByRole('listitem')
-        .map((li) => li.getAttribute('aria-label'))
+        .getAllByRole('row')
+        .map((r) => r.getAttribute('aria-label'))
+        .filter((n) => n != null)
 
     await screen.findByText('Total Apps: 2')
     expect(names()).toEqual(['Zone Alias', 'Auto PTR'])
 
-    const sort = within(screen.getByRole('dialog')).getByRole('button', { name: 'Sort by name' })
+    const sort = within(screen.getByRole('dialog')).getByRole('button', { name: /Store Apps/ })
     await userEvent.click(sort)
     expect(names()).toEqual(['Auto PTR', 'Zone Alias'])
 
@@ -422,10 +426,10 @@ describe('Apps: the store', () => {
     withApps([WITH_UPDATE])
     withStore(STORE)
     render(<Apps token="t" />)
-    await screen.findByRole('listitem', { name: 'NO DATA' })
+    await screen.findByRole('row', { name: 'NO DATA' })
     await openStore()
 
-    const row = within(await screen.findByRole('listitem', { name: 'Advanced Blocking' }))
+    const row = within(await screen.findByRole('row', { name: 'Advanced Blocking' }))
     expect(row.getByText('Version 11.1')).toBeInTheDocument()
     expect(row.getByText(/61\.54 KB/)).toBeInTheDocument()
     expect(row.getByText(/AdvancedBlockingApp-v11\.1\.zip/)).toBeInTheDocument()
@@ -436,17 +440,58 @@ describe('Apps: the store', () => {
     withApps([WITH_UPDATE])
     withStore(STORE)
     render(<Apps token="t" />)
-    await screen.findByRole('listitem', { name: 'NO DATA' })
+    await screen.findByRole('row', { name: 'NO DATA' })
     await openStore()
 
     const row = within(
-      await within(screen.getByRole('dialog')).findByRole('listitem', { name: 'NO DATA' }),
+      await within(screen.getByRole('dialog')).findByRole('row', { name: 'NO DATA' }),
     )
     expect(row.getByText('Version 5.0')).toBeInTheDocument()
     expect(row.getByText('Update 6.0')).toBeInTheDocument()
     expect(row.queryByRole('button', { name: 'Install' })).not.toBeInTheDocument()
     expect(row.getByRole('button', { name: 'Update' })).toBeInTheDocument()
-    expect(row.getByRole('button', { name: 'Uninstall' })).toBeInTheDocument()
+    expect(row.getByText('Installed')).toBeInTheDocument()
+    // Uninstall is the row's menu's, as every repeated destructive verb here.
+    expect(row.queryByRole('button', { name: 'Uninstall' })).not.toBeInTheDocument()
+    await userEvent.click(row.getByRole('button', { name: 'Actions for NO DATA' }))
+    expect(within(await screen.findByRole('menu')).getByRole('menuitem', { name: 'Uninstall' })).toBeInTheDocument()
+  })
+
+  it('a store app that is not installed offers Install and no menu', async () => {
+    withApps([])
+    withStore(STORE)
+    render(<Apps token="t" />)
+    await screen.findByText('No apps installed')
+    await openStore()
+
+    const row = within(await screen.findByRole('row', { name: 'Advanced Blocking' }))
+    expect(row.getByRole('button', { name: 'Install' })).toBeInTheDocument()
+    expect(row.queryByText('Installed')).not.toBeInTheDocument()
+    expect(row.queryByRole('button', { name: /Actions for/ })).not.toBeInTheDocument()
+  })
+
+  /*
+  The search (deviation 17): it narrows the rows by name or description, asks the
+  server nothing more, and leaves `Total Apps` counting the whole catalogue.
+  */
+  it('the search narrows the rows by name or description and keeps the total', async () => {
+    withApps([])
+    const spy = withStore(STORE)
+    render(<Apps token="t" />)
+    await screen.findByText('No apps installed')
+    await openStore()
+    await screen.findByText('Total Apps: 2')
+
+    const dialog = within(screen.getByRole('dialog'))
+    await userEvent.type(dialog.getByLabelText('Search'), 'block LISTS')
+    expect(dialog.getByRole('row', { name: 'Advanced Blocking' })).toBeInTheDocument()
+    expect(dialog.queryByRole('row', { name: 'NO DATA' })).not.toBeInTheDocument()
+    expect(dialog.getByText('Total Apps: 2')).toBeInTheDocument()
+
+    await userEvent.clear(dialog.getByLabelText('Search'))
+    await userEvent.type(dialog.getByLabelText('Search'), 'nothing like this')
+    expect(dialog.getByText('No Apps Found')).toBeInTheDocument()
+    expect(spy).toHaveBeenCalledTimes(1)
   })
 
   it('installing calls downloadAndInstall and alerts with the literal text', async () => {
@@ -459,7 +504,7 @@ describe('Apps: the store', () => {
     await screen.findByText('No apps installed')
     await openStore()
 
-    const row = within(await screen.findByRole('listitem', { name: 'Advanced Blocking' }))
+    const row = within(await screen.findByRole('row', { name: 'Advanced Blocking' }))
     await userEvent.click(row.getByRole('button', { name: 'Install' }))
     expect(spy.mock.calls[0][1]).toBe('Advanced Blocking')
     expect(spy.mock.calls[0][2]).toBe('https://x/AdvancedBlockingApp-v11.1.zip')
@@ -475,13 +520,14 @@ describe('Apps: the store', () => {
     withStore(STORE)
     vi.spyOn(api, 'uninstallApp').mockResolvedValue({ kind: 'ok', data: { status: 'ok' } } as never)
     render(<Apps token="t" />)
-    await screen.findByRole('listitem', { name: 'NO DATA' })
+    await screen.findByRole('row', { name: 'NO DATA' })
     await openStore()
 
     const row = within(
-      await within(screen.getAllByRole('dialog')[0]).findByRole('listitem', { name: 'NO DATA' }),
+      await within(screen.getAllByRole('dialog')[0]).findByRole('row', { name: 'NO DATA' }),
     )
-    await userEvent.click(row.getByRole('button', { name: 'Uninstall' }))
+    await userEvent.click(row.getByRole('button', { name: 'Actions for NO DATA' }))
+    await userEvent.click(within(await screen.findByRole('menu')).getByRole('menuitem', { name: 'Uninstall' }))
     // The confirmation stacks over the store's dialog.
     await userEvent.click(
       within(screen.getAllByRole('dialog').at(-1)!).getByRole('button', { name: 'Uninstall' }),

@@ -1,61 +1,92 @@
-/* The gap between an alert and what comes below. It was done by hand on each
-   screen with an inline `style`. */
+/*
+Apps (deviation 17, 2026-11-06): the cards' extras (`AppsSummary.tsx`), the
+installed table's and the store's rows (`AppRow.tsx`, `StoreApps.tsx`), the kind
+chip and the config editor.
+*/
 
-.apps { display:grid; grid-template-columns:repeat(2,1fr); gap: var(--s-8); list-style:none; margin: 0; padding: 0; }
-@media (max-width: 1040px) { .apps { grid-template-columns:1fr; } }
-.app { composes: panel from '../../ui/Panel.module.css'; padding: var(--s-9); display: flex; flex-direction: column; }
-.ah { display:flex; align-items:flex-start; justify-content:space-between; gap: var(--s-8); margin-bottom: var(--s-5); }
-.ah h2 { margin: 0; font-size: var(--t-4); font-weight: 550; color:var(--ink); }
-.view { font-family:var(--font-mono); font-size: var(--t-2); color:var(--faint); margin-top: var(--s-1); }
-.blank { color:var(--acc-ink); }
-.desc { margin: 0 0 var(--s-7); font-size: var(--t-4); line-height:1.55; color:var(--mute); white-space:pre-line; }
-.foot { display:flex; gap: var(--s-3); justify-content:flex-end; flex-wrap:wrap; margin-top: auto; }
+/* --- The cards --- */
 
-.details { margin: 0 0 var(--s-7); }
+/* The three update states under the bar, one a line: the state, then its count. */
+.stateRows { display: grid; gap: var(--s-3); margin: var(--s-6) 0 0; }
+.stateRows > div { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-8); transition: color var(--t-fast); }
+.stateRows dt { display: inline-flex; align-items: center; gap: var(--s-3); font-size: var(--t-3); color: var(--mute); }
+.stateRows dd { margin: 0; font: 600 var(--t-4)/1.3 var(--font-ui); font-variant-numeric: tabular-nums; color: var(--ink); }
+.stateRows > div[data-hot] dt { color: var(--ink); }
 
-.cls { margin-top: var(--s-6); padding-top: var(--s-6); border-top:1px solid var(--line2); }
-.cls:first-of-type { border-top:0; }
-.classPath { font-family:var(--font-mono); font-size: var(--t-3); color:var(--ink); }
-.caps { display:flex; gap: var(--s-3); flex-wrap:wrap; margin: var(--s-3) 0; }
-.classDesc { font-size: var(--t-3); line-height:1.5; color:var(--mute); margin: 0; white-space:pre-line; }
-.template { margin: var(--s-3) 0 0; padding: var(--s-6); background:var(--field); border:1px solid var(--line); border-radius: var(--r-2); font-family:var(--font-mono); font-size: var(--t-2); color:var(--ink); overflow:auto; }
-.templateK { font-size: var(--t-2); color:var(--mute); font-weight: 550; margin-top: var(--s-4); }
+/* The Query Logs apps and the APP record classes, one per line. */
+.cardList { margin: 0 0 var(--s-5); padding: 0; }
+.cardName { font: 600 var(--t-5)/1.3 var(--font-ui); color: var(--ink); overflow-wrap: break-word; min-width: 0; }
+.classLine { font: var(--t-3)/1.4 var(--font-mono); color: var(--ink); overflow-wrap: break-word; }
 
-/* --- The store --- */
-.store { list-style:none; margin: 0; padding: 0; display:flex; flex-direction:column; }
-.srow { display:flex; align-items:flex-start; justify-content:space-between; gap: var(--s-9); padding: var(--s-7) 0; border-bottom:1px solid var(--line2); }
-.srow:last-child { border-bottom:0; }
-/* The name and its version share a line: on its own the tag cost a row of its
-   own in each of the 27, and it is a label of the name, not a fact beside it. */
-.sname { display:flex; align-items:baseline; gap: var(--s-6); flex-wrap:wrap; font-size: var(--t-4); font-weight: 550; color:var(--ink); }
-.slabels { display:inline-flex; gap: var(--s-3); flex-wrap:wrap; align-items:baseline; }
+/* --- A row: the name with its version, the description, More Details --- */
+
+.appHead { display: flex; align-items: center; flex-wrap: wrap; gap: var(--s-3) var(--s-6); }
+.appName { font-size: var(--t-5); font-weight: 600; color: var(--ink); overflow-wrap: break-word; }
+
+.desc,
+.descClamp,
+.descFull { margin: var(--s-3) 0 0; max-width: 92ch; font-size: var(--t-4); line-height: 1.55; color: var(--mute); white-space: pre-line; }
+
 /*
 Two lines at rest. `-webkit-line-clamp` is the only thing that truncates by LINE
 and not by character, and it is the same in every engine this console runs on;
-the fallback if it ever is not honoured is a taller row, which is what there was
-before.
+the fallback if it ever is not honoured is a taller row.
 */
-.sdesc { margin: 0 0 var(--s-5); font-size: var(--t-4); line-height:1.55; color:var(--mute); white-space:pre-line;
-         display:-webkit-box; -webkit-line-clamp:2; line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
-.sdescFull { margin: 0 0 var(--s-5); font-size: var(--t-4); line-height:1.55; color:var(--mute); white-space:pre-line; }
-.sdetails { margin: 0 0 var(--s-5); }
-/* The zip URL and the size. Lines end between words: `break-all` split `App Zip
-   File` and the size mid-word to fill each line. Only the URL, one long word, breaks
-   where it reaches the edge. */
-.smeta { composes: annotation from '../../ui/text.module.css'; overflow-wrap: break-word; }
-.smeta b { color:var(--mute); font-family:var(--font-ui); }
-.sacts { display:flex; flex-direction:column; gap: var(--s-3); flex:none; }
-/* The count is `ui/count.module.css`'s: see there for why. */
-.total { composes: count2 below from '../../ui/count.module.css'; }
-/* --- Config --- */
-.note { font-size: var(--t-3); line-height:1.6; color:var(--mute); margin: 0 0 var(--s-7); }
-.note code { font-family:var(--font-mono); color:var(--acc-ink); }
-.config { width:100%; min-height:300px; font-family:var(--font-mono); font-size: var(--t-4); line-height:1.5; padding: var(--s-6); border:1px solid var(--line-field); border-radius: var(--r-2); background:var(--field); color:var(--ink); resize:vertical; }
+.descClamp { display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.descFull { margin: 0 0 var(--s-5); }
+/* Open, More Details shows the description whole: the clamped copy above it goes. */
+.descClamp:has(+ .details[open]) { display: none; }
 
-/* The store's sort, which is upstream's `Store Apps` header link. */
-.sortRow { display:flex; justify-content:flex-start; padding-bottom: var(--s-5); border-bottom:1px solid var(--line); }
-.sortBy { display:inline-flex; align-items:center; gap: var(--s-3); background:none; border:0; padding:0; cursor:pointer; font: 700 var(--t-1) var(--font-ui); text-transform:uppercase; letter-spacing:0.05em; color:var(--mute); }
-.sortBy:hover { color:var(--ink); }
-.sortBy:focus-visible { outline: var(--focus); outline-offset: var(--focus-offset); }
-/* The installed grid gets the same sort affordance as the store list. */
-.sortRow + .apps { margin-top: var(--s-8); }
+.details { margin: var(--s-3) 0 0; }
+
+.cls { margin-top: var(--s-6); padding-top: var(--s-6); border-top: 1px solid var(--line2); }
+.descFull + .cls,
+.cls:first-of-type { border-top: 0; padding-top: 0; }
+.classPath { font-family: var(--font-mono); font-size: var(--t-3); color: var(--ink); }
+.classDesc { font-size: var(--t-3); line-height: 1.5; color: var(--mute); margin: 0; max-width: 92ch; white-space: pre-line; }
+.template { margin: var(--s-3) 0 0; padding: var(--s-6); background: var(--field); border: 1px solid var(--line); border-radius: var(--r-2); font-family: var(--font-mono); font-size: var(--t-2); color: var(--ink); overflow: auto; }
+.templateK { font-size: var(--t-2); color: var(--mute); font-weight: 550; margin-top: var(--s-4); }
+
+/* The installed table and the store's: a row opened on its More Details is tall,
+   and its kinds, size and actions stay level with its name. */
+.rows > tbody > tr > td { vertical-align: top; }
+
+/* --- The kinds --- */
+
+.kindHead { width: 240px; }
+.kinds { display: flex; flex-wrap: wrap; gap: var(--s-3); margin: var(--s-3) 0; }
+.kindCell .kinds { margin: 0; }
+
+/* A kind: its series colour (`--sw`, `app-kinds.ts`) as a swatch and a tint, and
+   its name in ink beside it. Not a button: pressing a kind is the Classes card's. */
+.kind {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-1) var(--s-4);
+  border-radius: var(--r-1);
+  background: color-mix(in srgb, var(--sw) 14%, transparent);
+  color: var(--ink);
+  font-size: var(--t-3);
+  font-weight: 500;
+  white-space: nowrap;
+}
+.kind::before { content: ''; width: 8px; height: 8px; border-radius: 2px; background: var(--sw); flex: none; }
+
+.kindField { width: 230px; max-width: 100%; }
+
+/* --- The store --- */
+
+.sizeHead { width: 110px; }
+.sizeCell { white-space: nowrap; font-variant-numeric: tabular-nums; color: var(--mute); }
+.storeActs { display: inline-flex; gap: var(--s-3); align-items: center; }
+
+/* The zip URL. Lines end between words; only the URL, one long word, breaks where
+   it reaches the edge (`ui/UrlText`). */
+.smeta { composes: annotation from '../../ui/text.module.css'; overflow-wrap: break-word; }
+.smeta b { color: var(--mute); font-family: var(--font-ui); }
+
+/* --- Config --- */
+.note { font-size: var(--t-3); line-height: 1.6; color: var(--mute); margin: 0 0 var(--s-7); }
+.note code { font-family: var(--font-mono); color: var(--acc-ink); }
+.config { width: 100%; min-height: 300px; font-family: var(--font-mono); font-size: var(--t-4); line-height: 1.5; padding: var(--s-6); border: 1px solid var(--line-field); border-radius: var(--r-2); background: var(--field); color: var(--ink); resize: vertical; }
