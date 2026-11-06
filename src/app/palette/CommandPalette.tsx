@@ -24,12 +24,15 @@ export function CommandPalette({
   open,
   onOpenChange,
   items,
+  allowed = () => true,
   onRun,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   /** Pages, zones and account entries; `Actions` are built from the query. */
   items: (query: string) => PaletteItem[]
+  /** Whether a kept recent entry may still run for this session. */
+  allowed?: (target: PaletteItem['target']) => boolean
   onRun: (item: PaletteItem) => void
 }) {
   const [query, setQuery] = useState('')
@@ -47,9 +50,9 @@ export function CommandPalette({
   const shown = useMemo(() => {
     if (!open) return []
     const q = query.trim()
-    if (q === '') return [...readRecent(), ...rank(items(''), '').filter((i) => i.group === 'Pages').slice(0, 6)]
+    if (q === '') return [...readRecent().filter((r) => allowed(r.target)), ...rank(items(''), '').filter((i) => i.group === 'Pages').slice(0, 6)]
     return rank(items(q), q)
-  }, [open, query, items])
+  }, [open, query, items, allowed])
 
   useEffect(() => setActive(0), [query])
   useEffect(() => {

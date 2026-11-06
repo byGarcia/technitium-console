@@ -187,6 +187,18 @@ describe('Query Logs: what Live Update brings', () => {
       // Fifteen more in the log, though only two fit on page 1.
       expect(screen.getByText('15 new')).toBeInTheDocument()
 
+      // A filter changed while live starts a new count: the next turn adds nothing.
+      await user.click(card('Response Types').getByRole('button', { name: 'Cached 1' }))
+      query.mockResolvedValue({
+        kind: 'ok',
+        data: { response: page({ totalEntries: 900, entries: [entry(9, { responseType: 'Cached', qname: 'cached.example' })] }) },
+      } as never)
+      await vi.advanceTimersByTimeAsync(2100)
+      await vi.waitFor(() => expect(screen.queryByTitle('cached.example')).toBeInTheDocument())
+      expect(query.mock.calls.at(-1)?.[1]).toMatchObject({ responseType: 'Cached' })
+      expect(screen.getByText('15 new')).toBeInTheDocument()
+      expect(document.querySelectorAll('tr[data-fresh]')).toHaveLength(0)
+
       await user.click(screen.getByLabelText('Live Update'))
       expect(screen.queryByText(/\d+ new/)).not.toBeInTheDocument()
     } finally {

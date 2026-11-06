@@ -40,7 +40,8 @@ export interface Membership {
 /** Whether, and through which entry, `ip` is in `list`. The address itself wins over a network. */
 export function membership(list: readonly string[] | null | undefined, ip: string): Membership {
   const entries = (list ?? []).map((e) => e.trim()).filter((e) => e !== '')
-  const exact = entries.find((e) => e === ip)
+  /* The same address written in another case is still the address (IPv6). */
+  const exact = entries.find((e) => e.toLowerCase() === ip.toLowerCase())
   if (exact != null) return { entry: exact, exact: true }
   const network = entries.find((e) => networkContains(e, ip))
   return { entry: network ?? null, exact: false }
@@ -60,5 +61,5 @@ export function addBody(name: BypassList, list: readonly string[] | null | undef
 /** The `settings/set` body that takes `ip` (the address itself) out of one list. */
 export function removeBody(name: BypassList, list: readonly string[] | null | undefined, ip: string, node: string): Record<string, string> {
   const m = membership(list, ip)
-  return { node, [name]: asValue((list ?? []).filter((e) => !(m.exact && e.trim() === m.entry))) }
+  return { node, [name]: asValue((list ?? []).filter((e) => !(m.exact && e.trim().toLowerCase() === m.entry?.toLowerCase()))) }
 }

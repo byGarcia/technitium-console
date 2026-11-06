@@ -330,6 +330,38 @@ export function Shell({
     [sections, permissions, zoneItems, session.type],
   )
 
+  /* A recent entry was kept in this browser, maybe by another account: it is shown
+     only where this session may go, as the entries built now are. */
+  const paletteAllows = useCallback(
+    (t: Target): boolean => {
+      const visible = (id: string) => id === 'profile' || sections.some((x) => x.id === id)
+      switch (t.kind) {
+        case 'route':
+          if (t.section === 'zones' && t.params?.zone != null) {
+            return visible('zones') && zoneItems.some((z) => z.target.kind === 'route' && z.target.params?.zone === t.params?.zone)
+          }
+          if (!visible(t.section)) return false
+          if (t.sub == null) return true
+          {
+            const sec = sections.find((x) => x.id === t.section)
+            const subs = sec == null ? [] : t.section === 'settings' ? MENU_TABS.slice() : visibleSubs(sec, permissions)
+            return subs.includes(t.sub) || (sec?.subs ?? []).includes(t.sub)
+          }
+        case 'dnsclient':
+          return visible('dnsclient')
+        case 'logs':
+          return visible('logs')
+        case 'modal':
+          if (t.id === 'password') return session.type !== 'RemoteSSO' && session.type !== 'RemoteLDAP'
+          if (t.id === 'twofa') return session.type !== 'RemoteSSO'
+          return true
+        default:
+          return true
+      }
+    },
+    [sections, permissions, zoneItems, session.type],
+  )
+
   function runTarget(t: Target) {
     setDrawer(false)
     switch (t.kind) {
@@ -338,7 +370,11 @@ export function Shell({
         window.history.pushState(null, '', toTrail({ section: t.section, sub: t.sub }) + search)
         window.dispatchEvent(new PopStateEvent('popstate'))
         if (search !== '') {
-          jumpUrl.current = toTrail({ section: t.section, sub: t.sub }) + search
+          /* `?check=` is spent by the screen that reads it (Blocking's check runs
+             once and drops it), so it is not written back. */
+          const kept = Object.fromEntries(Object.entries(t.params ?? {}).filter(([k]) => k !== 'check'))
+          const keptSearch = Object.keys(kept).length > 0 ? `?${new URLSearchParams(kept).toString()}` : ''
+          jumpUrl.current = keptSearch !== '' ? toTrail({ section: t.section, sub: t.sub }) + keptSearch : null
           setPaletteJump((n) => n + 1)
         }
         return
@@ -902,7 +938,7 @@ export function Shell({
         token={session.token}
         onCreated={() => setAccountRevision((n) => n + 1)}
       />
-      <CommandPalette open={palette} onOpenChange={setPalette} items={paletteItems} onRun={(item) => runTarget(item.target)} />
+      <CommandPalette open={palette} onOpenChange={setPalette} items={paletteItems} allowed={paletteAllows} onRun={(item) => runTarget(item.target)} />
       <ChangeTheme
         open={modal === 'theme'}
         onOpenChange={(o) => setModal(o ? 'theme' : null)}

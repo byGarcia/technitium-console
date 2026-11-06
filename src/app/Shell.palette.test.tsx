@@ -37,6 +37,8 @@ function api() {
     if (path === 'zones/list') {
       return { kind: 'ok', data: { status: 'ok', response: { zones: [{ name: 'example.net', type: 'Primary', disabled: false, lastModified: '', soaSerial: 1 }] } } } as never
     }
+    /* Blocking's figures have nothing to draw from here: they fail, and say so. */
+    if (path.startsWith('dashboard/')) return { kind: 'error', message: 'none' } as never
     return { kind: 'ok', data: { status: 'ok', response: {} } } as never
   })
 }
@@ -68,5 +70,34 @@ describe('the command palette', () => {
     await userEvent.keyboard('{Enter}')
     expect(push).toHaveBeenCalledWith(null, '', '/zones/?zone=example.net')
     expect(screen.queryByRole('combobox', { name: 'Search' })).not.toBeInTheDocument()
+  })
+
+  it('shows a kept recent entry only where this session may go', async () => {
+    served('/about/', 'about')
+    api()
+    localStorage.setItem(
+      'paletteRecent',
+      JSON.stringify([
+        { id: 'account:password', group: 'Recent', label: 'Change Password', icon: 'key', target: { kind: 'modal', id: 'password' } },
+        { id: 'account:token', group: 'Recent', label: 'Create API Token', icon: 'key', target: { kind: 'modal', id: 'token' } },
+      ]),
+    )
+    render(<Shell session={{ ...SESSION, type: 'RemoteLDAP' }} onLogout={() => {}} />)
+    fireEvent.keyDown(window, { key: 'k', ctrlKey: true })
+    await screen.findByRole('combobox', { name: 'Search' })
+    const labels = screen.getAllByRole('option').map((o) => o.textContent)
+    expect(labels.some((l) => l?.includes('Create API Token'))).toBe(true)
+    expect(labels.some((l) => l?.includes('Change Password'))).toBe(false)
+  })
+
+  it('does not write back the check it handed to Blocking', async () => {
+    served('/about/', 'about')
+    api()
+    render(<Shell session={SESSION} onLogout={() => {}} />)
+    fireEvent.keyDown(window, { key: 'k', ctrlKey: true })
+    await userEvent.type(await screen.findByRole('combobox', { name: 'Search' }), 'doubleclick.net{Enter}')
+    await waitFor(() => expect(window.location.pathname).toBe('/blocking/overview/'))
+    await new Promise((r) => setTimeout(r, 30))
+    expect(window.location.search).not.toContain('check=')
   })
 })

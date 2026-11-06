@@ -200,9 +200,12 @@ export function ViewLogs({
     let live = true
     void (async () => {
       const list = await load()
+      /* Spent only by the run that counts: StrictMode's rehearsal run is cancelled
+         before it answers, and must leave the link for the real one. */
+      if (!live) return
       const was = openRef.current ?? arrivalRef.current
       arrivalRef.current = null
-      if (!live || was == null || list == null) return
+      if (was == null || list == null) return
       if (list.some((f) => f.fileName === was)) void viewRef.current(was)
       else {
         setOpen(null)

@@ -78,6 +78,9 @@ describe('the bodies the lists are saved with', () => {
   it('an address is in a list by itself or through a network that holds it', () => {
     expect(membership([IP], IP)).toEqual({ entry: IP, exact: true })
     expect(membership(['10.0.0.0/24'], IP)).toEqual({ entry: '10.0.0.0/24', exact: false })
+    // The same IPv6 address in another case is the address, and removing it takes it out.
+    expect(membership(['FE80::1'], 'fe80::1')).toEqual({ entry: 'FE80::1', exact: true })
+    expect(removeBody('blockingBypassList', ['FE80::1', '10.0.0.0/8'], 'fe80::1', '')).toEqual({ node: '', blockingBypassList: '10.0.0.0/8' })
     expect(membership(['10.0.1.0/24'], IP)).toEqual({ entry: null, exact: false })
     expect(membership(null, IP)).toEqual({ entry: null, exact: false })
   })

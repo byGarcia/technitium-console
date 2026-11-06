@@ -256,8 +256,17 @@ export function Clients({
     const arm = () => {
       if (!cancelled && !document.hidden) timer = window.setTimeout(() => void again(), LAST_HOUR_REFRESH_MS)
     }
+    /* One chain only: a tab shown again while a read is still out waits for it,
+       which then arms the next turn itself. */
+    let running = false
     async function again() {
-      await load()
+      if (running) return
+      running = true
+      try {
+        await load()
+      } finally {
+        running = false
+      }
       arm()
     }
     function onVisibility() {
@@ -279,6 +288,7 @@ export function Clients({
   const rows = useMemo(() => clientRows(top ?? [], entries), [top, entries])
   const summary = useMemo(() => (entries != null ? summarise(entries, top ?? []) : null), [entries, top])
   const total = stats?.stats.totalQueries ?? 0
+  const busiestRows = useMemo(() => busiest(rows, total), [rows, total])
 
   /* Heavy blocking is counted from the log sample: without one it is not offered. */
   const filters: readonly Filter[] = entries != null ? FILTERS : FILTERS.filter((f) => f !== 'heavy')
@@ -328,6 +338,7 @@ export function Clients({
     />
   )
 
+  const selectedLease = selectedRow != null ? leaseFor(leases, selectedRow.ip) : null
   const card = selectedRow != null && (
     <ClientCard
       key={selectedRow.ip}
@@ -338,7 +349,7 @@ export function Clients({
       logNode={logNode}
       where={where}
       logsNeed={logsNeed}
-      lease={leaseFor(leases, selectedRow.ip)}
+      lease={selectedLease}
       refreshOn={stats}
       onNotice={setNotice}
       heading={!narrow}
@@ -350,7 +361,7 @@ export function Clients({
           onSettings={setBypass}
           settingsNode={listsNode}
           settingsNeed={missing(permissions, 'Settings.canModify')}
-          lease={leaseFor(leases, selectedRow.ip)}
+          lease={selectedLease}
           dhcpNode={logNode}
           dhcpNeed={missing(permissions, 'DhcpServer.canModify')}
           onLeaseChanged={reloadLeases}
@@ -429,7 +440,7 @@ export function Clients({
               logsNeed={logsNeed != null ? requiresText(logsNeed) : null}
               app={app}
             />
-            <WhoUses busiest={busiest(rows, total)} totalQueries={total} selected={selected} onSelect={choose} />
+            <WhoUses busiest={busiestRows} totalQueries={total} selected={selected} onSelect={choose} />
             {narrow ? (
               list
             ) : (

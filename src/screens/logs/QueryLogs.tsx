@@ -532,7 +532,7 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
   switch counts how many arrived since it was turned on. It reads only what the
   loop already reads; the loop, its calls and its timing are upstream's.
   */
-  const seen = useRef<{ rows: Set<number>; total: number } | null>(null)
+  const seen = useRef<{ rows: Set<number>; total: number; asked: string } | null>(null)
   const [fresh, setFresh] = useState<ReadonlySet<number>>(() => new Set())
   const [arrived, setArrived] = useState(0)
   /* What the Live Update switch says right now, for the guard at the top of
@@ -664,8 +664,12 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
       }
 
       const landed = outcome.data.response
-      if (live) {
-        const before = seen.current
+      if (live && liveRef.current) {
+        /* Only a turn that asked what the last one asked is compared with it: a
+           filter or node changed in between starts a new count from there. */
+        const asked = JSON.stringify(params(filters, pageNumber))
+        const before = seen.current?.asked === asked ? seen.current : null
+        if (seen.current != null && before == null) setFresh((f) => (f.size === 0 ? f : new Set()))
         const rows = new Set(landed.entries.map((e) => e.rowNumber))
         if (before != null) {
           setFresh(new Set(landed.entries.filter((e) => !before.rows.has(e.rowNumber)).map((e) => e.rowNumber)))
@@ -674,8 +678,8 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
           const grew = landed.totalEntries - before.total
           if (grew > 0) setArrived((n) => n + grew)
         }
-        seen.current = { rows, total: landed.totalEntries }
-      } else {
+        seen.current = { rows, total: landed.totalEntries, asked }
+      } else if (!live) {
         seen.current = null
         setFresh((f) => (f.size === 0 ? f : new Set()))
       }

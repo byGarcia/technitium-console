@@ -346,8 +346,17 @@ export function Overview({
     const arm = () => {
       if (!cancelled && !document.hidden) timer = window.setTimeout(() => void again(), LAST_HOUR_REFRESH_MS)
     }
+    /* One chain only: a tab shown again while a read is still out waits for it,
+       which then arms the next turn itself. */
+    let running = false
     async function again() {
-      await load()
+      if (running) return
+      running = true
+      try {
+        await load()
+      } finally {
+        running = false
+      }
       arm()
     }
     function onVisibility() {
