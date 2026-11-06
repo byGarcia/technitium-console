@@ -52,6 +52,8 @@ two other modules with the same values copied by hand.
 /* The same save bar as Settings and DHCP: STICKY. Without that, in a form as
    long as SSO's the button stays up top as you scroll down. */
 .bar { composes: bar from '../../ui/PanelForm.module.css'; }
+/* At rest, after the last card, the bar keeps the gap the cards keep between them. */
+.split + .bar, .split ~ .bar { margin-top: var(--gap-block); }
 
 /* Modal body: the same rows, but with a narrower label. */
 .mval { font-size: var(--t-4); font-weight: 600; color:var(--ink); padding-top: var(--s-5); }
