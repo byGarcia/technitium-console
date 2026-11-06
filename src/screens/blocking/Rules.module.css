@@ -1,5 +1,7 @@
 /* The filter group in the card's toolbar: All, Blocked, Allowed. */
 .filter { display: inline-flex; gap: var(--s-2); }
+/* The search takes the toolbar's room left over. */
+.search { width: 100%; }
 /* Import, Export and Flush at the foot's end. */
 .verbs { display: flex; flex-wrap: wrap; gap: var(--s-3); }
 /* The name wraps at its dots only (`ui/DomainName`), never inside a label. */

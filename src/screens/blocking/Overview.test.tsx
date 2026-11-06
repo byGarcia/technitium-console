@@ -8,11 +8,10 @@ import * as zonelists from '../../api/zonelists'
 import { SlotProvider } from '../../app/ChromeSlot'
 import { Overview, blockingChart } from './Overview'
 
-/** Your Rules: each number with the word under it, in the card's two columns. */
+/** Your Rules: each number with the word over it, in the strip's cell. */
 function rulePairs() {
-  const text = screen.getByText('Your Rules', { selector: 'span' }).parentElement!
-  const [numbers, words] = [...text.children].slice(0, 2).map((row) => [...row.children].map((c) => c.textContent))
-  return numbers.map((n, i) => [n, words[i]])
+  const facts = screen.getByLabelText('Your Rules')
+  return [...facts.children].map((pair) => [pair.querySelector('dd')!.textContent, pair.querySelector('dt')!.textContent])
 }
 
 /* Every `data` the charts were handed, by chart: Chart.tsx rebuilds its canvas on a
@@ -116,7 +115,7 @@ describe('Overview', () => {
     /* The ring writes the same share in its hole: the figure is looked for in its card. */
     expect(within(screen.getByText('5,310').parentElement!).getByText('26.09% of total')).toBeInTheDocument()
     expect(screen.getByText('74,779')).toBeInTheDocument()
-    expect(rulePairs()).toEqual([['1', 'blocked'], ['1', 'allowed']])
+    expect(rulePairs()).toEqual([['1', 'Blocked'], ['1', 'Allowed']])
   })
 
   it('draws the stacked bars and the blocked share', async () => {
@@ -199,14 +198,15 @@ describe('Overview', () => {
     serve().mockResolvedValue({ ...OK, data: { ...OK.data, stats: { ...STATS, blockedZones: 10000, allowedZones: 1234 } } })
     render(<Overview token="T" permissions={undefined} />)
     await screen.findByText((10000).toLocaleString())
-    expect(rulePairs()).toEqual([[(10000).toLocaleString(), 'blocked'], [(1234).toLocaleString(), 'allowed']])
+    expect(rulePairs()).toEqual([[(10000).toLocaleString(), 'Blocked'], [(1234).toLocaleString(), 'Allowed']])
   })
 
   it('while the figures travel the top tables do not claim there are no domains', () => {
     serve().mockReturnValue(new Promise(() => {}))
     render(<Overview token="T" permissions={undefined} />)
     expect(screen.queryByText('No domains for this period.')).not.toBeInTheDocument()
-    expect(screen.getAllByText('—').length).toBe(4)
+    // Total Queries, Blocked, Block List Domains, and Your Rules' figure and two counts.
+    expect(screen.getAllByText('—').length).toBe(6)
   })
 
   it('a first read that fails says so with the message from the server', async () => {
@@ -374,5 +374,16 @@ describe('Overview: Last Hour in real time', () => {
     await act(async () => { await vi.advanceTimersByTimeAsync(130_000) })
     expect(spy).not.toHaveBeenCalled()
     expect(live).not.toHaveBeenCalled()
+  })
+})
+
+describe('the strip (2026-11-06)', () => {
+  it('Your Rules counts every rule, then each list, and Blocked says its share', async () => {
+    serve()
+    render(<Overview token="T" permissions={undefined} />)
+    await screen.findByText('20,354')
+    const rules = screen.getByRole('heading', { level: 2, name: 'Your Rules' }).parentElement!
+    expect(rules.children[1].firstElementChild).toHaveTextContent('2')
+    expect(screen.getAllByRole('img', { name: /^Blocked [\d,]+, Allowed [\d,]+$/ })).toHaveLength(2)
   })
 })

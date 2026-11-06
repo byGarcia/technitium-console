@@ -6,11 +6,9 @@ The Lists tab. Every value is a token of theme/tokens.css.
 .bar { composes: bar from '../../ui/PanelForm.module.css'; }
 .spacer { flex: 1; }
 
-/* The figures are the shared ones (`.kpi*`, Blocking.module.css). A count the server is
-   still reloading: dimmed, and its sub-line says why, at the sub-line's size so the
-   card does not change height. */
+/* A count the server is still reloading: dimmed, and the line under it says why. */
 .stale { opacity: var(--dim); }
-.pending { color: var(--mute); font-size: var(--t-2); }
+.pending { margin-top: var(--s-2); color: var(--mute); font-size: var(--t-2); }
 
 /*
 "Add a list" on a grid. The first column is the URL's: its field, its error, its
@@ -65,10 +63,29 @@ target and the input's alignment) and `toggle` for the switch drawing.
 */
 .switch { composes: check toggle from '../../ui/Check.module.css'; }
 
-.name { font-weight: 600; }
-/* The URL wraps after its separators (`ui/UrlText`), not at whatever letter meets the
-   edge: `anywhere` drew `raw.githubuser` / `content.com` at 390 px. */
-.url { font-family: var(--font-mono); color: var(--mute); overflow-wrap: break-word; }
+/*
+A list on ONE line: its name, then its URL, cut where the cell ends; the whole URL
+is in the row's Details (and in the line's title). `max-width: 0` with the cell
+taking the rest of the row is what lets a table cell cut its text instead of
+growing the table.
+*/
+.switchCell { width: 1%; }
+.listCell { width: 100%; max-width: 0; }
+.line { display: flex; align-items: baseline; gap: var(--s-5); min-width: 0; white-space: nowrap; }
+.name { flex: none; font-weight: 600; color: var(--ink); }
+.url,
+.urlAfter { min-width: 0; overflow: hidden; text-overflow: ellipsis; font-family: var(--font-mono); }
+.url { color: var(--ink); }
+.urlAfter { color: var(--mute); font-size: var(--t-3); }
+/* The URL whole, in the Details line: it wraps after its separators (`ui/UrlText`). */
+.urlWhole { font-family: var(--font-mono); overflow-wrap: break-word; }
+
+/* The row's Details: label beside value, as Query Logs draws its own. */
+.details { display: flex; flex-wrap: wrap; gap: var(--s-5) var(--s-11); margin: 0; padding: var(--s-3) 0 var(--s-5); }
+.details > div { display: flex; align-items: baseline; gap: var(--s-5); min-width: 0; }
+.details dt { flex: none; font-size: var(--t-2); color: var(--mute); }
+.details dd { margin: 0; min-width: 0; font-size: var(--t-4); color: var(--ink); }
+.detailWide { flex-basis: 100%; }
 /* A switched-off list: its name and kind fade, its controls do not. */
 .off { opacity: var(--dim); }
 
@@ -81,9 +98,6 @@ the row hover, the text tone 5.0:1.
 */
 .allow { color: var(--ok); }
 
-/* Move up, Move down and Remove, hard against the row's end as Delete is in Rules. */
-.actions { text-align: right; white-space: nowrap; }
-.rowActions { display: inline-flex; align-items: center; gap: var(--s-2); }
 
 /*
 The kind has two places: its own column, and under the URL. Only one is drawn at a
@@ -92,14 +106,14 @@ time (`display: none` also takes the other out of what a screen reader reads).
 .kindInline { display: none; }
 
 /*
-`--bp-stack`. Four columns and three row buttons left the URL six characters a line
-at 390: the Type column folds into the List cell, under the URL, and the row's
-buttons stack in their column, so the URL keeps most of the width.
+`--bp-stack`. The Type column folds into the List cell, under the name, so the
+line keeps the width the four row controls leave it.
 */
 @media (max-width: 560px) {
   .kindCell { display: none; }
   .kindInline { display: inline-flex; margin-top: var(--s-2); }
-  .rowActions { flex-direction: column; align-items: flex-end; }
+  .line { flex-wrap: wrap; row-gap: 0; }
+  .urlAfter { flex-basis: 100%; }
 }
 
 /*
@@ -119,7 +133,7 @@ the header's small capitals.
   background: var(--pan2);
   border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line2);
-  padding: var(--s-5) var(--s-7);
+  padding: var(--s-5) var(--s-10);
   text-align: left;
   font-weight: 400;
 }
@@ -132,4 +146,9 @@ the header's small capitals.
 .editorField { flex: 1 1 var(--s-12); min-width: 0; max-width: var(--help-col); }
 .editor > .invalid { flex-basis: 100%; margin-top: 0; }
 
-.foot { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-5); padding: var(--s-7) var(--s-9); color: var(--mute); }
+
+/* The strip's three cells on a phone, two a row: the third takes the whole row
+   rather than leaving an empty cell beside it. */
+@media (max-width: 560px) {
+  .strip > :last-child:nth-child(odd) { grid-column: 1 / -1; }
+}

@@ -428,3 +428,27 @@ describe('BlockLists', () => {
     expect(get).not.toHaveBeenCalled()
   })
 })
+
+describe('a list on one line (2026-11-06)', () => {
+  it('the row carries the name and the URL; Details opens the URL whole', async () => {
+    serve([HOSTS])
+    draw()
+    const table = await screen.findByRole('table')
+    expect(within(table).getByTitle(HOSTS)).toHaveTextContent('Steven Black [adware + malware]')
+    const details = within(table).getByRole('button', { name: 'Details' })
+    expect(details).toHaveAttribute('aria-expanded', 'false')
+    await userEvent.click(details)
+    expect(details).toHaveAttribute('aria-expanded', 'true')
+    expect(within(table).getByText('List URL').nextElementSibling).toHaveTextContent(HOSTS)
+  })
+
+  it('the three figures sit in one strip, Update Now in the next update cell', async () => {
+    serve([HOSTS])
+    draw()
+    await screen.findByRole('table')
+    const next = screen.getByRole('heading', { name: 'Next update · every 24 h' }).parentElement!
+    expect(within(next).getByRole('button', { name: 'Update Now' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Block List Domains' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Allow List Domains' })).toBeInTheDocument()
+  })
+})

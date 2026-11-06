@@ -10,6 +10,8 @@ import { ClusterNodeSelect, AGGREGATE, type ClusterNode } from '../../ui/Cluster
 import { SectionHeader } from '../../ui/SectionHeader'
 import { Segmented } from '../../ui/Segmented'
 import { Panel, Body } from '../../ui/Panel'
+import { Card, StackBar, statStyles } from '../../ui/StatCard'
+import { useCountUp } from '../../ui/useCountUp'
 import { Empty, Loading, Failure } from '../../ui/Empty'
 import { Notifier } from '../../ui/Notifier'
 import { noticeFromFailure, type Notice } from '../../lib/notice'
@@ -33,8 +35,8 @@ data, so choosing a node here and seeing another there would be a contradiction.
 The five fixed periods and not Custom: a range of your own is the Dashboard's job.
 
 The words are OURS except `Total Queries` and `Blocked`, upstream's Dashboard tiles:
-the title `Overview` and its subtitle (`OVERVIEW_SUBTITLE`), `Period`, `Block List Domains`, `Your Rules` and its `blocked` and
-`allowed`, the `of total` after Blocked's share, the panel titles (`Statistics`, `Queries over time`, `Blocked share`), the
+the title `Overview` and its subtitle (`OVERVIEW_SUBTITLE`), `Period`, `Block List Domains`, `Your Rules` and its `Blocked` and
+`Allowed`, the `of total` after Blocked's share, the strip's two bars' `Blocked N, Allowed M`, the panel titles (`Statistics`, `Queries over time`, `Blocked share`), the
 `Allowed` series, the ring's `Share` and `Blocked share: N%`, and the chart's label.
 The two gap sentences are the ones this console's Dashboard already uses.
 */
@@ -102,67 +104,80 @@ function Bars({ chart, resetOn }: { chart: ChartData; resetOn: unknown }) {
   )
 }
 
-/* A figure's trend, beside it: decorative, so hidden from assistive technology (the
-   figure says the number). */
-function Spark({ data, tone }: { data: number[]; tone: string }) {
-  if (data.length < 2) return null
-  const max = Math.max(...data, 1)
-  const step = 100 / (data.length - 1)
-  const points = data.map((v, i) => `${(i * step).toFixed(2)},${(30 - (v / max) * 28).toFixed(2)}`).join(' ')
-  return (
-    <svg className={`${styles.spark} ${tone}`} viewBox="0 0 100 32" preserveAspectRatio="none" aria-hidden="true">
-      <polyline points={`0,32 ${points} 100,32`} fill="currentColor" fillOpacity="0.18" stroke="none" />
-      <polyline points={points} fill="none" stroke="currentColor" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
-    </svg>
-  )
+/* A figure of the strip, counting up once as its card comes in (`ui/useCountUp`),
+   in the reader's own digit grouping as the stock tiles write it. Before the first
+   answer it is upstream's "no value". */
+function Figure({ value }: { value: number | undefined }) {
+  return <div className={statStyles.figure}>{value == null ? '—' : <Grouped value={value} />}</div>
 }
 
-function Kpi({
-  value,
-  sub,
-  label,
-  children,
-}: {
-  /** Two figures side by side (`Your Rules`) come as pairs, each number over its word. */
-  value: string | [string, string]
-  sub?: string | [string, string]
-  label: string
-  children?: ReactNode
-}) {
-  const paired = Array.isArray(value) && Array.isArray(sub)
+function Grouped({ value }: { value: number }) {
+  return <>{useCountUp(value).toLocaleString()}</>
+}
+
+/*
+WHAT BLOCKING IS DOING, AT A GLANCE (2026-11-06): the four figures as one strip of
+`ui/StatCard` cells, the strip every list screen opens with (Cache, Zones, Apps,
+Administration), in the series colours the charts below use. Blocked carries its
+share of the period and the bar of how the period split (Blocked against what got
+through, the bars' own two series); Your Rules carries how many rules there are
+(the server's two counts added), each count, and the same kind of bar. The trends that sat beside Total Queries and Blocked are gone: the
+chart under the strip draws the same series over the same period, larger.
+*/
+function Strip({ s }: { s: DashboardStats['stats'] | undefined }) {
+  const allowed = s == null ? 0 : s.totalQueries - s.totalBlocked
   return (
-    <Panel className={shared.centred}>
-      <Body>
-        <div className={`${shared.kpi}${children != null ? ` ${styles.trended}` : ''}`}>
-          <div className={`${shared.kpiText}${paired ? ` ${shared.kpiPaired}` : ''}`}>
-            {paired ? (
-              /* Both lines are laid on one two-column grid, so each number stands
-                 over its own word: written as one string, the 7 of "2 · 7" sat over
-                 the middle of "blocked · allowed". */
-              <>
-                <span className={`${shared.kpiValue} ${shared.kpiRow}`}>
-                  <span>{value[0]}</span>
-                  <span>{value[1]}</span>
-                </span>
-                <span className={`${shared.kpiSub} ${shared.kpiRow}`}>
-                  <span>{sub[0]}</span>
-                  <span>{sub[1]}</span>
-                </span>
-              </>
-            ) : (
-              <>
-                <span className={shared.kpiValue}>{value}</span>
-                {/* A figure without a sub-line keeps an empty one, a full line high, so the four
-                    labels sit on one line as the drawing has them. */}
-                <span className={shared.kpiSub}>{sub ?? '\u00a0'}</span>
-              </>
-            )}
-            <span className={shared.kpiLabel}>{label}</span>
-          </div>
-          {children}
+    <div className={`${statStyles.grid} ${shared.inStack}`}>
+      <Card title="Total Queries" colour="var(--ch-total)">
+        <div className={statStyles.body}>
+          <Figure value={s?.totalQueries} />
         </div>
-      </Body>
-    </Panel>
+      </Card>
+      <Card title="Blocked" colour="var(--ch-block)">
+        <div className={statStyles.body}>
+          <Figure value={s?.totalBlocked} />
+          {s != null && <div className={statStyles.caption}>{`${percentage(s.totalBlocked, s.totalQueries)} of total`}</div>}
+          {s != null && (
+            <StackBar
+              label={`Blocked ${s.totalBlocked.toLocaleString()}, Allowed ${allowed.toLocaleString()}`}
+              parts={[
+                { key: 'Blocked', name: 'Blocked', value: s.totalBlocked, colour: 'var(--ch-block)' },
+                { key: 'Allowed', name: 'Allowed', value: allowed, colour: 'var(--ch-ok)' },
+              ]}
+            />
+          )}
+        </div>
+      </Card>
+      <Card title="Block List Domains" colour="var(--ch-drop)">
+        <div className={statStyles.body}>
+          <Figure value={s?.blockListZones} />
+        </div>
+      </Card>
+      <Card title="Your Rules" colour="var(--ch-ok)">
+        <div className={statStyles.body}>
+          <Figure value={s == null ? undefined : s.blockedZones + s.allowedZones} />
+          <dl className={statStyles.facts} aria-label="Your Rules">
+            <div>
+              <dt>Blocked</dt>
+              <dd>{s == null ? '—' : <Grouped value={s.blockedZones} />}</dd>
+            </div>
+            <div>
+              <dt>Allowed</dt>
+              <dd>{s == null ? '—' : <Grouped value={s.allowedZones} />}</dd>
+            </div>
+          </dl>
+          {s != null && (
+            <StackBar
+              label={`Blocked ${s.blockedZones.toLocaleString()}, Allowed ${s.allowedZones.toLocaleString()}`}
+              parts={[
+                { key: 'Blocked', name: 'Blocked', value: s.blockedZones, colour: 'var(--ch-block)' },
+                { key: 'Allowed', name: 'Allowed', value: s.allowedZones, colour: 'var(--ch-ok)' },
+              ]}
+            />
+          )}
+        </div>
+      </Card>
+    </div>
   )
 }
 
@@ -352,24 +367,7 @@ export function Overview({
         {statsNeed != null ? (
           <Locked title="Statistics" need={statsNeed} />
         ) : (
-          <div className={shared.kpis}>
-            <Kpi value={s ? s.totalQueries.toLocaleString() : '—'} label="Total Queries">
-              {view && <Spark data={series(view.mainChartData, 'Total')} tone={styles.sparkTotal} />}
-            </Kpi>
-            <Kpi
-              value={s ? s.totalBlocked.toLocaleString() : '—'}
-              sub={s ? `${percentage(s.totalBlocked, s.totalQueries)} of total` : undefined}
-              label="Blocked"
-            >
-              {view && <Spark data={series(view.mainChartData, 'Blocked')} tone={styles.sparkBlocked} />}
-            </Kpi>
-            <Kpi value={s ? s.blockListZones.toLocaleString() : '—'} label="Block List Domains" />
-            <Kpi
-              value={s ? [s.blockedZones.toLocaleString(), s.allowedZones.toLocaleString()] : '—'}
-              sub={s ? ['blocked', 'allowed'] : undefined}
-              label="Your Rules"
-            />
-          </div>
+          <Strip s={s} />
         )}
 
         <div className={`${shared.row2} ${styles.checkRow}`}>

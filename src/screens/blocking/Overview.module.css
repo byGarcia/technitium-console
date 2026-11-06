@@ -8,6 +8,12 @@
 .statusTitle { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-5); font-size: var(--t-5); font-weight: 600; }
 .statusSub { color: var(--mute); margin-top: var(--s-1); }
 
+/*
+A card's title in its toolbar (the top tables, Recently Blocked): the weight of a
+panel's title, since the card is the panel.
+*/
+.cardTitle { margin: 0; font-size: var(--t-5); font-weight: 600; color: var(--ink); }
+
 /* Top tables: name, a bar for the share, the hits, the row menu. */
 /* The name wraps at its dots only (`ui/DomainName`), never inside a label. */
 .name { font-family: var(--font-mono); }
@@ -16,6 +22,7 @@
    Written to outweigh `.table thead th` of ui/Table, which sets every header left. */
 thead > tr > th.hitsHead { text-align: right; }
 /* A block, not the span's inline box: an inline element ignores `height`. */
+.shareCell { width: 22%; }
 .share { display: block; position: relative; height: var(--s-3); min-width: var(--s-12); border-radius: var(--r-1); background: var(--line2); }
 .share > i { position: absolute; inset: 0 auto 0 0; border-radius: var(--r-1); }
 .shareBlocked > i { background: var(--ch-block); }
@@ -33,40 +40,6 @@ measures the two ambers as indistinguishable. The sentence and its icon say it.
 */
 .partial { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-5) var(--s-9); color: var(--mute); }
 
-/*
-A figure's trend, beside its text and as tall as it (`.kpi` in Blocking.module.css):
-the text keeps its width, so its three lines stay level with the other cards', and the
-trend takes what is left, up to half the card. Size containment drops the drawing's own
-100:32 shape, so a wide screen cannot make the trend, and with it the card, taller.
-*/
-.spark {
-  display: block;
-  flex: 1 1 0;
-  align-self: stretch;
-  min-width: var(--s-12);
-  max-width: 50%;
-  height: auto;
-  contain: size;
-}
-/*
-`--bp-stack`. Two cards a row leave no room beside the text, so the trend drops to the
-card's foot and runs to its edges, as the drawing has it: the body's padding
-(`--s-9`, ui/Panel) is given back on three sides and the panel's rounded corners clip
-it. The two cards with a trend share the first row, so no card in a row has a band
-the other lacks.
-*/
-@media (max-width: 560px) {
-  .trended { flex-wrap: wrap; }
-  .spark {
-    flex-basis: calc(100% + 2 * var(--s-9));
-    max-width: none;
-    height: var(--s-12);
-    margin: 0 calc(-1 * var(--s-9)) calc(-1 * var(--s-9));
-  }
-}
-.sparkTotal { color: var(--ch-total); }
-.sparkBlocked { color: var(--ch-block); }
-
 /* The ring, with the share written in its hole. */
 .ring { position: relative; }
 .ringValue { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; font-family: var(--font-mono); font-size: var(--t-6); font-weight: 600; pointer-events: none; }
@@ -82,3 +55,12 @@ floating in it, so it keeps its own height instead, top-aligned. The check panel
 answer region is empty (`:empty`) until then.
 */
 .checkRow:has([aria-live]:not(:empty)) > :first-child { align-self: start; }
+
+/* Recently Blocked's Details: the rest of the log entry, label beside value, as
+   Query Logs draws its own (`logs/QueryLogs`). */
+.details { display: flex; flex-wrap: wrap; gap: var(--s-5) var(--s-11); margin: 0; padding: var(--s-3) 0 var(--s-5); }
+.details > div { display: flex; align-items: baseline; gap: var(--s-5); min-width: 0; }
+.details dt { font-size: var(--t-2); color: var(--mute); }
+.details dd { margin: 0; font-size: var(--t-4); color: var(--ink); overflow-wrap: break-word; min-width: 0; }
+.detailWide { flex-basis: 100%; }
+.rtt { font-size: var(--t-2); color: var(--faint); padding-left: var(--s-5); }

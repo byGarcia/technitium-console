@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import * as apps from '../../api/apps'
 import type { InstalledApp } from '../../api/apps'
 import * as blocking from '../../api/blocking'
@@ -214,3 +215,24 @@ describe('RecentBlocked: following the Blocked figure', () => {
 })
 
 const listApps = () => vi.mocked(apps.listApps)
+
+describe('a blocked query on one line (2026-11-06)', () => {
+  it('Details opens the rest of the log entry, with Query Logs labels, and the foot counts the rows', async () => {
+    withApps([LOGGER])
+    vi.spyOn(blocking, 'recentBlocked').mockResolvedValue({
+      kind: 'ok', data: { partial: false, entries: [{
+        rowNumber: 1, timestamp: '2026-10-01T10:00:00Z', clientIpAddress: '192.168.1.34', protocol: 'Udp',
+        responseType: 'UpstreamBlocked', responseRtt: 12.5, rcode: 'NxDomain', qname: 'ads.test', qtype: 'A', qclass: 'IN', answer: null,
+      }] },
+    })
+    render(<RecentBlocked token="T" permissions={undefined} node="" aggregate={false} serverDomain="dns.test" />)
+    await screen.findByText(wholeText('ads.test'))
+    expect(screen.getByText('1 blocked query')).toBeInTheDocument()
+    expect(screen.queryByText('UpstreamBlocked')).toBeNull()
+    await userEvent.click(screen.getByRole('button', { name: 'Details' }))
+    expect(screen.getByText('Response Type').nextElementSibling).toHaveTextContent('UpstreamBlocked(12.50 ms)')
+    expect(screen.getByText('RCODE').nextElementSibling).toHaveTextContent('NxDomain')
+    expect(screen.getByText('Protocol').nextElementSibling).toHaveTextContent('Udp')
+    expect(screen.getByText('Class').nextElementSibling).toHaveTextContent('IN')
+  })
+})

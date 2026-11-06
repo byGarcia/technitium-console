@@ -471,3 +471,31 @@ describe('Rules', () => {
     expect(window.location.search).toBe('?x=1')
   })
 })
+
+describe('Rules keeps its view in the address bar (2026-11-06)', () => {
+  it('reads the search, the page, the tree and its list on arrival', async () => {
+    window.history.replaceState(null, '', '/blocking/rules/?q=ads&view=tree&list=allowed')
+    exports(['ads.example.com'], ['s.youtube.com'])
+    const list = emptyTree()
+    draw()
+    await screen.findByText(/^0 records at/)
+    expect(list).toHaveBeenCalledWith('allowed', 'T', '', undefined, '')
+    expect(within(screen.getByRole('group', { name: 'Tree' })).getByRole('button', { name: 'Allowed' }))
+      .toHaveAttribute('aria-pressed', 'true')
+    await userEvent.click(screen.getByRole('button', { name: 'List' }))
+    expect(screen.getByRole('textbox', { name: 'Filter domains' })).toHaveValue('ads')
+    expect(window.location.search).toBe('?q=ads')
+  })
+
+  it('writes what changes by replacing the entry, and drops it all with the tab', async () => {
+    exports(['ads.example.com', 'b.test'], [])
+    const length = window.history.length
+    const { unmount } = draw()
+    await screen.findByRole('table')
+    await userEvent.type(screen.getByRole('textbox', { name: 'Filter domains' }), 'b')
+    expect(window.location.search).toBe('?q=b')
+    expect(window.history.length).toBe(length)
+    unmount()
+    expect(window.location.search).toBe('')
+  })
+})

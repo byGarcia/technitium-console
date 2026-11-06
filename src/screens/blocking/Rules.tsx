@@ -561,6 +561,7 @@ export function Rules({
                     <Input
                       ref={search}
                       search
+                      className={styles.search}
                       aria-label="Filter domains"
                       placeholder="Filter domains…"
                       value={query}
@@ -644,7 +645,7 @@ export function Rules({
                 {current.rows.map((r) => (
                   <tr key={`${r.list}:${r.domain}`}>
                     <td className={`${styles.domain} ${tbl.lead}`}><DomainName name={r.domain} /></td>
-                    <td>
+                    <td className={tbl.lead}>
                       <span className={`${styles.kind} ${styles[r.list]}`}>
                         <Icon name={r.list} size={14} />
                         {LABEL[r.list]}
