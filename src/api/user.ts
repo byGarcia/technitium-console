@@ -17,8 +17,57 @@ export interface SessionRow {
   lastSeenUserAgent: string
 }
 
-export function deleteSession(token: string | null, partialToken: string): Promise<ApiOutcome> {
-  return apiRequest('user/session/delete', { token, body: { partialToken } })
+/*
+`deleteMySession` (auth.js:824-866): an API token travels with `node`, the
+cluster's primary (`getPrimaryClusterNodeName`, empty on a standalone server, and
+sent empty all the same); any other session travels without it.
+*/
+export function deleteSession(
+  token: string | null,
+  partialToken: string,
+  node?: string,
+): Promise<ApiOutcome> {
+  return apiRequest('user/session/delete', {
+    token,
+    body: node == null ? { partialToken } : { partialToken, node },
+  })
+}
+
+/*
+`user/profile/get` (auth.js:660-781), the answer for the user of the session.
+Checked live against v15.6.1 on 2026-11-06: it also carries `disabled` and the
+two logins `admin/users/list` shows (`recentSession…`, `previousSession…`), which
+the stock My Profile does not draw. A login that never happened is .NET's
+`0001-01-01T00:00:00` from `0.0.0.0`.
+*/
+export interface Profile {
+  displayName: string
+  username: string
+  /** `Local`, `RemoteSSO` or `RemoteLDAP` since v15.5. */
+  type?: string
+  isSsoUser?: boolean
+  /** Omitted for a `RemoteSSO` user (WebServiceAuthApi.cs:140-146). */
+  totpEnabled?: boolean
+  disabled?: boolean
+  recentSessionLoggedOn?: string
+  recentSessionRemoteAddress?: string
+  previousSessionLoggedOn?: string
+  previousSessionRemoteAddress?: string
+  sessionTimeoutSeconds: number
+  memberOfGroups: string[]
+  sessions: SessionRow[]
+}
+
+export function getProfile(token: string | null): Promise<ApiOutcome<{ response: Profile }>> {
+  return apiRequest('user/profile/get', { token })
+}
+
+/* `saveMyProfile` (auth.js:783-822): a GET with the fields in the query. */
+export function setProfile(
+  token: string | null,
+  body: Record<string, string>,
+): Promise<ApiOutcome<{ response: Partial<Profile> }>> {
+  return apiRequest('user/profile/set', { token, body })
 }
 
 /*

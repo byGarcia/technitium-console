@@ -5,7 +5,7 @@ import { ChangePassword } from '../screens/modals/ChangePassword'
 import { ChangeTheme } from '../screens/modals/ChangeTheme'
 import { Configure2FA } from '../screens/modals/Configure2FA'
 import { CreateApiToken } from '../screens/modals/CreateApiToken'
-import { MyProfile } from '../screens/modals/MyProfile'
+import { Profile } from '../screens/profile/Profile'
 import { Dashboard } from '../screens/dashboard/Dashboard'
 import { DnsClient } from '../screens/dnsclient/DnsClient'
 import { About } from '../screens/about/About'
@@ -44,7 +44,7 @@ import {
   updateNotificationSilenced,
 } from '../api/user'
 
-type ModalId = 'profile' | 'password' | 'twofa' | 'token' | 'theme'
+type ModalId = 'password' | 'twofa' | 'token' | 'theme'
 
 /** One glyph per section. No icon dependency: the server's CSP does not allow a
  *  CDN and an icon font would have to ship as a file in www/. */
@@ -130,6 +130,9 @@ export function Shell({
   const [sub, setSub] = useState<string | null>(initialRoute?.sub ?? null)
   const [displayName, setDisplayName] = useState(session.displayName)
   const [totpEnabled, setTotpEnabled] = useState(session.totpEnabled ?? false)
+  /* Bumped when an account dialog changes what My Profile shows (2FA, a new
+     token), so the page reads `user/profile/get` again (deviation 21). */
+  const [accountRevision, setAccountRevision] = useState(0)
 
   /*
   Silencing the update notice (`main.js:702-732`), which this console could read
@@ -411,7 +414,17 @@ export function Shell({
           <Menu label={displayName} text={displayName} anchor="left" asRow>
             {(close) => (
               <>
-                <button type="button" onClick={() => { close(); open('profile') }}>
+                {/* A page since 2026-11-06 (deviation 21): it navigates to
+                    `/profile/`, where upstream opens `modalMyProfile`. */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    close()
+                    setActive('profile')
+                    setSub(null)
+                    setDrawer(false)
+                  }}
+                >
                   My Profile
                 </button>
                 {/* main.js:71-87 (v15.5.1) switches on `sessionData.type`:
@@ -514,6 +527,18 @@ export function Shell({
             clusterInitialised={session.info?.clusterInitialized === true}
             request={pending != null && 'dnsclient' in pending ? pending.dnsclient : undefined}
           />
+        ) : current?.id === 'profile' ? (
+          <Profile
+            token={session.token}
+            nodes={session.info?.clusterNodes ?? []}
+            clusterInitialised={session.info?.clusterInitialized === true}
+            revision={accountRevision}
+            onProfile={(p) => {
+              setDisplayName(p.displayName)
+              setTotpEnabled(p.totpEnabled)
+            }}
+            onOpen={open}
+          />
         ) : current?.id === 'about' ? (
           <About info={info} />
         ) : current?.id === 'apps' ? (
@@ -607,13 +632,6 @@ export function Shell({
         </footer>
       </div>
 
-      <MyProfile
-        open={modal === 'profile'}
-        onOpenChange={(o) => setModal(o ? 'profile' : null)}
-        token={session.token}
-        onSaved={setDisplayName}
-        onNotice={setChromeNotice}
-      />
       <ChangePassword
         open={modal === 'password'}
         onOpenChange={(o) => {
@@ -631,7 +649,10 @@ export function Shell({
         onOpenChange={(o) => setModal(o ? 'twofa' : null)}
         token={session.token}
         username={session.username}
-        onChanged={setTotpEnabled}
+        onChanged={(enabled) => {
+          setTotpEnabled(enabled)
+          setAccountRevision((n) => n + 1)
+        }}
         onNotice={setChromeNotice}
       />
       <CreateApiToken
@@ -639,6 +660,7 @@ export function Shell({
         onOpenChange={(o) => setModal(o ? 'token' : null)}
         username={session.username}
         token={session.token}
+        onCreated={() => setAccountRevision((n) => n + 1)}
       />
       <ChangeTheme
         open={modal === 'theme'}
