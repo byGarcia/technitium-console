@@ -491,3 +491,27 @@ which is where it was before.
   display: inline-grid;
   max-width: 100%;
 }
+
+/*
+A row's Details, open (2026-11-06): the row loses its line so the two read as one,
+and the detail line sits on the panel's quieter surface. The row carries `.openRow`
+and the line under it `.detailRow`, whose one cell spans the table. Written here
+once for every screen that folds a row's secondary fields under a `Details`
+chevron (`RowAction` with `chevronRight` / `chevronDown` and `aria-expanded`).
+*/
+.openRow > td { border-bottom-color: transparent; }
+.detailRow > td { padding-top: 0; background: var(--pan2); }
+
+/*
+A cell that spans several columns in a stacked row (a Details line, a group
+heading) takes the whole row, not the width of one fact. It carries no label
+(`labelCells` gives none to a spanning cell), so it is not a fact either: it starts
+its own line under the row's first one.
+*/
+.stack[data-stacked] > tbody > tr > td[colspan]:not([colspan='1']),
+.stack[data-stacked] > tbody > tr > th[colspan]:not([colspan='1']) {
+  flex-basis: 100%;
+  order: 3;
+}
+.stack[data-stacked] > tbody > tr.detailRow { padding-top: 0; }
+.stack[data-stacked] > tbody > tr.detailRow > td { margin-top: 0; padding: var(--s-4) 0 0; }

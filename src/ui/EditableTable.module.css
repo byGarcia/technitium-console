@@ -1,20 +1,30 @@
 /*
 The table of a list edited in place: the TSIG keys, the forwarders, a scope's
-static routes, the SSO group maps.
+static routes, the SSO group maps, a section's permissions.
 
-It is not the data table of `ui/Table.module.css` and must not look like it: that
-one is a screen's main object (with its panel, its border and its shadow), and this
-one lives INSIDE a panel, tight against its fields. That is why it goes without a
-box, without a header background and with a narrower cell.
+Redrawn on 2026-11-06 in the data table's register (`ui/Table.module.css`): a
+frame of its own, the header a quiet band with the small-caps label, a line under
+each row and the row's hover veil, so a list edited in place reads as the same
+object as a list read on any other screen. It stays a lighter piece than that
+table: no shadow (it lives inside a panel or a dialog) and tighter cells, because
+each cell already holds a field with its own box.
 
-What they do share is the label: the column header is the same small caps as any
-other table's (`--text-*` in tokens). It was not before (it ran at 0.07em), and on
-top of that this table was written THREE times, in Settings, in DHCP and in
+What they share comes from the same tokens: the label (`--text-*`), the band, the
+line and the hover. It was written THREE times before, in Settings, in DHCP and in
 Administration, with the same values copied by hand.
+
+`border-collapse: separate` and not `collapse`: only a separated table keeps its
+corners round, and the lines are drawn on the cells' bottoms so there is no double
+border to collapse.
 */
 .table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid var(--line2);
+  border-radius: var(--r-3);
+  background: var(--pan);
+  overflow: hidden;
 }
 
 .table th {
@@ -24,11 +34,50 @@ Administration, with the same values copied by hand.
   letter-spacing: var(--text-tracking);
   text-transform: uppercase;
   color: var(--mute);
-  padding: 0 var(--s-5) var(--s-4) 0;
-  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+  padding: var(--s-5) var(--s-6);
+  background: color-mix(in srgb, var(--pan2) 60%, var(--pan));
+  border-bottom: 1px solid var(--line2);
 }
 
 .table td {
-  padding: var(--s-3) var(--s-5) var(--s-3) 0;
+  padding: var(--s-4) var(--s-6);
+  vertical-align: middle;
+  border-bottom: 1px solid var(--line2);
+}
+
+/* The last row carries no line: the frame closes it. */
+.table tbody tr:last-child td { border-bottom: 0; }
+
+.table tbody tr { transition: background var(--t-fast); }
+.table tbody tr:hover { background: var(--nav-hover); }
+
+/* The row's own control (Delete, Remove) sits hard against the end, as small as
+   it is: the column takes no more than the button. */
+.table th:last-child,
+.table td:last-child:has(> button, > * > button) {
+  width: 1%;
+  white-space: nowrap;
+  text-align: right;
+}
+
+/*
+A column of checkboxes (`data-check`, set by `EditableTable.tsx`): narrow,
+centred under its label, the checkbox at its own size. The selector outweighs a
+screen's `.x input { width: 100% }`, which a text field wants and which drew the
+checkbox as a bar across its column.
+*/
+.table [data-check] {
+  width: 1%;
+  text-align: center;
+  padding-left: var(--s-8);
+  padding-right: var(--s-8);
+}
+.table td[data-check] > input[type='checkbox'] {
+  width: var(--ctrl);
+  min-width: 0;
+  height: var(--ctrl);
+  display: inline-block;
+  margin: 0;
   vertical-align: middle;
 }
