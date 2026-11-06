@@ -172,7 +172,7 @@ describe('Scopes, All nodes', () => {
     serve()
     const enable = vi.spyOn(api, 'enableScope').mockResolvedValue(OK)
     const get = vi.spyOn(api, 'getScope').mockResolvedValue(DETAIL)
-    const del = vi.spyOn(api, 'deleteScope').mockResolvedValue(OK)
+    const remove = vi.spyOn(api, 'deleteScope').mockResolvedValue(OK)
     render(<Section first="Scopes" />)
     await screen.findByText('Total Scopes: 2')
 
@@ -192,7 +192,7 @@ describe('Scopes, All nodes', () => {
     await user.click(within(ns2()).getByRole('button', { name: 'Actions for LAN' }))
     await user.click(screen.getByRole('menuitem', { name: 'Delete Scope' }))
     await user.click(screen.getByRole('button', { name: 'Delete' }))
-    await waitFor(() => expect(del).toHaveBeenCalledWith('t', 'LAN', 'ns2.test'))
+    await waitFor(() => expect(remove).toHaveBeenCalledWith('t', 'LAN', 'ns2.test'))
     await waitFor(() => expect(screen.getAllByRole('row').slice(1).map((r) => cells(r)[0])).toEqual(['ns1.test']))
   })
 
