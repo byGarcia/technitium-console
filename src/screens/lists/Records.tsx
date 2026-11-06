@@ -1,5 +1,4 @@
 import { Tag } from '../../ui/Tag'
-import { Button } from '../../ui/Button'
 import { useId, useState, type CSSProperties } from 'react'
 import type { DnsRecord } from '../../api/zonelists'
 import { rdataEntries, extras, meta, splitTtl, type Entry } from './record'
@@ -12,10 +11,11 @@ import styles from './Lists.module.css'
 /*
 The table that replaces the `<pre>` with the raw JSON.
 
-Only HOW it reads changes: there is not one new control. The two row buttons
-("RRSIG" and "Glue") call no endpoint: they expand fields that already came in
-the same JSON (`dnssecRecords` and `glueRecords`) and that in upstream's dump read
-just as badly as the rest.
+Only HOW it reads changes: there is not one new control. A row's Details calls no
+endpoint: it opens fields that already came in the same JSON (where the answer came
+from, `dnssecRecords`, `glueRecords`) and that in upstream's dump read just as badly
+as the rest. Cache, Allowed and Blocked draw it the same way since 2026-11-06; only
+Cache has the DNSSEC column.
 */
 
 /*
@@ -102,7 +102,7 @@ the glue and signatures that came with it are one press away, in the row's
 Details, which opens a line under it. Nothing is dropped: it is the same text the
 two-line row wrote, and the glue and RRSIG blocks its two buttons opened.
 */
-function CompactRow({ r, node }: { r: DnsRecord; node: string }) {
+function CompactRow({ r, node, withDnssec }: { r: DnsRecord; node: string; withDnssec: boolean }) {
   const [open, setOpen] = useState(false)
   const ttl = splitTtl(r)
   const extra = extras(r)
@@ -124,9 +124,11 @@ function CompactRow({ r, node }: { r: DnsRecord; node: string }) {
         <td>
           <Inline entries={rdataEntries(r.rData)} bare />
         </td>
-        <td>
-          <Tag tone={dnssecTone(r.dnssecStatus)}>{r.dnssecStatus ?? '—'}</Tag>
-        </td>
+        {withDnssec && (
+          <td>
+            <Tag tone={dnssecTone(r.dnssecStatus)}>{r.dnssecStatus ?? '—'}</Tag>
+          </td>
+        )}
         <td className={tbl.actionsCell}>
           <div className={tbl.actions}>
             <RowAction
@@ -141,7 +143,7 @@ function CompactRow({ r, node }: { r: DnsRecord; node: string }) {
       </tr>
       {open && (
         <tr id={detail} className={styles.detailRow}>
-          <td colSpan={5}>
+          <td colSpan={withDnssec ? 5 : 4}>
             <div className={styles.meta}>
               <span title={r.lastUsedOn}>{meta(r).join(' · ')}</span>
               {extra.length > 0 && <Inline entries={extra} className={styles.extra} />}
@@ -165,129 +167,33 @@ function CompactRow({ r, node }: { r: DnsRecord; node: string }) {
   )
 }
 
-function Row({ r, withDnssec, node }: { r: DnsRecord; withDnssec: boolean; node: string }) {
-  const [signatures, setSignatures] = useState(false)
-  const [glue, setGlue] = useState(false)
-
-  const ttl = splitTtl(r)
-  const extra = extras(r)
-  const name = r.nameIdn ?? r.name
-  // The name always matches the open node; it is only said when it does NOT.
-  const differentName = r.name !== node && name !== node
-
-  return (
-    <tr>
-      <td className={tbl.lead}>
-        <RecordType type={r.type} />
-        {differentName && <span className={styles.name}>{name === '' ? '<ROOT>' : name}</span>}
-      </td>
-      <td className={styles.ttl}>
-        {ttl.value} {ttl.human && <small>({ttl.human})</small>}
-        {/* The server writes a record kept past its TTL as `0 (0s)`; the word says
-            so (deviation 16, the Records card's `Stale`). */}
-        {isStale(r) && <span className={styles.stale}><Tag tone="warn">Stale</Tag></span>}
-      </td>
-      <td>
-        <Inline entries={rdataEntries(r.rData)} bare />
-        {/* The second line: where the answer came from and when it was used, and
-            then whatever else the record carries (a name server's health, a field
-            the server adds tomorrow). It was a third and fourth block of
-            label-over-value rows; it is the grey line now, the same weight as the
-            metadata beside it, because none of it is the record's data. */}
-        <div className={styles.meta}>
-          <span title={r.lastUsedOn}>{meta(r).join(' · ')}</span>
-          {extra.length > 0 && <Inline entries={extra} className={styles.extra} />}
-        </div>
-        {signatures && r.dnssecRecords && (
-          <pre className={styles.signatures}>{r.dnssecRecords.join('\n')}</pre>
-        )}
-        {glue && r.glueRecords && <pre className={styles.signatures}>{r.glueRecords.join('\n')}</pre>}
-      </td>
-      {withDnssec && (
-        <td>
-          <Tag tone={dnssecTone(r.dnssecStatus)}>
-            {r.dnssecStatus ?? '—'}
-          </Tag>
-        </td>
-      )}
-      <td className={tbl.actionsCell}>
-        <div className={tbl.actions}>
-          {r.glueRecords && (
-            <Button
-              size="sm"
-              aria-pressed={glue}
-              onClick={() => setGlue((v) => !v)}
-            >
-              Glue
-            </Button>
-          )}
-          {r.dnssecRecords && (
-            <Button
-              size="sm"
-              aria-pressed={signatures}
-              onClick={() => setSignatures((v) => !v)}
-            >
-              RRSIG
-            </Button>
-          )}
-        </div>
-      </td>
-    </tr>
-  )
-}
-
 export function ResourceRecords({
   records,
   withDnssec,
   node,
-  compact = false,
 }: {
   records: DnsRecord[]
-  /** The DNSSEC column belongs to Cache only; elsewhere it drops to the grey line. */
+  /** The DNSSEC column belongs to Cache only. */
   withDnssec: boolean
   node: string
-  /** One line per record, the rest under Details (Cache). */
-  compact?: boolean
 }) {
-  if (compact) {
-    return (
-      <Table
-        stack
-        header={
-          <>
-            <th style={{ width: 110 }}>Type</th>
-            <th style={{ width: 150 }}>TTL</th>
-            <th>Data</th>
-            <th style={{ width: 120 }}>DNSSEC</th>
-            <th style={{ width: 56 }}>
-              <span className="sr-only" />
-            </th>
-          </>
-        }
-      >
-        {records.map((r, i) => (
-          <CompactRow key={`${r.name}|${r.type}|${i}`} r={r} node={node} />
-        ))}
-      </Table>
-    )
-  }
   return (
     <Table
       stack
       header={
         <>
           <th style={{ width: 110 }}>Type</th>
-          <th style={{ width: 120 }}>TTL</th>
+          <th style={{ width: 150 }}>TTL</th>
           <th>Data</th>
-          {withDnssec && <th style={{ width: 100 }}>DNSSEC</th>}
-          <th style={{ width: 120 }}>
+          {withDnssec && <th style={{ width: 120 }}>DNSSEC</th>}
+          <th style={{ width: 56 }}>
             <span className="sr-only" />
           </th>
         </>
       }
     >
       {records.map((r, i) => (
-        <Row key={`${r.name}|${r.type}|${i}`} r={r} withDnssec={withDnssec} node={node} />
+        <CompactRow key={`${r.name}|${r.type}|${i}`} r={r} node={node} withDnssec={withDnssec} />
       ))}
     </Table>
   )

@@ -1,0 +1,22 @@
+/*
+The "Top 1000" dialog's list (`TopStats.tsx`): the console's data table in a card
+of its own, the search over it and the total under it.
+
+The rows scroll inside the card, under a header that stays: the list can hold a
+thousand entries inside a dialog. `max-height` is the dialog's room for it, as
+upstream's 500 px `divTopStatsData`, less the toolbar and the foot.
+*/
+.wrap { max-height: 420px; overflow-y: auto; }
+.table thead th { position: sticky; top: 0; z-index: 1; }
+
+/* ONE line per entry: the name, and a client's domain beside it, quieter. A name
+   wraps only when it cannot fit, at its separators. */
+.name { font-family: var(--font-mono); color: var(--ink); overflow-wrap: break-word; }
+.domain { margin-left: var(--s-5); font: var(--t-3) var(--font-mono); color: var(--faint); overflow-wrap: break-word; }
+
+/* The count lines up on its units, under a header on the same edge. */
+.count { composes: number from '../../ui/Table.module.css'; width: 1%; white-space: nowrap; }
+thead > tr > th.countHead { text-align: right; }
+
+/* Upstream draws a rate-limited client in orange. */
+.limited .name { color: var(--warn); }

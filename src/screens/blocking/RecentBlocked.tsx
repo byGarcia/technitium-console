@@ -1,11 +1,12 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { listApps } from '../../api/apps'
 import { recentBlocked } from '../../api/blocking'
 import type { QueryLogEntry } from '../../api/logs'
 import { appsWithQueryLogs } from '../logs/QueryLogs'
 import { RouteLink } from '../../ui/RouteLink'
-import { Panel, Body } from '../../ui/Panel'
-import { Table } from '../../ui/Table'
+import { Body } from '../../ui/Panel'
+import { DataTable, DataFoot, End } from '../../ui/DataTable'
+import { RowAction, Table } from '../../ui/Table'
 import tbl from '../../ui/Table.module.css'
 import { DomainName } from '../../ui/DomainName'
 import { Chip } from '../../ui/Tag'
@@ -15,7 +16,6 @@ import { dateTime } from '../../lib/dates'
 import { noticeFromFailure } from '../../lib/notice'
 import { Locked } from './Locked'
 import { missing, type Permissions } from './permissions'
-import shared from './Blocking.module.css'
 import styles from './Overview.module.css'
 
 /*
@@ -30,6 +30,13 @@ link "Apps"; the empty-state title is ours. Ours too: the panel title `Recently
 Blocked`, `on <node>`, `Open Query Logs`, the columns `Time`, `Client`, `Domain` and
 `Type` (upstream's Query Logs table calls them otherwise), `No blocked queries.` and
 `Some blocked queries could not be read.`
+
+Drawn as every list is since 2026-11-06: ONE card (`ui/DataTable`), its title and
+`Open Query Logs` in the toolbar, one line per query (when, which client, what it
+asked) and, under the row's `Details`, the rest of the same `logs/query` entry with
+Query Logs' own labels (`Response Type` with its time, `RCODE`, `Protocol`,
+`Class`, `Answer`), so it reads which of the three blocked classes answered without
+leaving the tab. The foot counts the rows: `N blocked queries` (OURS).
 
 The Overview passes its Blocked figure as `refreshOn`. A change refreshes the rows
 without clearing the previous list, serializes overlapping reads, and retains the
@@ -159,9 +166,22 @@ export function RecentBlocked({
   )
 
   return (
-    <Panel
-      title={title}
-      actions={<RouteLink to={{ section: 'logs', sub: 'Query Logs' }}>Open Query Logs</RouteLink>}
+    <DataTable
+      toolbar={
+        <>
+          <h2 className={styles.cardTitle}>{title}</h2>
+          <End>
+            <RouteLink to={{ section: 'logs', sub: 'Query Logs' }}>Open Query Logs</RouteLink>
+          </End>
+        </>
+      }
+      foot={
+        state.kind === 'ok' && state.entries.length > 0 ? (
+          <DataFoot
+            count={state.entries.length === 1 ? '1 blocked query' : `${state.entries.length} blocked queries`}
+          />
+        ) : undefined
+      }
     >
       {state.kind === 'loading' && (
         <Body>
@@ -197,24 +217,79 @@ export function RecentBlocked({
                 <th>Client</th>
                 <th>Domain</th>
                 <th>Type</th>
+                <th className={tbl.actionsCell} />
               </>
             }
             isEmpty={state.entries.length === 0}
             emptyText="No blocked queries."
-            columns={4}
-            className={shared.inPanel}
+            columns={5}
           >
             {state.entries.map((e) => (
-              <tr key={`${e.responseType}:${e.rowNumber}:${e.timestamp}`}>
-                <td className={styles.time}>{dateTime(e.timestamp)}</td>
-                <td className={styles.mono}>{e.clientIpAddress}</td>
-                <td className={`${styles.name} ${tbl.lead}`}><DomainName name={e.qname ?? '.'} /></td>
-                <td className={tbl.lead}>{e.qtype != null && <Chip>{e.qtype}</Chip>}</td>
-              </tr>
+              <BlockedRow key={`${e.responseType}:${e.rowNumber}:${e.timestamp}`} e={e} />
             ))}
           </Table>
         </>
       )}
-    </Panel>
+    </DataTable>
+  )
+}
+
+/* One blocked query on one line, the rest of its log entry under `Details`. */
+function BlockedRow({ e }: { e: QueryLogEntry }) {
+  const [open, setOpen] = useState(false)
+  const detail = useId()
+  return (
+    <>
+      <tr className={open ? tbl.openRow : undefined}>
+        <td className={styles.time}>{dateTime(e.timestamp)}</td>
+        <td className={styles.mono}>{e.clientIpAddress}</td>
+        <td className={`${styles.name} ${tbl.lead}`}><DomainName name={e.qname ?? '.'} /></td>
+        <td className={tbl.lead}>{e.qtype != null && <Chip>{e.qtype}</Chip>}</td>
+        <td className={tbl.actionsCell}>
+          <div className={tbl.actions}>
+            <RowAction
+              icon={open ? 'chevronDown' : 'chevronRight'}
+              name="Details"
+              aria-expanded={open}
+              aria-controls={detail}
+              onClick={() => setOpen((v) => !v)}
+            />
+          </div>
+        </td>
+      </tr>
+      {open && (
+        <tr id={detail} className={tbl.detailRow}>
+          <td colSpan={5}>
+            <dl className={styles.details}>
+              <div>
+                <dt>Response Type</dt>
+                <dd>
+                  {e.responseType}
+                  {e.responseRtt != null && <span className={styles.rtt}>({e.responseRtt.toFixed(2)} ms)</span>}
+                </dd>
+              </div>
+              <div>
+                <dt>RCODE</dt>
+                <dd>{e.rcode}</dd>
+              </div>
+              <div>
+                <dt>Protocol</dt>
+                <dd>{e.protocol}</dd>
+              </div>
+              <div>
+                <dt>Class</dt>
+                <dd>{e.qclass ?? ''}</dd>
+              </div>
+              {e.answer != null && e.answer !== '' && (
+                <div className={styles.detailWide}>
+                  <dt>Answer</dt>
+                  <dd className={styles.mono}>{e.answer}</dd>
+                </div>
+              )}
+            </dl>
+          </td>
+        </tr>
+      )}
+    </>
   )
 }

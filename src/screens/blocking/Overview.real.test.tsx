@@ -32,14 +32,12 @@ afterEach(() => {
   drawn.clear()
 })
 
-/** The value of a figure, found by its label: a bare number can also be a hit count,
-    and `Blocked` is also the ring's word. A figure is value, sub-line, label. */
+/** The value of a figure, found by its cell's title: a bare number can also be a hit
+    count, and `Blocked` is also the ring's word. A cell is its title, then its body,
+    whose first line is the figure. */
 function figure(label: string) {
-  const own = screen
-    .getAllByText(label, { selector: 'span' })
-    .filter((el) => el.parentElement!.children[2] === el)
-  expect(own).toHaveLength(1)
-  return own[0].parentElement!.firstElementChild!.textContent
+  const card = screen.getByRole('heading', { level: 2, name: label }).parentElement!
+  return card.children[1].firstElementChild!.textContent
 }
 
 async function shows(label: string, value: string) {
@@ -57,8 +55,8 @@ describe('Overview against the harness', () => {
     expect(figure('Blocked')).toBe(s.totalBlocked.toLocaleString())
     expect(screen.getByText(`${percentage(s.totalBlocked, s.totalQueries)} of total`)).toBeInTheDocument()
     expect(figure('Block List Domains')).toBe(s.blockListZones.toLocaleString())
-    const rules = screen.getByText('Your Rules', { selector: 'span' }).parentElement!
-    expect([...rules.children[0].children].map((c) => c.textContent)).toEqual([
+    const rules = screen.getByLabelText('Your Rules')
+    expect([...rules.querySelectorAll('dd')].map((c) => c.textContent)).toEqual([
       s.blockedZones.toLocaleString(),
       s.allowedZones.toLocaleString(),
     ])

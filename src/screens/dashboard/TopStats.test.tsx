@@ -148,3 +148,27 @@ describe('the three \"More\" buttons of the Dashboard', () => {
     expect(screen.getByText(/10\.0\.0\.9 \(rate limited\)/)).toBeTruthy()
   })
 })
+
+describe('the search of the Top 1000 list (ours, deviation 7)', () => {
+  it('narrows the loaded list by name and by a client domain, and says how many are shown', async () => {
+    const spy = vi.spyOn(api, 'getTop').mockResolvedValue([
+      { name: '10.0.0.2', hits: 9, domain: 'pc.home.test' },
+      { name: '10.0.0.3', hits: 4 },
+      { name: '10.0.0.4', hits: 2, domain: 'tv.home.test' },
+    ])
+    render(<TopStats type="TopClients" range="LastHour" token="t" onClose={() => {}} />)
+    const search = await screen.findByRole('textbox', { name: 'Search' })
+    expect(screen.getByText('Total Clients: 3')).toBeTruthy()
+    await userEvent.type(search, 'home')
+    expect(screen.queryByText('10.0.0.3')).toBeNull()
+    expect(screen.getByText('10.0.0.2')).toBeTruthy()
+    expect(screen.getByText('Total Clients: 3, 2 shown')).toBeTruthy()
+    await userEvent.clear(search)
+    await userEvent.type(search, '10.0.0.3')
+    expect(screen.getByText('Total Clients: 3, 1 shown')).toBeTruthy()
+    await userEvent.type(search, 'x')
+    expect(screen.getByText('No Data')).toBeTruthy()
+    // It asks the server nothing more.
+    expect(spy).toHaveBeenCalledTimes(1)
+  })
+})

@@ -67,7 +67,7 @@ describe('tree navigation', () => {
   it('each section asks for its own endpoint', async () => {
     const spy = withNode(node())
     render(<Lists list="blocked" token="t" embedded />)
-    await screen.findByText('Domains the administrator blocks')
+    await screen.findByText(/^0 records at/)
     expect(spy.mock.calls[0][0]).toBe('blocked')
   })
 
@@ -78,7 +78,7 @@ describe('tree navigation', () => {
     render(<Lists list="allowed" token="t" embedded />)
     await userEvent.type(await screen.findByLabelText('Domain'), 'org')
     await userEvent.click(screen.getByRole('button', { name: 'Browse' }))
-    expect(await screen.findByText('foo.example.org')).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'foo.example.org' })).toBeInTheDocument()
     expect(screen.getByText(/1 records at/)).toBeInTheDocument()
   })
 
@@ -143,7 +143,8 @@ describe('records table', () => {
     render(<Lists list="allowed" token="t" embedded />)
     await screen.findByText('Name Server')
     expect(screen.queryByRole('columnheader', { name: 'DNSSEC' })).not.toBeInTheDocument()
-    // But the DNSSEC state is not lost: it drops down to the grey line.
+    // But the DNSSEC state is not lost: it drops down to the grey line, under Details.
+    await userEvent.click(screen.getByRole('button', { name: 'Details' }))
     expect(screen.getByText(/DNSSEC Unknown/)).toBeInTheDocument()
   })
 
@@ -221,7 +222,7 @@ describe('Allowed', () => {
   it('Delete only appears when the node has records', async () => {
     withNode(node({ domain: 'home.test', zones: ['a.home.test'], records: [] }))
     const { unmount } = render(<Lists list="allowed" token="t" embedded />)
-    await screen.findByText('a.home.test')
+    await screen.findByRole('button', { name: 'a.home.test' })
     expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument()
     unmount()
 

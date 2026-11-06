@@ -2,13 +2,15 @@ import { useEffect, useState } from 'react'
 import { getTop, type Range, type TopKind, type TopEntry } from '../../api/dashboard'
 import { Dialog } from '../../ui/Dialog'
 import { Table } from '../../ui/Table'
+import { DataTable, DataFoot, Grow } from '../../ui/DataTable'
+import { Field, Input } from '../../ui/Field'
 import { Loading } from '../../ui/Empty'
 import { Notifier } from '../../ui/Notifier'
 import tbl from '../../ui/Table.module.css'
 import type { Notice } from '../../lib/notice'
 import { useDomainAction } from '../../lib/allow-block'
 import { TopRowMenu } from './TopRowMenu'
-import styles from './Dashboard.module.css'
+import styles from './TopStats.module.css'
 
 /*
 `modalTopStats` (main.js:2879). It is what sits behind the Dashboard's three
@@ -35,6 +37,16 @@ for with the Dashboard's node, as upstream reads `optDashboardClusterNode`
 (`divTopStatsAlert`); jumping to DNS Client or Query Logs leaves the screen that
 opened it, and the modal goes with it, which is upstream's
 `$("#modalTopStats").modal("hide")`.
+
+**The table reads like the console's other lists** (2026-11-06): ONE card
+(`ui/DataTable`) with a search in its toolbar, one line per entry (a client's
+domain beside its name, quieter, instead of under it) and upstream's `Total
+Clients: N` in the card's foot, with `, K shown` while the search narrows it. The
+search is OURS, a deviation (CONVENTIONS.md, deviation 7): upstream's modal has
+none, and a thousand entries cannot be scanned by eye. It filters the list already
+loaded, by the name and, for a client, its domain, and asks the server nothing.
+Its words are OURS: `Search`, its placeholders and `N shown`; with no entry
+matching, the table says upstream's own `No Data`.
 */
 
 const LIMIT = 1000
@@ -49,6 +61,19 @@ const HEADER: Record<TopKind, string> = {
   TopClients: 'Client',
   TopDomains: 'Domain',
   TopBlockedDomains: 'Domain',
+}
+
+const PLACEHOLDER: Record<TopKind, string> = {
+  TopClients: 'Client or domain',
+  TopDomains: 'Domain',
+  TopBlockedDomains: 'Domain',
+}
+
+/** An entry matches the search by its name and, for a client, its domain. */
+export function matchesTop(f: TopEntry, search: string): boolean {
+  const q = search.trim().toLowerCase()
+  if (q === '') return true
+  return f.name.toLowerCase().includes(q) || (f.domain ?? '').toLowerCase().includes(q)
 }
 
 const COUNT: Record<TopKind, string> = {
@@ -75,6 +100,7 @@ export function TopStats({
   const [rows, setRows] = useState<TopEntry[]>([])
   const [loading, setLoading] = useState(false)
   const [notice, setNotice] = useState<Notice | null>(null)
+  const [search, setSearch] = useState('')
   const action = useDomainAction(token, setNotice)
 
   useEffect(() => {
@@ -82,6 +108,7 @@ export function TopStats({
     setLoading(true)
     setRows([])
     setNotice(null)
+    setSearch('')
     void getTop(token, range, type, LIMIT, node).then((r) => {
       setRows(r)
       setLoading(false)
@@ -89,6 +116,8 @@ export function TopStats({
   }, [type, range, token, node])
 
   const isClient = type === 'TopClients'
+  const shown = rows.filter((f) => matchesTop(f, search))
+  const total = type == null ? '' : `Total ${TITLES[type]}: ${rows.length.toLocaleString()}`
 
   return (
     <Dialog
@@ -104,43 +133,61 @@ export function TopStats({
       {loading ? (
         <Loading compact />
       ) : (
-        <Table
-          className={styles.topTableWrap}
-          tableClass={styles.topTable}
-          header={
-            <>
-              <th>{type == null ? '' : HEADER[type]}</th>
-              <th style={{ width: 110 }}>{type == null ? '' : COUNT[type]}</th>
-              <th className={tbl.actionsCell} />
-            </>
+        <DataTable
+          toolbar={
+            <Grow>
+              <Field inline label="Search">
+                {(id) => (
+                  <Input
+                    id={id}
+                    search
+                    placeholder={type == null ? '' : PLACEHOLDER[type]}
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                  />
+                )}
+              </Field>
+            </Grow>
           }
-          isEmpty={rows.length === 0}
-          emptyText="No Data"
-          columns={3}
-          footer={
-            <th colSpan={3}>
-              {type == null ? '' : `Total ${TITLES[type]}: ${rows.length.toLocaleString()}`}
-            </th>
+          foot={
+            <DataFoot
+              count={shown.length === rows.length ? total : `${total}, ${shown.length.toLocaleString()} shown`}
+            />
           }
         >
-          {rows.map((f, i) => (
-            <tr key={`${f.name}|${i}`} className={f.rateLimited ? styles.limited : undefined}>
-              <td>
-                <span className={styles.topName}>
-                  {f.name}
-                  {f.rateLimited ? ' (rate limited)' : ''}
-                </span>
-                {isClient && f.domain != null && f.domain !== '' && (
-                  <span className={styles.topDomain}>{f.domain}</span>
-                )}
-              </td>
-              <td className={styles.topCount}>{f.hits.toLocaleString()}</td>
-              <td className={tbl.actionsCell}>
-                {type != null && <TopRowMenu kind={type} name={f.name} node={node} action={action} />}
-              </td>
-            </tr>
-          ))}
-        </Table>
+          <Table
+            className={styles.wrap}
+            tableClass={styles.table}
+            header={
+              <>
+                <th>{type == null ? '' : HEADER[type]}</th>
+                <th className={styles.countHead}>{type == null ? '' : COUNT[type]}</th>
+                <th className={tbl.actionsCell} />
+              </>
+            }
+            isEmpty={shown.length === 0}
+            emptyText="No Data"
+            columns={3}
+          >
+            {shown.map((f, i) => (
+              <tr key={`${f.name}|${i}`} className={f.rateLimited ? styles.limited : undefined}>
+                <td>
+                  <span className={styles.name}>
+                    {f.name}
+                    {f.rateLimited ? ' (rate limited)' : ''}
+                  </span>
+                  {isClient && f.domain != null && f.domain !== '' && (
+                    <span className={styles.domain}>{f.domain}</span>
+                  )}
+                </td>
+                <td className={styles.count}>{f.hits.toLocaleString()}</td>
+                <td className={tbl.actionsCell}>
+                  {type != null && <TopRowMenu kind={type} name={f.name} node={node} action={action} />}
+                </td>
+              </tr>
+            ))}
+          </Table>
+        </DataTable>
       )}
     </Dialog>
   )

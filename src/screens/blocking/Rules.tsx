@@ -2,8 +2,10 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, typ
 import { readRuleExport } from '../../api/blocking'
 import { addDomain, deleteDomain, exportDomains, flushList, type DomainList } from '../../api/zonelists'
 import { SectionHeader } from '../../ui/SectionHeader'
-import { Panel, Body } from '../../ui/Panel'
-import { Table } from '../../ui/Table'
+import { Body } from '../../ui/Panel'
+import { RowAction, Table } from '../../ui/Table'
+import tbl from '../../ui/Table.module.css'
+import { DataTable, DataFoot, End, Grow } from '../../ui/DataTable'
 import { Pagination } from '../../ui/Pagination'
 import { Segmented } from '../../ui/Segmented'
 import { Menu } from '../../ui/Menu'
@@ -18,6 +20,7 @@ import { Failure, Loading } from '../../ui/Empty'
 import { Button } from '../../ui/Button'
 import { primaryNodeName } from '../../ui/ClusterNodeSelect'
 import { pageWindow } from '../../lib/pagination'
+import { dropParams, readParam, writeParams } from '../../lib/url-state'
 import { noticeFromFailure, type Notice } from '../../lib/notice'
 import { StaleData } from '../StaleData'
 import { Lists, ImportDomains, type Confirmation } from '../lists/Lists'
@@ -76,6 +79,17 @@ export const RULES_SUBTITLE = 'Domains you block or allow yourself, with their s
 
 const LABEL: Record<DomainList, string> = { blocked: 'Blocked', allowed: 'Allowed' }
 
+/*
+The rest of Rules' view in the address bar (2026-11-06, `lib/url-state.ts`), beside
+`?rule=`: the search (`?q=`), the page (`?page=`, left out on 1), the Tree view
+(`?view=tree`) and the tree's list (`?list=allowed`, left out on the default). Read
+on arrival, written by replacing the entry, dropped when the tab goes.
+*/
+const Q = 'q'
+const PAGE = 'page'
+const VIEW = 'view'
+const LIST = 'list'
+
 export function Rules({
   tabs,
   token,
@@ -111,10 +125,15 @@ export function Rules({
     const may = asked === 'all' || (asked === 'blocked' ? viewBlocked : viewAllowed)
     return may ? asked : 'all'
   })
-  const [query, setQuery] = useState('')
-  const [page, setPage] = useState(1)
-  const [view, setView] = useState<'list' | 'tree'>('list')
-  const [treeList, setTreeList] = useState<DomainList>(viewBlocked ? 'blocked' : 'allowed')
+  const [query, setQuery] = useState(() => readParam(Q) ?? '')
+  const [page, setPage] = useState(() => Math.max(1, Number(readParam(PAGE)) || 1))
+  const [view, setView] = useState<'list' | 'tree'>(() => (readParam(VIEW) === 'tree' ? 'tree' : 'list'))
+  const [treeList, setTreeList] = useState<DomainList>(() => {
+    const asked = readParam(LIST)
+    if (asked === 'allowed' && viewAllowed) return 'allowed'
+    if (asked === 'blocked' && viewBlocked) return 'blocked'
+    return viewBlocked ? 'blocked' : 'allowed'
+  })
   /* Bumped after Block, Allow, Delete, Import and Flush: the open tree is mounted
      again so it reads the lists as they are now, from the primary node, as every
      read after a change does in this section. Choosing
@@ -209,6 +228,17 @@ export function Rules({
     if (raw === (filter === 'all' ? null : filter)) return
     window.history.replaceState(null, '', window.location.pathname + ruleSearch(window.location.search, filter))
   }, [filter])
+
+  const defaultList: DomainList = viewBlocked ? 'blocked' : 'allowed'
+  useEffect(() => {
+    writeParams({
+      [Q]: query,
+      [PAGE]: page > 1 ? String(page) : null,
+      [VIEW]: view === 'tree' ? 'tree' : null,
+      [LIST]: view === 'tree' && treeList !== defaultList ? treeList : null,
+    })
+  }, [query, page, view, treeList, defaultList])
+  useEffect(() => () => dropParams([Q, PAGE, VIEW, LIST]), [])
 
   function choose(f: RuleFilter) {
     setFilter(f)
@@ -390,9 +420,95 @@ export function Rules({
 
   const treeNeed = missing(permissions, treeList === 'allowed' ? 'Allowed.canView' : 'Blocked.canView')
 
+  /* The card's controls, the same in both views: which list the tree shows, List or
+     Tree, and the three verbs of the foot. */
+  const treeSwitch = (
+    <Segmented
+      label="Tree"
+      options={[
+        { id: 'blocked' as const, label: 'Blocked' },
+        { id: 'allowed' as const, label: 'Allowed' },
+      ]}
+      active={treeList}
+      onChoose={(l) => {
+        setTreeList(l)
+        setAfterChange(false)
+        setTreeDomain('')
+      }}
+    />
+  )
+  const viewSwitch = (
+    <Segmented
+      label="View"
+      options={[
+        { id: 'list' as const, label: 'List' },
+        { id: 'tree' as const, label: 'Tree' },
+      ]}
+      active={view}
+      onChoose={(v) => {
+        setView(v)
+        setAfterChange(false)
+        setTreeDomain('')
+        /* No read on coming back to the list: the tree says when it deleted
+           (`onChanged`) and the table was read again then, from the primary.
+           Reading the connected node here would bring back, on a secondary,
+           the row just deleted. */
+      }}
+    />
+  )
+  const verbs = (
+    <div className={styles.verbs}>
+      <Menu label="Import" text="Import">
+        {(close) => (
+          <>
+            {entry('blocked', missing(permissions, 'Blocked.canModify'), () => setImporting('blocked'), close)}
+            {entry('allowed', missing(permissions, 'Allowed.canModify'), () => setImporting('allowed'), close)}
+          </>
+        )}
+      </Menu>
+      <Menu label="Export" text="Export">
+        {(close) => (
+          <>
+            {entry('blocked', missing(permissions, 'Blocked.canView'), () => void runExport('blocked'), close)}
+            {entry('allowed', missing(permissions, 'Allowed.canView'), () => void runExport('allowed'), close)}
+          </>
+        )}
+      </Menu>
+      <Menu label="Flush" text="Flush">
+        {(close) => (
+          <>
+            {entry('blocked', missing(permissions, 'Blocked.canDelete'), () => askFlush('blocked'), close)}
+            {entry('allowed', missing(permissions, 'Allowed.canDelete'), () => askFlush('allowed'), close)}
+          </>
+        )}
+      </Menu>
+    </div>
+  )
+
   return (
     <>
-      <SectionHeader section="Blocking" title="Rules" subtitle={RULES_SUBTITLE} tabs={tabs} />
+      <SectionHeader
+        section="Blocking"
+        title="Rules"
+        subtitle={RULES_SUBTITLE}
+        tabs={tabs}
+        titleAction={
+          <RowAction
+            icon="refresh"
+            name="Refresh"
+            disabled={viewNone || (rules == null && !failed)}
+            onClick={() => {
+              setFailed(false)
+              void load()
+              if (view === 'tree') {
+                setAfterChange(false)
+                setTreeDomain('')
+                setGeneration((g) => g + 1)
+              }
+            }}
+          />
+        }
+      />
       <Notifier notice={notice} onClose={() => setNotice(null)} />
 
       <div className={shared.stack}>
@@ -405,197 +521,170 @@ export function Rules({
 
         {stale && <StaleData since={lastGood} onRetry={() => void load()} />}
 
-        <Panel className={shared.flush}>
-          <div className={styles.bar}>
-            {view === 'list' ? (
-              <>
-                <div className={styles.filter} role="group" aria-label="Rule">
-                  {filterButton('all', viewNone ? undefined : counts.all)}
-                  {filterButton('blocked', counts.blocked, missing(permissions, 'Blocked.canView'))}
-                  {filterButton('allowed', counts.allowed, missing(permissions, 'Allowed.canView'))}
-                </div>
-                <Input
-                  ref={search}
-                  className={styles.search}
-                  aria-label="Filter domains"
-                  placeholder="Filter domains…"
-                  value={query}
-                  onChange={(e) => {
-                    setQuery(e.target.value)
-                    setPage(1)
-                  }}
-                />
-              </>
-            ) : (
-              <Segmented
-                label="Tree"
-                options={[
-                  { id: 'blocked' as const, label: 'Blocked' },
-                  { id: 'allowed' as const, label: 'Allowed' },
-                ]}
-                active={treeList}
-                onChoose={(l) => {
-                  setTreeList(l)
-                  setAfterChange(false)
-                  setTreeDomain('')
-                }}
-              />
-            )}
-            <span className={styles.spacer} />
-            <Segmented
-              label="View"
-              options={[
-                { id: 'list' as const, label: 'List' },
-                { id: 'tree' as const, label: 'Tree' },
-              ]}
-              active={view}
-              onChoose={(v) => {
-                setView(v)
-                setAfterChange(false)
-                setTreeDomain('')
-                /* No read on coming back to the list: the tree says when it deleted
-                   (`onChanged`) and the table was read again then, from the primary.
-                   Reading the connected node here would bring back, on a secondary,
-                   the row just deleted. */
-              }}
-            />
-          </div>
-
-          {view === 'tree' ? (
-            treeNeed != null ? (
+        {view === 'tree' && treeNeed == null ? (
+          /* The tree is the same card: Allowed and Blocked draw it (`lists/Lists.tsx`),
+             with this tab's list and view switches in its toolbar and its verbs in
+             its foot. */
+          <Lists
+            key={`${treeList}:${generation}`}
+            list={treeList}
+            token={token}
+            nodes={nodes}
+            clusterInitialised={clusterInitialised}
+            embedded
+            initialFromPrimary={afterChange}
+            initialDomain={treeDomain}
+            fieldName="Browse domain"
+            canDelete={missing(permissions, treeList === 'allowed' ? 'Allowed.canDelete' : 'Blocked.canDelete') == null}
+            onNotice={setNotice}
+            onChanged={() => void load(true)}
+            toolbarStart={treeSwitch}
+            toolbarEnd={<End>{viewSwitch}</End>}
+            footEnd={verbs}
+          />
+        ) : (
+          <DataTable
+            toolbar={
+              view === 'tree' ? (
+                <>
+                  {treeSwitch}
+                  <End>{viewSwitch}</End>
+                </>
+              ) : (
+                <>
+                  <div className={styles.filter} role="group" aria-label="Rule">
+                    {filterButton('all', viewNone ? undefined : counts.all)}
+                    {filterButton('blocked', counts.blocked, missing(permissions, 'Blocked.canView'))}
+                    {filterButton('allowed', counts.allowed, missing(permissions, 'Allowed.canView'))}
+                  </div>
+                  <Grow>
+                    <Input
+                      ref={search}
+                      search
+                      className={styles.search}
+                      aria-label="Filter domains"
+                      placeholder="Filter domains…"
+                      value={query}
+                      onChange={(e) => {
+                        setQuery(e.target.value)
+                        setPage(1)
+                      }}
+                    />
+                  </Grow>
+                  <End>{viewSwitch}</End>
+                </>
+              )
+            }
+            foot={
+              <DataFoot
+                count={
+                  /* The count describes the table: not a locked tree, and not a
+                     table that could not be read. */
+                  view === 'list' && !viewNone ? (shown.length === 1 ? '1 rule' : `${shown.length} rules`) : null
+                }
+              >
+                {view === 'list' && current.totalPages > 1 && (
+                  <Pagination
+                    window={pageWindow(current.page, current.totalPages)}
+                    current={current.page}
+                    last={current.totalPages}
+                    onGoTo={setPage}
+                  />
+                )}
+                {verbs}
+              </DataFoot>
+            }
+          >
+            {view === 'tree' && treeNeed != null ? (
               <Body>
                 <LockedBody need={treeNeed} />
               </Body>
-            ) : (
-              /* Inset like the rest of the panel's content: the tree and the node detail
-                 are framed boxes of their own, and flush they doubled the panel's edge. */
-              <div className={styles.tree}>
-                <Lists
-                  key={`${treeList}:${generation}`}
-                  list={treeList}
-                  token={token}
-                  nodes={nodes}
-                  clusterInitialised={clusterInitialised}
-                  embedded
-                  initialFromPrimary={afterChange}
-                  initialDomain={treeDomain}
-                  fieldName="Browse domain"
-                  canDelete={missing(permissions, treeList === 'allowed' ? 'Allowed.canDelete' : 'Blocked.canDelete') == null}
-                  onNotice={setNotice}
-                  onChanged={() => void load(true)}
-                />
-              </div>
-            )
-          ) : viewNone ? (
-            <Body>
-              <LockedBody need="Blocked.canView" />
-              <LockedBody need="Allowed.canView" />
-            </Body>
-          ) : rules == null ? (
-            failed ? (
-              /* The notice at the top carries the server's message; once it is
-                 dismissed, the slot still says what happened and offers to read
-                 again, as the blocking state does (StatusPanel). */
+            ) : viewNone ? (
               <Body>
-                <Failure>
-                  Could not read the rules.{' '}
-                  <Button
-                    size="sm"
-                    onClick={() => {
-                      setFailed(false)
-                      void load()
-                    }}
-                  >
-                    Retry
-                  </Button>
-                </Failure>
+                <LockedBody need="Blocked.canView" />
+                <LockedBody need="Allowed.canView" />
               </Body>
+            ) : rules == null ? (
+              failed ? (
+                /* The notice at the top carries the server's message; once it is
+                   dismissed, the slot still says what happened and offers to read
+                   again, as the blocking state does (StatusPanel). */
+                <Body>
+                  <Failure>
+                    Could not read the rules.{' '}
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        setFailed(false)
+                        void load()
+                      }}
+                    >
+                      Retry
+                    </Button>
+                  </Failure>
+                </Body>
+              ) : (
+                <Body>
+                  <Loading />
+                </Body>
+              )
             ) : (
-              <Loading />
-            )
-          ) : (
-            <>
               <Table
+                stack
                 header={
                   <>
                     <th>Domain</th>
                     <th>Rule</th>
-                    <th />
+                    <th className={tbl.actionsCell} />
                   </>
                 }
                 isEmpty={current.rows.length === 0}
                 emptyText={query === '' ? 'No rules' : 'No rules match this filter'}
                 columns={3}
-                className={shared.inPanel}
               >
                 {current.rows.map((r) => (
                   <tr key={`${r.list}:${r.domain}`}>
-                    <td className={styles.domain}><DomainName name={r.domain} /></td>
-                    <td>
+                    <td className={`${styles.domain} ${tbl.lead}`}><DomainName name={r.domain} /></td>
+                    <td className={tbl.lead}>
                       <span className={`${styles.kind} ${styles[r.list]}`}>
                         <Icon name={r.list} size={14} />
                         {LABEL[r.list]}
                       </span>
                     </td>
-                    <td className={styles.actions}>
-                      <PermissionButton
-                        size="sm"
-                        variant="danger"
-                        aria-label={`Delete ${r.domain}`}
-                        disabled={busy}
-                        permission={missing(permissions, r.list === 'allowed' ? 'Allowed.canDelete' : 'Blocked.canDelete')}
-                        onClick={() => void deleteRule(r)}
-                      >
-                        Delete
-                      </PermissionButton>
+                    <td className={tbl.actionsCell}>
+                      {/* An icon in the row's action group, as every list's row
+                          actions are; its name stays `Delete <domain>`, and the
+                          tooltip says `Delete`. Without the permission it keeps its
+                          place, padlocked, and names what is missing. */}
+                      <div className={tbl.actions}>
+                        {missing(permissions, r.list === 'allowed' ? 'Allowed.canDelete' : 'Blocked.canDelete') == null ? (
+                          <RowAction
+                            icon="trash"
+                            name="Delete"
+                            variant="danger"
+                            aria-label={`Delete ${r.domain}`}
+                            disabled={busy}
+                            onClick={() => void deleteRule(r)}
+                          />
+                        ) : (
+                          <PermissionButton
+                            size="sm"
+                            icon
+                            variant="danger"
+                            aria-label={`Delete ${r.domain}`}
+                            permission={missing(permissions, r.list === 'allowed' ? 'Allowed.canDelete' : 'Blocked.canDelete')}
+                          >
+                            <Icon name="trash" size={15} />
+                          </PermissionButton>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
               </Table>
-              {current.totalPages > 1 && (
-                <Pagination
-                  window={pageWindow(current.page, current.totalPages)}
-                  current={current.page}
-                  last={current.totalPages}
-                  onGoTo={setPage}
-                />
-              )}
-            </>
-          )}
-
-          <div className={styles.foot}>
-            {/* The count describes the table: not the tree, and not a table that
-                could not be read. */}
-            {view === 'list' && !viewNone && (
-              <span>{shown.length === 1 ? '1 rule' : `${shown.length} rules`}</span>
             )}
-            <span className={styles.spacer} />
-            <Menu label="Import" text="Import">
-              {(close) => (
-                <>
-                  {entry('blocked', missing(permissions, 'Blocked.canModify'), () => setImporting('blocked'), close)}
-                  {entry('allowed', missing(permissions, 'Allowed.canModify'), () => setImporting('allowed'), close)}
-                </>
-              )}
-            </Menu>
-            <Menu label="Export" text="Export">
-              {(close) => (
-                <>
-                  {entry('blocked', missing(permissions, 'Blocked.canView'), () => void runExport('blocked'), close)}
-                  {entry('allowed', missing(permissions, 'Allowed.canView'), () => void runExport('allowed'), close)}
-                </>
-              )}
-            </Menu>
-            <Menu label="Flush" text="Flush">
-              {(close) => (
-                <>
-                  {entry('blocked', missing(permissions, 'Blocked.canDelete'), () => askFlush('blocked'), close)}
-                  {entry('allowed', missing(permissions, 'Allowed.canDelete'), () => askFlush('allowed'), close)}
-                </>
-              )}
-            </Menu>
-          </div>
-        </Panel>
+          </DataTable>
+        )}
       </div>
 
       {/* The action's promise goes back to `Confirm`, which keeps the dialog busy

@@ -42,7 +42,7 @@ async function draw(urls: string[], permissions?: Parameters<typeof BlockLists>[
 function order(table: HTMLElement): string[] {
   return within(table).getAllByRole('row').slice(1).map((r) => {
     const head = within(r).queryByRole('columnheader')
-    return head != null ? `[${head.querySelector('span')?.textContent}]` : (r.querySelectorAll('td')[1]?.querySelector('div:last-of-type')?.textContent ?? '')
+    return head != null ? `[${head.querySelector('span')?.textContent}]` : (r.querySelectorAll('td')[1]?.querySelector('[title]')?.getAttribute('title') ?? '')
   })
 }
 
