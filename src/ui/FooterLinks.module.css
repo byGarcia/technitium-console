@@ -41,3 +41,13 @@ dropped the "Theme by" to `--line`, which is a border colour, and it measured
 footer's `--faint`, which gives 5.61:1.
 */
 .credit { margin-top: var(--s-3); }
+
+/*
+The handle in the console's amber (Adrián's decision, 2026-11-06), so the one
+thing in the footer that is this console's reads as its own. Only the handle;
+`Theme:` keeps the footer's `--faint`. It is `--acc-ink` and not `--acc`: the fill
+amber on the light background is 2.0:1, and `--acc-ink` is the amber drawn for
+text in each theme. Doubled class: it has to outrank `.footer a` and its hover.
+*/
+.credit.credit a { color: var(--acc-ink); font-weight: 600; }
+.credit.credit a:hover { color: var(--acc-ink); }
