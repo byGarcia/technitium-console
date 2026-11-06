@@ -138,6 +138,9 @@ describe('Query Logs: the cards of the page on screen', () => {
       render(<Logs token="t" sub="Query Logs" />)
       // With fake clocks `findBy*` does not work (CONVENTIONS.md, Tests).
       await vi.waitFor(() => expect(screen.queryByLabelText('App Name')).toBeInTheDocument())
+      /* The filters reach the ref Query reads in an effect after the app lands; a
+         loaded machine could press Query before it and get upstream's `Missing!`. */
+      await vi.advanceTimersByTimeAsync(0)
       await user.click(screen.getByRole('button', { name: 'Query' }))
       await vi.waitFor(() => expect(screen.queryByTitle('ads.example')).toBeInTheDocument())
       await user.click(screen.getByLabelText('Live Update'))
@@ -151,6 +154,41 @@ describe('Query Logs: the cards of the page on screen', () => {
       expect(query).toHaveBeenCalledTimes(3)
       expect(query.mock.calls[2][1]).toMatchObject({ responseType: 'Cached', pageNumber: '1' })
       await user.click(screen.getByLabelText('Live Update'))
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+})
+
+/* Live Update, seen live (deviation 27): the rows a turn brings flash once, and the
+   switch says how many logs arrived since it was turned on, counted from the total. */
+describe('Query Logs: what Live Update brings', () => {
+  it('marks the new rows of each turn and counts the arrivals from the total', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    try {
+      const user = userEvent.setup({ delay: null })
+      const query = setUp()
+      render(<Logs token="t" sub="Query Logs" />)
+      await vi.waitFor(() => expect(screen.queryByLabelText('App Name')).toBeInTheDocument())
+      await user.click(screen.getByLabelText('Live Update'))
+      await vi.waitFor(() => expect(query).toHaveBeenCalledTimes(1))
+      await vi.waitFor(() => expect(screen.queryByTitle('ads.example')).toBeInTheDocument())
+      // The first turn is what was there: nothing is new yet.
+      expect(screen.getByText('0 new')).toBeInTheDocument()
+      expect(document.querySelectorAll('tr[data-fresh]')).toHaveLength(0)
+
+      query.mockResolvedValue({
+        kind: 'ok',
+        data: { response: page({ totalEntries: 27, entries: [entry(6, { qname: 'new.example' }), entry(5), ...ENTRIES.slice(0, 2)] }) },
+      } as never)
+      await vi.advanceTimersByTimeAsync(2100)
+      await vi.waitFor(() => expect(screen.queryByTitle('new.example')).toBeInTheDocument())
+      expect(document.querySelectorAll('tr[data-fresh]')).toHaveLength(2)
+      // Fifteen more in the log, though only two fit on page 1.
+      expect(screen.getByText('15 new')).toBeInTheDocument()
+
+      await user.click(screen.getByLabelText('Live Update'))
+      expect(screen.queryByText(/\d+ new/)).not.toBeInTheDocument()
     } finally {
       vi.useRealTimers()
     }

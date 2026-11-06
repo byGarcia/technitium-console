@@ -352,7 +352,29 @@ one pill per group.
    (the negative margin cancels the padding): a group that grew when the mode
    switched on would push its neighbours to another band. */
 /* The switch in the toolbar: centred on the buttons beside it. */
-.live { display: inline-flex; align-items: center; padding-left: var(--s-5); }
+.live { display: inline-flex; align-items: center; gap: var(--s-6); padding-left: var(--s-5); }
+
+/*
+Live Update, seen live (2026-11-06, deviation 27): while it is on, a dot beats beside
+the switch with how many queries came in since, and each row the last turn brought
+flashes once in the accent's tint, then settles. No motion with reduced motion.
+*/
+.liveNow { display: inline-flex; align-items: center; gap: var(--s-4); font: 500 var(--t-2)/1 var(--font-mono); color: var(--ok); white-space: nowrap; }
+.liveNow::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--ok); animation: live-beat 2s ease-out infinite; }
+@keyframes live-beat {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ok) 55%, transparent); }
+  70%, 100% { box-shadow: 0 0 0 7px transparent; }
+}
+/* Quiet on purpose: on a busy server every row of page 1 is new on every turn, and a
+   strong flash every two seconds would be noise. */
+tr[data-fresh] > td { animation: row-in 1.1s ease-out; }
+@keyframes row-in {
+  0% { background-color: color-mix(in srgb, var(--acc-tint) 55%, transparent); }
+  100% { background-color: transparent; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .liveNow::before, tr[data-fresh] > td { animation: none; }
+}
 
 .byMode {
   composes: dependent from '../../ui/Form.module.css';

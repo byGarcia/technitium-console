@@ -119,6 +119,8 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
   field's help sits under its label, folded to one line; the save bar stays at the foot of the
   window and says what would change; Backup, Restore and Flush Cache move to the header. Notes and warnings
   are compact lines instead of boxes, and long helps fold to one line with *more*, in every form.
+- **Query Logs' Live Update looks live:** a beating dot beside the switch counts the logs that arrived
+  since it was turned on, and each new row flashes once as it comes in.
 - **A command palette:** Ctrl+K (or the search field at the top of the sidebar) jumps to any page,
   Settings pane or zone, and takes a typed name straight to Blocking's check, DNS Client, Query
   Logs, the cache, your rules or the settings search. It remembers the last entries you ran.

@@ -394,11 +394,14 @@ function QueryRow({
   node,
   handoff,
   action,
+  fresh = false,
 }: {
   e: QueryLogEntry
   node: string
   handoff: Handoff | null
   action: ReturnType<typeof useDomainAction>
+  /** It came in on Live Update's last turn: it flashes once. */
+  fresh?: boolean
 }) {
   const [open, setOpen] = useState(false)
   const detail = useId()
@@ -406,7 +409,7 @@ function QueryRow({
 
   return (
     <>
-      <tr className={cls || undefined}>
+      <tr className={cls || undefined} data-fresh={fresh ? '' : undefined}>
         <td className={`${styles.mono} ${styles.stamp}`}>
           <Stamp text={dateTime(e.timestamp)} />
         </td>
@@ -523,6 +526,15 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
   const [notice, setNotice] = useState<Notice | null>(null)
   const [busy, setBusy] = useState(false)
   const [live, setLive] = useState(false)
+  /*
+  What Live Update brought, for the eye only (2026-11-06, deviation 27): the rows
+  that were not on the previous turn's page flash once as they come in, and the
+  switch counts how many arrived since it was turned on. It reads only what the
+  loop already reads; the loop, its calls and its timing are upstream's.
+  */
+  const seen = useRef<{ rows: Set<number>; total: number } | null>(null)
+  const [fresh, setFresh] = useState<ReadonlySet<number>>(() => new Set())
+  const [arrived, setArrived] = useState(0)
   /* What the Live Update switch says right now, for the guard at the top of
      `query`: set in the same handler as the switch, so a click on the
      pagination one frame after it already sees it. */
@@ -652,6 +664,21 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
       }
 
       const landed = outcome.data.response
+      if (live) {
+        const before = seen.current
+        const rows = new Set(landed.entries.map((e) => e.rowNumber))
+        if (before != null) {
+          setFresh(new Set(landed.entries.filter((e) => !before.rows.has(e.rowNumber)).map((e) => e.rowNumber)))
+          /* Counted from the log's total, not the page: more than a page can arrive
+             between two turns. A total that shrinks (logs deleted) counts nothing. */
+          const grew = landed.totalEntries - before.total
+          if (grew > 0) setArrived((n) => n + grew)
+        }
+        seen.current = { rows, total: landed.totalEntries }
+      } else {
+        seen.current = null
+        setFresh((f) => (f.size === 0 ? f : new Set()))
+      }
       setPage(landed)
       setApplied(filters)
       /* The query on screen goes to the bar, replacing the entry: the filters it
@@ -783,6 +810,9 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
     }
     liveRef.current = false
     setLive(false)
+    seen.current = null
+    setFresh(new Set())
+    setArrived(0)
     restart()
   }
 
@@ -946,6 +976,11 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
               */}
               <span className={styles.live}>
                 <Check toggle label="Live Update" checked={live} onChange={toggleLive} />
+                {live && (
+                  <span className={styles.liveNow} title="Live Update reads page 1 every 2 seconds">
+                    {arrived === 1 ? '1 new' : `${arrived} new`}
+                  </span>
+                )}
               </span>
             </div>
             {page != null && (
@@ -1181,7 +1216,7 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
               }
             >
               {page.entries.map((e) => (
-                <QueryRow key={e.rowNumber} e={e} node={node} handoff={handoff} action={action} />
+                <QueryRow key={e.rowNumber} e={e} node={node} handoff={handoff} action={action} fresh={fresh.has(e.rowNumber)} />
               ))}
             </Table>
           </>

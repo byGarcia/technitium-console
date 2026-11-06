@@ -1592,6 +1592,16 @@ contract and SECURITY.md.
     in `dev/check-parity-controls.mjs`), `N% blocked`, `Open in Query Logs`, `Copy IP`, the
     card's four figures and its section titles. The page's folder is generated from `SECTIONS`.
 
+27. **Live Update is seen live** (Adrián's decision, 2026-11-06; `screens/logs/QueryLogs.tsx`).
+    Upstream's Live Update is kept as it is: page 1 every 2 s, the same request, the same
+    fields it pins and turns off. While it is on, a dot beats beside the switch with how
+    many logs arrived since it was turned on (`N new`, from the growth of
+    `totalEntries` between turns, so it counts more than a page can show; a total that
+    shrinks counts nothing), and each row that was not on the previous turn's page
+    flashes once in a light accent tint, quiet on purpose because on a busy server every
+    row of page 1 is new on every turn. No motion with reduced motion. Its words, OURS:
+    `N new` and the switch's title `Live Update reads page 1 every 2 seconds`.
+
 ## Four constraints the server imposes
 
 These are not preferences: break them and the console works in development and
