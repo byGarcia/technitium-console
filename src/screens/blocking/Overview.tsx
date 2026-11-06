@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import {
   getDashboardStats, RANGES, RANGE_LABEL,
   type ChartData, type DashboardStats, type Range,
@@ -8,7 +8,7 @@ import { Chart } from '../dashboard/Chart'
 import { Change } from '../dashboard/Figures'
 import { changes, previousLabel, previousQuery, windowOf, type Changes, type PreviousQuery } from '../dashboard/compare'
 import { InChrome } from '../../app/ChromeSlot'
-import { ClusterNodeSelect, AGGREGATE, type ClusterNode } from '../../ui/ClusterNodeSelect'
+import { ClusterNodeSelect, AGGREGATE, ThisServerName, type ClusterNode } from '../../ui/ClusterNodeSelect'
 import { SectionHeader } from '../../ui/SectionHeader'
 import { Segmented } from '../../ui/Segmented'
 import { Panel, Body } from '../../ui/Panel'
@@ -27,6 +27,7 @@ import { RecentBlocked } from './RecentBlocked'
 import { LAST_HOUR_REFRESH_MS, useLiveView } from '../dashboard/useLive'
 import { Locked } from './Locked'
 import { missing, type Permissions } from './permissions'
+import { keepReading } from './list-history'
 import shared from './Blocking.module.css'
 import styles from './Overview.module.css'
 
@@ -52,6 +53,11 @@ the title `Overview` and its subtitle (`OVERVIEW_SUBTITLE`), `Period`, `Block Li
 (`▲ N%`, `vs previous hour` and the rest) are the Dashboard's (deviation 7,
 `dashboard/Figures.tsx`), here on Total Queries and Blocked only.
 The two gap sentences are the ones this console's Dashboard already uses.
+
+Each answer read for the whole server (the aggregate, which is also what the Lists tab
+reads) hands its `Block List Domains` to the readings Lists draws as `Domains over
+time` (deviation 32, `list-history.ts`): kept in this browser when it differs from the
+last one. Nothing more is asked of the server for it, and nothing here draws it.
 */
 
 /** The previous period, asked for one answer of the period on screen. */
@@ -244,6 +250,7 @@ export function Overview({
   serverDomain?: string
 }) {
   const statsNeed = missing(permissions, 'Dashboard.canView')
+  const server = useContext(ThisServerName)
   const [range, setRange] = useState<Period>('LastHour')
   const [node, setNode] = useState<string>(() => localStorage.getItem('dashboardClusterNode') || AGGREGATE)
   const [data, setData] = useState<DashboardStats | null>(null)
@@ -277,6 +284,7 @@ export function Overview({
     const r = await getDashboardStats(token, range, undefined, node)
     if (mine !== asked.current) return
     if (r.kind === 'ok') {
+      if (node === AGGREGATE) keepReading(server, r.data.stats.blockListZones)
       /*
       The previous period, for the strip's two changes: the Dashboard's second read
       (deviation 7, `dashboard/compare.ts`), `type=Custom` with the instants worked
@@ -318,7 +326,7 @@ export function Overview({
       setFailure(true)
       setNotice(noticeFromFailure(r))
     }
-  }, [token, range, node, statsNeed])
+  }, [token, range, node, statsNeed, server])
 
   /*
   A new period or node is a new question. What is on screen answers the previous one,

@@ -517,6 +517,8 @@ export function Rules({
           permissions={permissions}
           onNotice={setNotice}
           onChanged={added}
+          rules={rules}
+          rulesFailed={failed}
         />
 
         {stale && <StaleData since={lastGood} onRetry={() => void load()} />}

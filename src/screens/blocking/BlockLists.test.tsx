@@ -7,6 +7,9 @@ import * as quick from '../../lib/quick-lists'
 import { chooseIn } from '../../test/dropdown'
 import { BlockLists, LISTS_SUBTITLE } from './BlockLists'
 
+/* A strip's figure, not the same number in the Domains over time readings. */
+const FIGURE = { selector: 'div' }
+
 afterEach(() => {
   vi.useRealTimers()
   vi.restoreAllMocks()
@@ -150,7 +153,7 @@ describe('BlockLists', () => {
       kind: 'ok', data: { stats: { blockListZones: 1234, allowListZones: 0 } } as never,
     })
     draw()
-    expect(await screen.findByText((1234).toLocaleString())).toBeInTheDocument()
+    expect(await screen.findByText((1234).toLocaleString(), FIGURE)).toBeInTheDocument()
     expect(screen.getByText('0')).toBeInTheDocument()
     expect(screen.queryByText('Could not read the counts.')).not.toBeInTheDocument()
   })
@@ -302,7 +305,7 @@ describe('BlockLists', () => {
     it('after Update Now the figures say they are updating while the server still answers the old date', async () => {
       const { read, counts, user } = setup()
       draw()
-      expect(await screen.findByText((74771).toLocaleString())).toBeInTheDocument()
+      expect(await screen.findByText((74771).toLocaleString(), FIGURE)).toBeInTheDocument()
       await updateNow(user)
       expect(await screen.findAllByText('Updating…')).toHaveLength(2)
       expect(screen.getByText('Updating Now')).toBeInTheDocument()
@@ -316,7 +319,7 @@ describe('BlockLists', () => {
       counts.mockResolvedValue(stats(74763))
       read.mockResolvedValue(ok(answer(NEW)))
       await act(() => vi.advanceTimersByTimeAsync(3000))
-      expect(await screen.findByText((74763).toLocaleString())).toBeInTheDocument()
+      expect(await screen.findByText((74763).toLocaleString(), FIGURE)).toBeInTheDocument()
       expect(screen.queryByText('Updating…')).not.toBeInTheDocument()
       expect(screen.queryByText('Updating Now')).not.toBeInTheDocument()
     })
@@ -324,7 +327,7 @@ describe('BlockLists', () => {
     it('the wait is bounded: after two minutes the figures are read once more and the mark goes', async () => {
       const { read, counts, user } = setup()
       draw()
-      await screen.findByText((74771).toLocaleString())
+      await screen.findByText((74771).toLocaleString(), FIGURE)
       await updateNow(user)
       await screen.findAllByText('Updating…')
       const statsBefore = counts.mock.calls.length
@@ -340,7 +343,7 @@ describe('BlockLists', () => {
     it('a second Update Now while waiting captures again and starts the two minutes again', async () => {
       const { user } = setup()
       draw()
-      await screen.findByText((74771).toLocaleString())
+      await screen.findByText((74771).toLocaleString(), FIGURE)
       await updateNow(user)
       await screen.findAllByText('Updating…')
       await act(() => vi.advanceTimersByTimeAsync(100_000))
@@ -358,7 +361,7 @@ describe('BlockLists', () => {
         kind: 'ok', data: { server: 'x', response: answer(OLD, [`#${HOSTS}`]) },
       })
       draw()
-      await screen.findByText((74771).toLocaleString())
+      await screen.findByText((74771).toLocaleString(), FIGURE)
       await user.click(screen.getByRole('checkbox', { name: /Enabled/ }))
       await user.click(screen.getByRole('button', { name: 'Save' }))
       expect(await screen.findAllByText('Updating…')).toHaveLength(2)
@@ -369,7 +372,7 @@ describe('BlockLists', () => {
       counts.mockResolvedValue(stats(11))
       read.mockResolvedValue(ok(answer(NEW, [`#${HOSTS}`])))
       await act(() => vi.advanceTimersByTimeAsync(3000))
-      expect(await screen.findByText('11')).toBeInTheDocument()
+      expect(await screen.findByText('11', FIGURE)).toBeInTheDocument()
       expect(screen.queryByText('Updating…')).not.toBeInTheDocument()
     })
 
@@ -381,7 +384,7 @@ describe('BlockLists', () => {
         kind: 'ok', data: { server: 'x', response: answer(OLD, [B, HOSTS]) },
       })
       draw()
-      await screen.findByText((74771).toLocaleString())
+      await screen.findByText((74771).toLocaleString(), FIGURE)
       await user.click(screen.getByRole('button', { name: `Remove ${HOSTS}` }))
       await user.type(screen.getByRole('textbox', { name: 'List URL' }), HOSTS)
       await user.click(screen.getByRole('button', { name: 'Add block list' }))
@@ -399,11 +402,11 @@ describe('BlockLists', () => {
         kind: 'ok', data: { server: 'x', response: answer(undefined, null) },
       })
       draw()
-      await screen.findByText((74771).toLocaleString())
+      await screen.findByText((74771).toLocaleString(), FIGURE)
       counts.mockResolvedValue(stats(0))
       await chooseIn(user, 'Quick Add', 'None')
       await user.click(screen.getByRole('button', { name: 'Save' }))
-      expect(await screen.findAllByText('0')).toHaveLength(2)
+      expect(await screen.findAllByText('0', FIGURE)).toHaveLength(2)
       expect(screen.queryByText('Updating…')).not.toBeInTheDocument()
     })
   })

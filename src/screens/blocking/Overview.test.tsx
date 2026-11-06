@@ -9,6 +9,8 @@ import * as blocking from '../../api/blocking'
 import { SAMPLE } from './blocked-sample'
 import { SlotProvider } from '../../app/ChromeSlot'
 import { Overview, blockingChart } from './Overview'
+import { ThisServerName } from '../../ui/ClusterNodeSelect'
+import { readReadings } from './list-history'
 
 /** Your Rules: each number with the word over it, in the strip's cell. */
 function rulePairs() {
@@ -134,6 +136,29 @@ describe('Overview', () => {
     expect([...group.querySelectorAll('button')].map((b) => b.textContent)).toEqual([
       'Last Hour', 'Last Day', 'Last Week', 'Last Month', 'Last Year',
     ])
+  })
+
+  it('hands the whole server\'s Block List Domains to the readings Lists draws (deviation 32)', async () => {
+    serve()
+    render(
+      <ThisServerName.Provider value="dns1.example">
+        <Overview token="T" permissions={undefined} />
+      </ThisServerName.Provider>,
+    )
+    await screen.findByText('20,354')
+    expect(readReadings('dns1.example').map((r) => r.count)).toEqual([74779])
+  })
+
+  it('a single node\'s count is not the whole server\'s, and is not kept', async () => {
+    localStorage.setItem('dashboardClusterNode', 'dns2.example')
+    serve()
+    render(
+      <ThisServerName.Provider value="dns1.example">
+        <Overview token="T" permissions={undefined} />
+      </ThisServerName.Provider>,
+    )
+    await screen.findByText('20,354')
+    expect(readReadings('dns1.example')).toEqual([])
   })
 
   it('reads the node the Dashboard remembers', async () => {

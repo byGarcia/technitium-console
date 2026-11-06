@@ -147,8 +147,21 @@ the header's small capitals.
 .editor > .invalid { flex-basis: 100%; margin-top: 0; }
 
 
-/* The strip's three cells on a phone, two a row: the third takes the whole row
-   rather than leaving an empty cell beside it. */
+/* The strip's four cells on a phone: the two counts share a row, and the next update
+   and the readings each take a whole row (the readings' three columns of figures do
+   not fit half of it). */
 @media (max-width: 560px) {
-  .strip > :last-child:nth-child(odd) { grid-column: 1 / -1; }
+  .strip > :nth-child(n + 3) { grid-column: 1 / -1; }
 }
+
+/*
+The count over time (`ReadingsCard`, deviation 32): one line per reading, its time,
+the count and its change in three columns that line up, then the sentence that says
+where the readings are kept.
+*/
+.readings { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: auto 1fr auto; gap: var(--s-2) var(--s-6); font-size: var(--t-3); font-variant-numeric: tabular-nums; }
+.readings li { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; }
+.readingAt { color: var(--mute); white-space: nowrap; }
+.readingCount { color: var(--ink); text-align: right; }
+.readingChange { color: var(--mute); text-align: right; white-space: nowrap; }
+.readingsNote { margin: var(--s-5) 0 0; font-size: var(--t-2); color: var(--mute); }

@@ -1668,6 +1668,45 @@ contract and SECURITY.md.
     And **the row's round trip is back in Query Logs**: upstream draws `(N.NN ms)` under
     the response type (logs.js:517); it had gone under `Details` only.
 
+32. **Blocking remembers the lists and the rules you already have** (Adrián's request, 2026-11-06;
+    `screens/blocking/list-history.ts`, `rule-match.ts`, `BlockLists.tsx`,
+    `AddDomainBar.tsx`). Three additions, the first in two parts, inside deviation 2's four
+    limits: no new endpoint, and each call sequence is one the section already makes.
+    - **When the lists were last updated.** The Lists tab's Next update cell adds `Last
+      updated <time>, <ago>`. The server does not send it, but `blockListNextUpdatedOn` is
+      its last successful update plus the interval it sends beside it
+      (WebServiceSettingsApi.cs:386), so the difference is the server's own value, not an
+      estimate. Nothing is said without a schedule (the key omitted, or an interval of 0),
+      for `default(DateTime)`, or while Update Now has just left `Updating Now`.
+    - **Domains over time.** A fourth cell on Lists: every `Block List Domains` figure
+      the Lists tab or Overview reads (`dashboard/stats/get`, the read each already makes;
+      Overview only on the aggregate, which is what Lists reads) that differs from the last
+      one kept is stored as `{ at, count }` in this browser's `localStorage`
+      (`blocking-list-domains:<dnsServerDomain>`, at most 30, every access in try/catch).
+      The newest three are drawn with their change (`+1,904`), the figure's own cell
+      carries the last one (`+1,904 since <time>`), and the cell says the readings are kept
+      in this browser. Without `Dashboard.canView` the cell is locked.
+    - **Save and Update Now** in Lists' save bar, beside Save: Save exactly as it is, then,
+      only if it succeeded and left lists to download (Update Now's own `hasSaved`
+      condition), Update Now exactly as it is, from its confirmation on. Same permission
+      as both, `Settings.canModify`.
+    - **Already one of your rules?** Under the Block / Allow / Check bar's field, as the name
+      is typed: whether one of your rules, the name or a parent rule covering it, already
+      blocks or allows it, with the allow rule first when both cover it (it wins). On Rules
+      it uses the table's rules; on Overview the bar reads `blocked/export` and
+      `allowed/export` (each only with its View permission) once, on the first name typed,
+      and again only after a Block or Allow made there. A list it could not read is named;
+      with neither readable it says nothing. It never runs Check's DNS query: the block
+      lists stay Check's answer.
+    Their words, all OURS: `Last updated <time>, <ago>`, `Domains over time`, `No readings
+    yet.`, `Kept in this browser when the count changes.`, `<change> since <time>`, the
+    readings' label `Block List Domains, newest first`, `Save and Update Now`, `Already
+    blocked: it is one of your rules.`, `Already blocked by your rule <rule>, which covers
+    its subdomains.` and the same two for allowed, `It wins over your blocked rule
+    <rule>.`, `Not one of your rules.` (and `Not one of your blocked rules.`, `Not one of
+    your allowed rules.`), `Your blocked rules were not checked: Requires …` (and allowed),
+    `Check asks the block lists.` and `Could not read your rules.`
+
 ## Four constraints the server imposes
 
 These are not preferences: break them and the console works in development and
