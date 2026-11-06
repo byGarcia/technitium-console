@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import {
   activateKskDnsKey,
   addPrivateKey,
@@ -383,7 +383,7 @@ export function DnssecProperties({
 
             {notes.map((n) => (
               <Alert key={n} type="info" title="Note!">
-                {n}
+                {NOTE_TEXT[n]}
               </Alert>
             ))}
 
@@ -478,7 +478,8 @@ export function DnssecProperties({
                   )}
                 </div>
 
-                <div className={l.across}>
+                <div className={l.title} id="addKeyGenerationLabel">Key Generation</div>
+                <div className={l.across} role="radiogroup" aria-labelledby="addKeyGenerationLabel">
                   {GENERATIONS.map((g) => (
                     <label key={g.value} className={l.check}>
                       <input
@@ -609,14 +610,17 @@ MII...
                 <div className={l.field}>
                   <Field label="NSEC3 Iterations">
                     {(id) => (
-                      <Input
-                        placeholder="iterations"
-                        id={id}
-                        mono
-                        className={l.short}
-                        value={iterations}
-                        onChange={(e) => setIterations(e.target.value)}
-                      />
+                      <div className={l.inline}>
+                        <Input
+                          placeholder="iterations"
+                          id={id}
+                          mono
+                          className={l.short}
+                          value={iterations}
+                          onChange={(e) => setIterations(e.target.value)}
+                        />
+                        <span className={l.suffix}>(valid range 0-50, recommended 0)</span>
+                      </div>
                     )}
                   </Field>
                   <div className={l.help}>
@@ -629,14 +633,17 @@ MII...
                 <div className={l.field}>
                   <Field label="NSEC3 Salt Length">
                     {(id) => (
-                      <Input
-                        placeholder="length"
-                        id={id}
-                        mono
-                        className={l.short}
-                        value={saltLength}
-                        onChange={(e) => setSaltLength(e.target.value)}
-                      />
+                      <div className={l.inline}>
+                        <Input
+                          placeholder="length"
+                          id={id}
+                          mono
+                          className={l.short}
+                          value={saltLength}
+                          onChange={(e) => setSaltLength(e.target.value)}
+                        />
+                        <span className={l.suffix}>bytes (valid range 0-32, recommended 0)</span>
+                      </div>
                     )}
                   </Field>
                   <div className={l.help}>
@@ -668,9 +675,9 @@ MII...
                       value={dnsKeyTtl}
                       onChange={(e) => setDnsKeyTtl(e.target.value)}
                     />
-                    <span className={l.suffix}>seconds</span>
+                    <span className={l.suffix}>seconds (default 3600/1h)</span>
                     <Button disabled={busy} onClick={saveTtl}>
-                      Save
+                      Update TTL
                     </Button>
                   </div>
                 )}
@@ -681,6 +688,14 @@ MII...
                 resolvers.
               </div>
             </div>
+            {/* index.html, under the DNSKEY TTL. "the the" is upstream's. */}
+            <Alert type="warning" title="Warning!">
+              You MUST wait for at least the number of seconds specified by the the old TTL value to
+              elapse before making any changes to the DNS keys above to ensure that all recursive
+              resolvers would have expired the DNSKEY records from its cache. For example, if the old
+              TTL value was 3600, then you must wait for 3600 seconds (1 hour) to pass before making
+              any changes to the DNS keys.
+            </Alert>
           </section>
         </div>
       )}
@@ -739,25 +754,45 @@ export function keyActions(k: PrivateKey): {
   }
 }
 
-/** The three footnotes, which appear according to the keys' states. */
-export function stateNotes(keys: PrivateKey[]): string[] {
-  const notes: string[] = []
+type StateNote = 'readyBy' | 'activeBy' | 'retiredRevoked'
 
-  if (keys.some((k) => k.keyType === 'KeySigningKey' && k.state === 'Published')) {
-    notes.push(
-      'A "ready by" timestamp is displayed for a Key Signing Key (KSK) that is Published. Wait until then before adding its DS record to the parent zone.',
-    )
-  }
-  if (keys.some((k) => k.keyType === 'KeySigningKey' && k.state === 'Ready')) {
-    notes.push(
-      'An "active by" timestamp is displayed for a Key Signing Key (KSK) that is Ready. The key will become active automatically.',
-    )
-  }
-  if (keys.some((k) => k.state === 'Retired' || k.state === 'Revoked')) {
-    notes.push('Retired and Revoked keys are removed automatically by the DNS Server.')
-  }
-
+/*
+The three footnotes under the keys, each shown when some key is in its state
+(zone.js:7024-7040): a Published KSK, a Ready KSK, a Retired or Revoked key of
+either type. Upstream's own words, its `<code>` and `<b>` included
+(index.html, `divDnssecPropertiesNote*`).
+*/
+export function stateNotes(keys: PrivateKey[]): StateNote[] {
+  const notes: StateNote[] = []
+  if (keys.some((k) => k.keyType === 'KeySigningKey' && k.state === 'Published')) notes.push('readyBy')
+  if (keys.some((k) => k.keyType === 'KeySigningKey' && k.state === 'Ready')) notes.push('activeBy')
+  if (keys.some((k) => k.state === 'Retired' || k.state === 'Revoked')) notes.push('retiredRevoked')
   return notes
+}
+
+const NOTE_TEXT: Record<StateNote, ReactNode> = {
+  readyBy: (
+    <>
+      The Key State for a newly published Key Signing Key (KSK) must be <code>Ready</code> before you
+      can add a DS record for it. Use the <b>View DS Info</b> option for more details on adding DS
+      record.
+    </>
+  ),
+  activeBy: (
+    <>
+      The Key State for a Key Signing Key (KSK) will automatically switch from <code>Ready</code> to{' '}
+      <code>Active</code> once you have added DS record for it and the DNS Server is able to detect it.
+      Use the <b>View DS Info</b> option for more details on adding DS record. If this is a private
+      zone, then you should manually activate the KSK so that the DNS Server stops the detection
+      process which queries for DS records periodically.
+    </>
+  ),
+  retiredRevoked: (
+    <>
+      The keys with <code>Retired</code> or <code>Revoked</code> Key State will be automatically
+      unpublished and removed when its safe to do so.
+    </>
+  ),
 }
 
 function KeyRow({
