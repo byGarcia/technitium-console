@@ -39,6 +39,18 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
   node's leases and scopes together with a Node column, the cards adding the nodes up. Converting
   or removing a lease and enabling, disabling, editing or deleting a scope act on the row's node,
   and each scope's usage counts its own node's leases. A node that cannot be read is named.
+- **Choose a window on the Queries chart:** on the Dashboard, dragging across the Queries chart
+  draws a window and, on release, opens Query Logs from the start of its first point to the end of
+  its last, as clicking one point opens that point. It works with the mouse, a pen or a finger, and
+  on the lines compared by node too. A plain click still opens one point.
+- **Queries across cluster nodes:** Administration › Cluster shows a period's Total Queries split by
+  the node that answered them, as one bar in each node's colour with each node's count and share,
+  Last Day first with the Dashboard's periods beside it. A node that does not answer is left out and
+  named. Needs Dashboard: View.
+- **Block lists across cluster nodes:** on a cluster, Blocking › Lists shows each node's Block List
+  Domains, when it last updated its lists and when it updates them next. Update Now moves into that
+  card as Update Now on All Nodes, the same call and confirmation: the server already passes it on
+  to every node. A node that does not answer says so with the server's message.
 - **Settings compared across cluster nodes:** Administration › Cluster shows a curated set of each
   node's settings side by side (domain, version, end points, recursion, DNSSEC, rate limits, default
   TTLs, blocking, forwarders, logging), the ones that differ first and marked, with "Show only

@@ -43,6 +43,7 @@ import { RowAction, Th, useSort, type Keys, Table } from '../../ui/Table'
 import { Menu, Separator } from '../../ui/Menu'
 import { Notifier } from '../../ui/Notifier'
 import { NodeSettings } from './NodeSettings'
+import { QueryShare } from './QueryShare'
 
 /*
 The Cluster sub-tab (the whole of `cluster.js`, 1,055 lines). Twelve endpoints
@@ -69,8 +70,10 @@ What to keep in front of you:
 
 Deviation 31 (2026-11-06): with the cluster initialised, a Settings Across Nodes
 card under the table (`NodeSettings.tsx`) reads `settings/get` once per node and
-compares a curated set; it needs `Settings: View`, the only permission this
-sub-tab is told.
+compares a curated set; it needs `Settings: View`. Deviation 40 (2026-11-06): above
+it, Queries Across Nodes (`QueryShare.tsx`) splits a period's Total Queries by node,
+from `dashboard/stats/get` once per node; it needs `Dashboard: View`. Those two are
+the only permissions this sub-tab is told.
 
 Verification notice: with a single instance the cluster never gets initialised,
 so half of these endpoints could not be exercised against a real server. They are
@@ -92,6 +95,8 @@ interface Props {
    *  one permission this sub-tab reads, because that card is the one call here
    *  that is not of the cluster's own family. */
   canViewSettings?: boolean
+  /** `Dashboard.canView`, for the Queries Across Nodes card (deviation 40). */
+  canViewDashboard?: boolean
 }
 
 type Modal =
@@ -128,6 +133,7 @@ export function Cluster({
   onCluster,
   onNotice,
   canViewSettings = true,
+  canViewDashboard = true,
 }: Props) {
   const [localNode, setLocalNode] = useState('')
   const node = controlledNode ?? localNode
@@ -364,8 +370,9 @@ export function Cluster({
               ))}
             </Table>
           </DataTable>
-          {/* Deviation 31: each node's settings side by side, read again with the
-              cluster's state. */}
+          {/* Deviation 40: the period's queries split by node; deviation 31: each
+              node's settings side by side. Both read again with the cluster's state. */}
+          <QueryShare token={token} nodes={nodes.map((n) => n.name)} canView={canViewDashboard} refreshOn={state} />
           <NodeSettings token={token} nodes={nodes} canView={canViewSettings} refreshOn={state} />
         </>
       )}

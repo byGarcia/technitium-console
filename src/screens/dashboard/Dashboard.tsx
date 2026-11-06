@@ -15,7 +15,7 @@ import { Resolution } from './Resolution'
 import { useDashboardSample } from './dashboard-sample'
 import { nodeSeries, nodesChart, readNodes, type NodeStats } from './compare-nodes'
 import {
-  bucketWindow, periodFilters, protocolFilter, queryTypeFilter, responseTypeFilter,
+  bucketWindow, bucketsWindow, periodFilters, protocolFilter, queryTypeFilter, responseTypeFilter,
 } from './jump'
 import { ClusterNodeSelect, AGGREGATE, type ClusterNode } from '../../ui/ClusterNodeSelect'
 import { InChrome } from '../../app/ChromeSlot'
@@ -342,6 +342,14 @@ export function Dashboard({
         if (span != null) jump(span)
       }
     : undefined
+  /* A drag across Queries opens the window it covers (deviation 41), from the same
+     answer a point's click reads, under the same condition. */
+  const pickWindow = pickPoint != null
+    ? (first: number, last: number) => {
+        const span = bucketsWindow(view?.mainChartData, first, last)
+        if (span != null) jump(span)
+      }
+    : undefined
   const byValue = (field: 'responseType' | 'protocol' | 'qtype', value: (label: string) => string | null) =>
     canJump && shown != null
       ? (label: string) => {
@@ -377,6 +385,12 @@ export function Dashboard({
   const pickCompared = pickPoint != null && data != null
     ? (i: number) => {
         const span = bucketWindow(data.mainChartData, i)
+        if (span != null) jump(span)
+      }
+    : undefined
+  const pickComparedWindow = pickPoint != null && data != null
+    ? (first: number, last: number) => {
+        const span = bucketsWindow(data.mainChartData, first, last)
         if (span != null) jump(span)
       }
     : undefined
@@ -517,7 +531,7 @@ export function Dashboard({
           actions={(pickPoint != null && unit != null) || canCompare ? (
             <div className={styles.panelActions}>
               {pickPoint != null && unit != null && (
-                <span className={styles.hint}>Click a point to open Query Logs for that {unit}</span>
+                <span className={styles.hint}>Click a point to open Query Logs for that {unit}, or drag to choose a window</span>
               )}
               {canCompare && (
                 <Button size="sm" aria-pressed={compare} onClick={() => setCompare((v) => !v)}>
@@ -538,6 +552,7 @@ export function Dashboard({
                     data={compared.chart}
                     resetOn={byNode}
                     onPick={pickCompared}
+                    onPickRange={pickComparedWindow}
                     height={300}
                     series={series}
                   />
@@ -558,7 +573,7 @@ export function Dashboard({
               <>
                 {loading && <Loading compact />}
                 {!loading && view && hasData(view.mainChartData) && (
-                  <Line key="total" data={view.mainChartData} resetOn={data?.mainChartData} onPick={pickPoint} height={300} />
+                  <Line key="total" data={view.mainChartData} resetOn={data?.mainChartData} onPick={pickPoint} onPickRange={pickWindow} height={300} />
                 )}
                 {!loading && (!view || !hasData(view.mainChartData)) && (
                   <Placeholder failure={failure} empty="No queries for this period." />

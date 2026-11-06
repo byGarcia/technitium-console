@@ -183,6 +183,7 @@ export function Line({
   data,
   resetOn = data,
   onPick,
+  onPickRange,
   height,
   series,
 }: {
@@ -192,6 +193,8 @@ export function Line({
   height?: number
   /** A point's jump to Query Logs, by its index (deviation 7). */
   onPick?: (index: number) => void
+  /** A drag's window to Query Logs, by its first and last bucket (deviation 41). */
+  onPickRange?: (first: number, last: number) => void
   /** Each series' colour token, when it is not the label's (deviation 36). */
   series?: Series
 }) {
@@ -203,7 +206,7 @@ export function Line({
   return (
     <>
       <Legend entries={entries} hidden={hidden} onToggle={toggle} series={series} />
-      <Chart type="line" data={data} height={height} aria="Queries over time" separateLegend hidden={hidden} onPick={onPick} series={series} />
+      <Chart type="line" data={data} height={height} aria="Queries over time" separateLegend hidden={hidden} onPick={onPick} onPickRange={onPickRange} series={series} />
     </>
   )
 }

@@ -1913,6 +1913,57 @@ contract and SECURITY.md.
     under the field while it has the focus and Caps Lock is on (read from the key
     events, gone on leaving the field). What is sent, the steps and the texts are
     upstream's. Its words, OURS: those three.
+39. **Block lists across the cluster's nodes** (Adrián's decision, 2026-11-06;
+    `screens/blocking/ListsOnNodes.tsx`, `lists-on-nodes.ts`). The list URLs are one cluster-wide
+    setting, but each node fetches and keeps its own copy of the lists on its own timer. On an
+    initialised cluster the Lists tab draws, under its strip, a `Block Lists Across Nodes` card with
+    one row per node of the session's list: its `Block List Domains` (`dashboard/stats/get`, Last
+    Hour, the read the strip makes, with that node's `node`; only with `Dashboard: View`, the column
+    is left out otherwise), its `Last updated` and its `Next update` (`settings/get` with that node's
+    `node`, the two values deviation 32 derives them from, `nextUpdateText` for the next). Read when
+    the tab opens and again each time the tab reads its counts (after a Save or an Update Now has
+    waited for the reload). A node whose `settings/get` fails is one row that says `Did not answer:
+    <the server's message>`; a count alone that fails says `Not read`, the message in its title.
+    **Update Now carries no node.** Upstream's `forceUpdateBlockLists` (main.js:2342-2366) sends no
+    `node`, and the server needs none: it updates the node it reaches and passes the update on to
+    every other node itself (WebServiceSettingsApi.cs:1964-2003, asynchronously, a node that fails
+    only logged there). So no per-node Update Now is offered; on a cluster the strip's Update Now
+    moves into the card as `Update Now on All Nodes`, with the same permission, condition,
+    confirmation, call and alert, and while its wait lasts every row's Next update says upstream's
+    `Updating Now`. Without a cluster nothing changes: no card, no per-node read, Update Now in the
+    strip. Each node wears the colour deviation 35 gives it (`nodeToken`). Its words, OURS, are
+    declared in the header comment of `ListsOnNodes.tsx`.
+
+40. **Queries across the cluster's nodes** (Adrián's decision, 2026-11-06;
+    `screens/admin/QueryShare.tsx`, `query-share.ts`). With the cluster initialised, a `Queries
+    Across Nodes` card between the node table and Settings Across Nodes (deviation 31) reads
+    `dashboard/stats/get` once per node with that node's `node` (the Dashboard's read with a node
+    chosen) and splits the period's `Total Queries` by node: one bar whose segments are the nodes in
+    their colour (`nodeToken`, by the node's place in the list, the one deviations 35 and 36 give
+    it), and under it a line per node with its count and its share in whole percents that add up to
+    100 (largest remainder). Last Day first; the Dashboard's periods sit beside the title (Custom is
+    not offered: it needs its two dates). It reads again with each period and each time the sub-tab
+    reads the cluster's state (arrival and Refresh). A node that does not answer is left out of the
+    shares and named once (`<node> did not answer: <message>`); with none answering the card says
+    `No node answered.`, with nothing counted `No queries for this period.`. Without `Dashboard:
+    View` nothing is read and the card is locked; it is the second permission Administration is
+    told (`canViewDashboard`, from the Shell). Read only. Its words, OURS, are declared in the
+    header comment of `QueryShare.tsx`.
+
+41. **A window chosen on the Queries chart** (Adrián's decision, 2026-11-06;
+    `screens/dashboard/Chart.tsx`, `drag-window.ts`, `jump.ts`). Dragging across the Dashboard's
+    Queries chart draws the window under the pointer (a band in the accent over the plot) and, on
+    release, opens Query Logs from the start of the first bucket it covers to the last second of
+    the last (`bucketsWindow`), through the same `jump` a point's click makes (deviation 7): the
+    same node rule, arrival and alert. A press that travels less than 6 px is a click and opens one
+    bucket as before; the click that ends a drag is the drag's. It uses pointer events, so a mouse,
+    a pen and a finger drag; the chart leaves vertical swipes to the page (`touch-action: pan-y`),
+    and the tooltip stands down while the window is drawn. On the lines compared by node
+    (deviation 36) the window is read from the aggregate's buckets the lines are laid on. It is
+    offered exactly when a point's click is (`canJump` and buckets that are instants), and the
+    canvas takes no keyboard focus, as deviation 7 already has it, so nothing changes for the
+    keyboard. Its words, OURS: the Queries hint becomes "Click a point to open Query Logs for that
+    minute/hour/day/month, or drag to choose a window" (`Dashboard.tsx`).
 
 ## Four constraints the server imposes
 

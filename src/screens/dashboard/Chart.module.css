@@ -1,0 +1,16 @@
+/*
+A chart's canvas, and the window being dragged across it (deviation 41): a band
+in the accent over the plot area, under the pointer, never taking a click.
+*/
+.wrap { position: relative; }
+
+/* A drag across the chart is horizontal; a vertical swipe still scrolls the page. */
+.wrap[data-drag] { touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+
+.selection {
+  position: absolute;
+  pointer-events: none;
+  background: var(--acc-tint);
+  border-left: 1px solid var(--acc-bd);
+  border-right: 1px solid var(--acc-bd);
+}
