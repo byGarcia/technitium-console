@@ -66,8 +66,10 @@ Write down here whatever you find. What is already known:
 
 - **Optional fields that look required.** In `apps/list`, the `updateVersion`,
   `updateUrl` and `updateAvailable` fields **only exist** if the app is in the
-  store catalog and there is a compatible version there; an app installed from
-  your own zip never brings them, and if the catalog query exhausts its 5 s
+  store catalog and there is a compatible version there. They go by the app's
+  NAME, not by where it came from: a store app's zip uploaded under another name
+  brings none of them, and the same zip uploaded under the store's name brings all
+  three (checked against v15.6.1 on 2026-11-06). If the catalog query exhausts its 5 s
   timeout the list arrives whole but without them on any app. Typing them as
   required is a guaranteed bug. Be suspicious of every field you have only seen
   once.
@@ -441,6 +443,27 @@ Write down here whatever you find. What is already known:
   A name the server refuses (`not a domain`) is an `error` envelope with no
   `response` at all. Checked live against v15.6.1 on 2026-10-15
   (`screens/blocking/check-domain.real.json`).
+- **A cached negative answer is a record of the type asked**, not a marker of its
+  own: its `rData` is `{ dataType: "DnsSpecialCacheRecordData", data:
+  "NegativeCache: NxDomain; …" }` (or `NoError; …` for "no record of that type")
+  and its `dnssecStatus` is `Unknown`. With Serve Stale on (the default), expired
+  records stay in `cache/list` and the server writes their TTL as `"0 (0s)"`
+  (WebServiceZonesApi.cs:120-125). With a forwarder, `responseMetadata.nameServer`
+  is the bare address (`1.1.1.1`). Checked live against v15.6.1 on 2026-11-06
+  (`screens/lists/cache-node.real.json`).
+- **`recordDataTemplate` is left out, not `null`,** on an app class that serves no
+  APP records (`apps/list`, v15.6.1).
+- **A reserved lease is not in `dhcp/leases/list` until a client takes it.**
+  `ListDhcpLeases` walks the leases clients hold, never the reservations; upstream
+  marks a held lease `Reserved` when its client has a reservation. An enabled scope
+  with no matching interface reports `interfaceAddress: "0.0.0.0"`. A reservation
+  inside an exclusion range is still handed out. Checked live against v15.6.1 on
+  2026-11-06 with real DHCP clients.
+- **`dnsClient/resolve` with validation on can answer a failed validation with
+  the DNSKEY/RRSIG datagram** carried by the exception, plus `warningMessage`: an A
+  query for `dnssec-failed.org` gets DNSKEY records back. `rawResponses` are whole
+  datagrams, not strings. Upstream calls it with `showInnerError: true`, so its
+  error reads `errorMessage` and then `innerErrorMessage` (common.js:165).
 
 ## How the code is written
 
@@ -897,6 +920,164 @@ contract and SECURITY.md.
     several stack, so nothing under it moves. A result inside a dialog stays in the
     dialog, and the login form's stays in the form. The texts, the five seconds of
     a success and the close button are the same.
+16. **Cache says what a node holds** (Adrián's decision, 2026-11-06). Upstream dumps a
+    node's records as JSON (other-zones.js:157). Here, over the records table, up to four
+    cards (`screens/lists/CacheSummary.tsx`, `cache-facts.ts`) read only the records of
+    the `cache/list` answer already on screen: no call is added, and they follow the
+    node exactly as the table does.
+    - **Records**: how many, by type in each type's series colour (`zones/zone-colours`),
+      with a key that only lights its share of the bar (Cache has no filter for it to
+      drive), and `Negative`: the records whose `rData` is the server's special cache
+      record (`dataType: DnsSpecialCacheRecordData`) with a `data` starting
+      `NegativeCache:`. Always drawn; an empty node says 0.
+    - **Time Left**: the record that leaves the cache first and how soon, the longest
+      time left, and `Stale`: the records written `ttl: "0 (0s)"`, which the server
+      writes for a record kept past its TTL (`record.IsStale`,
+      WebServiceZonesApi.cs:120-125). Like the TTL column, it is the time left when the
+      node was read.
+    - **DNSSEC**: the records by `dnssecStatus`. Secure is `--ok`, Bogus `--dan`,
+      Indeterminate `--warn`, Unknown `--ch-3`, any other `--ch-drop`; the table's
+      DNSSEC tag takes the same tones.
+    - **Answered By**: each `responseMetadata.nameServer` and how many of the node's
+      records it gave, most first, four shown and the rest as "N more".
+    - A card whose data the node lacks is not drawn.
+    - In the records table, shared with Allowed and Blocked, a record type is drawn in
+      its series colour, and a cache record with `ttl: "0 (0s)"` carries a `Stale` tag.
+    - The records sit in `ui/DataTable` with their count in its foot; Flush Cache,
+      Delete, Refresh, the crumbs and the chips send exactly what they sent.
+    Its words, all OURS: `Records`, `Time Left`, `Next to expire`, `Longest`, `Stale`,
+    `Negative`, `Answered By`, `N more`, and the two tooltips "Its TTL has run out.
+    The server keeps it for Serve Stale and shows its TTL as 0 (0s)." and "A cached
+    answer that the name, or a record of that type, does not exist."
+17. **Apps says what the apps are** (Adrián's decision, 2026-11-06). Everything
+    reads the `apps/list` the screen already makes (the store, its own
+    `apps/listStoreApps`); every call, confirmation, alert text, validation and
+    alert placement is the one it was.
+    - **Four cards over the installed list** (`AppsSummary.tsx`). Installed Apps:
+      how many, split in a bar into `Up to date`, `Update available` and `No store
+      version` (the server wrote none of the three update fields), the last with a
+      tooltip: "The server gives a store version only for an app whose name the DNS
+      App Store lists with a version for this server, and for none when the store
+      could not be reached." Classes: every class of every app by upstream's labels
+      (`APP Record` … `Generic`); pressing a kind sets the table's Kind filter,
+      exactly as choosing it there, and pressing the applied one clears it. Query
+      Logs: the apps whose classes have `isQueryLogs`, "Read by Query Logs in the
+      Logs section.", and how many classes are a `Query Logger`. APP Records: the
+      classes with `isAppRecordRequestHandler`, four by class path and the rest as
+      "N more", "Classes an APP record can use.". A zero is drawn as 0, `None
+      installed` when no app serves Query Logs; no card is drawn when the list
+      failed to load.
+    - **The installed apps are a table** in `ui/DataTable`: upstream's `Installed
+      Apps` header sorts it, its foot is upstream's `Total Apps: N` (apps.js:41),
+      which this console had dropped, and `No Apps Found` when the filter leaves
+      nothing. The tags are upstream's `Version X` and `Update Y` again.
+    - **A `Kind` column and a `Kind` filter.** Each row writes the kinds of its
+      classes once each, in upstream's order; the filter narrows what is drawn and
+      asks the server nothing. More Details still lists them per class.
+    - **Each kind has a series colour** (`app-kinds.ts`), from the Dashboard's open
+      cycle `--ch-1` to `--ch-8`, `Generic` neutral; the kind is always written
+      beside it.
+    - **The description shows two lines at rest** where More Details holds it whole;
+      opened, the whole one replaces them. An app without classes shows it whole.
+    - **Row actions**: Config and Update as icons with their names in the tooltip,
+      `Store Update` labelled when the store has one, and the `⋮` menu carrying all
+      of them by name, Uninstall only there.
+    - **The store** is a wide dialog with a DataTable: a `Search` field narrowing by
+      name or description in the browser (`Total Apps` still counts the whole
+      catalogue; `No Apps Found` when nothing matches), the size in a `Size` column,
+      `App Zip File` in More Details, an `Installed` mark beside the version, and
+      Uninstall (with Update) in the row's `⋮` menu. Install and Update stay
+      buttons of the row.
+    - **The header's "N update(s) available" pill is gone**: the Installed Apps
+      card says it.
+    - Two that predate 2026-11-06 and are registered here because they were never
+      written down: the header button says `Install from file` where upstream says
+      `Install`, and with no app installed the table's place holds a region empty
+      state (`No apps installed`, one sentence and `Open App Store`) where upstream's
+      footer says `No Apps Found`.
+18. **DNS Client lays the response out** (Adrián's decision, 2026-11-06). Upstream
+    prints `response.result` as JSON and the raw responses as a stack of JSON
+    blocks (dnsclient.js:174-194). Here the same response, and nothing else, is
+    drawn as a DNS message; no call is added and nothing is kept between queries
+    (`screens/dnsclient/response.ts`, which reads the serialised `DnsDatagram`
+    with every key optional):
+    - **Four cards** (`ResponseSummary.tsx`): Response (the RCODE in the
+      Dashboard's colour for it, Opcode, ID, the Extended DNS Error codes once
+      each), Answer (the count, the types in their Zones colours as a bar and
+      chips, Authority and Additional), Server (`Metadata`: Name Server, Protocol,
+      Round Trip Time, Datagram Size; not drawn without it) and Flags (AA, TC, RD,
+      RA, AD, CD, lit when set, each named in its tooltip; UDP Payload Size, EDNS
+      Flags; the answer records' DNSSEC statuses). A count is drawn as 0. The
+      chips count; they do not filter: the screen has no filter to drive.
+    - **The sections as tables** (`ResponseSections.tsx`): tabs `Question`,
+      `Answer`, `Authority`, `Additional`, each with its count, and `Extended DNS
+      Errors` when the answer carries any (the EDNS options of that code and the
+      client library's `DnsClientExtendedErrors`, with their source). Answer opens
+      first. RDATA is written as the server keys it; a TXT's `CharacterStrings`
+      is left out only when it repeats `Text` as one string. A `DnssecStatus` of
+      `Disabled` (validation not asked for) is a quiet word, not a pill.
+    - **The JSON stays, whole**: the last tab is upstream's
+      `JSON.stringify(result, null, 2)`, and it is the only tab when the result
+      is not a datagram.
+    - **Raw Responses (N)** keeps upstream's collapsed panel, but lists one row per
+      response (Name Server, Question, RCODE, the three counts, Round Trip Time),
+      each opening its own JSON (`RawResponses.tsx`).
+    - **The query bar** is two lines in one card, what is asked and then how,
+      with the node selector beside the buttons as upstream has it; Import
+      carries an icon. Same fields, labels, options and order.
+    Its words, all ours: the card titles `Response`, `Answer`, `Server`, `Flags`;
+    `Opcode`, `ID`, `Extended DNS Errors`, `Authority`, `Additional`, `Name
+    Server`, `Protocol`, `Round Trip Time`, `Datagram Size`, `UDP Payload Size`,
+    `EDNS Flags`, `DNSSEC`; the flags' abbreviations and their tooltip names (the
+    datagram's keys split into words); the tabs' `Question`, `Answer`,
+    `Authority`, `Additional`, `JSON`; the headers `Name`, `Type`, `Class`,
+    `TTL`, `Data`, `Source`, `Info Code`, `Extra Text`, `RCODE`; the sources
+    `EDNS` and `DNS Client`; `No Record Found` (the zone table's words); `Show
+    raw response N` / `Hide raw response N`; and the Import confirmation's title
+    and verb, `Import`.
+19. **DHCP says what it holds** (Adrián's decision, 2026-11-06). Its two tabs open
+    with stat cards and their lists become `ui/DataTable`s, reading only DHCP's own
+    two lists:
+    - **Scopes opens with three cards** (`ScopeSummary.tsx`): All Scopes (Enabled
+      and Disabled), Address Pool (the leases held in the enabled scopes, of the
+      addresses in their ranges) and Leases (Dynamic and Reserved). The scope
+      table gains a **Leases** column, each scope's leases of the addresses in its
+      range, sortable by count. They read `dhcp/leases/list` beside
+      `dhcp/scopes/list`, the one call this deviation adds: the list the Leases tab
+      already loads, under the same DHCP: View, on the same node. When it fails the
+      scope table and All Scopes are untouched, no notice is raised, and the two
+      cards say "The leases could not be read." instead of drawing a false zero.
+      A range is `endingAddress - startingAddress + 1`; the exclusions are not in
+      `scopes/list`, so nothing calls the remainder "free" (`pool.ts`).
+    - **Leases opens with four cards** (`LeaseSummary.tsx`), counted from the list
+      on screen: All Leases (pressing a type sets the Type filter, pressing it
+      again clears it), Leases per Scope (pressing one sets the Scope filter),
+      Expiring Soon (within the next hour, and the first to go) and Newest Lease.
+    - **The lease table can be searched and filtered.** Upstream has no filter
+      here; the toolbar's Search (IP address, MAC address or host name, a MAC
+      typed with colons finding the server's dashes), Scope and Type filter the
+      list already loaded and ask the server nothing. The foot still reads
+      `Total Leases: N`, the whole list; while a filter hides rows the toolbar
+      says `N of M shown`. An empty result shows upstream's `No Lease Found`.
+    - **A lease type has a series colour** (`lease-colours.ts`): Dynamic the blue
+      upstream gives it, Reserved the violet (upstream's grey would read as "off"),
+      always with the word beside it. Lease Expires adds how far off it is under
+      the date.
+    - **The scope form takes the section index** (`ui/IndexedForm`, as Settings
+      and SSO), its entries the thirteen blocks' titles; the Ping Check `Warning!`
+      moves above the block's controls (DESIGN: Warning before, Note after); the
+      Ending Address says how many addresses the range holds while typing, only
+      for a valid IPv4 range; and the Vendor Specific Information hex samples may
+      wrap between their octets. Same fields, order, defaults, texts and save.
+    - **"Remove Lease?" draws its two `Warning!` paragraphs as warning blocks**,
+      same words, same order.
+    Its words, all OURS, declared in the header comment of the file that writes
+    them: the card titles `All Scopes`, `Address Pool`, `All Leases`, `Leases per
+    Scope`, `Expiring Soon`, `Newest Lease` (and `Leases`), `of N`, `addresses in
+    range`, `leased in the enabled scopes`, `in the enabled scopes`, `The leases
+    could not be read.`, `within the next hour`, `next:`, `obtained`, `None`, the
+    column header `Leases`, `Search`, its placeholder `IP address, MAC address or
+    host name`, `All`, `N of M shown` and `N addresses`/`1 address`.
 
 
 ## Four constraints the server imposes

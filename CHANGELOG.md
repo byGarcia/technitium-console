@@ -84,8 +84,25 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
   plain grey (a DNSSEC key's Delete, Delete Record, and two Remove buttons) now are too.
 - **The sidebar says technitium-console**, beside Technitium's own logo, now a vector file of
   the same mark so it stays sharp on high-density screens.
+- **Cache says what the open node holds:** cards for its records by type, the time left before
+  the next one expires and how many are stale, their DNSSEC states and the servers that answered,
+  all read from the answer already on screen. Record types are coloured in the table, and a record
+  kept past its TTL is marked `Stale`.
+- **Apps opens with four cards** (installed apps and their store status, classes by kind, what
+  serves Query Logs, what APP records can use). The installed apps and the App Store are tables,
+  with a Kind filter and a search, and each kind of DNS app has its own colour. The installed list
+  says `Total Apps` again.
+- **DNS Client draws the answer instead of only printing it:** cards for the response code, the
+  answer by record type, the server and the header flags; the Question, Answer, Authority,
+  Additional and Extended DNS Errors sections as tables; the JSON as its own tab; and each raw
+  response as a row that opens its JSON.
+- **DHCP at a glance.** Scopes opens with cards for the scopes by state, the address pool the
+  enabled scopes have leased and the leases by type, and each scope row says how many of its
+  addresses are leased. Leases opens with cards for the leases by type, per scope, those expiring
+  within the hour and the newest, and its table can be searched (IP, MAC, host name) and filtered
+  by scope and type, also from the cards. The scope form gets a section index.
 
-**Behaves like the stock console in three more places:**
+**Behaves like the stock console in more places:**
 
 - **Zones: a zone that does not exist says so.** Opening one (from an old link, for instance)
   showed "Unable to connect to the server"; it now shows the server's own message, as the stock
@@ -96,6 +113,12 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
   generation choice has its *Key Generation* label, the DNSKEY TTL says its default and is saved
   with *Update TTL*, and the warning about waiting for the old TTL is back. The NSEC3 fields say
   their valid ranges.
+- **DNS Client:** Import asks first, as the stock console does, since an import can create a zone.
+  Enter resolves, a pasted URL is cut to its host, choosing the recursive resolver or the system
+  DNS sets the protocol to UDP, a server typed by hand joins the list, the buttons say
+  *Resolving...* and *Importing...*, and an error shows the reason under it too.
+- **DHCP Leases:** converting or removing a lease on a sorted table acts on the row clicked. It
+  could act on another lease.
 
 ## v1.3.4 (2026-10-21)
 
