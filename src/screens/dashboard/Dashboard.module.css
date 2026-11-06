@@ -145,6 +145,8 @@ It goes AFTER `.tile .v` on purpose: same specificity, so the last one wins.
 beside it. The column ends where `Queries` does: `Server` takes what the week
 leaves.
 */
+.insights { display:grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--s-8); margin-top: var(--s-8); align-items: stretch; }
+@media (max-width: 1180px) { .insights { grid-template-columns: minmax(0, 1fr); } }
 .middle { display:grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: var(--s-8); margin-top: var(--s-8); }
 .side { display:grid; grid-template-rows: auto 1fr; gap: var(--s-8); min-width: 0; }
 .queries .legend { gap: 0 var(--s-2); margin-bottom: var(--s-3); }

@@ -119,6 +119,9 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
   field's help sits under its label, folded to one line; the save bar stays at the foot of the
   window and says what would change; Backup, Restore and Flush Cache move to the header. Notes and warnings
   are compact lines instead of boxes, and long helps fold to one line with *more*, in every form.
+- **How a query is resolved, on the Dashboard:** beside Response Time, a flow of the latest logged
+  queries from how the server answered them to what it answered; each kind and code opens Query
+  Logs filtered by it.
 - **Response Time on the Dashboard:** the median, the 95th percentile, the share over 100 ms and a
   histogram of the upstream round trips among the latest 1,000 logged queries. Query Logs shows
   each answer's round trip under its response type again, as the stock console does.

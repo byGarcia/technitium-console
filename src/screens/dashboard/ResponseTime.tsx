@@ -1,48 +1,25 @@
 import { useMemo } from 'react'
 import { Body, Panel } from '../../ui/Panel'
 import { Empty, Loading } from '../../ui/Empty'
-import { RouteLink } from '../../ui/RouteLink'
-import { LockedBody } from '../blocking/Locked'
-import { useLoggingApp } from '../blocking/logging-app'
-import { useQuerySample } from '../clients/query-sample'
+import { SampleState, type DashboardSample } from './dashboard-sample'
 import { BUCKETS, SLOW_MS, ms, responseTimes } from './response-time'
 import styles from './ResponseTime.module.css'
 
 /*
 Response Time, on the Dashboard (OURS, CONVENTIONS.md deviation 28): how long the
 server waited for the upstream answers among the newest 1,000 logged queries, as
-the median, the 95th percentile, the share over 100 ms and a histogram. Read
-through the first query logs app (`logs/query`, as Blocking's Blocked by client
-reads it), again each time the Dashboard's statistics answer; on the cluster
-aggregate, the log of the node the console is connected to, and the card says so.
+the median, the 95th percentile, the share over 100 ms and a histogram. The read is
+the Dashboard's one sample of the log (`dashboard-sample.tsx`); on the cluster
+aggregate it is the log of the node the console is connected to, and the card says so.
 
 Its words, all OURS: `Response Time`, `Median`, `95th percentile`, `Over 100 ms`,
 `Upstream round-trip time of the latest logged queries that were not answered from
 cache, a zone or a block.`, `In the last N queries` / `on <node>`, `N timed`,
 `No timed queries in the latest N.`, `milliseconds`, and the bucket labels.
 */
-export function ResponseTime({
-  token,
-  node,
-  onConnected,
-  serverDomain,
-  canView,
-  refreshOn,
-}: {
-  token: string | null
-  /** The node whose log is read; empty for the connected one. */
-  node: string
-  /** The Dashboard reads the aggregate: the log is the connected node's. */
-  onConnected: boolean
-  serverDomain?: string
-  canView: boolean
-  refreshOn: unknown
-}) {
-  const app = useLoggingApp(token, canView)
-  const sample = useQuerySample({ token, app, node, limit: 1000, refreshOn, enabled: canView })
+export function ResponseTime({ sample, where }: { sample: DashboardSample; where: string }) {
   const times = useMemo(() => (sample.kind === 'ok' ? responseTimes(sample.entries) : null), [sample])
   const top = times != null ? Math.max(1, ...times.counts) : 1
-  const where = onConnected && serverDomain != null && serverDomain !== '' ? ` on ${serverDomain}` : ''
 
   return (
     <Panel
@@ -51,17 +28,10 @@ export function ResponseTime({
       actions={times != null ? <span className={styles.caption}>In the last {times.sampled === 1 ? 'query' : `${times.sampled.toLocaleString('en-US')} queries`}{where}</span> : undefined}
     >
       <Body>
-        {!canView ? (
-          <LockedBody need="Logs.canView" />
-        ) : app.kind === 'none' ? (
-          <Empty compact>
-            Please install the &apos;Query Logs (Sqlite)&apos; DNS App or any other DNS app that supports query logging
-            feature from the <RouteLink to={{ section: 'apps', sub: null }}>Apps</RouteLink> section.
-          </Empty>
-        ) : sample.kind === 'loading' ? (
+        {sample.kind !== 'ok' ? (
+          <SampleState sample={sample} />
+        ) : times == null ? (
           <Loading compact />
-        ) : sample.kind !== 'ok' || times == null ? (
-          <Empty compact>Could not load this data.</Empty>
         ) : times.timed === 0 ? (
           <Empty compact>No timed queries in the latest {times.sampled.toLocaleString('en-US')}.</Empty>
         ) : (

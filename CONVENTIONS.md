@@ -1668,6 +1668,17 @@ contract and SECURITY.md.
     And **the row's round trip is back in Query Logs**: upstream draws `(N.NN ms)` under
     the response type (logs.js:517); it had gone under `Details` only.
 
+29. **The Dashboard shows how a query is resolved** (Adrián's decision, 2026-11-06;
+    `screens/dashboard/Resolution.tsx`, `resolution.ts`). Beside Response Time (deviation
+    28), over the same one read of the log (`dashboard-sample.tsx`: the newest 1,000
+    entries, read once for both cards), a flow from all the queries, through how the
+    server answered them (`Cached`, `Recursive`, `Authoritative`, `Blocked` for the three
+    blocked kinds, `Other`) to what it answered (`No Error`, `NX Domain`, `Server
+    Failure`, `Refused`, `Other`), each band as thick as its queries. A kind or a code
+    with a name opens Query Logs filtered by it, with no period (the sample is the
+    newest queries, not the period). On a narrow card the codes move to a legend under
+    the bands. Its words, OURS, are declared in its header comment.
+
 ## Four constraints the server imposes
 
 These are not preferences: break them and the console works in development and

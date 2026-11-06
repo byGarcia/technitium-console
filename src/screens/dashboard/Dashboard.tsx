@@ -11,6 +11,8 @@ import { Line, Placeholder, Top, hasData } from './Panels'
 import { Breakdown } from './Breakdown'
 import { Heatmap } from './Heatmap'
 import { ResponseTime } from './ResponseTime'
+import { Resolution } from './Resolution'
+import { useDashboardSample } from './dashboard-sample'
 import {
   bucketWindow, periodFilters, protocolFilter, queryTypeFilter, responseTypeFilter,
 } from './jump'
@@ -294,6 +296,10 @@ export function Dashboard({
         }
       : undefined
   const responseJump = byValue('responseType', responseTypeFilter)
+  /* The newest logged queries (deviations 28 and 29): on the aggregate, the connected node's log. */
+  const logNode = !clusterInitialised || node === AGGREGATE ? '' : node
+  const logSample = useDashboardSample(token, logNode, canViewLogs, data)
+  const logWhere = clusterInitialised && node === AGGREGATE && serverDomain != null && serverDomain !== '' ? ` on ${serverDomain}` : ''
   /* The count cards' jump is upstream's (v15.6.2, logs.js:21-24): no node and no
      period, only the card's response code or type, so Query Logs keeps the node it
      had and its own empty `From`/`To`. */
@@ -472,14 +478,15 @@ export function Dashboard({
         </div>
       </div>
 
-      <ResponseTime
-        token={token}
-        node={!clusterInitialised || node === AGGREGATE ? '' : node}
-        onConnected={clusterInitialised && node === AGGREGATE}
-        serverDomain={serverDomain}
-        canView={canViewLogs}
-        refreshOn={data}
-      />
+      {/* The two cards over the newest logged queries (deviations 28 and 29), side by side. */}
+      <div className={styles.insights}>
+        <ResponseTime sample={logSample} where={logWhere} />
+        <Resolution
+          sample={logSample}
+          where={logWhere}
+          open={canJump ? (f) => handoff?.showQueryLogs(null, null, logNode, f) : undefined}
+        />
+      </div>
 
       <div className={styles.lists}>
         <Top

@@ -3,7 +3,7 @@ Response Time (deviation 28): the three figures at the left, the histogram at th
 right, one row; stacked under 760 px of card. The bars are the Total series'
 colour, the slow tail (over 100 ms) the warning one: amber only where it is slow.
 */
-.panel { margin-top: var(--s-8); container-type: inline-size; }
+.panel { container-type: inline-size; min-width: 0; }
 
 .caption { font-size: var(--t-2); color: var(--faint); }
 
