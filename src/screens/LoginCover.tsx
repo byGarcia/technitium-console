@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react'
 import styles from './LoginCover.module.css'
+import { BrandMark } from '../app/BrandMark'
 
 /*
 The login cover, OURS: a brand panel beside the stock login form. It is a
@@ -7,7 +8,7 @@ deliberate deviation from upstream (CONVENTIONS.md, "Deliberate deviations from
 upstream behaviour", 2026-10-15), and it only changes the layout around the
 form: every field, text, step and alert of `Login.tsx` is upstream's and stays so.
 
-Every word in this file is OURS: the name `technitium-console`, the headline,
+Every word in this file is OURS: the name `Technitium` with `Console` under it, the headline,
 the `;; ANSWER SECTION:` line and the four TXT records (keys and values). They
 are written so they do not age: nothing says "new", and each line is true of the
 console as it ships today, which is why a line has to change the day it stops
@@ -21,14 +22,18 @@ faint grid drifting one cell at a time and a soft amber glow, both decorative,
 hidden from screen readers, and still under `prefers-reduced-motion`.
 */
 
-export const COVER_NAME = 'technitium-console'
+/* Since 2026-11-06 the cover names the console as the sidebar does: the redrawn mark,
+   `Technitium` with the version, and `Console` under it. */
+export const COVER_NAME = 'Technitium'
+export const COVER_SUB = 'Console'
 export const COVER_HEADLINE = 'The same DNS server, in a rebuilt console.'
 
 /** The answer block: one TXT record per thing the console offers. */
 export const COVER_RECORDS: readonly { key: string; value: string }[] = [
   { key: 'features.', value: 'every stock feature, same API' },
-  { key: 'blocking.', value: 'rules and lists in one place' },
-  { key: 'themes.', value: 'light, dark or system' },
+  { key: 'clients.', value: 'who asks, and what gets blocked' },
+  { key: 'search.', value: 'Ctrl K to any page or zone' },
+  { key: 'cluster.', value: 'every node side by side' },
   { key: 'phone.', value: 'works on a phone' },
 ]
 
@@ -41,10 +46,15 @@ export function LoginCover() {
       </div>
 
       <p className={styles.name}>
-        <span className={styles.dot} aria-hidden="true" />
-        <span>{COVER_NAME}</span>
-        {/* The version from package.json, injected at build time (vite.config.ts). */}
-        <span className={styles.version}>v{__CONSOLE_VERSION__}</span>
+        <BrandMark size={34} />
+        <span className={styles.nameText}>
+          <span className={styles.nameLine}>
+            <span>{COVER_NAME}</span>
+            {/* The version from package.json, injected at build time (vite.config.ts). */}
+            <span className={styles.version}>v{__CONSOLE_VERSION__}</span>
+          </span>
+          <span className={styles.sub}>{COVER_SUB}</span>
+        </span>
       </p>
 
       <p className={styles.headline}>{COVER_HEADLINE}</p>

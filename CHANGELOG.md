@@ -27,6 +27,8 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
 
 **Flat controls and a calmer chrome.** Design only: every control, text and step is the same.
 
+- **The login names the console as the sidebar does**, with its version, and its password field can
+  show what was typed and says when Caps Lock is on.
 - **Query Logs across the cluster:** on a cluster, `All nodes` in Query Logs sends the query to
   every node and shows the newest entries of all of them in one table, newest first, with a Node
   column and each node's own total for the filters. Only the newest page is offered in this view,

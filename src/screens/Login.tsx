@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { apiRequest } from '../api/client'
 import { getStatus } from '../api/status'
 import { type AlertType } from '../ui/Alert'
 import { Button } from '../ui/Button'
-import { LabeledInput } from '../ui/Field'
+import { Field, Input, LabeledInput } from '../ui/Field'
+import { Icon } from '../ui/Icon'
 import { ForgotPassword } from './modals/ForgotPassword'
 import styles from './Login.module.css'
 import { publicUrl } from '../app/base'
@@ -55,6 +56,9 @@ export function Login({
   const [user, setUser] = useState('')
   const [pass, setPass] = useState('')
   const [totp, setTotp] = useState('')
+  const [showPass, setShowPass] = useState(false)
+  const [caps, setCaps] = useState(false)
+  const capsId = useId()
   const [otpVisible, setOtpVisible] = useState(false)
   const [busy, setBusy] = useState(false)
   const [forgotten, setForgotten] = useState(false)
@@ -260,15 +264,47 @@ export function Login({
                 autoComplete="username"
                 onChange={(e) => setUser(e.target.value)}
               />
-              <LabeledInput
-                label="Password"
-                type="password"
-                ref={passRef}
-                value={pass}
-                disabled={otpVisible}
-                autoComplete="current-password"
-                onChange={(e) => setPass(e.target.value)}
-              />
+              {/* The password field (2026-11-06, CONVENTIONS.md deviation 42): Show to read
+                  what was typed, and a line when Caps Lock is on. Neither changes what is
+                  sent. Their words are OURS: `Show password`, `Hide password`,
+                  `Caps Lock is on`. */}
+              <Field label="Password">
+                {(id) => (
+                  <>
+                    <span className={styles.secret}>
+                      <Input
+                        id={id}
+                        type={showPass ? 'text' : 'password'}
+                        ref={passRef}
+                        value={pass}
+                        disabled={otpVisible}
+                        autoComplete="current-password"
+                        aria-describedby={caps ? capsId : undefined}
+                        onChange={(e) => setPass(e.target.value)}
+                        onKeyDown={(e) => setCaps(e.getModifierState?.('CapsLock') === true)}
+                        onKeyUp={(e) => setCaps(e.getModifierState?.('CapsLock') === true)}
+                        onBlur={() => setCaps(false)}
+                      />
+                      <button
+                        type="button"
+                        className={styles.reveal}
+                        aria-label={showPass ? 'Hide password' : 'Show password'}
+                        aria-pressed={showPass}
+                        title={showPass ? 'Hide password' : 'Show password'}
+                        disabled={otpVisible}
+                        onClick={() => setShowPass((v) => !v)}
+                      >
+                        <Icon name="eye" size={16} />
+                      </button>
+                    </span>
+                    {caps && (
+                      <span id={capsId} className={styles.caps} role="status">
+                        Caps Lock is on
+                      </span>
+                    )}
+                  </>
+                )}
+              </Field>
               {otpVisible && (
                 <LabeledInput
                   label="OTP"

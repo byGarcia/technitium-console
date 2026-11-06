@@ -160,3 +160,33 @@ and draws a ring before its label. The label does not change.
   .body { padding: var(--s-10); }
   .sso { padding: var(--s-9) var(--s-10); }
 }
+
+/*
+The password field's Show button inside its right edge, and the Caps Lock line under
+it (2026-11-06, deviation 42). The input keeps its full width; its text stops short
+of the button.
+*/
+.secret { position: relative; display: block; }
+.secret > input { width: 100%; padding-right: calc(var(--field-height) + var(--s-2)); }
+.reveal {
+  position: absolute;
+  top: 50%;
+  right: var(--s-2);
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(var(--field-height) - var(--s-4));
+  height: calc(var(--field-height) - var(--s-4));
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-1);
+  background: none;
+  color: var(--faint);
+  cursor: pointer;
+}
+.reveal:hover { color: var(--ink); background: var(--nav-hover); }
+.reveal[aria-pressed='true'] { color: var(--acc-ink); }
+.reveal:focus-visible { outline: var(--focus); outline-offset: 0; }
+.reveal:disabled { cursor: default; opacity: 0.5; }
+.caps { display: block; margin-top: var(--s-3); font-size: var(--t-2); color: var(--warn); }

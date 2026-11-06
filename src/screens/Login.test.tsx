@@ -187,3 +187,34 @@ describe('Forgot Password?', () => {
     expect(spy).not.toHaveBeenCalled()
   })
 })
+
+/* The password field's own help (deviation 42): nothing of it travels to the server. */
+describe('Login: the password field', () => {
+  it('shows and hides what was typed, and sends it the same either way', async () => {
+    const login = vi.spyOn(client, 'apiRequest').mockResolvedValue({ kind: 'error', message: 'Invalid username or password.' } as never)
+    render(<Login onSuccess={() => {}} />)
+    const pass = screen.getByLabelText('Password')
+    await userEvent.type(screen.getByLabelText('Username'), 'admin')
+    await userEvent.type(pass, 's3cret')
+    expect(pass).toHaveAttribute('type', 'password')
+    await userEvent.click(screen.getByRole('button', { name: 'Show password' }))
+    expect(pass).toHaveAttribute('type', 'text')
+    expect(screen.getByRole('button', { name: 'Hide password' })).toHaveAttribute('aria-pressed', 'true')
+    await userEvent.click(screen.getByRole('button', { name: 'Login' }))
+    const call = login.mock.calls.find((c) => c[0] === 'user/login')
+    expect(call?.[1]?.body).toMatchObject({ user: 'admin', pass: 's3cret' })
+  })
+
+  it('says when Caps Lock is on, and stops saying it on leaving the field', async () => {
+    render(<Login onSuccess={() => {}} />)
+    const pass = screen.getByLabelText('Password')
+    pass.focus()
+    const ev = new KeyboardEvent('keydown', { key: 'A', bubbles: true })
+    Object.defineProperty(ev, 'getModifierState', { value: (k: string) => k === 'CapsLock' })
+    pass.dispatchEvent(ev)
+    expect(await screen.findByRole('status')).toHaveTextContent('Caps Lock is on')
+    expect(pass).toHaveAttribute('aria-describedby', screen.getByRole('status').id)
+    pass.blur()
+    await vi.waitFor(() => expect(screen.queryByText('Caps Lock is on')).toBeNull())
+  })
+})

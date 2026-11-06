@@ -763,12 +763,14 @@ contract and SECURITY.md.
    panel beside the stock form above 960 px, and a header above it below,
    compact under 560 px (`screens/LoginCover.tsx`). It changes the layout and
    nothing else. Its limits, and crossing one is a bug:
-   - **the form is upstream's, whole**: every field, text, step (the OTP one
+   - **the form is upstream's, whole** (save deviation 42's Show and Caps Lock line
+     on the password, which send nothing): every field, text, step (the OTP one
      included), validation, alert and behaviour of `Login.tsx` is untouched, and
      it stays alone inside `<main>`; the cover is an `<aside>` outside it, and
      upstream's `Technitium DNS Server` is still the only `<h1>`;
    - **its words are ours and say so** in the header comment of its file: the
-     name, the headline and the four TXT records. They must not age (no "new")
+     name (since 2026-11-06 the sidebar's: the redrawn mark, `Technitium` with the
+     version and `Console` under it), the headline and the five TXT records. They must not age (no "new")
      and each must be true of the console as it ships; a line that stops being
      true changes in the same commit. It shows the console's version from the
      build and nothing else: no screenshot and no figure, since nobody has
@@ -1904,6 +1906,13 @@ contract and SECURITY.md.
       arrival only on DHCP's folders, and leaves with the section.
     Its words, OURS: `Node`, and those of `ui/AcrossNodes.tsx`; `DHCP view` is the toggle's
     accessible name (`ACCESSIBLE_NAMES` in `dev/check-parity-controls.mjs`).
+
+42. **The login's password field helps** (Adrián's decision, 2026-11-06; `screens/Login.tsx`).
+    A `Show password` button at the field's right edge shows what was typed (`Hide
+    password` to hide it again, `aria-pressed`), and a `Caps Lock is on` line appears
+    under the field while it has the focus and Caps Lock is on (read from the key
+    events, gone on leaving the field). What is sent, the steps and the texts are
+    upstream's. Its words, OURS: those three.
 
 ## Four constraints the server imposes
 

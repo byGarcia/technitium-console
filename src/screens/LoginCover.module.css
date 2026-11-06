@@ -109,8 +109,10 @@ tokens keep the contrast `dev/theme-contrast.mjs` measures on `field`.
   letter-spacing: 0.01em;
   color: var(--mute);
 }
-.dot { flex: none; width: var(--s-7); height: var(--s-7); border-radius: var(--r-full); background: var(--acc); }
-.version { font-weight: 400; font-size: var(--t-4); color: var(--faint); }
+.nameText { display: flex; flex-direction: column; gap: var(--s-3); font-family: var(--font-ui); }
+.nameLine { display: flex; align-items: center; gap: var(--s-5); font: 650 var(--t-6)/1 var(--font-ui); letter-spacing: -0.01em; color: var(--ink); }
+.sub { font: 700 var(--t-1)/1 var(--font-ui); letter-spacing: 0.14em; text-transform: uppercase; color: var(--acc-ink); }
+.version { padding: 1px var(--s-3); border: 1px solid var(--line); border-radius: var(--r-2); font: 500 var(--t-2)/1.2 var(--font-mono); color: var(--mute); }
 
 .headline {
   margin: 0;
@@ -176,9 +178,9 @@ rest.
 
 @media (max-width: 560px) {
   .cover { gap: var(--s-5); padding: var(--s-11) var(--s-10) var(--s-10); }
-  .name { font-size: var(--t-4); gap: var(--s-5); }
-  .dot { width: var(--s-5); height: var(--s-5); }
-  .version { font-size: var(--t-3); }
+  .name { gap: var(--s-5); }
+  .nameLine { font-size: var(--t-5); }
+  .name > svg { width: 28px; height: 28px; }
   .headline { max-width: none; font-size: var(--t-6); }
   .answer { display: none; }
   .glow { top: -160%; right: -25%; width: 80%; }
