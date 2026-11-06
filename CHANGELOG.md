@@ -92,8 +92,8 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
   *Details*. Pressing a record type on the cards narrows the table to it, and a record kept past its
   TTL is marked `Stale`. The open node and that type are in the address bar, so a reload or a link
   comes back to them.
-- **Zones: the list's page and filters are in the address bar** too, so a reload or a link returns
-  to the same page.
+- **Zones: the list's page and filters are in the address bar** too, and so are a zone's records
+  page and filters, so a reload or a link returns to the same page.
 - **Apps opens with four cards** (installed apps and their store status, classes by kind, what
   serves Query Logs, what APP records can use). The installed apps and the App Store are tables,
   with a Kind filter and a search, and each kind of DNS app has its own colour. The installed list

@@ -139,6 +139,26 @@ describe('the open zone in the address bar', () => {
     expect(paged?.[1]?.body).toMatchObject({ pageNumber: '3', filterName: 'ca*', filterType: 'Primary' })
   })
 
+  it('a zone keeps its records page and filters in the bar, and a reload lands on them', async () => {
+    servedAt('/zones/?zone=casa.test&rtype=A&rname=www')
+    server()
+    render(<Zones token="t" canModify canDelete />)
+    await screen.findByRole('heading', { name: 'casa.test' })
+    expect(screen.getByLabelText('Type')).toHaveValue('A')
+    expect(bar()).toBe('/zones/?zone=casa.test&rtype=A&rname=www')
+  })
+
+  it('opening another zone or going back to the list leaves the records view behind', async () => {
+    servedAt('/zones/?zone=casa.test&rpage=2&rtype=A')
+    server()
+    const user = userEvent.setup()
+    render(<Zones token="t" canModify canDelete />)
+    await screen.findByRole('heading', { name: 'casa.test' })
+    await user.click(screen.getByRole('button', { name: 'Zones' }))
+    await screen.findByRole('button', { name: 'casa.test' })
+    expect(bar()).toBe('/zones/')
+  })
+
   it('the back button returns to the list, and forward opens the zone again', async () => {
     server()
     const user = userEvent.setup()

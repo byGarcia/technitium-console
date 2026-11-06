@@ -911,7 +911,10 @@ contract and SECURITY.md.
     Blocking keeps `?rule=`: the page (`?page=`, left out on 1) and the applied
     filters (`?name=`, `?type=`), written by replacing the entry once a list lands,
     so a reload or a copied link asks for that page with those filters, and Back
-    still walks between the list and the zones. `lib/url-state.ts`.
+    still walks between the list and the zones. `lib/url-state.ts`. A zone keeps its
+    records page and filters the same way (`?rpage=`, `?rname=`, `?rtype=`); they
+    belong to that zone, so opening another one or going back to the list takes them
+    out (`zone-url.ts`).
 14. **"Delete Zones" waits for a selection** (Adrián's decision, 2026-11-05).
     Upstream keeps the bulk delete button enabled and answers a click with nothing
     ticked with an `alert()`, "Please select one or more zones to delete."

@@ -1,3 +1,5 @@
+import { readParam, writeParams } from '../../lib/url-state'
+import { RECORDS_NAME, RECORDS_PAGE, RECORDS_TYPE } from './zone-url'
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { readPerPage, writePerPage } from '../../lib/stored-per-page'
 import {
@@ -136,15 +138,30 @@ export function ZoneRecords(p: ZoneRecordsProps) {
   fields only in `showEditZonePage` (zone.js:3594-3610), run by Go or by a page
   link, so typing a filter changes nothing on screen until then.
   */
-  const [nameField, setNameField] = useState('')
-  const [typeField, setTypeField] = useState('')
+  /* The bar's `?rname=`, `?rtype=` and `?rpage=` (`zone-url.ts`) are the records a
+     reload or a copied link lands on: typed and applied, as Go would apply them. */
+  const [nameField, setNameField] = useState(() => readParam(RECORDS_NAME) ?? '')
+  const [typeField, setTypeField] = useState(() => readParam(RECORDS_TYPE) ?? '')
   /* What is typed in Page Number; `null` shows the page on screen (zone.js:3733). */
   const [pageDraft, setPageDraft] = useState<string | null>(null)
   const [perPageField, setPerPageField] = useState(() => readPerPage(RECORDS_PER_PAGE_KEY, RECORDS_PER_PAGE, 10))
-  const [nameFilter, setNameFilter] = useState('')
-  const [typeFilter, setTypeFilter] = useState('')
+  const [nameFilter, setNameFilter] = useState(() => readParam(RECORDS_NAME) ?? '')
+  const [typeFilter, setTypeFilter] = useState(() => readParam(RECORDS_TYPE) ?? '')
   const [perPage, setPerPage] = useState(perPageField)
-  const [page, setPage] = useState(1)
+  const [page, setPage] = useState(() => {
+    const n = Number(readParam(RECORDS_PAGE) ?? 1)
+    return Number.isInteger(n) && n > 0 ? n : 1
+  })
+
+  /* What is on screen goes to the bar, replacing the zone's entry, as the zone
+     list keeps its page: Back still returns to the list, not to another page. */
+  useEffect(() => {
+    writeParams({
+      [RECORDS_PAGE]: page > 1 ? String(page) : null,
+      [RECORDS_NAME]: nameFilter,
+      [RECORDS_TYPE]: typeFilter,
+    })
+  }, [page, nameFilter, typeFilter])
 
   /** `showEditZonePage(pageNumber)`: the fields applied, on that page or the
    *  one in Page Number (0 or empty is 1). */

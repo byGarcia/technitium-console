@@ -22,6 +22,14 @@ kept: only `zone` is ours.
 
 const PARAM = 'zone'
 
+/* A zone's records page and filters (`ZoneRecords`), as the list keeps its own.
+   They belong to the zone on screen, so a change of zone, and the way back to the
+   list, takes them out. */
+export const RECORDS_PAGE = 'rpage'
+export const RECORDS_NAME = 'rname'
+export const RECORDS_TYPE = 'rtype'
+const RECORDS = [RECORDS_PAGE, RECORDS_NAME, RECORDS_TYPE]
+
 /** The zone the bar asks for, or `null` for the list. The root zone is `.`. */
 export function readZoneParam(search = window.location.search): string | null {
   const zone = new URLSearchParams(search).get(PARAM)
@@ -33,6 +41,7 @@ function zoneSearch(search: string, zone: string | null): string {
   const params = new URLSearchParams(search)
   if (zone == null) params.delete(PARAM)
   else params.set(PARAM, zone)
+  for (const r of RECORDS) params.delete(r)
   const out = params.toString()
   return out === '' ? '' : `?${out}`
 }
@@ -61,6 +70,6 @@ export function writeZone(zone: string | null, replaceEntry = false): void {
  * without this the zone would follow the user to `/dashboard/?zone=…`.
  */
 export function dropZoneParam(): void {
-  if (readZoneParam() == null) return
+  if (readZoneParam() == null && RECORDS.every((r) => new URLSearchParams(window.location.search).get(r) == null)) return
   window.history.replaceState(null, '', window.location.pathname + zoneSearch(window.location.search, null))
 }
