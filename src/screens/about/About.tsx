@@ -3,7 +3,7 @@ import { SectionHeader } from '../../ui/SectionHeader'
 import { dateTime } from '../../lib/dates'
 import { Panel } from '../../ui/Panel'
 import { DomainName } from '../../ui/DomainName'
-import { publicUrl } from '../../app/base'
+import { BrandMark } from '../../app/BrandMark'
 import { Icon, type IconName } from '../../ui/Icon'
 import styles from './About.module.css'
 
@@ -119,13 +119,13 @@ export function About({ info }: { info?: Info }) {
   const up = info ? uptime(info.uptimestamp) : null
   return (
     <>
-      {/* Technitium's logo, not an initial of ours. Upstream puts it right
-          above the name (`index.html:3644`), and the file travels in
-          `public/img/` untouched. */}
+      {/* The console's mark, the side panel's (`app/BrandMark`), where upstream
+          puts its logo right above the name (`index.html:3644`). It was the old
+          file until 2026-11-06. */}
       <SectionHeader
         section="About"
         title="Technitium DNS Server"
-        mark={<img className={styles.logo} src={publicUrl('img/logo.svg')} alt="" width={52} height={52} />}
+        mark={<BrandMark size={52} />}
         /* What is running, on the header's line (2026-11-06): an object's page says
            its facts under its name, as a zone says its serial, instead of a row of
            cards. */
@@ -241,6 +241,31 @@ export function About({ info }: { info?: Info }) {
 
         {/* OURS (deviation 9): this console's column, under its card. */}
         <div className={`${styles.column} ${styles.console}`}>
+          {/*
+          First in its column and marked (2026-11-06): Technitium's Donate beside it
+          is the one a reader meets first otherwise, and the two are not the same
+          project. The line under the title says where each one goes.
+          */}
+          <Panel title="Support the Console" className={styles.support}>
+            <div className={styles.prose}>
+              <p>
+                Free, and it stays free. A star or a good bug report helps as much as a donation.
+              </p>
+              <p className={styles.whereTo}>
+                These go to this console&apos;s author. Technitium&apos;s Donate supports the DNS server.
+              </p>
+              <Link href={FUNDING[0][1]} cls={`${styles.button} ${styles.wide} ${styles.lead}`}>
+                <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M8 14.2 6.9 13.2C3 9.7.5 7.4.5 4.6.5 2.3 2.3.5 4.6.5c1.3 0 2.5.6 3.4 1.6C8.9 1.1 10.1.5 11.4.5c2.3 0 4.1 1.8 4.1 4.1 0 2.8-2.5 5.1-6.4 8.6L8 14.2Z" /></svg>
+                {FUNDING[0][0]}
+              </Link>
+              <div className={styles.funding}>
+                <Link href={CONSOLE_REPO} cls={styles.button}>Star on GitHub</Link>
+                {FUNDING.slice(1).map(([label, href]) => (
+                  <Link key={label} href={href} cls={styles.button}>{label}</Link>
+                ))}
+              </div>
+            </div>
+          </Panel>
           <Panel title="On GitHub">
             <p className={styles.consoleNote}>
               <Link href={`${CONSOLE_REPO}/blob/main/LICENSE`}>GPL-3.0-or-later</Link>. An independent
@@ -255,19 +280,6 @@ export function About({ info }: { info?: Info }) {
             </ul>
           </Panel>
 
-          <Panel title="Support the Console">
-            <div className={styles.prose}>
-              <p>
-                Free, and it stays free. A star or a good bug report helps as much as a donation.
-              </p>
-              <Link href={CONSOLE_REPO} cls={`${styles.button} ${styles.wide}`}>Star on GitHub</Link>
-              <div className={styles.funding}>
-                {FUNDING.map(([label, href]) => (
-                  <Link key={label} href={href} cls={styles.button}>{label}</Link>
-                ))}
-              </div>
-            </div>
-          </Panel>
         </div>
       </div>
     </>

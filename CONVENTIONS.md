@@ -881,8 +881,9 @@ contract and SECURITY.md.
    Here every one of its sentences and destinations stays, word for word, laid out
    the way Zones and Cache are; nothing is asked of the server (everything comes
    from the session's `info`), so there is no loading or failure state:
-   - **The header is the server**: the path `About ›`, Technitium's logo (the file
-     in `public/img/`, untouched), `Technitium DNS Server` and the server's domain.
+   - **The header is the server**: the path `About ›`, the console's mark
+     (`app/BrandMark.tsx`, the sidebar's; it was the file in `public/img/` until
+     2026-11-06), `Technitium DNS Server` and the server's domain.
    - **What is running is the header's line**, after the domain: `DNS Server` and its
      version, `Uptime` (the span since `uptimestamp` in its two largest units, `2d
      3h`, `4h 5m`, `12m`) with `since` and the date, and `Web Console` with
@@ -900,6 +901,13 @@ contract and SECURITY.md.
      console fault does not go to Technitium's support) and `Ideas and questions`;
      and `Support the Console`, one sentence, `Star on GitHub` and the four
      destinations of `.github/FUNDING.yml` as buttons.
+   - **`Support the Console` comes first in that column, and is marked** (Adrián's
+     decision, 2026-11-06): upstream's `Donate` sits beside it and a visitor who
+     wants to give to the console would otherwise land on Technitium's. It is the
+     one violet thing on the page (edge, tint and `GitHub Sponsors` filled, with a
+     heart), and a second sentence says where each one goes: `These go to this
+     console's author. Technitium's Donate supports the DNS server.` Upstream's
+     `Donate` is untouched.
    Its words, all OURS: `Uptime`, the span's format, `Documentation`, `License`,
    `On GitHub`, `Web Console`, `DNS Server`, `Version` as a card label and the
    console's sentences, which follow the README's `Support` and `Licence`.
@@ -1514,8 +1522,9 @@ contract and SECURITY.md.
       emitted and `route.ts` rewrites it to `/blocking/settings/` (`MOVED_ROUTES`). The
       page needs `Settings.canView`, as the pane did.
     - **The brand and the versions.** At the top, Technitium's maze redrawn in its
-      blue tile (`app/BrandMark.tsx`, the same geometry as `public/img/logo.png`; Login
-      and About keep the original file), `Technitium` with this console's version
+      blue tile (`app/BrandMark.tsx`, the same geometry as `public/img/logo.png`; since
+      2026-11-06 Login, About and the browser tab use it too, the tab as
+      `public/favicon.svg` and `favicon.ico`, the mark in white on a solid tile), `Technitium` with this console's version
       beside it and `Console` under it, the console's `Update` chip beside that word
       when there is one. At the foot, above the account, a quiet card with the DNS
       server's domain and `DNS Server <version>`, its `Update` chip at the line's end
@@ -1986,7 +1995,8 @@ fails in production.
   same origin**: a font embedded as a `data:` URI inherits `default-src 'self'`
   and does not load. No CDN is possible either.
 - **`public/` holds the assets the server or the console still need**:
-  `favicon.ico`, `robots.txt`, `img/` (including `oidc.png`, which the login uses)
+  `favicon.ico` and `favicon.svg` (the console's mark since 2026-11-06, no longer
+  upstream's file), `robots.txt`, `img/` (including `oidc.png`, which the login uses)
   and `json/*-builtin.json`. The build emits them again.
 
 ## Closing

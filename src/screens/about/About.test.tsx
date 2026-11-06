@@ -17,12 +17,14 @@ function said(el: HTMLElement): string {
 }
 
 describe('About', () => {
-  it('the header is the server: its name, its logo and its domain, under the About path', () => {
+  it('the header is the server: its name, the console\'s mark and its domain, under the About path', () => {
     render(<About info={info} />)
     expect(screen.getByRole('heading', { level: 1, name: 'Technitium DNS Server' })).toBeInTheDocument()
     const trail = screen.getByRole('navigation', { name: 'Breadcrumb' })
     expect(within(trail).getByText('About')).toBeInTheDocument()
-    expect(document.querySelector('img[src$="img/logo.svg"]')).not.toBeNull()
+    // The mark is the side panel's (`app/BrandMark`), not the old file.
+    expect(document.querySelector('img[src$="img/logo.svg"]')).toBeNull()
+    expect([...document.querySelectorAll('svg')].some((svg) => svg.getAttribute('viewBox') === '0 0 48 48')).toBe(true)
     // The domain is drawn label by label (`ui/DomainName`), under the title.
     const named = screen.getByRole('heading', { level: 1 }).parentElement as HTMLElement
     expect(said(named)).toContain('dns.example.net')
@@ -194,5 +196,15 @@ describe('About', () => {
       expect(within(support).getByRole('link', { name })).toHaveAttribute('href', href)
     }
     expect(said(block('On GitHub'))).toContain('An independent project, not affiliated with or endorsed by Technitium.')
+  })
+
+  it('the console\'s support comes first in its column and says where the money goes', () => {
+    render(<About info={info} />)
+    const support = block('Support the Console')
+    expect(said(support)).toContain("These go to this console's author. Technitium's Donate supports the DNS server.")
+    // Above On GitHub, so it is the first thing in the console's column.
+    expect(support.compareDocumentPosition(block('On GitHub')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    // GitHub Sponsors is the first link in it.
+    expect(within(support).getAllByRole('link')[0]).toHaveAccessibleName('GitHub Sponsors')
   })
 })

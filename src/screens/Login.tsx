@@ -11,6 +11,7 @@ import { publicUrl } from '../app/base'
 import { FooterLinks } from '../ui/FooterLinks'
 import { Notifier } from '../ui/Notifier'
 import { LoginCover } from './LoginCover'
+import { BrandMark } from '../app/BrandMark'
 
 /*
 The login screen. A replica of `login()` in
@@ -241,7 +242,7 @@ export function Login({
       <main className={styles.page}>
         <div className={styles.card}>
           <h1 className={styles.brand}>
-            <img className={styles.mark} src={publicUrl('img/logo.svg')} alt="" width={28} height={28} />
+            <BrandMark size={28} />
             <span className={styles.name}>Technitium DNS Server</span>
           </h1>
 

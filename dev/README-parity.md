@@ -33,7 +33,6 @@ still serves for what the build preserves untouched:
 
 ```bash
 ./check-parity.sh /robots.txt   # IDENTICAL
-./check-parity.sh /favicon.ico  # IDENTICAL
 ```
 
 ## `parity-login.mjs`

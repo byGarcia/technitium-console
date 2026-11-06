@@ -6,8 +6,11 @@ tile tinted with Technitium's blue and a 1 px edge, which is how the console
 draws whatever is current. It is inline and not an `<img>` so its colours are
 theme tokens (`--brand-*` in `theme/tokens.css`).
 
-Only the side panel and the phone header use it. Login and About keep the
-original file, because there the name on screen is Technitium DNS Server.
+It is the console's one mark: the side panel, the phone header, the login (cover
+and card) and About use it, and `public/favicon.svg` is the same drawing in
+white on a solid tile, so it reads at 16 px on a light or a dark tab bar. Until
+2026-11-06 Login and About kept the original file; now only the server's own
+pages, which the console does not draw, show it.
 */
 export function BrandMark({ size = 26 }: { size?: number }) {
   return (

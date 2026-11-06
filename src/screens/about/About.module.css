@@ -82,3 +82,38 @@ so the whole row is the target; a link inside the sentence sits above that box.
 @media (max-width: 720px) {
   .blocks, .console { grid-template-columns: minmax(0, 1fr); }
 }
+
+/*
+Support the Console, marked (2026-11-06) in the violet of the palette and not in
+the amber: amber is the console's "this is yours to change", and a donation card
+in it read as one more setting. Violet is used nowhere else on About, so the
+card is the one thing on the page in that colour. GitHub Sponsors is its one
+filled button, with a heart; the sentence under the text says where each
+donation goes. The ink on the filled button is `--pan`: dark on the light violet
+of the dark theme, white on the deep violet of the light one.
+*/
+/* Doubled so it outranks the panel's own border, whatever order the modules load in. */
+.support.support {
+  border-color: color-mix(in srgb, var(--viol) 60%, var(--line));
+  background: color-mix(in srgb, var(--viol) 12%, var(--pan));
+}
+.support.support > :first-child { border-bottom-color: color-mix(in srgb, var(--viol) 35%, var(--line)); }
+.whereTo { font-size: var(--t-2); color: var(--mute); }
+/* Inside the card, so it outranks the button's own rest. Its hover has to outrank
+   the neutral button's (`.btn:not(.primary):not(.danger):hover:not(:disabled)`,
+   five classes), which otherwise paints it grey and leaves the `--pan` text
+   unseen: hence the doubled classes. The hover moves the violet toward the ink,
+   lighter in dark and deeper in light, as the amber primary's does. */
+.support .lead {
+  gap: var(--s-4);
+  background: var(--viol);
+  border-color: var(--viol);
+  color: var(--pan);
+  font-weight: 600;
+}
+.support.support .lead.lead:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--viol) 82%, var(--ink));
+  border-color: color-mix(in srgb, var(--viol) 82%, var(--ink));
+  color: var(--pan);
+}
+.lead svg { flex: none; }

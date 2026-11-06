@@ -69,7 +69,7 @@ band, the place a dialog puts its title, over a hairline.
   font-weight: inherit;
 }
 /* Technitium's logo, not an initial of ours. See `app/Shell.module.css`. */
-.mark { width: 28px; height: 28px; flex: none; }
+.brand > svg { flex: none; }
 .name { font-weight: 650; letter-spacing: -0.01em; color: var(--ink); font-size: var(--t-6); }
 
 .body { padding: var(--s-11); }
