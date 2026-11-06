@@ -652,7 +652,9 @@ export function Settings({
         onClose={() => setConfirm(null)}
         title="Flush Cache"
         label="Flush"
-        variant="primary"
+        /* It empties the whole cache, as the red button that opens it says: the
+           question is drawn as destructive too (Cache's own is). */
+        variant="danger"
         text="Are you sure to flush the DNS Server cache?"
         busy={busy}
         onConfirm={() => void doFlushCache()}
