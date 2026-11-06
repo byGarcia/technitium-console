@@ -17,6 +17,7 @@ import {
 } from '../../api/admin'
 import type { ClusterState } from '../../api/admin-cluster'
 import { UserDetails } from './UserDetails'
+import { DialogForm, DialogPair, dialogForm as df } from '../../ui/DialogForm'
 import {
   noticeFromFailure,
   Confirm,
@@ -534,52 +535,58 @@ function AddUser({
       }
     >
       <Notifier notice={notice} onClose={() => setNotice(null)} />
-      <MRow label="Display Name">
-        {(id) => (
-          <Input
-            id={id}
-            placeholder="display name"
-            maxLength={255}
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-          />
-        )}
-      </MRow>
-      <MRow label="Username">
-        {(id) => (
-          <Input
-            id={id}
-            placeholder="username"
-            maxLength={255}
-            value={user}
-            onChange={(e) => setUser(e.target.value)}
-          />
-        )}
-      </MRow>
-      <MRow label="Password">
-        {(id) => (
-          <Input
-            id={id}
-            type="password"
-            placeholder="password"
-            maxLength={255}
-            value={pass}
-            onChange={(e) => setPass(e.target.value)}
-          />
-        )}
-      </MRow>
-      <MRow label="Confirm Password">
-        {(id) => (
-          <Input
-            id={id}
-            type="password"
-            placeholder="confirm password"
-            maxLength={255}
-            value={confirm}
-            onChange={(e) => setConfirm(e.target.value)}
-          />
-        )}
-      </MRow>
+      {/* The two names, then the password and its confirmation on one line: they
+          are one thing typed twice. */}
+      <DialogForm>
+        <MRow label="Display Name">
+          {(id) => (
+            <Input
+              id={id}
+              placeholder="display name"
+              maxLength={255}
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+            />
+          )}
+        </MRow>
+        <MRow label="Username">
+          {(id) => (
+            <Input
+              id={id}
+              placeholder="username"
+              maxLength={255}
+              value={user}
+              onChange={(e) => setUser(e.target.value)}
+            />
+          )}
+        </MRow>
+        <DialogPair>
+          <MRow label="Password">
+            {(id) => (
+              <Input
+                id={id}
+                type="password"
+                placeholder="password"
+                maxLength={255}
+                value={pass}
+                onChange={(e) => setPass(e.target.value)}
+              />
+            )}
+          </MRow>
+          <MRow label="Confirm Password">
+            {(id) => (
+              <Input
+                id={id}
+                type="password"
+                placeholder="confirm password"
+                maxLength={255}
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
+              />
+            )}
+          </MRow>
+        </DialogPair>
+      </DialogForm>
     </Dialog>
   )
 }
@@ -650,29 +657,33 @@ function ResetPassword({
       }
     >
       <Notifier notice={notice} onClose={() => setNotice(null)} />
-      <MRow label="Username">{(id) => <Input id={id} value={username} readOnly />}</MRow>
-      <MRow label="New Password">
-        {(id) => (
-          <Input
-            id={id}
-            type="password"
-            maxLength={255}
-            value={blank}
-            onChange={(e) => setBlank(e.target.value)}
-          />
-        )}
-      </MRow>
-      <MRow label="Confirm Password">
-        {(id) => (
-          <Input
-            id={id}
-            type="password"
-            maxLength={255}
-            value={confirm}
-            onChange={(e) => setConfirm(e.target.value)}
-          />
-        )}
-      </MRow>
+      <DialogForm>
+        <MRow label="Username">{(id) => <Input id={id} className={df.readOnly} value={username} readOnly />}</MRow>
+        <DialogPair>
+          <MRow label="New Password">
+            {(id) => (
+              <Input
+                id={id}
+                type="password"
+                maxLength={255}
+                value={blank}
+                onChange={(e) => setBlank(e.target.value)}
+              />
+            )}
+          </MRow>
+          <MRow label="Confirm Password">
+            {(id) => (
+              <Input
+                id={id}
+                type="password"
+                maxLength={255}
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
+              />
+            )}
+          </MRow>
+        </DialogPair>
+      </DialogForm>
     </Dialog>
   )
 }

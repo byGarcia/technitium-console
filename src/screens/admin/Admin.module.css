@@ -11,20 +11,8 @@
 /* The count is `ui/count.module.css`'s: see there for why. */
 .count { composes: bar below from '../../ui/count.module.css'; }
 
-/* The first column's user / group / section name opens its record. */
-/* No `word-break: break-all` of its own: it cut a name letter by letter wherever
-   the column was narrow. The shared rule breaks one only when it cannot fit. */
-.link { composes: entityLink from '../../ui/Table.module.css'; }
-
 .node { font-size: var(--t-4); padding: var(--s-3) var(--s-6); border:1px solid var(--line-field); border-radius: var(--r-2); background:var(--field); color:var(--ink); }
 
-/* The Edit Permissions dialog's subject names (the list is `PermissionMap`). A
-   name wraps between words, and a single word breaks only when it still does not
-   fit once the column has its room. */
-.who { color:var(--ink); font-family:var(--font-mono); font-size: var(--t-4); overflow-wrap: break-word; }
-
-/* The Edit Permissions dialog's checkbox: 18 px tall, given a 24 px target. */
-.chkPerm { composes: hitArea from '../../ui/interaction.module.css'; margin: 0 auto; display: block; }
 
 /* SSO and the Cluster modals: label + control rows, as in Settings. */
 
@@ -32,7 +20,6 @@
 .suffix { composes: trailer from '../../ui/text.module.css'; }
 .help { composes: help from '../../ui/Form.module.css'; }
 .group { composes: group from '../../ui/Form.module.css'; }
-.area { composes: area from '../../ui/PanelForm.module.css'; }
 /* The width only: the trigger's box is set by `ui/Select`. */
 .select { max-width: 420px; }
 
@@ -53,13 +40,6 @@ two other modules with the same values copied by hand.
    long as SSO's the button stays up top as you scroll down. */
 .bar { composes: bar from '../../ui/PanelForm.module.css'; }
 
-/* Modal body: the same rows, but with a narrower label. */
-.mval { font-size: var(--t-4); font-weight: 600; color:var(--ink); padding-top: var(--s-5); }
-.paragraph { composes: paragraph from '../../ui/text.module.css'; }
-.sub { margin: var(--s-10) 0 var(--s-5); font-size: var(--t-4); font-weight: 550; color:var(--ink); }
-.output { display:flex; flex-direction:column; gap: var(--s-5); }
-.link { font-size: var(--t-3); }
-.link a { color:var(--acc-ink); }
 
 
 

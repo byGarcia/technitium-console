@@ -138,3 +138,19 @@ describe('DNSSEC Properties, against upstream', () => {
     expect(within(dialog).getByText('bytes (valid range 0-32, recommended 0)')).toBeTruthy()
   })
 })
+
+/* Redrawn 2026-11-06: one line per key, its actions as the row's icon buttons
+   and the ZSK's rollover field under the row's Details. */
+describe('DNSSEC Properties, the keys table', () => {
+  it('a key is one line: its actions keep their names, the rollover field is under Details', async () => {
+    withKeys([{ ...key(7, 'ZoneSigningKey', 'Active'), rolloverDays: 30 }])
+    const dialog = await open()
+    const table = within(dialog).getByRole('table')
+    expect(within(table).getByRole('button', { name: 'Rollover' })).toBeInTheDocument()
+    expect(within(table).getByRole('button', { name: 'Retire' })).toBeInTheDocument()
+    expect(within(table).queryByLabelText('Rollover days for 7')).not.toBeInTheDocument()
+    await userEvent.click(within(table).getByRole('button', { name: 'Details' }))
+    expect(within(table).getByLabelText('Rollover days for 7')).toHaveValue('30')
+    expect(within(table).getByRole('button', { name: 'Save' })).toBeInTheDocument()
+  })
+})

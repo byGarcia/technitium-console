@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { apiRequest } from '../../api/client'
 import { Button } from '../../ui/Button'
 import { Dialog } from '../../ui/Dialog'
-import { Row } from '../../ui/Form'
+import { DialogField, DialogForm, DialogPair, dialogForm as df } from '../../ui/DialogForm'
 import { Input } from '../../ui/Field'
 import { Warning } from '../../ui/PanelForm'
 import { noticeFromFailure, type Notice } from '../../lib/notice'
@@ -19,7 +19,7 @@ will not be shown again. Until 2026-09-30 this one left the form in place with
 the token under it, and neither dialog carried the two warnings.
 */
 
-/** index.html:3807, under the form. */
+/** index.html:3807, under the form upstream; before it here (the design's rule for a `Warning!`). */
 export const TOKEN_PRIVILEGES =
   "The token allows access to API calls with the same privileges as that of the user account. Thus its recommended to create a separate user account with limited permissions as required by the specific task that the token will be used for. The token cannot be used to change the user's password, or update the user profile details."
 
@@ -105,39 +105,47 @@ export function CreateApiToken({
       }
     >
       <Notifier notice={alert} onClose={() => setAlert(null)} />
+      {/* As Administration › Sessions draws the same dialog: the privileges
+          `Warning!` before the fields (a warning is read before deciding), the
+          one about "the token value above" under the token it points at, and
+          the token made in read-only fields, to be selected and copied. */}
       {created == null ? (
-        <>
-          <Row modal label="Username">
-            {(id) => <Input id={id} placeholder="username" value={username} disabled />}
-          </Row>
-          <Row modal label="Token Name">
-            {(id) => (
-              <Input
-                id={id}
-                ref={nameRef}
-                autoFocus
-                placeholder="token name"
-                maxLength={255}
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
-            )}
-          </Row>
+        <DialogForm>
           <Warning>{TOKEN_PRIVILEGES}</Warning>
-        </>
+          <DialogPair>
+            <DialogField label="Username">
+              {(id) => <Input id={id} placeholder="username" value={username} disabled />}
+            </DialogField>
+            <DialogField label="Token Name">
+              {(id) => (
+                <Input
+                  id={id}
+                  ref={nameRef}
+                  autoFocus
+                  placeholder="token name"
+                  maxLength={255}
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+              )}
+            </DialogField>
+          </DialogPair>
+        </DialogForm>
       ) : (
-        <>
-          <Row modal label="Username">
-            {(id) => <Input id={id} value={created.username} readOnly />}
-          </Row>
-          <Row modal label="Token Name">
-            {(id) => <Input id={id} value={created.tokenName} readOnly />}
-          </Row>
-          <Row modal label="Token">
-            {(id) => <Input id={id} mono value={created.token} readOnly />}
-          </Row>
+        <DialogForm>
+          <DialogPair>
+            <DialogField label="Username">
+              {(id) => <Input id={id} className={df.readOnly} value={created.username} readOnly />}
+            </DialogField>
+            <DialogField label="Token Name">
+              {(id) => <Input id={id} className={df.readOnly} value={created.tokenName} readOnly />}
+            </DialogField>
+          </DialogPair>
+          <DialogField label="Token">
+            {(id) => <Input id={id} mono className={df.readOnly} value={created.token} readOnly />}
+          </DialogField>
           <Warning>{TOKEN_SHOWN_ONCE}</Warning>
-        </>
+        </DialogForm>
       )}
     </Dialog>
   )

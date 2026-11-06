@@ -5,7 +5,7 @@ import { Dialog } from '../../../ui/Dialog'
 import { Field, Select } from '../../../ui/Field'
 import { Loading } from '../../../ui/Empty'
 import type { Notice } from '../types'
-import { Table } from '../../../ui/Table'
+import { RowAction, Table } from '../../../ui/Table'
 import tbl from '../../../ui/Table.module.css'
 import l from './layout.module.css'
 import styles from './ZonePermissions.module.css'
@@ -212,14 +212,13 @@ function PermissionsTable({
                 />
               </td>
             ))}
+            {/* Remove is the row's action, as every table's: the bin with its
+                name in the tooltip. It takes the name out of this list only;
+                nothing is sent until Save. */}
             <td className={tbl.actionsCell}>
-              <Button variant="danger"
-                size="sm"
-                lead="trash"
-                onClick={() => onChange(rows.filter((_, j) => j !== i))}
-              >
-                Remove
-              </Button>
+              <div className={tbl.actions}>
+                <RowAction icon="trash" name="Remove" onClick={() => onChange(rows.filter((_, j) => j !== i))} />
+              </div>
             </td>
           </tr>
         ))}

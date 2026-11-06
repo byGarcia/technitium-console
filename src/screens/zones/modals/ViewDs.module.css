@@ -22,13 +22,15 @@ View DS Info's own pieces. The rest of its layout is the zone dialogs' one
   gap: var(--s-8) var(--s-12);
   margin: 0;
 }
+/* Each fact's name in a field label's type (`ui/DialogForm`'s value), not in the
+   small caps of a table header: the digests' table right under them carries
+   those, and two rows of capitals read as two tables. */
 .facts dt {
   margin-bottom: var(--s-3);
-  font-size: var(--text-size);
-  font-weight: var(--text-weight);
-  letter-spacing: var(--text-tracking);
-  text-transform: uppercase;
+  font-size: var(--t-2);
   color: var(--mute);
+  font-weight: 550;
+  letter-spacing: 0.01em;
 }
 .facts dd { margin: 0; min-width: 0; font-size: var(--t-4); color: var(--ink); }
 .wide { grid-column: 1 / -1; }
@@ -41,7 +43,7 @@ View DS Info's own pieces. The rest of its layout is the zone dialogs' one
 
 /* A digest type with its number, on one line; the column as wide as that. */
 .digestCol { width: 140px; }
-.digestType { white-space: nowrap; font-family: var(--font-mono); }
+.digestType { white-space: nowrap; }
 
 /* A key or a digest, and the "show full" that expands it (`Zones.module.css`). */
 .key { composes: key from '../Zones.module.css'; font-family: var(--font-mono); font-size: var(--t-3); }

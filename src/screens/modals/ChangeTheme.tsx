@@ -1,6 +1,5 @@
 import { Dialog } from '../../ui/Dialog'
-import { GroupRow } from '../../ui/Form'
-import { Radios } from '../../ui/PanelForm'
+import { DialogGroup, Tile, dialogForm as df } from '../../ui/DialogForm'
 import { useTheme } from '../../theme/useTheme'
 import type { OfferedTheme } from '../../theme/theme'
 
@@ -42,14 +41,20 @@ export function ChangeTheme({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange} title="Change Theme">
-      <GroupRow modal label="Theme" role="radiogroup">
-        <Radios
-          name="rdChangeTheme"
-          value={checked}
-          options={OPTIONS}
-          onChange={(v) => setChoice(v as OfferedTheme)}
-        />
-      </GroupRow>
+      {/* The three choices as tiles, as Add Zone draws its types: the whole tile
+          is the radio's target and the chosen one takes the accent. */}
+      <DialogGroup label="Theme" radios={`${df.tiles} ${df.tiles1}`}>
+        {OPTIONS.map((o) => (
+          <Tile
+            key={o.value}
+            name="rdChangeTheme"
+            checked={checked === o.value}
+            onChange={() => setChoice(o.value)}
+          >
+            {o.label}
+          </Tile>
+        ))}
+      </DialogGroup>
     </Dialog>
   )
 }

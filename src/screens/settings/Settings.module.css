@@ -27,7 +27,6 @@
      (`ui/PanelForm.module.css`). */
   --block-title-position: static;
 }
-.group { composes: group from '../../ui/Form.module.css'; }
 
 /* The block-lists summary: "N allowed, M blocked", with the figures in monospace
    so they do not dance about on reload. */
@@ -35,9 +34,6 @@
 .inline { display: flex; align-items: center; gap: var(--s-7); flex-wrap: wrap; }
 .val { composes: mono from '../../ui/text.module.css'; font-size: var(--t-4); color: var(--ink); }
 
-/* Two consecutive alerts inside a modal: they group closer together than the
-   rest of the body, because they say the same thing about the same thing. */
-.notes { display: flex; flex-direction: column; gap: var(--s-5); }
 
 /*
 The textarea of a pane. `Recursion` named `settings.area` and this module

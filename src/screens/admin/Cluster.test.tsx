@@ -137,6 +137,21 @@ describe('Cluster: joining an existing one', () => {
     expect(user).toBeTruthy()
   })
 
+  /* Redrawn 2026-11-06: the Warning! is read before the fields, the two ways of
+     validating the certificate are tiles named by their own words. */
+  it('the warning comes before the fields and the certificate choice is two named tiles', async () => {
+    await open()
+    const dialog = screen.getByRole('dialog')
+    const warning = within(dialog).getByText(/Joining a Cluster will cause configuration on this DNS Server/)
+    const first = within(dialog).getByLabelText('Secondary Node IP Addresses')
+    expect(warning.compareDocumentPosition(first) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    const group = within(dialog).getByRole('radiogroup', { name: 'Certificate Validation' })
+    expect(within(group).getByRole('radio', { name: 'Validate Certificate With PKI and DANE (Recommended)' })).toBeChecked()
+    expect(within(group).getByRole('radio', { name: 'Ignore Certificate Validation Errors' })).toHaveAccessibleDescription(
+      'Use this options only when you know that the Primary node Web Service is using a self-signed TLS certificate and is reachable on a private network.',
+    )
+  })
+
   it('the validation order is IP, URL, user and password', async () => {
     const { user, spy } = await open()
     const button = screen.getByRole('button', { name: 'Join' })
