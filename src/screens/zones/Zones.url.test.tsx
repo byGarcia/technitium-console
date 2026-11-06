@@ -147,6 +147,15 @@ describe('the open zone in the address bar', () => {
     expect(push).not.toHaveBeenCalled()
   })
 
+  it('a zone that does not exist says what the server said, not that it is unreachable', async () => {
+    servedAt('/zones/?zone=missing.test')
+    server()
+    render(<Zones token="t" canModify canDelete />)
+
+    expect(await screen.findByText('No such zone was found: missing.test')).toBeInTheDocument()
+    expect(screen.queryByText('Unable to connect to the server. Please try again.')).toBeNull()
+  })
+
   it('behind a prefix the zone hangs from the real root', async () => {
     servedAt('/dns/zones/')
     server()

@@ -51,9 +51,9 @@ describe('zones/records: transport', () => {
     expect(spy.mock.calls[0][1]?.body).not.toHaveProperty('pageNumber')
   })
 
-  it('it returns null if the call fails', async () => {
-    vi.spyOn(client, 'apiRequest').mockResolvedValue({ kind: 'invalid-token' })
-    expect(await getRecords('t', 'x')).toBeNull()
+  it('it returns the failure as it came, with the message from the server', async () => {
+    vi.spyOn(client, 'apiRequest').mockResolvedValue({ kind: 'error', message: 'No such zone was found: x' })
+    expect(await getRecords('t', 'x')).toEqual({ kind: 'error', message: 'No such zone was found: x' })
   })
 
   it('add and delete are POST and carry `node` in the QUERY, not in the body', async () => {

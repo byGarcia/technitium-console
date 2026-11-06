@@ -162,12 +162,12 @@ export function ZoneRecords(p: ZoneRecordsProps) {
     const r = await getRecords(token, zone, node)
     setLoading(false)
 
-    if (r == null) {
-      onNotice({ type: 'danger', title: 'Error!', text: 'Unable to connect to the server. Please try again.' })
+    if (r.kind !== 'ok') {
+      onNotice(noticeFromFailure(r))
       return
     }
-    setZoneInfo(r.zone)
-    setRecords(r.records)
+    setZoneInfo(r.data.zone)
+    setRecords(r.data.records)
   }, [token, zone, node, onNotice])
 
   useEffect(() => {
