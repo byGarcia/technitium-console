@@ -282,10 +282,7 @@ floating a step above the window's bottom edge, as the other forms' save bars do
   max-width: var(--settings-form);
 }
 
-/* Wide, the card sits under the form's column, not under the menu. */
-@container (min-width: 960px) {
-  .bar { margin-left: calc(var(--settings-menu) + var(--s-11)); max-width: var(--settings-form); }
-}
+
 
 .pending {
   min-width: 0;

@@ -592,10 +592,10 @@ export function ScopeForm({
       </div>
 
       <div className={styles.bar}>
+        <Button onClick={onCancel}>Cancel</Button>
         <Button variant="primary" lead="save" disabled={busy} onClick={save}>
           Save
         </Button>
-        <Button onClick={onCancel}>Cancel</Button>
       </div>
     </div>
   )

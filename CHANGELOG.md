@@ -119,6 +119,8 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
   field's help sits under its label, folded to one line; the save bar stays at the foot of the
   window and says what would change; Backup, Restore and Flush Cache move to the header. Notes and warnings
   are compact lines instead of boxes, and long helps fold to one line with *more*, in every form.
+- **Every save bar reads the same way:** it floats with a margin above the foot of the window,
+  keeps a gap from the card above when at rest, and puts its buttons at the right with Save last.
 - **Administration reads like the rest of the console.** Permissions is one matrix of sections by
   groups and users, about a third of its old height, and opens a section's dialog from its row.
   Users, Groups and Sessions are data tables with a search, one line per row with Details, and the

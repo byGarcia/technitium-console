@@ -157,6 +157,9 @@ wider than its cell would overflow the whole page.
 .bar {
   display: flex;
   align-items: center;
+  /* The verbs at the right, as Settings' Save is (2026-11-06): every save bar puts
+     them in the same place. */
+  justify-content: flex-end;
   gap: var(--s-5);
   flex-wrap: wrap;
   padding: var(--s-8) var(--s-9);

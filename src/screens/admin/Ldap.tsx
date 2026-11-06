@@ -568,6 +568,8 @@ export function Ldap({ tabs, token, onNotice }: Props) {
                 {/* `addAdminLdapGroupMapRow('', '')`: no option matches `''`, so
                     the browser shows the first one, which is what travels. */}
                 <Button
+                  size="sm"
+                  lead="add"
                   onClick={() =>
                     setGroupMap((list) => [
                       ...list,
@@ -602,11 +604,11 @@ export function Ldap({ tabs, token, onNotice }: Props) {
       </div>
 
       <div className={styles.bar}>
-        <Button variant="primary" disabled={busy} onClick={() => save()}>
-          Save Config
-        </Button>
         <Button disabled={testing} onClick={() => void test()}>
           Test Connection
+        </Button>
+        <Button variant="primary" lead="save" disabled={busy} onClick={() => save()}>
+          Save Config
         </Button>
       </div>
 

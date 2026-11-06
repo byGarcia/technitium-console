@@ -246,7 +246,8 @@ export function Radios({
             />
             <span className={check.text}>{o.label}</span>
           </label>
-          {o.help && <div className={check.help}>{o.help}</div>}
+          {/* An option's help folds to its first line with `more`, as a switch's does. */}
+          {o.help && <FoldHelp className={check.help}>{o.help}</FoldHelp>}
         </div>
       ))}
     </>
@@ -412,6 +413,7 @@ export function EditableList<T extends Record<string, string>>({
               <td className={styles.tdel}>
                 <Button
                   variant="danger"
+                  size="sm"
                   disabled={disabled}
                   onClick={() => onChange(rows.filter((_, j) => j !== i))}
                 >
@@ -427,7 +429,7 @@ export function EditableList<T extends Record<string, string>>({
           does not say "there are none", it says "I do not know". */}
       {rows.length === 0 && <Empty compact>No entries.</Empty>}
       <div>
-        <Button disabled={disabled} onClick={() => onChange([...rows, blank()])}>
+        <Button size="sm" lead="add" disabled={disabled} onClick={() => onChange([...rows, blank()])}>
           Add
         </Button>
       </div>

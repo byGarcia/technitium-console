@@ -455,7 +455,9 @@ export function Sso({ tabs, token, onNotice }: Props) {
                   ))}
                 </EditableTable>
                 <div>
-                  <Button onClick={() => setScopes((list) => [...list, ''])}>Add</Button>
+                  <Button size="sm" lead="add" onClick={() => setScopes((list) => [...list, ''])}>
+                    Add
+                  </Button>
                 </div>
                 {/*
                 This help and the Group Map one are NOT among the 27 `help=` props
@@ -548,6 +550,8 @@ export function Sso({ tabs, token, onNotice }: Props) {
                 </EditableTable>
                 <div>
                   <Button
+                    size="sm"
+                    lead="add"
                     onClick={() =>
                       setGroupMap((list) => [
                         ...list,
@@ -584,7 +588,7 @@ export function Sso({ tabs, token, onNotice }: Props) {
         </div>
 
         <div className={styles.bar}>
-          <Button variant="primary" disabled={busy} onClick={() => save()}>
+          <Button variant="primary" lead="save" disabled={busy} onClick={() => save()}>
             Save Config
           </Button>
         </div>

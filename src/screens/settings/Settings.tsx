@@ -592,6 +592,36 @@ export function Settings({
               No settings in {active} match &ldquo;{query.trim()}&rdquo;.
             </Empty>
           )}
+          {/*
+          The save bar, in the form's column (so it follows the form and not the menu's
+          height), on screen for the whole screen, as
+          upstream's Save is always there. It says what the save would change
+          (deviation 3) or that nothing would, and holds the one verb that sends the
+          form: Backup, Restore and Flush Cache moved up to the header.
+          */}
+          <div className={styles.bar} role="region" aria-label="Save">
+            <div className={styles.barInner}>
+              <span className={styles.pending} aria-live="polite">
+                {pendingWords !== '' ? (
+                  <>
+                    <span className={styles.pendingDot} aria-hidden="true" />
+                    Unsaved changes: {pendingWords}
+                  </>
+                ) : (
+                  <span className={styles.saved}>No unsaved changes</span>
+                )}
+              </span>
+              <PermissionButton
+                lead="save"
+                variant="primary"
+                disabled={busy}
+                permission={canModify ? undefined : 'Settings.canModify'}
+                onClick={() => void save()}
+              >
+                Save Settings
+              </PermissionButton>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -617,35 +647,6 @@ export function Settings({
         </div>
       )}
 
-      {/*
-      The save bar, pinned to the bottom of the window for the whole screen, as
-      upstream's Save is always there. It says what the save would change
-      (deviation 3) or that nothing would, and holds the one verb that sends the
-      form: Backup, Restore and Flush Cache moved up to the header.
-      */}
-      <div className={styles.bar} role="region" aria-label="Save">
-        <div className={styles.barInner}>
-          <span className={styles.pending} aria-live="polite">
-            {pendingWords !== '' ? (
-              <>
-                <span className={styles.pendingDot} aria-hidden="true" />
-                Unsaved changes: {pendingWords}
-              </>
-            ) : (
-              <span className={styles.saved}>No unsaved changes</span>
-            )}
-          </span>
-          <PermissionButton
-            lead="save"
-            variant="primary"
-            disabled={busy}
-            permission={canModify ? undefined : 'Settings.canModify'}
-            onClick={() => void save()}
-          >
-            Save Settings
-          </PermissionButton>
-        </div>
-      </div>
 
       <Confirm
         open={confirm === 'flush'}
