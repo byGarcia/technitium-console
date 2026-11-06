@@ -79,8 +79,12 @@ and the screen notice (the `Notifier`'s, above the title) is not in a section:
 capping it the same way would apply the rule where it was not decided. Dialog
 notices do not need it either, because the dialog itself is 880 at most.
 */
+/* The same breath above and below the notes (2026-11-06): the panel's 14 px. Below
+   a row they get it as a margin; at the foot the panel's padding gives it; before a
+   row its 10 px top padding plus these 4 px; first in a panel with no title, the
+   panel's own padding. */
 .notices {
-  margin: var(--s-3) var(--s-9) 0 var(--s-9);
+  margin: var(--s-9) var(--s-9) 0 var(--s-9);
   max-width: var(--notice-max);
   display: flex;
   flex-direction: column;
@@ -101,7 +105,9 @@ notices do not need it either, because the dialog itself is 880 at most.
   padding: 0 var(--s-9);
 }
 /* A paragraph after the notes is not one more note: a breath before it (2026-11-06). */
-.notices + .plain { margin-top: var(--s-7); }
+.notices + .plain { margin-top: var(--s-9); }
+.notices:first-child { margin-top: 0; }
+.notices:not(:last-child) { margin-bottom: var(--s-2); }
 
 .link { font-size: var(--t-3); padding: var(--s-5) var(--s-9) 0 var(--s-9); }
 .link a { color: var(--acc-ink); }
