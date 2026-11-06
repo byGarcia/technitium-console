@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type CSSProperties } from 'react'
 import type { DhcpLease, DhcpScopeRow } from '../../api/dhcp'
 import { Card, Count, StackBar, hotEvents, statStyles as stat } from '../../ui/StatCard'
 import { DISABLED_COLOUR, ENABLED_COLOUR, leaseColour } from './lease-colours'
@@ -10,7 +10,8 @@ import styles from './Dhcp.module.css'
 THE SCOPES AT A GLANCE (deviation 19 in CONVENTIONS.md, 2026-11-06): three cards
 over the scope table.
 
-  · All Scopes    how many, Enabled against Disabled (`scopes/list`).
+  · All Scopes    how many, Enabled against Disabled (`scopes/list`). Pressing a
+                  state sets the table's State filter, pressing it again clears it.
   · Address Pool  the leases held in the enabled scopes, of the addresses in their
                   ranges (`pool.ts` says what is and is not counted).
   · Leases        how many, Dynamic against Reserved.
@@ -25,7 +26,18 @@ Words of ours, all in this file: the three titles, `of`, `addresses in range`,
 not be read.`.
 */
 
-export function ScopeSummary({ scopes, leases }: { scopes: DhcpScopeRow[]; leases: DhcpLease[] | null }) {
+export function ScopeSummary({
+  scopes,
+  leases,
+  state,
+  onState,
+}: {
+  scopes: DhcpScopeRow[]
+  leases: DhcpLease[] | null
+  /** The table's State filter, `''` for all. */
+  state: string
+  onState: (state: string) => void
+}) {
   const [hotState, setHotState] = useState<string | null>(null)
   const [hotType, setHotType] = useState<string | null>(null)
   const enabled = scopes.filter((s) => s.enabled).length
@@ -53,16 +65,23 @@ export function ScopeSummary({ scopes, leases }: { scopes: DhcpScopeRow[]; lease
             hot={hotState}
             onHot={setHotState}
           />
-          <dl className={stat.facts}>
+          <div className={stat.types} role="group" aria-label="Scopes by state">
             {states.map((s) => (
-              <div key={s.key} {...hotEvents(s.key, setHotState)}>
-                <dt>
-                  <span className={stat.dot} style={{ background: s.colour }} /> {s.name}
-                </dt>
-                <dd><Count value={s.value} /></dd>
-              </div>
+              <button
+                key={s.key}
+                type="button"
+                className={stat.typeChip}
+                style={{ '--sw': s.colour } as CSSProperties}
+                aria-pressed={state === s.key}
+                data-hot={hotState === s.key || undefined}
+                onClick={() => onState(state === s.key ? '' : s.key)}
+                {...hotEvents(s.key, setHotState)}
+              >
+                <span className={stat.typeLabel}>{s.name}</span>
+                <span className={stat.typeCount}>{s.value}</span>
+              </button>
             ))}
-          </dl>
+          </div>
         </div>
       </Card>
 

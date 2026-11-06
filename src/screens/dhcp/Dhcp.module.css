@@ -16,11 +16,7 @@ title out again.
 .wrap { composes: screen from '../../ui/SectionHeader.module.css'; }
 
 .mono { composes: mono from '../../ui/text.module.css'; }
-.name { font-weight: 550; color: var(--ink); white-space: nowrap; }
 .date { white-space: nowrap; font-family: var(--font-mono); font-size: var(--t-3); }
-/* The count is `ui/count.module.css`'s: see there for why. */
-.total { composes: count2 below from '../../ui/count.module.css'; }
-.kv { composes: kv from '../../ui/kv.module.css'; }
 
 .paragraph { composes: paragraph from '../../ui/text.module.css'; }
 .list { margin: 0 0 var(--s-7); padding-left: var(--s-10); font-size: var(--t-4); color: var(--mute); line-height: 1.6; }
@@ -121,8 +117,104 @@ written in several places), except that here one of the copies was missing.
 .ltype { display: inline-flex; align-items: center; gap: var(--s-4); font-size: var(--t-3); color: var(--ink); white-space: nowrap; }
 .ltype::before { content: ''; width: var(--s-4); height: var(--s-4); border-radius: var(--r-1); background: var(--lt); flex: none; }
 
-/* How far off a lease's end is, under its date. */
-.when { display: block; font-family: var(--font-ui); font-size: var(--t-2); color: var(--mute); }
+/* How far off a lease's date is, beside it in brackets, as a TTL carries its
+   human part in Cache. */
+.when { font-family: var(--font-ui); font-size: var(--t-2); color: var(--mute); }
 
 /* The Remove Lease dialog's two warnings, one after the other. */
 .warnings { display: flex; flex-direction: column; gap: var(--s-5); margin-bottom: var(--s-8); }
+
+/* ---- One line per row (deviation 19, the Cache pattern) ---- */
+
+/* A lease's address: what identifies the row, so the row's weight. */
+.address { font-weight: 600; white-space: nowrap; }
+
+/* A scope's name opens its page, as a zone's name does in the zone list. */
+.opener { composes: entityLink from '../../ui/Table.module.css'; white-space: nowrap; }
+
+/* "N of M shown" in the toolbar. */
+.shown { font-size: var(--t-3); color: var(--mute); white-space: nowrap; }
+
+/* A row's Details, open: the row loses the line under it so the two read as one,
+   and the detail line sits on the panel's quieter surface (`lists/Lists.module.css`). */
+.openRow > td { border-bottom-color: transparent; }
+.detailRow > td { padding-top: 0; background: var(--pan2); }
+
+/* The detail's facts inline, label in grey and value in ink, wrapping between
+   pairs, as Cache writes a record's data. */
+.inline { display: flex; flex-wrap: wrap; gap: var(--s-3) var(--s-9); margin: var(--s-3) 0 0; min-width: 0; }
+.pair { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--s-4); min-width: 0; max-width: 100%; }
+.pair dt { font-size: var(--t-3); color: var(--faint); white-space: nowrap; }
+.pair dd { margin: 0; min-width: 0; font: var(--t-4) / 1.45 var(--font-mono); color: var(--ink); overflow-wrap: break-word; }
+
+/* ---- A scope's page ---- */
+
+/* A fact in the header, beside the state: `Interface 172.31.10.2`. */
+.fact { font-size: var(--t-3); color: var(--mute); align-self: center; }
+.fact b { font-weight: 600; color: var(--ink); font-family: var(--font-mono); }
+
+/* Address Pool: the four addresses under the meter. */
+.cardPairs { margin-top: var(--s-7); }
+
+/* Reserved Leases: one line per reservation, its name, its address and its tag. */
+.reservations { list-style: none; margin: var(--s-6) 0 0; padding: 0; display: flex; flex-direction: column; gap: var(--s-4); }
+.reservations li { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--s-4); font-size: var(--t-3); }
+.resWho { display: flex; flex-direction: column; min-width: 0; }
+.resName { font-family: var(--font-mono); color: var(--ink); overflow-wrap: break-word; }
+.resAddress { font-family: var(--font-mono); font-size: var(--t-2); color: var(--mute); }
+.more { color: var(--mute); }
+.explained { text-decoration: underline dotted; text-underline-offset: var(--s-1); cursor: help; border-radius: var(--r-1); }
+.explained:focus-visible { outline: var(--focus); outline-offset: var(--focus-offset); }
+
+/* ---- The scope form ---- */
+
+.form { min-width: 0; }
+.formTitle { margin: 0 0 var(--s-8); font-size: var(--t-6); font-weight: 650; color: var(--ink); }
+
+/* The twelve folded blocks: ONE card of lines, each its title and what it holds,
+   opening its fields under it. */
+.folds {
+  border: 1px solid var(--line);
+  border-radius: var(--r-4);
+  background: var(--pan);
+  box-shadow: var(--e-1), var(--edge);
+  overflow: clip;
+  min-width: 0;
+  /* The Scope block above keeps its own `--s-9` under it; together they make the
+     gap between two blocks. */
+  margin: calc(var(--gap-block) - var(--s-9)) 0 var(--s-9);
+}
+.fold + .fold { border-top: 1px solid var(--line2); }
+.foldHead {
+  display: grid;
+  grid-template-columns: minmax(150px, 15rem) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--s-3) var(--s-9);
+  width: 100%;
+  padding: var(--s-6) var(--s-9);
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--t-fast);
+}
+.foldHead:hover { background: var(--hover); }
+.foldHead:focus-visible { outline: var(--focus); outline-offset: calc(var(--focus-offset) * -1); }
+.foldTitle { font-size: var(--t-4); font-weight: 600; }
+.foldSummary { min-width: 0; font-size: var(--t-3); line-height: 1.45; color: var(--mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.foldChevron { color: var(--mute); }
+.fold[data-open] > .foldHead { background: var(--pan2); }
+.fold[data-open] .foldSummary { white-space: normal; }
+.foldBody { padding-bottom: var(--s-6); border-top: 1px solid var(--line2); }
+.notices { composes: notices from '../../ui/PanelForm.module.css'; margin-top: var(--s-8); }
+
+@media (max-width: 560px) {
+  .foldHead { grid-template-columns: minmax(0, 1fr) auto; padding: var(--s-6) var(--s-8); }
+  .foldSummary { grid-column: 1; grid-row: 2; white-space: normal; }
+  .foldChevron { grid-column: 2; grid-row: 1 / span 2; }
+}
+
+/* A word among addresses in a card's facts: `None`, `This DNS Server`. */
+.word { font-family: var(--font-ui); color: var(--mute); }

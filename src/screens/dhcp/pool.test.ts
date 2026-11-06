@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { DhcpLease, DhcpScopeRow } from '../../api/dhcp'
-import { expiringSoon, ipv4, leaseKey, leasesPerScope, matchesSearch, newest, poolTotals, rangeSize } from './pool'
+import { expiringSoon, ipv4, leaseKey, leaseTime, leasesPerScope, matchesScope, matchesSearch, newest, poolTotals, rangeSize } from './pool'
 
 const NOW = Date.parse('2026-11-06T07:00:00Z')
 
@@ -103,5 +103,32 @@ describe('the search', () => {
 
   it('a lease is known by its scope and client identifier', () => {
     expect(leaseKey(lease({}))).toBe('Office LAN\n1-A483E7112233')
+  })
+})
+
+describe('the scope search and the lease time', () => {
+  const s = {
+    name: 'Office',
+    enabled: true,
+    startingAddress: '172.31.10.100',
+    endingAddress: '172.31.10.199',
+    subnetMask: '255.255.255.0',
+    networkAddress: '172.31.10.0',
+    broadcastAddress: '172.31.10.255',
+    interfaceAddress: '172.31.10.2',
+  }
+
+  it('finds a scope by name, by an address its range holds, or by part of its addresses', () => {
+    expect(matchesScope(s, 'off')).toBe(true)
+    expect(matchesScope(s, '172.31.10.150')).toBe(true)
+    expect(matchesScope(s, '172.31.10.250')).toBe(false)
+    expect(matchesScope(s, '172.31.10')).toBe(true)
+    expect(matchesScope(s, '')).toBe(true)
+  })
+
+  it('writes a lease time as the console writes a TTL', () => {
+    expect(leaseTime(1, 0, 0)).toBe('1d')
+    expect(leaseTime(0, 4, 30)).toBe('4h 30m')
+    expect(leaseTime(0, 0, 0)).toBe('0m')
   })
 })
