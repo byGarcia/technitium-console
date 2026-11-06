@@ -27,10 +27,10 @@ import { LEASE_TYPES, LeaseSummary } from './LeaseSummary'
 import { leaseColour } from './lease-colours'
 import { leaseKey, matchesSearch } from './pool'
 import { LEASE_PARAMS, Q, SCOPE, TYPE, readTabParam } from './dhcp-url'
-import { leasesAcross, type NodeLease } from './across'
+import { inScopeFilter, leaseScopeKey, leasesAcross, scopeKeyLabel, type NodeLease } from './across'
 import type { ClusterNode } from '../../ui/ClusterNodeSelect'
 import { NodeName, NodesFailed, type NodeFailure } from '../../ui/AcrossNodes'
-import { nodeToken } from '../dashboard/palette'
+import { nodeColour } from '../dashboard/palette'
 
 /*
 DHCP › Leases (dhcp.js:37-199).
@@ -151,6 +151,9 @@ export function Leases({
   }, [query, scopeFilter, typeFilter])
   useEffect(() => () => dropParams(LEASE_PARAMS), [])
 
+  /* The node the single view reads. The All nodes view reads every node whichever
+     is chosen, so the selector (which there only aims Add Scope) reads nothing again. */
+  const readNode = nodeKey !== '' ? '' : node
   const load = useCallback(async () => {
     setLeases(null)
     if (nodeKey !== '') {
@@ -162,7 +165,7 @@ export function Leases({
       return
     }
     setFailed(null)
-    const r = await listLeases(token, node)
+    const r = await listLeases(token, readNode)
     if (r.kind === 'ok') {
       setNow(Date.now())
       setLeases(r.data)
@@ -172,7 +175,7 @@ export function Leases({
     setLeases([])
     setFailure(true)
     setNotice(noticeFromFailure(r))
-  }, [token, node, nodeKey])
+  }, [token, readNode, nodeKey])
 
   useEffect(() => {
     void load()
@@ -184,14 +187,14 @@ export function Leases({
   const visibleLeases = sortedLeases.filter(
     (l) =>
       (typeFilter === '' || l.type === typeFilter) &&
-      (scopeFilter === '' || l.scope === scopeFilter) &&
+      inScopeFilter(l, scopeFilter) &&
       matchesSearch(l, query),
   )
   const filtered = query.trim() !== '' || typeFilter !== '' || scopeFilter !== ''
   /* The scopes the list names, and the one in the filter even when no lease
      carries it any more (a link or a scope's page), so the field says what
      narrows the table. */
-  const scopeNames = [...new Set([...(leases ?? []).map((l) => l.scope), ...(scopeFilter ? [scopeFilter] : [])])]
+  const scopeNames = [...new Set([...(leases ?? []).map(leaseScopeKey), ...(scopeFilter ? [scopeFilter] : [])])]
 
   function toggleOpen(key: string) {
     setOpen((prev) => {
@@ -260,7 +263,7 @@ export function Leases({
   }
 
   const colourOf = (name: string) =>
-    `var(${nodeToken(Math.max(0, (cluster?.nodes ?? []).findIndex((n) => n.name === name)))})`
+    nodeColour(cluster?.nodes ?? [], name)
 
   return (
     <div className={styles.wrap}>
@@ -320,9 +323,11 @@ export function Leases({
                     {(id) => (
                       <Select id={id} value={scopeFilter} onChange={(e) => setScopeFilter(e.target.value)}>
                         <option value="">All</option>
+                        {/* In the All nodes view a scope is named with its node:
+                            two nodes can each have one of the same name. */}
                         {scopeNames.map((n) => (
                           <option key={n} value={n}>
-                            {n}
+                            {scopeKeyLabel(n)}
                           </option>
                         ))}
                       </Select>

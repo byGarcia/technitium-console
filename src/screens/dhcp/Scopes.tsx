@@ -33,7 +33,7 @@ import { Q, SCOPE, SCOPE_NODE, SCOPE_PARAMS, STATE, onDhcpTab, readTabParam, wri
 import { scopeKey, scopesAcross, type NodeLease, type NodeScopeRow } from './across'
 import type { DhcpCluster } from './Leases'
 import { NodeName, NodesFailed, type NodeFailure } from '../../ui/AcrossNodes'
-import { nodeToken } from '../dashboard/palette'
+import { nodeColour } from '../dashboard/palette'
 
 /*
 DHCP › Scopes (dhcp.js:201-684).
@@ -187,6 +187,8 @@ export function Scopes({
 
   // A failure on load is not drawn as an empty list; see `Leases`. With a scope's
   // page open the list is read again quietly, so the page stays where it is.
+  /* As in Leases: the All nodes view reads every node, so the selector reads nothing again. */
+  const readNode = nodeKey !== '' ? '' : node
   const load = useCallback(
     async (quiet = false) => {
       if (!quiet) setScopes(null)
@@ -199,7 +201,7 @@ export function Scopes({
         return
       }
       setFailed(null)
-      const [r, l] = await Promise.all([listScopes(token, node), listLeases(token, node)])
+      const [r, l] = await Promise.all([listScopes(token, readNode), listLeases(token, readNode)])
       setLeases(l.kind === 'ok' ? l.data : null)
       if (r.kind === 'ok') {
         setScopes(r.data)
@@ -210,7 +212,7 @@ export function Scopes({
       setFailure(true)
       setNotice(noticeFromFailure(r))
     },
-    [token, node, nodeKey],
+    [token, readNode, nodeKey],
   )
 
   /** Opens a scope's page: `push` from the list, `none` when the bar already says
@@ -401,7 +403,9 @@ export function Scopes({
           onNotice={(e) => setNotice({ type: 'warning', title: e.title, text: e.text })}
           onToggle={() => row != null && toggleState(row)}
           onDelete={() => page.mode === 'edit' && setConfirm({ action: 'delete', name: page.name, on: page.on })}
-          onOpenLeases={() => page.mode === 'edit' && onOpenLeases?.(page.name)}
+          /* With its node in the All nodes view, so Leases narrows to this
+             node's scope and not to every scope of the name. */
+          onOpenLeases={() => page.mode === 'edit' && onOpenLeases?.(scopeKey({ name: page.name, node: page.on } as NodeScopeRow))}
         />
         {confirmation}
       </div>
@@ -409,7 +413,7 @@ export function Scopes({
   }
 
   const colourOf = (name: string) =>
-    `var(${nodeToken(Math.max(0, (cluster?.nodes ?? []).findIndex((n) => n.name === name)))})`
+    nodeColour(cluster?.nodes ?? [], name)
 
   return (
     <div className={styles.wrap}>

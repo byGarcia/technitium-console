@@ -33,6 +33,23 @@ export function scopeKey(s: NodeScopeRow): string {
   return s.node == null ? s.name : `${s.node}\n${s.name}`
 }
 
+/** The scope a lease belongs to, as `scopeKey` names it: with its node in the `All nodes` view. */
+export function leaseScopeKey(l: NodeLease): string {
+  return l.node == null ? l.scope : `${l.node}\n${l.scope}`
+}
+
+/** A scope key as words: `LAN`, or `LAN on ns1.example` when it carries its node. */
+export function scopeKeyLabel(key: string): string {
+  const cut = key.indexOf('\n')
+  return cut < 0 ? key : `${key.slice(cut + 1)} on ${key.slice(0, cut)}`
+}
+
+/** Whether a lease is in the Scope filter: a key names one node's scope, a bare
+ *  name (a link from one node's view) every scope of that name. */
+export function inScopeFilter(l: NodeLease, filter: string): boolean {
+  return filter === '' || leaseScopeKey(l) === filter || (!filter.includes('\n') && l.scope === filter)
+}
+
 export interface LeasesAcross {
   leases: NodeLease[]
   failed: NodeFailure[]

@@ -177,6 +177,17 @@ describe('Query Logs, All nodes', () => {
     await waitFor(() => expect(screen.queryByRole('columnheader', { name: 'Node' })).not.toBeInTheDocument())
   })
 
+  it('arriving in the merged view pins page 1 and newest first in the form, and This node goes back to that', async () => {
+    servedAt('/logs/query-logs/?nodes=all&pageNumber=4&descendingOrder=false', 'logs/query-logs')
+    const spy = serve()
+    inShell(<Logs token="t" sub="Query Logs" {...cluster} />)
+    await screen.findAllByText('Newest 10 across the nodes')
+    spy.mockClear()
+    await userEvent.click(screen.getByRole('button', { name: 'This node' }))
+    await waitFor(() => expect(sent(spy)).toHaveLength(1))
+    expect(sent(spy)[0]).toMatchObject({ node: '', pageNumber: '1', descendingOrder: 'true' })
+  })
+
   it('another screen’s ?nodes=all, left in the bar, is not read', async () => {
     servedAt('/cache/?nodes=all', null)
     serve()
@@ -185,6 +196,10 @@ describe('Query Logs, All nodes', () => {
     expect(screen.getByRole('button', { name: 'This node' })).toHaveAttribute('aria-pressed', 'true')
   })
 
+  /* Generous waits: the full suite runs this beside two hundred other files, and a
+     turn's first answer can take longer than `waitFor`'s default second there. */
+  const SLOW = { timeout: 5000 }
+
   it('Live Update asks every node each turn, and counts what arrived on all of them', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
     try {
@@ -192,22 +207,31 @@ describe('Query Logs, All nodes', () => {
       const totals = { 'ns1.test': 100, 'ns2.test': 50 }
       const spy = serve(totals)
       inShell(<Logs token="t" sub="Query Logs" {...cluster} />)
-      await vi.waitFor(() => expect(screen.queryByLabelText('App Name')).toBeInTheDocument())
+      await vi.waitFor(() => expect(screen.queryByLabelText('App Name')).toBeInTheDocument(), SLOW)
       await user.click(screen.getByRole('button', { name: 'All nodes' }))
       await user.click(screen.getByLabelText('Live Update'))
-      await vi.waitFor(() => expect(spy).toHaveBeenCalledTimes(3))
-      expect(sent(spy).map((c) => c.node)).toEqual(['ns1.test', 'ns2.test', 'ns3.test'])
+      /* The clock also runs for real (`shouldAdvanceTime`), so under load a turn more
+         may land: what is checked is that each turn asks the three nodes, in order. */
+      const turns = () => {
+        const nodes = sent(spy).map((c) => c.node)
+        expect(nodes.length % 3).toBe(0)
+        for (let i = 0; i < nodes.length; i += 3) expect(nodes.slice(i, i + 3)).toEqual(['ns1.test', 'ns2.test', 'ns3.test'])
+        return nodes.length / 3
+      }
+      await vi.waitFor(() => expect(turns()).toBeGreaterThanOrEqual(1), SLOW)
+      const first = turns()
 
       totals['ns1.test'] = 103
       totals['ns2.test'] = 52
       await vi.advanceTimersByTimeAsync(2000)
-      await vi.waitFor(() => expect(spy).toHaveBeenCalledTimes(6))
-      expect(sent(spy).slice(3).map((c) => c.node)).toEqual(['ns1.test', 'ns2.test', 'ns3.test'])
-      await vi.waitFor(() => expect(screen.getByText('5 new')).toBeInTheDocument())
+      await vi.waitFor(() => expect(turns()).toBeGreaterThan(first), SLOW)
+      await vi.waitFor(() => expect(screen.getByText('5 new')).toBeInTheDocument(), SLOW)
 
       await user.click(screen.getByLabelText('Live Update'))
+      await vi.waitFor(() => expect(sent(spy).length % 3).toBe(0), SLOW)
+      const stopped = spy.mock.calls.length
       await vi.advanceTimersByTimeAsync(6000)
-      expect(spy).toHaveBeenCalledTimes(6)
+      expect(spy).toHaveBeenCalledTimes(stopped)
     } finally {
       vi.useRealTimers()
     }

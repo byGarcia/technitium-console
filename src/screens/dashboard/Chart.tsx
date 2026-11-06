@@ -412,6 +412,8 @@ export function Chart({
 
   function onPointerDown(e: ReactPointerEvent<HTMLDivElement>) {
     if (pick.current.onPickRange == null || e.button !== 0) return
+    /* A drag whose release never reached us gives its tooltip back first. */
+    if (drag.current?.dragging) showTooltip(chart.current, true)
     const first = bucketUnder(e.clientX)
     if (first == null) return
     drag.current = { id: e.pointerId, x: e.clientX, first, dragging: false }
@@ -422,6 +424,13 @@ export function Chart({
     const d = drag.current
     const c = chart.current
     if (d == null || d.id !== e.pointerId || c == null) return
+    /* No button held: the press was released where we could not hear it (outside
+       the chart, before it travelled far enough to be captured). It is over, and a
+       hover must not turn into a drag. */
+    if ((e.buttons & 1) === 0) {
+      onPointerCancel()
+      return
+    }
     if (!d.dragging) {
       if (Math.abs(e.clientX - d.x) < DRAG_THRESHOLD_PX) return
       d.dragging = true
@@ -453,11 +462,14 @@ export function Chart({
     if (d.dragging) showTooltip(chart.current, true)
     if (!d.dragging) return
     const last = bucketUnder(e.clientX)
-    /* The click that follows this release belongs to the drag; it is let go after it. */
+    /* The click that follows this release belongs to the drag; it is let go after it.
+       Chart.js handles a canvas click in the next animation frame (its listeners are
+       throttled to `requestAnimationFrame`), so a timeout of 0 would let it go too
+       soon: two frames, so the flag outlives the frame that click is handled in. */
     dragged.current = true
-    window.setTimeout(() => {
+    window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
       dragged.current = false
-    }, 0)
+    }))
     if (last == null) return
     const [a, b] = spanOf(d.first, last)
     pick.current.onPickRange?.(a, b)

@@ -57,6 +57,14 @@ export function nodeToken(index: number): string {
   return CYCLE[index % CYCLE.length] ?? '--ch-1'
 }
 
+/** A node's colour by its name, as `var(--token)`: its place in the session's list
+ *  of nodes, the first node's colour for a name the list does not hold. The one rule
+ *  the All nodes views of Query Logs, DHCP and Administration paint by. */
+export function nodeColour(nodes: readonly (string | { name: string })[], name: string): string {
+  const at = nodes.findIndex((n) => (typeof n === 'string' ? n : n.name) === name)
+  return `var(${nodeToken(Math.max(0, at))})`
+}
+
 /** Which token a chart's series is painted with, by its label and position. The
  *  default is `tokenForLabel`; the Queries compared by node give each node its own. */
 export type Series = (label: string, index: number) => string

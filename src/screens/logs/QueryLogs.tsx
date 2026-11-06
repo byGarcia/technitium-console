@@ -41,7 +41,7 @@ import { QUERY_PARAMS, filtersFromBar, queryParams } from './query-url'
 import { Segmented } from '../../ui/Segmented'
 import type { ClusterNode } from '../../ui/ClusterNodeSelect'
 import { NodeName, NodesFailed } from '../../ui/AcrossNodes'
-import { nodeToken } from '../dashboard/palette'
+import { nodeColour } from '../dashboard/palette'
 import { readParam } from '../../lib/url-state'
 import { toTrail } from '../../app/route'
 import {
@@ -843,10 +843,13 @@ export function QueryLogs({ tabs, token, node = '', request, nodes = [], cluster
           setF(base)
           return
         }
-        /* A link to a query: that form, queried once, as Query would. */
-        setF(fromBar)
-        filtersRef.current = fromBar
-        void queryRef.current(fromBar.pageNumber, false)
+        /* A link to a query: that form, queried once, as Query would. Arriving in the
+           merged view, page 1 and newest first are pinned as `chooseView('all')`
+           pins them, so the form says what is sent and This node goes back to it. */
+        const form = acrossRef.current ? { ...fromBar, pageNumber: '1', descendingOrder: 'true' } : fromBar
+        setF(form)
+        filtersRef.current = form
+        void queryRef.current(form.pageNumber, false)
         return
       }
       /* `showQueryLogs` (logs.js:624-655): the reset form, the domain and/or the
@@ -855,7 +858,8 @@ export function QueryLogs({ tabs, token, node = '', request, nodes = [], cluster
          The ref is written here because the query reads it before the next commit
          would. */
       pending.current = undefined
-      const next = { ...base, qname: req.domain ?? '', clientIpAddress: req.clientIp ?? '', ...req.filters }
+      const asked = { ...base, qname: req.domain ?? '', clientIpAddress: req.clientIp ?? '', ...req.filters }
+      const next = acrossRef.current ? { ...asked, pageNumber: '1', descendingOrder: 'true' } : asked
       setF(next)
       filtersRef.current = next
       void queryRef.current(next.pageNumber, false)
@@ -988,7 +992,7 @@ export function QueryLogs({ tabs, token, node = '', request, nodes = [], cluster
   /* The page on screen is a merge when its rows carry their node (deviation 37). */
   const merged = page != null && reads != null && across
   const status = page == null ? '' : merged ? acrossStatus(page.entries.length) : statusText(page)
-  const colourOf = (name: string) => `var(${nodeToken(Math.max(0, nodes.findIndex((n) => n.name === name)))})`
+  const colourOf = (name: string) => nodeColour(nodes, name)
 
   /* What the folded band lists (FOLD_QUERY): its own fields that are set. */
   const active = activeFilters(f, defaultFilters(apps[0]?.name ?? '', apps[0]?.classPaths[0] ?? '')).filter(

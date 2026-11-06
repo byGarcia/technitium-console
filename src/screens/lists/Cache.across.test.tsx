@@ -138,6 +138,19 @@ describe('Cache: All nodes', () => {
     await waitFor(() => expect(flush).toHaveBeenCalledWith('t', 'ns2.test'))
   })
 
+  it('a node chosen whose read fails never shows the previous node\'s records under its name', async () => {
+    await openAcross()
+    vi.restoreAllMocks()
+    serving({ failing: ['ns2.test', 'ns3.test'] })
+    await userEvent.click(screen.getByRole('combobox', { name: 'Cluster Node' }))
+    await userEvent.click(screen.getByRole('option', { name: 'ns2.test (secondary)' }))
+    // The screen's read of ns2 failed, so nothing new is reused: ns2's column keeps
+    // its own record (1974 s), never ns1's answer (2141 s) under ns2's name.
+    await new Promise((r) => setTimeout(r, 50))
+    const a = screen.getAllByRole('row').slice(1)[0]
+    expect(a).toHaveTextContent('1974 (32m54s)')
+  })
+
   it('without a cluster nothing changes: no switch, and the bar does not open it', async () => {
     window.history.replaceState(null, '', '/cache/?domain=example.com&nodes=all')
     const spy = serving()

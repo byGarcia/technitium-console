@@ -64,7 +64,8 @@ export function CacheAcross({
   /** The screen's answer for the chosen node: each new one (a move, Refresh, the
    *  read after Flush or Delete) reads every node again, for its domain. */
   node: ListNode
-  /** The node the screen read `node` from (the selector's), whose answer is reused. */
+  /** The node `node` was read from (not the selector's, which moves before its
+   *  answer arrives), whose answer is reused as that node's. */
   chosen?: string
   nodeTitle: string
   /** The screen's Domain field and Browse, as the one-node card has them. */
@@ -79,8 +80,7 @@ export function CacheAcross({
 
   useEffect(() => {
     let cancelled = false
-    const here = node.domain.toLowerCase() === domain.toLowerCase()
-    void readAcross(token, domain, nodes, { node: chosen, records: here ? (node.records ?? []) : [], zones: here ? (node.zones ?? []) : [] }).then((r) => {
+    void readAcross(token, domain, nodes, { node: chosen, records: node.records ?? [], zones: node.zones ?? [] }).then((r) => {
       if (!cancelled) setReads(r)
     })
     return () => {

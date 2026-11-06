@@ -687,7 +687,10 @@ export function BlockLists({
       saveStartedReload.current = true
     }
     else {
+      /* The wait this Save ends may be Update Now's: its `Updating Now` ends with it,
+         since the poll that would have cleared it is torn down. */
       setReloading(null)
+      setForced(false)
       void readCounts()
       setCountsRead((n) => n + 1)
     }

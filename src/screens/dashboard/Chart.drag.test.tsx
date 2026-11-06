@@ -70,8 +70,10 @@ function draw({ drags = true }: { drags?: boolean } = {}) {
   return { wrap, onPick, onPickRange }
 }
 
-const pointer = (el: HTMLElement, type: string, clientX: number) =>
-  fireEvent(el, new MouseEvent(type, { bubbles: true, clientX, button: 0 }))
+/* `buttons` is what the browser reports: the primary held during a press and its moves,
+   none on the release and on a hover. */
+const pointer = (el: HTMLElement, type: string, clientX: number, buttons = type === 'pointerup' ? 0 : 1) =>
+  fireEvent(el, new MouseEvent(type, { bubbles: true, clientX, button: 0, buttons }))
 
 /* What the browser fires after a release on the canvas: the click Chart.js handles. */
 const click = (clientX: number) =>
@@ -94,6 +96,28 @@ describe('Chart: choosing a window by dragging', () => {
     expect(onPickRange).toHaveBeenCalledWith(10, 14)
     expect(onPick).not.toHaveBeenCalled()
     expect(screen.queryByTestId('chart-selection')).not.toBeInTheDocument()
+  })
+
+  it('a press released outside the chart is over: hovering back draws nothing and keeps the tooltip', () => {
+    const { wrap, onPickRange } = draw()
+    pointer(wrap, 'pointerdown', 145)
+    // The release happened outside the chart; the next move carries no button.
+    pointer(wrap, 'pointermove', 245, 0)
+    expect(screen.queryByTestId('chart-selection')).not.toBeInTheDocument()
+    expect(built[0].options.plugins.tooltip.enabled).not.toBe(false)
+    pointer(wrap, 'pointerup', 245)
+    expect(onPickRange).not.toHaveBeenCalled()
+  })
+
+  it('the click Chart.js handles a frame after the release is still the drag\'s', async () => {
+    const { wrap, onPick, onPickRange } = draw()
+    pointer(wrap, 'pointerdown', 185)
+    pointer(wrap, 'pointermove', 145)
+    pointer(wrap, 'pointerup', 145)
+    await new Promise((r) => window.requestAnimationFrame(() => r(null)))
+    act(() => click(145))
+    expect(onPickRange).toHaveBeenCalledWith(10, 14)
+    expect(onPick).not.toHaveBeenCalled()
   })
 
   it('a press that does not travel is a click: it opens one bucket', () => {

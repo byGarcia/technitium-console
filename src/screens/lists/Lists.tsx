@@ -250,6 +250,11 @@ export function Lists({
   /* Read by `load` through a ref, so choosing a node does not rebuild it (and
      re-run the mount effect that reads the root). */
   const cacheNode = useRef('')
+  /* The node the answer in `node` was read from. The selector moves `cacheNode` at
+     once and the answer comes later, so the All nodes view is told this one and not
+     the selector's: it reuses the answer as that node's, and a node chosen whose
+     read failed never gets the previous node's records under its name. */
+  const nodeFrom = useRef('')
 
   const [node, setNode] = useState<ListNode | null>(null)
   const [field, setField] = useState('')
@@ -318,6 +323,7 @@ export function Lists({
       const node = list === 'cache' ? cacheNode.current : fromPrimary ? primary.current : ''
       const outcome = await listNode(list, token, domain, up ? 'up' : undefined, node)
       if (outcome.kind === 'ok') {
+        nodeFrom.current = node
         setNode(outcome.data)
         /* Cache keeps the open node in the bar (`?domain=`), as Blocking keeps its
            filter: a reload or a copied link opens the same node. */
@@ -629,7 +635,7 @@ export function Lists({
             token={token}
             nodes={nodes}
             node={node}
-            chosen={cacheNode.current}
+            chosen={nodeFrom.current}
             nodeTitle={nodeTitle}
             toolbar={cacheSearch}
             band={zoneBand}

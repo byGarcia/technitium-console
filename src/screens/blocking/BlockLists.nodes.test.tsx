@@ -76,6 +76,15 @@ describe('BlockLists on each node', () => {
     expect(screen.getAllByText(/did not respond/)).toHaveLength(1)
   })
 
+  it('an answer with no count in it is that node\'s count not read, and the card still draws', async () => {
+    serve({ failing: [] })
+    vi.mocked(dashboard.getDashboardStats).mockImplementation(async (_t, _r, _c, node) =>
+      node === 'ns2.home.lan' ? ok({}) : ok({ stats: { blockListZones: 1_203_411, allowListZones: 0 } }))
+    render(<BlockLists token="T" permissions={undefined} clusterInitialised nodes={NODES} />)
+    const row2 = (await screen.findByText('ns2.home.lan', { selector: 'td *, td' })).closest('tr') as HTMLElement
+    expect(row2).toHaveTextContent('Not read')
+  })
+
   it('a row stands for a failed node only when its settings did not answer', () => {
     expect(nodeFailure({ node: 'a', domains: { kind: 'failed', message: 'x' }, schedule: { kind: 'ok', value: { next: null, interval: 24 } } })).toBeNull()
     expect(nodeFailure({ node: 'a', domains: null, schedule: { kind: 'failed', message: 'gone' } })).toBe('gone')
@@ -97,6 +106,22 @@ describe('BlockLists on each node', () => {
     // All nodes are fetching now: each row says so, as the strip does.
     const rows = screen.getAllByRole('row')
     expect(rows.filter((r) => /Updating Now/.test(r.textContent ?? ''))).toHaveLength(NODES.length)
+  })
+
+  it('a Save that empties the lists during Update Now\'s wait ends its Updating Now', async () => {
+    serve({ failing: [] })
+    vi.spyOn(settings, 'setSettings').mockResolvedValue(ok({
+      response: { blockListUrls: [], blockListUpdateIntervalHours: 24, blockListNextUpdatedOn: NEXT },
+    }))
+    render(<BlockLists token="T" permissions={undefined} clusterInitialised nodes={NODES} />)
+    await screen.findByText('1,203,411')
+    await userEvent.click(screen.getByRole('button', { name: 'Update Now on All Nodes' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Update' }))
+    await screen.findByText('Block list update was triggered successfully.')
+    await userEvent.click(screen.getByRole('button', { name: `Remove ${HOSTS}` }))
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }))
+    await screen.findByText('DNS Server settings were saved successfully.')
+    await vi.waitFor(() => expect(screen.getAllByRole('row').filter((r) => /Updating Now/.test(r.textContent ?? ''))).toHaveLength(0))
   })
 
   it('without Dashboard: View the nodes\' counts are not asked for', async () => {

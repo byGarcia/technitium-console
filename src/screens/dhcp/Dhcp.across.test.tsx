@@ -115,6 +115,33 @@ describe('Leases, All nodes', () => {
     expect(screen.getByText('Their rows are missing here: only the nodes that answered are listed.')).toBeInTheDocument()
   })
 
+  it('counts and filters each node\'s LAN apart: one name on two nodes is two scopes', async () => {
+    const user = userEvent.setup()
+    serve()
+    servedAt('/dhcp/leases/?nodes=all', 'dhcp/leases')
+    render(<Section first="Leases" />)
+    await screen.findByText('Total Leases: 3')
+    const per = screen.getByRole('group', { name: 'Leases per scope' })
+    expect(within(per).getByRole('button', { name: 'LAN on ns1.test2' })).toBeInTheDocument()
+    expect(within(per).getByRole('button', { name: 'LAN on ns2.test1' })).toBeInTheDocument()
+    await user.click(within(per).getByRole('button', { name: 'LAN on ns2.test1' }))
+    await waitFor(() => expect(screen.queryByRole('row', { name: /10\.0\.0\.10/ })).not.toBeInTheDocument())
+    expect(screen.getByRole('row', { name: /10\.0\.1\.10/ })).toBeInTheDocument()
+  })
+
+  it('moving the node selector reads nothing again: the view reads every node already', async () => {
+    const user = userEvent.setup()
+    const { leases } = serve()
+    servedAt('/dhcp/leases/?nodes=all', 'dhcp/leases')
+    render(<Section first="Leases" />)
+    await screen.findByText('Total Leases: 3')
+    const before = leases.mock.calls.length
+    await user.click(screen.getByRole('combobox', { name: 'Cluster Node' }))
+    await user.click(screen.getByRole('option', { name: /ns2\.test/ }))
+    await new Promise((r) => setTimeout(r, 30))
+    expect(leases.mock.calls.length).toBe(before)
+  })
+
   it("converts and removes a lease on the row's node", async () => {
     const user = userEvent.setup()
     serve()

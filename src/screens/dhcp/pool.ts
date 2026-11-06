@@ -1,5 +1,5 @@
 import type { DhcpLease, DhcpScopeRow } from '../../api/dhcp'
-import type { NodeLease, NodeScopeRow } from './across'
+import { leaseScopeKey, type NodeLease, type NodeScopeRow } from './across'
 
 /*
 WHAT THE SECTION HOLDS (deviation 19 in CONVENTIONS.md, 2026-11-06). The figures
@@ -40,9 +40,14 @@ export function rangeSize(start: string, end: string): number | null {
 }
 
 /** The leases each scope holds, by scope name. */
-export function leasesPerScope(leases: DhcpLease[]): Map<string, number> {
+/** Leases per scope, keyed as the Scope filter is (`leaseScopeKey`): in the `All
+ *  nodes` view one node's `LAN` and another's are two scopes, not one. */
+export function leasesPerScope(leases: NodeLease[]): Map<string, number> {
   const out = new Map<string, number>()
-  for (const l of leases) out.set(l.scope, (out.get(l.scope) ?? 0) + 1)
+  for (const l of leases) {
+    const key = leaseScopeKey(l)
+    out.set(key, (out.get(key) ?? 0) + 1)
+  }
   return out
 }
 

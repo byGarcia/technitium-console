@@ -5,6 +5,7 @@ import { Icon } from '../../ui/Icon'
 import { Card, Count, StackBar, hotEvents, statStyles as stat } from '../../ui/StatCard'
 import { leaseColour } from './lease-colours'
 import { expiringSoon, leasesPerScope, newest } from './pool'
+import { scopeKeyLabel } from './across'
 import styles from './Dhcp.module.css'
 
 /*
@@ -100,7 +101,7 @@ export function LeaseSummary({
                   aria-pressed={scope === name}
                   onClick={() => onScope(scope === name ? '' : name)}
                 >
-                  <span className={styles.scopeName}>{name}</span>
+                  <span className={styles.scopeName}>{scopeKeyLabel(name)}</span>
                   <span className={styles.scopeCount}>{n}</span>
                   <span className={styles.scopeTrack} aria-hidden="true">
                     <span style={{ width: `${(n / most) * 100}%` }} />

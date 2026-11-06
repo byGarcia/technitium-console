@@ -4,7 +4,7 @@ import { Panel } from '../../ui/Panel'
 import { Loading, Failure, Empty } from '../../ui/Empty'
 import { Segmented } from '../../ui/Segmented'
 import { Locked } from '../blocking/Locked'
-import { nodeToken } from '../dashboard/palette'
+import { nodeColour } from '../dashboard/palette'
 import { readShares, sharesOf, type NodeRead } from './query-share'
 import styles from './QueryShare.module.css'
 
@@ -61,7 +61,7 @@ export function QueryShare({
 
   if (!canView) return <Locked title="Queries Across Nodes" need="Dashboard.canView" />
 
-  const colour = (node: string) => ({ '--nd': `var(${nodeToken(Math.max(0, nodes.indexOf(node)))})` }) as CSSProperties
+  const colour = (node: string) => ({ '--nd': nodeColour(nodes, node) }) as CSSProperties
 
   return (
     <Panel

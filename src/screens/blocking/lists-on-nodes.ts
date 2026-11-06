@@ -16,8 +16,13 @@ already makes for the connected node:
     the two values the strip's Next update cell and its `Last updated` come from
     (deviation 32).
 
-A read that fails keeps the server's message; the row says it once.
+A read that fails keeps the server's message; the row says it once. An answer with
+no count in it (`stats` missing, as a node mid-restart can send) is a failed count
+and not a thrown read, which would have left the whole card loading: its words,
+OURS, are `NO_COUNT`.
 */
+
+export const NO_COUNT = 'The answer carried no Block List Domains.'
 
 export type Read<T> = { kind: 'ok'; value: T } | { kind: 'failed'; message: string }
 
@@ -44,9 +49,11 @@ export function readListsOnNodes(
         domains:
           stats == null
             ? null
-            : stats.kind === 'ok'
-              ? { kind: 'ok', value: stats.data.stats.blockListZones }
-              : { kind: 'failed', message: noticeFromFailure(stats).text },
+            : stats.kind !== 'ok'
+              ? { kind: 'failed', message: noticeFromFailure(stats).text }
+              : typeof stats.data.stats?.blockListZones === 'number'
+                ? { kind: 'ok', value: stats.data.stats.blockListZones }
+                : { kind: 'failed', message: NO_COUNT },
         schedule:
           settings.kind === 'ok'
             ? {
