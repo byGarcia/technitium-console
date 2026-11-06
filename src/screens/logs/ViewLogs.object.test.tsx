@@ -66,7 +66,7 @@ describe('View Logs: the folder', () => {
     render(<Logs token="t" sub="View Logs" />)
     await screen.findByRole('table')
 
-    const newest = screen.getByRole('heading', { name: 'Newest' }).closest('div')!.parentElement!
+    const newest = screen.getByRole('heading', { name: 'Newest' }).closest('section')!
     await user.click(within(newest).getByRole('button', { name: '2026-11-06' }))
     expect(read).toHaveBeenCalledWith('t', '2026-11-06', '')
     expect(await screen.findByRole('heading', { level: 1, name: '2026-11-06' })).toBeInTheDocument()
