@@ -13,7 +13,8 @@ also `technitiumServerMinimum` in its `package.json`, which is what the update n
 
 | Console | Technitium DNS Server | Notes |
 |---|---|---|
-| **1.3.x** | **15.5.x, 15.6.x** (1.3.4 checked against 15.6.2) | Current. Every screen redesigned for the phone, a Dashboard that compares periods, Cache in one panel. |
+| **1.4.x** | **15.5.x, 15.6.x** (1.4.0 checked against 15.6.2) | Current. A Clients page with actions, every cluster node side by side, a command palette, response times on the Dashboard, and every screen redrawn. |
+| 1.3.x | 15.5.x, 15.6.x | Superseded by 1.4.x on the same server. Every screen redesigned for the phone, a Dashboard that compares periods, Cache in one panel. |
 | 1.2.x | 15.5.x, 15.6.x | Superseded by 1.3.x on the same server. Allowed and Blocked become one Blocking section, a light theme, and the console comes as an image for Docker. Supports a console folder of its own (`DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH`), so server updates leave it alone. |
 | 1.1.x | 15.5.x | Superseded by 1.2.x on the same server. If you stay on it, use 1.1.3: earlier ones flood the server from Cache, Allowed and Blocked. |
 | 1.0.0 | 15.4 | Cannot save Settings on a 15.5 server. Upgrade. |
@@ -23,244 +24,174 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
 
 ---
 
-## Unreleased
+## v1.4.0 (2026-11-06)
 
-**Flat controls and a calmer chrome.** Design only: every control, text and step is the same.
+**Know who uses your DNS, see every cluster node side by side, and jump anywhere with Ctrl K.**
+Every feature of the stock console works as before, through the same API: checked against
+Technitium DNS Server 15.6.2. Beside them, this release adds screens the stock console never had.
+Each one only uses calls the stock console already makes, and each is written down, with its limits,
+in [CONVENTIONS.md](CONVENTIONS.md#deliberate-deviations-from-upstream-behaviour).
 
-- **The login names the console as the sidebar does**, with its version, and its password field can
-  show what was typed and says when Caps Lock is on.
-- **The account menu reads in groups**, each entry with an icon and Logout apart, in red.
-- **The theme credit's handle is in the console's amber.**
-- **One mark everywhere:** the login card, About and the browser tab show the console's mark, the
-  one in the sidebar.
-- **About puts the console's support first:** `Support the Console` heads the console's column in
-  its own colour, with GitHub Sponsors as its main button and a line saying these go to the
-  console's author while Technitium's Donate supports the DNS server.
-- **Query Logs across the cluster:** on a cluster, `All nodes` in Query Logs sends the query to
-  every node and shows the newest entries of all of them in one table, newest first, with a Node
-  column and each node's own total for the filters. Only the newest page is offered in this view,
-  and Live Update follows every node. A node that cannot be read is named with the server's
-  message. Export and paging stay per node, and the view is kept in the address bar
-  (`?nodes=all`).
-- **DHCP across the cluster:** on a cluster, `All nodes` in DHCP › Leases and Scopes shows every
-  node's leases and scopes together with a Node column, the cards adding the nodes up. Converting
-  or removing a lease and enabling, disabling, editing or deleting a scope act on the row's node,
-  and each scope's usage counts its own node's leases. A node that cannot be read is named.
-- **Choose a window on the Queries chart:** on the Dashboard, dragging across the Queries chart
-  draws a window and, on release, opens Query Logs from the start of its first point to the end of
-  its last, as clicking one point opens that point. It works with the mouse, a pen or a finger, and
-  on the lines compared by node too. A plain click still opens one point.
-- **Queries across cluster nodes:** Administration › Cluster shows a period's Total Queries split by
-  the node that answered them, as one bar in each node's colour with each node's count and share,
-  Last Day first with the Dashboard's periods beside it. A node that does not answer is left out and
-  named. Needs Dashboard: View.
-- **Block lists across cluster nodes:** on a cluster, Blocking › Lists shows each node's Block List
-  Domains, when it last updated its lists and when it updates them next. Update Now moves into that
-  card as Update Now on All Nodes, the same call and confirmation: the server already passes it on
-  to every node. A node that does not answer says so with the server's message.
-- **Settings compared across cluster nodes:** Administration › Cluster shows a curated set of each
-  node's settings side by side (domain, version, end points, recursion, DNSSEC, rate limits, default
-  TTLs, blocking, forwarders, logging), the ones that differ first and marked, with "Show only
-  differences". A node that does not answer says so with the server's message. Needs Settings: View.
-- **DHCP scope usage:** each enabled scope's row in DHCP › Scopes shows how many of the addresses in
-  its range are leased, Dynamic and Reserved, as a share and a bar that turns amber above 80%.
-- **Blocking › Lists remembers and saves in one step:** the Next update cell says when the lists
-  were last updated (the server's next update less its interval), a Block list growth cell keeps
-  the Block List Domains count each time it changes, in this browser only, with what each update
-  added or removed, and the save bar has Save and Update Now, which saves and then asks to update
-  as Update Now does. The Block, Allow and Check bar says as you type whether one of your own
-  rules, the name or a parent, already blocks or allows it, from the rules it reads once.
-- **Cache across the cluster:** on a cluster, `All nodes` beside the node selector reads the domain
-  you are browsing from every node and lays the answers side by side: how many records each node
-  holds there, one row per record with each node's time left (or `not cached here`), and filters
-  for the records on every node or on some nodes only. A node that cannot be read says so in its
-  column. Flush Cache and Delete still act on the node chosen, and the view is kept in the address
-  bar (`?nodes=all`).
-- **Queries compared by node:** on a cluster with `Cluster` chosen, `Compare nodes` in the
-  Dashboard's Queries card draws one line per node, each node's own total for the period, in the
-  colour it has in Cache. A node that cannot be read is left out and named under the chart. The
-  lines reload with the minute reload, and the choice is remembered in the browser.
-- **Buttons are flat**, with no shine or bevel. The neutral one is a step lighter than the panel
-  it sits on, so it no longer disappears in a panel header or a dialog footer. Under the pointer the
-  primary button no longer grows a grey ring and the destructive one keeps its colour.
-- **Destructive buttons in two tiers.** On a page ("Delete Zones", "Flush Cache", "Remove") they are
-  neutral with a red label and fill with red under the pointer; the button that confirms in a
-  dialog is solid red.
-- **Icons on the main actions** (Add Zone, Flush Cache, Query, Export, Backup and Restore
-  Settings, and more), a magnifying glass in the fields that look something up, and the sort arrow
-  always visible in table headers.
-- **States as a dot and a word** (`Enabled`, `Active`) instead of a filled pill.
-- **Sidebar:** its own darker layer, the current section marked with an amber bar instead of a solid
-  amber block, the three groups divided, and an update notice that no longer breaks its line.
-- **Dashboard:** the figure cards drop their curved coloured edge for a straight bar, read in the
-  interface's face, and mark the latest reading on each trend. Last Hour shows a live dot while it
-  refreshes by itself. A card's hover outline now sits on its border.
-- **The period picker** is a joined group of buttons, with the chosen one in amber text instead of
-  a solid amber block.
-- Links inside upstream's texts (such as "RFC 8806" in Add Zone) take the theme's colour.
-- **Zones, redesigned to read at a glance.** The list keeps only Name and Type above it, with the
-  page fields beside the pagination, shows Expiry only when a zone has one, and puts every action in
-  one row menu in upstream's order. A zone shows its state, type, serial and last change under its
-  title, a summary of its records by type that filters when pressed, and compact records: an SOA on
-  two lines, the dates on one quiet line, `never` instead of an empty date, and one owner name per
-  run of records. Fixed on the way: the refresh beside a zone's title, the IDN title, the status
-  colours, the expiry with its seconds, the catalog's own name, `Properties` in the DNSSEC menu
-  and the `seconds` after the SOA timers.
-- **Zones at a glance.** The zone list opens with cards for all zones by type, their health, how
-  many are signed and the last change; a zone opens with cards for its records, its SOA, its name
-  servers and its DNSSEC, which carries the DNSSEC actions. Record and zone types each have a
-  colour, the same everywhere. Disable Zone and Delete Zone move to the foot of the zone's page.
-- **Tables redrawn.** Every table has a lighter header, more room at its edges and a quieter hover;
-  the pagination is a row of flat buttons with the current page in amber. Zones and a zone's records
-  are one card each: the filters and the selection's verb in a toolbar on top, the count, the page
-  fields and the pagination in a foot below. Dialogs are redrawn too, and the breadcrumb ends with
-  the page you are on.
-- **Zones: the open zone is in the address bar** (`/zones/?zone=example.org`), so a reload, a
-  bookmark, a shared link and the back and forward buttons return to it.
-- **Zone menus are easier to scan:** the row menu and a zone's Options menu are split into groups,
-  each entry has an icon and Delete stays red. "Delete Zones" is disabled until a zone is selected.
-- **Icon-only buttons show their name** in the console's own tooltip, on hover and on keyboard
-  focus. The Zones summary cards come in with one short entrance and light the segment of the type
-  you point at.
-- **Results float in the bottom right corner** as a card with a coloured icon and a bar that runs
-  out over the five seconds a success stays; form notices get a soft tint and the same icon.
-- **Loading shows skeleton bars**, dropdown lists open with a short fade, and the Dashboard figures
-  rise slightly under the pointer.
-- **Query Logs: the results are one card**, with Query, Export, Reset and Live Update in its toolbar
-  and the count, Page Number, Logs Per Page and the pages in its foot.
-- **The Zones dialogs are redrawn inside:** labels above their fields, zone types and import sources
-  as tiles, a type's own fields in one block, DNSSEC key states as coloured pills, and confirmations
-  with a badge of their tone, red when the action is destructive.
-- **The login screen is redrawn:** the form on a floating card, a full-width Login button with a
-  ring while it works, and a quiet backdrop on the cover. Nothing the form does has changed.
-- **Destructive buttons are outlined in red at rest** across the console, and the four that were
-  plain grey (a DNSSEC key's Delete, Delete Record, and two Remove buttons) now are too.
-- **The sidebar says technitium-console**, beside Technitium's own logo, now a vector file of
-  the same mark so it stays sharp on high-density screens.
-- **Cache reads like a zone.** The open node is the header (its path, every step of which goes
-  back up, and its name with Refresh, Delete and Flush Cache), then cards for its records by type,
-  the time left before the next one expires and how many are stale, their DNSSEC states and the
-  servers that answered, all read from the answer already on screen. Below, one card holds the
-  Domain field, the zones under the node and its records, one line each with the rest under
-  *Details*. Pressing a record type on the cards narrows the table to it, and a record kept past its
-  TTL is marked `Stale`. The open node and that type are in the address bar, so a reload or a link
-  comes back to them.
-- **Zones: the list's page and filters are in the address bar** too, and so are a zone's records
-  page and filters, so a reload or a link returns to the same page.
-- **Apps opens with four cards** (installed apps and their store status, classes by kind, what
-  serves Query Logs, what APP records can use). The installed apps and the App Store are tables
-  with one line per app and a search, More Details opening under the row, and each kind of DNS app
-  has its own colour; pressing a kind on the cards narrows the table. The installed list says
-  `Total Apps` again. App Config numbers its lines and says whether the text is valid JSON.
-- **About reads like the rest of the console:** the server as the header with its logo and domain,
-  cards for the DNS Server version, the uptime and the console version, and Technitium's
-  documentation, support, license and donate sections as blocks of link rows, every sentence and
-  link as upstream writes it, with this console's links in their own column.
-- **My Profile is a page** (`/profile/`) instead of a dialog, everything on one screen: your
-  sessions in a filterable table where you can also create an API token, and beside it your
-  profile form, password and two-factor, groups and last logins, and the theme.
-- **The cards over each list are one compact strip** instead of a row of tall boxes, so the table
-  starts higher on the screen. The Dashboard keeps its large figures.
-- **Logs reads like Cache:** View Logs opens with cards for the log folder (files, total size,
-  newest and oldest) over a one-line-per-file table, and an open file becomes its own page with its
-  size, entries and time span, saying when only its first 2 MB are shown. Query Logs opens with
-  cards for the page on screen (response types, RCODE, top clients and names) that set the matching
-  filter, keeps its filters inside the results card, draws each entry on one line with the rest
-  under Details, and keeps the query and the open file in the address bar so a link reproduces them.
-- **Settings reads as one form:** one menu at the left with the nine sub-sections, the current
-  one's blocks and a search that narrows the rows and counts matches in every sub-section; each
-  field's help sits under its label, folded to one line; the save bar stays at the foot of the
-  window and says what would change; Backup, Restore and Flush Cache move to the header. Notes and warnings
-  are compact lines instead of boxes, and long helps fold to one line with *more*, in every form.
-- **Zones across cluster nodes:** on a cluster, the zone list can show every node side by side,
-  each zone's type and serial on each node and whether it is healthy, only on some nodes, has a
-  serial that differs or is disabled on a node, with filters for each. A node that does not answer
-  says why.
-- **Quick add of a host record:** a name and an address in the zone list's toolbar add an A or
-  AAAA record to the zone the name belongs to, with the reverse (PTR) record if you tick it, and
-  the notice opens that zone.
+### New
+
+- **A Clients page**, first under Monitoring. A strip counts the clients and names the most active
+  and the most blocked, with the blocked share of the latest 1,000 queries; a bar shows the busiest
+  clients side by side by their share, a click opening one. The list shows every client of the
+  period (the stock Dashboard's Top Clients, up to 1,000) with its queries, how much of its latest
+  queries was blocked and a `High block rate` tag, with a search, filters (`High block rate`,
+  `Quiet`) and an order, all kept in the address bar. A client opens as a card beside the list on a
+  wide screen, or as its own page on a narrow one: its DHCP lease (MAC address, host name, scope),
+  its last query, Show Query Logs and Copy IP, and from its latest 500 queries the blocked share,
+  the cache hit rate, the median response time, its activity over time, its top and top blocked
+  domains, its protocols and record types and its latest queries. Without a query logging app it
+  still lists the clients and says why the rest is missing.
+- **Act on a client from its card:** let it bypass blocking or exempt it from rate limiting
+  (Settings' Blocking Bypass List and QPM Limit Bypass List, after a confirmation), and reserve its
+  DHCP lease or make it dynamic again, as DHCP › Leases does.
+- **A command palette:** Ctrl+K (⌘K on a Mac), or the search field at the top of the sidebar, jumps
+  to any page, Settings pane or zone, and takes a typed name straight to Blocking's check, DNS
+  Client, Query Logs, the cache, your rules or the settings search. It remembers the last entries
+  you ran.
+- **Response Time on the Dashboard:** the median, the 95th percentile, the share over 100 ms and a
+  histogram of the upstream round trips among the latest 1,000 logged queries. The card says first
+  how many of them went upstream, and with fewer than 20 the second figure is the slowest one. Query
+  Logs shows each answer's round trip under its response type again, as the stock console does.
 - **From query to answer, on the Dashboard:** beside Response Time, a flow of the latest logged
   queries from how the server answered them to what it answered; each kind and code opens Query
   Logs filtered by it.
-- **Response Time on the Dashboard:** the median, the 95th percentile, the share over 100 ms and a
-  histogram of the upstream round trips among the latest 1,000 logged queries. Query Logs shows
-  each answer's round trip under its response type again, as the stock console does.
-- **Query Logs' Live Update looks live:** a beating dot beside the switch counts the logs that arrived
-  since it was turned on, and each new row flashes once as it comes in.
-- **A command palette:** Ctrl+K (or the search field at the top of the sidebar) jumps to any page,
-  Settings pane or zone, and takes a typed name straight to Blocking's check, DNS Client, Query
-  Logs, the cache, your rules or the settings search. It remembers the last entries you ran.
-- **A sidebar grouped by task:** Monitoring, DNS, Network, Tools and System, with Query Logs and
-  View Logs as entries of their own; Blocking, DHCP and Administration unfold their screens in the
-  sidebar instead of tabs under the title. Blocking gets a Settings page with the blocking options.
-  The top reads Technitium Console with the console's version, Technitium's mark redrawn in its
-  blue tile; the server's domain and version sit in a card above the account, each with its Update
-  mark.
-- **Every save bar reads the same way:** it floats with a margin above the foot of the window,
-  keeps a gap from the card above when at rest, and puts its buttons at the right with Save last.
-- **Administration reads like the rest of the console.** Permissions is one matrix of sections by
-  groups and users, about a third of its old height, and opens a section's dialog from its row.
-  Users, Groups and Sessions are data tables with a search, one line per row with Details, and the
-  stock row menu. Users and Sessions get a stat strip whose parts filter the table. SSO and LDAP
-  show whether they are enabled and configured. The search and filters are kept in the address
-  bar.
-- **Every dialog reads like Add Zone:** labels above their fields, short fields in pairs, related
-  fields in a light block, choices as tiles, tables one line per row with icon actions; a
-  `Warning!` comes before the controls it is about. Edit Permissions draws real checkboxes.
-- **Blocking reads like Cache and Administration:** Overview and Lists open with a strip of
-  figures, every list is one card with its controls in the toolbar and its count in the foot, one
-  line per row with the rest under Details, and Rules' tree is the same card with a trail to the
-  node and its view kept in the address bar. The Dashboard's Top 1000 list gets a search, and
-  editable tables (TSIG keys, group maps) take the table look.
+- **Choose a window on the Queries chart:** dragging across it opens Query Logs from the start of
+  its first point to the end of its last, as clicking one point opens that point. It works with the
+  mouse, a pen or a finger.
+- **Query Logs' Live Update looks live:** a beating dot beside the switch counts the logs that
+  arrived since it was turned on, and each new row flashes once as it comes in.
+- **Blocking › Settings:** the blocking options have their own page in the Blocking section, and
+  `/settings/blocking/` still lands there.
+- **Blocking › Lists remembers and saves in one step:** the Next update cell says when the lists
+  were last updated, a Block list growth cell keeps the Block List Domains count each time it
+  changes (in this browser only) with what each update added or removed, and Save and Update Now
+  saves and then asks to update. The Block, Allow and Check bar says as you type whether one of your
+  own rules, the name or a parent, already blocks or allows it.
 - **Blocking's Overview shows more:** whether blocking is on sits in the header beside the period,
   as a pill (green, amber with the time it comes back, red) with the same Disable menu; checking,
   blocking or allowing a domain is one bar across the page; Total Queries and Blocked show their
-  change against the previous period, as on the Dashboard; and the Blocked share ring gives way to
-  **Blocked by client**, the clients behind the latest 1,000 blocked queries with a jump to their
-  Query Logs, and the query types they asked for. It reads the same query logs Recently Blocked
-  reads.
-- **A Clients page**, first under Monitoring. A strip counts the clients and names the most
-  active and the most blocked, with the blocked share of the latest 1,000 queries; a bar shows who
-  uses your DNS, the busiest clients side by side by their share, a click opening one. The list
-  shows every client of the period (the stock Dashboard's Top Clients, up to 1,000) with its
-  queries, how much of its latest queries was blocked and a `High block rate` tag, with a search,
-  filters (`High block rate`, `Quiet`) and an order, all kept in the address bar. A client opens as
-  a card beside the list on a wide screen, or as its own page on a narrow one: its DHCP lease (MAC
-  address, host name, scope), its last query, Show Query Logs and Copy IP, and from its latest
-  500 queries the blocked share, the cache hit rate, the median response time, its activity over
-  time, its top and top blocked domains, its protocols and record types and its latest queries.
-  From the card you can let the client bypass blocking or exempt it from rate limiting (Settings'
-  Blocking Bypass List and QPM Limit Bypass List, after a confirmation), and reserve its DHCP
-  lease or make it dynamic again, as DHCP › Leases does. Without a query logging app it still
-  lists the clients and says why the rest is missing.
-- **Choosing a file is a drop zone** in every dialog that takes one (an app's zip, a zone file, a
-  settings backup): drop the file or click to choose it, and it shows its name and size.
-- **Dialogs are one surface**, without the lines under the title and over the buttons. A
-  confirmation leads with a red warning sign when it deletes, and the name it acts on stands out.
-- **DNS Client draws the answer instead of only printing it:** cards for the response code, the
-  answer by record type, the server and the header flags; the Question, Answer, Authority,
-  Additional and Extended DNS Errors sections as tables; the JSON as its own tab; and each raw
-  response as a row that opens its JSON. The query is the answer card's toolbar, the question
-  becomes the page's title, the query goes in the address bar so a link repeats it, and the empty
-  card lists your recent queries to run again with one press.
-- **DHCP reads like Cache and Zones:** one line per lease and per scope with the rest under
-  Details, a search and a State filter for scopes, and a scope that opens as its own page, with its
-  verbs in the header, cards for its pool, leases, reservations and options, and a form whose twelve
-  optional blocks fold into one line each. Search, filters and the open scope are kept in the
-  address bar.
-- **Zones: a zone that does not exist says so.** Opening one (from an old link, for instance)
-  showed "Unable to connect to the server"; it now shows the server's own message, as the stock
-  console does, and the list comes back.
-- **Query Logs: the pages do nothing while Live Update is on**, as in the stock console. They used
-  to run a query that the next refresh then replaced.
+  change against the previous period; and **Blocked by client** lists the clients behind the
+  latest 1,000 blocked queries, with the query types they asked for.
+- **Quick add of a host record:** a name and an address in the zone list's toolbar add an A or AAAA
+  record to the zone the name belongs to, with the reverse (PTR) record if you tick it, and the
+  notice opens that zone.
+- **Zones at a glance:** the zone list opens with cards for all zones by type, their health, how
+  many are signed and the last change; a zone opens with cards for its records, its SOA, its name
+  servers and its DNSSEC. The open zone, the list's page and filters, and a zone's records page are
+  in the address bar, so a reload, a bookmark or a shared link returns to them.
+- **DHCP scope usage:** each enabled scope shows how many of the addresses in its range are leased,
+  Dynamic and Reserved, as a share and a bar that turns amber above 80%.
+- **The login's password field** can show what was typed and says when Caps Lock is on.
+
+### On a cluster
+
+Each node keeps its own cache, query log, DHCP leases and copy of the block lists, and the stock
+console shows one node at a time. On an initialised cluster, `All nodes` lays them side by side. A
+node that does not answer is named once with the server's message and left out of the comparison.
+These views are new: if you run a cluster, a report of how they behave on yours is welcome.
+
+- **Zones:** every zone with its type and serial on each node, and whether it is healthy, only on
+  some nodes, has a serial that differs or is disabled on a node, with filters for each.
+- **Cache:** how many records each node holds at the domain you are browsing, one row per record
+  with each node's time left (or `not cached here`), and filters for the records on every node or on
+  some only. Flush Cache and Delete still act on the node chosen.
+- **Query Logs:** the query sent to every node, the newest entries of all of them in one table with
+  a Node column and each node's own total for the filters. Only the newest page is offered in this
+  view, and Live Update follows every node.
+- **DHCP:** every node's leases and scopes together with a Node column. Converting or removing a
+  lease and enabling, disabling, editing or deleting a scope act on the row's node, and a scope of
+  the same name on two nodes counts as two.
+- **Block lists:** each node's Block List Domains, when it last updated its lists and when it
+  updates them next. Update Now becomes Update Now on All Nodes, the same call: the server already
+  passes it on to every node.
+- **Administration › Cluster** splits a period's Total Queries by node and compares a curated set
+  of the nodes' settings side by side, the ones that differ first, with "Show only differences".
+- **The Dashboard's Queries** can draw one line per node with `Compare nodes`.
+
+These views keep their choice in the address bar (`?nodes=all`), and each node has the same colour
+in all of them.
+
+### Every screen redrawn
+
+- **A sidebar grouped by task:** Monitoring, DNS, Network, Tools and System, with Query Logs and
+  View Logs as entries of their own; Blocking, DHCP and Administration unfold their screens in the
+  sidebar instead of tabs under the title, and the page you are on is always in view. The top reads
+  Technitium Console with the console's version, beside Technitium's mark redrawn in a blue tile;
+  the server's domain and version sit in a card above the account, each with its Update mark. The
+  same mark is on the login, About and the browser tab.
+- **The account menu reads in groups**, each entry with an icon and Logout apart, in red.
+- **The login screen:** the form on a floating card beside a cover that names the console, in both
+  themes and at phone width. Nothing the form sends has changed.
+- **The Dashboard's figure cards** drop their curved coloured edge for a straight bar and mark the
+  latest reading on each trend; Last Hour shows a live dot while it refreshes by itself.
+- **Zones:** the list keeps only Name and Type above it and puts every action in one row menu in
+  the stock order, split into groups with an icon each. A zone shows its state, type, serial and
+  last change under its title, a summary of its records by type that filters when pressed, and
+  compact records. Disable Zone and Delete Zone move to the foot of the zone's page, and Delete
+  Zones waits for a selection.
+- **Cache reads like a zone:** the open node is the header, with its path, Refresh, Delete and
+  Flush Cache, then cards for its records by type, the time left before the next one expires, how
+  many are stale, their DNSSEC states and the servers that answered; a record kept past its TTL is
+  marked `Stale`. The open node and the record type are in the address bar.
+- **Apps opens with four cards** (installed apps and their store status, classes by kind, what
+  serves Query Logs, what APP records can use), and the installed apps and the App Store are tables
+  with a search and More Details under the row. App Config numbers its lines and says whether the
+  text is valid JSON.
+- **DNS Client draws the answer:** cards for the response code, the answer by record type, the
+  server and the header flags; the Question, Answer, Authority, Additional and Extended DNS Errors
+  sections as tables; the JSON as its own tab; and the query in the address bar so a link repeats
+  it. The empty card lists your recent queries to run again with one press.
+- **DHCP reads like Cache and Zones:** one line per lease and per scope with the rest under Details,
+  a search and a State filter, and a scope that opens as its own page with cards for its pool,
+  leases, reservations and options.
+- **Logs reads like Cache:** View Logs opens with cards for the log folder over a one-line-per-file
+  table, and an open file becomes its own page. Query Logs opens with cards for the page on screen
+  that set the matching filter, keeps its filters inside the results card, and keeps the query in
+  the address bar.
+- **Settings reads as one form:** one menu at the left with the sub-sections, a search that narrows
+  the rows and counts matches in every sub-section, each field's help under its label, and a save
+  bar at the foot of the window that says what would change. Backup, Restore and Flush Cache move to
+  the header.
+- **Administration reads like the rest:** Permissions is one matrix of sections by groups and
+  users, about a third of its old height; Users, Groups and Sessions are data tables with a search;
+  SSO and LDAP show whether they are enabled and configured.
+- **Blocking reads like Cache and Administration:** Overview and Lists open with a strip of figures,
+  every list is one card with its controls in the toolbar and its count in the foot, and Rules' tree
+  is the same card with a trail to the node.
+- **My Profile is a page** (`/profile/`) instead of a dialog: your sessions in a filterable table
+  where you can also create an API token, beside your profile, password and two-factor, groups,
+  last logins and the theme.
+- **About:** the server is the header, with the console's mark, its domain and what is running on
+  one line; Technitium's sections are blocks of link rows, every sentence as the stock console
+  writes it. The console's column starts with Support the Console, in its own colour, saying that
+  these donations go to the console's author while Technitium's Donate supports the DNS server.
+- **Every dialog reads like Add Zone:** labels above their fields, short fields in pairs, choices as
+  tiles, one surface without lines under the title or over the buttons, and a red warning sign on a
+  confirmation that deletes. Choosing a file is a drop zone.
+- **Tables, buttons and states:** lighter table headers and flat pagination; flat buttons, with
+  icons on the main actions; destructive buttons outlined in red on a page and solid red in the
+  dialog that confirms; states as a dot and a word; the period picker as a joined group; results
+  that float in the bottom right corner; skeleton bars while loading; and every save bar with its
+  buttons at the right and Save last.
+
+### Fixed
+
+- **Zones:** a zone that does not exist shows the server's own message, as the stock console does,
+  instead of "Unable to connect to the server". On the way: the refresh beside a zone's title, the
+  IDN title, the status colours, the expiry with its seconds, the catalog's own name, `Properties`
+  in the DNSSEC menu and the `seconds` after the SOA timers.
+- **Query Logs:** the pages do nothing while Live Update is on, as in the stock console.
 - **DNSSEC Properties:** the three notes under the keys are the stock console's own, the key
   generation choice has its *Key Generation* label, the DNSKEY TTL says its default and is saved
-  with *Update TTL*, and the warning about waiting for the old TTL is back. The NSEC3 fields say
+  with *Update TTL*, the warning about waiting for the old TTL is back, and the NSEC3 fields say
   their valid ranges.
-- **DNS Client:** Import asks first, as the stock console does, since an import can create a zone.
-  Enter resolves, a pasted URL is cut to its host, choosing the recursive resolver or the system
-  DNS sets the protocol to UDP, a server typed by hand joins the list, the buttons say
-  *Resolving...* and *Importing...*, and an error shows the reason under it too.
+- **DNS Client:** Import asks first, as the stock console does. Enter resolves, a pasted URL is cut
+  to its host, choosing the recursive resolver or the system DNS sets the protocol to UDP, a server
+  typed by hand joins the list, and an error shows the reason under it too.
 - **DHCP Leases:** converting or removing a lease on a sorted table acts on the row clicked. It
   could act on another lease.
 

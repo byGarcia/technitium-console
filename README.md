@@ -19,9 +19,9 @@ that works on your phone.
 |---|---|
 | ![The dashboard](docs/screenshots/dashboard.png) | ![Clients, with one client open](docs/screenshots/clients.png) |
 
-**Latest release: [v1.3.4](https://github.com/byGarcia/technitium-console/releases/latest) for
-Technitium DNS Server 15.5.x and 15.6.x.** What is coming next is under
-[Unreleased](CHANGELOG.md#unreleased).
+**Latest release: [v1.4.0](https://github.com/byGarcia/technitium-console/releases/latest) for
+Technitium DNS Server 15.5.x and 15.6.x**, with the Clients page, the cluster views, the command
+palette and every screen redrawn.
 [What's new](CHANGELOG.md) · [Which console for which server](CHANGELOG.md#which-version-for-which-server) · [Installing](#installing) · [Technitium in Docker](#docker)
 
 It replaces the console the server ships with. Install it and the DNS service behaves exactly as

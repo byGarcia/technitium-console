@@ -146,7 +146,12 @@ describe('Versions: the console mark', () => {
     } as never)
   }
 
-  function consoleRelease(latest = '1.4.0') {
+  /* A release one minor step past this console's own, so the test keeps meaning
+     "a newer console exists" whatever version this console is. */
+  const [major, minor] = __CONSOLE_VERSION__.split('.').map(Number)
+  const NEWER = `${major}.${minor + 1}.0`
+
+  function consoleRelease(latest = NEWER) {
     return vi.spyOn(consoleUpdate, 'checkConsoleUpdate').mockResolvedValue({ latest, server: '15.5' })
   }
 
@@ -168,10 +173,10 @@ describe('Versions: the console mark', () => {
     const dialog = screen.getByRole('dialog')
     expect(screen.getByRole('heading', { name: 'New Web Console Version Available!' })).toBeInTheDocument()
     expect(dialog).toHaveTextContent(`Current Version: ${__CONSOLE_VERSION__}`)
-    expect(dialog).toHaveTextContent('Update Version: 1.4.0')
+    expect(dialog).toHaveTextContent(`Update Version: ${NEWER}`)
     expect(screen.getByRole('link', { name: 'Release Notes' })).toHaveAttribute(
       'href',
-      'https://github.com/byGarcia/technitium-console/releases/tag/v1.4.0',
+      `https://github.com/byGarcia/technitium-console/releases/tag/v${NEWER}`,
     )
     expect(dialog).toHaveTextContent(
       'curl -sSL https://raw.githubusercontent.com/byGarcia/technitium-console/main/install.sh | sudo sh',
