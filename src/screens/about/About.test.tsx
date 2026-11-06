@@ -8,7 +8,7 @@ const info = { version: '15.4', uptimestamp: '2026-08-25T13:07:31Z', dnsServerDo
    whose parent is the panel. */
 function block(name: string): HTMLElement {
   const heading = screen.getByRole('heading', { level: 2, name })
-  return heading.parentElement?.parentElement as HTMLElement
+  return (heading.parentElement?.tagName === 'SECTION' ? heading.parentElement : heading.parentElement?.parentElement) as HTMLElement
 }
 
 /* What a block says, with the spacing the markup adds folded away. */

@@ -1,5 +1,4 @@
-import { useRef, useState, type CSSProperties, type ReactNode } from 'react'
-import { Panel } from './Panel'
+import { useId, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { useTooltip } from './Tooltip'
 import { useCountUp } from './useCountUp'
 import styles from './StatCard.module.css'
@@ -17,10 +16,14 @@ export { styles as statStyles }
 /** A card with its series colour as a straight bar inside its left edge, the way
  *  the Dashboard's figures carry theirs. */
 export function Card({ title, colour, children }: { title: string; colour: string; children: ReactNode }) {
+  const id = useId()
   return (
-    <div className={styles.card} style={{ '--tc': colour } as CSSProperties}>
-      <Panel title={title}>{children}</Panel>
-    </div>
+    <section className={styles.card} style={{ '--tc': colour } as CSSProperties} aria-labelledby={id}>
+      <h2 className={styles.cardTitle} id={id}>
+        {title}
+      </h2>
+      {children}
+    </section>
   )
 }
 

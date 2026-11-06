@@ -185,3 +185,55 @@ out under the console's one curve (`--t-fast`'s, `cubic-bezier(0.2, 0.9, 0.3, 1)
 @keyframes fill {
   from { transform: scaleX(0); }
 }
+
+/*
+A STRIP, NOT A ROW OF BOXES (2026-11-06). The cards were full panels, 140 to 235 px
+tall, and pushed every list's table below the middle of the screen. They are now
+the cells of ONE panel: a label, the figure a step smaller, the bar and the chips,
+with a hairline between cells. The Dashboard keeps its own large figures
+(`dashboard/Figures.tsx`): there the figures are the content.
+*/
+.grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1px;
+  border: 1px solid var(--line2);
+  border-radius: var(--r-4);
+  background: var(--line2);
+  box-shadow: var(--e-1);
+  overflow: hidden;
+}
+@media (max-width: 1180px) {
+  .grid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+}
+@media (max-width: 560px) {
+  .grid { grid-template-columns: minmax(0, 1fr); }
+}
+.card {
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: var(--s-6) var(--s-8) var(--s-7);
+  background: var(--pan);
+}
+.card > * { flex: none; }
+.card::before { top: var(--s-6); bottom: var(--s-6); }
+.card:hover > * { border-color: transparent; }
+.card:hover { background: color-mix(in srgb, var(--tc) 5%, var(--pan)); }
+.cardTitle { margin: 0; font-size: var(--t-3); font-weight: 550; color: var(--mute); }
+.card .body { padding: 0; }
+
+.figure { font: 650 var(--t-6)/1.15 var(--font-ui); }
+.factsLarge dd { font: 650 var(--t-6)/1.15 var(--font-ui); }
+.facts { gap: var(--s-8); margin-top: var(--s-3); }
+.facts dt { font-size: var(--t-2); }
+.facts dd { font-size: var(--t-4); }
+.stack, .meter { height: var(--s-3); margin-top: var(--s-4); }
+.types { gap: var(--s-2); margin-top: var(--s-4); }
+.typeChip { padding: 0 var(--s-4); font-size: var(--t-2); min-height: var(--s-10); }
+.caption { margin-top: var(--s-2); font-size: var(--t-2); }
+.of { font-size: var(--t-4); }
+.state { min-height: 0; }
+.shield { margin-right: var(--s-3); }
+.pairs { gap: var(--s-2) var(--s-8); margin-top: var(--s-2); }
+.pairs dd { font-size: var(--t-2); }
+.list { gap: var(--s-2); margin-top: var(--s-2); }
+.actions { margin-top: var(--s-4); }

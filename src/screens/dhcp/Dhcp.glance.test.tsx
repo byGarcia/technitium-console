@@ -98,7 +98,7 @@ function rowsShown(): string[] {
 }
 
 function card(title: string) {
-  return within(screen.getByText(title).closest('section, [class*="card"]') as HTMLElement)
+  return within(screen.getByText(title).closest('section') as HTMLElement)
 }
 
 describe('Leases at a glance', () => {

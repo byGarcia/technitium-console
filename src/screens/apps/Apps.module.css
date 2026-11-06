@@ -6,17 +6,19 @@ chip and the config editor.
 
 /* --- The cards --- */
 
-/* The three update states under the bar, one a line: the state, then its count. */
-.stateRows { display: grid; gap: var(--s-3); margin: var(--s-6) 0 0; }
-.stateRows > div { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-8); transition: color var(--t-fast); }
-.stateRows dt { display: inline-flex; align-items: center; gap: var(--s-3); font-size: var(--t-3); color: var(--mute); }
+/* The three update states under the bar, side by side as the strip's facts: the
+   state over its count. */
+.stateRows { display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-6); margin: var(--s-3) 0 0; }
+.stateRows > div { display: flex; flex-direction: column; transition: color var(--t-fast); }
+.stateRows dt { display: inline-flex; align-items: center; gap: var(--s-3); font-size: var(--t-2); color: var(--mute); }
 .stateRows dd { margin: 0; font: 600 var(--t-4)/1.3 var(--font-ui); font-variant-numeric: tabular-nums; color: var(--ink); }
 .stateRows > div[data-hot] dt { color: var(--ink); }
 
-/* The Query Logs apps and the APP record classes, one per line. */
-.cardList { margin: 0 0 var(--s-5); padding: 0; }
+/* The Query Logs apps and the APP record classes, running on as words. */
+.cardList { display: flex; flex-direction: row; flex-wrap: wrap; gap: var(--s-1) var(--s-5); margin: var(--s-2) 0 0; padding: 0; }
 .cardName { font: 600 var(--t-5)/1.3 var(--font-ui); color: var(--ink); overflow-wrap: break-word; min-width: 0; }
-.classLine { font: var(--t-4)/1.5 var(--font-ui); color: var(--ink); overflow-wrap: break-word; }
+.classLine { font: var(--t-3)/1.5 var(--font-ui); color: var(--ink); overflow-wrap: break-word; }
+.cardName { font-size: var(--t-4); }
 
 /* --- A row: one line (name, version, kinds, actions); More Details opens under it --- */
 

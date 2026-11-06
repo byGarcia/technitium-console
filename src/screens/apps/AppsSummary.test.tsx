@@ -83,7 +83,7 @@ function withApps(apps: InstalledApp[]) {
 function cardOf(title: string) {
   // The card's panel: its title's header's parent.
   const heading = screen.getByRole('heading', { name: title, level: 2 })
-  return within(heading.parentElement!.parentElement!)
+  return within(heading.closest('section')!)
 }
 
 function rowNames() {

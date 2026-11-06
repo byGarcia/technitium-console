@@ -27,7 +27,7 @@ async function query(domain: string) {
 }
 
 function card(title: string) {
-  return screen.getByRole('heading', { name: title }).parentElement!.parentElement!
+  return screen.getByRole('heading', { name: title }).closest('section')!
 }
 
 describe('DNS Client: the cards', () => {
