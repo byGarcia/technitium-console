@@ -1200,32 +1200,36 @@ contract and SECURITY.md.
     `user/profile/get` on arrival, on Refresh and after a dialog opened from it changes
     the account (2FA, a new token); `user/profile/set` on Save; `user/session/delete`.
     - **The user is the header**: the account menu's initial, `My Profile ›`, the display
-      name as the title with Refresh, the username and the Type.
-    - **Four cards** (`ProfileSummary.tsx`) from the answer on screen: Active Sessions (by
-      type, each type a series colour; pressing one narrows the table, pressing it again
-      clears it, and the foot says `N of M sessions, TYPE only`), 2FA Status, Member Of
-      (upstream's table of groups, as a card) and Logins: Recent Login and Previous Login,
-      which `user/profile/get` carries and the stock dialog does not draw, written as
-      Users writes them (`date from address`, `Never`).
-    - **The dialog's form, whole**: Display Name (locked and not sent for a remote user),
-      Username, Type, Session Timeout with `seconds (valid range 0-604800; default 1800;
-      set 0 to disable)`, an empty timeout sent as 1800, `Profile Saved!` on the page. The
-      load writes the name into the menu and the 2FA state into the session
-      (auth.js:675-679). It no longer takes the focus a second after loading.
+      name as the title with Refresh, and on its line the username, the Type and the 2FA
+      Status (`2FA Enabled`, `2FA Disabled`, `2FA SSO Managed`).
+    - **Four tabs, each a route** (`/profile/profile/`, `/profile/security/`,
+      `/profile/sessions/`, `/profile/theme/`; `profile` has `subs` in `SECTIONS`), as the
+      sub-sections of Settings and Administration (2026-11-06, Adrián's request). No
+      cards: what they said lives in the tab that uses it.
+    - **Profile**: the dialog's form, whole: Display Name (locked and not sent for a
+      remote user), Username, Type, Session Timeout with `seconds (valid range 0-604800;
+      default 1800; set 0 to disable)`, an empty timeout sent as 1800, `Profile Saved!` on
+      the page. The load writes the name into the menu and the 2FA state into the session
+      (auth.js:675-679). It no longer takes the focus a second after loading. Beside it,
+      `Account` (`AccountPanel.tsx`): Member Of (upstream's table of groups, as tags, or
+      `No Group Found`), and Recent Login and Previous Login, which `user/profile/get`
+      carries and the stock dialog does not draw, written as Users writes them (`date
+      from address`, `Never`).
     - **Security** gathers the account menu's Change Password, Configure 2FA and Create
       API Token, opening the same dialogs under the menu's same rules.
-    - **Active Sessions in `ui/DataTable`**: upstream's four sortable columns and
-      `Total Sessions: N`, one line per session, the user agent whole under `Details`, a
-      type filter in the toolbar (the cards' chips drive it; `?type=` in the address bar,
-      `lib/url-state.ts`), and `Delete Session` as the row's button instead of a one-entry
-      menu, with upstream's confirmation. A deleted session leaves the list without a
-      reload, as `deleteMySession` removes the row, and an API token is deleted with
-      `node` set to the primary's name, empty on a standalone server (auth.js:835-838).
+    - **Sessions in `ui/DataTable`**: upstream's four sortable columns and `Total
+      Sessions: N`, one line per session, the user agent whole under `Details`, a type
+      filter in the toolbar (`?type=` in the address bar, `lib/url-state.ts`; the foot
+      says `N of M sessions, TYPE only`), and `Delete Session` as the row's button instead
+      of a one-entry menu, with upstream's confirmation. A deleted session leaves the list
+      without a reload, as `deleteMySession` removes the row, and an API token is deleted
+      with `node` set to the primary's name, empty on a standalone server
+      (auth.js:835-838).
     - **Theme** offers Change Theme's three options as tiles, each with a sketch of the
       console drawn in that theme's tokens, applying on click as the dialog does; the
       menu's Change Theme stays.
-    Its words, all OURS: `Profile`, `Security`, `Password`, `API Tokens`, `Theme` as
-    block titles, `Logins`, `from`, `N more`, `N token(s)`, `All`, `Details`, `Session
+    Its words, all OURS: `Profile`, `Security`, `Sessions`, `Theme` as tabs, `Account`,
+    `Password`, `API Tokens`, `2FA` before the status, `Logins`, `from`, `N more`, `N token(s)`, `All`, `Details`, `Session
     type`, `N of M sessions, TYPE only`.
 
 ## Four constraints the server imposes
@@ -1238,9 +1242,9 @@ fails in production.
   reverse proxy with a prefix. `dev/check-prefix.sh` checks it.
 - **Real routes, one folder per route.** The server's only `MapFallback` is
   `/api/{*path}`, so a deep route with no file on disk would 404. The build emits
-  one folder with its own `index.html` for each of the console's 35 routes (11
-  sections, 23 sub-sections and `profile`, from `SECTIONS`), plus the two legacy
-  folders `/allowed/` and `/blocked/`: 37 in all. The URL is real (no `#/`) and F5 brings
+  one folder with its own `index.html` for each of the console's 39 routes (11
+  sections, 23 sub-sections, `profile` and its 4 tabs, from `SECTIONS`), plus the
+  two legacy folders `/allowed/` and `/blocked/`: 41 in all. The URL is real (no `#/`) and F5 brings
   you back where you were, without touching a line of C#. See `vite.config.ts` and
   `app/static-routes.ts`.
 - **Content-Security-Policy**: `default-src 'self'; script-src 'self'

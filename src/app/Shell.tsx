@@ -530,6 +530,8 @@ export function Shell({
         ) : current?.id === 'profile' ? (
           <Profile
             token={session.token}
+            sub={currentSub ?? 'Profile'}
+            onSubChange={setSub}
             nodes={session.info?.clusterNodes ?? []}
             clusterInitialised={session.info?.clusterInitialized === true}
             revision={accountRevision}

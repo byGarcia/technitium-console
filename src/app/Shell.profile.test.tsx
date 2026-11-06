@@ -62,7 +62,8 @@ describe('My Profile in the Shell', () => {
     render(<Shell session={SESSION} onLogout={() => {}} />)
     await userEvent.click(screen.getByRole('button', { name: 'Administrator' }))
     await userEvent.click(screen.getByRole('menuitem', { name: 'My Profile' }))
-    await waitFor(() => expect(window.location.pathname).toBe('/profile/'))
+    // The first tab's own folder, as the first sub-section of every section.
+    await waitFor(() => expect(window.location.pathname).toBe('/profile/profile/'))
     expect(await screen.findByRole('heading', { level: 1, name: 'Admin Renamed' })).toBeInTheDocument()
     expect(spy.mock.calls.some((c) => c[0] === 'user/profile/get')).toBe(true)
     // auth.js:675-677: the load writes the name into the menu.
@@ -81,12 +82,13 @@ describe('My Profile in the Shell', () => {
     expect(within(nav).getAllByRole('link')).toHaveLength(11)
   })
 
-  it('its Security block opens the account menu dialogs', async () => {
+  it('its Security tab opens the account menu dialogs', async () => {
     servedAt('/profile/', 'profile')
     mockApi()
     render(<Shell session={SESSION} onLogout={() => {}} />)
     await screen.findByRole('heading', { level: 1, name: 'Admin Renamed' })
-    await userEvent.click(screen.getByRole('button', { name: 'Create API Token' }))
+    await userEvent.click(within(screen.getByRole('navigation', { name: 'Profile sections' })).getByRole('link', { name: 'Security' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Create API Token' }))
     expect(await screen.findByRole('dialog', { name: 'Create API Token' })).toBeInTheDocument()
   })
 })

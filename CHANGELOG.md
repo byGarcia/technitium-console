@@ -103,9 +103,9 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
   cards for the DNS Server version, the uptime and the console version, and Technitium's
   documentation, support, license and donate sections as blocks of link rows, every sentence and
   link as upstream writes it, with this console's links in their own column.
-- **My Profile is a page** (`/profile/`) instead of a dialog: the user as the header, cards for
-  sessions, 2FA, groups and logins, the profile form, a Security block with the account actions,
-  the sessions in a filterable table, and the theme choice with previews.
+- **My Profile is a page** (`/profile/`) instead of a dialog, with four tabs: Profile (the form, the
+  groups and the last two logins), Security (password, two-factor and API tokens), Sessions (a
+  filterable table) and Theme (the three themes with previews).
 - **The cards over each list are one compact strip** instead of a row of tall boxes, so the table
   starts higher on the screen. The Dashboard keeps its large figures.
 - **Choosing a file is a drop zone** in every dialog that takes one (an app's zip, a zone file, a

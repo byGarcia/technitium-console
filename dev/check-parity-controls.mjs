@@ -383,6 +383,7 @@ const ACCESSIBLE_NAMES = new Set([
   'Logs sections',
   'Settings sections',
   'Response sections',
+  'Profile sections',
 ])
 /*
 The Blocking section is the deliberate exception that adds a screen

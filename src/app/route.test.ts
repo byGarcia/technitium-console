@@ -284,9 +284,14 @@ describe('the `<meta>` name is the same on both sides of the build', () => {
 /* My Profile is a page (deviation 21): a folder of its own, so `/profile/`
    survives an F5, also behind a prefix. */
 describe('the profile route', () => {
-  it('is built as a folder and is not a sub-section', () => {
+  it('is built as a folder, with one folder per tab', () => {
     expect(STATIC_ROUTES).toContain('profile')
-    expect(STATIC_ROUTES.filter((r) => r.startsWith('profile/'))).toEqual([])
+    expect(STATIC_ROUTES.filter((r) => r.startsWith('profile/'))).toEqual([
+      'profile/profile',
+      'profile/security',
+      'profile/sessions',
+      'profile/theme',
+    ])
   })
 
   it('reads back from its own folder, with and without a prefix', () => {

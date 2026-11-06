@@ -36,30 +36,8 @@ the theme. Every value is a token.
 
 .username { font-size: var(--t-4); color: var(--mute); align-self: center; }
 
-/* The 2FA card: its state as the card's figure, in words. */
-.bigState { font: 650 var(--t-6)/1.2 var(--font-ui); color: var(--ink); }
-.shieldOk { color: var(--ok); }
-
-/* The Member Of card: the groups as quiet lines. */
-.groups { list-style: none; margin: var(--s-6) 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--s-3); }
-.groups li {
-  padding: var(--s-1) var(--s-5);
-  border: 1px solid var(--line);
-  border-radius: var(--r-2);
-  background: var(--pan2);
-  font-size: var(--t-3);
-  color: var(--ink);
-  overflow-wrap: break-word;
-  min-width: 0;
-}
-.groups li.more { border-color: transparent; background: transparent; color: var(--mute); }
-
-/* The Logins card: two logins, the recent one larger. */
-.logins { display: flex; flex-direction: column; gap: var(--s-8); }
-.logins dt { font-size: var(--t-3); color: var(--mute); }
-.logins dd { margin: var(--s-1) 0 0; display: flex; flex-direction: column; gap: var(--s-1); }
-.ago { font: 650 var(--t-6)/1.2 var(--font-ui); color: var(--ink); }
-.agoSmall { font: 600 var(--t-5)/1.3 var(--font-ui); color: var(--ink); }
+/* A login in the Account panel: how long ago, then the date and the address. */
+.ago { font: 600 var(--t-5)/1.3 var(--font-ui); color: var(--ink); }
 .when { font-size: var(--t-3); color: var(--mute); font-variant-numeric: tabular-nums; }
 .addr { font-family: var(--font-mono); color: var(--ink); }
 
@@ -202,3 +180,13 @@ the theme. Every value is a token.
 .sketchCards { display: flex; gap: var(--s-3); flex: 1; }
 .sketchCards i { flex: 1; border-radius: var(--r-1); background: var(--pan); border: 1px solid var(--line); }
 .sketchAcc { display: block; height: var(--s-3); width: 30%; border-radius: var(--r-1); background: var(--acc); }
+
+/* The Security tab: its one panel at the width of a form, not the whole page. */
+.single { max-width: 760px; }
+
+/* The Account panel beside the Profile form: the groups, then the two logins. */
+.account { display: flex; flex-direction: column; gap: var(--s-8); margin: 0; padding: var(--s-8) var(--s-9); }
+.account dt { font-size: var(--t-3); color: var(--mute); }
+.account dd { margin: var(--s-2) 0 0; display: flex; flex-direction: column; gap: var(--s-1); }
+.groupTags { list-style: none; display: flex; flex-wrap: wrap; gap: var(--s-3); margin: 0; padding: 0; }
+.quiet { color: var(--mute); font-size: var(--t-4); }

@@ -14,7 +14,8 @@ import { Notifier } from '../../ui/Notifier'
 import { primaryNodeName, type ClusterNode } from '../../ui/ClusterNodeSelect'
 import { noticeFromFailure, type Notice } from '../../lib/notice'
 import { dropParams, readParam, writeParams } from '../../lib/url-state'
-import { ProfileSummary } from './ProfileSummary'
+import { AccountPanel } from './AccountPanel'
+import { SubTabs } from '../../ui/SubTabs'
 import { SessionsTable } from './SessionsTable'
 import { ThemeChoice } from './ThemeChoice'
 import {
@@ -82,6 +83,11 @@ export interface ProfileFacts {
 
 const TYPE_PARAM = 'type'
 
+/* The page's tabs, each a route (`/profile/`, `/profile/security/`…), as the
+   sub-sections of Settings and Administration are (2026-11-06). */
+const TABS = ['Profile', 'Security', 'Sessions', 'Theme'] as const
+type Tab = (typeof TABS)[number]
+
 export function Profile({
   token,
   nodes = [],
@@ -89,8 +95,13 @@ export function Profile({
   revision = 0,
   onProfile,
   onOpen,
+  sub,
+  onSubChange,
 }: {
   token: string | null
+  /** The tab on screen, the route's sub-section (`/profile/security/`…). */
+  sub?: string | null
+  onSubChange?: (sub: string) => void
   nodes?: readonly ClusterNode[]
   clusterInitialised?: boolean
   /** Bumped by the Shell when a dialog opened from here changed the account. */
@@ -109,6 +120,7 @@ export function Profile({
   const [pendingDelete, setPendingDelete] = useState<SessionRow | null>(null)
   const [deleting, setDeleting] = useState<string | null>(null)
   const [kind, setKind] = useState(() => readParam(TYPE_PARAM) ?? '')
+  const active = (TABS as readonly string[]).includes(sub ?? '') ? (sub as Tab) : 'Profile'
   const onProfileRef = useRef(onProfile)
   onProfileRef.current = onProfile
 
@@ -208,6 +220,12 @@ export function Profile({
                 <>
                   <span className={styles.username}>{profile.username}</span>
                   <Tag tone={remote ? 'info' : 'neutral'}>{userType(profile)}</Tag>
+                  {/* The 2FA state, on the header's line: it was a card. */}
+                  <span data-testid="totp-status">
+                    <Tag tone={profile.totpEnabled && profile.type !== 'RemoteSSO' ? 'ok' : 'neutral'}>
+                      2FA {totpStatus(profile)}
+                    </Tag>
+                  </span>
                 </>
               )
             }
@@ -215,13 +233,22 @@ export function Profile({
         </div>
       </div>
 
+      {profile != null && (
+        <SubTabs
+          label="Profile sections"
+          section="profile"
+          tabs={TABS}
+          active={active}
+          onChoose={(t) => onSubChange?.(t)}
+        />
+      )}
+
       {profile == null ? (
         loading && <Loading />
       ) : (
         <>
-          <ProfileSummary profile={profile} activeKind={activeKind} onKind={setKind} />
-
-          <div className={styles.columns}>
+          {active === 'Profile' && (
+            <div className={styles.columns}>
             <Panel title="Profile">
               <form
                 className={styles.form}
@@ -274,7 +301,11 @@ export function Profile({
                 </div>
               </form>
             </Panel>
-
+              <AccountPanel profile={profile} />
+            </div>
+          )}
+          {active === 'Security' && (
+            <div className={styles.single}>
             <Panel title="Security">
               <ul className={styles.security}>
                 {canChangePassword(profile) && (
@@ -311,8 +342,9 @@ export function Profile({
                 </li>
               </ul>
             </Panel>
-          </div>
-
+            </div>
+          )}
+          {active === 'Sessions' && (
           <SessionsTable
             sessions={sessions}
             kind={activeKind}
@@ -320,8 +352,8 @@ export function Profile({
             onDelete={setPendingDelete}
             busy={deleting}
           />
-
-          <ThemeChoice />
+          )}
+          {active === 'Theme' && <ThemeChoice />}
         </>
       )}
 
