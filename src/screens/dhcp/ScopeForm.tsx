@@ -20,6 +20,10 @@ import {
   Warning,
 } from './parts'
 import { SectionHeader } from '../../ui/SectionHeader'
+import { IndexedForm } from '../../ui/IndexedForm'
+import { BlockAnchors } from '../../ui/PanelForm'
+import { useSectionInView } from '../../ui/useSectionInView'
+import { rangeSize } from './pool'
 import styles from './Dhcp.module.css'
 
 /*
@@ -38,7 +42,62 @@ here are state, to the same effect:
     Lease" (dhcp.js:21-25).
   · "Use This DNS Server" checked disables the DNS servers area
     (index.html:2713).
+
+Deviation 19 (2026-11-06), layout only: the form takes the section index beside it
+(`ui/IndexedForm`, as Settings and SSO), whose thirteen entries are the blocks'
+own titles; the Ping Check `Warning!` moves above the block's controls (DESIGN,
+"`Warning!` before, `Note!` after"); the Ending Address says how many addresses the
+range holds, as the user types (`N addresses`, ours, counted by `pool.ts`, drawn
+only for a valid IPv4 range); and the long hex samples of the Vendor Specific
+Information help may wrap between their octets, where before they ran out of the
+help column. Same fields, same order, same defaults, same texts, same save.
 */
+
+/* The blocks' titles, in page order: the index's entries. */
+const BLOCKS = [
+  'Scope',
+  'Ping Check',
+  'DNS',
+  'Network Options',
+  'Static Routes',
+  'Bootstrap',
+  'Vendor Specific Information',
+  'CAPWAP Access Controller Addresses',
+  'TFTP Server Addresses',
+  'Generic DHCP Options',
+  'Exclusions',
+  'Advanced Options',
+  'Reserved Leases',
+] as const
+
+const PREFIX = 'dhcp-scope'
+
+/* `ui/PanelForm`'s `BlockAnchors` id for a block with this title. */
+function anchor(title: string): string {
+  return `${PREFIX}-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`
+}
+
+const SECTIONS = BLOCKS.map((t) => ({ id: anchor(t), label: t }))
+
+/*
+A hex sample that may break between its octets and nowhere else: a `<wbr>` after
+every colon, or every two digits when there are none. The text is the same
+characters; only where a line may end changes (`lint:breaks` keeps break-all out
+of the console, so the break points are written in).
+*/
+function Hex({ children }: { children: string }) {
+  const pieces = children.includes(':') ? children.split(/(?<=:)/) : children.match(/.{1,2}/g) ?? [children]
+  return (
+    <code>
+      {pieces.map((p, i) => (
+        <span key={i}>
+          {p}
+          {i < pieces.length - 1 && <wbr />}
+        </span>
+      ))}
+    </code>
+  )
+}
 
 export function ScopeForm({
   title,
@@ -56,6 +115,8 @@ export function ScopeForm({
   onNotice: (e: ScopeError) => void
 }) {
   const [f, setF] = useState<Form>(initial)
+  const here = useSectionInView(SECTIONS.map((x) => x.id))
+  const size = rangeSize(f.startingAddress, f.endingAddress)
 
   function set(partial: Partial<Form>) {
     setF((prev) => ({ ...prev, ...partial }))
@@ -75,6 +136,9 @@ export function ScopeForm({
     <div>
       <SectionHeader section="DHCP" title={title} />
 
+      <IndexedForm sections={SECTIONS} active={here}>
+      <div>
+      <BlockAnchors prefix={PREFIX}>
       <Block title="Scope">
         <TextRow
           label="Name"
@@ -96,6 +160,7 @@ export function ScopeForm({
           onChange={(v) => set({ endingAddress: v })}
           placeholder="Ending Address"
           width="wide"
+          suffix={size == null ? undefined : `${size} ${size === 1 ? 'address' : 'addresses'}`}
         />
         <TextRow
           label="Subnet Mask"
@@ -158,7 +223,19 @@ export function ScopeForm({
         />
       </Block>
 
-      <Block title="Ping Check">
+      <Block
+        title="Ping Check"
+        notices={
+            <Warning>
+              Ping check would work as expected only when you make sure that all the client devices with
+              manually configured IP addresses on the network respond to a ping request. Devices running
+              Microsoft Windows by default drop ping requests at host firewall and will cause this ping
+              check to fail to detect in use IP addresses. It is recommended to not rely on this option
+              and instead make sure that you exclude a range of addresses using Exclusions and manually
+              assign IP addresses to your devices only in the excluded range.
+            </Warning>
+        }
+      >
         <GroupRow label="Ping Check">
           <Check
             toggle
@@ -186,16 +263,6 @@ export function ScopeForm({
           onChange={(v) => set({ pingCheckRetries: v })}
           help="The maximum number of ping requests to try."
         />
-        <Notices>
-          <Warning>
-            Ping check would work as expected only when you make sure that all the client devices with
-            manually configured IP addresses on the network respond to a ping request. Devices running
-            Microsoft Windows by default drop ping requests at host firewall and will cause this ping
-            check to fail to detect in use IP addresses. It is recommended to not rely on this option
-            and instead make sure that you exclude a range of addresses using Exclusions and manually
-            assign IP addresses to your devices only in the excluded range.
-          </Warning>
-        </Notices>
       </Block>
 
       <Block title="DNS">
@@ -356,10 +423,8 @@ export function ScopeForm({
               example <code>substring(vendor-class-identifier,0,9)=="PXEClient"</code>. The Vendor
               Specific Information must be either a colon (:) separated hex string or a normal hex
               string, for example{' '}
-              <code>
-                06:01:03:0A:04:00:50:58:45:09:14:00:00:11:52:61:73:70:62:65:72:72:79:20:50:69:20:42:6F:6F:74:FF
-              </code>{' '}
-              OR <code>0601030A0400505845091400001152617370626572727920506920426F6F74FF</code>.
+              <Hex>06:01:03:0A:04:00:50:58:45:09:14:00:00:11:52:61:73:70:62:65:72:72:79:20:50:69:20:42:6F:6F:74:FF</Hex>{' '}
+              OR <Hex>0601030A0400505845091400001152617370626572727920506920426F6F74FF</Hex>.
             </>
           }
         />
@@ -485,12 +550,16 @@ export function ScopeForm({
         />
       </Block>
 
+      </BlockAnchors>
+
       <div className={styles.bar}>
-        <Button variant="primary" disabled={busy} onClick={save}>
+        <Button variant="primary" lead="save" disabled={busy} onClick={save}>
           Save
         </Button>
         <Button onClick={onCancel}>Cancel</Button>
       </div>
+      </div>
+      </IndexedForm>
     </div>
   )
 }

@@ -14,13 +14,20 @@ import { SectionHeader } from '../../ui/SectionHeader'
 import { minuteStamp } from './dates'
 import type { Notice } from './notices'
 import { Failure, Loading } from '../../ui/Empty'
-import { Tag } from '../../ui/Tag'
 import tbl from '../../ui/Table.module.css'
 import styles from './Dhcp.module.css'
 import { RowAction, Th, useSort, type Keys, Table } from '../../ui/Table'
 import { Menu } from '../../ui/Menu'
 import { noticeFromFailure } from '../../lib/notice'
 import { Notifier } from '../../ui/Notifier'
+import { DataFoot, DataTable, End, Grow } from '../../ui/DataTable'
+import { Field, Input, Select } from '../../ui/Field'
+import { Warning } from '../../ui/PanelForm'
+import { fromNow } from '../../lib/dates'
+import { LEASE_TYPES, LeaseSummary } from './LeaseSummary'
+import { leaseColour } from './lease-colours'
+import { leaseKey, matchesSearch } from './pool'
+import type { CSSProperties } from 'react'
 
 /*
 DHCP › Leases (dhcp.js:37-199).
@@ -39,6 +46,20 @@ Three upstream details that are not visible in the mockup and that are kept here
 The redesign mockup drops the type column (Dynamic/Reserved) and leaves only
 "Remove" on each row. That would lose two real API actions, so upstream's three
 and the type tag are kept.
+
+Deviation 19 (2026-11-06): four cards over the table (`LeaseSummary.tsx`), and the
+table in `ui/DataTable` with a toolbar upstream does not have: a search over the
+IP address, MAC address and host name, and Scope and Type filters, which the cards
+also set. They filter the list already loaded; nothing is asked of the server. A
+lease's type is its series colour (`lease-colours.ts`) with the word beside it, and
+Lease Expires says how far off it is under the date. The foot still reads
+`Total Leases: N`, the whole list; while a filter hides rows the toolbar says how
+many are shown. Words of ours: `Search`, the search field's placeholder,
+`All` and `N of M shown`.
+
+Rows are found by their scope and client identifier (`leaseKey`), not by their
+position: the position in the sorted, filtered table is not the position in the
+list, and acting on a sorted table must act on the row that was clicked.
 */
 
 export interface LeasesProps {
@@ -80,8 +101,13 @@ export function Leases({ tabs, token, node = '', canModify = true, canDelete = t
   const [failure, setFailure] = useState(false)
   const [notice, setNotice] = useState<Notice | null>(null)
   const [busy, setBusy] = useState(false)
-  const [confirm, setConfirm] = useState<{ type: 'reserve' | 'dynamic'; i: number } | null>(null)
-  const [discard, setDiscard] = useState<number | null>(null)
+  const [confirm, setConfirm] = useState<{ type: 'reserve' | 'dynamic'; key: string } | null>(null)
+  const [discard, setDiscard] = useState<string | null>(null)
+  /* The table's filters (deviation 19), and the clock the expiry figures read. */
+  const [query, setQuery] = useState('')
+  const [typeFilter, setTypeFilter] = useState('')
+  const [scopeFilter, setScopeFilter] = useState('')
+  const [now, setNow] = useState(() => Date.now())
   const [modalNotice, setModalNotice] = useState<Notice | null>(null)
 
   /*
@@ -96,6 +122,7 @@ export function Leases({ tabs, token, node = '', canModify = true, canDelete = t
     setLeases(null)
     const r = await listLeases(token, node)
     if (r.kind === 'ok') {
+      setNow(Date.now())
       setLeases(r.data)
       setFailure(false)
       return
@@ -111,10 +138,18 @@ export function Leases({ tabs, token, node = '', canModify = true, canDelete = t
 
   // The hook goes BEFORE any return: otherwise it would stop being called as soon
   // as the table is loading.
-  const { rows: visibleLeases, sort, toggle } = useSort(KEYS, leases ?? [])
+  const { rows: sortedLeases, sort, toggle } = useSort(KEYS, leases ?? [])
+  const visibleLeases = sortedLeases.filter(
+    (l) =>
+      (typeFilter === '' || l.type === typeFilter) &&
+      (scopeFilter === '' || l.scope === scopeFilter) &&
+      matchesSearch(l, query),
+  )
+  const filtered = query.trim() !== '' || typeFilter !== '' || scopeFilter !== ''
+  const scopeNames = [...new Set((leases ?? []).map((l) => l.scope))]
 
-  async function convert(i: number, type: 'reserve' | 'dynamic') {
-    const lease = leases?.[i]
+  async function convert(key: string, type: 'reserve' | 'dynamic') {
+    const lease = leases?.find((l) => leaseKey(l) === key)
     setConfirm(null)
     if (lease == null) return
 
@@ -129,7 +164,7 @@ export function Leases({ tabs, token, node = '', canModify = true, canDelete = t
 
     // dhcp.js:104-109. Only the row's tag changes; nothing is reloaded.
     const blank = type === 'reserve' ? 'Reserved' : 'Dynamic'
-    setLeases((prev) => prev?.map((l, j) => (j === i ? { ...l, type: blank } : l)) ?? prev)
+    setLeases((prev) => prev?.map((l) => (leaseKey(l) === key ? { ...l, type: blank } : l)) ?? prev)
     setNotice(
       type === 'reserve'
         ? {
@@ -146,9 +181,9 @@ export function Leases({ tabs, token, node = '', canModify = true, canDelete = t
   }
 
   async function discardLease() {
-    const i = discard
-    const lease = i == null ? null : leases?.[i]
-    if (i == null || lease == null) return
+    const key = discard
+    const lease = key == null ? null : leases?.find((l) => leaseKey(l) === key)
+    if (key == null || lease == null) return
 
     setBusy(true)
     const outcome = await removeLease(token, lease.scope, lease.clientIdentifier, node)
@@ -159,7 +194,7 @@ export function Leases({ tabs, token, node = '', canModify = true, canDelete = t
       return
     }
 
-    setLeases((prev) => prev?.filter((_, j) => j !== i) ?? prev)
+    setLeases((prev) => prev?.filter((l) => leaseKey(l) !== key) ?? prev)
     setDiscard(null)
     setNotice({
       type: 'success',
@@ -167,8 +202,6 @@ export function Leases({ tabs, token, node = '', canModify = true, canDelete = t
       text: 'The DHCP lease was removed successfully.',
     })
   }
-
-  if (leases == null) return <Loading />
 
   return (
     <div className={styles.wrap}>
@@ -180,12 +213,76 @@ export function Leases({ tabs, token, node = '', canModify = true, canDelete = t
 
       <Notifier notice={notice} onClose={() => setNotice(null)} />
 
-      {failure ? (
+      {leases == null ? (
+        <Loading />
+      ) : failure ? (
         /* Solid, not dashed, and with no count: how many there are is not known.
-           The server's message goes in the notice at the top. */
+           The server's message goes in the notice. */
         <Failure>Could not load the list.</Failure>
       ) : (
       <>
+      <LeaseSummary
+        leases={leases}
+        now={now}
+        type={typeFilter}
+        scope={scopeFilter}
+        onType={setTypeFilter}
+        onScope={setScopeFilter}
+      />
+
+      <DataTable
+        toolbar={
+          <>
+            <Grow>
+              <Field inline label="Search">
+                {(id) => (
+                  <Input
+                    id={id}
+                    search
+                    placeholder="IP address, MAC address or host name"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                  />
+                )}
+              </Field>
+            </Grow>
+            <div className={styles.filter}>
+              <Field inline label="Scope">
+                {(id) => (
+                  <Select id={id} value={scopeFilter} onChange={(e) => setScopeFilter(e.target.value)}>
+                    <option value="">All</option>
+                    {scopeNames.map((n) => (
+                      <option key={n} value={n}>
+                        {n}
+                      </option>
+                    ))}
+                  </Select>
+                )}
+              </Field>
+            </div>
+            <div className={styles.filterShort}>
+              <Field inline label="Type">
+                {(id) => (
+                  <Select id={id} value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
+                    <option value="">All</option>
+                    {LEASE_TYPES.map((t) => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
+                    ))}
+                  </Select>
+                )}
+              </Field>
+            </div>
+            {filtered && (
+              <End>
+                <span>{`${visibleLeases.length} of ${leases.length} shown`}</span>
+              </End>
+            )}
+          </>
+        }
+        foot={<DataFoot count={`Total Leases: ${leases.length}`} />}
+      >
       <Table
         stack
         header={
@@ -204,19 +301,25 @@ export function Leases({ tabs, token, node = '', canModify = true, canDelete = t
         emptyText="No Lease Found"
         columns={8}
       >
-        {visibleLeases.map((l, i) => (
-          <tr key={`${l.scope}/${l.clientIdentifier}`}>
-            <td className={styles.mono}>{l.scope}</td>
+        {visibleLeases.map((l) => {
+          const key = leaseKey(l)
+          return (
+          <tr key={key}>
+            <td className={styles.scopeCell}>{l.scope}</td>
             <td className={styles.mono}>{l.hardwareAddress}</td>
             <td className={`${styles.mono} ${tbl.lead}`}>{l.address}</td>
             <td>
-              <Tag tone={l.type === 'Reserved' ? 'neutral' : 'ok'}>
+              {/* The type in its series colour, the word beside it (deviation 19). */}
+              <span className={styles.ltype} style={{ '--lt': leaseColour(l.type) } as CSSProperties}>
                 {l.type}
-              </Tag>
+              </span>
             </td>
             <td className={`${styles.mono} ${tbl.lead}`}>{l.hostName}</td>
             <td className={styles.date}>{minuteStamp(l.leaseObtained)}</td>
-            <td className={styles.date}>{minuteStamp(l.leaseExpires)}</td>
+            <td className={styles.date}>
+              {minuteStamp(l.leaseExpires)}
+              <span className={styles.when}>{fromNow(l.leaseExpires, now)}</span>
+            </td>
             <td className={tbl.actionsCell}>
               <div className={tbl.actions}>
                 {/* dhcp.js:63-64. Which of the two conversions is offered
@@ -231,7 +334,7 @@ export function Leases({ tabs, token, node = '', canModify = true, canDelete = t
                     }
                     disabled={busy}
                     onClick={() =>
-                      setConfirm({ type: l.type === 'Dynamic' ? 'reserve' : 'dynamic', i })
+                      setConfirm({ type: l.type === 'Dynamic' ? 'reserve' : 'dynamic', key })
                     }
                   />
                 )}
@@ -242,7 +345,7 @@ export function Leases({ tabs, token, node = '', canModify = true, canDelete = t
                         type="button"
                         data-variant="danger"
                         disabled={busy}
-                        onClick={() => { close(); setModalNotice(null); setDiscard(i) }}
+                        onClick={() => { close(); setModalNotice(null); setDiscard(key) }}
                       >
                         Remove Lease
                       </button>
@@ -252,19 +355,12 @@ export function Leases({ tabs, token, node = '', canModify = true, canDelete = t
               </div>
             </td>
           </tr>
-        ))}
+          )
+        })}
       </Table>
-
-      <div className={styles.total}>
-        {/* The footer is the count and nothing else. When there are no rows,
-            the one that says so is the table itself, with its centred row, like
-            the rest of the console and like upstream (`dhcp.js:74`); here it was
-            left floating outside the panel, under a table with a blank body. */}
-        <span>{`Total Leases: ${leases.length}`}</span>
-      </div>
+      </DataTable>
       </>
       )}
-
       <Confirm
         open={confirm !== null}
         title={confirm?.type === 'dynamic' ? 'Convert To Dynamic Lease' : 'Convert To Reserved Lease'}
@@ -277,7 +373,7 @@ export function Leases({ tabs, token, node = '', canModify = true, canDelete = t
         variant="primary"
         busy={busy}
         onClose={() => setConfirm(null)}
-        onConfirm={() => confirm && void convert(confirm.i, confirm.type)}
+        onConfirm={() => confirm && void convert(confirm.key, confirm.type)}
       />
 
       {/* index.html:6587-6617. The complete "Remove Lease?" modal, with its two
@@ -288,23 +384,26 @@ export function Leases({ tabs, token, node = '', canModify = true, canDelete = t
         title="Remove Lease?"
         actions={
           <>
-            <Button variant="danger" disabled={busy} onClick={() => void discardLease()}>
+            <Button variant="danger" lead="trash" disabled={busy} onClick={() => void discardLease()}>
               Remove
             </Button>
           </>
         }
       >
         <Notifier notice={modalNotice} onClose={() => setModalNotice(null)} />
-        <p className={styles.paragraph}>
-          <b>Warning!</b> Removing a DHCP lease from the server side will NOT remove the allocated IP
-          address from the client side. Make sure that the client assigned this lease is not
-          connected to the network before proceeding.
-        </p>
-        <p className={styles.paragraph}>
-          <b>Warning!</b> Removing a DHCP lease may cause IP address conflict if the DHCP server
-          assigns the same IP address to a new client while the old client is still connected to the
-          network.
-        </p>
+        {/* The two `Warning!` paragraphs as the console's warning blocks, the same
+            words; the rest of upstream's text follows as prose (deviation 19). */}
+        <div className={styles.warnings}>
+          <Warning>
+            Removing a DHCP lease from the server side will NOT remove the allocated IP address from
+            the client side. Make sure that the client assigned this lease is not connected to the
+            network before proceeding.
+          </Warning>
+          <Warning>
+            Removing a DHCP lease may cause IP address conflict if the DHCP server assigns the same IP
+            address to a new client while the old client is still connected to the network.
+          </Warning>
+        </div>
         <p className={styles.paragraph}>
           It is not recommended to remove a DHCP lease when the client is still connected or may
           connect back later to the network before the lease expires. Use this option only as a last
