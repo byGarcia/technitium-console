@@ -1,8 +1,8 @@
 /*
-The console's 11 sections, in upstream's order, with one that is OURS: Blocking
+The console's 12 sections, in upstream's order, with two that are OURS: Blocking
 takes the place of upstream's Allowed and Blocked, and gathers them with the block
 lists into three tabs (CONVENTIONS.md, "Deliberate deviations from upstream
-behaviour", item 2). Their old addresses still land: see `LEGACY_ROUTES` in
+behaviour", item 2), and Clients follows the Dashboard (item 25). Their old addresses still land: see `LEGACY_ROUTES` in
 `static-routes.ts`.
 
 `permission` is the key inside `sessionData.info.permissions`, and it does NOT
@@ -33,6 +33,9 @@ export interface Section {
 
 export const SECTIONS: Section[] = [
   { id: 'dashboard', label: 'Dashboard', permission: 'Dashboard' },
+  /* OURS (CONVENTIONS.md, deviation 25): the clients the Dashboard counts, as a page.
+     Its main data is `dashboard/stats/*`, which asks for Dashboard: View. */
+  { id: 'clients', label: 'Clients', permission: 'Dashboard' },
   { id: 'zones', label: 'Zones', permission: 'Zones' },
   { id: 'cache', label: 'Cache', permission: 'Cache' },
   { id: 'blocking', label: 'Blocking', permission: ['Blocked', 'Allowed'],

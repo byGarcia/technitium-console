@@ -15,9 +15,20 @@ export { styles as statStyles }
 
 /** A card with its series colour as a straight bar inside its left edge, the way
  *  the Dashboard's figures carry theirs. */
-export function Card({ title, colour, children }: { title: string; colour: string; children: ReactNode }) {
+export function Card({
+  title,
+  colour,
+  className,
+  children,
+}: {
+  title: string
+  colour: string
+  /** The screen's own placing of the cell in its strip (the Clients page's wide one). */
+  className?: string
+  children: ReactNode
+}) {
   return (
-    <section className={styles.card} style={{ '--tc': colour } as CSSProperties}>
+    <section className={className != null ? `${styles.card} ${className}` : styles.card} style={{ '--tc': colour } as CSSProperties}>
       <h2 className={styles.cardTitle}>
         {title}
       </h2>

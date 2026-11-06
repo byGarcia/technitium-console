@@ -236,10 +236,11 @@ describe('writeRoute', () => {
     expect(window.history.length).toBe(before2)
   })
 
-  /* 35: eleven sections, twenty-three sub-sections, and My Profile, a page since
-     2026-11-06 (deviation 21) and in no sidebar group. The two legacy folders are
+  /* 36: twelve sections (Clients since 2026-11-06, deviation 25), twenty-three
+     sub-sections, and My Profile, a page since 2026-11-06 (deviation 21) and in no
+     sidebar group. The two legacy folders are
      not sections and are not in this walk. */
-  it('what gets written reads back the same, across all 35 routes', () => {
+  it('what gets written reads back the same, across all 36 routes', () => {
     servedAt('/')
     for (const s of SECTIONS) {
       for (const sub of s.subs ?? [null]) {
