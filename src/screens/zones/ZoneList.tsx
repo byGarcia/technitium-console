@@ -36,6 +36,11 @@ import { DataTable, DataFoot, End, Grow } from '../../ui/DataTable'
 import { ZoneSummary } from './ZoneSummary'
 import { zoneColour } from './zone-colours'
 import { noticeFromFailure } from '../../lib/notice'
+import { Segmented } from '../../ui/Segmented'
+import type { ClusterNode } from '../../ui/ClusterNodeSelect'
+import { AcrossNodes } from './AcrossNodes'
+import { readAcrossFilter, type AcrossFilter } from './across-nodes'
+import { QuickAdd } from './QuickAdd'
 
 /*
 The zone list. A replica of `refreshZones` (zone.js:649) and of the six actions
@@ -84,6 +89,11 @@ export interface ZoneListProps extends ZoneActions {
   onAdd: () => void
   /** Changes when something from outside (a modal) forces a re-read of the list. */
   refresh: number
+  /** The cluster's nodes: with an initialised cluster the list can show them all (deviation 33). */
+  nodes?: ClusterNode[]
+  clusterInitialised?: boolean
+  /** The server's default record TTL, the quick add's TTL (deviation 34). */
+  defaultRecordTtl?: number
 }
 
 const ZONES_PER_PAGE_KEY = 'optZonesPerPage'
@@ -92,6 +102,10 @@ const ZONES_PER_PAGE_KEY = 'optZonesPerPage'
 export const LIST_PAGE = 'page'
 export const LIST_NAME = 'name'
 export const LIST_TYPE = 'type'
+/* The view across cluster nodes (deviation 33): `?view=all`, its filter and its page. */
+export const LIST_VIEW = 'view'
+export const LIST_ACROSS = 'across'
+export const LIST_ACROSS_PAGE = 'apage'
 
 export function ZoneList({
   token,
@@ -109,6 +123,9 @@ export function ZoneList({
   onPermissions,
   onOptions,
   refresh,
+  nodes = [],
+  clusterInitialised = false,
+  defaultRecordTtl = 3600,
 }: ZoneListProps) {
   const [zones, setZones] = useState<Zone[]>([])
   /* Every zone, for the summary over the list (`ZoneSummary`). */
@@ -149,6 +166,18 @@ export function ZoneList({
   const [typeFilter, setTypeFilter] = useState(() => readParam(LIST_TYPE) ?? '')
   /* The type the list on screen was loaded with: the summary's pressed chip. */
   const [appliedType, setAppliedType] = useState('')
+  /* The name it was loaded with, and how many loads have landed: the view across
+     nodes reads again with each one, with that name (deviation 33). */
+  const [appliedName, setAppliedName] = useState('')
+  const [loads, setLoads] = useState(0)
+
+  /* This node or all of them, only where there is a cluster; without one the bar's
+     `?view=` means nothing and the list is as it always was. */
+  const withCluster = clusterInitialised && nodes.length > 0
+  const [view, setView] = useState<'node' | 'all'>(() => (readParam(LIST_VIEW) === 'all' ? 'all' : 'node'))
+  const across = withCluster && view === 'all'
+  const [acrossFilter, setAcrossFilter] = useState<AcrossFilter>(() => readAcrossFilter(readParam(LIST_ACROSS)))
+  const [acrossPage, setAcrossPage] = useState(() => Math.max(1, Number(readParam(LIST_ACROSS_PAGE) ?? '1') || 1))
   /* Remembered under upstream's key (zone.js:626-632). */
   const [perPage, setPerPage] = useState(() => readPerPage(ZONES_PER_PAGE_KEY, ZONES_PER_PAGE, 10))
   const [pageField, setPageField] = useState(() => readParam(LIST_PAGE) ?? '1')
@@ -211,6 +240,8 @@ export function ZoneList({
 
       const data = r.data
       setAppliedType(typeOverride ?? typeFilter)
+      setAppliedName(nameFilter)
+      setLoads((n) => n + 1)
       /* What is on screen goes to the bar, replacing the entry, as Blocking keeps
          its filter: the page (left out on 1) and the filters that were sent. */
       writeParams({
@@ -416,6 +447,66 @@ export function ZoneList({
   // The last page is asked for with -1: the server works it out itself.
   const pagination = <Pagination window={pg} current={pageNumber} last={-1} onGoTo={goTo} />
 
+  function chooseView(v: 'node' | 'all') {
+    setView(v)
+    setAcrossPage(1)
+    setAcrossFilter('all')
+    writeParams({ [LIST_VIEW]: v === 'all' ? 'all' : null, [LIST_ACROSS]: null, [LIST_ACROSS_PAGE]: null })
+  }
+
+  /* This node or every node, first in the toolbar (deviation 33). Drawn only with
+     a cluster, so a single server's toolbar is the one it always had. */
+  const viewToggle = withCluster ? (
+    <Segmented
+      compact
+      label="Zones view"
+      options={[
+        { id: 'node', label: 'This node' },
+        { id: 'all', label: 'All nodes' },
+      ]}
+      active={across ? 'all' : 'node'}
+      onChoose={chooseView}
+    />
+  ) : null
+
+  const nameField = (
+    <Grow>
+      <Field inline label="Name">
+        {(id) => (
+          <Input
+            id={id}
+            ref={nameRef}
+            search
+            placeholder="abc or a* or *b* or a?c"
+            value={nameFilter}
+            onChange={(e) => setNameFilter(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
+          />
+        )}
+      </Field>
+    </Grow>
+  )
+
+  /* The quick add of a host record (deviation 34), a band of the toolbar in both
+     views. It matches the name against every zone of this node (the summary's
+     read), or the page on screen while that read has not landed. */
+  const quickAdd = (
+    <QuickAdd
+      token={token}
+      node={node}
+      zones={allZones ?? zones}
+      canModify={canModify}
+      defaultRecordTtl={defaultRecordTtl}
+      onNotice={onNotice}
+      onAdded={() => {
+        summaryWanted.current = true
+        return load(pageNumber)
+      }}
+      onOpenZone={onOpen}
+      onAddZone={onAdd}
+    />
+  )
+
   return (
     <>
       <SectionHeader
@@ -425,7 +516,7 @@ export function ZoneList({
           </Button></>}
       />
 
-      {allZones != null && (
+      {allZones != null && !across && (
         <ZoneSummary
           zones={allZones}
           activeType={appliedType}
@@ -452,24 +543,42 @@ export function ZoneList({
       The list, its toolbar and its foot as one card (`ui/DataTable`, 2026-11-05).
       The selection's count and its verb sit at the toolbar's end: see below.
       */}
+      {across ? (
+        <AcrossNodes
+          token={token}
+          nodes={nodes}
+          filterName={appliedName}
+          reload={loads}
+          filter={acrossFilter}
+          onFilter={(f) => {
+            setAcrossFilter(f)
+            setAcrossPage(1)
+            writeParams({ [LIST_ACROSS]: f === 'all' ? null : f, [LIST_ACROSS_PAGE]: null })
+          }}
+          page={acrossPage}
+          onPage={(n) => {
+            setAcrossPage(n)
+            writeParams({ [LIST_ACROSS_PAGE]: n > 1 ? String(n) : null })
+          }}
+          perPage={perPage}
+          onOpen={onOpen}
+          toolbar={
+            <>
+              {viewToggle}
+              {nameField}
+              <Button variant="primary" disabled={busy} onClick={applyFilters}>
+                Go
+              </Button>
+            </>
+          }
+          band={quickAdd}
+        />
+      ) : (
       <DataTable
         toolbar={
           <>
-            <Grow>
-              <Field inline label="Name">
-                {(id) => (
-                  <Input
-                    id={id}
-                    ref={nameRef}
-                    search
-                    placeholder="abc or a* or *b* or a?c"
-                    value={nameFilter}
-                    onChange={(e) => setNameFilter(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
-                  />
-                )}
-              </Field>
-            </Grow>
+            {viewToggle}
+            {nameField}
             <div className={styles.filterMedium}>
               <Field inline label="Type">
                 {(id) => (
@@ -523,6 +632,7 @@ export function ZoneList({
                 Delete Zones
               </Button>
             </End>
+            {quickAdd}
           </>
         }
         foot={
@@ -649,6 +759,7 @@ export function ZoneList({
           </Table>
         )}
       </DataTable>
+      )}
     </>
   )
 }

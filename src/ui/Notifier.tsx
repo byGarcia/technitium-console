@@ -2,6 +2,7 @@ import { useContext, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { InDialog } from './Dialog'
 import { Alert } from './Alert'
+import { Button } from './Button'
 import type { Notice } from '../lib/notice'
 import { useMedia } from '../lib/use-media'
 import styles from './Alert.module.css'
@@ -88,9 +89,27 @@ export function Notifier({ notice, onClose, inline = false }: { notice: Notice |
       </div>
     )
   }
+  const action = notice.action
   return place(
     <div className={float ? styles.floating : styles.gap}>
-      <Alert type={notice.type} title={notice.title} onDismiss={onClose}>
+      <Alert
+        type={notice.type}
+        title={notice.title}
+        onDismiss={onClose}
+        action={
+          action != null ? (
+            <Button
+              size="sm"
+              onClick={() => {
+                onClose()
+                action.run()
+              }}
+            >
+              {action.label}
+            </Button>
+          ) : undefined
+        }
+      >
         {notice.text}
       </Alert>
     </div>

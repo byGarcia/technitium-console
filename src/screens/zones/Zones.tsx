@@ -1,5 +1,5 @@
 import { dropParams } from '../../lib/url-state'
-import { LIST_NAME, LIST_PAGE, LIST_TYPE } from './ZoneList'
+import { LIST_ACROSS, LIST_ACROSS_PAGE, LIST_NAME, LIST_PAGE, LIST_TYPE, LIST_VIEW } from './ZoneList'
 import { ClusterNodeSelect } from '../../ui/ClusterNodeSelect'
 import { useEffect, useRef, useState } from 'react'
 import type { ResourceRecord, ZoneDetails } from '../../api/records'
@@ -155,7 +155,7 @@ export function Zones({
       queueMicrotask(() => {
         if (!mounted.current) {
           dropZoneParam()
-          dropParams([LIST_PAGE, LIST_NAME, LIST_TYPE])
+          dropParams([LIST_PAGE, LIST_NAME, LIST_TYPE, LIST_VIEW, LIST_ACROSS, LIST_ACROSS_PAGE])
         }
       })
     }
@@ -239,6 +239,9 @@ export function Zones({
           onPermissions={(z) => openModal('permissions', z)}
           onOptions={(z) => openModal('options', z)}
           refresh={listRefresh}
+          nodes={nodes}
+          clusterInitialised={clusterInitialised}
+          defaultRecordTtl={recordTtls.defaultRecordTtl}
         />
       ) : (
         <ZoneRecords

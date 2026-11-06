@@ -12,6 +12,9 @@ export interface Notice {
   type: AlertType
   title: string
   text: string
+  /** A way on from the result, drawn at its end: the zone a quick add went into
+   *  (deviation 34). Upstream's alerts have none; the text stays upstream's. */
+  action?: { label: string; run: () => void }
 }
 
 /*

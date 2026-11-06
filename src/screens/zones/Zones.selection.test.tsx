@@ -76,8 +76,8 @@ describe('the zone selection bar', () => {
     render(<ZoneList {...props} />)
     await screen.findByRole('button', { name: 'casa.test' })
 
-    const boxes = screen.getAllByRole('checkbox')
-    await user.click(boxes[1])
+    // By name: the quick add's two boxes come before the table's (deviation 34).
+    await user.click(screen.getByLabelText('Select casa.test'))
     expect(await screen.findByText('1 of 2 zones selected')).toBeInTheDocument()
   })
 })

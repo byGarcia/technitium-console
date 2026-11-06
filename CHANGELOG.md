@@ -131,6 +131,13 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
   field's help sits under its label, folded to one line; the save bar stays at the foot of the
   window and says what would change; Backup, Restore and Flush Cache move to the header. Notes and warnings
   are compact lines instead of boxes, and long helps fold to one line with *more*, in every form.
+- **Zones across cluster nodes:** on a cluster, the zone list can show every node side by side,
+  each zone's type and serial on each node and whether it is healthy, only on some nodes, has a
+  serial that differs or is disabled on a node, with filters for each. A node that does not answer
+  says why.
+- **Quick add of a host record:** a name and an address in the zone list's toolbar add an A or
+  AAAA record to the zone the name belongs to, with the reverse (PTR) record if you tick it, and
+  the notice opens that zone.
 - **How a query is resolved, on the Dashboard:** beside Response Time, a flow of the latest logged
   queries from how the server answered them to what it answered; each kind and code opens Query
   Logs filtered by it.
