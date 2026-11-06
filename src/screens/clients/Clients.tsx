@@ -48,7 +48,7 @@ same row menus. It asks the server nothing upstream's console does not already a
     period's total of queries, which the shares are of;
   · `dashboard/stats/getTop` with `statsType=TopClients` and `limit=1000`, what
     upstream's "More" behind Top Clients sends (main.js:2939, index.html:336), for
-    the list, one line per client, and the "Who uses your DNS" bar;
+    the list, one line per client, and the "Queries by client" bar;
   · `apps/list` and `logs/query` (Query Logs' calls) for the log sample: the newest
     1,000 queries of every type (`SAMPLE`, the Blocked by client card's size), and
     for the open client the newest 500 of its own (`ClientCard.tsx`);
@@ -59,7 +59,7 @@ same row menus. It asks the server nothing upstream's console does not already a
     `settings/set` and DHCP's two conversions).
 
 LAID OUT as master and detail. On a wide screen (above `--bp-wide`, 1180 px): the
-header, the strip, the "Who uses your DNS" bar, then the list as a column at the
+header, the strip, the "Queries by client" bar, then the list as a column at the
 left and the open client's card at the right, the first client of the list open
 when the bar names none. At 1180 and under: the list takes the width, and opening a
 client shows its card instead, with `Clients ›` above its name to come back, as a
@@ -290,7 +290,7 @@ export function Clients({
   const total = stats?.stats.totalQueries ?? 0
   const busiestRows = useMemo(() => busiest(rows, total), [rows, total])
 
-  /* Heavy blocking is counted from the log sample: without one it is not offered. */
+  /* High block rate is counted from the log sample: without one it is not offered. */
   const filters: readonly Filter[] = entries != null ? FILTERS : FILTERS.filter((f) => f !== 'heavy')
   const shownFilter: Filter = filters.includes(filter) ? filter : 'all'
   const counts = useMemo(() => filterCounts(rows, total), [rows, total])
@@ -309,7 +309,7 @@ export function Clients({
   const placed = useRef(false)
   useEffect(() => {
     if (placed.current || top == null) return
-    /* A `Heavy blocking` filter in the link needs the log sample to know its rows:
+    /* A `High block rate` filter in the link needs the log sample to know its rows:
        the page is worked out once it is in, not on the unfiltered list (review of
        2026-11-06). A sample that will not come (no app, no permission, a failure)
        does not hold it. */

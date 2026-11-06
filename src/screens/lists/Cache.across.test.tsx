@@ -96,11 +96,11 @@ describe('Cache: All nodes', () => {
     await openAcross()
     const group = screen.getByRole('group', { name: 'Records across nodes' })
     expect(within(group).getByRole('button', { name: 'All 2' })).toHaveAttribute('aria-pressed', 'true')
-    await userEvent.click(within(group).getByRole('button', { name: 'On every node 1' }))
+    await userEvent.click(within(group).getByRole('button', { name: 'On all nodes 1' }))
     expect(screen.getAllByRole('row').slice(1)).toHaveLength(1)
     expect(screen.getAllByRole('row')[1]).toHaveTextContent('A')
     expect(screen.getByText(/1 of 2 records/)).toHaveTextContent('1 of 2 records at example.com, on every node')
-    await userEvent.click(within(group).getByRole('button', { name: 'On some nodes only 1' }))
+    await userEvent.click(within(group).getByRole('button', { name: 'Missing on some nodes 1' }))
     expect(screen.getAllByRole('row')[1]).toHaveTextContent('MX')
   })
 

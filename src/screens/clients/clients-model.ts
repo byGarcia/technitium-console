@@ -34,7 +34,7 @@ export const PER_PAGE = 25
 /** How many domains each of a card's two lists shows: the Dashboard's top lists show five. */
 export const DETAIL_ROWS = 5
 
-/** How many clients the "Who uses your DNS" bar draws. */
+/** How many clients the "Queries by client" bar draws. */
 export const BUSIEST = 20
 
 /** How many of a client's newest queries its card lists one by one. */
@@ -48,7 +48,7 @@ THE TWO TAGS, and why there are only two. Each is a rule over figures the page h
 nothing is tagged that the data cannot prove (there is no "New": the server does not
 say when it first saw a client).
 
-  · HEAVY BLOCKING: at least a fifth (`HEAVY_SHARE`, 20 %) of the client's queries
+  · HIGH BLOCK RATE: at least a fifth (`HEAVY_SHARE`, 20 %) of the client's queries
     in the list's log sample were blocked, counted over at least `HEAVY_MIN` (10) of
     its queries, so two blocked out of three does not make a tag.
   · QUIET: under 1 % (`QUIET_SHARE`) of the period's queries. A filter, not a tag:
@@ -205,7 +205,7 @@ export interface Busiest {
   covered: number
 }
 
-/** The "Who uses your DNS" bar: the `BUSIEST` clients of the period. */
+/** The "Queries by client" bar: the `BUSIEST` clients of the period. */
 export function busiest(rows: readonly ClientRow[], totalQueries: number, n = BUSIEST): Busiest {
   const top = [...rows].sort((a, b) => b.hits - a.hits).slice(0, n)
   const share = (h: number) => (totalQueries > 0 ? h / totalQueries : 0)

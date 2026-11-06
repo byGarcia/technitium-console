@@ -20,7 +20,7 @@ that node), and a table with one column per node and one row per setting of the
 curated set in `node-settings.ts`. Read only: nothing here writes.
 
   · The rows whose values differ go first, marked `Differs`, and the line over the
-    table says `Every setting matches` or `N settings differ`; `Show only
+    table says `All settings agree` or `N settings differ`; `Show only
     differences` hides the rest.
   · A node that does not answer keeps its column, marked `Unavailable`, empty, and
     a line under the summary names it with the server's message.
@@ -30,7 +30,7 @@ curated set in `node-settings.ts`. Read only: nothing here writes.
     arrival and Refresh).
 
 Its words, all OURS: the title `Settings Across Nodes`, `Setting`, `Differs`,
-`Every setting matches`, `N settings differ` (`1 setting differs`), `Only one node
+`All settings agree`, `N settings differ` (`1 setting differs`), `Only one node
 answered`, `No node answered`, `Show only differences`, `Unavailable`, `<node> did
 not answer:`, and the words of `node-settings.ts`.
 */

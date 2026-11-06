@@ -27,7 +27,7 @@ out side by side.
     each node keeps its own cache.
   · One table of the records, merged by name, type and value, with one TTL column
     per node: the time left on that node when it was read, or `not cached here`.
-  · Three filters with their counts: `All`, `On every node` and `On some nodes
+  · Three filters with their counts: `All`, `On all nodes` and `On some nodes
     only`, measured over the nodes that answered.
   · A node whose read failed says so on its card and in its column's header, and
     its cells say `not read`: what it holds is unknown, not empty.
@@ -46,8 +46,8 @@ const OWN_CACHE =
 
 const SPREAD_LABEL: Record<Spread, string> = {
   all: 'All',
-  every: 'On every node',
-  some: 'On some nodes only',
+  every: 'On all nodes',
+  some: 'Missing on some nodes',
 }
 
 export function CacheAcross({

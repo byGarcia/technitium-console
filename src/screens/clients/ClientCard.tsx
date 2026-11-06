@@ -52,14 +52,14 @@ figure comes from a call upstream's console already makes:
 The log entries carry no node, so there is no "answered by" in a cluster: the
 aggregate reads the connected node's log and says `on <node>`.
 
-Its actions are upstream's jumps: `Open in Query Logs` is Query Logs for the client
+Its actions are upstream's jumps: `Show Query Logs` is Query Logs for the client
 (the Dashboard's Top Clients menu, main.js:2796), each domain carries Top Domains' or
 Top Blocked Domains' menu (`TopRowMenu`). `Copy IP` copies the address (`copyText`).
 
 Its words, all OURS save upstream's `Top Domains`, `Top Blocked Domains`, `Query
 Types`, `Protocol`, `Response Type`, `Domain`, `Type` and the response types the server
-writes: `Heavy blocking` and `Rate limited` (the tags), `IP`, `MAC`, `Host`, `Scope`,
-`Last query`, `N ago`, `Open in Query Logs`, `Copy IP`, `Copied`, `In the latest N
+writes: `High block rate` and `Rate limited` (the tags), `IP`, `MAC`, `Host`, `Scope`,
+`Last query`, `N ago`, `Show Query Logs`, `Copy IP`, `Copied`, `In the latest N
 queries` (and `In the latest query`), `on <node>`, `Queries`, `Blocked`, `Cache hit
 rate`, `Median response time`, `N blocked`, `N cached`, `of N timed`, `Activity in
 the latest N queries`, `Protocols`, `Record Types`, `Latest Queries`, `When`,
@@ -151,7 +151,7 @@ export function ClientCard({
         </div>
         <div className={styles.cardActions}>
           <Button size="sm" variant="primary" onClick={() => handoff?.showQueryLogs(null, row.ip, node)}>
-            Open in Query Logs
+            Show Query Logs
           </Button>
           <CopyIp ip={row.ip} />
         </div>
@@ -221,7 +221,7 @@ export function Tags({ row }: { row: ClientRow }) {
   if (!heavy && !row.rateLimited) return null
   return (
     <span className={styles.tags}>
-      {heavy && <span className={styles.tagBlock}>Heavy blocking</span>}
+      {heavy && <span className={styles.tagBlock}>High block rate</span>}
       {row.rateLimited && <span className={styles.tagWarn}>Rate limited</span>}
     </span>
   )
@@ -285,7 +285,7 @@ function Activity({ entries, n }: { entries: QueryLogEntry[]; n: number }) {
   return (
     <section className={styles.activity} aria-labelledby={id}>
       <h3 className={dash.partTitle} id={id}>
-        {n === 1 ? 'Activity in the latest query' : `Activity in the latest ${num2(n)} queries`}
+        {n === 1 ? 'The latest query over time' : `The latest ${num2(n)} queries over time`}
       </h3>
       <Line data={data} height={170} />
     </section>

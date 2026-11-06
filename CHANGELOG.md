@@ -34,7 +34,7 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
 - **DHCP scope usage:** each enabled scope's row in DHCP › Scopes shows how many of the addresses in
   its range are leased, Dynamic and Reserved, as a share and a bar that turns amber above 80%.
 - **Blocking › Lists remembers and saves in one step:** the Next update cell says when the lists
-  were last updated (the server's next update less its interval), a Domains over time cell keeps
+  were last updated (the server's next update less its interval), a Block list growth cell keeps
   the Block List Domains count each time it changes, in this browser only, with what each update
   added or removed, and the save bar has Save and Update Now, which saves and then asks to update
   as Update Now does. The Block, Allow and Check bar says as you type whether one of your own
@@ -148,7 +148,7 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
 - **Quick add of a host record:** a name and an address in the zone list's toolbar add an A or
   AAAA record to the zone the name belongs to, with the reverse (PTR) record if you tick it, and
   the notice opens that zone.
-- **How a query is resolved, on the Dashboard:** beside Response Time, a flow of the latest logged
+- **From query to answer, on the Dashboard:** beside Response Time, a flow of the latest logged
   queries from how the server answered them to what it answered; each kind and code opens Query
   Logs filtered by it.
 - **Response Time on the Dashboard:** the median, the 95th percentile, the share over 100 ms and a
@@ -192,10 +192,10 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
   active and the most blocked, with the blocked share of the latest 1,000 queries; a bar shows who
   uses your DNS, the busiest clients side by side by their share, a click opening one. The list
   shows every client of the period (the stock Dashboard's Top Clients, up to 1,000) with its
-  queries, how much of its latest queries was blocked and a `Heavy blocking` tag, with a search,
-  filters (`Heavy blocking`, `Quiet`) and an order, all kept in the address bar. A client opens as
+  queries, how much of its latest queries was blocked and a `High block rate` tag, with a search,
+  filters (`High block rate`, `Quiet`) and an order, all kept in the address bar. A client opens as
   a card beside the list on a wide screen, or as its own page on a narrow one: its DHCP lease (MAC
-  address, host name, scope), its last query, Open in Query Logs and Copy IP, and from its latest
+  address, host name, scope), its last query, Show Query Logs and Copy IP, and from its latest
   500 queries the blocked share, the cache hit rate, the median response time, its activity over
   time, its top and top blocked domains, its protocols and record types and its latest queries.
   From the card you can let the client bypass blocking or exempt it from rate limiting (Settings'

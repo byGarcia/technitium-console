@@ -6,14 +6,14 @@ import { SampleState, type DashboardSample } from './dashboard-sample'
 import styles from './Resolution.module.css'
 
 /*
-How a query is resolved, on the Dashboard (OURS, CONVENTIONS.md deviation 29): the
+From query to answer, on the Dashboard (OURS, CONVENTIONS.md deviation 29): the
 newest logged queries (the same read as Response Time) flowing from all of them,
 through how the server answered them, to what it answered. Each band is as thick
 as its queries. A kind or a code with a name opens Query Logs filtered by it, as
 the Dashboard's other charts do, with no period: the sample is the newest queries,
 not the period.
 
-Its words, all OURS: `How a query is resolved`, `Queries`, `Other`, `From the
+Its words, all OURS: `From query to answer`, `Queries`, `Other`, `From the
 latest N logged queries` / `on <node>`, `No queries logged yet.`. The kinds and codes
 are upstream's names.
 */
@@ -42,7 +42,7 @@ export function Resolution({
 
   return (
     <Panel
-      title="How a query is resolved"
+      title="From query to answer"
       className={styles.panel}
       actions={
         flow != null && flow.total > 0 ? (

@@ -4,7 +4,7 @@ import { REAL, realServer } from '../../test/real-blocking'
 import { nextUpdateText } from '../settings/panes/Blocking'
 import { BlockLists } from './BlockLists'
 
-/* A strip's figure, not the same number in the Domains over time readings. */
+/* A strip's figure, not the same number in the Block list growth readings. */
 const FIGURE = { selector: 'div' }
 
 /*

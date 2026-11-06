@@ -58,7 +58,7 @@ function entry(
     rcode: 'NoError', qname, qtype: 'A', qclass: 'IN', answer: null, ...extra,
   }
 }
-/* 10.0.0.2: ten queries in the sample, three blocked: Heavy blocking. 10.0.0.1: ten, one. */
+/* 10.0.0.2: ten queries in the sample, three blocked: High block rate. 10.0.0.1: ten, one. */
 const SAMPLE_ENTRIES = [
   ...Array.from({ length: 3 }, () => entry('10.0.0.2', 'Blocked')),
   ...Array.from({ length: 7 }, () => entry('10.0.0.2')),
@@ -160,8 +160,8 @@ describe('Clients', () => {
     expect(line('phone.home.arpa')).toHaveTextContent('10.0.0.1')
     expect(line('phone.home.arpa')).toHaveTextContent('600')
     expect(line('phone.home.arpa')).toHaveTextContent('10% blocked')
-    expect(within(line('phone.home.arpa')).queryByText('Heavy blocking')).not.toBeInTheDocument()
-    expect(within(line('^10.0.0.2')).getByText('Heavy blocking')).toBeInTheDocument()
+    expect(within(line('phone.home.arpa')).queryByText('High block rate')).not.toBeInTheDocument()
+    expect(within(line('^10.0.0.2')).getByText('High block rate')).toBeInTheDocument()
     expect(line('^10.0.0.2')).toHaveTextContent('30% blocked')
     /* Not in the sample: no share at all, not zero. */
     expect(line('tv.home.arpa')).not.toHaveTextContent('blocked')
@@ -172,7 +172,7 @@ describe('Clients', () => {
     draw()
     await listed()
     const before = window.history.length
-    expect(screen.getByRole('button', { name: 'Heavy blocking 1' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'High block rate 1' })).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Quiet 1' }))
     expect(params().get('filter')).toBe('quiet')
     expect(await listed(false)).toEqual(['tv.home.arpa'])
@@ -227,7 +227,7 @@ describe('Clients', () => {
     /* The two timed answers, 10 and 40 ms: the median of two is their mean. */
     expect(figure('Median response time')).toHaveTextContent('25.0 ms')
     expect(figure('Median response time')).toHaveTextContent('of 2 timed')
-    expect(within(card).getByRole('heading', { name: 'Activity in the latest 4 queries' })).toBeInTheDocument()
+    expect(within(card).getByRole('heading', { name: 'The latest 4 queries over time' })).toBeInTheDocument()
     expect(within(card).getByRole('img', { name: 'example.com: 2' })).toBeInTheDocument()
     expect(within(card).getAllByRole('img', { name: 'ads.example: 1' })).toHaveLength(2)
     /* Latest Queries: newest first, the time in ms or the placeholder. */
@@ -237,7 +237,7 @@ describe('Clients', () => {
     expect(within(rows[0]).getByText('Blocked')).toBeInTheDocument()
     expect(rows[0]).toHaveTextContent('—')
     expect(rows[1]).toHaveTextContent('40.00 ms')
-    await userEvent.click(within(card).getByRole('button', { name: 'Open in Query Logs' }))
+    await userEvent.click(within(card).getByRole('button', { name: 'Show Query Logs' }))
     expect(handoff.showQueryLogs).toHaveBeenCalledWith(null, '10.0.0.1', 'cluster')
     await userEvent.click(within(card).getByRole('button', { name: 'Actions for example.com' }))
     expect(screen.getByRole('menuitem', { name: 'Block Domain' })).toBeInTheDocument()
@@ -295,12 +295,12 @@ describe('Clients', () => {
     await waitFor(() => expect(params().get('client')).toBeNull())
   })
 
-  it('without a query logs app it says so once, the period still draws, and Heavy blocking is not offered', async () => {
+  it('without a query logs app it says so once, the period still draws, and High block rate is not offered', async () => {
     const { newest } = serve({ withApp: false })
     draw()
     expect(await screen.findByText(/Please install the 'Query Logs \(Sqlite\)' DNS App/)).toBeInTheDocument()
     expect(await listed(false)).toEqual(['phone.home.arpa', '10.0.0.2', 'tv.home.arpa'])
-    expect(screen.queryByRole('button', { name: /^Heavy blocking/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^High block rate/ })).not.toBeInTheDocument()
     expect(screen.queryByText('Most Blocked')).not.toBeInTheDocument()
     const card = screen.getByRole('region', { name: 'phone.home.arpa' })
     expect(within(card).getByText('No query logging app')).toBeInTheDocument()
@@ -322,7 +322,7 @@ describe('Clients', () => {
     draw()
     expect(await screen.findByText('No clients for this period.')).toBeInTheDocument()
     expect(screen.getByText('No queries for this period.')).toBeInTheDocument()
-    expect(screen.queryByText('Who uses your DNS')).not.toBeInTheDocument()
+    expect(screen.queryByText('Queries by client')).not.toBeInTheDocument()
   })
 
   it('a failed read says so with the server message, not that there are no clients', async () => {

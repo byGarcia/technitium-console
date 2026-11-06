@@ -52,7 +52,7 @@ describe('clientRows', () => {
 })
 
 describe('the tags and the filters', () => {
-  it('Heavy blocking: a fifth or more blocked, over at least ten of its queries', () => {
+  it('High block rate: a fifth or more blocked, over at least ten of its queries', () => {
     expect(isHeavy(client({ sampled: HEAVY_MIN, blocked: 2 }))).toBe(true)
     expect(isHeavy(client({ sampled: HEAVY_MIN, blocked: 1 }))).toBe(false)
     /* Two of three is a share, not yet a tag. */

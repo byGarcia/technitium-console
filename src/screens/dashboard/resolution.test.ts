@@ -6,7 +6,7 @@ const e = (responseType: string, rcode: string): QueryLogEntry => ({
   rowNumber: 1, timestamp: '', clientIpAddress: '10.0.0.1', protocol: 'Udp', responseType, rcode, qname: 'a', qtype: 'A', qclass: 'IN', answer: null,
 })
 
-describe('How a query is resolved', () => {
+describe('From query to answer', () => {
   it('counts every query by how it was answered and by what, and the pairs between them', () => {
     const f = flowOf([e('Cached', 'NoError'), e('Cached', 'NxDomain'), e('Recursive', 'NoError'), e('Blocked', 'NxDomain'), e('UpstreamBlocked', 'NxDomain')])
     expect(f.total).toBe(5)
@@ -34,7 +34,7 @@ describe('How a query is resolved', () => {
   })
 })
 
-describe('How a query is resolved: the review fixes', () => {
+describe('From query to answer: the review fixes', () => {
   it('opens Blocked filtered only when all its queries are of the plain Blocked kind', () => {
     expect(flowOf([e('Blocked', 'NxDomain')]).how[0].value).toBe('Blocked')
     expect(flowOf([e('Blocked', 'NxDomain'), e('UpstreamBlocked', 'NxDomain')]).how[0].value).toBeNull()

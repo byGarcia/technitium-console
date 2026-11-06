@@ -7,7 +7,7 @@ import * as quick from '../../lib/quick-lists'
 import { chooseIn } from '../../test/dropdown'
 import { BlockLists, LISTS_SUBTITLE } from './BlockLists'
 
-/* A strip's figure, not the same number in the Domains over time readings. */
+/* A strip's figure, not the same number in the Block list growth readings. */
 const FIGURE = { selector: 'div' }
 
 afterEach(() => {

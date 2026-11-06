@@ -36,7 +36,7 @@ reads; nothing else here acts.
 Read on every load of the list behind it (`reload`: the list's Go, a refresh, a
 new node), with the Name filter the list applied, and only the newest read lands.
 
-Its words, OURS: the four filters, the four health words, `not on this node`,
+Its words, OURS: the four filters, the four health words, `absent`,
 `No answer`, `<node> did not answer: <message>`, `Health` and `N zones across M nodes`.
 */
 
@@ -198,7 +198,7 @@ export function AcrossNodes({
                       {z === undefined ? (
                         <span className={zones.quiet}>No answer</span>
                       ) : z === null ? (
-                        <span className={zones.quiet}>not on this node</span>
+                        <span className={zones.quiet}>absent</span>
                       ) : (
                         <span className={styles.held}>
                           <span className={zones.ztype}>

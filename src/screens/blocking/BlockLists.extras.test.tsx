@@ -67,17 +67,17 @@ describe('when the lists were last updated', () => {
   })
 })
 
-describe('Domains over time', () => {
+describe('Block list growth', () => {
   it('keeps a reading when the count changes, per server, and shows the change', async () => {
     localStorage.setItem('blocking-list-domains:dns1.test', JSON.stringify([{ at: '2026-11-01T10:00:00.000Z', count: 900 }]))
     serve()
     draw()
-    const card = (await screen.findByRole('heading', { name: 'Domains over time' })).parentElement!
+    const card = (await screen.findByRole('heading', { name: 'Block list growth' })).parentElement!
     await within(card).findByText((1000).toLocaleString())
     expect(within(card).getByText('+100')).toBeInTheDocument()
     const figure = screen.getByRole('heading', { name: 'Block List Domains' }).parentElement!
     expect(within(figure).getByText(`+100 since ${minuteStamp('2026-11-01T10:00:00.000Z')}`)).toBeInTheDocument()
-    expect(within(card).getByText('Kept in this browser when the count changes.'))
+    expect(within(card).getByText('Recorded by this browser each time the count changes.'))
       .toBeInTheDocument()
     expect(readReadings('dns1.test').map((r) => r.count)).toEqual([900, 1000])
     expect(readReadings('other.test')).toEqual([])

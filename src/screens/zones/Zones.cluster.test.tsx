@@ -94,10 +94,10 @@ describe('the zone list across nodes', () => {
     expect(perNode.every((b) => b.filterName == null)).toBe(true)
 
     const lab = screen.getByRole('button', { name: 'lab.test' }).closest('tr')!
-    expect(within(lab).getByText('not on this node')).toBeInTheDocument()
-    expect(within(lab).getByText('Only on 1 node')).toBeInTheDocument()
+    expect(within(lab).getByText('absent')).toBeInTheDocument()
+    expect(within(lab).getByText('Held by 1 node')).toBeInTheDocument()
     const rev = screen.getByRole('button', { name: 'rev.test' }).closest('tr')!
-    expect(within(rev).getByText('Serial differs')).toBeInTheDocument()
+    expect(within(rev).getByText('Serials disagree')).toBeInTheDocument()
     const casa = screen.getByRole('button', { name: 'casa.test' }).closest('tr')!
     expect(within(casa).getByText('Healthy')).toBeInTheDocument()
     expect(within(casa).getByText('Secondary')).toBeInTheDocument()
@@ -137,9 +137,9 @@ describe('the zone list across nodes', () => {
 
     const chips = within(screen.getByRole('group', { name: 'Filter' }))
     expect(chips.getByRole('button', { name: 'All 3' })).toHaveAttribute('aria-pressed', 'true')
-    expect(chips.getByRole('button', { name: 'On every node 2' })).toBeInTheDocument()
-    expect(chips.getByRole('button', { name: 'Only on some nodes 1' })).toBeInTheDocument()
-    await user.click(chips.getByRole('button', { name: 'Serial differs 1' }))
+    expect(chips.getByRole('button', { name: 'On all nodes 2' })).toBeInTheDocument()
+    expect(chips.getByRole('button', { name: 'Missing on some nodes 1' })).toBeInTheDocument()
+    await user.click(chips.getByRole('button', { name: 'Serials disagree 1' }))
     expect(window.location.search).toBe('?view=all&across=serial')
     expect(screen.getByRole('button', { name: 'rev.test' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'casa.test' })).toBeNull()

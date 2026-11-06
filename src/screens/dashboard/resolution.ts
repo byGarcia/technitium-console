@@ -1,7 +1,7 @@
 import type { QueryLogEntry } from '../../api/logs'
 
 /*
-How a query is resolved (CONVENTIONS.md, deviation 29): the newest logged queries
+From query to answer (CONVENTIONS.md, deviation 29): the newest logged queries
 counted twice, by how the server answered (`responseType`) and by what it answered
 (`rcode`), and the pairs between the two, which the Dashboard draws as a flow. The
 three blocked kinds count as one, `Blocked`; a type or code with no name of its own

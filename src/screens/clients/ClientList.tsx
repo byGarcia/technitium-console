@@ -24,12 +24,12 @@ in the sample or there is none) and a thin bar of the same split, Blocked purple
 the rest green.
 
 Its words, all OURS save upstream's `No Data`: `Search`, `Name or IP`, `Filter`,
-`All`, `Heavy blocking`, `Quiet`, `Sort by`, `Most queries`, `Most blocked`, `Name`,
+`All`, `High block rate`, `Quiet`, `Sort by`, `Most queries`, `Most blocked`, `Name`,
 `N of M`, `N% blocked`, `No clients for this period.`, `Could not load this data.`
 (the Overview's) and each bar's `Blocked N%`.
 */
 
-export const FILTER_LABEL: Record<Filter, string> = { all: 'All', heavy: 'Heavy blocking', quiet: 'Quiet' }
+export const FILTER_LABEL: Record<Filter, string> = { all: 'All', heavy: 'High block rate', quiet: 'Quiet' }
 export const SORT_LABEL: Record<SortBy, string> = { queries: 'Most queries', blocked: 'Most blocked', name: 'Name' }
 
 export function ClientList({
@@ -57,7 +57,7 @@ export function ClientList({
   all: number
   shown: number
   counts: Record<Filter, number>
-  /** The filters this session can count: Heavy blocking needs the log sample. */
+  /** The filters this session can count: High block rate needs the log sample. */
   filters: readonly Filter[]
   filter: Filter
   onFilter: (f: Filter) => void

@@ -56,7 +56,7 @@ describe('comparing the nodes', () => {
     expect(row(c, 'domain').values).toEqual(['ns1.mycluster.test', 'ns2.mycluster.test'])
     expect(row(c, 'domain').differs).toBe(false)
     expect(row(c, 'upSince').differs).toBe(false)
-    expect(summary(c)).toBe('Every setting matches')
+    expect(summary(c)).toBe('All settings agree')
     expect(c.rows.map((r) => r.key)).toEqual(SETTING_ROWS.map((r) => r.key))
   })
 

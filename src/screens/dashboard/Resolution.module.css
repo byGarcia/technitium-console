@@ -1,5 +1,5 @@
 /*
-How a query is resolved (deviation 29). The bands are drawn in an SVG that stretches
+From query to answer (deviation 29). The bands are drawn in an SVG that stretches
 to the card's width; the labels are HTML laid over it, so they keep their size. The
 bands carry their kind's series colour, light, and darken under the pointer.
 */

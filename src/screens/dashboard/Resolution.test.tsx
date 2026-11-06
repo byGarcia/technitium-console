@@ -9,7 +9,7 @@ const e = (responseType: string, rcode: string): QueryLogEntry => ({
 })
 const entries = [...Array(60)].map(() => e('Cached', 'NoError')).concat([...Array(40)].map(() => e('Blocked', 'NxDomain')))
 
-describe('the How a query is resolved card', () => {
+describe('the From query to answer card', () => {
   it('names the kinds and codes with their counts, and says what it is drawn from', () => {
     render(<Resolution sample={{ kind: 'ok', entries }} where=" on ns1.example" />)
     expect(screen.getByText('From the latest 100 logged queries on ns1.example')).toBeInTheDocument()

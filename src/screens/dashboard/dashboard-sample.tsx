@@ -8,7 +8,7 @@ import type { QueryLogEntry } from '../../api/logs'
 /*
 The Dashboard's one read of the query log (deviations 28 and 29): the newest 1,000
 entries through the first query logs app, again each time the statistics answer,
-shared by Response Time and How a query is resolved so the log is read once. Nothing
+shared by Response Time and From query to answer so the log is read once. Nothing
 is read without `Logs.canView`.
 */
 export type DashboardSample =

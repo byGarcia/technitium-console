@@ -1536,7 +1536,7 @@ contract and SECURITY.md.
     - **a strip** of four cells: `Clients` (`totalClients` of `stats/get`), `Most Active` (the
       first of the period's Top Clients, its queries and share of `totalQueries`), `Most
       Blocked` and `Blocked Share`, both from the log sample;
-    - **Who uses your DNS** (`WhoUses.tsx`): the period's 20 busiest clients as one bar, each
+    - **Queries by client** (`WhoUses.tsx`): the period's 20 busiest clients as one bar, each
       segment its share of `totalQueries`, its name inside when it has 6 % of the bar (not on a
       phone), a click opening that client, and the caption with the total and how much of the
       traffic they cover;
@@ -1548,7 +1548,7 @@ contract and SECURITY.md.
       blocking`, a fifth or more of its queries in the sample blocked over at least ten of
       them, and upstream's own `rateLimited` as `Rate limited`; nothing the data cannot prove
       (the server does not say when it first saw a client, so there is no "New"). Filter
-      chips with their counts, `All`, `Heavy blocking` (only with a sample) and `Quiet` (under
+      chips with their counts, `All`, `High block rate` (only with a sample) and `Quiet` (under
       1 % of the period's queries), and a `Sort by` of `Most queries`, `Most blocked` and
       `Name`. The search (`?q=`), the filter (`?filter=`), the order (`?sort=`), the page
       (`?page=`) and the open client (`?client=`) are in the address bar, written by replacing
@@ -1561,7 +1561,7 @@ contract and SECURITY.md.
     - **the card** (`ClientCard.tsx`): its name (or address) and tags; its address and, when a
       DHCP lease hands it out (`dhcp/leases/list`, read only with `DhcpServer: View`, matched
       by address), the lease's MAC address, host name and scope; its last query's age;
-      `Open in Query Logs` (the Top Clients jump) and `Copy IP`. Then, from `logs/query`
+      `Show Query Logs` (the Top Clients jump) and `Copy IP`. Then, from `logs/query`
       filtered by `clientIpAddress`, its newest 500 entries of every type: `Queries`,
       `Blocked` (the three classes), `Cache hit rate` (`Cached` over all) and `Median response
       time` (the median `responseRtt` of the entries that carry one, the cell left out when
@@ -1603,7 +1603,7 @@ contract and SECURITY.md.
     queries`, `In the latest N queries` on the card, `on <node>` with the cluster aggregate:
     logs are one node's). Without a query logs app the two sample cells become one that says
     why, once, with upstream's sentence and a link to Apps; the list keeps its queries, loses
-    `Heavy blocking` and the blocked share, and the card says `No query logging app` under its
+    `High block rate` and the blocked share, and the card says `No query logging app` under its
     head. Without `Logs: View` each sample cell and the card's body keep their place, locked,
     and nothing reads the log.
 
@@ -1615,7 +1615,7 @@ contract and SECURITY.md.
     words, all OURS and declared in the header comments of `Clients.tsx`, `ClientList.tsx`,
     `ClientCard.tsx`, `ClientActions.tsx` and `WhoUses.tsx`, among them the subtitle, the strip's cells, `Who uses
     your DNS` and its sentences, the two tags, the filters and orders with `Sort by` (listed
-    in `dev/check-parity-controls.mjs`), `N% blocked`, `Open in Query Logs`, `Copy IP`, the
+    in `dev/check-parity-controls.mjs`), `N% blocked`, `Show Query Logs`, `Copy IP`, the
     card's four figures and its section titles, and the Actions' `Actions`, `DHCP Lease`,
     `Applies`, `Bypassed`, `Exempt`, `Through <network>`, the four button names, `Add`,
     `Remove`, the four confirmations (`ASK` in `ClientActions.tsx`) and `Could not read the
@@ -1668,7 +1668,7 @@ contract and SECURITY.md.
     And **the row's round trip is back in Query Logs**: upstream draws `(N.NN ms)` under
     the response type (logs.js:517); it had gone under `Details` only.
 
-29. **The Dashboard shows how a query is resolved** (Adrián's decision, 2026-11-06;
+29. **The Dashboard shows from query to answer** (Adrián's decision, 2026-11-06;
     `screens/dashboard/Resolution.tsx`, `resolution.ts`). Beside Response Time (deviation
     28), over the same one read of the log (`dashboard-sample.tsx`: the newest 1,000
     entries, read once for both cards), a flow from all the queries, through how the
@@ -1705,7 +1705,7 @@ contract and SECURITY.md.
     To). Labels and option labels are the Settings panes', without `(default)` and
     `(recommended)`. The domain and the start are each node's own and are never counted; any other
     row whose answering nodes disagree is marked `Differs`, with a warning rule down it, and listed
-    first. The line over the table says `Every setting matches`, `N settings differ`, `Only one node
+    first. The line over the table says `All settings agree`, `N settings differ`, `Only one node
     answered` or `No node answered`; `Show only differences` hides the rest. A node that does not
     answer keeps its column, empty, marked `Unavailable`, and a line names it with the server's
     message (`<node> did not answer: <message>`); it takes no part in the comparison. Without
@@ -1722,7 +1722,7 @@ contract and SECURITY.md.
       (WebServiceSettingsApi.cs:386), so the difference is the server's own value, not an
       estimate. Nothing is said without a schedule (the key omitted, or an interval of 0),
       for `default(DateTime)`, or while Update Now has just left `Updating Now`.
-    - **Domains over time.** A fourth cell on Lists: every `Block List Domains` figure
+    - **Block list growth.** A fourth cell on Lists: every `Block List Domains` figure
       the Lists tab or Overview reads (`dashboard/stats/get`, the read each already makes;
       Overview only on the aggregate, which is what Lists reads) that differs from the last
       one kept is stored as `{ at, count }` in this browser's `localStorage`
@@ -1742,8 +1742,8 @@ contract and SECURITY.md.
       and again only after a Block or Allow made there. A list it could not read is named;
       with neither readable it says nothing. It never runs Check's DNS query: the block
       lists stay Check's answer.
-    Their words, all OURS: `Last updated <time>, <ago>`, `Domains over time`, `No readings
-    yet.`, `Kept in this browser when the count changes.`, `<change> since <time>`, the
+    Their words, all OURS: `Last updated <time>, <ago>`, `Block list growth`, `No readings
+    yet.`, `Recorded by this browser each time the count changes.`, `<change> since <time>`, the
     readings' label `Block List Domains, newest first`, `Save and Update Now`, `Already
     blocked: it is one of your rules.`, `Already blocked by your rule <rule>, which covers
     its subdomains.` and the same two for allowed, `It wins over your blocked rule
@@ -1757,11 +1757,11 @@ contract and SECURITY.md.
     (`clusterNodes` of the session), with that node's `node` and the applied Name filter as
     upstream's `filterName` (the server filters before any page), and lays the answers side by
     side, one line per zone name: a column per node with that node's zone type, its serial and a
-    `Disabled` pill, or `not on this node`, and a `Health` cell, the first that applies of `Only
-    on N nodes` (an answering node does not hold it), `Serial differs` (two holders give
+    `Disabled` pill, or `absent`, and a `Health` cell, the first that applies of `Only
+    on N nodes` (an answering node does not hold it), `Serials disagree` (two holders give
     different `soaSerial`; a node that gives none is not compared), `Disabled on a node` and
-    `Healthy`. Chips with their counts filter it, each on its own rule: `All`, `On every node`,
-    `Only on some nodes`, `Serial differs`. A node that fails to answer is said once above the
+    `Healthy`. Chips with their counts filter it, each on its own rule: `All`, `On all nodes`,
+    `Missing on some nodes`, `Serials disagree`. A node that fails to answer is said once above the
     table (`<node> did not answer: <the server's message>`), its column head says `(No answer)`,
     its cells `No answer`, and it is left out of every comparison. The type filter and the summary
     cards stand down in this view (they are one node's); the zone's name opens it as the list does,
@@ -1804,7 +1804,7 @@ contract and SECURITY.md.
     asked for it) and, once, that each node keeps its own cache; one table of the records,
     merged by name, type and value, with a TTL column per node (the time left as Cache
     writes it, `Stale` included, or `not cached here`); and three filters with their counts,
-    `All`, `On every node` and `On some nodes only`, measured over the nodes that answered.
+    `All`, `On all nodes` and `Missing on some nodes`, measured over the nodes that answered.
     The zone chips under the domain are those of any node. Its limits, and crossing one is a
     bug:
     - **only `cache/list`**, with the domain the chosen node's answer names. A node whose

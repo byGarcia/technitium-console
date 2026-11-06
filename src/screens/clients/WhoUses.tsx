@@ -4,14 +4,14 @@ import { label, type Busiest } from './clients-model'
 import styles from './Clients.module.css'
 
 /*
-"Who uses your DNS" (CONVENTIONS.md, deviation 25): the period's busiest clients as
+"Queries by client" (CONVENTIONS.md, deviation 25): the period's busiest clients as
 one bar, each segment as wide as its share of the period's queries
 (`dashboard/stats/getTop` over `totalQueries` of `dashboard/stats/get`), most first,
 the rest of the traffic left as the bare track. A segment wide enough to hold a name
 writes it (6 % of the bar and up); every segment names itself to the pointer and
 the reader, and a click opens that client. The open one is marked.
 
-OURS, all its words: `Who uses your DNS`, its sentence, each segment's `<client>: N
+OURS, all its words: `Queries by client`, its sentence, each segment's `<client>: N
 queries (X%)`, and the caption `N queries. The N busiest clients are shown, covering
 X% of the traffic.` (`The busiest client is shown` with one).
 */
@@ -33,7 +33,7 @@ export function WhoUses({
   if (busiest.rows.length === 0 || totalQueries === 0) return null
   const n = busiest.rows.length
   return (
-    <Panel title="Who uses your DNS">
+    <Panel title="Queries by client">
       <Body className={styles.usesBody}>
         <p className={styles.usesHint}>Share of the period&apos;s queries. Click a segment to open that client.</p>
         <div className={styles.usesBar}>

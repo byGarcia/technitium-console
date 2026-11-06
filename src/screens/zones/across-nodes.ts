@@ -9,7 +9,7 @@ lays the answers side by side, one line per zone name.
 It only reads. What a line says comes from the zones the nodes answered and from
 nothing else:
 
-  · a node that answered and does not hold the zone: `not on this node`;
+  · a node that answered and does not hold the zone: `absent`;
   · a node that did not answer: no value, and the reason is said once for the
     whole column, with the server's message. Such a node is left out of every
     comparison, because nothing is known about it: a zone is not "only on some
@@ -17,15 +17,15 @@ nothing else:
 
 The health of a line is ONE of four words, the first that applies, in this order:
 
-  1. `Only on N nodes`: some answering node does not hold it.
-  2. `Serial differs`: two nodes that hold it give different SOA serials. Only
+  1. `Held by N nodes`: some answering node does not hold it.
+  2. `Serials disagree`: two nodes that hold it give different SOA serials. Only
      the serials a node gives count: a Forwarder or a Stub may give none.
   3. `Disabled on a node`: some node holds it disabled.
   4. `Healthy`.
 
 The filters are counted on their own rule, not on that word: a zone missing from
-a node whose serials also differ counts under both `Only on some nodes` and
-`Serial differs`.
+a node whose serials also differ counts under both `Missing on some nodes` and
+`Serials disagree`.
 */
 
 export interface NodeAnswer {
@@ -57,17 +57,17 @@ export const ACROSS_FILTERS: AcrossFilter[] = ['all', 'every', 'some', 'serial']
 
 export const ACROSS_FILTER_LABEL: Record<AcrossFilter, string> = {
   all: 'All',
-  every: 'On every node',
-  some: 'Only on some nodes',
-  serial: 'Serial differs',
+  every: 'On all nodes',
+  some: 'Missing on some nodes',
+  serial: 'Serials disagree',
 }
 
 export function healthText(row: Pick<AcrossRow, 'health' | 'holders'>): string {
   switch (row.health) {
     case 'some':
-      return `Only on ${row.holders} ${row.holders === 1 ? 'node' : 'nodes'}`
+      return `Held by ${row.holders} ${row.holders === 1 ? 'node' : 'nodes'}`
     case 'serial':
-      return 'Serial differs'
+      return 'Serials disagree'
     case 'disabled':
       return 'Disabled on a node'
     default:

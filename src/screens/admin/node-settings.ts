@@ -130,6 +130,6 @@ export function compareSettings(answers: NodeAnswer[], rows: SettingRow[] = SETT
 export function summary(c: Comparison): string {
   if (c.answered === 0) return 'No node answered'
   if (c.answered === 1) return 'Only one node answered'
-  if (c.differing === 0) return 'Every setting matches'
+  if (c.differing === 0) return 'All settings agree'
   return c.differing === 1 ? '1 setting differs' : `${c.differing} settings differ`
 }

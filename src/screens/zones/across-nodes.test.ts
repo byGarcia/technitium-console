@@ -48,22 +48,22 @@ describe('the health of a line', () => {
     expect(healthText(row)).toBe('Healthy')
   })
 
-  it('is Only on N nodes when an answering node does not hold it, ahead of a serial that differs', () => {
+  it('is Held by N nodes when an answering node does not hold it, ahead of a serial that differs', () => {
     const [row] = mergeAcrossNodes([
       ok('ns1', [z('a.test', 'Primary', 5)]),
       ok('ns2', [z('a.test', 'Secondary', 4)]),
       ok('ns3', []),
     ])
     expect(row.health).toBe('some')
-    expect(healthText(row)).toBe('Only on 2 nodes')
+    expect(healthText(row)).toBe('Held by 2 nodes')
     expect(row.serialDiffers).toBe(true)
     const [one] = mergeAcrossNodes([ok('ns1', [z('a.test', 'Primary', 5)]), ok('ns2', [])])
-    expect(healthText(one)).toBe('Only on 1 node')
+    expect(healthText(one)).toBe('Held by 1 node')
   })
 
-  it('is Serial differs only between serials both nodes give, and ahead of a disabled node', () => {
+  it('is Serials disagree only between serials both nodes give, and ahead of a disabled node', () => {
     const [differs] = mergeAcrossNodes([ok('ns1', [z('a.test', 'Primary', 5)]), ok('ns2', [z('a.test', 'Secondary', 4, { disabled: true })])])
-    expect(healthText(differs)).toBe('Serial differs')
+    expect(healthText(differs)).toBe('Serials disagree')
     const [noSerial] = mergeAcrossNodes([ok('ns1', [z('f.test', 'Forwarder', null)]), ok('ns2', [z('f.test', 'Forwarder', 3)])])
     expect(noSerial.health).toBe('healthy')
   })

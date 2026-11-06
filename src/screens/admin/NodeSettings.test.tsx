@@ -56,7 +56,7 @@ describe('Settings Across Nodes', () => {
   it('reads settings/get once per node, with its name in node', async () => {
     const api = server()
     render(<Cluster {...props} />)
-    await screen.findByText('Every setting matches')
+    await screen.findByText('All settings agree')
     const reads = api.mock.calls.filter((c) => c[0] === 'settings/get')
     expect(reads.map((c) => (c[1] as { body: Record<string, string> }).body.node)).toEqual([
       'ns1.mycluster.test',
@@ -77,7 +77,7 @@ describe('Settings Across Nodes', () => {
   it('a node that does not answer keeps its column, marked Unavailable, with the message of the server', async () => {
     server()
     render(<Cluster {...props} />)
-    await screen.findByText('Every setting matches')
+    await screen.findByText('All settings agree')
     const t = await card()
     const head = within(t).getAllByRole('columnheader')
     expect(head.map((h) => h.textContent)).toEqual([
@@ -122,7 +122,7 @@ describe('Settings Across Nodes', () => {
   it('with every setting matching, the toggle has nothing to hide', async () => {
     server()
     render(<Cluster {...props} />)
-    await screen.findByText('Every setting matches')
+    await screen.findByText('All settings agree')
     expect(within(await card()).getByLabelText('Show only differences')).toBeDisabled()
   })
 
@@ -130,7 +130,7 @@ describe('Settings Across Nodes', () => {
     const user = userEvent.setup()
     const api = server()
     render(<Cluster {...props} />)
-    await screen.findByText('Every setting matches')
+    await screen.findByText('All settings agree')
     await user.click(screen.getByRole('button', { name: 'Refresh' }))
     await waitFor(() => expect(api.mock.calls.filter((c) => c[0] === 'settings/get')).toHaveLength(6))
   })

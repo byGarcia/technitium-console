@@ -66,8 +66,8 @@ every alert of the update and the save. Everything else is OURS:
   console's own (`extra-lists.ts`), under `More lists` after Technitium's;
 - (2026-11-06, deviation 32) the Next update cell's `Last updated <time>, <ago>`,
   worked out from the server's own two values (`list-history.ts`, `lastUpdateOf`);
-  the fourth cell `Domains over time` with its readings (`<time>`, the count, its
-  change as `+1,904`), `No readings yet.` and its sentence `Kept in this browser when
+  the fourth cell `Block list growth` with its readings (`<time>`, the count, its
+  change as `+1,904`), `No readings yet.` and its sentence `Recorded by this browser each time
   the count changes.`, and under the Block List Domains figure the last change,
   `<change> since <time>` (`list-history.ts`); and
   the save bar's `Save and Update Now`, which runs Save and then, only if Save
@@ -264,7 +264,7 @@ function ReadingsCard({ readings }: { readings: Reading[] }) {
   const shown = readings.slice(-READINGS_SHOWN).reverse()
   const from = readings.length - shown.length
   return (
-    <Card title="Domains over time" colour="var(--ch-block)">
+    <Card title="Block list growth" colour="var(--ch-block)">
       <div className={statStyles.body}>
         {shown.length === 0 ? (
           <div className={statStyles.quiet}>No readings yet.</div>
@@ -283,7 +283,7 @@ function ReadingsCard({ readings }: { readings: Reading[] }) {
             })}
           </ol>
         )}
-        <p className={styles.readingsNote}>Kept in this browser when the count changes.</p>
+        <p className={styles.readingsNote}>Recorded by this browser each time the count changes.</p>
       </div>
     </Card>
   )
@@ -849,7 +849,7 @@ export function BlockLists({
               </div>
             </div>
           </Card>
-          {statsNeed != null ? <Locked title="Domains over time" need={statsNeed} /> : <ReadingsCard readings={readings} />}
+          {statsNeed != null ? <Locked title="Block list growth" need={statsNeed} /> : <ReadingsCard readings={readings} />}
         </div>
 
         <Panel title="Add a list">
