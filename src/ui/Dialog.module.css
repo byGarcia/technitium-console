@@ -140,3 +140,28 @@ having moved the scroll, and it goes here so the next person does not pay it.
   display: flex; justify-content: flex-end; gap: var(--s-5);
   padding: var(--s-9) var(--s-11); border-top: 1px solid var(--line2); background: transparent;
 }
+
+/*
+THE LEAD: a glyph in front of the title, for a dialog whose tone has to read
+before its words do (a destructive `ui/Confirm`). It is bare, in the tone's own
+colour, with no disc or ring behind it: the title it sits beside is the subject,
+the glyph only colours it. Its box is one title line tall and the glyph centres
+in it, so on a title that wraps it stays beside the first line.
+*/
+.heading { display: flex; align-items: flex-start; gap: var(--s-5); min-width: 0; }
+.heading .title { line-height: 1.3; }
+.lead {
+  flex: none;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: var(--s-10); height: calc(var(--t-6) * 1.3);
+}
+
+/*
+PLAIN: one surface for a question in a few lines (`ui/Confirm`). The two
+hairlines that divide a form dialog cut a three-line question into three boxes,
+so here they go, and the spacing does their job: the sentence sits close under
+the title it explains, and the actions stand a full `--s-11` below it.
+*/
+.plain .head { border-bottom: 0; padding-bottom: 0; }
+.plain .body { padding-top: var(--s-5); padding-bottom: 0; }
+.plain .foot { border-top: 0; padding: var(--s-11) var(--s-11) var(--s-10); }
