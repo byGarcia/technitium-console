@@ -62,3 +62,7 @@ two other modules with the same values copied by hand.
 .link a { color:var(--acc-ink); }
 
 
+
+/* SSO's and LDAP's form, at the width of Settings' (deviation 22): a row of label,
+   help and control reads as one line of sight, not across the whole screen. */
+.formColumn { max-width: 820px; }

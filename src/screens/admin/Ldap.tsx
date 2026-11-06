@@ -25,6 +25,7 @@ import {
   type Notice,
 } from './parts'
 import frm from '../../ui/Form.module.css'
+import adm from './Admin.module.css'
 
 /*
 `refreshAdminLdapConfig`, `loadAdminLdapConfig`, `addAdminLdapGroupMapRow`,
@@ -304,7 +305,7 @@ export function Ldap({ tabs, token, onNotice }: Props) {
       is also the block that holds "Ignore SSL Certificate Errors", the control
       the first of them is about.
       */}
-      <div>
+      <div className={adm.formColumn}>
         <div id={SECTIONS[0].id}>
           <Block
             title="LDAP Authentication"

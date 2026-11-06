@@ -23,6 +23,7 @@ import {
 import { EditableTable } from '../../ui/EditableTable'
 import { Row } from '../../ui/Form'
 import frm from '../../ui/Form.module.css'
+import adm from './Admin.module.css'
 
 /*
 `refreshAdminSsoConfig`, `loadAdminSsoConfig` and `saveAdminSsoConfig`
@@ -265,8 +266,11 @@ export function Sso({ tabs, token, onNotice }: Props) {
       There is no `Cluster Node` here, nor a gap where one would go: that selector
       belongs to `Sessions` and to `Cluster`.
       */}
-      <IndexedForm sections={SECTIONS} active={here}>
-        <div>
+      {/* No section index (2026-11-06, deviation 23): four blocks read in one scroll, and
+          a second row of links that only scroll looked like a second row of tabs, as
+          it did in Settings (deviation 22). The column keeps Settings' width. */}
+      <IndexedForm sections={[]} active={here}>
+        <div className={adm.formColumn}>
           <div id={SECTIONS[0].id}>
             <Block
               title="Single Sign-On (SSO)"

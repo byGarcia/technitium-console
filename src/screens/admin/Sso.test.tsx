@@ -372,15 +372,13 @@ describe('SSO: dense form', () => {
   column never takes width the controls have at 1440. See the note beside
   `SECTIONS` in `Sso.tsx`.
   */
-  it('carries the section index: the four blocks, by their titles, leading to their anchors', async () => {
+  it('has no section index any more: the four blocks are read in one scroll (deviation 23)', async () => {
     server()
     render(<Sso {...props} />)
     await screen.findByLabelText('Authority (Issuer)')
-    const [strip, column] = screen.getAllByRole('navigation', { name: 'On this page' })
-    for (const nav of [strip, column]) {
-      const links = within(nav).getAllByRole('link')
-      expect(links.map((a) => a.textContent)).toEqual(['Single Sign-On (SSO)', 'SSO User Sign Up', 'Scopes', 'Group Map (Optional)'])
-      for (const a of links) expect(document.getElementById(a.getAttribute('href')!.slice(1))).not.toBeNull()
+    expect(screen.queryByRole('navigation', { name: 'On this page' })).toBeNull()
+    for (const t of ['Single Sign-On (SSO)', 'SSO User Sign Up', 'Scopes', 'Group Map (Optional)']) {
+      expect(screen.getByRole('heading', { name: t })).toBeInTheDocument()
     }
   })
 
