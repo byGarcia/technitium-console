@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import { listApps, type InstalledApp } from '../../api/apps'
 import {
@@ -21,19 +21,23 @@ import { toIso, dateTime } from './dates'
 import { Loading } from '../../ui/Empty'
 import { Check } from '../../ui/Check'
 import { Tag } from '../../ui/Tag'
-import { Table } from '../../ui/Table'
+import { RowAction, Table } from '../../ui/Table'
 import styles from './Logs.module.css'
 import { pageWindow } from '../../lib/pagination'
 import { Pagination } from '../../ui/Pagination'
-import { DataTable, DataFoot, End } from '../../ui/DataTable'
+import { DataTable, DataFoot, End, Grow } from '../../ui/DataTable'
 import { noticeFromFailure, type Notice } from '../../lib/notice'
 import { Notifier } from '../../ui/Notifier'
 import { Menu } from '../../ui/Menu'
 import tbl from '../../ui/Table.module.css'
-import { useHandoff, type QueryLogsRequest } from '../../app/handoff'
+import { useHandoff, type Handoff, type QueryLogsRequest } from '../../app/handoff'
 import { useDomainAction, verbFor } from '../../lib/allow-block'
 import { useMedia } from '../../lib/use-media'
 import { Icon } from '../../ui/Icon'
+import { dropParams, writeParams } from '../../lib/url-state'
+import { recordColour } from '../zones/zone-colours'
+import { QuerySummary, type Pick } from './QuerySummary'
+import { QUERY_PARAMS, filtersFromBar, queryParams } from './query-url'
 
 /*
 Logs › Query Logs (logs.js:20-101 and 270-710).
@@ -62,6 +66,24 @@ other. The jump to DNS Client goes through the Shell (`app/handoff.ts`), and the
 other way round, `showQueryLogs` from the Dashboard arrives here as `request`:
 the form is reset, filled with it and queried once the apps are known, which is
 `refreshQueryLogsTab(true)`.
+
+HOW IT IS LAID OUT (deviation 20 in CONVENTIONS.md, 2026-11-06), the way Cache and
+the zone list read: what the page holds, then ONE card that both asks and shows.
+
+  · **Four cards** over the results (`QuerySummary.tsx`), counted from the page on
+    screen: its entries by response type and by RCODE, its top clients and its top
+    names. Pressing one sets that filter and queries, as choosing it would.
+  · **The results card** (`ui/DataTable`): its toolbar is the question, `Domain`
+    and the screen's four verbs in upstream's order (Query, Export, Reset, Live
+    Update) with the status at its end; under it, the band of the other filters;
+    then the legend, the rows and, in the foot, the status, Page Number, Logs Per
+    Page and the pager. Upstream draws a form panel over a table.
+  · **One line per row**: when, who, what was asked, how it was answered and the
+    answer, cut where its column ends. The rest (`#`, `Protocol`, `Class`, the
+    response time and the whole answer, one record a line) is under the row's
+    `Details`, beside upstream's row menu.
+  · **The query is in the address bar** (`query-url.ts`), written once a query
+    lands and read on arrival, which queries it with Live Update off.
 */
 
 
@@ -205,29 +227,29 @@ export function rowClass(entry: QueryLogEntry): string {
 }
 
 /*
-FOLDING, below `--bp-index` (960 px): the filter panel and the legend's conditions.
+FOLDING, below `--bp-index` (960 px): the band of filters and the legend's conditions.
 
 At 390x844 the fourteen filters were one column of fields 1,173 px tall, the legend
 another 217 px, and the first result row ended at y=1,905: two full screens of
-scrolling before a single log. At 768 the table still started below the first
-screen (y=1,001). So under this width the panel closes to its title, `Filters`,
-as a toggle, and the table follows right under it.
+scrolling before a single log. So under this width the band closes and a `Filters`
+toggle joins the toolbar, beside `Domain`, which stays on its line with the verbs:
+it is the field most queries start from, and the Top Domains card sets it.
 
 What it does NOT do, and each of these is the reason it is allowed:
-  - **it never hides that the results are filtered.** Closed, the panel lists every
-    field that differs from what `Reset` would give (`activeFilters`), by its own
-    label and with the value it holds. With nothing to list there is nothing under
-    the title, which is the truth: the results are the unfiltered ones;
+  - **it never hides that the results are filtered.** Closed, the band lists every
+    field it holds that differs from what `Reset` would give (`activeFilters`), by
+    its own label and with the value it holds. `Domain`, `Page Number` and `Logs Per
+    Page` are on screen anyway and are not repeated;
   - **it never leaves a validation without its field.** Upstream focuses the field
-    that failed (logs.js:389-424 and 612-625). Here a closed panel opens first, in
+    that failed (logs.js:389-424 and 612-625). Here a closed band opens first, in
     the same task (`flushSync`), so the focus lands on a field that is on screen;
   - **it changes no request.** The fields stay mounted while closed (`hidden`, not
     unmounted), so their values, refs and the Live Update loop are the same ones,
     and Query, Export and Reset send exactly what they sent.
 
 It starts closed, and `Query` closes it again: that is the moment the user asks
-for results, and the results are below. Above 960 none of this exists: the title
-is a heading, not a button, and the panel is always open, as before.
+for results, and the results are below. Above 960 none of this exists: there is no
+toggle and the band is always open.
 
 Why not `ui/Details`, the console's disclosure: it is a `<details>`, which cannot
 be pinned open above a width without leaving a toggle that does nothing, and a
@@ -323,10 +345,181 @@ export interface QueryLogsProps {
   request?: QueryLogsRequest
 }
 
+/** The fields the folded band does not repeat: they stay on screen below 960. */
+const ALWAYS_SHOWN = ['Domain', 'Page Number', 'Logs Per Page']
+
+/** A query type in its series colour (`zones/zone-colours`), as Zones and Cache
+ *  draw a record's type: the word in the colour, on a tint of it. */
+function QType({ type }: { type: string | null }) {
+  if (type == null || type === '') return null
+  return (
+    <span className={styles.qtype} style={{ '--rt': recordColour(type) } as CSSProperties}>
+      {type}
+    </span>
+  )
+}
+
+/*
+The answer whole, one record a line. The server writes the records of an answer
+joined by `, ` (`A 1.2.3.4, A 5.6.7.8`); each piece is its own block here and keeps
+its comma, so the text read, found and copied is the answer as it came. A record's
+data can hold `, ` too (a TXT), so the split is only where the next piece starts
+with a record type; a TXT that holds one breaks one line early and loses nothing.
+*/
+function AnswerLines({ text }: { text: string }) {
+  const pieces = text.split(/(?<=,) (?=[A-Z][A-Z0-9]* )/)
+  return (
+    <span className={styles.answerLines}>
+      {pieces.map((p, i) => (
+        <span key={i}>
+          {p}
+          {i < pieces.length - 1 ? ' ' : ''}
+        </span>
+      ))}
+    </span>
+  )
+}
+
+/*
+ONE LINE PER ROW, its details folded (deviation 20, 2026-11-06), as Cache draws a
+record. The line says what happened: when, which client, what it asked (the name
+and the type, the row's lead in a stacked table), how it was answered (the
+response type on its row colour, and the RCODE) and the answer, cut where the
+column ends. `Details` opens a line under it with the rest of upstream's columns,
+`#`, `Protocol` and `Class`, the response time upstream writes under the response
+type, and the answer whole. Upstream's row menu stays beside it.
+*/
+function QueryRow({
+  e,
+  node,
+  handoff,
+  action,
+}: {
+  e: QueryLogEntry
+  node: string
+  handoff: Handoff | null
+  action: ReturnType<typeof useDomainAction>
+}) {
+  const [open, setOpen] = useState(false)
+  const detail = useId()
+  const cls = [rowClass(e), open ? styles.openRow : ''].filter(Boolean).join(' ')
+
+  return (
+    <>
+      <tr className={cls || undefined}>
+        <td className={`${styles.mono} ${styles.stamp}`}>
+          <Stamp text={dateTime(e.timestamp)} />
+        </td>
+        <td className={styles.mono}>
+          <Clip text={e.clientIpAddress} className={styles.clipClient} />
+        </td>
+        {/* logs.js:518. The root is written with a dot. */}
+        <td className={`${styles.mono} ${tbl.lead}`}>
+          <Clip text={e.qname === '' ? '.' : (e.qname ?? '')} className={styles.clipDomain} />
+        </td>
+        <td className={tbl.lead}>
+          <QType type={e.qtype} />
+        </td>
+        <td>
+          {/* The row's colour, in this cell: see `.tone` in Logs.module.css. */}
+          <span className={styles.tone}>{e.responseType}</span>
+        </td>
+        <td>{e.rcode}</td>
+        <td className={`${styles.mono} ${styles.answer}`}>
+          <Clip text={e.answer ?? ''} className={styles.clipAnswer} />
+        </td>
+        <td className={tbl.actionsCell}>
+          <div className={tbl.actions}>
+            <RowAction
+              icon={open ? 'chevronDown' : 'chevronRight'}
+              name="Details"
+              aria-expanded={open}
+              aria-controls={detail}
+              onClick={() => setOpen((v) => !v)}
+            />
+            <Menu label={`Actions for row ${e.rowNumber}`}>
+              {(close) => {
+                const verb = verbFor(e.responseType)
+                const key = String(e.rowNumber)
+                /* The domain is the row's `qname` as it came (the root is the empty
+                   string, not the dot drawn above). */
+                const domain = e.qname ?? ''
+                return (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        close()
+                        /* Upstream writes the type into the handler as text, so a
+                           missing one travels as "null", not as no type. */
+                        handoff?.queryDnsServer(domain, String(e.qtype), node)
+                      }}
+                    >
+                      Query DNS Server
+                    </button>
+                    <button
+                      type="button"
+                      disabled={action.isBusy(key)}
+                      onClick={() => {
+                        close()
+                        void action.run(key, verb, domain)
+                      }}
+                    >
+                      {verb}
+                    </button>
+                  </>
+                )
+              }}
+            </Menu>
+          </div>
+        </td>
+      </tr>
+      {open && (
+        <tr id={detail} className={styles.detailRow}>
+          <td colSpan={8}>
+            <dl className={styles.details}>
+              <div>
+                <dt>#</dt>
+                <dd className={styles.mono}>{e.rowNumber}</dd>
+              </div>
+              <div>
+                <dt>Protocol</dt>
+                <dd>{e.protocol}</dd>
+              </div>
+              <div>
+                <dt>Class</dt>
+                <dd>{e.qclass ?? ''}</dd>
+              </div>
+              <div>
+                <dt>Response Type</dt>
+                <dd>
+                  {e.responseType}
+                  {e.responseRtt != null && <span className={styles.rtt}>({e.responseRtt.toFixed(2)} ms)</span>}
+                </dd>
+              </div>
+              {e.answer != null && e.answer !== '' && (
+                <div className={styles.detailWide}>
+                  <dt>Answer</dt>
+                  <dd className={styles.mono}>
+                    <AnswerLines text={e.answer} />
+                  </dd>
+                </div>
+              )}
+            </dl>
+          </td>
+        </tr>
+      )}
+    </>
+  )
+}
+
 export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
   const [apps, setApps] = useState<{ name: string; classPaths: string[] }[] | null>(null)
   const [f, setF] = useState<Filters>(() => defaultFilters('', ''))
   const [page, setPage] = useState<QueryLogPage | null>(null)
+  /* The filters the page on screen was asked with: the pressed card chips, and
+     what goes to the address bar. */
+  const [applied, setApplied] = useState<Filters | null>(null)
   const [notice, setNotice] = useState<Notice | null>(null)
   const [busy, setBusy] = useState(false)
   const [live, setLive] = useState(false)
@@ -334,7 +527,7 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
      `query`: set in the same handler as the switch, so a click on the
      pagination one frame after it already sees it. */
   const liveRef = useRef(false)
-  /* Below 960 the panel folds (see FOLD_QUERY); it starts closed. */
+  /* Below 960 the band folds (see FOLD_QUERY); it starts closed. */
   const fold = useMedia(FOLD_QUERY)
   const [filtersOpen, setFiltersOpen] = useState(false)
   const folded = fold && !filtersOpen
@@ -344,6 +537,10 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
   const action = useDomainAction(token, setNotice)
   /* The jump that brought us here, applied once the apps list arrives. */
   const pending = useRef(request)
+  /* The query the address bar asked for on arrival (`query-url.ts`), read before
+     anything writes to it; a jump from another screen wins over it. */
+  const [bar] = useState(() => window.location.search)
+  const barRef = useRef<string | null>(bar)
 
   const since = useRef<HTMLInputElement>(null)
   const until = useRef<HTMLInputElement>(null)
@@ -357,8 +554,10 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
   useEffect(() => {
     filtersRef.current = f
   }, [f])
+  /* What Reset gives, for the address bar and the folded summary. */
+  const resetRef = useRef<Filters>(defaultFilters('', ''))
 
-  /* Upstream focuses the field that failed. A folded panel opens first, and in the
+  /* Upstream focuses the field that failed. A folded band opens first, and in the
      same task, so the field is on screen when it takes the focus; above 960 the
      state is not read and this changes nothing. */
   const reveal = useCallback((field: HTMLElement | null) => {
@@ -452,7 +651,12 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
         return
       }
 
-      setPage(outcome.data.response)
+      const landed = outcome.data.response
+      setPage(landed)
+      setApplied(filters)
+      /* The query on screen goes to the bar, replacing the entry: the filters it
+         sent and the page the server answered (`query-url.ts`). */
+      writeParams(queryParams(filters, resetRef.current, landed.pageNumber))
     },
     [token, params, reveal],
   )
@@ -461,6 +665,9 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
   useEffect(() => {
     queryRef.current = query
   }, [query])
+
+  /* The bar's query leaves with the screen, as Cache's node does. */
+  useEffect(() => () => dropParams(QUERY_PARAMS), [])
 
   /*
   A node change runs the query again when there are results on screen
@@ -501,9 +708,19 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
       setApps(list)
       const first = list[0]
       const base = defaultFilters(first?.name ?? '', first?.classPaths[0] ?? '')
+      resetRef.current = base
       const req = pending.current
+      const fromBar = barRef.current != null ? filtersFromBar(barRef.current, base, list) : null
+      barRef.current = null
       if (req == null) {
-        setF(base)
+        if (fromBar == null) {
+          setF(base)
+          return
+        }
+        /* A link to a query: that form, queried once, as Query would. */
+        setF(fromBar)
+        filtersRef.current = fromBar
+        void queryRef.current(fromBar.pageNumber, false)
         return
       }
       /* `showQueryLogs` (logs.js:624-655): the reset form, the domain and/or the
@@ -569,6 +786,19 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
     restart()
   }
 
+  /*
+  A card pressed (`QuerySummary`): the value goes into its field and Query runs
+  from page 1, as choosing it and pressing Query would; the ref is written first
+  because the query reads it before the next commit. With Live Update on Query is
+  off, and the loop's next turn sends the field as it is.
+  */
+  function pick(field: Pick, value: string) {
+    const next = { ...filtersRef.current, [field]: value, pageNumber: '1' }
+    setF(next)
+    filtersRef.current = next
+    if (!liveRef.current) void query('1', false)
+  }
+
   async function runExport() {
     // logs.js:612-625. The app alert does NOT carry "from the Apps section." and
     // the dates are not checked here.
@@ -607,9 +837,10 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
 
   if (apps == null) return <Loading />
 
-  /* What the folded panel lists (FOLD_QUERY). */
-  const active = activeFilters(f, defaultFilters(apps[0]?.name ?? '', apps[0]?.classPaths[0] ?? ''))
-
+  /* What the folded band lists (FOLD_QUERY): its own fields that are set. */
+  const active = activeFilters(f, defaultFilters(apps[0]?.name ?? '', apps[0]?.classPaths[0] ?? '')).filter(
+    (a) => !ALWAYS_SHOWN.includes(a.label),
+  )
 
   return (
     <div className={styles.wrap}>
@@ -621,276 +852,75 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
 
       <Notifier notice={notice} onClose={() => setNotice(null)} />
 
-      <div className={styles.fs}>
-        {fold ? (
-          <h3 className={`${styles.fsTitle} ${styles.fsTitleFold}${folded ? ` ${styles.fsTitleClosed}` : ''}`}>
-            <button
-              type="button"
-              className={styles.fsToggle}
-              aria-expanded={filtersOpen}
-              aria-controls="ql-filters"
-              aria-describedby={folded && active.length > 0 ? 'ql-filters-set' : undefined}
-              onClick={() => setFiltersOpen(!filtersOpen)}
-            >
-              <Icon name="chevronRight" size={12} className={styles.chevron} />
-              Filters
-            </button>
-          </h3>
-        ) : (
-          <h3 className={styles.fsTitle}>Filters</h3>
-        )}
-        {/* Folded, what is set, so a filtered table never reads as the whole log. */}
-        {folded && active.length > 0 && (
-          <p id="ql-filters-set" className={styles.fsSet}>
-            {active.map((a) => (
-              <span key={a.label} className={styles.fsSetItem}>
-                <span className={styles.fsSetLabel}>{a.label}:</span> {a.value}
-              </span>
-            ))}
-          </p>
-        )}
-        <div id="ql-filters" className={styles.fsIn} hidden={folded}>
-          <div className={styles.group}>
-            <div className={styles.groupLabel}>Source</div>
-            <div className={styles.groupCtl}>
-              <div className={styles.field} style={fieldWidth(195)}>
-                <label htmlFor="ql-appName">App Name</label>
-                <Select
-                  id="ql-appName"
-                  ref={appRef}
-                  value={f.appName}
-                  onChange={(e) => changeApp(e.target.value)}
-                >
-                  {apps.map((a) => (
-                    <option key={a.name} value={a.name}>
-                      {a.name}
-                    </option>
-                  ))}
-                </Select>
-              </div>
-              <div className={styles.field} style={fieldWidth(195)}>
-                <label htmlFor="ql-classPath">Class Path</label>
-                <Select
-                  id="ql-classPath"
-                  ref={classRef}
-                  value={f.classPath}
-                  onChange={(e) => set({ classPath: e.target.value })}
-                >
-                  {appClasses.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </Select>
-              </div>
-            </div>
-          </div>
-
-          {/*
-          The MODE group: the fields "Live Update" turns off, together. The switch
-          itself is in the results' toolbar, with the screen's actions (see there).
-
-          They used to be spread about (`From`, `To` and `Order` in "Period"), so the
-          off signal jumped from one group to another and had to be repeated.
-          Together, the edge runs down them once and **one** pill is enough, which
-          is the `Settings` master-switch rule.
-
-          `Page Number`, the fourth field the mode turns off, sat here until
-          2026-11-05 and moved to the results' foot, beside the pager it belongs
-          with; there it is drawn disabled while the mode is on, as before. And
-          `Logs Per Page`, the one the mode does NOT turn off, went with it.
-          */}
-          <div className={`${styles.group}${live ? ` ${styles.byMode}` : ''}`}>
-            <div className={styles.groupLabel}>
-              <span>Mode</span>
-              {/*
-              The pill carries the OPPOSITE POLARITY to the one in `Settings`.
-
-              There it says `Needs {switch}`: "turn it on and this becomes active".
-              Here the truth is the reverse (they are off because `Live Update` is
-              ON), and `Needs Live Update` would say exactly the opposite of how to
-              get them back. A control that lies about how to recover it is worse
-              than a control with no signal at all.
-
-              Same amber and same edge, because the situation is the same in what
-              matters: **the user can undo it themselves**, which is what the amber
-              means. If the permission were missing too, the padlock wins.
-              */}
-              {live && <Tag tone="acc">While Live Update</Tag>}
-            </div>
-            <div className={styles.groupCtl}>
-              <div className={styles.field} style={fieldWidth(180)}>
-                <label htmlFor="ql-start">From</label>
-                <Input
-                  id="ql-start"
-                  ref={since}
-                  type="datetime-local"
-                  disabled={live}
-                  value={f.start}
-                  onChange={(e) => set({ start: e.target.value })}
-                />
-              </div>
-              <div className={styles.field} style={fieldWidth(180)}>
-                <label htmlFor="ql-end">To</label>
-                <Input
-                  id="ql-end"
-                  ref={until}
-                  type="datetime-local"
-                  disabled={live}
-                  value={f.end}
-                  onChange={(e) => set({ end: e.target.value })}
-                />
-              </div>
-              <div className={styles.field} style={fieldWidth(120)}>
-                <label htmlFor="ql-order">Order</label>
-                <Select
-                  id="ql-order"
-                  disabled={live}
-                  value={f.descendingOrder}
-                  onChange={(e) => set({ descendingOrder: e.target.value })}
-                >
-                  <option value="false">Ascending</option>
-                  <option value="true">Descending</option>
-                </Select>
-              </div>
-            </div>
-          </div>
-
-          <div className={styles.group}>
-            <div className={styles.groupLabel}>Query</div>
-            <div className={styles.groupCtl}>
-              <div className={styles.field} style={fieldWidth(240)}>
-                <label htmlFor="ql-qname">Domain</label>
-                <Input
-                  id="ql-qname"
-                  mono
-                  search
-                  placeholder="example.com or *.com"
-                  value={f.qname}
-                  onChange={(e) => set({ qname: e.target.value })}
-                />
-              </div>
-              <div className={styles.field} style={fieldWidth(110)}>
-                <label htmlFor="ql-qtype">Type</label>
-                <Input
-                  id="ql-qtype"
-                  placeholder="A, AAAA, etc."
-                  value={f.qtype}
-                  onChange={(e) => set({ qtype: e.target.value })}
-                />
-              </div>
-              <div className={styles.field} style={fieldWidth(96)}>
-                <label htmlFor="ql-qclass">Class</label>
-                <Select
-                  id="ql-qclass"
-                  value={f.qclass}
-                  onChange={(e) => set({ qclass: e.target.value })}
-                >
-                  {QCLASSES.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </Select>
-              </div>
-              <div className={styles.field} style={fieldWidth(160)}>
-                <label htmlFor="ql-clientIpAddress">Client IP Address</label>
-                <Input
-                  id="ql-clientIpAddress"
-                  mono
-                  value={f.clientIpAddress}
-                  onChange={(e) => set({ clientIpAddress: e.target.value })}
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className={styles.group}>
-            <div className={styles.groupLabel}>Response</div>
-            <div className={styles.groupCtl}>
-              <div className={styles.field} style={fieldWidth(120)}>
-                <label htmlFor="ql-protocol">Protocol</label>
-                <Select
-                  id="ql-protocol"
-                  value={f.protocol}
-                  onChange={(e) => set({ protocol: e.target.value })}
-                >
-                  {PROTOCOLS.map((p) => (
-                    <option key={p.value} value={p.value}>
-                      {p.label}
-                    </option>
-                  ))}
-                </Select>
-              </div>
-              <div className={styles.field} style={fieldWidth(190)}>
-                <label htmlFor="ql-responseType">Response Type</label>
-                <Select
-                  id="ql-responseType"
-                  value={f.responseType}
-                  onChange={(e) => set({ responseType: e.target.value })}
-                >
-                  {RESPONSE_TYPES.map((r) => (
-                    <option key={r.value} value={r.value}>
-                      {r.label}
-                    </option>
-                  ))}
-                </Select>
-              </div>
-              <div className={styles.field} style={fieldWidth(140)}>
-                <label htmlFor="ql-rcode">RCODE</label>
-                <Select
-                  id="ql-rcode"
-                  value={f.rcode}
-                  onChange={(e) => set({ rcode: e.target.value })}
-                >
-                  {RCODES.map((r) => (
-                    <option key={r.value} value={r.value}>
-                      {r.label}
-                    </option>
-                  ))}
-                </Select>
-              </div>
-            </div>
-          </div>
-
-        </div>
-      </div>
+      {page != null && applied != null && (
+        <QuerySummary
+          page={page}
+          applied={{
+            responseType: applied.responseType,
+            rcode: applied.rcode,
+            clientIpAddress: applied.clientIpAddress,
+            qname: applied.qname,
+          }}
+          onPick={pick}
+        />
+      )}
 
       {/*
-      The results as one card (`ui/DataTable`, 2026-11-05), the way Zones draws its
-      list: the screen's actions in the toolbar, the table, and the count with the
-      paging in the foot. The page reads top to bottom as it is used: the filters,
-      then what runs them, then what they found.
+      ONE card that asks and shows (`ui/DataTable`), the way the zone list and Cache
+      draw theirs: the question in its toolbar, the other filters in a band under it,
+      then the legend, the rows and, in its foot, the status, the page fields and the
+      pager. The page reads top to bottom as it is used.
 
-        · The toolbar: Query, Export, Reset and Live Update, upstream's buttons in
-          upstream's order (index.html:3565-3569), with the same handlers. They
-          sat in the section header; there they were a screen away from the
-          filters at 1440, and under the folded panel they now come right after
-          its title. At its end, the status, because upstream writes it above the
-          table as well as under it (`tableQueryLogsTopStatus`, logs.js:589).
-        · The foot: the status again (`tableQueryLogsFooterStatus`, logs.js:592),
-          the pager once, as Zones draws it (upstream repeats it too), and the two
-          fields that say WHICH page, Page Number and Logs Per Page, beside the
-          pager that moves between pages. They were in the filter panel's Mode
-          and Paging groups; they are the same fields, with the same labels, the
-          same values and the same behaviour (Live Update still disables Page
-          Number, and Logs Per Page is still remembered), now with their labels
-          on their line (`Field inline`).
+        · The toolbar: `Domain`, the field a query most often starts from, and the
+          screen's verbs in upstream's order (index.html:3565-3569) with the same
+          handlers: Query, Export, Reset and Live Update. At its end the status,
+          because upstream writes it above the table as well as under it
+          (`tableQueryLogsTopStatus`, logs.js:589).
+        · The band: the other ten filters, the ones Live Update turns off together
+          under one edge. Upstream draws all of them in a form panel above the table.
+        · The foot: the status again (`tableQueryLogsFooterStatus`, logs.js:592), the
+          two fields that say WHICH page (Live Update still disables Page Number, and
+          Logs Per Page is still remembered) and the pager, once.
 
-      The card is drawn before the first query too, with its toolbar and its two
-      fields, because the buttons and the fields are part of the form and upstream
-      shows them all from the start; the status, the pager, the legend and the
-      table only arrive with a result, as upstream's `divQueryLogsTable` does.
+      The card is drawn before the first query too, with its toolbar, band and page
+      fields, because they are the form and upstream shows them all from the start;
+      the status, the pager, the legend and the table only arrive with a result, as
+      upstream's `divQueryLogsTable` does.
       */}
       <DataTable
         toolbar={
           <>
+            <Grow>
+              <Field inline label="Domain">
+                {(id) => (
+                  <Input
+                    id={id}
+                    mono
+                    search
+                    placeholder="example.com or *.com"
+                    value={f.qname}
+                    onChange={(e) => set({ qname: e.target.value })}
+                  />
+                )}
+              </Field>
+            </Grow>
+            {fold && (
+              <Button
+                aria-expanded={filtersOpen}
+                aria-controls="ql-filters"
+                aria-describedby={folded && active.length > 0 ? 'ql-filters-set' : undefined}
+                onClick={() => setFiltersOpen(!filtersOpen)}
+              >
+                <Icon name="chevronRight" size={12} className={styles.chevron} />
+                Filters
+              </Button>
+            )}
             <div className={styles.runActs}>
               <Button lead="search"
                 variant="primary"
                 disabled={busy || live}
                 onClick={() => {
-                  /* Folded, Query closes the panel: the results are what comes next.
+                  /* Folded, Query closes the band: the results are what comes next.
                      A validation that fails opens it again on its field (`reveal`). */
                   if (fold) setFiltersOpen(false)
                   void query(f.pageNumber, false)
@@ -904,11 +934,11 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
               <Button onClick={restart}>Reset</Button>
               {/*
               "Live Update" is a MODE of the whole screen, not a filter: it governs
-              Query, the Mode group, Page Number and the table at once. So it sits
-              with the screen's actions and is drawn as `ui/Check`'s switch, which
-              this console uses for a state that stays put. Underneath it is the
-              same checkbox with the same label, in upstream's place in the order
-              (after Reset, index.html:3565-3569), and the same handler.
+              Query, the From/To/Order group, Page Number and the table at once. So it
+              sits with the screen's actions and is drawn as `ui/Check`'s switch, which
+              this console uses for a state that stays put. Underneath it is the same
+              checkbox with the same label, in upstream's place in the order (after
+              Reset, index.html:3565-3569), and the same handler.
 
               Not wrapped in `.field`: `dev/uniformity.js` caught that once, when it
               turned the label into an 11 px grey one.
@@ -971,96 +1001,188 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
           </DataFoot>
         }
       >
+        {/* Folded, what is set, so a filtered table never reads as the whole log. */}
+        {folded && active.length > 0 && (
+          <p id="ql-filters-set" className={styles.fsSet}>
+            {active.map((a) => (
+              <span key={a.label} className={styles.fsSetItem}>
+                <span className={styles.fsSetLabel}>{a.label}:</span> {a.value}
+              </span>
+            ))}
+          </p>
+        )}
+        <div id="ql-filters" className={styles.band} hidden={folded}>
+          <div className={styles.field} style={fieldWidth(190)}>
+            <label htmlFor="ql-responseType">Response Type</label>
+            <Select
+              id="ql-responseType"
+              value={f.responseType}
+              onChange={(e) => set({ responseType: e.target.value })}
+            >
+              {RESPONSE_TYPES.map((r) => (
+                <option key={r.value} value={r.value}>
+                  {r.label}
+                </option>
+              ))}
+            </Select>
+          </div>
+          <div className={styles.field} style={fieldWidth(140)}>
+            <label htmlFor="ql-rcode">RCODE</label>
+            <Select id="ql-rcode" value={f.rcode} onChange={(e) => set({ rcode: e.target.value })}>
+              {RCODES.map((r) => (
+                <option key={r.value} value={r.value}>
+                  {r.label}
+                </option>
+              ))}
+            </Select>
+          </div>
+          <div className={styles.field} style={fieldWidth(160)}>
+            <label htmlFor="ql-clientIpAddress">Client IP Address</label>
+            <Input
+              id="ql-clientIpAddress"
+              mono
+              value={f.clientIpAddress}
+              onChange={(e) => set({ clientIpAddress: e.target.value })}
+            />
+          </div>
+          <div className={styles.field} style={fieldWidth(110)}>
+            <label htmlFor="ql-qtype">Type</label>
+            <Input
+              id="ql-qtype"
+              placeholder="A, AAAA, etc."
+              value={f.qtype}
+              onChange={(e) => set({ qtype: e.target.value })}
+            />
+          </div>
+          <div className={styles.field} style={fieldWidth(96)}>
+            <label htmlFor="ql-qclass">Class</label>
+            <Select id="ql-qclass" value={f.qclass} onChange={(e) => set({ qclass: e.target.value })}>
+              {QCLASSES.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </Select>
+          </div>
+          <div className={styles.field} style={fieldWidth(120)}>
+            <label htmlFor="ql-protocol">Protocol</label>
+            <Select id="ql-protocol" value={f.protocol} onChange={(e) => set({ protocol: e.target.value })}>
+              {PROTOCOLS.map((p) => (
+                <option key={p.value} value={p.value}>
+                  {p.label}
+                </option>
+              ))}
+            </Select>
+          </div>
+
+          {/*
+          The MODE group: the fields "Live Update" turns off, together, so the edge
+          runs down them once and ONE pill is enough, which is the `Settings`
+          master-switch rule. `Page Number`, the fourth, is in the foot beside the
+          pager, drawn disabled while the mode is on.
+
+          The pill carries the OPPOSITE POLARITY to the one in `Settings`: there it
+          says `Needs {switch}`; here they are off because `Live Update` is ON, and
+          `Needs Live Update` would say exactly the opposite of how to get them back.
+          Same amber and same edge, because the user can undo it themselves, which is
+          what the amber means.
+          */}
+          <div className={`${styles.mode}${live ? ` ${styles.byMode}` : ''}`}>
+            <div className={styles.field} style={fieldWidth(190)}>
+              <label htmlFor="ql-start">From</label>
+              <Input
+                id="ql-start"
+                ref={since}
+                type="datetime-local"
+                disabled={live}
+                value={f.start}
+                onChange={(e) => set({ start: e.target.value })}
+              />
+            </div>
+            <div className={styles.field} style={fieldWidth(190)}>
+              <label htmlFor="ql-end">To</label>
+              <Input
+                id="ql-end"
+                ref={until}
+                type="datetime-local"
+                disabled={live}
+                value={f.end}
+                onChange={(e) => set({ end: e.target.value })}
+              />
+            </div>
+            <div className={styles.field} style={fieldWidth(130)}>
+              <label htmlFor="ql-order">Order</label>
+              <Select
+                id="ql-order"
+                disabled={live}
+                value={f.descendingOrder}
+                onChange={(e) => set({ descendingOrder: e.target.value })}
+              >
+                <option value="false">Ascending</option>
+                <option value="true">Descending</option>
+              </Select>
+            </div>
+            {live && (
+              <span className={styles.modePill}>
+                <Tag tone="acc">While Live Update</Tag>
+              </span>
+            )}
+          </div>
+
+          {/* Which app's log is read, and through which class: upstream's first two
+              fields, which the header's `app:` tag names. */}
+          <div className={styles.field} style={fieldWidth(200)}>
+            <label htmlFor="ql-appName">App Name</label>
+            <Select id="ql-appName" ref={appRef} value={f.appName} onChange={(e) => changeApp(e.target.value)}>
+              {apps.map((a) => (
+                <option key={a.name} value={a.name}>
+                  {a.name}
+                </option>
+              ))}
+            </Select>
+          </div>
+          <div className={styles.field} style={fieldWidth(200)}>
+            <label htmlFor="ql-classPath">Class Path</label>
+            <Select
+              id="ql-classPath"
+              ref={classRef}
+              value={f.classPath}
+              onChange={(e) => set({ classPath: e.target.value })}
+            >
+              {appClasses.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </Select>
+          </div>
+        </div>
+
         {page != null && (
           <>
             {/* Always all seven, whether or not they appear on this page: see `LEGEND_ROWS`. */}
             <RowLegend fold={fold} />
 
-              <Table
-                stack
-                tableClass={styles.queryTable}
-                header={
-                  <>
-                    <th>#</th>
-                    <th>Timestamp</th>
-                    <th>Client IP Address</th>
-                    <th>Protocol</th>
-                    <th>Response Type</th>
-                    <th>RCODE</th>
-                    <th>Domain</th>
-                    <th>Type</th>
-                    <th>Class</th>
-                    <th>Answer</th>
-                    <th className={tbl.actionsCell} />
-                  </>
-                }
-              >
-                {page.entries.map((e) => (
-                  <tr key={e.rowNumber} className={rowClass(e)}>
-                    <td className={styles.mono}>{e.rowNumber}</td>
-                    <td className={`${styles.mono} ${styles.stamp}`}>
-                      <Stamp text={dateTime(e.timestamp)} />
-                    </td>
-                    <td className={styles.mono}>
-                      <Clip text={e.clientIpAddress} className={styles.clipClient} />
-                    </td>
-                    <td>{e.protocol}</td>
-                    <td>
-                      {/* The row's colour, in this cell: see `.tone` in Logs.module.css. */}
-                      <span className={styles.tone}>{e.responseType}</span>
-                      {e.responseRtt != null && (
-                        <div className={styles.rtt}>({e.responseRtt.toFixed(2)} ms)</div>
-                      )}
-                    </td>
-                    <td>{e.rcode}</td>
-                    {/* logs.js:518. The root is written with a dot. */}
-                    <td className={`${styles.mono} ${tbl.lead}`}>
-                      <Clip text={e.qname === '' ? '.' : (e.qname ?? '')} className={styles.clipDomain} />
-                    </td>
-                    <td className={tbl.lead}>{e.qtype ?? ''}</td>
-                    <td>{e.qclass ?? ''}</td>
-                    <td className={`${styles.mono} ${styles.answer}`}>
-                      <Clip text={e.answer ?? ''} className={styles.clipAnswer} />
-                    </td>
-                    <td className={tbl.actionsCell}>
-                      <Menu label={`Actions for row ${e.rowNumber}`}>
-                        {(close) => {
-                          const verb = verbFor(e.responseType)
-                          const key = String(e.rowNumber)
-                          /* The domain is the row's `qname` as it came (the root is
-                             the empty string, not the dot drawn above). */
-                          const domain = e.qname ?? ''
-                          return (
-                            <>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  close()
-                                  /* Upstream writes the type into the handler as text,
-                                     so a missing one travels as "null", not as no type. */
-                                  handoff?.queryDnsServer(domain, String(e.qtype), node)
-                                }}
-                              >
-                                Query DNS Server
-                              </button>
-                              <button
-                                type="button"
-                                disabled={action.isBusy(key)}
-                                onClick={() => {
-                                  close()
-                                  void action.run(key, verb, domain)
-                                }}
-                              >
-                                {verb}
-                              </button>
-                            </>
-                          )
-                        }}
-                      </Menu>
-                    </td>
-                  </tr>
-                ))}
-              </Table>
+            <Table
+              stack
+              tableClass={styles.queryTable}
+              header={
+                <>
+                  <th>Timestamp</th>
+                  <th>Client IP Address</th>
+                  <th>Domain</th>
+                  <th>Type</th>
+                  <th>Response Type</th>
+                  <th>RCODE</th>
+                  <th>Answer</th>
+                  <th className={tbl.actionsCell} />
+                </>
+              }
+            >
+              {page.entries.map((e) => (
+                <QueryRow key={e.rowNumber} e={e} node={node} handoff={handoff} action={action} />
+              ))}
+            </Table>
           </>
         )}
       </DataTable>

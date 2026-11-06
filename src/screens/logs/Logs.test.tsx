@@ -64,6 +64,17 @@ function page(partial: Partial<QueryLogPage> = {}): QueryLogPage {
   return { pageNumber: 1, totalPages: 1, totalEntries: 1, entries: [ENTRY], ...partial }
 }
 
+/* A file's line in the folder's table: its name is the button that opens it (the
+   Newest and Oldest cards name the same days, so the table is where to look). */
+async function fileButton(name: string) {
+  return within(await screen.findByRole('table')).findByRole('button', { name })
+}
+
+/* A query entry's domain in the table (the Top Domains card writes it too). */
+function inTable() {
+  return within(screen.getByRole('table'))
+}
+
 function withApps(list: InstalledApp[]) {
   return vi
     .spyOn(apps, 'listApps')
@@ -75,8 +86,8 @@ describe('Logs › View Logs', () => {
     vi.spyOn(api, 'listLogFiles').mockResolvedValue({ kind: 'ok', data: FILES })
     render(<Logs token="t" sub="View Logs" />)
 
-    expect(await screen.findByText('2026-08-26')).toBeInTheDocument()
-    expect(screen.getByText('[20.48 KB]')).toBeInTheDocument()
+    expect(await fileButton('2026-08-26')).toBeInTheDocument()
+    expect(within(screen.getByRole('table')).getByText('20.48 KB')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Delete All Logs' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Delete All Stats' })).toBeInTheDocument()
   })
@@ -95,9 +106,7 @@ describe('Logs › View Logs', () => {
     vi.spyOn(api, 'listLogFiles').mockResolvedValue({ kind: 'ok', data: FILES })
     const spy = vi.spyOn(api, 'downloadLogText').mockResolvedValue('[2026-08-26] Logging started.')
     render(<Logs token="t" sub="View Logs" />)
-    await screen.findByText('2026-08-26')
-
-    await user.click(screen.getByText('2026-08-26'))
+    await user.click(await fileButton('2026-08-26'))
 
     expect(spy).toHaveBeenCalledWith('t', '2026-08-26', '')
     expect(await screen.findByText('[2026-08-26] Logging started.')).toBeInTheDocument()
@@ -113,7 +122,7 @@ describe('Logs › View Logs', () => {
     vi.spyOn(api, 'listLogFiles').mockResolvedValue({ kind: 'ok', data: FILES })
     vi.spyOn(api, 'downloadLogText').mockResolvedValue(text)
     render(<Logs token="t" sub="View Logs" />)
-    await user.click(await screen.findByText('2026-08-26'))
+    await user.click(await fileButton('2026-08-26'))
 
     const viewer = await screen.findByLabelText('2026-08-26 log file')
     expect(viewer.textContent).toBe(text)
@@ -121,12 +130,18 @@ describe('Logs › View Logs', () => {
     expect(viewer.querySelectorAll('wbr').length).toBeGreaterThan(0)
   })
 
-  /* The Shell gives a flex column only to a screen that asks for it. */
-  it('the screen asks the Shell for the height of the window', async () => {
+  /* The Shell gives a flex column only to a screen that asks for it: the open
+     file, whose reader takes the window's height. The list does not. */
+  it('the open file asks the Shell for the height of the window, the list does not', async () => {
+    const user = userEvent.setup()
     vi.spyOn(api, 'listLogFiles').mockResolvedValue({ kind: 'ok', data: FILES })
+    vi.spyOn(api, 'downloadLogText').mockResolvedValue('x')
     const { container } = render(<Logs token="t" sub="View Logs" />)
-    await screen.findByText('2026-08-26')
+    await user.click(await fileButton('2026-08-26'))
     expect(container.querySelector('[data-fills-window]')).not.toBeNull()
+    await user.click(screen.getByRole('button', { name: 'View Logs' }))
+    await fileButton('2026-08-26')
+    expect(container.querySelector('[data-fills-window]')).toBeNull()
   })
 
   it('\"Download\" asks for the whole file through a single-use token', async () => {
@@ -135,8 +150,7 @@ describe('Logs › View Logs', () => {
     vi.spyOn(api, 'downloadLogText').mockResolvedValue('x')
     const spy = vi.spyOn(api, 'openLogDownload').mockResolvedValue({ ok: true })
     render(<Logs token="t" sub="View Logs" />)
-    await screen.findByText('2026-08-26')
-    await user.click(screen.getByText('2026-08-26'))
+    await user.click(await fileButton('2026-08-26'))
     await screen.findByText('x')
 
     await user.click(screen.getByRole('button', { name: 'Download' }))
@@ -150,8 +164,7 @@ describe('Logs › View Logs', () => {
     vi.spyOn(api, 'downloadLogText').mockResolvedValue('x')
     const spy = vi.spyOn(api, 'deleteLog').mockResolvedValue(OK)
     render(<Logs token="t" sub="View Logs" />)
-    await screen.findByText('2026-08-26')
-    await user.click(screen.getByText('2026-08-26'))
+    await user.click(await fileButton('2026-08-26'))
     await screen.findByText('x')
 
     await user.click(screen.getByRole('button', { name: 'Delete' }))
@@ -170,7 +183,7 @@ describe('Logs › View Logs', () => {
     vi.spyOn(api, 'listLogFiles').mockResolvedValue({ kind: 'ok', data: FILES })
     const spy = vi.spyOn(api, 'deleteAllLogs').mockResolvedValue(OK)
     render(<Logs token="t" sub="View Logs" />)
-    await screen.findByText('2026-08-26')
+    await fileButton('2026-08-26')
 
     await user.click(screen.getByRole('button', { name: 'Delete All Logs' }))
     expect(
@@ -190,7 +203,7 @@ describe('Logs › View Logs', () => {
     vi.spyOn(api, 'listLogFiles').mockResolvedValue({ kind: 'ok', data: FILES })
     const spy = vi.spyOn(dashboard, 'deleteAllStats').mockResolvedValue(OK)
     render(<Logs token="t" sub="View Logs" />)
-    await screen.findByText('2026-08-26')
+    await fileButton('2026-08-26')
 
     await user.click(screen.getByRole('button', { name: 'Delete All Stats' }))
     expect(
@@ -476,9 +489,12 @@ describe('Logs › Query Logs: the table', () => {
     await screen.findByLabelText('App Name')
     await user.click(screen.getByRole('button', { name: 'Query' }))
 
-    expect(await screen.findByText('github.com')).toBeInTheDocument()
+    expect(await screen.findByTitle('github.com')).toBeInTheDocument()
+    expect(inTable().getByText('A 140.82.121.3')).toBeInTheDocument()
+    /* The response time is under the row's Details, with the rest of the row. */
+    expect(screen.queryByText('(12.82 ms)')).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Details' }))
     expect(screen.getByText('(12.82 ms)')).toBeInTheDocument()
-    expect(screen.getByText('A 140.82.121.3')).toBeInTheDocument()
   })
 
   it('the timestamp is two unbreakable pieces, date and time, so a narrow table breaks it only between them', async () => {
@@ -492,8 +508,8 @@ describe('Logs › Query Logs: the table', () => {
     await screen.findByLabelText('App Name')
     await user.click(screen.getByRole('button', { name: 'Query' }))
 
-    const row = (await screen.findByText('github.com')).closest('tr')!
-    const stamp = row.children[1]
+    const row = (await screen.findByTitle('github.com')).closest('tr')!
+    const stamp = row.children[0]
     const pieces = [...stamp.children].map((c) => c.textContent)
     expect(pieces).toHaveLength(2)
     expect(pieces[0]).toMatch(/^\d{4}-\d{2}-\d{2}$/)
@@ -516,9 +532,10 @@ describe('Logs › Query Logs: the table', () => {
     await screen.findByLabelText('App Name')
     await user.click(screen.getByRole('button', { name: 'Query' }))
 
+    await screen.findByRole('table')
     for (const value of [qname, answer, client]) {
-      const cell = await screen.findByText(value)
-      expect(cell).toHaveAttribute('title', value)
+      const cell = inTable().getByTitle(value)
+      expect(cell).toHaveTextContent(value)
     }
   })
 
@@ -539,7 +556,7 @@ describe('Logs › Query Logs: the table', () => {
     const cls = rowClass({ ...ENTRY, rcode: 'NxDomain', responseType: 'Blocked' })
     expect(pill.closest('tr')).toHaveClass(cls)
     const legend = LEGEND_ROWS.find((e) => e.name === 'Blocked')!
-    const legendPill = screen.getAllByText('Blocked').find((e) => e.closest('td') == null)!
+    const legendPill = screen.getAllByText('Blocked').find((e) => e.classList.contains(legend.cls))!
     expect(legendPill).toHaveClass(legend.cls)
     expect(legendPill.className.replace(legend.cls, '').trim()).toBe(pill.className)
   })
@@ -599,7 +616,7 @@ describe('Logs › Query Logs: the table', () => {
     render(<Logs token="t" sub="Query Logs" />)
     await screen.findByLabelText('App Name')
     await user.click(screen.getByRole('button', { name: 'Query' }))
-    await screen.findByText('github.com')
+    await screen.findByTitle('github.com')
 
     await user.click(screen.getByRole('button', { name: 'Last' }))
 
@@ -725,7 +742,7 @@ describe('Logs: changing the cluster node', () => {
     vi.spyOn(api, 'listLogFiles').mockResolvedValue({ kind: 'ok', data: FILES })
     const text = vi.spyOn(api, 'downloadLogText').mockResolvedValue('[2026-08-26] Logging started.')
     render(<Logs token="t" sub="View Logs" nodes={NODES} clusterInitialised />)
-    await user.click(await screen.findByText('2026-08-26'))
+    await user.click(await fileButton('2026-08-26'))
     await screen.findByText('[2026-08-26] Logging started.')
 
     await pickB(user)
@@ -738,13 +755,13 @@ describe('Logs: changing the cluster node', () => {
     const list = vi.spyOn(api, 'listLogFiles').mockResolvedValue({ kind: 'ok', data: FILES })
     vi.spyOn(api, 'downloadLogText').mockResolvedValue('[2026-08-26] Logging started.')
     render(<Logs token="t" sub="View Logs" nodes={NODES} clusterInitialised />)
-    await user.click(await screen.findByText('2026-08-26'))
+    await user.click(await fileButton('2026-08-26'))
     await screen.findByText('[2026-08-26] Logging started.')
 
     list.mockResolvedValue({ kind: 'ok', data: [{ fileName: '2026-08-20', size: '1 KB' }] })
     await pickB(user)
 
-    await screen.findByText('2026-08-20')
+    await fileButton('2026-08-20')
     expect(screen.queryByText('[2026-08-26] Logging started.')).not.toBeInTheDocument()
   })
 
@@ -757,7 +774,7 @@ describe('Logs: changing the cluster node', () => {
     render(<Logs token="t" sub="Query Logs" nodes={NODES} clusterInitialised />)
     await screen.findByLabelText('App Name')
     await user.click(screen.getByRole('button', { name: 'Query' }))
-    await screen.findByText('github.com')
+    await screen.findByTitle('github.com')
 
     await pickB(user)
 
