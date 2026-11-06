@@ -54,8 +54,15 @@ function mock(answer = profile('Local'), other: (path: string) => unknown = () =
 }
 
 async function loaded() {
-  // The trail is drawn once the profile has arrived, on every tab.
+  // The trail is drawn once the profile has arrived.
   await screen.findByRole('navigation', { name: 'Breadcrumb' })
+}
+
+/* A value on the header's line, found by the label a screen reader says before it
+   (Username, Type and 2FA Status: the dialog's read-only fields). */
+function headerFact(label: string) {
+  const term = screen.getByText(label, { selector: 'dt' })
+  return term.nextElementSibling as HTMLElement
 }
 
 describe('My Profile: the form', () => {
@@ -63,10 +70,11 @@ describe('My Profile: the form', () => {
     const spy = mock()
     render(<Profile token="t" />)
     await loaded()
-    expect(screen.getByLabelText('Type')).toHaveTextContent('Local')
+    expect(headerFact('Type')).toHaveTextContent('Local')
     expect(screen.getByLabelText('Display Name')).toBeEnabled()
-    expect(screen.getByLabelText('Username')).toHaveValue('admin')
-    expect(screen.getByLabelText('Username')).toBeDisabled()
+    // Username and Type are the header's now, not fields of the form.
+    expect(headerFact('Username')).toHaveTextContent('admin')
+    expect(screen.queryByRole('textbox', { name: 'Username' })).not.toBeInTheDocument()
     // index.html:3734-3738: the range and the default beside the field.
     expect(screen.getByText('seconds (valid range 0-604800; default 1800; set 0 to disable)')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Save' }))
@@ -78,7 +86,7 @@ describe('My Profile: the form', () => {
     const spy = mock(profile('RemoteSSO'))
     render(<Profile token="t" />)
     await loaded()
-    expect(screen.getByLabelText('Type')).toHaveTextContent('Remote/SSO')
+    expect(headerFact('Type')).toHaveTextContent('Remote/SSO')
     expect(screen.getByLabelText('Display Name')).toBeDisabled()
     expect(screen.getByTestId('totp-status')).toHaveTextContent('SSO Managed')
     await userEvent.click(screen.getByRole('button', { name: 'Save' }))
@@ -90,7 +98,7 @@ describe('My Profile: the form', () => {
     const spy = mock(profile('RemoteLDAP', { totpEnabled: true }))
     render(<Profile token="t" />)
     await loaded()
-    expect(screen.getByLabelText('Type')).toHaveTextContent('Remote/LDAP')
+    expect(headerFact('Type')).toHaveTextContent('Remote/LDAP')
     expect(screen.getByLabelText('Display Name')).toBeDisabled()
     expect(screen.getByTestId('totp-status')).toHaveTextContent('Enabled')
     await userEvent.click(screen.getByRole('button', { name: 'Save' }))
@@ -102,7 +110,7 @@ describe('My Profile: the form', () => {
     mock(profile('Future', { isSsoUser: true }))
     render(<Profile token="t" />)
     await loaded()
-    expect(screen.getByLabelText('Type')).toHaveTextContent('Future')
+    expect(headerFact('Type')).toHaveTextContent('Future')
     expect(screen.getByLabelText('Display Name')).toBeEnabled()
     expect(screen.getByTestId('totp-status')).toHaveTextContent('Disabled')
   })
@@ -174,7 +182,7 @@ describe('My Profile: the form', () => {
   })
 })
 
-describe('My Profile: the header, the account panel and the tabs', () => {
+describe('My Profile: the header, the panels and the filter', () => {
   it('the header is the user: name, username and type', async () => {
     mock()
     render(<Profile token="t" />)
@@ -182,6 +190,22 @@ describe('My Profile: the header, the account panel and the tabs', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Administrator' })).toBeInTheDocument()
     const crumb = screen.getByRole('navigation', { name: 'Breadcrumb' })
     expect(within(crumb).getByText('My Profile')).toBeInTheDocument()
+    expect(headerFact('Username')).toHaveTextContent('admin')
+    expect(headerFact('Type')).toHaveTextContent('Local')
+    expect(headerFact('2FA Status')).toHaveTextContent('2FA Disabled')
+  })
+
+  it('is one page: no tabs, and every block in view at once', async () => {
+    mock()
+    render(<Profile token="t" />)
+    await loaded()
+    expect(screen.queryByRole('navigation', { name: 'Profile sections' })).not.toBeInTheDocument()
+    for (const h of ['Profile', 'Security', 'Active Sessions', 'Account', 'Theme']) {
+      expect(screen.getByRole('heading', { level: 2, name: h })).toBeInTheDocument()
+    }
+    expect(screen.getByLabelText('Display Name')).toBeInTheDocument()
+    expect(screen.getByRole('table')).toBeInTheDocument()
+    expect(screen.getByRole('radiogroup', { name: 'Theme' })).toBeInTheDocument()
   })
 
   it('Member Of lists the groups, and says No Group Found for none', async () => {
@@ -211,7 +235,7 @@ describe('My Profile: the header, the account panel and the tabs', () => {
 
   it('a session type narrows the table, says so in the foot, and goes in the address bar', async () => {
     mock()
-    render(<Profile token="t" sub="Sessions" />)
+    render(<Profile token="t" />)
     await loaded()
     expect(screen.getByText('Total Sessions: 3')).toBeInTheDocument()
     const filter = screen.getByRole('group', { name: 'Session type' })
@@ -227,9 +251,9 @@ describe('My Profile: the header, the account panel and the tabs', () => {
   })
 
   it('a type in the address bar is read on arrival and dropped on leaving', async () => {
-    window.history.replaceState(null, '', '/profile/sessions/?type=ApiToken')
+    window.history.replaceState(null, '', '/profile/?type=ApiToken')
     mock()
-    const { unmount } = render(<Profile token="t" sub="Sessions" />)
+    const { unmount } = render(<Profile token="t" />)
     await loaded()
     expect(screen.getByText('1 of 3 sessions, API Token only')).toBeInTheDocument()
     unmount()
@@ -238,28 +262,30 @@ describe('My Profile: the header, the account panel and the tabs', () => {
 })
 
 describe('My Profile: the account actions', () => {
-  it('opens the account menu dialogs', async () => {
+  it('opens the account menu dialogs: Security\'s two, and the sessions table\'s Create API Token', async () => {
     mock()
     const onOpen = vi.fn()
-    render(<Profile token="t" sub="Security" onOpen={onOpen} />)
+    render(<Profile token="t" onOpen={onOpen} />)
     await loaded()
-    await userEvent.click(screen.getByRole('button', { name: 'Change Password' }))
-    await userEvent.click(screen.getByRole('button', { name: 'Configure 2FA' }))
+    const security = screen.getByRole('group', { name: 'Security' })
+    expect(within(security).getByText('2FA Status')).toBeInTheDocument()
+    await userEvent.click(within(security).getByRole('button', { name: 'Change Password' }))
+    await userEvent.click(within(security).getByRole('button', { name: 'Configure 2FA' }))
+    expect(within(security).queryByRole('button', { name: 'Create API Token' })).not.toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Create API Token' }))
     expect(onOpen.mock.calls.map((c) => c[0])).toEqual(['password', 'twofa', 'token'])
-    expect(screen.getByText('1 token')).toBeInTheDocument()
   })
 
   it('follows the menu rules: LDAP has no password to change, SSO no 2FA either (main.js:71-87)', async () => {
     mock(profile('RemoteLDAP'))
-    const { unmount } = render(<Profile token="t" sub="Security" />)
+    const { unmount } = render(<Profile token="t" />)
     await loaded()
     expect(screen.queryByRole('button', { name: 'Change Password' })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Configure 2FA' })).toBeInTheDocument()
     unmount()
     vi.restoreAllMocks()
     mock(profile('RemoteSSO'))
-    render(<Profile token="t" sub="Security" />)
+    render(<Profile token="t" />)
     await loaded()
     expect(screen.queryByRole('button', { name: 'Change Password' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Configure 2FA' })).not.toBeInTheDocument()
@@ -270,7 +296,7 @@ describe('My Profile: the account actions', () => {
 describe('My Profile: active sessions', () => {
   it('it lists the sessions, their total, the current one and the types', async () => {
     mock()
-    render(<Profile token="t" sub="Sessions" />)
+    render(<Profile token="t" />)
     await loaded()
     expect(screen.getByText('Total Sessions: 3')).toBeInTheDocument()
     const table = screen.getByRole('table')
@@ -286,7 +312,7 @@ describe('My Profile: active sessions', () => {
 
   it('Details opens the whole user agent under its row', async () => {
     mock()
-    render(<Profile token="t" sub="Sessions" />)
+    render(<Profile token="t" />)
     await loaded()
     const details = screen.getAllByRole('button', { name: 'Details' })[1]
     expect(details).toHaveAttribute('aria-expanded', 'false')
@@ -297,7 +323,7 @@ describe('My Profile: active sessions', () => {
 
   it('it asks for confirmation with the literal text before deleting', async () => {
     const spy = mock()
-    render(<Profile token="t" sub="Sessions" />)
+    render(<Profile token="t" />)
     await loaded()
     await userEvent.click(screen.getAllByRole('button', { name: 'Delete Session' })[1])
     expect(screen.getByText('Are you sure you want to delete the session [bbb222] ?')).toBeInTheDocument()
@@ -306,7 +332,7 @@ describe('My Profile: active sessions', () => {
 
   it('an API token is deleted with the primary node, empty on a standalone server (auth.js:835-838)', async () => {
     const spy = mock()
-    render(<Profile token="t" sub="Sessions" />)
+    render(<Profile token="t" />)
     await loaded()
     await userEvent.click(screen.getAllByRole('button', { name: 'Delete Session' })[1])
     const dialog = screen.getByRole('dialog')
@@ -326,7 +352,7 @@ describe('My Profile: active sessions', () => {
     render(
       <Profile
         token="t"
-        sub="Sessions"
+       
         clusterInitialised
         nodes={[{ name: 'ns2.test', type: 'Secondary' }, { name: 'ns1.test', type: 'Primary' }] as never}
       />,
@@ -351,7 +377,7 @@ describe('My Profile: active sessions', () => {
     mock(profile('Local'), (path) =>
       path === 'user/session/delete' ? { kind: 'error' as const, message: 'No such active session was found' } : ok(),
     )
-    render(<Profile token="t" sub="Sessions" />)
+    render(<Profile token="t" />)
     await loaded()
     await userEvent.click(screen.getAllByRole('button', { name: 'Delete Session' })[1])
     await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Delete Session' }))
@@ -366,7 +392,7 @@ describe('My Profile: the theme', () => {
     const setChoice = vi.fn()
     render(
       <ThemeContext.Provider value={{ choice: 'dark', resolved: 'dark', setChoice }}>
-        <Profile token="t" sub="Theme" />
+        <Profile token="t" />
       </ThemeContext.Provider>,
     )
     await loaded()
@@ -381,7 +407,7 @@ describe('My Profile: the theme', () => {
     mock()
     render(
       <ThemeContext.Provider value={{ choice: 'amber', resolved: 'dark', setChoice: () => {} }}>
-        <Profile token="t" sub="Theme" />
+        <Profile token="t" />
       </ThemeContext.Provider>,
     )
     await loaded()

@@ -383,7 +383,6 @@ const ACCESSIBLE_NAMES = new Set([
   'Logs sections',
   'Settings sections',
   'Response sections',
-  'Profile sections',
   'Entries by response type',
   'Entries by RCODE',
 ])

@@ -1,7 +1,7 @@
 /*
-My Profile as a page (deviation 21): the user as the header, the cards, two blocks
-side by side (the dialog's form and the account's actions), the sessions table and
-the theme. Every value is a token.
+My Profile as one page (deviation 21): the user as the header, then two columns,
+the sessions table in the main one and four compact panels stacked in the side
+one. Every value is a token.
 */
 
 .page {
@@ -10,10 +10,23 @@ the theme. Every value is a token.
   gap: var(--gap-block);
 }
 
-/* The header and the cards row carry their own bottom margin; the page's gap
-   replaces it, so every block sits `--gap-block` from the next. */
+/* The header carries its own bottom margin; the page's gap replaces it, so every
+   block sits `--gap-block` from the next. */
 .page > div,
 .identityHead > div:first-child { margin-bottom: 0; }
+
+/* Read by a screen reader, not drawn: the header's labels and the theme radios. */
+.hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
 
 /* THE USER IS THE HEADER: the account menu's initial, larger, before the name. */
 .identity { display: flex; align-items: flex-start; gap: var(--s-10); min-width: 0; }
@@ -34,58 +47,82 @@ the theme. Every value is a token.
   letter-spacing: -0.02em;
 }
 
-.username { font-size: var(--t-4); color: var(--mute); align-self: center; }
+/* Username, Type and 2FA on the title's line: values, their labels hidden. */
+.facts { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3) var(--s-5); margin: 0; }
+.facts > div { display: flex; align-items: center; }
+.facts dd { margin: 0; display: flex; }
+.username { font-size: var(--t-4); color: var(--mute); }
 
-/* A login in the Account panel: how long ago, then the date and the address. */
-.ago { font: 600 var(--t-5)/1.3 var(--font-ui); color: var(--ink); }
-.when { font-size: var(--t-3); color: var(--mute); font-variant-numeric: tabular-nums; }
-.addr { font-family: var(--font-mono); color: var(--ink); }
-
-/* Two blocks side by side on a wide screen, the form the wider. */
-.columns {
+/*
+THE TWO COLUMNS. Written in the order they stack (Profile, Security, Sessions,
+Account, Theme); on a wide screen the sessions take the main column across every
+row and the four panels fill the side one. The last row takes what is left over,
+so a table taller than the panels does not pull them apart.
+*/
+.layout {
   display: grid;
-  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  grid-template-rows: auto auto auto 1fr;
   gap: var(--s-11);
   align-items: start;
 }
+.profileArea { grid-column: 2; grid-row: 1; }
+.securityArea { grid-column: 2; grid-row: 2; }
+.accountArea { grid-column: 2; grid-row: 3; }
+.themeArea { grid-column: 2; grid-row: 4; }
+.sessionsArea { grid-column: 1; grid-row: 1 / -1; min-width: 0; }
 
 @media (max-width: 1180px) {
-  .columns { grid-template-columns: minmax(0, 1fr); }
+  .layout { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; }
+  .profileArea,
+  .securityArea,
+  .accountArea,
+  .themeArea,
+  .sessionsArea { grid-column: auto; grid-row: auto; }
 }
 
-.form { padding: var(--s-8) var(--s-10) var(--s-10); }
-.inline { display: flex; align-items: center; flex-wrap: wrap; gap: var(--s-6); }
+/* PROFILE: the labels over the fields, the column being narrow. */
+.form { display: flex; flex-direction: column; gap: var(--s-8); padding: var(--s-8) var(--s-9) var(--s-9); }
+.timeout { display: flex; align-items: center; flex-wrap: wrap; gap: var(--s-3) var(--s-6); }
 .num { width: var(--ctrl-num); }
-.typeValue { display: block; padding: var(--s-3) 0; font-weight: 650; color: var(--ink); }
-.formActions { display: flex; justify-content: flex-end; margin-top: var(--s-8); }
+.formActions { display: flex; justify-content: flex-end; }
 
-/* The account's actions: one line each, the action at the end. */
-.security { list-style: none; margin: 0; padding: 0; }
-.security li {
+/* SECURITY: one line each, the name, its state, the action at the end. */
+.lines { list-style: none; margin: 0; padding: 0; }
+.lines li {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   flex-wrap: wrap;
-  gap: var(--s-5) var(--s-8);
-  padding: var(--s-9) var(--s-10);
+  gap: var(--s-4) var(--s-6);
+  padding: var(--s-6) var(--s-9);
   border-bottom: 1px solid var(--line2);
 }
-.security li:last-child { border-bottom: 0; }
-.secText { display: flex; align-items: center; flex-wrap: wrap; gap: var(--s-6); min-width: 0; }
-.secName { font-size: var(--t-4); font-weight: 600; color: var(--ink); }
-.secValue { font-size: var(--t-4); color: var(--mute); font-variant-numeric: tabular-nums; }
+.lines li:last-child { border-bottom: 0; }
+.lines li > button { margin-left: auto; }
+.lineName { font-size: var(--t-4); font-weight: 600; color: var(--ink); }
+
+/* ACCOUNT: the groups, then each login on its line. */
+.account { display: flex; flex-direction: column; gap: var(--s-7); margin: 0; padding: var(--s-7) var(--s-9) var(--s-8); }
+.account dt { font-size: var(--t-2); color: var(--mute); font-weight: 550; }
+.account dd { margin: var(--s-2) 0 0; }
+.groupTags { list-style: none; display: flex; flex-wrap: wrap; gap: var(--s-3); margin: 0; padding: 0; }
+.quiet { color: var(--mute); font-size: var(--t-4); }
+.login { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--s-3); font-size: var(--t-4); color: var(--ink); }
+.ago { font-weight: 600; color: var(--ink); }
+.dot { color: var(--faint); margin-right: var(--s-3); }
+.when { color: var(--mute); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.addr { font-family: var(--font-mono); font-size: var(--t-3); color: var(--ink); }
 
 /* THE SESSIONS TABLE: one line per session. */
 .tableTitle { margin: 0; font-size: var(--t-5); font-weight: 650; color: var(--ink); }
 
-.session { display: inline-flex; align-items: center; flex-wrap: wrap; gap: var(--s-3) var(--s-5); min-width: 0; }
-/* On a wide table each session is one line: the user agent is the column that gives. */
-@media (min-width: 1181px) {
-  .session { flex-wrap: nowrap; white-space: nowrap; }
-  .seenCell { white-space: nowrap; }
-}
+/* In two thirds of the page each session is one row of two lines, the type and
+   the name over the token, as the date is over its age, so the table fits its
+   column instead of stacking. The user agent is the column that gives. */
+.session { display: flex; flex-direction: column; gap: var(--s-1); min-width: 0; }
+.sessionLine { display: flex; align-items: baseline; gap: var(--s-5); white-space: nowrap; }
 
-/* The type as a swatch and its word, the colour the card's chip has. */
+/* The type as a swatch and its word, in its series colour. */
 .kind {
   display: inline-flex;
   align-items: center;
@@ -97,16 +134,16 @@ the theme. Every value is a token.
 }
 .kind::before { content: ''; width: 8px; height: 8px; border-radius: 2px; background: var(--sw); flex: none; }
 
-.tokenName { font-weight: 600; color: var(--ink); overflow-wrap: break-word; min-width: 0; }
+.tokenName { font-weight: 600; color: var(--ink); }
 .partial { font: var(--t-3)/1.4 var(--font-mono); color: var(--mute); }
 .current { font-size: var(--t-3); font-weight: 600; color: var(--acc-ink); }
 
 .seen { font: var(--t-4)/1.4 var(--font-mono); color: var(--ink); white-space: nowrap; }
-.age { font-size: var(--t-2); color: var(--faint); white-space: nowrap; }
+.age { display: block; font-size: var(--t-2); color: var(--faint); white-space: nowrap; }
 .addrCell { font: var(--t-4)/1.4 var(--font-mono); color: var(--ink); white-space: nowrap; }
 
 /* The user agent cut to the line; the row's Details holds it whole. */
-.agentCell { max-width: 0; width: 34%; }
+.agentCell { max-width: 0; width: 30%; }
 .agent {
   display: block;
   overflow: hidden;
@@ -118,75 +155,53 @@ the theme. Every value is a token.
 
 .openRow > td { border-bottom-color: transparent; }
 .detailRow > td { padding-top: 0; background: var(--pan2); }
+/* When the table stacks, the details take the whole width of the block, not the
+   width of one cell (the stacked cell rule weighs two classes and a selector). */
+.detailRow > .detailCell[colspan] { flex-basis: 100%; }
 .detail { display: flex; flex-wrap: wrap; gap: var(--s-5) var(--s-12); margin: var(--s-3) 0 0; }
 .detail dt { font-size: var(--t-2); color: var(--faint); }
 .detail dd { margin: var(--s-1) 0 0; font-size: var(--t-3); color: var(--ink); }
 .detail .wide { flex: 1 1 100%; }
 .agentFull { overflow-wrap: break-word; }
 
-/* THE THEME: three options, each with a sketch of the theme it picks. */
+/* THE THEME: one bordered strip of three lines, the picked one tinted and ticked. */
 .themes {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--s-10);
-  padding: var(--s-10);
-}
-
-@media (max-width: 720px) {
-  .themes { grid-template-columns: minmax(0, 1fr); }
+  display: flex;
+  flex-direction: column;
+  margin: var(--s-7) var(--s-9) var(--s-8);
+  border: 1px solid var(--line);
+  border-radius: var(--r-3);
+  overflow: hidden;
 }
 
 .theme {
+  position: relative;
   display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: var(--s-6);
-  padding: var(--s-6);
-  border: 1px solid var(--line);
-  border-radius: var(--r-3);
-  background: var(--pan);
+  padding: var(--s-5) var(--s-7);
+  border-bottom: 1px solid var(--line2);
   cursor: pointer;
-  transition: border-color var(--t-fast), background var(--t-fast);
+  transition: background var(--t-fast);
 }
-.theme:hover { border-color: var(--line-hover); background: var(--hover); }
-.theme[data-checked] { border-color: var(--acc-ink); background: var(--acc-tint); }
-.theme:focus-within { outline: var(--focus); outline-offset: var(--focus-offset); }
+.theme:last-child { border-bottom: 0; }
+.theme:hover { background: var(--hover); }
+.theme[data-checked] { background: var(--acc-tint); }
+.theme:focus-within { outline: var(--focus); outline-offset: calc(-1 * var(--s-1)); }
 
-.themeLabel { display: inline-flex; align-items: center; gap: var(--s-5); font-size: var(--t-4); color: var(--ink); }
-.themeLabel input { accent-color: var(--acc); margin: 0; }
+.themeLabel { flex: 1; min-width: 0; font-size: var(--t-4); color: var(--ink); }
+.theme[data-checked] .themeLabel { font-weight: 600; }
+.tick { flex: none; color: var(--acc-ink); }
 
-.preview {
+/* The swatch: drawn inside its own `data-theme`, so these tokens are that theme's. */
+.swatch {
   display: flex;
-  height: calc(var(--s-12) * 3);
-  border-radius: var(--r-2);
-  overflow: hidden;
+  flex: none;
+  width: calc(var(--s-11) + var(--s-3));
+  height: calc(var(--s-10) + var(--s-1));
   border: 1px solid var(--line);
+  border-radius: var(--r-1);
+  overflow: hidden;
 }
-
-/* Drawn inside its own `data-theme`: these tokens are that theme's. */
-.sketch { flex: 1; display: flex; background: var(--bg); min-width: 0; }
-.sketchSide {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-2);
-  width: 28%;
-  padding: var(--s-5) var(--s-3);
-  background: var(--side);
-  border-right: 1px solid var(--line);
-}
-.sketchSide i { display: block; height: var(--s-2); border-radius: var(--r-1); background: var(--line-hover); }
-.sketchSide i:first-child { background: var(--acc); width: 70%; }
-.sketchMain { flex: 1; display: flex; flex-direction: column; gap: var(--s-3); padding: var(--s-5); min-width: 0; }
-.sketchTitle { display: block; height: var(--s-3); width: 45%; border-radius: var(--r-1); background: var(--ink); }
-.sketchCards { display: flex; gap: var(--s-3); flex: 1; }
-.sketchCards i { flex: 1; border-radius: var(--r-1); background: var(--pan); border: 1px solid var(--line); }
-.sketchAcc { display: block; height: var(--s-3); width: 30%; border-radius: var(--r-1); background: var(--acc); }
-
-/* The Security tab: its one panel at the width of a form, not the whole page. */
-.single { max-width: 760px; }
-
-/* The Account panel beside the Profile form: the groups, then the two logins. */
-.account { display: flex; flex-direction: column; gap: var(--s-8); margin: 0; padding: var(--s-8) var(--s-9); }
-.account dt { font-size: var(--t-3); color: var(--mute); }
-.account dd { margin: var(--s-2) 0 0; display: flex; flex-direction: column; gap: var(--s-1); }
-.groupTags { list-style: none; display: flex; flex-wrap: wrap; gap: var(--s-3); margin: 0; padding: 0; }
-.quiet { color: var(--mute); font-size: var(--t-4); }
+.swatchHalf { flex: 1; display: flex; align-items: flex-end; background: var(--bg); min-width: 0; }
+.swatchHalf i { display: block; width: 100%; height: 40%; background: var(--side); border-top: 1px solid var(--line); }

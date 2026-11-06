@@ -1,4 +1,5 @@
 import { Panel } from '../../ui/Panel'
+import { Icon } from '../../ui/Icon'
 import { useTheme } from '../../theme/useTheme'
 import type { OfferedTheme } from '../../theme/theme'
 import styles from './Profile.module.css'
@@ -10,10 +11,12 @@ and storing its theme the moment it is picked, with no Save, exactly as the dial
 does (`useTheme().setChoice`). A stored `amber` checks none, as there. The account
 menu's `Change Theme` is still there and opens the dialog.
 
-Each option shows the theme it picks: a small sketch of the console drawn inside
-an element that carries that theme's `data-theme`, so its colours are the theme's
-own tokens and change with them. System is half light and half dark. The sketch is
-decoration (`aria-hidden`); the radio and its label say the choice.
+A compact choice for the page's side column: one bordered strip of three lines,
+the picked one tinted and ticked. Each carries a swatch of the theme it picks,
+drawn inside an element that has that theme's `data-theme`, so its colours are the
+theme's own tokens; System is half light and half dark. The swatch and the tick are
+decoration (`aria-hidden`); the radio and its label say the choice. The radio is
+kept, visually hidden, so the arrow keys move through the group as in the dialog.
 */
 
 const OPTIONS: { value: OfferedTheme; label: string }[] = [
@@ -22,55 +25,43 @@ const OPTIONS: { value: OfferedTheme; label: string }[] = [
   { value: 'dark', label: 'Dark Theme' },
 ]
 
-function Sketch({ theme }: { theme: 'light' | 'dark' }) {
+function Swatch({ theme }: { theme: 'light' | 'dark' }) {
   return (
-    <span className={styles.sketch} data-theme={theme}>
-      <span className={styles.sketchSide}>
-        <i />
-        <i />
-        <i />
-      </span>
-      <span className={styles.sketchMain}>
-        <i className={styles.sketchTitle} />
-        <span className={styles.sketchCards}>
-          <i />
-          <i />
-        </span>
-        <i className={styles.sketchAcc} />
-      </span>
+    <span className={styles.swatchHalf} data-theme={theme}>
+      <i />
     </span>
   )
 }
 
-export function ThemeChoice() {
+export function ThemeChoice({ className }: { className?: string }) {
   const { choice, setChoice } = useTheme()
   const checked = choice === 'amber' ? '' : (choice ?? 'system')
 
   return (
-    <Panel title="Theme">
+    <Panel title="Theme" className={className}>
       <div className={styles.themes} role="radiogroup" aria-label="Theme">
         {OPTIONS.map((o) => (
           <label key={o.value} className={styles.theme} data-checked={checked === o.value || undefined}>
-            <span className={styles.preview} aria-hidden="true">
+            <input
+              type="radio"
+              className={styles.hidden}
+              name="rdProfileTheme"
+              value={o.value}
+              checked={checked === o.value}
+              onChange={() => setChoice(o.value)}
+            />
+            <span className={styles.swatch} aria-hidden="true">
               {o.value === 'system' ? (
                 <>
-                  <Sketch theme="light" />
-                  <Sketch theme="dark" />
+                  <Swatch theme="light" />
+                  <Swatch theme="dark" />
                 </>
               ) : (
-                <Sketch theme={o.value} />
+                <Swatch theme={o.value} />
               )}
             </span>
-            <span className={styles.themeLabel}>
-              <input
-                type="radio"
-                name="rdProfileTheme"
-                value={o.value}
-                checked={checked === o.value}
-                onChange={() => setChoice(o.value)}
-              />
-              {o.label}
-            </span>
+            <span className={styles.themeLabel}>{o.label}</span>
+            {checked === o.value && <Icon name="check" size={14} className={styles.tick} />}
           </label>
         ))}
       </div>
