@@ -100,6 +100,8 @@ notices do not need it either, because the dialog itself is 880 at most.
   composes: helpPanel from './text.module.css';
   padding: 0 var(--s-9);
 }
+/* A paragraph after the notes is not one more note: a breath before it (2026-11-06). */
+.notices + .plain { margin-top: var(--s-7); }
 
 .link { font-size: var(--t-3); padding: var(--s-5) var(--s-9) 0 var(--s-9); }
 .link a { color: var(--acc-ink); }

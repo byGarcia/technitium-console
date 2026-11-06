@@ -155,7 +155,7 @@ export function TextRow({
             onChange={(e) => onChange(e.target.value)}
             style={
               width === 'wide'
-                ? { width: '100%', maxWidth: 420 }
+                ? { width: '100%', maxWidth: 560 }
                 : { width: width ?? 'var(--ctrl-num)' }
             }
           />

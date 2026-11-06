@@ -91,7 +91,7 @@ A one-line field gains nothing from being 640 px wide.
 
 The control column is `1fr`, so it eats everything left over, and that did not
 show while every dialog was 560 wide. Once "User Details" got the 880 its sessions
-table asks for, the box for typing "admin" grew to 640 px. The cap is 420, which
+table asks for, the box for typing "admin" grew to 640 px. The cap was 420 (560 since 2026-11-06, as the text areas), which
 is what the page forms were already using in practice: measured across the
 console's 46 fields, the median is 174 px and the maximum 420.
 
@@ -101,8 +101,12 @@ it either: it puts it in a `col-sm-7`. What stays outside is the `textarea` (IP
 lists, which do use the width) and tables that are NOT a row's control, like the
 sessions one, which needs everything it can get.
 */
+/* Since 2026-11-06 the text fields and lists stop where the text areas do (560 px):
+   a 420 px input under a 560 px area left two right edges in the same column. */
 .mrow input:not([type='checkbox']):not([type='radio']),
-.mrow select,
+.mrow select {
+  max-width: 560px;
+}
 .mrow table {
   max-width: 420px;
 }
