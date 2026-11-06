@@ -45,7 +45,12 @@ export function compileNameFilter(
     return { domain, regex: null }
   }
 
-  let pattern = domain.replace(/\./g, '\\.')
+  /* OURS (2026-11-06): every other regular expression character is taken
+     literally. Upstream escapes only the dot, so `(a+)+b` was an expression; with
+     the filter now arriving from a link (`?rname=`, deviation 13) that let a link
+     hang the reader's tab on a big zone. No DNS name holds any of these
+     characters, so a name that matched before still matches. */
+  let pattern = domain.replace(/[\\^$+()[\]{}|.]/g, '\\$&')
   pattern = pattern.replace(/\*/g, '.*')
   pattern = pattern.replace(/\?/g, '.')
 

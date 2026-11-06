@@ -914,7 +914,10 @@ contract and SECURITY.md.
     still walks between the list and the zones. `lib/url-state.ts`. A zone keeps its
     records page and filters the same way (`?rpage=`, `?rname=`, `?rtype=`); they
     belong to that zone, so opening another one or going back to the list takes them
-    out (`zone-url.ts`).
+    out (`zone-url.ts`). Because a link can now carry a records filter, the name
+    filter takes only `*` and `?` as wildcards and every other regular expression
+    character literally (`filter.ts`); upstream escapes only the dot, which let a
+    crafted `?rname=` hang the tab. No DNS name holds those characters.
 14. **"Delete Zones" waits for a selection** (Adrián's decision, 2026-11-05).
     Upstream keeps the bulk delete button enabled and answers a click with nothing
     ticked with an `alert()`, "Please select one or more zones to delete."
