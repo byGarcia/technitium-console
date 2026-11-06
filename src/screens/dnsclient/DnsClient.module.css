@@ -1,42 +1,41 @@
 /*
-The query bar. `align-items: flex-end` is what lines the buttons up with the
-bottom edge of the fields; before it was achieved with a `marginBottom: 1` put by
-hand on each button, which is the symptom of a row that does not align.
+THE QUERY BAR (deviation 18): one card, two lines. The first says WHAT is asked
+(server, domain, type, transport), the second HOW (subnet, validation) and ends
+with the node and the two verbs. `align-items: flex-end` lines every control up
+with the bottom edge of the fields beside it, the labels above.
 */
-.flt {
+.bar {
   display: flex;
-  align-items: flex-end;
+  flex-direction: column;
   gap: var(--s-8);
-  padding: var(--s-9);
+  padding: var(--s-9) var(--s-10);
   background: var(--pan);
   border: 1px solid var(--line);
   border-radius: var(--r-4);
   box-shadow: var(--e-1), var(--edge);
   margin-bottom: var(--gap-block);
-  flex-wrap: wrap;
 }
 
+.ask,
+.how { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--s-8); }
 
-.width { flex: 1 1 240px; min-width: 240px; }
-.medium { flex: 1 1 200px; min-width: 200px; }
-.short { width: 120px; }
-.ecs { width: 176px; }
+.server { flex: 3 1 260px; min-width: 0; }
+.domain { flex: 4 1 260px; min-width: 0; }
+.short { flex: 0 0 120px; }
+.ecs { flex: 0 1 200px; min-width: 160px; }
 
-/* The checkbox lines up with the fields' BASELINE, not with their label: hence
-   it carries the field's height and not an invented margin. */
-/* `.chk` went in the redesign: a third name for the settings checkbox, and the only
-   place in the console where it measured 34 px high. It uses `ui/Check`. */
-.panel { margin-bottom: var(--s-9); }
+/* The checkbox stands on the fields' baseline: it carries their height. */
+.check { display: flex; align-items: center; min-height: var(--field-height); }
 
-.meta { composes: annotationQuiet from '../../ui/text.module.css'; }
-/*
-"Raw Responses (N)": the second panel of upstream's accordion, collapsed. Each
-browser draws its own `<details>` triangle, so it is replaced with the icon set's
-chevron, the same treatment as in Apps.
-*/
-.raw { margin-top: var(--s-8); border-top: 1px solid var(--line); padding-top: var(--s-8); }
-.raw > * + * { margin-top: var(--s-7); }
+/* The node and the verbs, at the line's end; on a phone they take a line of their own. */
+.verbs { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--s-5); margin-left: auto; }
 
+@media (max-width: 560px) {
+  .short { flex: 1 1 120px; }
+  .ecs { flex: 1 1 100%; }
+  .verbs { margin-left: 0; width: 100%; }
+  .verbs > button { flex: 1 1 0; justify-content: center; }
+}
 
 /* The server field and the arrow that opens its list, side by side. The field
    takes the width; the arrow keeps its own. */
@@ -44,3 +43,9 @@ chevron, the same treatment as in Apps.
 .combo > input { flex: 1 1 auto; min-width: 0; }
 /* The arrow is as tall as the field beside it, and square. */
 .combo > div > button[aria-haspopup] { min-height: var(--field-height); min-width: var(--field-height); }
+
+/* The empty state's line, with the section's own icon before it. */
+.hint { display: inline-flex; align-items: center; gap: var(--s-4); color: var(--mute); }
+
+/* The answer: cards, sections, raw responses, in that order. */
+.answer { min-width: 0; }

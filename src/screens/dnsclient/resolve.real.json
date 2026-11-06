@@ -1,0 +1,1625 @@
+{
+ "_note": "Real dnsClient/resolve envelopes from technitium/dns-server:15.6.1 on 2026-11-06 (forwarders 1.1.1.1, 1.0.0.1). Keys: the query each one answers.",
+ "example.com A dnssec": {
+  "response": {
+   "result": {
+    "Metadata": {
+     "NameServer": "ns1.example.net (127.0.0.1)",
+     "Protocol": "Udp",
+     "DatagramSize": "179 bytes",
+     "RoundTripTime": "310.01 ms"
+    },
+    "EDNS": {
+     "UdpPayloadSize": 1232,
+     "ExtendedRCODE": "NoError",
+     "Version": 0,
+     "Flags": "DNSSEC_OK",
+     "Options": []
+    },
+    "Identifier": 0,
+    "IsResponse": true,
+    "OPCODE": "StandardQuery",
+    "AuthoritativeAnswer": false,
+    "Truncation": false,
+    "RecursionDesired": true,
+    "RecursionAvailable": true,
+    "Z": 0,
+    "AuthenticData": true,
+    "CheckingDisabled": true,
+    "RCODE": "NoError",
+    "QDCOUNT": 1,
+    "ANCOUNT": 3,
+    "NSCOUNT": 0,
+    "ARCOUNT": 1,
+    "Question": [
+     {
+      "Name": "example.com",
+      "Type": "A",
+      "Class": "IN"
+     }
+    ],
+    "Answer": [
+     {
+      "Name": "example.com",
+      "Type": "A",
+      "Class": "IN",
+      "TTL": "264 (4m24s)",
+      "RDLENGTH": "4 bytes",
+      "RDATA": {
+       "IPAddress": "172.66.147.243"
+      },
+      "DnssecStatus": "Secure"
+     },
+     {
+      "Name": "example.com",
+      "Type": "A",
+      "Class": "IN",
+      "TTL": "264 (4m24s)",
+      "RDLENGTH": "4 bytes",
+      "RDATA": {
+       "IPAddress": "104.20.23.154"
+      },
+      "DnssecStatus": "Secure"
+     },
+     {
+      "Name": "example.com",
+      "Type": "RRSIG",
+      "Class": "IN",
+      "TTL": "264 (4m24s)",
+      "RDLENGTH": "95 bytes",
+      "RDATA": {
+       "TypeCovered": "A",
+       "Algorithm": "ECDSAP256SHA256 (13)",
+       "Labels": 2,
+       "OriginalTtl": 300,
+       "SignatureExpiration": "2026-11-07T06:57:51Z",
+       "SignatureInception": "2026-11-05T04:57:51Z",
+       "KeyTag": 34505,
+       "SignersName": "example.com",
+       "Signature": "R2LHhyygwG7POluZV0JddU8TNGTrEl2sEipVIbhXW+OBL8JZ5db+uMw1J8+i/08PVzApEysrPbBI7yMEMPtzFw=="
+      },
+      "DnssecStatus": "Secure"
+     }
+    ],
+    "Authority": [],
+    "Additional": [
+     {
+      "Name": "",
+      "Type": "OPT",
+      "Class": "1232",
+      "TTL": "32768 (9h6m8s)",
+      "RDLENGTH": "0 bytes",
+      "RDATA": {
+       "Options": []
+      },
+      "DnssecStatus": "Indeterminate"
+     }
+    ]
+   },
+   "rawResponses": []
+  },
+  "server": "ns1.example.net",
+  "status": "ok"
+ },
+ "gmail.com MX": {
+  "response": {
+   "result": {
+    "Metadata": {
+     "NameServer": "ns1.example.net (127.0.0.1)",
+     "Protocol": "Udp",
+     "DatagramSize": "161 bytes",
+     "RoundTripTime": "65.18 ms"
+    },
+    "EDNS": {
+     "UdpPayloadSize": 1232,
+     "ExtendedRCODE": "NoError",
+     "Version": 0,
+     "Flags": "None",
+     "Options": []
+    },
+    "Identifier": 0,
+    "IsResponse": true,
+    "OPCODE": "StandardQuery",
+    "AuthoritativeAnswer": false,
+    "Truncation": false,
+    "RecursionDesired": true,
+    "RecursionAvailable": true,
+    "Z": 0,
+    "AuthenticData": false,
+    "CheckingDisabled": false,
+    "RCODE": "NoError",
+    "QDCOUNT": 1,
+    "ANCOUNT": 5,
+    "NSCOUNT": 0,
+    "ARCOUNT": 1,
+    "Question": [
+     {
+      "Name": "gmail.com",
+      "Type": "MX",
+      "Class": "IN"
+     }
+    ],
+    "Answer": [
+     {
+      "Name": "gmail.com",
+      "Type": "MX",
+      "Class": "IN",
+      "TTL": "2110 (35m10s)",
+      "RDLENGTH": "32 bytes",
+      "RDATA": {
+       "Preference": 30,
+       "Exchange": "alt3.gmail-smtp-in.l.google.com"
+      },
+      "DnssecStatus": "Disabled"
+     },
+     {
+      "Name": "gmail.com",
+      "Type": "MX",
+      "Class": "IN",
+      "TTL": "2110 (35m10s)",
+      "RDLENGTH": "9 bytes",
+      "RDATA": {
+       "Preference": 10,
+       "Exchange": "alt1.gmail-smtp-in.l.google.com"
+      },
+      "DnssecStatus": "Disabled"
+     },
+     {
+      "Name": "gmail.com",
+      "Type": "MX",
+      "Class": "IN",
+      "TTL": "2110 (35m10s)",
+      "RDLENGTH": "9 bytes",
+      "RDATA": {
+       "Preference": 20,
+       "Exchange": "alt2.gmail-smtp-in.l.google.com"
+      },
+      "DnssecStatus": "Disabled"
+     },
+     {
+      "Name": "gmail.com",
+      "Type": "MX",
+      "Class": "IN",
+      "TTL": "2110 (35m10s)",
+      "RDLENGTH": "9 bytes",
+      "RDATA": {
+       "Preference": 40,
+       "Exchange": "alt4.gmail-smtp-in.l.google.com"
+      },
+      "DnssecStatus": "Disabled"
+     },
+     {
+      "Name": "gmail.com",
+      "Type": "MX",
+      "Class": "IN",
+      "TTL": "2110 (35m10s)",
+      "RDLENGTH": "4 bytes",
+      "RDATA": {
+       "Preference": 5,
+       "Exchange": "gmail-smtp-in.l.google.com"
+      },
+      "DnssecStatus": "Disabled"
+     }
+    ],
+    "Authority": [],
+    "Additional": [
+     {
+      "Name": "",
+      "Type": "OPT",
+      "Class": "1232",
+      "TTL": "0 (0s)",
+      "RDLENGTH": "0 bytes",
+      "RDATA": {
+       "Options": []
+      },
+      "DnssecStatus": "Disabled"
+     }
+    ]
+   },
+   "rawResponses": []
+  },
+  "server": "ns1.example.net",
+  "status": "ok"
+ },
+ "doesnotexist-zzq12345.com A": {
+  "response": {
+   "result": {
+    "Metadata": {
+     "NameServer": "ns1.example.net (127.0.0.1)",
+     "Protocol": "Udp",
+     "DatagramSize": "127 bytes",
+     "RoundTripTime": "50.32 ms"
+    },
+    "EDNS": {
+     "UdpPayloadSize": 1232,
+     "ExtendedRCODE": "NxDomain",
+     "Version": 0,
+     "Flags": "None",
+     "Options": []
+    },
+    "Identifier": 0,
+    "IsResponse": true,
+    "OPCODE": "StandardQuery",
+    "AuthoritativeAnswer": false,
+    "Truncation": false,
+    "RecursionDesired": true,
+    "RecursionAvailable": true,
+    "Z": 0,
+    "AuthenticData": true,
+    "CheckingDisabled": false,
+    "RCODE": "NxDomain",
+    "QDCOUNT": 1,
+    "ANCOUNT": 0,
+    "NSCOUNT": 1,
+    "ARCOUNT": 1,
+    "Question": [
+     {
+      "Name": "doesnotexist-zzq12345.com",
+      "Type": "A",
+      "Class": "IN"
+     }
+    ],
+    "Answer": [],
+    "Authority": [
+     {
+      "Name": "com",
+      "Type": "SOA",
+      "Class": "IN",
+      "TTL": "900 (15m)",
+      "RDLENGTH": "61 bytes",
+      "RDATA": {
+       "PrimaryNameServer": "a.gtld-servers.net",
+       "ResponsiblePerson": "nstld@verisign-grs.com",
+       "Serial": 1793944726,
+       "Refresh": "1800 (30m)",
+       "Retry": "900 (15m)",
+       "Expire": "604800 (1w)",
+       "Minimum": "900 (15m)"
+      },
+      "DnssecStatus": "Disabled"
+     }
+    ],
+    "Additional": [
+     {
+      "Name": "",
+      "Type": "OPT",
+      "Class": "1232",
+      "TTL": "0 (0s)",
+      "RDLENGTH": "0 bytes",
+      "RDATA": {
+       "Options": []
+      },
+      "DnssecStatus": "Disabled"
+     }
+    ]
+   },
+   "rawResponses": []
+  },
+  "server": "ns1.example.net",
+  "status": "ok"
+ },
+ "example.org A recursive-resolver dnssec": {
+  "response": {
+   "result": {
+    "Metadata": {
+     "NameServer": "e.root-servers.net (192.203.230.10)",
+     "Protocol": "Udp",
+     "DatagramSize": "40 bytes",
+     "RoundTripTime": "1.29 ms"
+    },
+    "EDNS": {
+     "UdpPayloadSize": 1232,
+     "ExtendedRCODE": "Refused",
+     "Version": 0,
+     "Flags": "DNSSEC_OK",
+     "Options": []
+    },
+    "DnsClientExtendedErrors": [
+     {
+      "InfoCode": "NoReachableAuthority",
+      "ExtraText": "e.root-servers.net (192.203.230.10) returned RCODE=Refused for example.org. A IN"
+     },
+     {
+      "InfoCode": "NoReachableAuthority",
+      "ExtraText": "l.root-servers.net (199.7.83.42) returned RCODE=Refused for example.org. A IN"
+     },
+     {
+      "InfoCode": "NoReachableAuthority",
+      "ExtraText": "f.root-servers.net (192.5.5.241) returned RCODE=Refused for example.org. A IN"
+     },
+     {
+      "InfoCode": "NoReachableAuthority",
+      "ExtraText": "d.root-servers.net (199.7.91.13) returned RCODE=Refused for example.org. A IN"
+     },
+     {
+      "InfoCode": "NoReachableAuthority",
+      "ExtraText": "a.root-servers.net (198.41.0.4) returned RCODE=Refused for example.org. A IN"
+     },
+     {
+      "InfoCode": "NoReachableAuthority",
+      "ExtraText": "c.root-servers.net (192.33.4.12) returned RCODE=Refused for example.org. A IN"
+     },
+     {
+      "InfoCode": "NoReachableAuthority",
+      "ExtraText": "m.root-servers.net (202.12.27.33) returned RCODE=Refused for example.org. A IN"
+     },
+     {
+      "InfoCode": "NoReachableAuthority",
+      "ExtraText": "b.root-servers.net (170.247.170.2) returned RCODE=Refused for example.org. A IN"
+     }
+    ],
+    "Identifier": 52837,
+    "IsResponse": true,
+    "OPCODE": "StandardQuery",
+    "AuthoritativeAnswer": false,
+    "Truncation": false,
+    "RecursionDesired": false,
+    "RecursionAvailable": true,
+    "Z": 0,
+    "AuthenticData": false,
+    "CheckingDisabled": false,
+    "RCODE": "Refused",
+    "QDCOUNT": 1,
+    "ANCOUNT": 0,
+    "NSCOUNT": 0,
+    "ARCOUNT": 1,
+    "Question": [
+     {
+      "Name": "example.org",
+      "Type": "A",
+      "Class": "IN"
+     }
+    ],
+    "Answer": [],
+    "Authority": [],
+    "Additional": [
+     {
+      "Name": "",
+      "Type": "OPT",
+      "Class": "1232",
+      "TTL": "32768 (9h6m8s)",
+      "RDLENGTH": "0 bytes",
+      "RDATA": {
+       "Options": []
+      },
+      "DnssecStatus": "Indeterminate"
+     }
+    ]
+   },
+   "rawResponses": [
+    {
+     "Metadata": {
+      "NameServer": "b.root-servers.net (170.247.170.2)",
+      "Protocol": "Udp",
+      "DatagramSize": "32 bytes",
+      "RoundTripTime": "1.14 ms"
+     },
+     "EDNS": {
+      "UdpPayloadSize": 1232,
+      "ExtendedRCODE": "Refused",
+      "Version": 0,
+      "Flags": "DNSSEC_OK",
+      "Options": []
+     },
+     "DnsClientExtendedErrors": [
+      {
+       "InfoCode": "NoReachableAuthority",
+       "ExtraText": "b.root-servers.net (170.247.170.2) returned RCODE=Refused for example.org. A IN"
+      }
+     ],
+     "Identifier": 35086,
+     "IsResponse": true,
+     "OPCODE": "StandardQuery",
+     "AuthoritativeAnswer": false,
+     "Truncation": false,
+     "RecursionDesired": false,
+     "RecursionAvailable": true,
+     "Z": 0,
+     "AuthenticData": false,
+     "CheckingDisabled": false,
+     "RCODE": "Refused",
+     "QDCOUNT": 1,
+     "ANCOUNT": 0,
+     "NSCOUNT": 0,
+     "ARCOUNT": 1,
+     "Question": [
+      {
+       "Name": "org",
+       "Type": "A",
+       "Class": "IN"
+      }
+     ],
+     "Answer": [],
+     "Authority": [],
+     "Additional": [
+      {
+       "Name": "",
+       "Type": "OPT",
+       "Class": "1232",
+       "TTL": "32768 (9h6m8s)",
+       "RDLENGTH": "0 bytes",
+       "RDATA": {
+        "Options": []
+       },
+       "DnssecStatus": "Indeterminate"
+      }
+     ]
+    },
+    {
+     "Metadata": {
+      "NameServer": "d.root-servers.net (199.7.91.13)",
+      "Protocol": "Udp",
+      "DatagramSize": "32 bytes",
+      "RoundTripTime": "1.28 ms"
+     },
+     "EDNS": {
+      "UdpPayloadSize": 1232,
+      "ExtendedRCODE": "Refused",
+      "Version": 0,
+      "Flags": "DNSSEC_OK",
+      "Options": []
+     },
+     "DnsClientExtendedErrors": [
+      {
+       "InfoCode": "NoReachableAuthority",
+       "ExtraText": "d.root-servers.net (199.7.91.13) returned RCODE=Refused for example.org. A IN"
+      }
+     ],
+     "Identifier": 27092,
+     "IsResponse": true,
+     "OPCODE": "StandardQuery",
+     "AuthoritativeAnswer": false,
+     "Truncation": false,
+     "RecursionDesired": false,
+     "RecursionAvailable": true,
+     "Z": 0,
+     "AuthenticData": false,
+     "CheckingDisabled": false,
+     "RCODE": "Refused",
+     "QDCOUNT": 1,
+     "ANCOUNT": 0,
+     "NSCOUNT": 0,
+     "ARCOUNT": 1,
+     "Question": [
+      {
+       "Name": "org",
+       "Type": "A",
+       "Class": "IN"
+      }
+     ],
+     "Answer": [],
+     "Authority": [],
+     "Additional": [
+      {
+       "Name": "",
+       "Type": "OPT",
+       "Class": "1232",
+       "TTL": "32768 (9h6m8s)",
+       "RDLENGTH": "0 bytes",
+       "RDATA": {
+        "Options": []
+       },
+       "DnssecStatus": "Indeterminate"
+      }
+     ]
+    },
+    {
+     "Metadata": {
+      "NameServer": "m.root-servers.net (202.12.27.33)",
+      "Protocol": "Udp",
+      "DatagramSize": "32 bytes",
+      "RoundTripTime": "1.1 ms"
+     },
+     "EDNS": {
+      "UdpPayloadSize": 1232,
+      "ExtendedRCODE": "Refused",
+      "Version": 0,
+      "Flags": "DNSSEC_OK",
+      "Options": []
+     },
+     "DnsClientExtendedErrors": [
+      {
+       "InfoCode": "NoReachableAuthority",
+       "ExtraText": "m.root-servers.net (202.12.27.33) returned RCODE=Refused for example.org. A IN"
+      },
+      {
+       "InfoCode": "NoReachableAuthority",
+       "ExtraText": "b.root-servers.net (170.247.170.2) returned RCODE=Refused for example.org. A IN"
+      }
+     ],
+     "Identifier": 11339,
+     "IsResponse": true,
+     "OPCODE": "StandardQuery",
+     "AuthoritativeAnswer": false,
+     "Truncation": false,
+     "RecursionDesired": false,
+     "RecursionAvailable": true,
+     "Z": 0,
+     "AuthenticData": false,
+     "CheckingDisabled": false,
+     "RCODE": "Refused",
+     "QDCOUNT": 1,
+     "ANCOUNT": 0,
+     "NSCOUNT": 0,
+     "ARCOUNT": 1,
+     "Question": [
+      {
+       "Name": "org",
+       "Type": "A",
+       "Class": "IN"
+      }
+     ],
+     "Answer": [],
+     "Authority": [],
+     "Additional": [
+      {
+       "Name": "",
+       "Type": "OPT",
+       "Class": "1232",
+       "TTL": "32768 (9h6m8s)",
+       "RDLENGTH": "0 bytes",
+       "RDATA": {
+        "Options": []
+       },
+       "DnssecStatus": "Indeterminate"
+      }
+     ]
+    },
+    {
+     "Metadata": {
+      "NameServer": "f.root-servers.net (192.5.5.241)",
+      "Protocol": "Udp",
+      "DatagramSize": "32 bytes",
+      "RoundTripTime": "1.16 ms"
+     },
+     "EDNS": {
+      "UdpPayloadSize": 1232,
+      "ExtendedRCODE": "Refused",
+      "Version": 0,
+      "Flags": "DNSSEC_OK",
+      "Options": []
+     },
+     "DnsClientExtendedErrors": [
+      {
+       "InfoCode": "NoReachableAuthority",
+       "ExtraText": "f.root-servers.net (192.5.5.241) returned RCODE=Refused for example.org. A IN"
+      },
+      {
+       "InfoCode": "NoReachableAuthority",
+       "ExtraText": "d.root-servers.net (199.7.91.13) returned RCODE=Refused for example.org. A IN"
+      }
+     ],
+     "Identifier": 61267,
+     "IsResponse": true,
+     "OPCODE": "StandardQuery",
+     "AuthoritativeAnswer": false,
+     "Truncation": false,
+     "RecursionDesired": false,
+     "RecursionAvailable": true,
+     "Z": 0,
+     "AuthenticData": false,
+     "CheckingDisabled": false,
+     "RCODE": "Refused",
+     "QDCOUNT": 1,
+     "ANCOUNT": 0,
+     "NSCOUNT": 0,
+     "ARCOUNT": 1,
+     "Question": [
+      {
+       "Name": "org",
+       "Type": "A",
+       "Class": "IN"
+      }
+     ],
+     "Answer": [],
+     "Authority": [],
+     "Additional": [
+      {
+       "Name": "",
+       "Type": "OPT",
+       "Class": "1232",
+       "TTL": "32768 (9h6m8s)",
+       "RDLENGTH": "0 bytes",
+       "RDATA": {
+        "Options": []
+       },
+       "DnssecStatus": "Indeterminate"
+      }
+     ]
+    },
+    {
+     "Metadata": {
+      "NameServer": "c.root-servers.net (192.33.4.12)",
+      "Protocol": "Udp",
+      "DatagramSize": "32 bytes",
+      "RoundTripTime": "1.42 ms"
+     },
+     "EDNS": {
+      "UdpPayloadSize": 1232,
+      "ExtendedRCODE": "Refused",
+      "Version": 0,
+      "Flags": "DNSSEC_OK",
+      "Options": []
+     },
+     "DnsClientExtendedErrors": [
+      {
+       "InfoCode": "NoReachableAuthority",
+       "ExtraText": "c.root-servers.net (192.33.4.12) returned RCODE=Refused for example.org. A IN"
+      },
+      {
+       "InfoCode": "NoReachableAuthority",
+       "ExtraText": "m.root-servers.net (202.12.27.33) returned RCODE=Refused for example.org. A IN"
+      },
+      {
+       "InfoCode": "NoReachableAuthority",
+       "ExtraText": "b.root-servers.net (170.247.170.2) returned RCODE=Refused for example.org. A IN"
+      }
+     ],
+     "Identifier": 59650,
+     "IsResponse": true,
+     "OPCODE": "StandardQuery",
+     "AuthoritativeAnswer": false,
+     "Truncation": false,
+     "RecursionDesired": false,
+     "RecursionAvailable": true,
+     "Z": 0,
+     "AuthenticData": false,
+     "CheckingDisabled": false,
+     "RCODE": "Refused",
+     "QDCOUNT": 1,
+     "ANCOUNT": 0,
+     "NSCOUNT": 0,
+     "ARCOUNT": 1,
+     "Question": [
+      {
+       "Name": "org",
+       "Type": "A",
+       "Class": "IN"
+      }
+     ],
+     "Answer": [],
+     "Authority": [],
+     "Additional": [
+      {
+       "Name": "",
+       "Type": "OPT",
+       "Class": "1232",
+       "TTL": "32768 (9h6m8s)",
+       "RDLENGTH": "0 bytes",
+       "RDATA": {
+        "Options": []
+       },
+       "DnssecStatus": "Indeterminate"
+      }
+     ]
+    },
+    {
+     "Metadata": {
+      "NameServer": "l.root-servers.net (199.7.83.42)",
+      "Protocol": "Udp",
+      "DatagramSize": "32 bytes",
+      "RoundTripTime": "1.37 ms"
+     },
+     "EDNS": {
+      "UdpPayloadSize": 1232,
+      "ExtendedRCODE": "Refused",
+      "Version": 0,
+      "Flags": "DNSSEC_OK",
+      "Options": []
+     },
+     "DnsClientExtendedErrors": [
+      {
+       "InfoCode": "NoReachableAuthority",
+       "ExtraText": "l.root-servers.net (199.7.83.42) returned RCODE=Refused for example.org. A IN"
+      },
+      {
+       "InfoCode": "NoReachableAuthority",
+       "ExtraText": "f.root-servers.net (192.5.5.241) returned RCODE=Refused for example.org. A IN"
+      },
+      {
+       "InfoCode": "NoReachableAuthority",
+       "ExtraText": "d.root-servers.net (199.7.91.13) returned RCODE=Refused for example.org. A IN"
+      }
+     ],
+     "Identifier": 52708,
+     "IsResponse": true,
+     "OPCODE": "StandardQuery",
+     "AuthoritativeAnswer": false,
+     "Truncation": false,
+     "RecursionDesired": false,
+     "RecursionAvailable": true,
+     "Z": 0,
+     "AuthenticData": false,
+     "CheckingDisabled": false,
+     "RCODE": "Refused",
+     "QDCOUNT": 1,
+     "ANCOUNT": 0,
+     "NSCOUNT": 0,
+     "ARCOUNT": 1,
+     "Question": [
+      {
+       "Name": "org",
+       "Type": "A",
+       "Class": "IN"
+      }
+     ],
+     "Answer": [],
+     "Authority": [],
+     "Additional": [
+      {
+       "Name": "",
+       "Type": "OPT",
+       "Class": "1232",
+       "TTL": "32768 (9h6m8s)",
+       "RDLENGTH": "0 bytes",
+       "RDATA": {
+        "Options": []
+       },
+       "DnssecStatus": "Indeterminate"
+      }
+     ]
+    },
+    {
+     "Metadata": {
+      "NameServer": "a.root-servers.net (198.41.0.4)",
+      "Protocol": "Udp",
+      "DatagramSize": "32 bytes",
+      "RoundTripTime": "0.76 ms"
+     },
+     "EDNS": {
+      "UdpPayloadSize": 1232,
+      "ExtendedRCODE": "Refused",
+      "Version": 0,
+      "Flags": "DNSSEC_OK",
+      "Options": []
+     },
+     "DnsClientExtendedErrors": [
+      {
+       "InfoCode": "NoReachableAuthority",
+       "ExtraText": "a.root-servers.net (198.41.0.4) returned RCODE=Refused for example.org. A IN"
+      },
+      {
+       "InfoCode": "NoReachableAuthority",
+       "ExtraText": "c.root-servers.net (192.33.4.12) returned RCODE=Refused for example.org. A IN"
+      },
+      {
+       "InfoCode": "NoReachableAuthority",
+       "ExtraText": "m.root-servers.net (202.12.27.33) returned RCODE=Refused for example.org. A IN"
+      },
+      {
+       "InfoCode": "NoReachableAuthority",
+       "ExtraText": "b.root-servers.net (170.247.170.2) returned RCODE=Refused for example.org. A IN"
+      }
+     ],
+     "Identifier": 11355,
+     "IsResponse": true,
+     "OPCODE": "StandardQuery",
+     "AuthoritativeAnswer": false,
+     "Truncation": false,
+     "RecursionDesired": false,
+     "RecursionAvailable": true,
+     "Z": 0,
+     "AuthenticData": false,
+     "CheckingDisabled": false,
+     "RCODE": "Refused",
+     "QDCOUNT": 1,
+     "ANCOUNT": 0,
+     "NSCOUNT": 0,
+     "ARCOUNT": 1,
+     "Question": [
+      {
+       "Name": "org",
+       "Type": "A",
+       "Class": "IN"
+      }
+     ],
+     "Answer": [],
+     "Authority": [],
+     "Additional": [
+      {
+       "Name": "",
+       "Type": "OPT",
+       "Class": "1232",
+       "TTL": "32768 (9h6m8s)",
+       "RDLENGTH": "0 bytes",
+       "RDATA": {
+        "Options": []
+       },
+       "DnssecStatus": "Indeterminate"
+      }
+     ]
+    },
+    {
+     "Metadata": {
+      "NameServer": "e.root-servers.net (192.203.230.10)",
+      "Protocol": "Udp",
+      "DatagramSize": "32 bytes",
+      "RoundTripTime": "0.73 ms"
+     },
+     "EDNS": {
+      "UdpPayloadSize": 1232,
+      "ExtendedRCODE": "Refused",
+      "Version": 0,
+      "Flags": "DNSSEC_OK",
+      "Options": []
+     },
+     "DnsClientExtendedErrors": [
+      {
+       "InfoCode": "NoReachableAuthority",
+       "ExtraText": "e.root-servers.net (192.203.230.10) returned RCODE=Refused for example.org. A IN"
+      },
+      {
+       "InfoCode": "NoReachableAuthority",
+       "ExtraText": "l.root-servers.net (199.7.83.42) returned RCODE=Refused for example.org. A IN"
+      },
+      {
+       "InfoCode": "NoReachableAuthority",
+       "ExtraText": "f.root-servers.net (192.5.5.241) returned RCODE=Refused for example.org. A IN"
+      },
+      {
+       "InfoCode": "NoReachableAuthority",
+       "ExtraText": "d.root-servers.net (199.7.91.13) returned RCODE=Refused for example.org. A IN"
+      },
+      {
+       "InfoCode": "NoReachableAuthority",
+       "ExtraText": "a.root-servers.net (198.41.0.4) returned RCODE=Refused for example.org. A IN"
+      },
+      {
+       "InfoCode": "NoReachableAuthority",
+       "ExtraText": "c.root-servers.net (192.33.4.12) returned RCODE=Refused for example.org. A IN"
+      },
+      {
+       "InfoCode": "NoReachableAuthority",
+       "ExtraText": "m.root-servers.net (202.12.27.33) returned RCODE=Refused for example.org. A IN"
+      },
+      {
+       "InfoCode": "NoReachableAuthority",
+       "ExtraText": "b.root-servers.net (170.247.170.2) returned RCODE=Refused for example.org. A IN"
+      }
+     ],
+     "Identifier": 59389,
+     "IsResponse": true,
+     "OPCODE": "StandardQuery",
+     "AuthoritativeAnswer": false,
+     "Truncation": false,
+     "RecursionDesired": false,
+     "RecursionAvailable": true,
+     "Z": 0,
+     "AuthenticData": false,
+     "CheckingDisabled": false,
+     "RCODE": "Refused",
+     "QDCOUNT": 1,
+     "ANCOUNT": 0,
+     "NSCOUNT": 0,
+     "ARCOUNT": 1,
+     "Question": [
+      {
+       "Name": "org",
+       "Type": "A",
+       "Class": "IN"
+      }
+     ],
+     "Answer": [],
+     "Authority": [],
+     "Additional": [
+      {
+       "Name": "",
+       "Type": "OPT",
+       "Class": "1232",
+       "TTL": "32768 (9h6m8s)",
+       "RDLENGTH": "0 bytes",
+       "RDATA": {
+        "Options": []
+       },
+       "DnssecStatus": "Indeterminate"
+      }
+     ]
+    },
+    {
+     "Metadata": {
+      "NameServer": "b.root-servers.net (170.247.170.2)",
+      "Protocol": "Udp",
+      "DatagramSize": "40 bytes",
+      "RoundTripTime": "1.02 ms"
+     },
+     "EDNS": {
+      "UdpPayloadSize": 1232,
+      "ExtendedRCODE": "Refused",
+      "Version": 0,
+      "Flags": "DNSSEC_OK",
+      "Options": []
+     },
+     "DnsClientExtendedErrors": [
+      {
+       "InfoCode": "NoReachableAuthority",
+       "ExtraText": "b.root-servers.net (170.247.170.2) returned RCODE=Refused for example.org. A IN"
+      }
+     ],
+     "Identifier": 24485,
+     "IsResponse": true,
+     "OPCODE": "StandardQuery",
+     "AuthoritativeAnswer": false,
+     "Truncation": false,
+     "RecursionDesired": false,
+     "RecursionAvailable": true,
+     "Z": 0,
+     "AuthenticData": false,
+     "CheckingDisabled": false,
+     "RCODE": "Refused",
+     "QDCOUNT": 1,
+     "ANCOUNT": 0,
+     "NSCOUNT": 0,
+     "ARCOUNT": 1,
+     "Question": [
+      {
+       "Name": "example.org",
+       "Type": "A",
+       "Class": "IN"
+      }
+     ],
+     "Answer": [],
+     "Authority": [],
+     "Additional": [
+      {
+       "Name": "",
+       "Type": "OPT",
+       "Class": "1232",
+       "TTL": "32768 (9h6m8s)",
+       "RDLENGTH": "0 bytes",
+       "RDATA": {
+        "Options": []
+       },
+       "DnssecStatus": "Indeterminate"
+      }
+     ]
+    },
+    {
+     "Metadata": {
+      "NameServer": "d.root-servers.net (199.7.91.13)",
+      "Protocol": "Udp",
+      "DatagramSize": "40 bytes",
+      "RoundTripTime": "1.08 ms"
+     },
+     "EDNS": {
+      "UdpPayloadSize": 1232,
+      "ExtendedRCODE": "Refused",
+      "Version": 0,
+      "Flags": "DNSSEC_OK",
+      "Options": []
+     },
+     "DnsClientExtendedErrors": [
+      {
+       "InfoCode": "NoReachableAuthority",
+       "ExtraText": "d.root-servers.net (199.7.91.13) returned RCODE=Refused for example.org. A IN"
+      }
+     ],
+     "Identifier": 25900,
+     "IsResponse": true,
+     "OPCODE": "StandardQuery",
+     "AuthoritativeAnswer": false,
+     "Truncation": false,
+     "RecursionDesired": false,
+     "RecursionAvailable": true,
+     "Z": 0,
+     "AuthenticData": false,
+     "CheckingDisabled": false,
+     "RCODE": "Refused",
+     "QDCOUNT": 1,
+     "ANCOUNT": 0,
+     "NSCOUNT": 0,
+     "ARCOUNT": 1,
+     "Question": [
+      {
+       "Name": "example.org",
+       "Type": "A",
+       "Class": "IN"
+      }
+     ],
+     "Answer": [],
+     "Authority": [],
+     "Additional": [
+      {
+       "Name": "",
+       "Type": "OPT",
+       "Class": "1232",
+       "TTL": "32768 (9h6m8s)",
+       "RDLENGTH": "0 bytes",
+       "RDATA": {
+        "Options": []
+       },
+       "DnssecStatus": "Indeterminate"
+      }
+     ]
+    },
+    {
+     "Metadata": {
+      "NameServer": "m.root-servers.net (202.12.27.33)",
+      "Protocol": "Udp",
+      "DatagramSize": "40 bytes",
+      "RoundTripTime": "2.27 ms"
+     },
+     "EDNS": {
+      "UdpPayloadSize": 1232,
+      "ExtendedRCODE": "Refused",
+      "Version": 0,
+      "Flags": "DNSSEC_OK",
+      "Options": []
+     },
+     "DnsClientExtendedErrors": [
+      {
+       "InfoCode": "NoReachableAuthority",
+       "ExtraText": "m.root-servers.net (202.12.27.33) returned RCODE=Refused for example.org. A IN"
+      },
+      {
+       "InfoCode": "NoReachableAuthority",
+       "ExtraText": "b.root-servers.net (170.247.170.2) returned RCODE=Refused for example.org. A IN"
+      }
+     ],
+     "Identifier": 37229,
+     "IsResponse": true,
+     "OPCODE": "StandardQuery",
+     "AuthoritativeAnswer": false,
+     "Truncation": false,
+     "RecursionDesired": false,
+     "RecursionAvailable": true,
+     "Z": 0,
+     "AuthenticData": false,
+     "CheckingDisabled": false,
+     "RCODE": "Refused",
+     "QDCOUNT": 1,
+     "ANCOUNT": 0,
+     "NSCOUNT": 0,
+     "ARCOUNT": 1,
+     "Question": [
+      {
+       "Name": "example.org",
+       "Type": "A",
+       "Class": "IN"
+      }
+     ],
+     "Answer": [],
+     "Authority": [],
+     "Additional": [
+      {
+       "Name": "",
+       "Type": "OPT",
+       "Class": "1232",
+       "TTL": "32768 (9h6m8s)",
+       "RDLENGTH": "0 bytes",
+       "RDATA": {
+        "Options": []
+       },
+       "DnssecStatus": "Indeterminate"
+      }
+     ]
+    },
+    {
+     "Metadata": {
+      "NameServer": "f.root-servers.net (192.5.5.241)",
+      "Protocol": "Udp",
+      "DatagramSize": "40 bytes",
+      "RoundTripTime": "1.29 ms"
+     },
+     "EDNS": {
+      "UdpPayloadSize": 1232,
+      "ExtendedRCODE": "Refused",
+      "Version": 0,
+      "Flags": "DNSSEC_OK",
+      "Options": []
+     },
+     "DnsClientExtendedErrors": [
+      {
+       "InfoCode": "NoReachableAuthority",
+       "ExtraText": "f.root-servers.net (192.5.5.241) returned RCODE=Refused for example.org. A IN"
+      },
+      {
+       "InfoCode": "NoReachableAuthority",
+       "ExtraText": "d.root-servers.net (199.7.91.13) returned RCODE=Refused for example.org. A IN"
+      }
+     ],
+     "Identifier": 57811,
+     "IsResponse": true,
+     "OPCODE": "StandardQuery",
+     "AuthoritativeAnswer": false,
+     "Truncation": false,
+     "RecursionDesired": false,
+     "RecursionAvailable": true,
+     "Z": 0,
+     "AuthenticData": false,
+     "CheckingDisabled": false,
+     "RCODE": "Refused",
+     "QDCOUNT": 1,
+     "ANCOUNT": 0,
+     "NSCOUNT": 0,
+     "ARCOUNT": 1,
+     "Question": [
+      {
+       "Name": "example.org",
+       "Type": "A",
+       "Class": "IN"
+      }
+     ],
+     "Answer": [],
+     "Authority": [],
+     "Additional": [
+      {
+       "Name": "",
+       "Type": "OPT",
+       "Class": "1232",
+       "TTL": "32768 (9h6m8s)",
+       "RDLENGTH": "0 bytes",
+       "RDATA": {
+        "Options": []
+       },
+       "DnssecStatus": "Indeterminate"
+      }
+     ]
+    },
+    {
+     "Metadata": {
+      "NameServer": "c.root-servers.net (192.33.4.12)",
+      "Protocol": "Udp",
+      "DatagramSize": "40 bytes",
+      "RoundTripTime": "1.39 ms"
+     },
+     "EDNS": {
+      "UdpPayloadSize": 1232,
+      "ExtendedRCODE": "Refused",
+      "Version": 0,
+      "Flags": "DNSSEC_OK",
+      "Options": []
+     },
+     "DnsClientExtendedErrors": [
+      {
+       "InfoCode": "NoReachableAuthority",
+       "ExtraText": "c.root-servers.net (192.33.4.12) returned RCODE=Refused for example.org. A IN"
+      },
+      {
+       "InfoCode": "NoReachableAuthority",
+       "ExtraText": "m.root-servers.net (202.12.27.33) returned RCODE=Refused for example.org. A IN"
+      },
+      {
+       "InfoCode": "NoReachableAuthority",
+       "ExtraText": "b.root-servers.net (170.247.170.2) returned RCODE=Refused for example.org. A IN"
+      }
+     ],
+     "Identifier": 21995,
+     "IsResponse": true,
+     "OPCODE": "StandardQuery",
+     "AuthoritativeAnswer": false,
+     "Truncation": false,
+     "RecursionDesired": false,
+     "RecursionAvailable": true,
+     "Z": 0,
+     "AuthenticData": false,
+     "CheckingDisabled": false,
+     "RCODE": "Refused",
+     "QDCOUNT": 1,
+     "ANCOUNT": 0,
+     "NSCOUNT": 0,
+     "ARCOUNT": 1,
+     "Question": [
+      {
+       "Name": "example.org",
+       "Type": "A",
+       "Class": "IN"
+      }
+     ],
+     "Answer": [],
+     "Authority": [],
+     "Additional": [
+      {
+       "Name": "",
+       "Type": "OPT",
+       "Class": "1232",
+       "TTL": "32768 (9h6m8s)",
+       "RDLENGTH": "0 bytes",
+       "RDATA": {
+        "Options": []
+       },
+       "DnssecStatus": "Indeterminate"
+      }
+     ]
+    },
+    {
+     "Metadata": {
+      "NameServer": "l.root-servers.net (199.7.83.42)",
+      "Protocol": "Udp",
+      "DatagramSize": "40 bytes",
+      "RoundTripTime": "1.3 ms"
+     },
+     "EDNS": {
+      "UdpPayloadSize": 1232,
+      "ExtendedRCODE": "Refused",
+      "Version": 0,
+      "Flags": "DNSSEC_OK",
+      "Options": []
+     },
+     "DnsClientExtendedErrors": [
+      {
+       "InfoCode": "NoReachableAuthority",
+       "ExtraText": "l.root-servers.net (199.7.83.42) returned RCODE=Refused for example.org. A IN"
+      },
+      {
+       "InfoCode": "NoReachableAuthority",
+       "ExtraText": "f.root-servers.net (192.5.5.241) returned RCODE=Refused for example.org. A IN"
+      },
+      {
+       "InfoCode": "NoReachableAuthority",
+       "ExtraText": "d.root-servers.net (199.7.91.13) returned RCODE=Refused for example.org. A IN"
+      }
+     ],
+     "Identifier": 34632,
+     "IsResponse": true,
+     "OPCODE": "StandardQuery",
+     "AuthoritativeAnswer": false,
+     "Truncation": false,
+     "RecursionDesired": false,
+     "RecursionAvailable": true,
+     "Z": 0,
+     "AuthenticData": false,
+     "CheckingDisabled": false,
+     "RCODE": "Refused",
+     "QDCOUNT": 1,
+     "ANCOUNT": 0,
+     "NSCOUNT": 0,
+     "ARCOUNT": 1,
+     "Question": [
+      {
+       "Name": "example.org",
+       "Type": "A",
+       "Class": "IN"
+      }
+     ],
+     "Answer": [],
+     "Authority": [],
+     "Additional": [
+      {
+       "Name": "",
+       "Type": "OPT",
+       "Class": "1232",
+       "TTL": "32768 (9h6m8s)",
+       "RDLENGTH": "0 bytes",
+       "RDATA": {
+        "Options": []
+       },
+       "DnssecStatus": "Indeterminate"
+      }
+     ]
+    },
+    {
+     "Metadata": {
+      "NameServer": "a.root-servers.net (198.41.0.4)",
+      "Protocol": "Udp",
+      "DatagramSize": "40 bytes",
+      "RoundTripTime": "1.72 ms"
+     },
+     "EDNS": {
+      "UdpPayloadSize": 1232,
+      "ExtendedRCODE": "Refused",
+      "Version": 0,
+      "Flags": "DNSSEC_OK",
+      "Options": []
+     },
+     "DnsClientExtendedErrors": [
+      {
+       "InfoCode": "NoReachableAuthority",
+       "ExtraText": "a.root-servers.net (198.41.0.4) returned RCODE=Refused for example.org. A IN"
+      },
+      {
+       "InfoCode": "NoReachableAuthority",
+       "ExtraText": "c.root-servers.net (192.33.4.12) returned RCODE=Refused for example.org. A IN"
+      },
+      {
+       "InfoCode": "NoReachableAuthority",
+       "ExtraText": "m.root-servers.net (202.12.27.33) returned RCODE=Refused for example.org. A IN"
+      },
+      {
+       "InfoCode": "NoReachableAuthority",
+       "ExtraText": "b.root-servers.net (170.247.170.2) returned RCODE=Refused for example.org. A IN"
+      }
+     ],
+     "Identifier": 39808,
+     "IsResponse": true,
+     "OPCODE": "StandardQuery",
+     "AuthoritativeAnswer": false,
+     "Truncation": false,
+     "RecursionDesired": false,
+     "RecursionAvailable": true,
+     "Z": 0,
+     "AuthenticData": false,
+     "CheckingDisabled": false,
+     "RCODE": "Refused",
+     "QDCOUNT": 1,
+     "ANCOUNT": 0,
+     "NSCOUNT": 0,
+     "ARCOUNT": 1,
+     "Question": [
+      {
+       "Name": "example.org",
+       "Type": "A",
+       "Class": "IN"
+      }
+     ],
+     "Answer": [],
+     "Authority": [],
+     "Additional": [
+      {
+       "Name": "",
+       "Type": "OPT",
+       "Class": "1232",
+       "TTL": "32768 (9h6m8s)",
+       "RDLENGTH": "0 bytes",
+       "RDATA": {
+        "Options": []
+       },
+       "DnssecStatus": "Indeterminate"
+      }
+     ]
+    },
+    {
+     "Metadata": {
+      "NameServer": "e.root-servers.net (192.203.230.10)",
+      "Protocol": "Udp",
+      "DatagramSize": "40 bytes",
+      "RoundTripTime": "1.29 ms"
+     },
+     "EDNS": {
+      "UdpPayloadSize": 1232,
+      "ExtendedRCODE": "Refused",
+      "Version": 0,
+      "Flags": "DNSSEC_OK",
+      "Options": []
+     },
+     "DnsClientExtendedErrors": [
+      {
+       "InfoCode": "NoReachableAuthority",
+       "ExtraText": "e.root-servers.net (192.203.230.10) returned RCODE=Refused for example.org. A IN"
+      },
+      {
+       "InfoCode": "NoReachableAuthority",
+       "ExtraText": "l.root-servers.net (199.7.83.42) returned RCODE=Refused for example.org. A IN"
+      },
+      {
+       "InfoCode": "NoReachableAuthority",
+       "ExtraText": "f.root-servers.net (192.5.5.241) returned RCODE=Refused for example.org. A IN"
+      },
+      {
+       "InfoCode": "NoReachableAuthority",
+       "ExtraText": "d.root-servers.net (199.7.91.13) returned RCODE=Refused for example.org. A IN"
+      },
+      {
+       "InfoCode": "NoReachableAuthority",
+       "ExtraText": "a.root-servers.net (198.41.0.4) returned RCODE=Refused for example.org. A IN"
+      },
+      {
+       "InfoCode": "NoReachableAuthority",
+       "ExtraText": "c.root-servers.net (192.33.4.12) returned RCODE=Refused for example.org. A IN"
+      },
+      {
+       "InfoCode": "NoReachableAuthority",
+       "ExtraText": "m.root-servers.net (202.12.27.33) returned RCODE=Refused for example.org. A IN"
+      },
+      {
+       "InfoCode": "NoReachableAuthority",
+       "ExtraText": "b.root-servers.net (170.247.170.2) returned RCODE=Refused for example.org. A IN"
+      }
+     ],
+     "Identifier": 52837,
+     "IsResponse": true,
+     "OPCODE": "StandardQuery",
+     "AuthoritativeAnswer": false,
+     "Truncation": false,
+     "RecursionDesired": false,
+     "RecursionAvailable": true,
+     "Z": 0,
+     "AuthenticData": false,
+     "CheckingDisabled": false,
+     "RCODE": "Refused",
+     "QDCOUNT": 1,
+     "ANCOUNT": 0,
+     "NSCOUNT": 0,
+     "ARCOUNT": 1,
+     "Question": [
+      {
+       "Name": "example.org",
+       "Type": "A",
+       "Class": "IN"
+      }
+     ],
+     "Answer": [],
+     "Authority": [],
+     "Additional": [
+      {
+       "Name": "",
+       "Type": "OPT",
+       "Class": "1232",
+       "TTL": "32768 (9h6m8s)",
+       "RDLENGTH": "0 bytes",
+       "RDATA": {
+        "Options": []
+       },
+       "DnssecStatus": "Indeterminate"
+      }
+     ]
+    }
+   ]
+  },
+  "server": "ns1.example.net",
+  "status": "ok"
+ },
+ "dnssec-failed.org A dnssec": {
+  "response": {
+   "warningMessage": "Attack detected! DNSSEC validation failed due to unable to find a SEP DNSKEY matching the DS for owner name: dnssec-failed.org",
+   "result": {
+    "Metadata": {
+     "NameServer": "ns1.example.net (127.0.0.1)",
+     "Protocol": "Udp",
+     "DatagramSize": "562 bytes",
+     "RoundTripTime": "0.53 ms"
+    },
+    "EDNS": {
+     "UdpPayloadSize": 1232,
+     "ExtendedRCODE": "NoError",
+     "Version": 0,
+     "Flags": "DNSSEC_OK",
+     "Options": [
+      {
+       "Code": "EXTENDED_DNS_ERROR",
+       "Length": "53 bytes",
+       "Data": {
+        "InfoCode": "DNSKEYMissing",
+        "ExtraText": "no SEP matching the DS found for dnssec-failed.org."
+       }
+      },
+      {
+       "Code": "EXTENDED_DNS_ERROR",
+       "Length": "69 bytes",
+       "Data": {
+        "InfoCode": "DNSKEYMissing",
+        "ExtraText": "Attack detected! No SEP matching the DS found for dnssec-failed.org"
+       }
+      }
+     ]
+    },
+    "DnsClientExtendedErrors": [
+     {
+      "InfoCode": "DNSKEYMissing",
+      "ExtraText": "Attack detected! No SEP matching the DS found for dnssec-failed.org"
+     }
+    ],
+    "Identifier": 63892,
+    "IsResponse": true,
+    "OPCODE": "StandardQuery",
+    "AuthoritativeAnswer": false,
+    "Truncation": false,
+    "RecursionDesired": true,
+    "RecursionAvailable": true,
+    "Z": 0,
+    "AuthenticData": false,
+    "CheckingDisabled": true,
+    "RCODE": "NoError",
+    "QDCOUNT": 1,
+    "ANCOUNT": 4,
+    "NSCOUNT": 0,
+    "ARCOUNT": 1,
+    "Question": [
+     {
+      "Name": "dnssec-failed.org",
+      "Type": "DNSKEY",
+      "Class": "IN"
+     }
+    ],
+    "Answer": [
+     {
+      "Name": "dnssec-failed.org",
+      "Type": "DNSKEY",
+      "Class": "IN",
+      "TTL": "300 (5m)",
+      "RDLENGTH": "68 bytes",
+      "RDATA": {
+       "Flags": "ZoneKey",
+       "Protocol": 3,
+       "Algorithm": "ECDSAP256SHA256 (13)",
+       "PublicKey": "+q1YaNu7nKJuMoQ4oAIqg4fvrSwFb/qeEu/2x6KX+r8Rnv0eC448+PnP9KoI1IETn4W9I7ilBxWsENtLUqxRUg==",
+       "ComputedKeyTag": 32784
+      },
+      "DnssecStatus": "Unknown"
+     },
+     {
+      "Name": "dnssec-failed.org",
+      "Type": "DNSKEY",
+      "Class": "IN",
+      "TTL": "300 (5m)",
+      "RDLENGTH": "68 bytes",
+      "RDATA": {
+       "Flags": "SecureEntryPoint, ZoneKey",
+       "Protocol": 3,
+       "Algorithm": "ECDSAP256SHA256 (13)",
+       "PublicKey": "1CcdGV2EigL5bsrPpkSvYHzyfYR1udWKZtWHU9EQXMrbtKglmUDYKKkwwajHQQ7TAMIit/vQbCrh4SPkxLbhgg==",
+       "ComputedKeyTag": 50719
+      },
+      "DnssecStatus": "Unknown"
+     },
+     {
+      "Name": "dnssec-failed.org",
+      "Type": "RRSIG",
+      "Class": "IN",
+      "TTL": "3600 (1h)",
+      "RDLENGTH": "101 bytes",
+      "RDATA": {
+       "TypeCovered": "DNSKEY",
+       "Algorithm": "ECDSAP256SHA256 (13)",
+       "Labels": 2,
+       "OriginalTtl": 3600,
+       "SignatureExpiration": "2026-11-12T01:57:06Z",
+       "SignatureInception": "2026-11-04T22:52:06Z",
+       "KeyTag": 32784,
+       "SignersName": "dnssec-failed.org",
+       "Signature": "Plwa8hfz76oG8tgSoTRhbIG0h1cW33Eyml00H+rzzYviU7vCXY53k3EqkH5HPyLzdFH7ozHFRtIefQGcKgMJ8g=="
+      },
+      "DnssecStatus": "Unknown"
+     },
+     {
+      "Name": "dnssec-failed.org",
+      "Type": "RRSIG",
+      "Class": "IN",
+      "TTL": "3600 (1h)",
+      "RDLENGTH": "101 bytes",
+      "RDATA": {
+       "TypeCovered": "DNSKEY",
+       "Algorithm": "ECDSAP256SHA256 (13)",
+       "Labels": 2,
+       "OriginalTtl": 3600,
+       "SignatureExpiration": "2026-07-02T22:57:06Z",
+       "SignatureInception": "2026-03-04T22:57:06Z",
+       "KeyTag": 50719,
+       "SignersName": "dnssec-failed.org",
+       "Signature": "lKlwCpp4weU8+JmndESAckuF6etEHyK1erKqotzCeAFBBYw0iV4SGiR5WOdkqvHa9QGDCNkAqd2uQ2CNLTBORw=="
+      },
+      "DnssecStatus": "Unknown"
+     }
+    ],
+    "Authority": [],
+    "Additional": [
+     {
+      "Name": "",
+      "Type": "OPT",
+      "Class": "1232",
+      "TTL": "32768 (9h6m8s)",
+      "RDLENGTH": "130 bytes",
+      "RDATA": {
+       "Options": [
+        {
+         "Code": "EXTENDED_DNS_ERROR",
+         "Length": "53 bytes",
+         "Data": {
+          "InfoCode": "DNSKEYMissing",
+          "ExtraText": "no SEP matching the DS found for dnssec-failed.org."
+         }
+        },
+        {
+         "Code": "EXTENDED_DNS_ERROR",
+         "Length": "69 bytes",
+         "Data": {
+          "InfoCode": "DNSKEYMissing",
+          "ExtraText": "Attack detected! No SEP matching the DS found for dnssec-failed.org"
+         }
+        }
+       ]
+      },
+      "DnssecStatus": "Unknown"
+     }
+    ]
+   },
+   "rawResponses": []
+  },
+  "server": "ns1.example.net",
+  "status": "ok"
+ },
+ "this-server TLS": {
+  "server": "ns1.example.net",
+  "status": "error",
+  "errorMessage": "Cannot use DNS-over-TLS protocol for 'this-server'. Please use the TLS certificate domain name as the server."
+ }
+}
