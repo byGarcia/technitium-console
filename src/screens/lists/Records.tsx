@@ -1,8 +1,10 @@
-import { Chip, Tag } from '../../ui/Tag'
+import { Tag } from '../../ui/Tag'
 import { Button } from '../../ui/Button'
-import { useState } from 'react'
+import { useState, type CSSProperties } from 'react'
 import type { DnsRecord } from '../../api/zonelists'
 import { rdataEntries, extras, meta, splitTtl, type Entry } from './record'
+import { dnssecTone, isStale } from './cache-facts'
+import { recordColour } from '../zones/zone-colours'
 import tbl from '../../ui/Table.module.css'
 import { Table } from '../../ui/Table'
 import styles from './Lists.module.css'
@@ -15,6 +17,20 @@ Only HOW it reads changes: there is not one new control. The two row buttons
 the same JSON (`dnssecRecords` and `glueRecords`) and that in upstream's dump read
 just as badly as the rest.
 */
+
+/*
+A record type in its series colour (`zones/zone-colours`), the word in the colour on
+a tint of it, as Zones draws its records' types (2026-11-06, deviation 16): a column
+of types reads by colour before it is read, and the type is the same colour on the
+Cache cards above. Allowed and Blocked share this table and get it too.
+*/
+export function RecordType({ type }: { type: string }) {
+  return (
+    <span className={styles.rtype} style={{ '--rt': recordColour(type) } as CSSProperties}>
+      {type}
+    </span>
+  )
+}
 
 // The same cut-off as in Zones: it was 48 here and 64 there, for the same control.
 const CUTOFF = 64
@@ -91,11 +107,14 @@ function Row({ r, withDnssec, node }: { r: DnsRecord; withDnssec: boolean; node:
   return (
     <tr>
       <td className={tbl.lead}>
-        <Chip>{r.type}</Chip>
+        <RecordType type={r.type} />
         {differentName && <span className={styles.name}>{name === '' ? '<ROOT>' : name}</span>}
       </td>
       <td className={styles.ttl}>
         {ttl.value} {ttl.human && <small>({ttl.human})</small>}
+        {/* The server writes a record kept past its TTL as `0 (0s)`; the word says
+            so (deviation 16, the Records card's `Stale`). */}
+        {isStale(r) && <span className={styles.stale}><Tag tone="warn">Stale</Tag></span>}
       </td>
       <td>
         <Inline entries={rdataEntries(r.rData)} bare />
@@ -115,7 +134,7 @@ function Row({ r, withDnssec, node }: { r: DnsRecord; withDnssec: boolean; node:
       </td>
       {withDnssec && (
         <td>
-          <Tag tone={r.dnssecStatus === 'Secure' ? 'ok' : 'neutral'}>
+          <Tag tone={dnssecTone(r.dnssecStatus)}>
             {r.dnssecStatus ?? '—'}
           </Tag>
         </td>
