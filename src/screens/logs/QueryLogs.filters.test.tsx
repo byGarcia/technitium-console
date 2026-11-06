@@ -87,16 +87,27 @@ describe('Query Logs: what the folded panel lists', () => {
   })
 })
 
-describe('Query Logs: the filter panel above 960', () => {
-  it('is always open, under a heading and with no toggle', async () => {
+describe('Query Logs: the band of filters above 960', () => {
+  it('is always open, with no toggle', async () => {
     windowWidth(false)
     setUp()
     render(<Logs token="t" sub="Query Logs" />)
     await screen.findByLabelText('App Name')
 
-    expect(screen.getByRole('heading', { name: 'Filters' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Filters' })).toBeNull()
     expect(panel()).not.toHaveAttribute('hidden')
+  })
+
+  it('Domain is on the toolbar line, outside the band; every other filter is in it', async () => {
+    windowWidth(false)
+    setUp()
+    render(<Logs token="t" sub="Query Logs" />)
+    await screen.findByLabelText('App Name')
+
+    expect(panel()).not.toContainElement(screen.getByLabelText('Domain'))
+    for (const label of ['App Name', 'Class Path', 'From', 'To', 'Order', 'Type', 'Class', 'Client IP Address', 'Protocol', 'Response Type', 'RCODE']) {
+      expect(panel()).toContainElement(screen.getByLabelText(label))
+    }
   })
 })
 
@@ -133,8 +144,9 @@ describe('Query Logs: the filter panel below 960', () => {
     expect(panel()).toHaveAttribute('hidden')
     const set = document.getElementById('ql-filters-set') as HTMLElement
     expect(toggle).toHaveAttribute('aria-describedby', 'ql-filters-set')
-    expect(set).toHaveTextContent('Domain: home.test')
     expect(set).toHaveTextContent('Protocol: UDP')
+    // Domain stays on screen, on the toolbar's line, so the list does not repeat it.
+    expect(set).not.toHaveTextContent('Domain')
     // The fields keep their values while folded.
     expect(screen.getByLabelText('Domain')).toHaveValue('home.test')
   })
@@ -187,7 +199,7 @@ describe('Query Logs: the filter panel below 960', () => {
       return el
     })
     expect(set).toHaveTextContent('From: 2026-10-15 21:04:00')
-    expect(set).toHaveTextContent('Domain: example.com')
+    expect(screen.getByLabelText('Domain')).toHaveValue('example.com')
     expect(set).toHaveTextContent(`Response Type: ${logs.RESPONSE_TYPES.find((r) => r.value === 'Cached')?.label}`)
   })
 })
