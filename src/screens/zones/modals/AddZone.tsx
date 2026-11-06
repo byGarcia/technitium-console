@@ -1,3 +1,4 @@
+import { FilePick } from '../../../ui/FilePick'
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { createZone, listCatalogs } from '../../../api/zones'
 import { getTsigKeyNames } from '../../../api/settings'
@@ -254,11 +255,7 @@ export function AddZone({
           <div hidden={!v.zoneFile}>
             <Field label="Import Zone File (Optional)">
               {(id) => (
-                <Input
-                  id={id}
-                  type="file"
-                  onChange={(e) => setZoneFile(e.target.files?.[0] ?? null)}
-                />
+                <FilePick id={id} onChange={(e) => setZoneFile(e.target.files?.[0] ?? null)} />
               )}
             </Field>
           </div>

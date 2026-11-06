@@ -1,10 +1,11 @@
+import { FilePick } from '../../../ui/FilePick'
 import { useEffect, useRef, useState } from 'react'
 import { importZone } from '../../../api/zones'
 import { Alert } from '../../../ui/Alert'
 import { Button } from '../../../ui/Button'
 import { Dialog } from '../../../ui/Dialog'
 import { Check } from '../../../ui/Check'
-import { Field, Input, Textarea } from '../../../ui/Field'
+import { Field, Textarea } from '../../../ui/Field'
 import type { Notice } from '../types'
 import z from './zone-dialog.module.css'
 import { Group, Tile } from './zone-dialog'
@@ -149,12 +150,7 @@ export function ImportZone({
         <div hidden={mode !== 'File'}>
           <Field label="Zone File">
             {(id) => (
-              <Input
-                id={id}
-                ref={file}
-                type="file"
-                onChange={(e) => setZoneFile(e.target.files?.[0] ?? null)}
-              />
+              <FilePick id={id} ref={file} onChange={(e) => setZoneFile(e.target.files?.[0] ?? null)} />
             )}
           </Field>
         </div>

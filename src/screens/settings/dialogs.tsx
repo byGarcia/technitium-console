@@ -1,3 +1,4 @@
+import { FilePick } from '../../ui/FilePick'
 import { useState } from 'react'
 import { Button } from '../../ui/Button'
 import { Dialog } from '../../ui/Dialog'
@@ -6,7 +7,6 @@ import { Field } from '../../ui/Field'
 import styles from './Settings.module.css'
 import { BACKUP_ITEMS } from '../../api/settings'
 import { Check } from './parts'
-import { Input } from '../../ui/Field'
 
 /*
 The "are you sure?" step is `ui/Confirm`, the same dialog the other five
@@ -123,7 +123,7 @@ export function RestoreDialog({
       )}
       <Field label="Backup Zip File">
         {(id) => (
-          <Input id={id} type="file" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+          <FilePick id={id} onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
         )}
       </Field>
       <p>The restore process will restore all the selected items from the backup zip file:</p>

@@ -95,9 +95,14 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
 - **Zones: the list's page and filters are in the address bar** too, and so are a zone's records
   page and filters, so a reload or a link returns to the same page.
 - **Apps opens with four cards** (installed apps and their store status, classes by kind, what
-  serves Query Logs, what APP records can use). The installed apps and the App Store are tables,
-  with a Kind filter and a search, and each kind of DNS app has its own colour. The installed list
-  says `Total Apps` again.
+  serves Query Logs, what APP records can use). The installed apps and the App Store are tables
+  with one line per app and a search, More Details opening under the row, and each kind of DNS app
+  has its own colour; pressing a kind on the cards narrows the table. The installed list says
+  `Total Apps` again. App Config numbers its lines and says whether the text is valid JSON.
+- **Choosing a file is a drop zone** in every dialog that takes one (an app's zip, a zone file, a
+  settings backup): drop the file or click to choose it, and it shows its name and size.
+- **Dialogs are one surface**, without the lines under the title and over the buttons. A
+  confirmation leads with a red warning sign when it deletes, and the name it acts on stands out.
 - **DNS Client draws the answer instead of only printing it:** cards for the response code, the
   answer by record type, the server and the header flags; the Question, Answer, Authority,
   Additional and Extended DNS Errors sections as tables; the JSON as its own tab; and each raw

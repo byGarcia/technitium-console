@@ -16,40 +16,31 @@ chip and the config editor.
 /* The Query Logs apps and the APP record classes, one per line. */
 .cardList { margin: 0 0 var(--s-5); padding: 0; }
 .cardName { font: 600 var(--t-5)/1.3 var(--font-ui); color: var(--ink); overflow-wrap: break-word; min-width: 0; }
-.classLine { font: var(--t-3)/1.4 var(--font-mono); color: var(--ink); overflow-wrap: break-word; }
+.classLine { font: var(--t-4)/1.5 var(--font-ui); color: var(--ink); overflow-wrap: break-word; }
 
-/* --- A row: the name with its version, the description, More Details --- */
+/* --- A row: one line (name, version, kinds, actions); More Details opens under it --- */
 
 .appHead { display: flex; align-items: center; flex-wrap: wrap; gap: var(--s-3) var(--s-6); }
 .appName { font-size: var(--t-5); font-weight: 600; color: var(--ink); overflow-wrap: break-word; }
 
-.desc,
-.descClamp,
-.descFull { margin: var(--s-3) 0 0; max-width: 92ch; font-size: var(--t-4); line-height: 1.55; color: var(--mute); white-space: pre-line; }
+.descFull { margin: var(--s-3) 0 var(--s-6); max-width: 92ch; font-size: var(--t-4); line-height: 1.55; color: var(--mute); white-space: pre-line; }
 
-/*
-Two lines at rest. `-webkit-line-clamp` is the only thing that truncates by LINE
-and not by character, and it is the same in every engine this console runs on;
-the fallback if it ever is not honoured is a taller row.
-*/
-.descClamp { display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.descFull { margin: 0 0 var(--s-5); }
-/* Open, More Details shows the description whole: the clamped copy above it goes. */
-.descClamp:has(+ .details[open]) { display: none; }
-
-.details { margin: var(--s-3) 0 0; }
+/* A row opened on its More Details reads as one with the line under it, which sits
+   on the panel's quieter surface. */
+.openRow > td { border-bottom-color: transparent; }
+.detailRow > td { padding-top: 0; background: var(--pan2); }
 
 .cls { margin-top: var(--s-6); padding-top: var(--s-6); border-top: 1px solid var(--line2); }
 .descFull + .cls,
 .cls:first-of-type { border-top: 0; padding-top: 0; }
+.classHead { display: flex; align-items: center; flex-wrap: wrap; gap: var(--s-3) var(--s-6); margin-bottom: var(--s-3); }
 .classPath { font-family: var(--font-mono); font-size: var(--t-3); color: var(--ink); }
 .classDesc { font-size: var(--t-3); line-height: 1.5; color: var(--mute); margin: 0; max-width: 92ch; white-space: pre-line; }
 .template { margin: var(--s-3) 0 0; padding: var(--s-6); background: var(--field); border: 1px solid var(--line); border-radius: var(--r-2); font-family: var(--font-mono); font-size: var(--t-2); color: var(--ink); overflow: auto; }
 .templateK { font-size: var(--t-2); color: var(--mute); font-weight: 550; margin-top: var(--s-4); }
 
-/* The installed table and the store's: a row opened on its More Details is tall,
-   and its kinds, size and actions stay level with its name. */
-.rows > tbody > tr > td { vertical-align: top; }
+/* One line a row: its name, kinds, size and actions on the same middle line. */
+.rows > tbody > tr > td { vertical-align: middle; }
 
 /* --- The kinds --- */
 
@@ -73,7 +64,21 @@ the fallback if it ever is not honoured is a taller row.
 }
 .kind::before { content: ''; width: 8px; height: 8px; border-radius: 2px; background: var(--sw); flex: none; }
 
-.kindField { width: 230px; max-width: 100%; }
+/* The kind the table is narrowed to, at the toolbar's end: pressing it clears it,
+   as pressing it again on the Classes card does. */
+.applied {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-4);
+  padding: var(--s-2) var(--s-4);
+  border: 1px solid var(--btn-line);
+  border-radius: var(--r-2);
+  background: var(--btn);
+  font: inherit;
+  cursor: pointer;
+}
+.applied:hover { border-color: var(--line-hover); }
+.clear { font-size: var(--t-3); color: var(--mute); }
 
 /* --- The store --- */
 
@@ -89,4 +94,8 @@ the fallback if it ever is not honoured is a taller row.
 /* --- Config --- */
 .note { font-size: var(--t-3); line-height: 1.6; color: var(--mute); margin: 0 0 var(--s-7); }
 .note code { font-family: var(--font-mono); color: var(--acc-ink); }
-.config { width: 100%; min-height: 300px; font-family: var(--font-mono); font-size: var(--t-4); line-height: 1.5; padding: var(--s-6); border: 1px solid var(--line-field); border-radius: var(--r-2); background: var(--field); color: var(--ink); resize: vertical; }
+/* App Config's line under the editor: whether the text reads as JSON. */
+.dotOk, .dotBad { display: inline-block; width: 7px; height: 7px; border-radius: 50%; flex: none; }
+.dotOk { background: var(--ok); }
+.dotBad { background: var(--warn); }
+.bad { display: inline-flex; align-items: center; gap: var(--s-4); color: var(--warn); overflow-wrap: break-word; }

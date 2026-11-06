@@ -1,9 +1,8 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useId, useState } from 'react'
 import { downloadAndInstall, downloadAndUpdate, listStoreApps, uninstallApp, type StoreApp } from '../../api/apps'
 import { Button } from '../../ui/Button'
-import { Table, Th, useSort } from '../../ui/Table'
+import { RowAction, Table, Th, useSort } from '../../ui/Table'
 import tbl from '../../ui/Table.module.css'
-import { Details } from '../../ui/Details'
 import { Dialog } from '../../ui/Dialog'
 import { error, type AlertState } from './Apps'
 import { Loading } from '../../ui/Empty'
@@ -226,8 +225,9 @@ One app of the catalogue. What upstream's row holds (index.html:6365, apps.js:
     ones read without looking for their Uninstall button;
   · the size in a column of its own, and the zip URL in More Details: 70
     characters that matter when you are about to install, never while you look;
-  · the description two lines at rest, whole in More Details, because SCANNING
-    wants short rows and CONFIRMING wants the description.
+  · one line per app (2026-11-06): the description and the zip URL are upstream's
+    More Details, opened under the row by the chevron that carries that name,
+    because SCANNING wants short rows and CONFIRMING wants the description.
 
 Install stays a button of the row and so does Update; Uninstall moves into the
 row's `⋮` menu, as every destructive verb that repeats once per row in this
@@ -249,54 +249,68 @@ function StoreRow({
   const hasUpdate = app.installed && app.updateAvailable === true
   // apps.js:164. Installed shows ITS version; not installed, the store's.
   const version = app.installed ? (app.installedVersion ?? app.version) : app.version
+  const [open, setOpen] = useState(false)
+  const detail = useId()
   return (
-    <tr aria-label={app.name}>
-      <td className={tbl.lead}>
-        <div className={styles.appHead}>
-          <span className={styles.appName}>{app.name}</span>
-          <Tag>Version {version}</Tag>
-          {hasUpdate && <Tag tone="warn">Update {app.version}</Tag>}
-          {app.installed && <Tag tone="ok">Installed</Tag>}
-        </div>
-        <p className={styles.descClamp}>{app.description}</p>
-        <Details summary="More Details" className={styles.details}>
-          <p className={styles.descFull}>{app.description}</p>
-          <div className={styles.smeta}>
-            <b>App Zip File</b>: <UrlText url={app.url} />
+    <>
+      <tr aria-label={app.name} className={open ? styles.openRow : undefined}>
+        <td className={tbl.lead}>
+          <div className={styles.appHead}>
+            <span className={styles.appName}>{app.name}</span>
+            <Tag>Version {version}</Tag>
+            {hasUpdate && <Tag tone="warn">Update {app.version}</Tag>}
+            {app.installed && <Tag tone="ok">Installed</Tag>}
           </div>
-        </Details>
-      </td>
-      <td className={styles.sizeCell}>{app.size}</td>
-      <td className={tbl.actionsCell}>
-        <div className={styles.storeActs}>
-          {!app.installed && (
-            <Button variant="primary" size="sm" lead="download" disabled={busy} onClick={onInstall}>
-              Install
-            </Button>
-          )}
-          {hasUpdate && (
-            <Button size="sm" lead="download" disabled={busy} onClick={onUpdate}>
-              Update
-            </Button>
-          )}
-          {app.installed && (
-            <Menu label={`Actions for ${app.name}`}>
-              {(close) => (
-                <>
-                  {hasUpdate && (
-                    <MenuItem icon="download" disabled={busy} onClick={() => { close(); onUpdate() }}>
-                      Update
+        </td>
+        <td className={styles.sizeCell}>{app.size}</td>
+        <td className={tbl.actionsCell}>
+          <div className={styles.storeActs}>
+            {!app.installed && (
+              <Button variant="primary" size="sm" lead="download" disabled={busy} onClick={onInstall}>
+                Install
+              </Button>
+            )}
+            {hasUpdate && (
+              <Button size="sm" lead="download" disabled={busy} onClick={onUpdate}>
+                Update
+              </Button>
+            )}
+            {app.installed && (
+              <Menu label={`Actions for ${app.name}`}>
+                {(close) => (
+                  <>
+                    {hasUpdate && (
+                      <MenuItem icon="download" disabled={busy} onClick={() => { close(); onUpdate() }}>
+                        Update
+                      </MenuItem>
+                    )}
+                    <MenuItem icon="trash" tone="danger" disabled={busy} onClick={() => { close(); onUninstall() }}>
+                      Uninstall
                     </MenuItem>
-                  )}
-                  <MenuItem icon="trash" tone="danger" disabled={busy} onClick={() => { close(); onUninstall() }}>
-                    Uninstall
-                  </MenuItem>
-                </>
-              )}
-            </Menu>
-          )}
-        </div>
-      </td>
-    </tr>
+                  </>
+                )}
+              </Menu>
+            )}
+            <RowAction
+              icon={open ? 'chevronDown' : 'chevronRight'}
+              name="More Details"
+              aria-expanded={open}
+              aria-controls={detail}
+              onClick={() => setOpen((v) => !v)}
+            />
+          </div>
+        </td>
+      </tr>
+      {open && (
+        <tr id={detail} className={styles.detailRow}>
+          <td colSpan={3}>
+            <p className={styles.descFull}>{app.description}</p>
+            <div className={styles.smeta}>
+              <b>App Zip File</b>: <UrlText url={app.url} />
+            </div>
+          </td>
+        </tr>
+      )}
+    </>
   )
 }

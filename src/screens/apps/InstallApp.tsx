@@ -1,8 +1,9 @@
+import { FilePick } from '../../ui/FilePick'
 import { useEffect, useRef, useState } from 'react'
 import { installApp } from '../../api/apps'
 import { Button } from '../../ui/Button'
 import { Dialog } from '../../ui/Dialog'
-import { LabeledInput } from '../../ui/Field'
+import { Field, LabeledInput } from '../../ui/Field'
 import { error, type AlertState } from './Apps'
 import { Notifier } from '../../ui/Notifier'
 
@@ -78,7 +79,7 @@ export function InstallApp({
     >
       <Notifier notice={alert} onClose={() => setAlert(null)} />
       <LabeledInput label="App Name" value={name} onChange={(e) => setName(e.target.value)} />
-      <LabeledInput label="App Zip File" type="file" ref={fileRef} />
+      <Field label="App Zip File">{(id) => <FilePick id={id} ref={fileRef} />}</Field>
     </Dialog>
   )
 }

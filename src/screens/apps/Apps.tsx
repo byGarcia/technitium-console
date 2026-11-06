@@ -10,17 +10,18 @@ import { type AlertType } from '../../ui/Alert'
 import { Button } from '../../ui/Button'
 import { SectionHeader } from '../../ui/SectionHeader'
 import { AppConfig } from './AppConfig'
-import { AppRow } from './AppRow'
+import { AppRow, KindChip } from './AppRow'
 import { AppsSummary } from './AppsSummary'
-import { KINDS, kindsOf } from './app-kinds'
+import { kindsOf } from './app-kinds'
 import { InstallApp } from './InstallApp'
 import { StoreApps } from './StoreApps'
 import { UpdateApp } from './UpdateApp'
 import { Empty, Failure, Loading } from '../../ui/Empty'
 import { Table, Th, useSort } from '../../ui/Table'
 import tbl from '../../ui/Table.module.css'
-import { DataFoot, DataTable } from '../../ui/DataTable'
-import { Field, Select } from '../../ui/Field'
+import { DataFoot, DataTable, End, Grow } from '../../ui/DataTable'
+import { Field, Input } from '../../ui/Field'
+import { dropParams, readParam, writeParams } from '../../lib/url-state'
 import styles from './Apps.module.css'
 import { noticeFromFailure } from '../../lib/notice'
 import { Notifier } from '../../ui/Notifier'
@@ -68,7 +69,14 @@ export function Apps({ token }: { token: string | null }) {
   /** Whether the last load failed: the gap is not drawn as an empty one. */
   const [failure, setFailure] = useState(false)
   const [pendingUninstall, setPendingUninstall] = useState<string | null>(null)
-  const [kindFilter, setKindFilter] = useState('')
+  /* The table's view, in the address bar as every list of the console keeps it
+     (`lib/url-state.ts`): the kind pressed on the Classes card and the search. */
+  const [kindFilter, setKindFilter] = useState(() => readParam('kind') ?? '')
+  const [search, setSearch] = useState(() => readParam('q') ?? '')
+  useEffect(() => {
+    writeParams({ kind: kindFilter, q: search })
+  }, [kindFilter, search])
+  useEffect(() => () => dropParams(['kind', 'q']), [])
 
   const reload = useCallback(async () => {
     const outcome = await listApps(token)
@@ -161,7 +169,12 @@ export function Apps({ token }: { token: string | null }) {
   or by pressing a kind in the Classes card. It only narrows what the table draws;
   nothing is asked of the server.
   */
-  const visible = kindFilter === '' ? (apps ?? []) : (apps ?? []).filter((a) => kindsOf(a).includes(kindFilter))
+  const needle = search.trim().toLowerCase()
+  const visible = (apps ?? []).filter(
+    (a) =>
+      (kindFilter === '' || kindsOf(a).includes(kindFilter)) &&
+      (needle === '' || a.name.toLowerCase().includes(needle) || (a.description ?? '').toLowerCase().includes(needle)),
+  )
 
   /*
   Upstream's installed list is a table and its `Installed Apps` header sorts it
@@ -213,24 +226,41 @@ export function Apps({ token }: { token: string | null }) {
           ) : (
             <DataTable
               toolbar={
-                <div className={styles.kindField}>
-                  <Field inline label="Kind">
-                    {(id) => (
-                      <Select id={id} value={kindFilter} onChange={(e) => setKindFilter(e.target.value)}>
-                        <option value="" />
-                        {KINDS.map((k) => (
-                          <option key={k} value={k}>
-                            {k}
-                          </option>
-                        ))}
-                      </Select>
-                    )}
-                  </Field>
-                </div>
+                <>
+                  <Grow>
+                    <Field inline label="Search">
+                      {(id) => (
+                        <Input
+                          id={id}
+                          search
+                          placeholder="Name or description"
+                          value={search}
+                          onChange={(e) => setSearch(e.target.value)}
+                        />
+                      )}
+                    </Field>
+                  </Grow>
+                  {kindFilter !== '' && (
+                    <End>
+                      <button type="button" className={styles.applied} onClick={() => setKindFilter('')}>
+                        <KindChip kind={kindFilter} />
+                        <span className={styles.clear}>Clear</span>
+                      </button>
+                    </End>
+                  )}
+                </>
               }
               /* Upstream's footer, `Total Apps: N` (apps.js:41): every installed app,
                  whatever the Kind filter leaves on screen. */
-              foot={<DataFoot count={`Total Apps: ${apps.length}`} />}
+              foot={
+                <DataFoot
+                  count={
+                    visible.length === apps.length
+                      ? `Total Apps: ${apps.length}`
+                      : `Total Apps: ${apps.length}, ${visible.length} shown`
+                  }
+                />
+              }
             >
               <Table
                 stack

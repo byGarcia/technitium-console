@@ -104,10 +104,10 @@ describe('Apps: installed list', () => {
 
     expect(await screen.findByRole('row', { name: 'What Is My Dns' })).toBeInTheDocument()
     expect(card('What Is My Dns').getByText('Version 9.0')).toBeInTheDocument()
-    // Two lines at rest, and whole again inside More Details.
-    expect(
-      card('What Is My Dns').getAllByText('Returns the IP address of the user DNS Server.'),
-    ).toHaveLength(2)
+    // One line at rest; the description is upstream's More Details, under the row.
+    expect(screen.queryByText('Returns the IP address of the user DNS Server.')).toBeNull()
+    await userEvent.click(card('What Is My Dns').getByRole('button', { name: 'More Details' }))
+    expect(screen.getByText('Returns the IP address of the user DNS Server.')).toBeInTheDocument()
   })
 
   /* Upstream's footer, apps.js:41. */
@@ -162,11 +162,14 @@ describe('Apps: installed list', () => {
     render(<Apps token="t" />)
     await screen.findByRole('row', { name: 'What Is My Dns' })
 
-    await userEvent.click(card('What Is My Dns').getByText('More Details'))
-    expect(card('What Is My Dns').getByText('NoData.App')).toBeInTheDocument()
-    // Once in the Kind column and once under the class.
-    expect(card('What Is My Dns').getAllByText('APP Record')).toHaveLength(2)
-    expect(card('What Is My Dns').getByText(/blockedTypes/)).toBeInTheDocument()
+    const more = card('What Is My Dns').getByRole('button', { name: 'More Details' })
+    await userEvent.click(more)
+    expect(more).toHaveAttribute('aria-expanded', 'true')
+    const detail = within(screen.getAllByText('NoData.App').map((e) => e.closest('tr')).find(Boolean)!)
+    // Under the class, as in the Kind column of the row above.
+    expect(detail.getByText('APP Record')).toBeInTheDocument()
+    expect(card('What Is My Dns').getByText('APP Record')).toBeInTheDocument()
+    expect(detail.getByText(/blockedTypes/)).toBeInTheDocument()
   })
 
   it('with no apps installed it explains what they are and offers to open the store', async () => {
@@ -432,7 +435,9 @@ describe('Apps: the store', () => {
     const row = within(await screen.findByRole('row', { name: 'Advanced Blocking' }))
     expect(row.getByText('Version 11.1')).toBeInTheDocument()
     expect(row.getByText(/61\.54 KB/)).toBeInTheDocument()
-    expect(row.getByText(/AdvancedBlockingApp-v11\.1\.zip/)).toBeInTheDocument()
+    // The zip is upstream's More Details, under the row.
+    await userEvent.click(row.getByRole('button', { name: 'More Details' }))
+    expect(screen.getByText(/AdvancedBlockingApp-v11\.1\.zip/)).toBeInTheDocument()
     expect(screen.getByText('Total Apps: 2')).toBeInTheDocument()
   })
 
@@ -545,5 +550,51 @@ describe('Apps: the store', () => {
     await openStore()
 
     expect(await screen.findByText('No Apps Found')).toBeInTheDocument()
+  })
+})
+
+describe('Apps: the redrawn table and dialogs (deviation 17)', () => {
+  it('the search narrows by name or description, writes ?q= and asks the server nothing', async () => {
+    window.history.replaceState(null, '', '/apps/')
+    const spy = withApps([UP_TO_DATE, WITH_UPDATE])
+    const { unmount } = render(<Apps token="t" />)
+    await screen.findByRole('row', { name: 'What Is My Dns' })
+    await userEvent.type(screen.getByLabelText('Search'), 'user dns')
+    expect(rowNames()).toEqual(['What Is My Dns'])
+    expect(window.location.search).toBe('?q=user+dns')
+    expect(screen.getByText('Total Apps: 2, 1 shown')).toBeInTheDocument()
+    expect(spy).toHaveBeenCalledTimes(1)
+    unmount()
+    expect(window.location.search).toBe('')
+  })
+
+  it('the config editor says whether the text is JSON, and Save still sends it as typed', async () => {
+    withApps([UP_TO_DATE])
+    vi.spyOn(api, 'getAppConfig').mockResolvedValue({
+      kind: 'ok',
+      data: { status: 'ok', response: { config: '{ "a": 1 }' } },
+    } as never)
+    const save = vi.spyOn(api, 'setAppConfig').mockResolvedValue({ kind: 'ok', data: { status: 'ok' } } as never)
+    render(<Apps token="t" />)
+    await screen.findByRole('row', { name: 'What Is My Dns' })
+    await userEvent.click(card('What Is My Dns').getByRole('button', { name: 'Config' }))
+    const editor = await screen.findByLabelText('Config File')
+    expect(screen.getByText('Valid JSON')).toBeInTheDocument()
+    await userEvent.type(editor, ',')
+    expect(screen.getByText(/^Not valid JSON/)).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }))
+    expect(save.mock.calls[0][2]).toBe('{ "a": 1 },')
+  })
+
+  it('the zip file field is still the file input its label names', async () => {
+    withApps([UP_TO_DATE])
+    render(<Apps token="t" />)
+    await screen.findByRole('row', { name: 'What Is My Dns' })
+    await userEvent.click(screen.getByRole('button', { name: /Install from file/ }))
+    const input = await screen.findByLabelText('App Zip File')
+    expect(input).toHaveAttribute('type', 'file')
+    await userEvent.upload(input, new File(['zip'], 'my-app.zip', { type: 'application/zip' }))
+    expect(screen.getByText('my-app.zip')).toBeInTheDocument()
+    expect(screen.getByText('3 B')).toBeInTheDocument()
   })
 })

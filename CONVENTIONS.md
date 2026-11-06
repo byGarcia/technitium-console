@@ -1002,14 +1002,21 @@ contract and SECURITY.md.
       Apps` header sorts it, its foot is upstream's `Total Apps: N` (apps.js:41),
       which this console had dropped, and `No Apps Found` when the filter leaves
       nothing. The tags are upstream's `Version X` and `Update Y` again.
-    - **A `Kind` column and a `Kind` filter.** Each row writes the kinds of its
-      classes once each, in upstream's order; the filter narrows what is drawn and
-      asks the server nothing. More Details still lists them per class.
+    - **A `Kind` column, and the kinds as a filter.** Each row writes the kinds of
+      its classes once each, in upstream's order. Pressing a kind on the Classes
+      card narrows the table to it; the toolbar's end then shows that kind with
+      `Clear`. A `Search` field in the toolbar narrows by name or description. Both
+      only narrow what is drawn and ask the server nothing; the foot reads `Total
+      Apps: N, M shown` while they hide rows. Both travel in the address bar
+      (`?kind=`, `?q=`, `lib/url-state.ts`), replacing the entry.
+    - **One line per app** (2026-11-06): the name with its tags, the kinds and the
+      actions. Upstream's More Details (the description, each class with its
+      labels, description and Record Data Template) opens under the row, from a
+      chevron named `More Details`; the store's rows do the same with the
+      description and `App Zip File`.
     - **Each kind has a series colour** (`app-kinds.ts`), from the Dashboard's open
       cycle `--ch-1` to `--ch-8`, `Generic` neutral; the kind is always written
       beside it.
-    - **The description shows two lines at rest** where More Details holds it whole;
-      opened, the whole one replaces them. An app without classes shows it whole.
     - **Row actions**: Config and Update as icons with their names in the tooltip,
       `Store Update` labelled when the store has one, and the `⋮` menu carrying all
       of them by name, Uninstall only there.
@@ -1021,6 +1028,9 @@ contract and SECURITY.md.
       buttons of the row.
     - **The header's "N update(s) available" pill is gone**: the Installed Apps
       card says it.
+    - **App Config's editor numbers its lines and says whether the text is JSON**
+      (`Valid JSON`, or `Not valid JSON:` and the browser's reason). It only
+      informs: Save sends the text as typed, valid or not.
     - Two that predate 2026-11-06 and are registered here because they were never
       written down: the header button says `Install from file` where upstream says
       `Install`, and with no app installed the table's place holds a region empty

@@ -1,0 +1,52 @@
+/* A file's text (`CodeArea.tsx`): a gutter of line numbers, the text, a status line. */
+.frame {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line-field);
+  border-radius: var(--r-3);
+  background: var(--field);
+  overflow: hidden;
+  transition: border-color var(--t-fast);
+}
+.frame:focus-within { border-color: var(--acc); }
+
+.body { display: flex; min-height: 0; height: 22rem; }
+
+.gutter {
+  flex: none;
+  overflow: hidden;
+  padding: var(--s-6) var(--s-5) var(--s-6) var(--s-6);
+  border-right: 1px solid var(--line);
+  background: var(--pan2);
+  color: var(--faint);
+  font: var(--t-3) / 1.6 var(--font-mono);
+  text-align: right;
+  user-select: none;
+  min-width: var(--s-12);
+}
+
+.text {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: var(--s-6) var(--s-7);
+  border: 0;
+  outline: 0;
+  resize: none;
+  background: transparent;
+  color: var(--ink);
+  font: var(--t-3) / 1.6 var(--font-mono);
+  white-space: pre;
+  overflow: auto;
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+  padding: var(--s-4) var(--s-7);
+  border-top: 1px solid var(--line);
+  background: var(--pan2);
+  font-size: var(--t-3);
+  color: var(--mute);
+}

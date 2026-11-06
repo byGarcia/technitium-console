@@ -96,7 +96,9 @@ confirmations are the browser's `confirm()`.
 .head {
   flex: none;
   display: flex; align-items: center; justify-content: space-between; gap: var(--s-8);
-  padding: var(--s-10) var(--s-11); border-bottom: 1px solid var(--line2);
+  /* No hairline under the title (2026-11-06): the dialog is one surface, and the
+     spacing separates the title from what it introduces, as in `ui/Confirm`. */
+  padding: var(--s-10) var(--s-11) var(--s-6);
 }
 .title { margin: 0; font-size: var(--t-6); font-weight: 650; letter-spacing: -0.01em; color: var(--ink); }
 /* The ✕ measured 28×22 and the minimum target is 24. It is the one on all 48 dialogs. */
@@ -116,7 +118,7 @@ confirmations are the browser's `confirm()`.
      inside a dialog and 24 on a page. Same mechanism as in
      `SectionHeader.module.css`. */
   --gap: var(--s-8);
-  padding: var(--s-10) var(--s-11) var(--s-11);
+  padding: var(--s-4) var(--s-11) var(--s-6);
   display: flex; flex-direction: column; gap: var(--gap);
   overflow-y: auto; min-height: 0;
 }
@@ -138,7 +140,7 @@ having moved the scroll, and it goes here so the next person does not pay it.
 .foot {
   flex: none;
   display: flex; justify-content: flex-end; gap: var(--s-5);
-  padding: var(--s-9) var(--s-11); border-top: 1px solid var(--line2); background: transparent;
+  padding: var(--s-9) var(--s-11) var(--s-10); background: transparent;
 }
 
 /*
@@ -162,6 +164,6 @@ hairlines that divide a form dialog cut a three-line question into three boxes,
 so here they go, and the spacing does their job: the sentence sits close under
 the title it explains, and the actions stand a full `--s-11` below it.
 */
-.plain .head { border-bottom: 0; padding-bottom: 0; }
+.plain .head { padding-bottom: 0; }
 .plain .body { padding-top: var(--s-5); padding-bottom: 0; }
-.plain .foot { border-top: 0; padding: var(--s-11) var(--s-11) var(--s-10); }
+.plain .foot { padding: var(--s-11) var(--s-11) var(--s-10); }

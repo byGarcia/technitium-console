@@ -184,9 +184,9 @@ describe('Apps: the Kind filter', () => {
     await userEvent.click(chip)
     expect(chip).toHaveAttribute('aria-pressed', 'true')
     expect(rowNames()).toEqual(['NO DATA', 'Split Horizon'])
-    expect(screen.getByLabelText('Kind')).toHaveTextContent('APP Record')
-    // The foot still counts every installed app, as upstream's does.
-    expect(screen.getByText('Total Apps: 4')).toBeInTheDocument()
+    // The toolbar says which kind is applied, and the foot still counts every app.
+    expect(screen.getByRole('button', { name: /APP Record\s*Clear/ })).toBeInTheDocument()
+    expect(screen.getByText('Total Apps: 4, 2 shown')).toBeInTheDocument()
 
     await userEvent.click(chip)
     expect(chip).toHaveAttribute('aria-pressed', 'false')
