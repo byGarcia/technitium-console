@@ -1086,9 +1086,25 @@ contract and SECURITY.md.
     - **Raw Responses (N)** keeps upstream's collapsed panel, but lists one row per
       response (Name Server, Question, RCODE, the three counts, Round Trip Time),
       each opening its own JSON (`RawResponses.tsx`).
-    - **The query bar** is two lines in one card, what is asked and then how,
-      with the node selector beside the buttons as upstream has it; Import
-      carries an icon. Same fields, labels, options and order.
+    - **The query is the toolbar of the answer's card** (2026-11-06): its first line
+      is what is asked (Domain, Type, Resolve and Import), the band under it how
+      (Server and its list, DNS-over-, EDNS Client Subnet, Enable DNSSEC Validation,
+      the node). Same fields, labels, options and verbs. The tabs and the tables
+      follow in the same card; the four cards stand above it once there is an
+      answer.
+    - **The question is the title once answered** (`DNS Client › github.com A`);
+      `DNS Client` in the trail goes back to the empty card.
+    - **The query is in the address bar** (`?domain=`, `?type=`, `?server=`,
+      `?protocol=`, `?dnssec=off`, `?ecs=`, `lib/url-state.ts`), written by
+      replacing the entry once an answer lands, only what differs from the form's
+      defaults. A bar naming a domain runs that query once on arrival, as a jump
+      from another screen does; a jump wins over the bar. They leave with the screen.
+    - **Recent queries** (`recent.ts`): the last eight that came back, newest first,
+      in this browser's storage only; the empty card lists them, and pressing one
+      fills the form and resolves it. With none, the card says `Run a query to see
+      the response.` as before.
+    - **The header flags are words, not boxes**: a set flag on a tint, an unset one
+      struck through and faint, each with its name in the tooltip.
     Its words, all ours: the card titles `Response`, `Answer`, `Server`, `Flags`;
     `Opcode`, `ID`, `Extended DNS Errors`, `Authority`, `Additional`, `Name
     Server`, `Protocol`, `Round Trip Time`, `Datagram Size`, `UDP Payload Size`,
@@ -1097,8 +1113,8 @@ contract and SECURITY.md.
     `Authority`, `Additional`, `JSON`; the headers `Name`, `Type`, `Class`,
     `TTL`, `Data`, `Source`, `Info Code`, `Extra Text`, `RCODE`; the sources
     `EDNS` and `DNS Client`; `No Record Found` (the zone table's words); `Show
-    raw response N` / `Hide raw response N`; and the Import confirmation's title
-    and verb, `Import`.
+    raw response N` / `Hide raw response N`; the Import confirmation's title
+    and verb, `Import`; and `Recent queries`.
 19. **DHCP reads like Cache and Zones** (Adrián's decision, 2026-11-06). Its two tabs
     open with stat cards over ONE card that both finds and shows (`ui/DataTable`), a
     row is one line with the rest under its `Details`, a scope opens as a page, and

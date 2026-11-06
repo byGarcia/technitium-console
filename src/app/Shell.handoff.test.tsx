@@ -136,7 +136,7 @@ describe('Shell: the jumps of the row menus', () => {
     mount()
     await pick('github.com', 'Query DNS Server')
 
-    expect(await screen.findByRole('heading', { name: 'DNS Client' })).toBeInTheDocument()
+    expect(await screen.findByRole('form', { name: 'Query' })).toBeInTheDocument()
     await waitFor(() => expect(resolve).toHaveBeenCalledTimes(1))
     expect(resolve.mock.calls[0][1]).toMatchObject({
       server: 'this-server',
@@ -180,7 +180,7 @@ describe('Shell: the jumps of the row menus', () => {
     expect(query.mock.calls[0][1]).toMatchObject({ qname: 'github.com', clientIpAddress: '' })
 
     await pick('row 1', 'Query DNS Server')
-    expect(await screen.findByRole('heading', { name: 'DNS Client' })).toBeInTheDocument()
+    expect(await screen.findByRole('form', { name: 'Query' })).toBeInTheDocument()
     await waitFor(() => expect(resolve).toHaveBeenCalledTimes(1))
     expect(resolve.mock.calls[0][1]).toMatchObject({ domain: 'api.github.com', type: 'HTTPS' })
   })

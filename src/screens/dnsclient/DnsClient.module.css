@@ -7,33 +7,29 @@ with the bottom edge of the fields beside it, the labels above.
 .bar {
   display: flex;
   flex-direction: column;
-  gap: var(--s-8);
-  padding: var(--s-9) var(--s-10);
-  background: var(--pan);
-  border: 1px solid var(--line);
-  border-radius: var(--r-4);
-  box-shadow: var(--e-1), var(--edge);
-  margin-bottom: var(--gap-block);
+  gap: var(--s-6);
 }
 
 .ask,
-.how { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--s-8); }
+.how { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--s-6) var(--s-8); }
+/* The band under the first line: how the query is asked, quieter. */
+.how { padding-top: var(--s-6); border-top: 1px dashed var(--line2); }
 
-.server { flex: 3 1 260px; min-width: 0; }
-.domain { flex: 4 1 260px; min-width: 0; }
+.domain { flex: 1 1 320px; min-width: 0; }
+.server { flex: 1 1 280px; min-width: 0; }
 .short { flex: 0 0 120px; }
 .ecs { flex: 0 1 200px; min-width: 160px; }
 
 /* The checkbox stands on the fields' baseline: it carries their height. */
 .check { display: flex; align-items: center; min-height: var(--field-height); }
 
-/* The node and the verbs, at the line's end; on a phone they take a line of their own. */
-.verbs { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--s-5); margin-left: auto; }
+/* The two verbs at the first line's end; on a phone they take a line of their own. */
+.verbs { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--s-5); }
 
 @media (max-width: 560px) {
   .short { flex: 1 1 120px; }
   .ecs { flex: 1 1 100%; }
-  .verbs { margin-left: 0; width: 100%; }
+  .verbs { width: 100%; }
   .verbs > button { flex: 1 1 0; justify-content: center; }
 }
 
@@ -47,5 +43,31 @@ with the bottom edge of the fields beside it, the labels above.
 /* The empty state's line, with the section's own icon before it. */
 .hint { display: inline-flex; align-items: center; gap: var(--s-4); color: var(--mute); }
 
-/* The answer: cards, sections, raw responses, in that order. */
-.answer { min-width: 0; }
+/* The card's body with no answer on screen: the wait, or the line saying what the
+   card is for. */
+.idle { padding: var(--s-11) var(--s-10); display: flex; justify-content: center; }
+
+/* The recent queries: one row each, the name, its type, how it was asked. */
+.recent { padding: var(--s-6) var(--s-10) var(--s-8); }
+.recentTitle { font-size: var(--t-3); color: var(--mute); margin-bottom: var(--s-4); }
+.recentList { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.recentRow {
+  display: flex;
+  align-items: center;
+  gap: var(--s-6);
+  width: 100%;
+  padding: var(--s-4) var(--s-5);
+  border: 0;
+  border-radius: var(--r-2);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.recentRow:hover { background: var(--pan2); }
+.recentRow:focus-visible { outline: var(--focus); outline-offset: var(--focus-offset); }
+.recentName { font: var(--t-4) var(--font-mono); overflow-wrap: break-word; min-width: 0; }
+.recentType { font-size: var(--t-3); font-weight: 600; color: var(--mute); }
+.recentVia { font-size: var(--t-3); color: var(--faint); margin-left: auto; overflow-wrap: break-word; min-width: 0; }
+.recentGo { color: var(--acc-ink); flex: none; }

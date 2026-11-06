@@ -121,7 +121,9 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
 - **DNS Client draws the answer instead of only printing it:** cards for the response code, the
   answer by record type, the server and the header flags; the Question, Answer, Authority,
   Additional and Extended DNS Errors sections as tables; the JSON as its own tab; and each raw
-  response as a row that opens its JSON.
+  response as a row that opens its JSON. The query is the answer card's toolbar, the question
+  becomes the page's title, the query goes in the address bar so a link repeats it, and the empty
+  card lists your recent queries to run again with one press.
 - **DHCP reads like Cache and Zones:** one line per lease and per scope with the rest under
   Details, a search and a State filter for scopes, and a scope that opens as its own page, with its
   verbs in the header, cards for its pool, leases, reservations and options, and a form whose twelve

@@ -4,7 +4,11 @@ import userEvent from '@testing-library/user-event'
 import { DnsClient } from './DnsClient'
 import * as api from '../../api/dnsclient'
 
-afterEach(() => vi.restoreAllMocks())
+afterEach(() => {
+  vi.restoreAllMocks()
+  // The recent queries live in this browser's storage: each test starts with none.
+  localStorage.removeItem('dnsclient-recent')
+})
 
 describe('DNS Client', () => {
   it('it requires the domain with the literal text of upstream', async () => {

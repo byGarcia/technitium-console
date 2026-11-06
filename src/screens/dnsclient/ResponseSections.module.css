@@ -31,3 +31,7 @@ and the JSON, under one strip of tabs inside `ui/DataTable`'s card.
 
 /* The JSON sits inside the card with the card's own air around it. */
 .json { padding: var(--s-8) var(--s-10); }
+
+/* The card's toolbar holds the query form on its own line, then the tabs. */
+.query { flex: 1 1 100%; min-width: 0; }
+.tabs { flex: 1 1 100%; min-width: 0; margin: 0 calc(var(--s-10) * -1) calc(var(--s-7) * -1); padding: 0 var(--s-10); border-top: 1px solid var(--line2); }

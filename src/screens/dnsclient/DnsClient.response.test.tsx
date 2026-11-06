@@ -12,7 +12,11 @@ v15.6.1 server (`resolve.real.json`, 2026-11-06), and four upstream behaviours o
 `resolveQuery()` this console had lost.
 */
 
-afterEach(() => vi.restoreAllMocks())
+afterEach(() => {
+  vi.restoreAllMocks()
+  // The recent queries live in this browser's storage: each test starts with none.
+  localStorage.removeItem('dnsclient-recent')
+})
 
 type Key = Exclude<keyof typeof real, '_note'>
 

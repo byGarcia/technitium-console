@@ -11,7 +11,11 @@ Arriving from another screen's "Query DNS Server": `queryDnsServer`
 (dnsclient.js:231-257) fills the form and runs `resolveQuery()`.
 */
 
-afterEach(() => vi.restoreAllMocks())
+afterEach(() => {
+  vi.restoreAllMocks()
+  // The recent queries live in this browser's storage: each test starts with none.
+  localStorage.removeItem('dnsclient-recent')
+})
 
 const NODES = [
   { name: 'node1.example', type: 'Primary' },

@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from 'react'
+import { useState, type CSSProperties, type ReactNode } from 'react'
 import { DataTable } from '../../ui/DataTable'
 import { DomainName } from '../../ui/DomainName'
 import { Raw } from '../../ui/Raw'
@@ -37,16 +37,40 @@ export function ResponseSections({
   d,
   json,
   label,
+  query,
+  idle,
+  seq,
 }: {
   /** The datagram, or null when the server's object is not one. */
   d: Datagram | null
-  /** Upstream's output: `JSON.stringify(result, null, 2)`. */
-  json: string
+  /** Upstream's output: `JSON.stringify(result, null, 2)`; null before an answer. */
+  json: string | null
   /** The JSON block's accessible name. */
   label: string
+  /** The query form, the card's toolbar (2026-11-06): the card that asks is the
+   *  card that answers, as Cache's search sits in its records' card. */
+  query: ReactNode
+  /** What the card holds with no answer on screen: the wait, or the recent queries. */
+  idle?: ReactNode
+  /** A new answer opens on its first section again, as upstream redraws it. */
+  seq: number
 }) {
   const errors = d == null ? [] : extendedErrors(d)
-  const [tab, setTab] = useState<Tab>(d == null ? 'json' : 'answer')
+  const first: Tab = d == null ? 'json' : 'answer'
+  const [tab, setTab] = useState<Tab>(first)
+  const [shownSeq, setShownSeq] = useState(seq)
+  if (shownSeq !== seq) {
+    setShownSeq(seq)
+    setTab(first)
+  }
+
+  if (json == null || idle != null) {
+    return (
+      <DataTable toolbar={<div className={styles.query}>{query}</div>}>
+        {idle}
+      </DataTable>
+    )
+  }
 
   const options: { id: Tab; label: string }[] =
     d == null
@@ -61,7 +85,16 @@ export function ResponseSections({
         ]
 
   return (
-    <DataTable toolbar={<Segmented asTabs flat label="Response sections" options={options} active={tab} onChoose={setTab} />}>
+    <DataTable
+      toolbar={
+        <>
+          <div className={styles.query}>{query}</div>
+          <div className={styles.tabs}>
+            <Segmented asTabs flat label="Response sections" options={options} active={tab} onChoose={setTab} />
+          </div>
+        </>
+      }
+    >
       {tab === 'json' || d == null ? (
         <div className={styles.json}>
           <Raw text={label}>{json}</Raw>

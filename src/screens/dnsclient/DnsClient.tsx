@@ -9,7 +9,7 @@ import { Field, Input, LabeledInput, LabeledSelect } from '../../ui/Field'
 import { Menu } from '../../ui/Menu'
 import { loadQuickList, protocolForServer, serverListOptions, type QuickServer } from '../../lib/quick-lists'
 import { SectionHeader } from '../../ui/SectionHeader'
-import { Empty, Loading } from '../../ui/Empty'
+import { Loading } from '../../ui/Empty'
 import { Icon } from '../../ui/Icon'
 import styles from './DnsClient.module.css'
 import { noticeFromFailure, type Notice } from '../../lib/notice'
@@ -18,6 +18,8 @@ import { asDatagram, stripUrl } from './response'
 import { ResponseSummary } from './ResponseSummary'
 import { ResponseSections } from './ResponseSections'
 import { RawResponses } from './RawResponses'
+import { dropParams, readParam, writeParams } from '../../lib/url-state'
+import { readRecent, rememberQuery, type RecentQuery } from './recent'
 
 /*
 A replica of `resolveQuery()` (dnsclient.js:95-210). Both buttons call the same
@@ -33,6 +35,8 @@ What this screen draws of the answer is deviation 18 in CONVENTIONS.md: the card
 (`ResponseSummary.tsx`), the sections and the JSON (`ResponseSections.tsx`) and the
 raw responses (`RawResponses.tsx`), all read from the one response.
 */
+
+const DEFAULT_SERVER = 'This Server {this-server}'
 
 /** What a query sends, fixed at the moment upstream would have read the form. */
 interface Query {
@@ -74,7 +78,10 @@ export function DnsClient({
      persistence. The jump picks a node only when it was given one. */
   const [clusterNode, setClusterNode] = useState<string>(() => request?.node ?? '')
 
-  const [server, setServer] = useState('This Server {this-server}')
+  /* A query from the address bar (2026-11-06): what a copied link asks, read once on
+     arrival. A jump from another screen (`request`) wins over it. */
+  const fromBar = request == null && readParam('domain') != null
+  const [server, setServer] = useState(() => (fromBar ? (readParam('server') ?? DEFAULT_SERVER) : DEFAULT_SERVER))
   /* Upstream focuses the field a validation names (dnsclient.js:123 and 129). */
   const serverField = useRef<HTMLInputElement>(null)
   const domainField = useRef<HTMLInputElement>(null)
@@ -101,13 +108,18 @@ export function DnsClient({
       alive = false
     }
   }, [])
-  const [domain, setDomain] = useState(() => request?.domain ?? '')
-  const [type, setType] = useState(() => request?.type ?? 'A')
-  const [protocol, setProtocol] = useState('UDP')
-  const [ecs, setEcs] = useState('')
+  const [domain, setDomain] = useState(() => request?.domain ?? (fromBar ? (readParam('domain') ?? '') : ''))
+  const [type, setType] = useState(() => request?.type ?? (fromBar ? (readParam('type') ?? 'A') : 'A'))
+  const [protocol, setProtocol] = useState(() => (fromBar ? (readParam('protocol') ?? 'UDP') : 'UDP'))
+  const [ecs, setEcs] = useState(() => (fromBar ? (readParam('ecs') ?? '') : ''))
   /* The one field the jump does not leave at its default: it UNCHECKS validation
      (dnsclient.js:240). */
-  const [dnssec, setDnssec] = useState(() => request == null)
+  const [dnssec, setDnssec] = useState(() => request == null && !(fromBar && readParam('dnssec') === 'off'))
+  /* The last queries that came back, kept in this browser only (`lib/recent-queries`),
+     to run again from the empty card with one press. */
+  const [recent, setRecent] = useState<RecentQuery[]>(readRecent)
+  /* Bumped to run a query after the fields a recent one fills have landed. */
+  const [rerun, setRerun] = useState(0)
   const [shown, setShown] = useState<Shown | null>(null)
   const [alert, setAlert] = useState<Notice | null>(null)
   /* Which button is busy: it reads `Resolving...` or `Importing...` (index.html:915-916)
@@ -185,6 +197,17 @@ export function DnsClient({
     }
 
     const r = outcome.data.response
+    /* What came back is a place a link can return to, and a query worth offering
+       again: the bar says it (replacing the entry) and the recent list keeps it. */
+    writeParams({
+      domain: q.domain,
+      type: q.type === 'A' ? null : q.type,
+      server: q.serverText === DEFAULT_SERVER ? null : q.serverText,
+      protocol: q.protocol === 'UDP' ? null : q.protocol,
+      dnssec: q.dnssec ? null : 'off',
+      ecs: q.ecs,
+    })
+    setRecent(rememberQuery({ server: q.serverText, domain: q.domain, type: q.type, protocol: q.protocol }))
     seq.current += 1
     setShown({ result: r.result, raw: r.rawResponses ?? [], domain: q.domain, type: q.type, seq: seq.current })
 
@@ -210,6 +233,25 @@ export function DnsClient({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [request])
 
+  /* The address bar's query runs once on arrival, as a jump does; the bar's
+     parameters leave with the screen. */
+  const ranBar = useRef(false)
+  useEffect(() => {
+    if (!fromBar || ranBar.current) return
+    ranBar.current = true
+    fire(false)
+    // Once, with the state the first render read from the bar.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+  useEffect(() => () => dropParams(['domain', 'type', 'server', 'protocol', 'dnssec', 'ecs']), [])
+
+  /* A recent query pressed: its fields are set, then it runs as Resolve would. */
+  useEffect(() => {
+    if (rerun > 0) fire(false)
+    // `fire` reads the fields this render holds, the ones the press just set.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rerun])
+
   /* Upstream's Resolve is the form's submit button: Enter in any field resolves. */
   function submit(e: FormEvent) {
     e.preventDefault()
@@ -219,124 +261,142 @@ export function DnsClient({
   const d = shown == null ? null : asDatagram(shown.result)
   const datagram = d != null && typeof d.RCODE === 'string' ? d : null
 
+  /*
+  THE QUERY, AS THE CARD'S TOOLBAR (deviation 18, 2026-11-06): what is asked on the
+  first line (Domain, Type and the two verbs), how it is asked on the band under it
+  (Server and its list, DNS-over-, EDNS Client Subnet, DNSSEC validation and the
+  node). The same fields, labels, options and order as upstream's form
+  (index.html:838-919); only where they sit changes.
+  */
+  const form = (
+    <form className={styles.bar} onSubmit={submit} aria-label="Query">
+      <div className={styles.ask}>
+        <div className={styles.domain}>
+          <Field label="Domain">
+            {(id) => (
+              <Input
+                id={id}
+                ref={domainField}
+                placeholder="example.com"
+                mono
+                search
+                value={domain}
+                onChange={(e) => setDomain(e.target.value)}
+              />
+            )}
+          </Field>
+        </div>
+        <div className={styles.short}>
+          <LabeledSelect label="Type" value={type} onChange={(e) => setType(e.target.value)}>
+            {TYPES.map((t) => <option key={t}>{t}</option>)}
+          </LabeledSelect>
+        </div>
+        <div className={styles.verbs}>
+          <Button type="submit" lead="run" variant="primary" disabled={busy != null}>
+            {busy === 'resolve' ? 'Resolving...' : 'Resolve'}
+          </Button>
+          <Button type="button" lead="download" disabled={busy != null} onClick={() => fire(true)}>
+            {busy === 'import' ? 'Importing...' : 'Import'}
+          </Button>
+        </div>
+      </div>
+      <div className={styles.how}>
+        <div className={styles.server}>
+          {/*
+          A field with a menu hanging off it, as upstream's (`index.html:840-846`):
+          the field stays free text, and the arrow opens EVERY server whatever the
+          field holds (a `<datalist>` filters by the field's text, issue #15).
+          Choosing also moves the protocol (`dnsclient.js:30-46`).
+          */}
+          <Field label="Server">
+            {(id) => (
+              <div className={styles.combo} ref={combo}>
+                <Input id={id} ref={serverField} mono value={server} onChange={(e) => setServer(e.target.value)} />
+                <Menu label="Server list" icon="chevronDown" anchor="left" alignTo={combo}>
+                  {(close) =>
+                    servers.map((sv) => (
+                      <button
+                        key={sv}
+                        type="button"
+                        onClick={() => {
+                          setServer(sv)
+                          setProtocol((p) => protocolForServer(sv, p))
+                          close()
+                        }}
+                      >
+                        {sv}
+                      </button>
+                    ))
+                  }
+                </Menu>
+              </div>
+            )}
+          </Field>
+        </div>
+        <div className={styles.short}>
+          <LabeledSelect label="DNS-over-" value={protocol} onChange={(e) => setProtocol(e.target.value)}>
+            {PROTOCOLS.map((t) => <option key={t}>{t}</option>)}
+          </LabeledSelect>
+        </div>
+        <div className={styles.ecs}>
+          <LabeledInput label="EDNS Client Subnet" mono value={ecs} onChange={(e) => setEcs(e.target.value)} />
+        </div>
+        <div className={styles.check}>
+          <Check label="Enable DNSSEC Validation" checked={dnssec} onChange={setDnssec} />
+        </div>
+        <ClusterNodeSelect
+          nodes={nodes}
+          initialised={clusterInitialised}
+          value={clusterNode}
+          onChange={setClusterNode}
+          label="Cluster Node"
+        />
+      </div>
+    </form>
+  )
+
   return (
     <>
-      <SectionHeader title="DNS Client" />
+      {/* The question is the page once it is answered, as a zone is the page once
+          it is open: `DNS Client ›` goes back to the empty form. */}
+      {shown == null ? (
+        <SectionHeader title="DNS Client" />
+      ) : (
+        <SectionHeader
+          section="DNS Client"
+          onBack={() => setShown(null)}
+          title={`${shown.domain} ${shown.type}`}
+        />
+      )}
 
       <Notifier notice={alert} onClose={() => setAlert(null)} />
 
-      {/*
-      THE QUERY BAR (deviation 18): what is asked on the first line, how it is asked
-      on the second, and the two verbs at its end. The same fields, labels, options
-      and order as upstream's form (index.html:838-919), its node selector beside
-      the buttons as upstream has it.
-      */}
-      <form className={styles.bar} onSubmit={submit} aria-label="Query">
-        <div className={styles.ask}>
-          <div className={styles.server}>
-            {/*
-            A field with a menu hanging off it, as upstream's (`index.html:840-846`):
-            the field stays free text, and the arrow opens EVERY server whatever the
-            field holds (a `<datalist>` filters by the field's text, issue #15).
-            Choosing also moves the protocol (`dnsclient.js:30-46`).
-            */}
-            <Field label="Server">
-              {(id) => (
-                <div className={styles.combo} ref={combo}>
-                  <Input id={id} ref={serverField} mono value={server} onChange={(e) => setServer(e.target.value)} />
-                  <Menu label="Server list" icon="chevronDown" anchor="left" alignTo={combo}>
-                    {(close) =>
-                      servers.map((s) => (
-                        <button
-                          key={s}
-                          type="button"
-                          onClick={() => {
-                            setServer(s)
-                            setProtocol((p) => protocolForServer(s, p))
-                            close()
-                          }}
-                        >
-                          {s}
-                        </button>
-                      ))
-                    }
-                  </Menu>
-                </div>
-              )}
-            </Field>
-          </div>
-          <div className={styles.domain}>
-            <Field label="Domain">
-              {(id) => (
-                <Input
-                  id={id}
-                  ref={domainField}
-                  placeholder="example.com"
-                  mono
-                  search
-                  value={domain}
-                  onChange={(e) => setDomain(e.target.value)}
-                />
-              )}
-            </Field>
-          </div>
-          <div className={styles.short}>
-            <LabeledSelect label="Type" value={type} onChange={(e) => setType(e.target.value)}>
-              {TYPES.map((t) => <option key={t}>{t}</option>)}
-            </LabeledSelect>
-          </div>
-          <div className={styles.short}>
-            <LabeledSelect label="DNS-over-" value={protocol} onChange={(e) => setProtocol(e.target.value)}>
-              {PROTOCOLS.map((t) => <option key={t}>{t}</option>)}
-            </LabeledSelect>
-          </div>
-        </div>
-        <div className={styles.how}>
-          <div className={styles.ecs}>
-            <LabeledInput label="EDNS Client Subnet" mono value={ecs} onChange={(e) => setEcs(e.target.value)} />
-          </div>
-          <div className={styles.check}>
-            <Check label="Enable DNSSEC Validation" checked={dnssec} onChange={setDnssec} />
-          </div>
-          <div className={styles.verbs}>
-            <ClusterNodeSelect
-              nodes={nodes}
-              initialised={clusterInitialised}
-              value={clusterNode}
-              onChange={setClusterNode}
-              label="Cluster Node"
+      {shown != null && busy == null && datagram != null && <ResponseSummary d={datagram} />}
+      <ResponseSections
+        d={datagram}
+        json={shown == null ? null : JSON.stringify(shown.result, null, 2)}
+        label={shown == null ? '' : `DNS response for ${shown.domain} ${shown.type}`}
+        seq={shown?.seq ?? 0}
+        query={form}
+        idle={
+          busy != null ? (
+            /* Upstream hides the answer while a query travels and shows its loader. */
+            <div className={styles.idle}><Loading /></div>
+          ) : shown == null ? (
+            <Recent
+              queries={recent}
+              onRun={(q) => {
+                setServer(q.server)
+                setDomain(q.domain)
+                setType(q.type)
+                setProtocol(q.protocol)
+                setRerun((n) => n + 1)
+              }}
             />
-            <Button type="submit" lead="run" variant="primary" disabled={busy != null}>
-              {busy === 'resolve' ? 'Resolving...' : 'Resolve'}
-            </Button>
-            <Button type="button" lead="download" disabled={busy != null} onClick={() => fire(true)}>
-              {busy === 'import' ? 'Importing...' : 'Import'}
-            </Button>
-          </div>
-        </div>
-      </form>
-
-      {/* Upstream hides the answer while a query travels and shows its loader. */}
-      {busy != null ? (
-        <Loading />
-      ) : shown == null ? (
-        <Empty>
-          <span className={styles.hint}>
-            <Icon name="dnsclient" size={16} />
-            Run a query to see the response.
-          </span>
-        </Empty>
-      ) : (
-        <div key={shown.seq} className={styles.answer}>
-          {datagram != null && <ResponseSummary d={datagram} />}
-          <ResponseSections
-            d={datagram}
-            json={JSON.stringify(shown.result, null, 2)}
-            label={`DNS response for ${shown.domain} ${shown.type}`}
-          />
-          {shown.raw.length > 0 && <RawResponses responses={shown.raw} />}
-        </div>
-      )}
+          ) : undefined
+        }
+      />
+      {shown != null && busy == null && shown.raw.length > 0 && <RawResponses key={shown.seq} responses={shown.raw} />}
 
       <Confirm
         open={asking != null}
@@ -352,5 +412,42 @@ export function DnsClient({
         }}
       />
     </>
+  )
+}
+
+/*
+The empty card before a query (2026-11-06): the last queries this browser ran,
+each pressed to fill the form and resolve it again. With none it says what the
+card is for, as the empty card did.
+*/
+function Recent({ queries, onRun }: { queries: RecentQuery[]; onRun: (q: RecentQuery) => void }) {
+  if (queries.length === 0) {
+    return (
+      <div className={styles.idle}>
+        <span className={styles.hint}>
+          <Icon name="dnsclient" size={16} />
+          Run a query to see the response.
+        </span>
+      </div>
+    )
+  }
+  return (
+    <div className={styles.recent}>
+      <div className={styles.recentTitle}>Recent queries</div>
+      <ul className={styles.recentList} aria-label="Recent queries">
+        {queries.map((q) => (
+          <li key={`${q.server}|${q.domain}|${q.type}|${q.protocol}`}>
+            <button type="button" className={styles.recentRow} onClick={() => onRun(q)}>
+              <span className={styles.recentName}>{q.domain}</span>
+              <span className={styles.recentType}>{q.type}</span>
+              <span className={styles.recentVia}>
+                {q.server} · {q.protocol}
+              </span>
+              <Icon name="run" size={14} className={styles.recentGo} />
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
   )
 }

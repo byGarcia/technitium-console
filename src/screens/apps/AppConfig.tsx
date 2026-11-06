@@ -101,18 +101,27 @@ or not, exactly as before. An empty file says nothing.
 */
 function JsonState({ text }: { text: string }) {
   if (text.trim() === '') return null
-  try {
-    JSON.parse(text)
+  const problem = jsonProblem(text)
+  if (problem == null) {
     return (
       <>
         <span className={styles.dotOk} aria-hidden="true" /> Valid JSON
       </>
     )
+  }
+  return (
+    <span className={styles.bad}>
+      <span className={styles.dotBad} aria-hidden="true" /> Not valid JSON: {problem}
+    </span>
+  )
+}
+
+/** Why the text is not JSON, or null when it is. */
+function jsonProblem(text: string): string | null {
+  try {
+    JSON.parse(text)
+    return null
   } catch (e) {
-    return (
-      <span className={styles.bad}>
-        <span className={styles.dotBad} aria-hidden="true" /> Not valid JSON: {e instanceof Error ? e.message : String(e)}
-      </span>
-    )
+    return e instanceof Error ? e.message : String(e)
   }
 }
