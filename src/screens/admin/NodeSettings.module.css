@@ -1,0 +1,43 @@
+/*
+Settings Across Nodes (deviation 31): the card under the Cluster table. The summary
+and any node that did not answer on a line over the table; a row is its group in
+small capitals, the setting's label and, when the nodes disagree, `Differs`.
+*/
+.panel { margin-top: var(--s-9); }
+
+.status {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s-3);
+  padding: var(--s-7) var(--s-9);
+  border-bottom: 1px solid var(--line2);
+}
+
+.summary { margin: 0; font-size: var(--t-4); font-weight: 600; color: var(--mute); }
+.summary[data-tone='ok'] { color: var(--ok); }
+.summary[data-tone='warn'] { color: var(--warn); }
+
+.failed { margin: 0; font-size: var(--t-3); color: var(--mute); overflow-wrap: break-word; }
+.node { font-family: var(--font-mono); color: var(--ink); }
+
+/* The panel draws the box; the table inside drops its own. */
+.table { border: 0; border-radius: 0; box-shadow: none; }
+
+.head { display: block; font-family: var(--font-mono); text-transform: none; color: var(--ink); }
+
+/* The group label before the setting's, at one width so the labels line up. */
+.setting { min-width: 0; }
+.group { composes: smallCaps from '../../ui/label.module.css'; display: inline-block; min-width: 112px; margin-right: var(--s-5); }
+.label { margin-right: var(--s-5); color: var(--ink); }
+
+/* A row whose nodes disagree: a warning rule down its first cell, the values in
+   weight. Not a wash: the Self row of the node table above is washed in the
+   accent, which a warning wash cannot be told from (tokens.css). */
+tr[data-differs] > .setting { box-shadow: inset 2px 0 0 var(--warn); }
+/* Stacked, the row is the block: the rule goes down all of it, clear of the text. */
+:global([data-stacked]) tr[data-differs] { box-shadow: inset 2px 0 0 var(--warn); }
+:global([data-stacked]) tr[data-differs] > .setting { box-shadow: none; }
+
+.value { white-space: pre-line; font-variant-numeric: tabular-nums; overflow-wrap: break-word; }
+tr[data-differs] .value { color: var(--ink); font-weight: 550; }

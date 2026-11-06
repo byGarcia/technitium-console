@@ -50,9 +50,13 @@ export interface AdminProps {
   /** The sub-navigation now lives under the title, so this IS invoked: it is what
    *  the bar calls when a tab is chosen. */
   onSubChange?: (sub: SubTab) => void
+  /** `Settings.canView`: the Cluster sub-tab's Settings Across Nodes card reads
+   *  `settings/get`, which is Settings' permission, not Administration's
+   *  (deviation 31). Nothing else here is told a permission. */
+  canViewSettings?: boolean
 }
 
-export function Admin({ token, sub }: AdminProps) {
+export function Admin({ token, sub, canViewSettings = true }: AdminProps) {
   const [notice, setNotice] = useState<Notice | null>(null)
   const [cluster, setCluster] = useState<ClusterState | null>(null)
   /*
@@ -134,6 +138,7 @@ export function Admin({ token, sub }: AdminProps) {
           onNodeChange={setNode}
           onCluster={toCluster}
           onNotice={notify}
+          canViewSettings={canViewSettings}
         />
       )}
     </div>

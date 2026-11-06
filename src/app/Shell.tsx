@@ -873,8 +873,15 @@ export function Shell({
           />
         ) : current?.id === 'admin' ? (
           /* No permission props on purpose: upstream hides and disables nothing
-             inside Administration, only the whole section (main.js:165). */
-          <Admin token={session.token} sub={currentSub ?? 'Sessions'} onSubChange={setSub} />
+             inside Administration, only the whole section (main.js:165). The one
+             exception is OURS: Cluster's Settings Across Nodes card reads
+             `settings/get`, which needs Settings: View (deviation 31). */
+          <Admin
+            token={session.token}
+            sub={currentSub ?? 'Sessions'}
+            onSubChange={setSub}
+            canViewSettings={permissions?.Settings?.canView !== false}
+          />
         ) : current?.id === 'settings' ? (
           /* main.js:906-930: three different permissions in a single bar:
              saving requires Settings.canModify, flushing the cache

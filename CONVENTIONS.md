@@ -1682,6 +1682,27 @@ contract and SECURITY.md.
     `X%`, `<1%`, `Dynamic N, Reserved N`, and the bar's name `<scope>: N of the M addresses in its
     range leased, X%`.
 
+31. **Cluster compares the nodes' settings** (Adrián's decision, 2026-11-06;
+    `screens/admin/NodeSettings.tsx`, `node-settings.ts`). With the cluster initialised, a
+    `Settings Across Nodes` card under the node table reads `settings/get` once per node, with the
+    node's name in `node` as Settings sends it (the server proxies the read to that node), again
+    each time the sub-tab reads the cluster's state (arrival and Refresh). Read only: nothing is
+    written. One column per node, one row per setting of a curated set, each with its group label:
+    Identity (DNS Server Domain, Version, Up Since), Resolution (Local End Points, Recursion, DNSSEC
+    Validation, IPv6 Support, EDNS Client Subnet, EDNS UDP Payload Size), Rate Limiting (QPM Sample
+    Size, the IPv4 and IPv6 QPM limits), Zone Defaults (the three default TTLs), Blocking (Enable
+    Blocking, Blocking Type), Forwarders (Forwarders, Forwarder Protocol), Logging (Enable Logging
+    To). Labels and option labels are the Settings panes', without `(default)` and
+    `(recommended)`. The domain and the start are each node's own and are never counted; any other
+    row whose answering nodes disagree is marked `Differs`, with a warning rule down it, and listed
+    first. The line over the table says `Every setting matches`, `N settings differ`, `Only one node
+    answered` or `No node answered`; `Show only differences` hides the rest. A node that does not
+    answer keeps its column, empty, marked `Unavailable`, and a line names it with the server's
+    message (`<node> did not answer: <message>`); it takes no part in the comparison. Without
+    `Settings: View` nothing is read and the card is locked (`Requires Settings: View`); that is the
+    one permission Administration is told (`Admin`'s `canViewSettings`, from the Shell). Its words,
+    OURS, are declared in the header comments of both files.
+
 ## Four constraints the server imposes
 
 These are not preferences: break them and the console works in development and

@@ -42,6 +42,7 @@ import tbl from '../../ui/Table.module.css'
 import { RowAction, Th, useSort, type Keys, Table } from '../../ui/Table'
 import { Menu, Separator } from '../../ui/Menu'
 import { Notifier } from '../../ui/Notifier'
+import { NodeSettings } from './NodeSettings'
 
 /*
 The Cluster sub-tab (the whole of `cluster.js`, 1,055 lines). Twelve endpoints
@@ -66,6 +67,11 @@ What to keep in front of you:
   · **`secondary/resync` does not return the cluster's state**: an alert is shown
     and it points at the Logs.
 
+Deviation 31 (2026-11-06): with the cluster initialised, a Settings Across Nodes
+card under the table (`NodeSettings.tsx`) reads `settings/get` once per node and
+compares a curated set; it needs `Settings: View`, the only permission this
+sub-tab is told.
+
 Verification notice: with a single instance the cluster never gets initialised,
 so half of these endpoints could not be exercised against a real server. They are
 written against `cluster.js` and against `WebServiceClusterApi.cs`, and covered
@@ -82,6 +88,10 @@ interface Props {
   onNodeChange?: (node: string) => void
   onCluster: (s: ClusterState) => void
   onNotice: (a: Notice) => void
+  /** `Settings.canView`, for the Settings Across Nodes card (deviation 31): the
+   *  one permission this sub-tab reads, because that card is the one call here
+   *  that is not of the cluster's own family. */
+  canViewSettings?: boolean
 }
 
 type Modal =
@@ -109,7 +119,16 @@ const KEYS: Keys<ClusterNode> = {
   synced: (n) => (n.state === 'Self' && n.type === 'Secondary' ? (n.configLastSynced ?? '') : ''),
 }
 
-export function Cluster({ tabs, token, cluster, node: controlledNode, onNodeChange, onCluster, onNotice }: Props) {
+export function Cluster({
+  tabs,
+  token,
+  cluster,
+  node: controlledNode,
+  onNodeChange,
+  onCluster,
+  onNotice,
+  canViewSettings = true,
+}: Props) {
   const [localNode, setLocalNode] = useState('')
   const node = controlledNode ?? localNode
   const setNode = onNodeChange ?? setLocalNode
@@ -221,129 +240,134 @@ export function Cluster({ tabs, token, cluster, node: controlledNode, onNodeChan
           This server is not part of a cluster. Create one, or join an existing cluster.
         </Empty>
       ) : (
-        <DataTable
-          /* Deviation 23: the node picker is the table's toolbar, and `Total Nodes`
-             its foot, as every list now has them. */
-          toolbar={
-            <End>
-              <NodePicker cluster={state} value={node} onChange={setNode} label="Cluster Node" />
-            </End>
-          }
-          foot={<DataFoot count={`Total Nodes: ${nodes.length}`} />}
-        >
-          <Table
-            stack
-            header={
-              <>
-                <Th field="name" sort={sort} onSort={toggle}>Node Name</Th>
-                <Th field="ip" sort={sort} onSort={toggle}>IP Address</Th>
-                <Th field="url" sort={sort} onSort={toggle}>URL</Th>
-                <Th field="type" sort={sort} onSort={toggle}>Type</Th>
-                <Th field="state" sort={sort} onSort={toggle}>State</Th>
-                <Th field="upSince" sort={sort} onSort={toggle}>Up Since</Th>
-                <Th field="lastSeen" sort={sort} onSort={toggle}>Last Seen</Th>
-                <Th field="synced" sort={sort} onSort={toggle}>Last Synced</Th>
-                <th className={tbl.actionsCell} />
-              </>
+        <>
+          <DataTable
+            /* Deviation 23: the node picker is the table's toolbar, and `Total Nodes`
+               its foot, as every list now has them. */
+            toolbar={
+              <End>
+                <NodePicker cluster={state} value={node} onChange={setNode} label="Cluster Node" />
+              </End>
             }
-            isEmpty={visibleNodes.length === 0}
-            emptyText="No Node Found"
-            columns={9}
+            foot={<DataFoot count={`Total Nodes: ${nodes.length}`} />}
           >
-            {visibleNodes.map((n) => (
-              /* This node's own row, washed in `--acc-bg`. The `Self` in its
-                 `State` column stays: the colour finds the row, the word says
-                 which it is. Same treatment as the current session's row. */
-              <tr key={n.id} className={n.state === 'Self' ? tbl.rowSelf : undefined}>
-                <td className={tbl.lead}>
-                  {n.name}
-                  {/* The node's version under its name, as `(v15.6)`: new in
-                      v15.6 (cluster.js:180-183). */}
-                  {n.version != null && <div className={tbl.meta}>(v{n.version})</div>}
-                </td>
-                <td className={styles.mono}>
-                  {n.ipAddresses.map((ip) => (
-                    <div key={ip}>{ip}</div>
-                  ))}
-                </td>
-                <td className={styles.mono}>{n.url}</td>
-                <td>
-                  {n.type === 'Primary' || n.type === 'Secondary' ? (
-                    <Tag tone="info">{n.type}</Tag>
-                  ) : (
-                    <Tag tone="warn">Unknown</Tag>
-                  )}
-                </td>
-                <td>
-                  {n.state === 'Self' ? (
-                    <Tag>Self</Tag>
-                  ) : n.state === 'Connected' ? (
-                    <Tag tone="ok">Connected</Tag>
-                  ) : n.state === 'Unreachable' ? (
-                    <Tag tone="warn">Unreachable</Tag>
-                  ) : (
-                    <Tag tone="warn">Unknown</Tag>
-                  )}
-                </td>
-                <td className={styles.nowrap}>
-                  <RelativeDate iso={n.upSince} />
-                </td>
-                <td className={styles.nowrap}>
-                  {/* The node itself has no "Last Seen": in its row that column
-                      is always empty (cluster.js:177-193). */}
-                  {n.state !== 'Self' && <RelativeDate iso={n.lastSeen} />}
-                </td>
-                <td className={styles.nowrap}>
-                  {n.state === 'Self' && n.type === 'Secondary' && (
-                    <RelativeDate iso={n.configLastSynced} />
-                  )}
-                </td>
-                <td className={tbl.actionsCell}>
-                  <div className={tbl.actions}>
-                    {/* What can be done with a node depends on whether this
-                        console is talking to the primary or to a secondary
-                        (cluster.js:248-264). Editing is the frequent one and goes
-                        in the row; removing and promoting, inside the menu. */}
-                    {(isPrimary ? n.state === 'Self' : n.state === 'Self' || n.type === 'Primary') && (
-                      <RowAction
-                        icon="edit"
-                        name="Edit Node"
-                        onClick={() =>
-                          setModal({
-                            type: n.state === 'Self' ? 'editSelf' : 'editPrimary',
-                            node: n,
-                          })
-                        }
-                      />
+            <Table
+              stack
+              header={
+                <>
+                  <Th field="name" sort={sort} onSort={toggle}>Node Name</Th>
+                  <Th field="ip" sort={sort} onSort={toggle}>IP Address</Th>
+                  <Th field="url" sort={sort} onSort={toggle}>URL</Th>
+                  <Th field="type" sort={sort} onSort={toggle}>Type</Th>
+                  <Th field="state" sort={sort} onSort={toggle}>State</Th>
+                  <Th field="upSince" sort={sort} onSort={toggle}>Up Since</Th>
+                  <Th field="lastSeen" sort={sort} onSort={toggle}>Last Seen</Th>
+                  <Th field="synced" sort={sort} onSort={toggle}>Last Synced</Th>
+                  <th className={tbl.actionsCell} />
+                </>
+              }
+              isEmpty={visibleNodes.length === 0}
+              emptyText="No Node Found"
+              columns={9}
+            >
+              {visibleNodes.map((n) => (
+                /* This node's own row, washed in `--acc-bg`. The `Self` in its
+                   `State` column stays: the colour finds the row, the word says
+                   which it is. Same treatment as the current session's row. */
+                <tr key={n.id} className={n.state === 'Self' ? tbl.rowSelf : undefined}>
+                  <td className={tbl.lead}>
+                    {n.name}
+                    {/* The node's version under its name, as `(v15.6)`: new in
+                        v15.6 (cluster.js:180-183). */}
+                    {n.version != null && <div className={tbl.meta}>(v{n.version})</div>}
+                  </td>
+                  <td className={styles.mono}>
+                    {n.ipAddresses.map((ip) => (
+                      <div key={ip}>{ip}</div>
+                    ))}
+                  </td>
+                  <td className={styles.mono}>{n.url}</td>
+                  <td>
+                    {n.type === 'Primary' || n.type === 'Secondary' ? (
+                      <Tag tone="info">{n.type}</Tag>
+                    ) : (
+                      <Tag tone="warn">Unknown</Tag>
                     )}
-                    {((isPrimary && n.type === 'Secondary') ||
-                      (ownType === 'Secondary' && n.state === 'Self')) && (
-                      <Menu label={`Actions for ${n.name}`}>
-                        {(close) => (
-                          <>
-                            {ownType === 'Secondary' && n.state === 'Self' && (
-                              <button type="button" onClick={() => { close(); setModal({ type: 'promote', node: n }) }}>
-                                Promote To Primary
-                              </button>
-                            )}
-                            {isPrimary && n.type === 'Secondary' && (
-                              <>
-                                <Separator />
-                                <button type="button" data-variant="danger" onClick={() => { close(); setModal({ type: 'remove', node: n }) }}>
-                                  Remove Node
+                  </td>
+                  <td>
+                    {n.state === 'Self' ? (
+                      <Tag>Self</Tag>
+                    ) : n.state === 'Connected' ? (
+                      <Tag tone="ok">Connected</Tag>
+                    ) : n.state === 'Unreachable' ? (
+                      <Tag tone="warn">Unreachable</Tag>
+                    ) : (
+                      <Tag tone="warn">Unknown</Tag>
+                    )}
+                  </td>
+                  <td className={styles.nowrap}>
+                    <RelativeDate iso={n.upSince} />
+                  </td>
+                  <td className={styles.nowrap}>
+                    {/* The node itself has no "Last Seen": in its row that column
+                        is always empty (cluster.js:177-193). */}
+                    {n.state !== 'Self' && <RelativeDate iso={n.lastSeen} />}
+                  </td>
+                  <td className={styles.nowrap}>
+                    {n.state === 'Self' && n.type === 'Secondary' && (
+                      <RelativeDate iso={n.configLastSynced} />
+                    )}
+                  </td>
+                  <td className={tbl.actionsCell}>
+                    <div className={tbl.actions}>
+                      {/* What can be done with a node depends on whether this
+                          console is talking to the primary or to a secondary
+                          (cluster.js:248-264). Editing is the frequent one and goes
+                          in the row; removing and promoting, inside the menu. */}
+                      {(isPrimary ? n.state === 'Self' : n.state === 'Self' || n.type === 'Primary') && (
+                        <RowAction
+                          icon="edit"
+                          name="Edit Node"
+                          onClick={() =>
+                            setModal({
+                              type: n.state === 'Self' ? 'editSelf' : 'editPrimary',
+                              node: n,
+                            })
+                          }
+                        />
+                      )}
+                      {((isPrimary && n.type === 'Secondary') ||
+                        (ownType === 'Secondary' && n.state === 'Self')) && (
+                        <Menu label={`Actions for ${n.name}`}>
+                          {(close) => (
+                            <>
+                              {ownType === 'Secondary' && n.state === 'Self' && (
+                                <button type="button" onClick={() => { close(); setModal({ type: 'promote', node: n }) }}>
+                                  Promote To Primary
                                 </button>
-                              </>
-                            )}
-                          </>
-                        )}
-                      </Menu>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </Table>
-        </DataTable>
+                              )}
+                              {isPrimary && n.type === 'Secondary' && (
+                                <>
+                                  <Separator />
+                                  <button type="button" data-variant="danger" onClick={() => { close(); setModal({ type: 'remove', node: n }) }}>
+                                    Remove Node
+                                  </button>
+                                </>
+                              )}
+                            </>
+                          )}
+                        </Menu>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </Table>
+          </DataTable>
+          {/* Deviation 31: each node's settings side by side, read again with the
+              cluster's state. */}
+          <NodeSettings token={token} nodes={nodes} canView={canViewSettings} refreshOn={state} />
+        </>
       )}
 
       <Confirm
