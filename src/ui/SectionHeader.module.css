@@ -66,6 +66,11 @@ button.ctx:hover { color: var(--acc-ink); }
 
 .titleRow { display: flex; align-items: center; gap: var(--s-5); min-width: 0; }
 
+/* The object's image beside its name (`mark`, About's logo), centred on the
+   title and the line under it. */
+.marked { display: flex; align-items: center; gap: var(--s-9); min-width: 0; }
+.mark { display: inline-flex; flex: none; }
+
 .tags {
   display: flex;
   gap: var(--s-3);

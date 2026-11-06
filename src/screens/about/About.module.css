@@ -1,49 +1,89 @@
 /*
-The panel is drawn by `ui/Panel`. What is left here is only this screen's own
-adjustments, if any: replicating its markup with `composes:` was what there was,
-and that is how a header ended up 21 px shorter than its card.
+About (deviation 9): the object in the header, three cards, then upstream's
+sections and the console's own as blocks in three columns, the console's under its
+card. Panels are `ui/Panel` and the cards `ui/StatCard`; what is here is only
+how this screen lays them out and draws its link rows.
 */
-.grid { display:grid; grid-template-columns:1fr 340px; gap: var(--s-10); align-items:start; }
-.col { display:flex; flex-direction:column; gap: var(--s-9); }
 
-.head { display:flex; align-items:center; gap: var(--s-8); margin-bottom: var(--s-9); }
-/* The logo is shown as it is: no colour box, no crop. */
-.mark { width:38px; height:38px; flex:none; }
-.h1 { margin: 0; font-size: var(--t-title); font-weight: 650; letter-spacing:-.02em; color:var(--ink); }
-.view { font-family:var(--font-mono); font-size: var(--t-4); color:var(--mute); margin-top: var(--s-1); }
-.prose { font-size: var(--t-4); line-height:1.7; color:var(--mute); max-width:720px; }
-.prose p { margin: 0 0 var(--s-7); }
-.prose h4 { margin: var(--s-10) 0 var(--s-2); font-size: var(--t-4); color:var(--ink); }
-.prose a { color:var(--acc-ink); }
-/*
-A link INSIDE a sentence is exempt from the minimum target size (WCAG 2.2,
-"inline"), but these five are not: the four titles and the "Donate Now!" are
-standalone destinations, and they were 14 px tall. They are given a box of their
-own up to 24 px without touching the text's rhythm: the padding goes inside the
-line they already occupied.
-*/
-.prose h4 a,
-.prose .target { display:inline-block; padding: var(--s-4) 0; }
-.kv { composes: kv from '../../ui/kv.module.css'; }
-/* The console's card wears the login cover's mark: the accent dot beside its name. */
-/* The console's panels. A short note, destinations as full-width rows (a 36 px
-   target each), and the funding destinations as buttons drawn by ui/Button's own
-   class, so they are the console's buttons and not a look of their own. */
-.note { margin: var(--s-6) 0 var(--s-6); font-size: var(--t-3); line-height: 1.6; color: var(--mute); }
-.note:first-child { margin-top: 0; }
-.kv a { color: var(--acc-ink); }
-.rows { list-style: none; margin: 0 calc(-1 * var(--s-9)) calc(-1 * var(--s-9)); padding: 0; border-top: 1px solid var(--line); }
-.rows li + li { border-top: 1px solid var(--line); }
-.row { display: flex; align-items: center; justify-content: space-between; min-height: 36px; padding: 0 var(--s-9); color: var(--ink); text-decoration: none; font-size: var(--t-4); }
-.row svg { color: var(--faint); }
-.row:hover { background: var(--pan2); }
-.row:hover svg { color: var(--acc-ink); }
-.row:focus-visible { outline: var(--focus); outline-offset: calc(-1 * var(--focus-offset)); }
-.button { composes: btn from '../../ui/Button.module.css'; text-decoration: none; }
-.wide { display: flex; width: 100%; margin-bottom: var(--s-4); }
-.funding { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-4); }
+/* Technitium's logo as it is: no colour box, no crop. */
+.logo { display: block; width: 52px; height: 52px; }
+.domain { font-family: var(--font-mono); }
 
-@media (max-width: 900px) {
-  .grid { grid-template-columns: minmax(0, 1fr); }
+/* The cards' row, three across (the shared grid is four): its entrance and the
+   cards' stagger come with the composed class. */
+.cards {
+  composes: grid from '../../ui/StatCard.module.css';
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+/* A card's one fact: its label over the figure. */
+.fact { margin: 0; }
+.fact dt { font-size: var(--t-3); color: var(--mute); }
+.fact dd { margin: var(--s-1) 0 0; }
+.cardNote { margin: var(--s-5) 0 0; font-size: var(--t-3); line-height: 1.5; color: var(--mute); }
+.cardNote a { color: var(--acc-ink); }
+
+.blocks {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--s-8);
+  align-items: start;
+}
+.column { display: flex; flex-direction: column; gap: var(--s-8); min-width: 0; }
+
+/*
+A destination as a row: one line, or a title and its sentence, with the icon of
+where it goes at the right. The row's own link is stretched over it (`.primary`),
+so the whole row is the target; a link inside the sentence sits above that box.
+*/
+.rows { list-style: none; margin: 0; padding: 0; }
+.row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--s-8);
+  padding: var(--s-7) var(--s-9);
+  transition: background var(--t-fast);
+}
+.row + .row { border-top: 1px solid var(--line2); }
+.row:hover { background: var(--pan2); }
+.row:has(.primary:focus-visible) { outline: var(--focus); outline-offset: calc(-1 * var(--focus-offset)); }
+.rowText { flex: 1; min-width: 0; font-size: var(--t-4); line-height: 1.5; color: var(--ink); }
+.rowIcon { flex: none; color: var(--faint); transition: color var(--t-fast); }
+.row:hover .rowIcon { color: var(--acc-ink); }
+
+.primary { color: var(--acc-ink); overflow-wrap: break-word; }
+.primary::after { content: ''; position: absolute; inset: 0; }
+.primary:focus-visible { outline: none; }
+/* A row whose link IS its name (the titles, the console's destinations): no
+   underline, the row is the target. A link inside a sentence keeps its own. */
+.label { color: var(--ink); font-weight: 500; text-decoration: none; }
+.rowTitle { font-weight: 600; }
+.row:hover .label { color: var(--acc-ink); text-decoration: none; }
+.rowNote { margin: var(--s-1) 0 0; font-size: var(--t-3); line-height: 1.6; color: var(--mute); }
+.inline { position: relative; z-index: 1; color: var(--acc-ink); }
+
+/* The blocks of text: upstream's sentences at body size, in their own air. */
+.prose { padding: var(--s-9); font-size: var(--t-4); line-height: 1.6; color: var(--mute); }
+.prose p { margin: 0 0 var(--s-7); }
+.prose p:last-child { margin-bottom: 0; }
+
+/* Upstream's `Donate` heading stays a link: the panel's title, in its ink. */
+.titleLink { color: inherit; text-decoration: none; }
+.titleLink:hover { color: var(--acc-ink); text-decoration: underline; text-underline-offset: var(--s-1); }
+
+/* Links drawn by ui/Button's own class, so they are the console's buttons. */
+.button { composes: btn from '../../ui/Button.module.css'; text-decoration: none; }
+.wide { display: flex; width: 100%; margin-bottom: var(--s-4); }
+.funding { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-4); }
+
+/* Narrower: two columns of Technitium's blocks, the console's two side by side
+   under them; then one column. */
+@media (max-width: 1180px) {
+  .blocks { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .console { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+}
+
+@media (max-width: 720px) {
+  .cards, .blocks, .console { grid-template-columns: minmax(0, 1fr); }
+}

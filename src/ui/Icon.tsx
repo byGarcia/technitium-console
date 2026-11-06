@@ -33,6 +33,7 @@ export type IconName =
   | 'moveUp' | 'moveDown'
   | 'shield' | 'add' | 'trash' | 'refresh' | 'search' | 'download' | 'upload' | 'run' | 'store' | 'key' | 'save'
   | 'file' | 'eye' | 'copy'
+  | 'external' | 'mail'
 
 const PATHS: Record<IconName, ReactElement> = {
   // ── Leading a button's label (`ui/Button`, `lead`), 2026-11-05 ──────────
@@ -369,6 +370,22 @@ Same closed body and same arc as the rest: a grid of 24 and a stroke of
     <>
       <path d="M12 5v14" />
       <path d="m6 13 6 6 6-6" />
+    </>
+  ),
+  /* A box with an arrow leaving it: the destination opens outside the console
+     (About's link rows). */
+  external: (
+    <>
+      <path d="M14 4h6v6" />
+      <path d="M20 4 11 13" />
+      <path d="M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4" />
+    </>
+  ),
+  /* An envelope: the destination is an email address (About's support row). */
+  mail: (
+    <>
+      <rect x="3" y="5.5" width="18" height="13" rx="2" />
+      <path d="m3.5 7 8.5 6 8.5-6" />
     </>
   ),
 }

@@ -54,6 +54,7 @@ export function SectionHeader({
   path,
   title,
   subtitle,
+  mark,
   labels,
   titleAction,
   actions,
@@ -70,8 +71,12 @@ export function SectionHeader({
   path?: { label: ReactNode; onOpen: () => void }[]
   /** The most specific name: the sub-tab if there is one, otherwise the section. */
   title: string
-  /** What the screen is for, in one sentence. Blocking only: see above. */
-  subtitle?: string
+  /** What the screen is for, in one sentence. Blocking only: see above. About
+   *  passes the server's domain here, so it takes a node (2026-11-06). */
+  subtitle?: ReactNode
+  /** An image that stands for the object, drawn before the title and what is
+   *  under it: About's Technitium logo, where upstream puts it (2026-11-06). */
+  mark?: ReactNode
   /** STATE pills. Counts go in the count bar. */
   labels?: ReactNode
   /** A control that belongs to the title itself, drawn right after it: a
@@ -87,6 +92,20 @@ export function SectionHeader({
    */
   tabs?: ReactNode
 }) {
+  const named = (
+    <>
+      {titleAction != null ? (
+        <div className={styles.titleRow}>
+          <h1 className={styles.title}>{title}</h1>
+          {titleAction}
+        </div>
+      ) : (
+        <h1 className={styles.title}>{title}</h1>
+      )}
+      {subtitle != null && <p className={styles.subtitle}>{subtitle}</p>}
+      {labels != null && <div className={styles.tags}>{labels}</div>}
+    </>
+  )
   return (
     <>
     <div className={styles.hrow}>
@@ -119,16 +138,14 @@ export function SectionHeader({
             <span className={styles.here} aria-current="page">{title}</span>
           </nav>
         )}
-        {titleAction != null ? (
-          <div className={styles.titleRow}>
-            <h1 className={styles.title}>{title}</h1>
-            {titleAction}
+        {mark != null ? (
+          <div className={styles.marked}>
+            <span className={styles.mark}>{mark}</span>
+            <div className={styles.left}>{named}</div>
           </div>
         ) : (
-          <h1 className={styles.title}>{title}</h1>
+          named
         )}
-        {subtitle != null && <p className={styles.subtitle}>{subtitle}</p>}
-        {labels != null && <div className={styles.tags}>{labels}</div>}
       </div>
       {actions != null && <div className={styles.acts}>{actions}</div>}
     </div>
