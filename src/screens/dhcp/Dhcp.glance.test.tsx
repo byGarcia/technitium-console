@@ -260,18 +260,19 @@ describe('Scopes at a glance', () => {
 })
 
 describe('the scope form at a glance', () => {
-  it('has an index of its thirteen blocks, by their titles', async () => {
+  it('reads in one glance: Scope open, the other twelve blocks one line each with what they hold', async () => {
     const user = userEvent.setup()
-    vi.spyOn(api, 'listScopes').mockResolvedValue({ kind: 'ok', data: [] })
+    vi.spyOn(api, 'listScopes').mockResolvedValue({ kind: 'ok', data: [SCOPE] })
     vi.spyOn(api, 'listLeases').mockResolvedValue({ kind: 'ok', data: [] })
+    vi.spyOn(api, 'getScope').mockResolvedValue({ ...DETAIL, domainName: 'home', exclusions: [{ startingAddress: '192.168.1.1', endingAddress: '192.168.1.10' }] })
     render(<Dhcp token="t" sub="Scopes" />)
-    await screen.findByText('No Scope Found')
-    await user.click(screen.getByRole('button', { name: 'Add Scope' }))
+    await screen.findByText('Total Scopes: 1')
+    await user.click(screen.getByRole('button', { name: 'Default' }))
+    await screen.findByRole('heading', { name: 'Edit Scope' })
 
-    const index = within(screen.getAllByRole('navigation', { name: 'On this page' })[0])
-    const links = index.getAllByRole('link').map((a) => a.textContent)
-    expect(links).toEqual([
-      'Scope',
+    expect(screen.getByLabelText('Name')).toBeVisible()
+    const lines = screen.getAllByRole('button', { expanded: false }).filter((b) => b.hasAttribute('aria-controls'))
+    expect(lines.map((b) => b.getAttribute('aria-labelledby') && document.getElementById(b.getAttribute('aria-labelledby')!)?.textContent)).toEqual([
       'Ping Check',
       'DNS',
       'Network Options',
@@ -285,8 +286,50 @@ describe('the scope form at a glance', () => {
       'Advanced Options',
       'Reserved Leases',
     ])
-    expect(index.getByRole('link', { name: 'Exclusions' })).toHaveAttribute('href', '#dhcp-scope-exclusions')
-    expect(document.getElementById('dhcp-scope-exclusions')).not.toBeNull()
+    const exclusions = screen.getByRole('button', { name: 'Exclusions' })
+    expect(exclusions).toHaveAccessibleDescription('192.168.1.1 - 192.168.1.10')
+    expect(screen.getByRole('button', { name: 'Static Routes' })).toHaveAccessibleDescription('None')
+    expect(screen.getByRole('button', { name: 'DNS' })).toHaveAccessibleDescription(/^home · DNS Updates On · TTL 900$/)
+    expect(screen.getByLabelText('Exclusions 1 Starting Address')).not.toBeVisible()
+
+    // A line opens its block, and the summary follows what is typed.
+    await user.click(exclusions)
+    expect(exclusions).toHaveAttribute('aria-expanded', 'true')
+    const start = screen.getByLabelText('Exclusions 1 Starting Address')
+    expect(start).toBeVisible()
+    await user.clear(start)
+    await user.type(start, '192.168.1.5')
+    expect(exclusions).toHaveAccessibleDescription('192.168.1.5 - 192.168.1.10')
+  })
+
+  it('the scope page says what the server holds: its header, pool, leases, reservations and options', async () => {
+    const user = userEvent.setup()
+    vi.spyOn(api, 'listScopes').mockResolvedValue({ kind: 'ok', data: [{ ...SCOPE, interfaceAddress: '192.168.1.2' }] })
+    vi.spyOn(api, 'listLeases').mockResolvedValue({ kind: 'ok', data: [DYNAMIC, RESERVED] })
+    vi.spyOn(api, 'getScope').mockResolvedValue({
+      ...DETAIL,
+      reservedLeases: [
+        { hostName: 'orbiter', hardwareAddress: 'DC-A6-32-7F-44-81', address: '192.168.1.50', comments: null },
+        { hostName: null, hardwareAddress: '02-00-00-00-00-01', address: '192.168.1.60', comments: 'spare' },
+      ],
+    })
+    render(<Dhcp token="t" sub="Scopes" />)
+    await screen.findByText('Total Scopes: 1')
+    await user.click(screen.getByRole('button', { name: 'Default' }))
+    await screen.findByRole('heading', { name: 'Edit Scope' })
+
+    expect(screen.getByRole('heading', { level: 1, name: 'Default' })).toBeInTheDocument()
+    expect(screen.getByText('Enabled')).toBeInTheDocument()
+    expect(screen.getByText('192.168.1.2')).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: '2 of 254 addresses in range leased' })).toBeInTheDocument()
+    expect(screen.getByText('192.168.1.255')).toBeInTheDocument()
+    expect(screen.getByText('1 of 2')).toBeInTheDocument()
+    expect(screen.getByText('Leased')).toBeInTheDocument()
+    expect(screen.getByText('Not leased')).toBeInTheDocument()
+    expect(screen.getByText('1d')).toBeInTheDocument()
+    expect(screen.getAllByText('This DNS Server').some((e) => e.closest('dd') != null)).toBe(true)
+    expect(screen.getByRole('button', { name: 'Disable Scope' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Delete Scope' })).toBeInTheDocument()
   })
 
   it('says how many addresses the range holds, and nothing for a range that is not one', async () => {
@@ -296,7 +339,7 @@ describe('the scope form at a glance', () => {
     vi.spyOn(api, 'getScope').mockResolvedValue(DETAIL)
     render(<Dhcp token="t" sub="Scopes" />)
     await screen.findByText('Total Scopes: 1')
-    await user.click(screen.getByRole('button', { name: 'Edit Scope' }))
+    await user.click(screen.getByRole('button', { name: 'Default' }))
 
     expect(await screen.findByText('254 addresses')).toBeInTheDocument()
     const end = screen.getByLabelText('Ending Address')

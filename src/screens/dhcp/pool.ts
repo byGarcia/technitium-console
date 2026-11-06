@@ -114,3 +114,30 @@ export function matchesSearch(l: DhcpLease, query: string): boolean {
 export function leaseKey(l: DhcpLease): string {
   return `${l.scope}\n${l.clientIdentifier}`
 }
+
+/*
+The scope list's search (deviation 19): the name, ignoring case, or an address.
+Typed whole, an IPv4 address finds the scopes whose range holds it, so "which scope
+hands out 172.31.10.42" has an answer; typed in part, it finds the scopes whose
+starting, ending, network or interface address carries it.
+*/
+export function matchesScope(s: DhcpScopeRow, query: string): boolean {
+  const q = query.trim().toLowerCase()
+  if (q === '') return true
+  if (s.name.toLowerCase().includes(q)) return true
+  const at = ipv4(q)
+  if (at != null) {
+    const a = ipv4(s.startingAddress)
+    const b = ipv4(s.endingAddress)
+    if (a != null && b != null && at >= a && at <= b) return true
+  }
+  return [s.startingAddress, s.endingAddress, s.networkAddress, s.interfaceAddress ?? ''].some((x) =>
+    x.includes(q),
+  )
+}
+
+/** A lease time as the console writes a TTL's human part: `1d`, `4h 30m`. */
+export function leaseTime(days: number, hours: number, minutes: number): string {
+  const parts = [days > 0 && `${days}d`, hours > 0 && `${hours}h`, minutes > 0 && `${minutes}m`].filter(Boolean)
+  return parts.length === 0 ? '0m' : parts.join(' ')
+}
