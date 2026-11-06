@@ -230,6 +230,17 @@ describe('DNS Client: what resolveQuery() does that this console had lost', () =
     expect(screen.queryByRole('tablist')).not.toBeInTheDocument()
   })
 
+  it('a new query clears the alert the last one left', async () => {
+    vi.spyOn(api, 'resolve')
+      .mockResolvedValueOnce({ kind: 'error', message: 'DNS request failed.' } as never)
+      .mockResolvedValueOnce({ kind: 'ok', data: real['gmail.com MX'] } as never)
+    await query('gmail.com')
+    expect(await screen.findByText('DNS request failed.')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Resolve' }))
+    expect(await screen.findByRole('tab', { name: /^Answer/ })).toBeInTheDocument()
+    expect(screen.queryByText('DNS request failed.')).not.toBeInTheDocument()
+  })
+
   it('an error with an inner message shows both, as upstream asks with showInnerError', async () => {
     vi.spyOn(api, 'resolve').mockResolvedValue({
       kind: 'error', message: 'DNS request failed.', inner: 'Connection refused.',

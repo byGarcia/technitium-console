@@ -14,7 +14,6 @@ fields, and the four sections; but a zone transfer is a JOINED datagram
 repository, so a missing key reads as missing, never as zero or false.
 */
 
-import type { TagTone } from '../../ui/Tag'
 
 /*
 `domain` with a URL pasted in loses the scheme and whatever follows the host
@@ -29,10 +28,7 @@ export function stripUrl(domain: string): string {
   return j > -1 ? domain.substring(i + 3, j) : domain.substring(i + 3)
 }
 
-/** A DNSSEC status as a state: `Secure` is the good one, `Bogus` the broken one. */
-export function dnssecTone(status: string): TagTone {
-  return status === 'Secure' ? 'ok' : status === 'Bogus' ? 'dan' : 'neutral'
-}
+export { dnssecTone } from '../../lib/dnssec-tone'
 
 export interface DnsRecord {
   Name?: string

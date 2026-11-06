@@ -156,6 +156,8 @@ export function DnsClient({
   }
 
   async function send(q: Query, runImport: boolean) {
+    // A new query starts with no alert left over from the last one.
+    setAlert(null)
     // Add the server to the list if it is not there yet (dnsclient.js:216-227).
     setServers((list) => (list.includes(q.serverText) ? list : [q.serverText, ...list]))
 

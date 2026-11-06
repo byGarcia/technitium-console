@@ -108,15 +108,4 @@ export function dnssecColour(status: string): string {
 }
 
 /** The tag tone a DNSSEC state takes in the table, by the same rule as its colour. */
-export function dnssecTone(status: string | undefined): 'ok' | 'dan' | 'warn' | 'neutral' {
-  switch (status) {
-    case 'Secure':
-      return 'ok'
-    case 'Bogus':
-      return 'dan'
-    case 'Indeterminate':
-      return 'warn'
-    default:
-      return 'neutral'
-  }
-}
+export { dnssecTone } from '../../lib/dnssec-tone'
