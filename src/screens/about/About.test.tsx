@@ -28,15 +28,15 @@ describe('About', () => {
     expect(said(named)).toContain('dns.example.net')
   })
 
-  it('three cards say what is running: the server version, its uptime and the console version', () => {
+  it('the header line says what is running: the server version, its uptime and the console version', () => {
     render(<About info={info} />)
-    expect(within(block('DNS Server')).getByText('15.4')).toBeInTheDocument()
-    const up = block('Uptime')
-    expect(within(up).getByText('Up since')).toBeInTheDocument()
-    expect(within(up).getByText(uptime(info.uptimestamp) as string)).toBeInTheDocument()
-    const console = block('Web Console')
-    expect(within(console).getByText(__CONSOLE_VERSION__)).toBeInTheDocument()
-    expect(within(console).getByRole('link', { name: 'GPL-3.0-or-later' })).toHaveAttribute(
+    const facts = screen.getByLabelText('What is running')
+    expect(said(facts)).toContain('DNS Server 15.4')
+    expect(said(facts)).toContain(`Uptime ${uptime(info.uptimestamp) as string}`)
+    expect(said(facts)).toContain(`Web Console ${__CONSOLE_VERSION__}`)
+    expect(screen.queryByRole('heading', { level: 2, name: 'Uptime' })).toBeNull()
+    // The console's licence goes with its own links.
+    expect(within(block('On GitHub')).getByRole('link', { name: 'GPL-3.0-or-later' })).toHaveAttribute(
       'href',
       'https://github.com/byGarcia/technitium-console/blob/main/LICENSE',
     )
@@ -162,11 +162,12 @@ describe('About', () => {
   */
   it('says nothing it does not know when the session brought no info', () => {
     render(<About />)
-    expect(within(block('DNS Server')).getByText('—')).toBeInTheDocument()
-    expect(within(block('Uptime')).getAllByText('—')).toHaveLength(2)
+    const facts = screen.getByLabelText('What is running')
+    expect(said(facts)).toContain('DNS Server \u2014')
+    expect(said(facts)).toContain('Uptime \u2014')
     expect(said(document.body)).not.toContain('dns.example.net')
     // The console knows its own version without the server.
-    expect(within(block('Web Console')).getByText(__CONSOLE_VERSION__)).toBeInTheDocument()
+    expect(said(facts)).toContain(`Web Console ${__CONSOLE_VERSION__}`)
   })
 
   it('it has blocks of its own for this console, with its funding destinations', () => {
@@ -192,6 +193,6 @@ describe('About', () => {
     ]) {
       expect(within(support).getByRole('link', { name })).toHaveAttribute('href', href)
     }
-    expect(said(block('Web Console'))).toContain('An independent project, not affiliated with or endorsed by Technitium.')
+    expect(said(block('On GitHub'))).toContain('An independent project, not affiliated with or endorsed by Technitium.')
   })
 })

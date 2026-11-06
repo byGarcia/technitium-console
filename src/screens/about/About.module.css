@@ -9,19 +9,14 @@ how this screen lays them out and draws its link rows.
 .logo { display: block; width: 52px; height: 52px; }
 .domain { font-family: var(--font-mono); }
 
-/* The cards' row, three across (the shared grid is four): its entrance and the
-   cards' stagger come with the composed class. */
-.cards {
-  composes: grid from '../../ui/StatCard.module.css';
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-/* A card's one fact: its label over the figure. */
-.fact { margin: 0; }
-.fact dt { font-size: var(--t-3); color: var(--mute); }
-.fact dd { margin: var(--s-1) 0 0; }
-.cardNote { margin: var(--s-5) 0 0; font-size: var(--t-3); line-height: 1.5; color: var(--mute); }
-.cardNote a { color: var(--acc-ink); }
+/* The header's line of facts: the domain, then what is running, each a label and
+   its value in ink, wrapping as words. */
+.facts { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-2) var(--s-9); }
+.fact { font-size: var(--t-3); color: var(--mute); }
+.fact b { margin-left: var(--s-2); font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+.since { margin-left: var(--s-3); color: var(--faint); }
+.consoleNote { margin: 0; padding: var(--s-6) var(--s-9) var(--s-4); font-size: var(--t-3); line-height: 1.5; color: var(--mute); }
+.consoleNote a { color: var(--acc-ink); }
 
 .blocks {
   display: grid;
@@ -85,5 +80,5 @@ so the whole row is the target; a link inside the sentence sits above that box.
 }
 
 @media (max-width: 720px) {
-  .cards, .blocks, .console { grid-template-columns: minmax(0, 1fr); }
+  .blocks, .console { grid-template-columns: minmax(0, 1fr); }
 }

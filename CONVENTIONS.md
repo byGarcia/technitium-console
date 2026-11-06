@@ -819,10 +819,10 @@ contract and SECURITY.md.
    from the session's `info`), so there is no loading or failure state:
    - **The header is the server**: the path `About ›`, Technitium's logo (the file
      in `public/img/`, untouched), `Technitium DNS Server` and the server's domain.
-   - **Three cards** (`ui/StatCard`): `DNS Server` (Version), `Uptime` (the span
-     since `uptimestamp` in its two largest units, `2d 3h`, `4h 5m`, `12m`, and `Up
-     since` with the date) and `Web Console` (`__CONSOLE_VERSION__`, its licence
-     and one sentence saying it is not Technitium's). Without `info` they show the "no value" placeholder.
+   - **What is running is the header's line**, after the domain: `DNS Server` and its
+     version, `Uptime` (the span since `uptimestamp` in its two largest units, `2d
+     3h`, `4h 5m`, `12m`) with `since` and the date, and `Web Console` with
+     `__CONSOLE_VERSION__`; without `info` they show the "no value" placeholder.
      Whether there is an update stays in the chrome (`app/Versions`, deviation 10).
    - **Upstream's sections are blocks**: `Documentation` holds What's New?, API
      Documentation and Help Topics as rows, the heading as the row's link and its
@@ -831,8 +831,8 @@ contract and SECURITY.md.
      the source-code sentence; `Donate` keeps its heading as a link (the panel's
      title), its sentence and `Donate Now!`. A row is one target, the link inside a
      sentence is still its own.
-   - **This console's column**, under its card: `On GitHub` with four
-     destinations as rows, `Source code`, `Release notes`, `Report a problem` (so a
+   - **This console's column**: `On GitHub`, with the console's licence and the
+     sentence saying it is not Technitium's, then four destinations as rows, `Source code`, `Release notes`, `Report a problem` (so a
      console fault does not go to Technitium's support) and `Ideas and questions`;
      and `Support the Console`, one sentence, `Star on GitHub` and the four
      destinations of `.github/FUNDING.yml` as buttons.

@@ -2,7 +2,6 @@ import { type ReactNode } from 'react'
 import { SectionHeader } from '../../ui/SectionHeader'
 import { dateTime } from '../../lib/dates'
 import { Panel } from '../../ui/Panel'
-import { Card, statStyles } from '../../ui/StatCard'
 import { DomainName } from '../../ui/DomainName'
 import { publicUrl } from '../../app/base'
 import { Icon, type IconName } from '../../ui/Icon'
@@ -127,48 +126,27 @@ export function About({ info }: { info?: Info }) {
         section="About"
         title="Technitium DNS Server"
         mark={<img className={styles.logo} src={publicUrl('img/logo.svg')} alt="" width={52} height={52} />}
+        /* What is running, on the header's line (2026-11-06): an object's page says
+           its facts under its name, as a zone says its serial, instead of a row of
+           cards. */
         subtitle={
-          info?.dnsServerDomain ? (
-            <span className={styles.domain}><DomainName name={info.dnsServerDomain} /></span>
-          ) : undefined
+          <span className={styles.facts} aria-label="What is running">
+            {info?.dnsServerDomain && (
+              <span className={styles.domain}><DomainName name={info.dnsServerDomain} /></span>
+            )}
+            <span className={styles.fact}>
+              DNS Server <b>{info?.version ?? '—'}</b>
+            </span>
+            <span className={styles.fact}>
+              Uptime <b>{up ?? '—'}</b>
+              {info && dateTime(info.uptimestamp) && <span className={styles.since}>since {dateTime(info.uptimestamp)}</span>}
+            </span>
+            <span className={styles.fact}>
+              Web Console <b>{__CONSOLE_VERSION__}</b>
+            </span>
+          </span>
         }
       />
-
-      <div className={styles.cards}>
-        <Card title="DNS Server" colour="var(--ch-1)">
-          <div className={statStyles.body}>
-            <dl className={styles.fact}>
-              <dt>Version</dt>
-              <dd className={statStyles.figure}>{info?.version ?? '—'}</dd>
-            </dl>
-          </div>
-        </Card>
-
-        <Card title="Uptime" colour="var(--ch-2)">
-          <div className={statStyles.body}>
-            <div className={statStyles.figure}>{up ?? '—'}</div>
-            <dl className={statStyles.facts}>
-              <div>
-                <dt>Up since</dt>
-                <dd>{info ? dateTime(info.uptimestamp) || '—' : '—'}</dd>
-              </div>
-            </dl>
-          </div>
-        </Card>
-
-        <Card title="Web Console" colour="var(--ch-3)">
-          <div className={statStyles.body}>
-            <dl className={styles.fact}>
-              <dt>Version</dt>
-              <dd className={statStyles.figure}>{__CONSOLE_VERSION__}</dd>
-            </dl>
-            <p className={styles.cardNote}>
-              <Link href={`${CONSOLE_REPO}/blob/main/LICENSE`}>GPL-3.0-or-later</Link>. An independent
-              project, not affiliated with or endorsed by Technitium.
-            </p>
-          </div>
-        </Card>
-      </div>
 
       <div className={styles.blocks}>
         {/* Technitium's, word for word: upstream's headings and sentences. */}
@@ -264,6 +242,10 @@ export function About({ info }: { info?: Info }) {
         {/* OURS (deviation 9): this console's column, under its card. */}
         <div className={`${styles.column} ${styles.console}`}>
           <Panel title="On GitHub">
+            <p className={styles.consoleNote}>
+              <Link href={`${CONSOLE_REPO}/blob/main/LICENSE`}>GPL-3.0-or-later</Link>. An independent
+              project, not affiliated with or endorsed by Technitium.
+            </p>
             <ul className={styles.rows}>
               {CONSOLE_LINKS.map(([label, path]) => (
                 <LinkRow key={label}>
