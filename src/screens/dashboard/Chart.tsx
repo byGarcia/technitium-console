@@ -8,7 +8,7 @@ import {
   type ChartData as ChartJsData, type ChartType, type ChartDataset, type ChartEvent, type TooltipItem,
 } from 'chart.js'
 import type { ChartData } from '../../api/dashboard'
-import { readPalette, type Palette } from './palette'
+import { readPalette, type Palette, type Series } from './palette'
 import { byLegendOrder } from './legend-order'
 import { useTheme } from '../../theme/useTheme'
 
@@ -39,10 +39,11 @@ function repaint(
   p: Palette,
   ctx: CanvasRenderingContext2D,
   height: number,
+  series?: Series,
 ): ChartJsData {
   const datasets = (data.datasets as unknown as ChartDataset[]).map((d, i) => {
     if (type === 'line') {
-      const colour = p.forLabel(String(d.label ?? ''), i)
+      const colour = series != null ? p.token(series(String(d.label ?? ''), i)) : p.forLabel(String(d.label ?? ''), i)
       /*
       Only `Total` is filled. Eleven fills laid over each other in transparency
       added up to one tinted mass under the top line, worst in the light theme, and
@@ -131,6 +132,7 @@ export function Chart({
   legendOrder,
   onPick,
   pickable,
+  series,
 }: {
   type: ChartType
   data: ChartData
@@ -161,8 +163,13 @@ export function Chart({
   */
   onPick?: (index: number) => void
   pickable?: (index: number) => boolean
+  /** A line chart whose series choose their own colour token (the Queries compared
+   *  by node, deviation 36). Read when the chart is drawn and when data arrives. */
+  series?: Series
 }) {
   const ref = useRef<HTMLCanvasElement>(null)
+  const seriesRef = useRef(series)
+  seriesRef.current = series
   /* Read at click time, so a new function from the caller needs no rebuild. */
   const pick = useRef({ onPick, pickable })
   pick.current = { onPick, pickable }
@@ -192,7 +199,7 @@ export function Chart({
 
     chart.current = new ChartJS(ref.current, {
       type: type,
-      data: repaint(data, type, p, ctx, height),
+      data: repaint(data, type, p, ctx, height, seriesRef.current),
       options: {
         responsive: true,
         maintainAspectRatio: false,
@@ -299,7 +306,7 @@ export function Chart({
     const ctx = ref.current.getContext('2d')
     if (!ctx) return
     const p = readPalette(getComputedStyle(document.documentElement))
-    const next = repaint(data, type, p, ctx, height)
+    const next = repaint(data, type, p, ctx, height, seriesRef.current)
     /* The same series: their figures are copied INTO the datasets the chart already
        has. Chart.js keeps a series' state (switched off from its own in-canvas
        legend, say) on the dataset object, and a new object would drop it. */

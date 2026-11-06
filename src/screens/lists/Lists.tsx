@@ -24,6 +24,7 @@ import { ancestors } from './Tree'
 import { Children } from './CacheNav'
 import { ResourceRecords } from './Records'
 import { CacheSummary } from './CacheSummary'
+import { CacheAcross } from './CacheAcross'
 import { DataTable, DataFoot, Grow } from '../../ui/DataTable'
 import { RowAction } from '../../ui/Table'
 import { DomainName } from '../../ui/DomainName'
@@ -69,6 +70,9 @@ const CHILDREN_SHOWN = 40
 /* Cache's view in the address bar (`lib/url-state.ts`). */
 const CACHE_DOMAIN = 'domain'
 const CACHE_TYPE = 'type'
+/* Cache's `All nodes` view (deviation 35), `?nodes=all`: read on an initialised
+   cluster only, so the same link on a single server opens the one-node view. */
+const CACHE_NODES = 'nodes'
 
 const TITLE: Record<List, string> = { cache: 'Cache', allowed: 'Allowed', blocked: 'Blocked' }
 
@@ -253,6 +257,9 @@ export function Lists({
      every zone under the node is shown or only the first CHILDREN_SHOWN. */
   const [cacheType, setCacheType] = useState(() => (list === 'cache' ? (readParam(CACHE_TYPE) ?? '') : ''))
   const [allChildren, setAllChildren] = useState(false)
+  /* Cache: the `All nodes` view asked for (deviation 35). It is drawn only while the
+     cluster is initialised; without one nothing on the screen changes. */
+  const [allNodes, setAllNodes] = useState(() => list === 'cache' && readParam(CACHE_NODES) === 'all')
   const [notice, setNotice] = useState<Notice | null>(null)
   /* Where this screen's alerts go: the host's notifier when it gives one, its own
      otherwise. Read through a ref so `load` does not change with every render. */
@@ -286,6 +293,13 @@ export function Lists({
 
   const isCache = list === 'cache'
   const domainList = list as DomainList
+  /* The cluster's nodes side by side (deviation 35): Cache, a cluster, and asked for. */
+  const clustered = isCache && !embedded && clusterInitialised && nodes.length > 0
+  const across = clustered && allNodes
+  /* `?nodes=all` while the view is drawn: a single server's bar never carries it. */
+  useEffect(() => {
+    if (isCache && !embedded) writeParams({ [CACHE_NODES]: across ? 'all' : null })
+  }, [isCache, embedded, across])
 
   /*
   The primary node is read through a ref for the same reason as `hadData`: as a
@@ -345,9 +359,10 @@ export function Lists({
   useEffect(() => {
     if (list === 'cache') writeParams({ [CACHE_TYPE]: cacheType })
   }, [list, cacheType])
+
   useEffect(() => {
     if (list !== 'cache') return
-    return () => dropParams([CACHE_DOMAIN, CACHE_TYPE])
+    return () => dropParams([CACHE_DOMAIN, CACHE_TYPE, CACHE_NODES])
   }, [list])
   useEffect(() => {
     void load(firstDomain.current, undefined, firstFromPrimary.current)
@@ -468,25 +483,86 @@ export function Lists({
     })
   }
 
+  const nodeSelect = (
+    <ClusterNodeSelect
+      nodes={nodes}
+      initialised={clusterInitialised}
+      value={clusterNode}
+      onChange={(n) => {
+        cacheNode.current = n
+        setClusterNode(n)
+        void load(domain)
+      }}
+      label="Cluster Node"
+    />
+  )
+
+  /* Cache's Domain field and Browse, in the records card's toolbar of both views. */
+  const cacheSearch = (
+    <Grow>
+      <div className={styles.search}>
+        <Field inline label={fieldName ?? 'Domain'}>
+          {(id) => (
+            <Input
+              id={id}
+              mono
+              search
+              placeholder="example.com"
+              value={field}
+              onChange={(e) => setField(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') navigate(field)
+              }}
+            />
+          )}
+        </Field>
+        <Button lead="search" variant="primary" onClick={() => navigate(field)}>
+          Browse
+        </Button>
+      </div>
+    </Grow>
+  )
+
+  /* The zones under the node as chips: the chosen node's, or in `All nodes` those
+     of any node (deviation 35). */
+  const zoneBand = (zs: string[]) => (
+    <div className={styles.children}>
+      <span className={styles.childrenCount}>{zs.length === 1 ? '1 zone' : `${zs.length} zones`}</span>
+      <Children
+        domain={domain}
+        zones={allChildren || zs.length <= CHILDREN_SHOWN ? zs : zs.slice(0, CHILDREN_SHOWN)}
+        onNavigate={navigate}
+      />
+      {zs.length > CHILDREN_SHOWN && (
+        <button type="button" className={styles.showIt} onClick={() => setAllChildren((v) => !v)}>
+          {allChildren ? 'Show fewer' : `Show all ${zs.length}`}
+        </button>
+      )}
+    </div>
+  )
+
   return (
     <>
       {/* The node selector exists only on Cache: upstream has none on Allowed or
           Blocked (index.html:712, `optCachedZonesClusterNode`, is the only one).
           Changing it reloads the open domain from that node, and the list, Flush
           and Delete all go to it (other-zones.js:20-61, 106). */}
-      {isCache && !embedded && (
-        <ClusterNodeSelect
-          nodes={nodes}
-          initialised={clusterInitialised}
-          value={clusterNode}
-          onChange={(n) => {
-            cacheNode.current = n
-            setClusterNode(n)
-            void load(domain)
-          }}
-          label="Cluster Node"
-        />
-      )}
+      {isCache && !embedded && (clustered ? (
+        <div className={styles.nodeBar}>
+          {nodeSelect}
+          {/* Deviation 35: every node's cache side by side, for the domain on screen.
+              The selector still chooses the node Flush Cache and Delete act on. */}
+          <Button
+            aria-pressed={allNodes}
+            onClick={() => {
+              setAllNodes((v) => !v)
+              setCacheType('')
+            }}
+          >
+            All nodes
+          </Button>
+        </div>
+      ) : nodeSelect)}
 
       {!embedded && !isCache && <SectionHeader title={TITLE[list]} />}
 
@@ -547,34 +623,21 @@ export function Lists({
         */
         loading ? (
           <div className={styles.waiting}><Loading /></div>
+        ) : across && node != null ? (
+          <CacheAcross
+            key={domain}
+            token={token}
+            nodes={nodes}
+            node={node}
+            nodeTitle={nodeTitle}
+            toolbar={cacheSearch}
+            band={zoneBand}
+          />
         ) : (
           <>
             <CacheSummary records={records} activeType={cacheType} onType={setCacheType} />
             <DataTable
-              toolbar={
-                <Grow>
-                  <div className={styles.search}>
-                    <Field inline label={fieldName ?? 'Domain'}>
-                      {(id) => (
-                        <Input
-                          id={id}
-                          mono
-                          search
-                          placeholder="example.com"
-                          value={field}
-                          onChange={(e) => setField(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') navigate(field)
-                          }}
-                        />
-                      )}
-                    </Field>
-                    <Button lead="search" variant="primary" onClick={() => navigate(field)}>
-                      Browse
-                    </Button>
-                  </div>
-                </Grow>
-              }
+              toolbar={cacheSearch}
               foot={
                 <DataFoot
                   count={
@@ -592,23 +655,7 @@ export function Lists({
                 />
               }
             >
-              {zones.length > 0 && (
-                <div className={styles.children}>
-                  <span className={styles.childrenCount}>
-                    {zones.length === 1 ? '1 zone' : `${zones.length} zones`}
-                  </span>
-                  <Children
-                    domain={domain}
-                    zones={allChildren || zones.length <= CHILDREN_SHOWN ? zones : zones.slice(0, CHILDREN_SHOWN)}
-                    onNavigate={navigate}
-                  />
-                  {zones.length > CHILDREN_SHOWN && (
-                    <button type="button" className={styles.showIt} onClick={() => setAllChildren((v) => !v)}>
-                      {allChildren ? 'Show fewer' : `Show all ${zones.length}`}
-                    </button>
-                  )}
-                </div>
-              )}
+              {zones.length > 0 && zoneBand(zones)}
               {typed.length > 0 ? (
                 <ResourceRecords records={typed} withDnssec node={domain} />
               ) : (

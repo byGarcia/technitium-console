@@ -1793,6 +1793,60 @@ contract and SECURITY.md.
     `Invalid!` and the texts of the last three refusals (in `quick-add.ts`), `Open <zone>` and the
     two placeholders.
 
+35. **Cache is compared across the cluster's nodes** (Adrián's decision, 2026-11-06;
+    `screens/lists/CacheAcross.tsx`, `cache-across.ts`). Each node keeps its own cache and
+    upstream shows one at a time (`optCachedZonesClusterNode`, other-zones.js:106). On an
+    initialised cluster, `All nodes` beside Cache's node selector reads the domain on screen
+    with `cache/list` once per node, with that node's `node`, as the screen sends it, again
+    with every answer the screen gets for the chosen node (a move, Refresh, the read after
+    Flush Cache or Delete). It draws a cell per node with how many records it holds at the
+    domain (the count Cache's foot already writes, from that node's answer; nothing new is
+    asked for it) and, once, that each node keeps its own cache; one table of the records,
+    merged by name, type and value, with a TTL column per node (the time left as Cache
+    writes it, `Stale` included, or `not cached here`); and three filters with their counts,
+    `All`, `On every node` and `On some nodes only`, measured over the nodes that answered.
+    The zone chips under the domain are those of any node. Its limits, and crossing one is a
+    bug:
+    - **only `cache/list`**, with the domain the chosen node's answer names. A node whose
+      server walked down to another domain (it holds no records at the domain and one child,
+      WebServiceOtherZonesApi.cs:88-120) counts as holding nothing there;
+    - **Flush Cache and Delete are untouched**: they still go to the node chosen in the
+      selector, and the header, the path and the stale strip are still that node's read;
+    - **a node that fails says so**: its cell says `Could not read this node.` with the
+      server's message, its column's header `Not read` and its cells `not read`, never
+      `not cached here`; with no node read the table says it could not read any;
+    - **without a cluster nothing changes**: no switch, no read, and `?nodes=all` in the bar
+      is not acted on. The view is kept in the address bar as `?nodes=all` while it is drawn
+      (`lib/url-state.ts`), and leaves with the screen;
+    - each node wears the series colour of its place in the session's list of nodes
+      (`dashboard/palette.ts`, `nodeToken`), the colour deviation 36 gives its line.
+    Its words, OURS, are declared in the header comment of `CacheAcross.tsx`.
+
+36. **The Dashboard's Queries are compared by node** (Adrián's decision, 2026-11-06;
+    `screens/dashboard/compare-nodes.ts`, `Dashboard.tsx`). On an initialised cluster with
+    the aggregate (`Cluster`) chosen, `Compare nodes` in the Queries card's header draws one
+    line per node: that node's own `Total` for the period, read with the request the
+    Dashboard already makes (`dashboard/stats/get`, the same `type`, `utc` and, for Custom,
+    `start` and `end`) once per node with that node's `node`. The aggregate's line is
+    hidden while comparing; the eleven figures and everything else stay the aggregate's.
+    Each node's line is laid on the aggregate's buckets by the instants the server wrote,
+    so a bucket a node has no reading for is a gap, not a zero. Off by default and kept per
+    browser in `localStorage` (`dashboardCompareNodes`), as the node choice is kept in
+    `dashboardClusterNode`. Its limits, and crossing one is a bug:
+    - **only `dashboard/stats/get`**, read again with each answer of the period on screen:
+      a period or a reload asks every node once more, nothing else does;
+    - **Last Hour stays live for the aggregate only** (deviation 5): the figures move every
+      2 seconds as before, and the compared lines move with the minute reload, never with
+      the live counters;
+    - **a node that fails is left out of the chart** and named under it (`Left out: could
+      not read N.`); with none read the card says it could not load, as for any failure;
+    - **without a cluster, or on one node, nothing changes**: no switch and no read, even
+      with the choice left on;
+    - each node keeps the series colour of its place in the session's list of nodes, the
+      one deviation 35 gives it in Cache, whichever other node failed. A point of a line
+      opens Query Logs for its bucket, as the aggregate's does (deviation 7).
+    Its words, OURS: `Compare nodes` and `Left out: could not read N.` (`Dashboard.tsx`).
+
 ## Four constraints the server imposes
 
 These are not preferences: break them and the console works in development and

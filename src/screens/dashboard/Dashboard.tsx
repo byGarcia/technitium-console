@@ -13,6 +13,7 @@ import { Heatmap } from './Heatmap'
 import { ResponseTime } from './ResponseTime'
 import { Resolution } from './Resolution'
 import { useDashboardSample } from './dashboard-sample'
+import { nodeSeries, nodesChart, readNodes, type NodeStats } from './compare-nodes'
 import {
   bucketWindow, periodFilters, protocolFilter, queryTypeFilter, responseTypeFilter,
 } from './jump'
@@ -44,6 +45,21 @@ const COUNTERS: { k: keyof Stats; label: string }[] = [
 ]
 
 const thisHour = () => Math.floor(Date.now() / 3_600_000) * 3_600_000
+
+/* `Compare nodes` on the Queries card (deviation 36), remembered per browser as the
+   node choice is (`dashboardClusterNode`): off unless it was left on. Its words, OURS:
+   `Compare nodes` and `Left out: could not read N.`. */
+const COMPARE_KEY = 'dashboardCompareNodes'
+function readCompare(): boolean {
+  try {
+    return localStorage.getItem(COMPARE_KEY) === 'true'
+  } catch {
+    return false
+  }
+}
+/** Which period an answer is for: the compared lines are drawn only for the one shown. */
+const periodKey = (range: Range, requested: { start: string; end: string } | null) =>
+  range === 'Custom' && requested != null ? `Custom ${requested.start} ${requested.end}` : range
 
 /* Blocking › Overview reads these from here: the figures' format, and the Queries legend its bars share. */
 export { percentage }
@@ -124,6 +140,27 @@ export function Dashboard({
      which is checked at each answer, so a minute reload in the same hour asks
      nothing more. */
   const [hour, setHour] = useState(() => thisHour())
+  /*
+  The Queries card compared by node (deviation 36, `compare-nodes.ts`). Offered on an
+  initialised cluster with the aggregate chosen; the switch stays where it was left.
+  Each answer of the period's `stats/get` on screen is read again from every node,
+  so the compared lines move with the minute reload, never with the live 2 s.
+  */
+  const [compare, setCompare] = useState(readCompare)
+  useEffect(() => {
+    try {
+      if (compare) localStorage.setItem(COMPARE_KEY, 'true')
+      else localStorage.removeItem(COMPARE_KEY)
+    } catch {
+      /* A browser that keeps nothing: the switch lasts as long as the screen. */
+    }
+  }, [compare])
+  const canCompare = clusterInitialised && node === AGGREGATE && nodes.length > 0
+  const comparing = compare && canCompare
+  /* The period each answer on screen was asked for, so the nodes are asked the same. */
+  const askedFor = useRef(new WeakMap<DashboardStats, { range: Range; requested: { start: string; end: string } | null }>())
+  const [byNode, setByNode] = useState<{ key: string; reads: NodeStats[] } | null>(null)
+  const nodeNames = nodes.map((n) => n.name).join('\n')
   const [prev, setPrev] = useState<{
     for: DashboardStats
     range: Range
@@ -153,6 +190,7 @@ export function Dashboard({
       const r = await getDashboardStats(token, range, requested ?? undefined, node)
       if (cancelled) return
       if (r.kind === 'ok') {
+        askedFor.current.set(r.data, { range, requested })
         setHour(thisHour())
         /*
         The previous period is a second read of the same endpoint, with
@@ -225,6 +263,22 @@ export function Dashboard({
       document.removeEventListener('visibilitychange', onVisibility)
     }
   }, [token, range, requested, node])
+
+  /* Every node's answer for the period on screen, again with each new answer. */
+  useEffect(() => {
+    if (!comparing || data == null) return
+    const asked = askedFor.current.get(data)
+    if (asked == null) return
+    let cancelled = false
+    void readNodes(token, asked.range, asked.requested, nodes).then((reads) => {
+      if (!cancelled) setByNode({ key: periodKey(asked.range, asked.requested), reads })
+    })
+    return () => {
+      cancelled = true
+    }
+    // `nodes` is read through its names: the Shell hands a new array on each render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [comparing, data, token, nodeNames])
 
   /*
   Last Hour in real time (`live.ts`, `useLive.ts`): between reloads the ten
@@ -311,6 +365,21 @@ export function Dashboard({
   /* What a point of `Queries` opens: its minute, hour, day or month. The hint that
      says so in its header is our words (deviation 7), drawn only when it can land. */
   const unit = bucketsOf(view?.mainChartData)?.unit
+
+  /* The compared lines, for the period on screen only: a new period waits for its
+     own reads, a minute reload keeps the lines until the new ones arrive. */
+  const compared = comparing && !loading && data != null && byNode != null &&
+    byNode.key === periodKey(range, requested)
+    ? nodesChart(data.mainChartData, byNode.reads)
+    : null
+  const series = useMemo(() => nodeSeries(nodes), [nodeNames]) // eslint-disable-line react-hooks/exhaustive-deps
+  /* A point of a compared line opens its bucket from the answer the lines are laid on. */
+  const pickCompared = pickPoint != null && data != null
+    ? (i: number) => {
+        const span = bucketWindow(data.mainChartData, i)
+        if (span != null) jump(span)
+      }
+    : undefined
 
   return (
     <>
@@ -445,17 +514,56 @@ export function Dashboard({
         <Panel
           title="Queries"
           className={styles.queries}
-          actions={pickPoint != null && unit != null
-            ? <span className={styles.hint}>Click a point to open Query Logs for that {unit}</span>
-            : undefined}
+          actions={(pickPoint != null && unit != null) || canCompare ? (
+            <div className={styles.panelActions}>
+              {pickPoint != null && unit != null && (
+                <span className={styles.hint}>Click a point to open Query Logs for that {unit}</span>
+              )}
+              {canCompare && (
+                <Button size="sm" aria-pressed={compare} onClick={() => setCompare((v) => !v)}>
+                  Compare nodes
+                </Button>
+              )}
+            </div>
+          ) : undefined}
         >
           <Body>
-            {loading && <Loading compact />}
-            {!loading && view && hasData(view.mainChartData) && (
-              <Line data={view.mainChartData} resetOn={data?.mainChartData} onPick={pickPoint} height={300} />
-            )}
-            {!loading && (!view || !hasData(view.mainChartData)) && (
-              <Placeholder failure={failure} empty="No queries for this period." />
+            {comparing ? (
+              /* One line per node, the aggregate's hidden (deviation 36). */
+              <>
+                {(loading || (!failure && compared == null)) && <Loading compact />}
+                {compared != null && hasData(compared.chart) && (
+                  <Line
+                    key="nodes"
+                    data={compared.chart}
+                    resetOn={byNode}
+                    onPick={pickCompared}
+                    height={300}
+                    series={series}
+                  />
+                )}
+                {!loading && (failure || (compared != null && !hasData(compared.chart))) && (
+                  <Placeholder
+                    failure={failure || (compared != null && compared.chart.datasets.length === 0)}
+                    empty="No queries for this period."
+                  />
+                )}
+                {compared != null && compared.failed.length > 0 && (
+                  <p className={styles.leftOut}>
+                    Left out: could not read {compared.failed.join(', ')}.
+                  </p>
+                )}
+              </>
+            ) : (
+              <>
+                {loading && <Loading compact />}
+                {!loading && view && hasData(view.mainChartData) && (
+                  <Line key="total" data={view.mainChartData} resetOn={data?.mainChartData} onPick={pickPoint} height={300} />
+                )}
+                {!loading && (!view || !hasData(view.mainChartData)) && (
+                  <Placeholder failure={failure} empty="No queries for this period." />
+                )}
+              </>
             )}
           </Body>
         </Panel>

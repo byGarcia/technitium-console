@@ -232,3 +232,48 @@ path's (`ui/SectionHeader`), in the mono of a DNS name.
 .trailSep { flex: none; color: var(--faint); }
 .trailHere { min-width: 0; color: var(--ink); font-weight: 650; }
 .trailActs { display: flex; align-items: center; gap: var(--s-3); margin-left: auto; }
+
+/*
+CACHE ACROSS THE CLUSTER (`CacheAcross.tsx`, deviation 35). The `All nodes` switch
+sits beside the node selector, at the foot of its field; a card per node with the
+records it holds at the domain follows, the sentence that each node keeps its own
+cache beside them, and the merged table has one TTL column per node.
+*/
+.nodeBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--s-5);
+}
+
+.acrossNote {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  padding: var(--s-6) var(--s-8) var(--s-7);
+  background: var(--pan);
+  font-size: var(--t-3);
+  line-height: 1.5;
+  color: var(--mute);
+}
+@media (max-width: 560px) {
+  /* Two cells a row: the sentence takes a row of its own after an even number of
+     nodes, and the cell beside the last node after an odd one, so no cell is blank. */
+  .acrossNote { padding: var(--s-5) var(--s-6) var(--s-6); }
+  .acrossNote:nth-child(odd) { grid-column: 1 / -1; }
+}
+.nodeFailed { margin-top: var(--s-2); font-size: var(--t-2); line-height: 1.45; color: var(--mute); }
+.nodeFailed strong { display: block; font-weight: 600; color: var(--dan); }
+
+.spread { display: flex; flex-wrap: wrap; gap: var(--s-3); }
+
+.nodeHead { white-space: nowrap; }
+.nodeName { display: inline-flex; align-items: center; gap: var(--s-3); }
+.nodeName::before {
+  content: '';
+  width: var(--s-4);
+  height: var(--s-4);
+  border-radius: var(--r-1);
+  background: var(--nd);
+}
+.notHere { color: var(--faint); font-style: italic; }

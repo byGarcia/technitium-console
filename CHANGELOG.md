@@ -39,6 +39,16 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
   added or removed, and the save bar has Save and Update Now, which saves and then asks to update
   as Update Now does. The Block, Allow and Check bar says as you type whether one of your own
   rules, the name or a parent, already blocks or allows it, from the rules it reads once.
+- **Cache across the cluster:** on a cluster, `All nodes` beside the node selector reads the domain
+  you are browsing from every node and lays the answers side by side: how many records each node
+  holds there, one row per record with each node's time left (or `not cached here`), and filters
+  for the records on every node or on some nodes only. A node that cannot be read says so in its
+  column. Flush Cache and Delete still act on the node chosen, and the view is kept in the address
+  bar (`?nodes=all`).
+- **Queries compared by node:** on a cluster with `Cluster` chosen, `Compare nodes` in the
+  Dashboard's Queries card draws one line per node, each node's own total for the period, in the
+  colour it has in Cache. A node that cannot be read is left out and named under the chart. The
+  lines reload with the minute reload, and the choice is remembered in the browser.
 - **Buttons are flat**, with no shine or bevel. The neutral one is a step lighter than the panel
   it sits on, so it no longer disappears in a panel header or a dialog footer. Under the pointer the
   primary button no longer grows a grey ring and the destructive one keeps its colour.

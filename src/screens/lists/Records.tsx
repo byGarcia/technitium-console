@@ -94,6 +94,23 @@ function Inline({ entries, className, bare = false }: {
   )
 }
 
+/** A cached record's time left as the TTL column writes it, with its `Stale` tag.
+ *  Also each node's column of Cache's `All nodes` (`CacheAcross.tsx`). */
+export function RecordTtl({ r }: { r: DnsRecord }) {
+  const ttl = splitTtl(r)
+  return (
+    <>
+      {ttl.value} {ttl.human && <small>({ttl.human})</small>}
+      {isStale(r) && <span className={styles.stale}><Tag tone="warn">Stale</Tag></span>}
+    </>
+  )
+}
+
+/** A record's data on one line, as the Data column writes it. */
+export function RecordData({ r }: { r: DnsRecord }) {
+  return <Inline entries={rdataEntries(r.rData)} bare />
+}
+
 /*
 A record on ONE line, its details folded (Cache, 2026-11-06, deviation 16). The
 row says what the record is: its type, its time left, its data and its DNSSEC
@@ -104,7 +121,6 @@ two-line row wrote, and the glue and RRSIG blocks its two buttons opened.
 */
 function CompactRow({ r, node, withDnssec }: { r: DnsRecord; node: string; withDnssec: boolean }) {
   const [open, setOpen] = useState(false)
-  const ttl = splitTtl(r)
   const extra = extras(r)
   const name = r.nameIdn ?? r.name
   const differentName = r.name !== node && name !== node
@@ -118,11 +134,10 @@ function CompactRow({ r, node, withDnssec }: { r: DnsRecord; node: string; withD
           {differentName && <span className={styles.name}>{name === '' ? '<ROOT>' : name}</span>}
         </td>
         <td className={styles.ttl}>
-          {ttl.value} {ttl.human && <small>({ttl.human})</small>}
-          {isStale(r) && <span className={styles.stale}><Tag tone="warn">Stale</Tag></span>}
+          <RecordTtl r={r} />
         </td>
         <td>
-          <Inline entries={rdataEntries(r.rData)} bare />
+          <RecordData r={r} />
         </td>
         {withDnssec && (
           <td>

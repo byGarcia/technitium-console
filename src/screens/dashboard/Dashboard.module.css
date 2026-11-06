@@ -335,3 +335,7 @@ each row's own columns, which are the same widths in all but the figures.
 .legendTable .lg { display:grid; grid-column: 1 / -1; grid-template-columns: subgrid; align-items:center; }
 .legendTable .lg b { text-align:right; }
 .lgName { text-align:left; }
+
+/* The Queries compared by node (deviation 36): the nodes whose read failed, named
+   under the lines they are missing from. */
+.leftOut { margin: var(--s-4) 0 0; font-size: var(--t-3); color: var(--warn); }

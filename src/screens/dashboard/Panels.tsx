@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import type { ChartData, TopEntry } from '../../api/dashboard'
 import { Chart } from './Chart'
-import { tokenForLabel } from './palette'
+import { tokenForLabel, type Series } from './palette'
 import { num2 } from './metrics'
 import { Body, Panel } from '../../ui/Panel'
 import { Button } from '../../ui/Button'
@@ -134,11 +134,14 @@ export function Legend({
   hidden,
   onToggle,
   table = false,
+  series = tokenForLabel,
 }: {
   entries: { label: string; datum: string; count?: string }[]
   hidden: ReadonlySet<string>
   onToggle: (label: string) => void
   table?: boolean
+  /** The swatch's token, when the chart's series choose their own (`Line`). */
+  series?: Series
 }) {
   return (
     <div className={`${styles.legend}${table ? ` ${styles.legendTable}` : ''}`}>
@@ -152,7 +155,7 @@ export function Legend({
             aria-pressed={!off}
             onClick={() => onToggle(e.label)}
           >
-            <i style={{ background: `var(${tokenForLabel(e.label, i)})` }} />
+            <i style={{ background: `var(${series(e.label, i)})` }} />
             {table ? (
               <>
                 {/* The spaces keep the name readable as words ("A 60 60.00%");
@@ -181,6 +184,7 @@ export function Line({
   resetOn = data,
   onPick,
   height,
+  series,
 }: {
   data: ChartData
   resetOn?: unknown
@@ -188,6 +192,8 @@ export function Line({
   height?: number
   /** A point's jump to Query Logs, by its index (deviation 7). */
   onPick?: (index: number) => void
+  /** Each series' colour token, when it is not the label's (deviation 36). */
+  series?: Series
 }) {
   const { hidden, toggle } = useHidden(resetOn)
   const entries = data.datasets.map((d) => ({
@@ -196,8 +202,8 @@ export function Line({
   }))
   return (
     <>
-      <Legend entries={entries} hidden={hidden} onToggle={toggle} />
-      <Chart type="line" data={data} height={height} aria="Queries over time" separateLegend hidden={hidden} onPick={onPick} />
+      <Legend entries={entries} hidden={hidden} onToggle={toggle} series={series} />
+      <Chart type="line" data={data} height={height} aria="Queries over time" separateLegend hidden={hidden} onPick={onPick} series={series} />
     </>
   )
 }
