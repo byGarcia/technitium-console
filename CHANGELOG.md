@@ -106,6 +106,8 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
 - **My Profile is a page** (`/profile/`) instead of a dialog: the user as the header, cards for
   sessions, 2FA, groups and logins, the profile form, a Security block with the account actions,
   the sessions in a filterable table, and the theme choice with previews.
+- **The cards over each list are one compact strip** instead of a row of tall boxes, so the table
+  starts higher on the screen. The Dashboard keeps its large figures.
 - **Choosing a file is a drop zone** in every dialog that takes one (an app's zip, a zone file, a
   settings backup): drop the file or click to choose it, and it shows its name and size.
 - **Dialogs are one surface**, without the lines under the title and over the buttons. A
@@ -114,14 +116,11 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
   answer by record type, the server and the header flags; the Question, Answer, Authority,
   Additional and Extended DNS Errors sections as tables; the JSON as its own tab; and each raw
   response as a row that opens its JSON.
-- **DHCP at a glance.** Scopes opens with cards for the scopes by state, the address pool the
-  enabled scopes have leased and the leases by type, and each scope row says how many of its
-  addresses are leased. Leases opens with cards for the leases by type, per scope, those expiring
-  within the hour and the newest, and its table can be searched (IP, MAC, host name) and filtered
-  by scope and type, also from the cards. The scope form gets a section index.
-
-**Behaves like the stock console in more places:**
-
+- **DHCP reads like Cache and Zones:** one line per lease and per scope with the rest under
+  Details, a search and a State filter for scopes, and a scope that opens as its own page, with its
+  verbs in the header, cards for its pool, leases, reservations and options, and a form whose twelve
+  optional blocks fold into one line each. Search, filters and the open scope are kept in the
+  address bar.
 - **Zones: a zone that does not exist says so.** Opening one (from an old link, for instance)
   showed "Unable to connect to the server"; it now shows the server's own message, as the stock
   console does, and the list comes back.

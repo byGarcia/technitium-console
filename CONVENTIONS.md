@@ -453,6 +453,9 @@ Write down here whatever you find. What is already known:
   (`screens/lists/cache-node.real.json`).
 - **`recordDataTemplate` is left out, not `null`,** on an app class that serves no
   APP records (`apps/list`, v15.6.1).
+- **A lease's `hostName` comes back with the scope's domain appended** (`build-01.lab.lan`
+  for a client that sent `build-01`), and is `null` when the client sent none (v15.6.1,
+  2026-11-06).
 - **A reserved lease is not in `dhcp/leases/list` until a client takes it.**
   `ListDhcpLeases` walks the leases clients hold, never the reservations; upstream
   marks a held lease `Reserved` when its client has a reservation. An enabled scope
@@ -1096,50 +1099,99 @@ contract and SECURITY.md.
     `EDNS` and `DNS Client`; `No Record Found` (the zone table's words); `Show
     raw response N` / `Hide raw response N`; and the Import confirmation's title
     and verb, `Import`.
-19. **DHCP says what it holds** (Adrián's decision, 2026-11-06). Its two tabs open
-    with stat cards and their lists become `ui/DataTable`s, reading only DHCP's own
-    two lists:
-    - **Scopes opens with three cards** (`ScopeSummary.tsx`): All Scopes (Enabled
-      and Disabled), Address Pool (the leases held in the enabled scopes, of the
-      addresses in their ranges) and Leases (Dynamic and Reserved). The scope
-      table gains a **Leases** column, each scope's leases of the addresses in its
-      range, sortable by count. They read `dhcp/leases/list` beside
+19. **DHCP reads like Cache and Zones** (Adrián's decision, 2026-11-06). Its two tabs
+    open with stat cards over ONE card that both finds and shows (`ui/DataTable`), a
+    row is one line with the rest under its `Details`, a scope opens as a page, and
+    the view is in the address bar. They read only DHCP's own two lists and the
+    `scopes/get` upstream's Edit already makes:
+    - **Scopes opens with three cards** (`ScopeSummary.tsx`): All Scopes (Enabled and
+      Disabled; pressing a state sets the State filter, pressing it again clears it),
+      Address Pool (the leases held in the enabled scopes, of the addresses in their
+      ranges) and Leases (Dynamic and Reserved). They read `dhcp/leases/list` beside
       `dhcp/scopes/list`, the one call this deviation adds: the list the Leases tab
       already loads, under the same DHCP: View, on the same node. When it fails the
-      scope table and All Scopes are untouched, no notice is raised, and the two
-      cards say "The leases could not be read." instead of drawing a false zero.
-      A range is `endingAddress - startingAddress + 1`; the exclusions are not in
-      `scopes/list`, so nothing calls the remainder "free" (`pool.ts`).
-    - **Leases opens with four cards** (`LeaseSummary.tsx`), counted from the list
-      on screen: All Leases (pressing a type sets the Type filter, pressing it
-      again clears it), Leases per Scope (pressing one sets the Scope filter),
-      Expiring Soon (within the next hour, and the first to go) and Newest Lease.
-    - **The lease table can be searched and filtered.** Upstream has no filter
-      here; the toolbar's Search (IP address, MAC address or host name, a MAC
-      typed with colons finding the server's dashes), Scope and Type filter the
-      list already loaded and ask the server nothing. The foot still reads
-      `Total Leases: N`, the whole list; while a filter hides rows the toolbar
-      says `N of M shown`. An empty result shows upstream's `No Lease Found`.
+      scope table and All Scopes are untouched, no notice is raised, and the cards say
+      "The leases could not be read." instead of drawing a false zero. A range is
+      `endingAddress - startingAddress + 1`; the exclusions are not in `scopes/list`,
+      so nothing calls the remainder "free" (`pool.ts`).
+    - **The scope table** has a toolbar upstream does not: `Search` (a name, or an
+      IPv4 address its range holds, or part of its starting, ending, network or
+      interface address) and a `State` filter, both narrowing the list on screen.
+      One line per scope: Name, `Scope Range`, `Subnet Mask` (upstream's "Scope
+      Range/Subnet Mask" split in two columns), Interface, a `Leases` column (each
+      scope's leases of the addresses in its range, sortable by count) and Status.
+      Network and Broadcast are under the row's `Details`, so the table no longer
+      sorts by them. The name opens the scope; Edit Scope and Delete Scope are in the
+      row's menu, Enable or Disable Scope beside it. Same calls and confirmations.
+    - **A scope opens as a page** (`ScopePage.tsx`), not a bare form: the header is
+      the scope (`Scopes ›` back to the list, which reads it again as Cancel does; its
+      name as the title; its state and `Interface`), with `Disable Scope` (or `Enable
+      Scope`) and `Delete Scope` at the right: the row's verbs, permissions,
+      confirmations and alerts. Disabling or enabling there reads the list again and
+      stays on the page, the form as typed; deleting returns to the list, removing the
+      row without reading it again. Four cards (`ScopeOverview.tsx`) read the scope's
+      row, its `scopes/get` and the leases: Address Pool (its leases of its range; the
+      range, mask, network and broadcast), Leases (Dynamic and Reserved, and `Open in
+      Leases`, which opens the Leases tab narrowed to the scope), Reserved Leases (how
+      many, and for each whether a lease of the scope carries its MAC: `Leased` or
+      `Not leased`, "N of M leased", with the tooltip "A reservation is in the Leases
+      list only once its client has taken it.") and Options (Lease Time written `1d
+      4h 30m`, Router Address, DNS Servers or `This DNS Server`, Domain Name; `None`
+      when empty). Then the form under upstream's title, "Edit Scope". Add Scope is
+      the same page titled "Add Scope", without cards.
+    - **The scope form reads in one glance** (`ScopeForm.tsx`, `form-summary.ts`):
+      Scope stands open; the other twelve blocks are one card of lines, each its
+      title and what it holds, following what is typed, and a line opens its block
+      under it. A closed block's fields stay in the form, hidden, and Save sends them
+      all; when a save stops at a cell of a closed block, the block opens before the
+      cell takes the focus. The Ping Check `Warning!` is above its controls (DESIGN:
+      Warning before, Note after); the Ending Address says how many addresses the
+      range holds while typing, only for a valid IPv4 range; the Vendor Specific
+      Information hex samples may wrap between octets. Same fields, order, defaults,
+      texts, validation and save. The section index is gone.
+    - **Leases opens with four cards** (`LeaseSummary.tsx`), counted from the list on
+      screen: All Leases (pressing a type sets the Type filter, pressing it again
+      clears it), Leases per Scope (pressing one sets the Scope filter), Expiring Soon
+      (within the next hour, and the first to go) and Newest Lease. Refresh sits beside
+      the title, as Cache's does.
+    - **The lease table can be searched and filtered**: `Search` (IP address, MAC
+      address or host name, a MAC typed with colons finding the server's dashes),
+      Scope and Type filter the list already loaded and ask the server nothing. The
+      foot still reads `Total Leases: N`; while a filter hides rows the toolbar says
+      `N of M shown`; an empty result shows `No Lease Found`. One line per lease: IP
+      Address, Host Name, MAC Address, Type, Scope and Lease Expires with how far off
+      it is (upstream's order was Scope, MAC, IP, Type, Host, Obtained, Expires). The
+      `Client Identifier`, which upstream only sends, and both dates with their
+      distance are under `Details`; Lease Obtained left the line, so the table no
+      longer sorts by it.
+    - **The view is in the address bar** (`dhcp-url.ts`, `lib/url-state.ts`): Leases
+      keeps `?q=`, `?scope=`, `?type=`; Scopes keeps `?q=`, `?state=`, written by
+      replacing the entry, and the open scope `?scope=`, PUSHED as `?zone=` is, so
+      Back and Forward walk between the list and a scope and a reload or a link opens
+      it (a scope that cannot be read leaves the list, and the bar with it). Each tab
+      reads them only when the bar is on its own folder, since a tab is drawn before
+      the screen it replaces has dropped its search, and drops them when it goes.
+      `Open in Leases` leaves Scopes, so Back from it lands on the scope list.
     - **A lease type has a series colour** (`lease-colours.ts`): Dynamic the blue
-      upstream gives it, Reserved the violet (upstream's grey would read as "off"),
-      always with the word beside it. Lease Expires adds how far off it is under
-      the date.
-    - **The scope form takes the section index** (`ui/IndexedForm`, as Settings
-      and SSO), its entries the thirteen blocks' titles; the Ping Check `Warning!`
-      moves above the block's controls (DESIGN: Warning before, Note after); the
-      Ending Address says how many addresses the range holds while typing, only
-      for a valid IPv4 range; and the Vendor Specific Information hex samples may
-      wrap between their octets. Same fields, order, defaults, texts and save.
-    - **"Remove Lease?" draws its two `Warning!` paragraphs as warning blocks**,
-      same words, same order.
-    Its words, all OURS, declared in the header comment of the file that writes
-    them: the card titles `All Scopes`, `Address Pool`, `All Leases`, `Leases per
-    Scope`, `Expiring Soon`, `Newest Lease` (and `Leases`), `of N`, `addresses in
-    range`, `leased in the enabled scopes`, `in the enabled scopes`, `The leases
-    could not be read.`, `within the next hour`, `next:`, `obtained`, `None`, the
-    column header `Leases`, `Search`, its placeholder `IP address, MAC address or
-    host name`, `All`, `N of M shown` and `N addresses`/`1 address`.
-
+      upstream gives it, Reserved the violet, always with the word beside it.
+    - **"Remove Lease?" draws its two `Warning!` paragraphs as warning blocks**, same
+      words, same order.
+    Its words, all OURS, declared in the header comment of the file that writes them:
+    the card titles `All Scopes`, `Address Pool`, `Leases`, `All Leases`, `Leases per
+    Scope`, `Expiring Soon`, `Newest Lease`, `Reserved Leases`, `Options`; `of N`,
+    `addresses in range`, `addresses in range leased`, `leased in the enabled
+    scopes`, `in the enabled scopes`, `The leases could not be read.`, `within the
+    next hour`, `next:`, `obtained`, `None`, `Open in Leases`, `N of M leased`,
+    `Leased`, `Not leased`, `N more`, `This DNS Server`, the `1d 4h 30m` lease time
+    and the reservation tooltip; the headers `Leases`, `Scope Range`, `Subnet Mask`;
+    `Search` and its placeholders `IP address, MAC address or host name` and `Scope
+    name or IP address`; `State`, `All`, `N of M shown`, `Details`, `Client
+    Identifier`, `Network`, `Broadcast`, `Interface`, `Disable Scope`, `Enable
+    Scope`, `Delete Scope` as header buttons, `N addresses`/`1 address`; and the
+    block summaries (`On`, `Off`, `ms`, `retry`/`retries`, `No domain name`, `DNS
+    Updates`, `TTL`, `search domain(s)`, `Router`, `DNS`, `WINS`, `NTP`, `via`,
+    `Option`, `entry`/`entries`, `route(s)`, `range(s)`, `Server`, `Host`, `File`,
+    `match any`, `and N more`).
 21. **My Profile is a page** (Adrián's decision, 2026-11-06). Upstream's `modalMyProfile`
     (index.html:3691-3786, auth.js:660-866) is a dialog; here it is `/profile/`, reached
     from the account menu's `My Profile` (`screens/profile/`). It is a route like the
