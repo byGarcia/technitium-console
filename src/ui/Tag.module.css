@@ -11,9 +11,7 @@ one thing on one screen and another on the next.
   letter-spacing: 0.03em;
   padding: var(--s-1) var(--s-5);
   border-radius: var(--r-full);
-  border: 1px solid var(--line);
-  background: var(--pan2);
-  color: var(--mute);
+  border: 1px solid transparent;
   white-space: nowrap;
 }
 
@@ -32,7 +30,10 @@ compared with mark a state: a column of filled capsules read as a column of
 buttons. The neutral pill (`Unsigned`, an app's name) keeps a quiet fill and
 loses its border, because it marks a kind, not a state.
 */
-.tag:not(:is(.ok, .warn, .dan, .info, .acc)) { border-color: transparent; background: var(--tag-neutral); }
+/* Grey and its fill only for the neutral pill (2026-11-06): set on `.tag` itself they
+   came after the tones (composed from `tones.module.css`, which loads first) and drew
+   every toned tag, and every toned capsule, grey. */
+.tag:not(:is(.ok, .warn, .dan, .info, .acc)) { border-color: transparent; background: var(--tag-neutral); color: var(--mute); }
 
 /* A toned tag that names something keeps its tone's filled capsule (`pill`). */
 .pill { border-color: transparent; }
