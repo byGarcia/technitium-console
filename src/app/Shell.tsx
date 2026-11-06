@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { visibleSections, visibleSubs, type Permission } from './sections'
 import { useAllNavMarks } from './nav-marks'
 import { toSlug } from './slug'
@@ -15,7 +15,7 @@ import { About } from '../screens/about/About'
 import { Apps } from '../screens/apps/Apps'
 import { Cache } from '../screens/lists/Lists'
 import { Blocking } from '../screens/blocking/Blocking'
-import { Settings, type RecordSettings, type ServerInfo } from '../screens/settings/Settings'
+import { MENU_TABS, Settings, type RecordSettings, type ServerInfo } from '../screens/settings/Settings'
 import { Zones } from '../screens/zones/Zones'
 import { Dhcp } from '../screens/dhcp/Dhcp'
 import { Logs } from '../screens/logs/Logs'
@@ -34,6 +34,10 @@ import { Menu } from '../ui/Menu'
 import { ThisServerName } from '../ui/ClusterNodeSelect'
 import { FooterLinks } from '../ui/FooterLinks'
 import { Versions } from './Versions'
+import { CommandPalette, PALETTE_KEYS } from './palette/CommandPalette'
+import { accountItems, actionItems, pageItems, zoneItem, type PaletteItem, type Target } from './palette/items'
+import { listAllZones } from '../api/zones'
+import { useTheme } from '../theme/useTheme'
 import { BrandMark } from './BrandMark'
 import { BlockingMark } from './BlockingMark'
 import { useBlockingMark } from '../screens/blocking/blocking-state'
@@ -245,6 +249,116 @@ export function Shell({
     if (pending != null) setPending(null)
   }, [pending])
 
+  /*
+  The command palette (deviation 26): Ctrl+K or ⌘K anywhere, or the field under the
+  brand. The zones are read when it opens, at most once a minute, and only for a
+  session that may see Zones.
+  */
+  const [palette, setPalette] = useState(false)
+  const [paletteJump, setPaletteJump] = useState(0)
+  /*
+  The address a jump asked for. The screen that remounts reads it on its first
+  render; the one it replaces may then take its own parameters out of the bar as it
+  goes, some of them a microtask later (Zones drops `?zone=` that way, so the back
+  button keeps the zone's own entry). A task after the remount, once all of that has
+  run, the bar is set back to what was asked, replacing the entry.
+  */
+  const jumpUrl = useRef<string | null>(null)
+  useEffect(() => {
+    const asked = jumpUrl.current
+    if (asked == null) return
+    /* Cleared in the task, not here: StrictMode's rehearsal runs this twice and
+       its cleanup cancels the first task. */
+    const t = window.setTimeout(() => {
+      jumpUrl.current = null
+      if (window.location.pathname + window.location.search !== asked) {
+        window.history.replaceState(null, '', asked)
+      }
+    }, 0)
+    return () => window.clearTimeout(t)
+  }, [paletteJump])
+  const theme = useTheme()
+  const zonesForPalette = useRef<{ at: number; items: PaletteItem[] } | null>(null)
+  const [zoneItems, setZoneItems] = useState<PaletteItem[]>([])
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        setPalette((v) => !v)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+  useEffect(() => {
+    if (!palette || !sections.some((x) => x.id === 'zones')) return
+    const kept = zonesForPalette.current
+    if (kept != null && Date.now() - kept.at < 60_000) {
+      setZoneItems(kept.items)
+      return
+    }
+    let alive = true
+    void listAllZones(session.token).then((zones) => {
+      if (!alive || zones == null) return
+      const items = zones.map((z) => zoneItem(z.name, z.type))
+      zonesForPalette.current = { at: Date.now(), items }
+      setZoneItems(items)
+    })
+    return () => {
+      alive = false
+    }
+  }, [palette, sections, session.token])
+
+  const paletteItems = useCallback(
+    (query: string): PaletteItem[] => {
+      const visible = (id: string) => sections.some((x) => x.id === id)
+      const pages = pageItems(
+        sections.filter((x) => x.id !== 'profile'),
+        (x) => (x.id === 'settings' ? MENU_TABS.slice() : visibleSubs(x, permissions)),
+      )
+      return [
+        ...actionItems(query, visible),
+        ...pages,
+        ...zoneItems,
+        ...accountItems({
+          canChangePassword: session.type !== 'RemoteSSO' && session.type !== 'RemoteLDAP',
+          canConfigure2fa: session.type !== 'RemoteSSO',
+        }),
+      ]
+    },
+    [sections, permissions, zoneItems, session.type],
+  )
+
+  function runTarget(t: Target) {
+    setDrawer(false)
+    switch (t.kind) {
+      case 'route': {
+        const search = t.params != null ? `?${new URLSearchParams(t.params).toString()}` : ''
+        window.history.pushState(null, '', toTrail({ section: t.section, sub: t.sub }) + search)
+        window.dispatchEvent(new PopStateEvent('popstate'))
+        if (search !== '') {
+          jumpUrl.current = toTrail({ section: t.section, sub: t.sub }) + search
+          setPaletteJump((n) => n + 1)
+        }
+        return
+      }
+      case 'dnsclient':
+        handoff.queryDnsServer(t.domain, null, null)
+        return
+      case 'logs':
+        handoff.showQueryLogs(t.domain, t.clientIp, null)
+        return
+      case 'modal':
+        open(t.id)
+        return
+      case 'theme':
+        theme.setChoice(t.choice)
+        return
+      case 'logout':
+        onLogout()
+    }
+  }
+
   const handoff = useMemo<Handoff>(() => {
     const visible = (id: string) => sections.some((s) => s.id === id)
     return {
@@ -370,6 +484,12 @@ export function Shell({
             </span>
           </span>
         </div>
+        {/* The palette's door: a field that is a button, with its shortcut. */}
+        <button type="button" className={styles.find} onClick={() => setPalette(true)} aria-keyshortcuts="Control+K Meta+K">
+          <Icon name="search" size={15} />
+          <span className={styles.findText}>Search or jump to…</span>
+          <kbd className={styles.findKeys}>{PALETTE_KEYS}</kbd>
+        </button>
         <nav className={styles.slist} role="navigation" aria-label="Sections">
           {/*
           This is a navigation menu, and until now it claimed to be a `tablist`.
@@ -578,6 +698,9 @@ export function Shell({
           >
             <Icon name="menu" size={18} />
           </button>
+          <button type="button" className={styles.findIcon} aria-label="Search" onClick={() => setPalette(true)}>
+            <Icon name="search" size={17} />
+          </button>
           <span className={styles.topBrand}>
             <BrandMark size={26} />
             <span className={styles.brandText}>
@@ -603,6 +726,9 @@ export function Shell({
             destination is a page-level alert, and until now the chrome had
             nowhere to put one. */}
         <Notifier notice={chromeNotice} onClose={() => setChromeNotice(null)} />
+        {/* Keyed on the palette's jumps, so a screen it opens on a name reads the
+            address bar again even when it was already on screen. */}
+        <Fragment key={paletteJump}>
         {current?.id === 'dashboard' ? (
           <Dashboard
             token={session.token}
@@ -720,6 +846,7 @@ export function Shell({
             onRecordSettings={setRecordSettings}
           />
         ) : null}
+        </Fragment>
         </main>
 
         {/*
@@ -766,6 +893,7 @@ export function Shell({
         token={session.token}
         onCreated={() => setAccountRevision((n) => n + 1)}
       />
+      <CommandPalette open={palette} onOpenChange={setPalette} items={paletteItems} onRun={(item) => runTarget(item.target)} />
       <ChangeTheme
         open={modal === 'theme'}
         onOpenChange={(o) => setModal(o ? 'theme' : null)}

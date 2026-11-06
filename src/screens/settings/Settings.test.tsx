@@ -878,7 +878,8 @@ describe('Settings: search settings (2026-11-06)', () => {
   it('narrows the pane to the rows its words find, in their label or their help, and hides the blocks left empty', async () => {
     server()
     await mount({ sub: 'General' })
-    await userEvent.type(search(), 'record ttl')
+    await userEvent.click(search())
+    await userEvent.paste('record ttl')
     expect(out('Default Record TTL')).toBe(false)
     expect(out('Default NS Record TTL')).toBe(false)
     expect(out('DNS Server Domain')).toBe(true)
@@ -890,26 +891,32 @@ describe('Settings: search settings (2026-11-06)', () => {
   it('finds a row by its help text, not by the value it holds', async () => {
     server()
     await mount({ sub: 'General' })
-    await userEvent.type(search(), 'fully qualified')
-    expect(out('DNS Server Domain')).toBe(false)
+    /* Pasted, not typed: each keystroke redraws nine panes, and a loaded machine
+       took longer than the test's five seconds to type sixteen of them. */
+    await userEvent.click(search())
+    await userEvent.paste('fully qualified')
+    await waitFor(() => expect(out('DNS Server Domain')).toBe(false))
     await userEvent.clear(search())
-    await userEvent.type(search(), 'ref.technitium-ui.test')
-    expect(out('DNS Server Domain')).toBe(true)
+    await userEvent.paste('ref.technitium-ui.test')
+    await waitFor(() => expect(out('DNS Server Domain')).toBe(true))
   })
 
   it('says in the menu how many it found in each sub-section, and nothing for the ones with none', async () => {
     server()
     await mount({ sub: 'General' })
-    await userEvent.type(search(), 'serve stale')
-    const cache = within(menu()).getByRole('link', { name: /^Cache/ })
-    expect(cache.textContent).toMatch(/^Cache, \d+ (match|matches)$/)
+    await userEvent.click(search())
+    await userEvent.paste('serve stale')
+    await waitFor(() =>
+      expect(within(menu()).getByRole('link', { name: /^Cache/ }).textContent).toMatch(/^Cache, \d+ (match|matches)$/),
+    )
     expect(within(menu()).getByRole('link', { name: 'TSIG' })).toHaveAttribute('data-none')
   })
 
   it('with nothing found here it says so, and the other panes still count', async () => {
     server()
     await mount({ sub: 'TSIG' })
-    await userEvent.type(search(), 'serve stale')
+    await userEvent.click(search())
+    await userEvent.paste('serve stale')
     expect(screen.getByText('No settings in TSIG match “serve stale”.')).toBeInTheDocument()
   })
 
@@ -921,7 +928,8 @@ describe('Settings: search settings (2026-11-06)', () => {
     expect(out('DNS Server Domain')).toBe(true)
     await userEvent.clear(search())
     expect(window.location.search).toBe('')
-    await userEvent.type(search(), 'ttl')
+    await userEvent.click(search())
+    await userEvent.paste('ttl')
     expect(window.location.search).toBe('?q=ttl')
     unmount()
     expect(window.location.search).toBe('')
@@ -930,7 +938,8 @@ describe('Settings: search settings (2026-11-06)', () => {
   it('Escape empties it and every row is back', async () => {
     server()
     await mount({ sub: 'General' })
-    await userEvent.type(search(), 'ttl')
+    await userEvent.click(search())
+    await userEvent.paste('ttl')
     expect(out('DNS Server Domain')).toBe(true)
     await userEvent.keyboard('{Escape}')
     expect(search()).toHaveValue('')
@@ -940,7 +949,8 @@ describe('Settings: search settings (2026-11-06)', () => {
   it('hides nothing from the save: a hidden field is sent as it was', async () => {
     const spy = server()
     await mount({ sub: 'General' })
-    await userEvent.type(search(), 'ttl')
+    await userEvent.click(search())
+    await userEvent.paste('ttl')
     await userEvent.click(screen.getByRole('button', { name: 'Save Settings' }))
     expect(await screen.findByText('Settings Saved!')).toBeInTheDocument()
     const body = spy.mock.calls.find((c) => c[0] === 'settings/set')![1]!.body as Record<string, string>
@@ -952,7 +962,8 @@ describe('Settings: search settings (2026-11-06)', () => {
     const lists = vi.spyOn(quickLists, 'loadQuickList').mockResolvedValue([])
     await mount({ sub: 'General' })
     const calls = spy.mock.calls.length
-    await userEvent.type(search(), 'forwarder')
+    await userEvent.click(search())
+    await userEvent.paste('forwarder')
     expect(spy.mock.calls.length).toBe(calls)
     expect(lists).not.toHaveBeenCalled()
   })

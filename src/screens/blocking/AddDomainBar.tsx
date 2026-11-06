@@ -1,4 +1,5 @@
-import { useId, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
+import { dropParams, readParam } from '../../lib/url-state'
 import { addDomain, type DomainList } from '../../api/zonelists'
 import { Panel, Body } from '../../ui/Panel'
 import { Input } from '../../ui/Field'
@@ -72,8 +73,22 @@ export function AddDomainBar({
 
   const checkNeed = missing(permissions, 'DnsClient.canView')
 
-  async function check() {
-    const domain = field.trim()
+  /*
+  `?check=<domain>`: the command palette's `Check <domain> in Blocking` (deviation
+  26). The name goes into the field and is checked once, as a click on Check would;
+  the parameter leaves the bar by replacing the entry.
+  */
+  useEffect(() => {
+    const asked = readParam('check')
+    if (asked == null) return
+    dropParams(['check'])
+    setField(asked)
+    void check(asked)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  async function check(name?: string) {
+    const domain = (name ?? field).trim()
     if (domain === '') {
       forget()
       setProblem('Please enter a domain name to check.')

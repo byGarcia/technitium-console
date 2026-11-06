@@ -1521,6 +1521,31 @@ contract and SECURITY.md.
     sub-section, `Blocking › Settings` in the two links that pointed to Settings ›
     Blocking.
 
+26. **A command palette** (Adrián's decision, 2026-11-06; `app/palette/`). Ctrl+K (⌘K
+    on a Mac), the `Search or jump to…` field under the brand, or the search button
+    in the narrow top bar opens one field over the screen. Empty, it lists the last
+    five entries run (kept in this browser, `paletteRecent`) and the first pages;
+    typing narrows every section and sub-section the user can see, Settings' panes,
+    the zones (`zones/list`, read when it opens, at most once a minute, only with
+    `Zones` visible) and the account menu's entries, plus the three themes and
+    Logout. Text that reads as a name adds the steps that take it: `Check <name> in
+    Blocking` (Blocking › Overview's check, through `?check=`, which the bar reads
+    once and drops), `Resolve <name> in DNS Client` and `Search Query Logs for
+    <name>` (the row menus' own hand-offs), `Find <name> in Cache` (`?domain=`),
+    `Search your rules for <name>` (`?q=`); an address adds `Search Query Logs for
+    client <address>`; any text adds `Search settings for <text>`. A zone or page
+    that answers comes before those steps. It calls nothing itself and changes
+    nothing: every entry lands on a screen that does what it always did. A jump
+    with parameters remounts the screen so it reads them even when it was already
+    open, and writes the address back a task later because a screen may take its
+    own parameters out as it goes (`app/Shell.tsx`, `paletteJump`). A combobox over
+    a listbox: the focus stays in the field, the arrows move `aria-activedescendant`,
+    Enter runs, Escape closes.
+    Its words, all OURS: `Search or jump to…`, `Search`, `Results`, the group names
+    (`Recent`, `Zones`, `Pages`, `Actions`, `Account`), `Page`, every action
+    sentence above, `Use the light theme`, `Use the dark theme`, `Use the system
+    theme`, `No matches for "<text>".`, `to move`, `to open`, `to close`.
+
 ## Four constraints the server imposes
 
 These are not preferences: break them and the console works in development and

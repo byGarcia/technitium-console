@@ -214,3 +214,19 @@ title, the domain heading what is said about that server.
 .serverLine { display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); min-height: 18px; }
 .serverVer { font: 400 var(--t-1)/1.3 var(--font-ui); color: var(--faint); white-space: nowrap; }
 .serverVer b { font: 500 var(--t-1)/1.3 var(--font-mono); color: var(--mute); }
+
+/*
+The command palette's door (2026-11-06, deviation 26): a field-shaped button under
+the brand, with the shortcut at its end. It opens the palette; it types nothing.
+*/
+.find { flex: none; display: flex; align-items: center; gap: var(--s-5); margin: var(--s-8) var(--s-6) 0; padding: 0 var(--s-6); height: 30px; border: 1px solid var(--line2); border-radius: var(--r-2); background: transparent; color: var(--faint); font: 400 var(--t-3)/1 var(--font-ui); cursor: pointer; text-align: left; transition: border-color var(--t-fast), color var(--t-fast); }
+.find:hover { border-color: var(--line-hover); color: var(--mute); }
+.find:focus-visible { outline: var(--focus); outline-offset: 1px; }
+.findText { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.findKeys { flex: none; padding: 1px var(--s-3); border: 1px solid var(--line); border-radius: var(--r-1); font: 500 var(--t-1)/1.2 var(--font-ui); color: var(--faint); background: var(--pan); }
+/* On a narrow screen the palette also opens from the top bar, beside the menu. */
+.findIcon { display: none; }
+@media (max-width: 900px) {
+  .findIcon { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; margin-right: auto; padding: 0; background: none; border: 1px solid var(--line); border-radius: var(--r-2); color: var(--ink); cursor: pointer; }
+  .hamburger { margin-right: 0 !important; }
+}
