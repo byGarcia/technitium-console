@@ -254,24 +254,25 @@ beside it. Under 960 px of screen the menu folds into a bar above the form.
 /* ── The save bar ─────────────────────────────────────────────────────── */
 
 /*
-Pinned to the bottom of the window for the whole screen, as upstream's Save is
-always on screen. It is the page's own foot, not another card: it bleeds to the
-content's edges (the Shell's padding, 24 px and 14 px under 900) and touches the
-window's bottom, with a hairline above it, and its words
-and its button line up with the form's column.
+On screen for the whole screen, as upstream's Save is always on screen: a card
+floating a step above the window's bottom edge, as the other forms' save bars do
+(`ui/PanelForm`'s `.bar`), with the same air under it at the end of the page
+(2026-11-06, Adrián), its words and its button lined up with the form's column.
 */
 .bar {
   position: sticky;
-  bottom: 0;
+  bottom: var(--s-9);
   z-index: var(--layer-sticky);
-  margin: auto calc(var(--s-11) * -1) calc(var(--s-11) * -1);
-  padding: var(--s-7) var(--s-11);
-  border-top: 1px solid var(--line);
+  margin: var(--s-10) 0 var(--s-9);
+  padding: var(--s-7) var(--s-9);
+  border: 1px solid var(--line);
+  border-radius: var(--r-4);
   background: var(--pan);
+  box-shadow: var(--e-2), var(--edge);
 }
 
 @media (max-width: 900px) {
-  .bar { margin: auto calc(var(--s-9) * -1) calc(var(--s-9) * -1); padding: var(--s-7) var(--s-9); }
+  .bar { padding: var(--s-6) var(--s-8); }
 }
 
 .barInner {
@@ -282,8 +283,9 @@ and its button line up with the form's column.
   max-width: var(--settings-form);
 }
 
+/* Wide, the card sits under the form's column, not under the menu. */
 @container (min-width: 960px) {
-  .barInner { margin-left: calc(var(--settings-menu) + var(--s-11)); }
+  .bar { margin-left: calc(var(--settings-menu) + var(--s-11)); max-width: var(--settings-form); }
 }
 
 .pending {

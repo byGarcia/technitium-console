@@ -155,7 +155,10 @@ wider than its cell would overflow the whole page.
   border-radius: var(--r-4);
   background: var(--pan);
   position: sticky;
-  bottom: 0;
+  /* It floats a step above the window's edge, never against it, and at the end of
+     the page it keeps the same air below it (2026-11-06, Adrián). */
+  bottom: var(--s-9);
+  margin-bottom: var(--s-9);
   z-index: var(--layer-sticky);
   box-shadow: var(--e-2), var(--edge);
 }

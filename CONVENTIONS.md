@@ -1337,7 +1337,9 @@ contract and SECURITY.md.
       SSO, LDAP and Cluster, DHCP's scope) reads the same.
     - **The header is the pane** (`Settings ›` and the sub-section as the title), with
       **Backup Settings, Restore Settings and Flush Cache** at its right; **Save Settings**
-      stays in a bar pinned to the foot of the window for the whole screen. Same calls,
+      stays in a bar on screen for the whole screen, a card floating a step above the
+      window's edge with the same air under it at the page's end, as every form's save bar
+      (`ui/PanelForm`'s `.bar`). Same calls,
       permissions, confirmations and texts.
     - The block headers carry no count of their rows. Quick Add and Quick Select are rows
       like their neighbours.
