@@ -14,6 +14,14 @@ It lives in `ui/` and not in one of the two screens, which is what stops touchin
 it again from meaning one screen rules over the other.
 */
 
+/*
+The block's own box, around the panel: a size container, so its rows ask how wide
+the BLOCK is (`ui/Form.module.css`, where a row stacks) and not the window. The
+same window leaves Settings' rows less room than Administration's, because
+Settings draws a menu beside its form.
+*/
+.unit { container-type: inline-size; }
+
 /* Only what belongs to the block: the box is painted by `ui/Panel`. */
 .block {
   margin: 0 0 var(--s-9) 0;
@@ -152,26 +160,10 @@ wider than its cell would overflow the whole page.
   box-shadow: var(--e-2), var(--edge);
 }
 
-.spacer { flex: 1; }
-
-/* When narrow the bar stacks and the elastic spacer stops making sense: with it,
-   "Backup Settings" fell off the screen. */
+/* Narrow, the bar keeps a tighter inset. (Its elastic `.spacer` went on
+   2026-11-06 with Settings' own bar, its only user.) */
 @media (max-width: 720px) {
-  .spacer { display: none; }
   .bar { padding: var(--s-7) var(--s-8); }
-}
-
-/*
-The section count, in its label.
-
-It is the same count pill any table in the console carries
-(`ui/count.module.css`), placed here in the block's header. It is dimmed on
-purpose: it goes with the label, it does not compete with it.
-*/
-.count {
-  font: 400 var(--t-2)/1 var(--font-mono);
-  color: var(--faint);
-  font-variant-numeric: tabular-nums;
 }
 
 /*
@@ -190,7 +182,10 @@ The background is compulsory: without it, the content shows through under the
 label.
 */
 .block > [class*='_header_'] {
-  position: sticky;
+  /* A screen that already says where you are can turn it off
+     (`--block-title-position: static`): Settings, whose menu marks the block in
+     view (2026-11-06). */
+  position: var(--block-title-position, sticky);
   /* Below whatever is pinned above the form: the section index's strip
      (`--pinned`, `ui/IndexedForm`), or the narrow screen's top bar (`--stuck-top`,
      `app/Shell.module.css`), which hid the title underneath before 2026-10-16. */

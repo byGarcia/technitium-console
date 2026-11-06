@@ -1,0 +1,61 @@
+/* A row's help folded to its first line (`FoldHelp.tsx`). */
+
+.fold {
+  position: relative;
+  min-width: 0;
+}
+
+/* Cut by LINE, as the session cells and the store descriptions are: the text is
+   all there, only the box stops after the first line. */
+.folded {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+  overflow: hidden;
+}
+
+/* A quiet text button, lower case, underlined, in the help's own muted ink, so a
+   column of them reads as the paragraphs' continuation and not as a stripe of
+   links: it
+   belongs to the paragraph, not to the form's verbs, so it carries no box. It
+   takes the link ink under the pointer and the halo on focus. Folded, it sits at the end of the line, over the clamp's ellipsis, on the panel's colour with a short fade before
+   it, so it costs no line of its own; unfolded, `less` follows the text. */
+.more {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: var(--font-ui);
+  font-size: inherit;
+  line-height: inherit;
+  font-weight: 550;
+  color: var(--mute);
+  text-decoration: underline;
+  text-decoration-color: var(--line-hover);
+  text-underline-offset: var(--s-1);
+  cursor: pointer;
+  border-radius: var(--r-1);
+}
+
+.folded + .more {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  padding-left: var(--s-3);
+  background: var(--pan);
+  box-shadow: calc(var(--s-9) * -1) 0 var(--s-7) var(--pan);
+}
+
+.more:hover { color: var(--acc-ink); text-decoration-color: currentColor; }
+.more:focus-visible { outline: none; box-shadow: var(--halo-focus); }
+
+/* While a search narrows the form, every help is whole and its button is gone:
+   the words that matched may be past the first line. */
+:global([data-searching]) .folded {
+  display: block;
+  -webkit-line-clamp: unset;
+  line-clamp: none;
+  overflow: visible;
+}
+
+:global([data-searching]) .more { display: none; }

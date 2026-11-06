@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
+import { PaneMirror } from './mirror'
 import {
   AreaRow,
   Notices,
@@ -8,9 +9,9 @@ import {
   Help,
   Note,
   Radios,
+  Row,
   TextRow,
 } from '../parts'
-import { Field } from '../../../ui/Field'
 import { Select } from '../../../ui/Select'
 import { loadQuickList, quickForwarderPatch, type QuickForwarder } from '../../../lib/quick-lists'
 import type { PaneProps } from './types'
@@ -35,13 +36,15 @@ export function ProxyForwarders({ f, set, en }: PaneProps) {
      only when the settings load, main.js:1566), so picking it again changes
      nothing: `ui/Select` fires no change for the option already chosen. */
   const [quickChoice, setQuickChoice] = useState('')
+  const mirror = useContext(PaneMirror)
   useEffect(() => {
+    if (mirror) return
     let alive = true
     void loadQuickList<QuickForwarder>('quick-forwarders-list').then((e) => alive && setQuick(e))
     return () => {
       alive = false
     }
-  }, [])
+  }, [mirror])
 
   return (
     <>
@@ -117,9 +120,10 @@ export function ProxyForwarders({ f, set, en }: PaneProps) {
           onChange={(v) => set({ forwarders: v })}
           help="Enter forwarder DNS Server IP addresses or URLs one below another in above text field or use the Quick Select list to select desired forwarder."
         />
-        {/* Upstream calls it "Quick Select" here and "Quick Add" on Blocking.
+        {/* A row like its neighbours (2026-11-06; it used to sit loose under the
+            list, outside the row grid). Upstream calls it "Quick Select" here and "Quick Add" on Blocking.
             Both names are its own and travel verbatim. */}
-        <Field label="Quick Select">
+        <Row label="Quick Select">
           {(id) => (
             <Select
               id={id}
@@ -139,7 +143,7 @@ export function ProxyForwarders({ f, set, en }: PaneProps) {
               ))}
             </Select>
           )}
-        </Field>
+        </Row>
         <GroupRow
           label="Forwarder Protocol"
           help="Select a protocol that this DNS Server must use to query the forwarders specified above."

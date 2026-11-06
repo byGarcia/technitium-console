@@ -10,32 +10,53 @@ not what you read afterwards.
 */
 
 /*
-THREE columns: label, control and help.
+TWO columns: the label with its help under it, and the control (2026-11-06,
+CONVENTIONS.md deviation 22).
 
-It is the dense-form design's decision, and the one that holds it up: in a dense form
-**the surface is the text**. `General` has 41 paragraphs of help against 39
-controls, and under each field they made a page twice as long in which the text
-weighed more than the fields.
+Until then the dense form had THREE (`210px 1fr var(--help-col)`): label, control
+and help, so the eye read a label at the left, a field in the middle and what it
+meant 800 px away at the right, and in `General` 41 paragraphs of help outweighed
+39 controls. Now the help is a muted paragraph under its label, folded to two lines
+(`ui/FoldHelp`), and the control keeps its own column. The column of a dense form
+is capped by its screen (Settings: about 820 px), so the label column is about
+300 px and the control's about 470.
 
-The third column is `--help-col` and **only `.row` carries it**. `.mrow` (the
-dialog) stays at two: there are 560 px of width there, and the design measured a
-panel, not a modal.
+The children are placed by name and not by order, so a row written by hand with
+the old order (label, control, help: Administration's SSO and LDAP) lands the same.
+
+An editable table drops UNDER its label and help and takes the row's whole width:
+its columns need it. A text area stays in the control's column, which at 470 px
+holds a list of addresses: stacked, each of General's seven made its row twice as
+tall (measured at 1440, 2026-11-06), and the screen longer than before.
 */
 .row {
   display: grid;
-  grid-template-columns: 210px minmax(0, 1fr) var(--help-col);
-  gap: var(--s-8);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
+  column-gap: var(--s-10);
+  row-gap: var(--s-2);
   padding: var(--s-7) var(--s-9);
   align-items: start;
   border-bottom: 1px solid var(--line);
 }
 
-/* The help as the control's sibling and not inside it: that is what moves it into
-   its own column. In the modal it stays nested, and that is why it still falls
-   underneath. */
-.rowHelp {
-  grid-column: 3;
+.row > .rowLabel { grid-column: 1; grid-row: 1; padding-top: var(--s-1); }
+.row > .rowHelp { grid-column: 1; grid-row: 2; }
+.row > .rowCtl { grid-column: 2; grid-row: 1 / span 2; }
+
+.row:has(> .rowCtl table) {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto;
 }
+
+.row:has(> .rowCtl table) > .rowCtl {
+  grid-column: 1;
+  grid-row: 3;
+  margin-top: var(--s-5);
+}
+
+/* Stacked, nothing sits beside the label for it to line up with. */
+.row:has(> .rowCtl table) > .rowLabel { padding-top: 0; }
 
 .row:last-child { border-bottom: 0; }
 
@@ -87,44 +108,38 @@ sessions one, which needs everything it can get.
 }
 
 /*
-The breakpoints, and why the panel and the modal no longer share one.
+Where it stacks: label, help and control in one column, in that order.
 
-This breakpoint was a SINGLE one at 720 for both rows. What motivated it is still
-true and is written down: at 390 the 210 px grid left 20 px for the field and made
-seventeen Settings fields invisible. **But that proves 390 had to be protected,
-not that 720 was the right threshold.**
+It asks the width of the BLOCK the row is in (`ui/PanelForm`'s `Block` is a size
+container), not the window's: Settings puts a menu beside its form, so the same
+window leaves a different width for the rows depending on the screen. Under 560
+px of block a 2:3 split leaves the control too little, and that is a phone. The
+window query below is for a row outside any block, which has no container to ask.
 
-So they part company:
-
-  · `.row` follows the breakpoints the dense-form design measured: 1180 and 560.
-  · `.mrow` **keeps its 720 and its geometry**: the design measured a dense form,
-    not a dialog, and does not authorise touching the modal. That 720 stands as
-    **modal** debt, with its figure, and not mixed in with the dense form.
-
-At 1180 the help leaves the third column and drops to a second line of its own row.
-It stays visible and stays complete: **no width hides it**.
+`.mrow` keeps its own 720 (below): the dialog was not part of this decision.
 */
-@media (max-width: 1180px) {
+@container (max-width: 559px) {
   .row {
-    grid-template-columns: 210px minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto;
+    padding: var(--s-8);
   }
 
-  /* Second line, aligned with the control and not with the label. */
-  .rowHelp {
-    grid-column: 2;
-  }
+  .row > .rowLabel { padding-top: 0; }
+
+  .row > .rowCtl { grid-column: 1; grid-row: 3; margin-top: var(--s-4); }
 }
 
-/* At 560 it stacks completely: label, control and help, in that order. */
 @media (max-width: 560px) {
   .row {
     grid-template-columns: minmax(0, 1fr);
-    gap: var(--s-4);
-    padding: var(--s-7) var(--s-8);
+    grid-template-rows: auto;
+    padding: var(--s-8);
   }
 
-  .rowLabel { padding-top: 0; }
-  .rowHelp { grid-column: 1; }
+  .row > .rowLabel { padding-top: 0; }
+
+  .row > .rowCtl { grid-column: 1; grid-row: 3; margin-top: var(--s-4); }
 }
 
 /* 720: the MODAL's, which stays where it was. */
