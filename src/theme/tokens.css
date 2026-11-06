@@ -442,7 +442,7 @@ before `data-theme` is set and with any value nobody declared.
     --glyph-tick      `#1a1205`, the value of `--on-acc`: the ink of the amber fill
     --glyph-dash      the same ink, for the indeterminate checkbox
     --glyph-tick-ok   `#052e26`, the value of `--ok-bg`: the ink of the green fill
-                      (`ui/Matrix`, a granted permission)
+                      (a granted permission in Permissions)
 
   If one of those tokens changes, the glyph that copies it has to change too.
   */

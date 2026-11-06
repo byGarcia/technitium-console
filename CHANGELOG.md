@@ -114,6 +114,12 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
   cards for the page on screen (response types, RCODE, top clients and names) that set the matching
   filter, keeps its filters inside the results card, draws each entry on one line with the rest
   under Details, and keeps the query and the open file in the address bar so a link reproduces them.
+- **Administration reads like the rest of the console.** Permissions is one matrix of sections by
+  groups and users, about a third of its old height, and opens a section's dialog from its row.
+  Users, Groups and Sessions are data tables with a search, one line per row with Details, and the
+  stock row menu. Users and Sessions get a stat strip whose parts filter the table. SSO and LDAP
+  show whether they are enabled and configured. The search and filters are kept in the address
+  bar.
 - **Choosing a file is a drop zone** in every dialog that takes one (an app's zip, a zone file, a
   settings backup): drop the file or click to choose it, and it shows its name and size.
 - **Dialogs are one surface**, without the lines under the title and over the buttons. A

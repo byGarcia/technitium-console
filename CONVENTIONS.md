@@ -455,6 +455,9 @@ Write down here whatever you find. What is already known:
   not the tail, so the viewer of a large file shows its oldest lines. `logs/list` sorts by
   path descending, so newest first only holds because files are named by date. Sizes come
   written (`6 KB`, `24.44 KB`, `2.39 MB`).
+- **The permission sections are named as the server names them**: `DnsClient` and
+  `DhcpServer`, not "DNS Client" and "DHCP"; upstream draws them as they come. Upstream's
+  Users row menu says plain `Enable` / `Disable`.
 - **`recordDataTemplate` is left out, not `null`,** on an app class that serves no
   APP records (`apps/list`, v15.6.1).
 - **A lease's `hostName` comes back with the scope's domain appended** (`build-01.lab.lan`
@@ -1309,6 +1312,61 @@ contract and SECURITY.md.
     Its words, all OURS: `Profile`, `Security`, `Account`, `Password` as block titles,
     `2FA` before the header's status, `from`, `All`, `Details`, `Session type`, `N of M
     sessions, TYPE only`.
+23. **Administration reads like the rest** (Adrián's decision, 2026-11-06). Every call,
+    confirmation, alert text, validation and its order, and every dialog are the ones
+    they were; what changes is the layout and what is drawn from data the screen already
+    has. Each sub-section has Refresh beside the title (the same list call it makes on
+    arrival).
+    - **Permissions is one matrix** (`PermissionMap.tsx`, `permission-map.ts`). Upstream
+      draws a row per section holding a user table and a group table with a tick per verb
+      (auth.js:2031-2073). Here the sections are the rows, under upstream's sortable
+      `Section`, and the columns are every group and then every user holding an entry in
+      any section, in the order the server first lists them, under upstream's `Group
+      Permissions` and `User Permissions`. A cell is three marks, `V`, `M`, `D`, filled for
+      each verb granted; its tooltip and its text for a reader name them, or say `None` for
+      an entry granting nothing; no entry is an empty cell, as it is a missing row upstream.
+      A population nobody holds says upstream's `No group permissions` / `No user
+      permissions` once, down its one column. The section's name (upstream's link), the
+      row's `Edit Permissions` (the `⋮` menu's only entry) and a click on the row open
+      upstream's dialog for that section. Under 720 px it folds into one block per section,
+      its groups and then its users, with upstream's two literals where it has none. The
+      eleven panels, their index and the map above them are gone: 3,252 px at 1440 became
+      979.
+    - **Users, Groups and Sessions are data tables** (`ui/DataTable`): the search in the
+      toolbar, then upstream's primary action (`Add User`, `Add Group`, and on Sessions the
+      node picker and `Create Token`) at its end, where upstream floats them over the table;
+      upstream's `Total Users: N` / `Total Groups: N` / `Total Sessions: N` in the foot, with
+      `, K shown` while a search or a filter narrows it. One line per row; the rest under the
+      row's `Details` (chevron, `aria-expanded`): a user's two logins whole (`date from
+      address` and how long ago; the row keeps each date), a group's description line by line
+      (the row cuts it to one), a session's type and whole user agent (the row cuts it). The
+      row's other control is upstream's `⋮` menu with its own entries in its own order
+      (auth.js:1190-1209, 1797-1799, 938-939): the separate View Details and Enable/Disable
+      buttons are back inside it, under upstream's words `Enable` and `Disable`. The name
+      opens the details, as upstream's link does.
+    - **Users opens with four cells** (`UsersSummary.tsx`, `user-facts.ts`) counted from
+      `admin/users/list`: Users (Enabled against Disabled), Type (by upstream's labels), 2FA
+      (enabled of the users whose 2FA this server keeps, an SSO user's being the provider's,
+      and `SSO Managed N`), Recent Login (who, how long ago, from where). Pressing a state or a
+      type narrows the table and pressing it again clears it; the applied one also sits in
+      the toolbar as a chip that clears it. **Sessions opens with three**
+      (`SessionsSummary.tsx`, `session-facts.ts`) counted from `admin/sessions/list`: Sessions
+      by type (My Profile's colours; pressing filters), Users and Remote Addresses (how many,
+      the four with most; pressing one writes it in the Search). Nothing is asked of the
+      server.
+    - **The view is in the address bar** (`bar-param.ts` over `lib/url-state.ts`): `?q=` on
+      the three lists, `?status=` and `?type=` on Users, `?type=` on Sessions; read on
+      arrival, written by replacing the entry, dropped when the sub-section goes.
+    - **SSO and LDAP say their state on the header line**: `Enabled` or `Disabled` as last
+      read or saved (not the unsaved checkbox), and `Not configured` while the authority
+      and client ID (SSO) or the server (LDAP) are empty, warn-toned only when enabled.
+    - **Cluster's nodes are a data table**: the node picker in its toolbar, `Total Nodes: N`
+      in its foot.
+    Its words, all OURS: `V`, `M`, `D` and the legend, `None`, `Search` and its three
+    placeholders, `Details`, `Clear`, `N shown`, `Users`, `Type`, `2FA`, `of`, `Recent
+    Login` as a cell title, `Nobody yet`, `Sessions`, `Remote Addresses`, `N more`,
+    `Enabled`, `Disabled` and `Not configured` on the SSO and LDAP headers, `Refresh`
+    (Cache's word).
 
 ## Four constraints the server imposes
 
