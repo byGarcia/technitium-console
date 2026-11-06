@@ -1,3 +1,5 @@
+import { dropParams } from '../../lib/url-state'
+import { LIST_NAME, LIST_PAGE, LIST_TYPE } from './ZoneList'
 import { ClusterNodeSelect } from '../../ui/ClusterNodeSelect'
 import { useEffect, useRef, useState } from 'react'
 import type { ResourceRecord, ZoneDetails } from '../../api/records'
@@ -151,7 +153,10 @@ export function Zones({
     return () => {
       mounted.current = false
       queueMicrotask(() => {
-        if (!mounted.current) dropZoneParam()
+        if (!mounted.current) {
+          dropZoneParam()
+          dropParams([LIST_PAGE, LIST_NAME, LIST_TYPE])
+        }
       })
     }
   }, [])

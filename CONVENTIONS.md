@@ -907,6 +907,11 @@ contract and SECURITY.md.
     a history entry; a zone that cannot be read shows the list again, as upstream
     does on its `error` (zone.js:3583-3585). Leaving the section takes `?zone=` out
     of the next route. `screens/zones/zone-url.ts`.
+    The zone list keeps its view there too (Adrián's request, 2026-11-06), the way
+    Blocking keeps `?rule=`: the page (`?page=`, left out on 1) and the applied
+    filters (`?name=`, `?type=`), written by replacing the entry once a list lands,
+    so a reload or a copied link asks for that page with those filters, and Back
+    still walks between the list and the zones. `lib/url-state.ts`.
 14. **"Delete Zones" waits for a selection** (Adrián's decision, 2026-11-05).
     Upstream keeps the bulk delete button enabled and answers a click with nothing
     ticked with an `alert()`, "Please select one or more zones to delete."
@@ -960,6 +965,10 @@ contract and SECURITY.md.
       its series colour, and a cache record with `ttl: "0 (0s)"` carries a `Stale` tag.
       Allowed and Blocked keep their two-line rows.
     - Flush Cache, Delete, Refresh, the path and the chips send exactly what they sent.
+    - **The open node and the type are in the address bar** (`?domain=`, `?type=`),
+      as Blocking keeps `?rule=`: written by replacing the entry, read on arrival (the
+      first `cache/list` asks for that node instead of the root), dropped when the
+      screen goes. `lib/url-state.ts`.
     Its words, all OURS: `Records`, `Time Left`, `Next to expire`, `Longest`, `Stale`,
     `Negative`, `Answered By`, `N more`, `Details`, `Show all N`, `Show fewer`, `N of M
     records at <node>, TYPE only`, `Cache` as the path's first step, and the two tooltips "Its TTL has run out.

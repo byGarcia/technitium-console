@@ -33,7 +33,15 @@ function server() {
     if (base === 'zones/list') {
       return {
         kind: 'ok',
-        data: { status: 'ok', response: { zones: [ZONE], pageNumber: 1, totalPages: 1, totalZones: 1 } },
+        data: {
+          status: 'ok',
+          response: {
+            zones: [ZONE],
+            pageNumber: Number((init?.body as Record<string, string> | undefined)?.pageNumber ?? 1),
+            totalPages: 3,
+            totalZones: 25,
+          },
+        },
       } as never
     }
     if (base === 'zones/records/get') {
@@ -110,6 +118,25 @@ describe('the open zone in the address bar', () => {
     expect(await screen.findByRole('button', { name: 'casa.test' })).toBeInTheDocument()
     await waitFor(() => expect(bar()).toBe('/zones/'))
     expect(push).not.toHaveBeenCalled()
+  })
+
+  it('the list page and filters go to the bar, replacing the entry, and a reload lands on them', async () => {
+    const spy = server()
+    const push = vi.spyOn(window.history, 'pushState')
+    const user = userEvent.setup()
+    const { unmount } = render(<Zones token="t" canModify canDelete />)
+    await screen.findByRole('button', { name: 'casa.test' })
+    await user.click(screen.getAllByRole('button', { name: 'Next' })[0])
+    await waitFor(() => expect(bar()).toBe('/zones/?page=2'))
+    expect(push).not.toHaveBeenCalled()
+    unmount()
+
+    servedAt('/zones/?page=3&name=ca*&type=Primary')
+    spy.mockClear()
+    render(<Zones token="t" canModify canDelete />)
+    await screen.findByRole('button', { name: 'casa.test' })
+    const paged = spy.mock.calls.find((c) => c[0] === 'zones/list' && c[1]?.body?.pageNumber != null)
+    expect(paged?.[1]?.body).toMatchObject({ pageNumber: '3', filterName: 'ca*', filterType: 'Primary' })
   })
 
   it('the back button returns to the list, and forward opens the zone again', async () => {

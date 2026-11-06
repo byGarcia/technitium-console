@@ -31,6 +31,7 @@ import { DomainName } from '../../ui/DomainName'
 import styles from './Lists.module.css'
 import { noticeFromFailure, type Notice } from '../../lib/notice'
 import { Notifier } from '../../ui/Notifier'
+import { dropParams, readParam, writeParams } from '../../lib/url-state'
 import { Icon } from '../../ui/Icon'
 
 /*
@@ -65,6 +66,10 @@ export interface Confirmation {
 /* At the root the cache holds every top-level domain asked for: hundreds of
    chips. The first ones are shown, and the rest one press away. */
 const CHILDREN_SHOWN = 40
+
+/* Cache's view in the address bar (`lib/url-state.ts`). */
+const CACHE_DOMAIN = 'domain'
+const CACHE_TYPE = 'type'
 
 const TITLE: Record<List, string> = { cache: 'Cache', allowed: 'Allowed', blocked: 'Blocked' }
 
@@ -246,7 +251,7 @@ export function Lists({
   const [field, setField] = useState('')
   /* Cache: the record type the table is narrowed to (`CacheSummary`), and whether
      every zone under the node is shown or only the first CHILDREN_SHOWN. */
-  const [cacheType, setCacheType] = useState('')
+  const [cacheType, setCacheType] = useState(() => (list === 'cache' ? (readParam(CACHE_TYPE) ?? '') : ''))
   const [allChildren, setAllChildren] = useState(false)
   const [notice, setNotice] = useState<Notice | null>(null)
   /* Where this screen's alerts go: the host's notifier when it gives one, its own
@@ -300,6 +305,9 @@ export function Lists({
       const outcome = await listNode(list, token, domain, up ? 'up' : undefined, node)
       if (outcome.kind === 'ok') {
         setNode(outcome.data)
+        /* Cache keeps the open node in the bar (`?domain=`), as Blocking keeps its
+           filter: a reload or a copied link opens the same node. */
+        if (list === 'cache') writeParams({ [CACHE_DOMAIN]: outcome.data.domain })
         setStale(false)
         setLastGood(new Date().toISOString())
         hadData.current = true
@@ -331,6 +339,16 @@ export function Lists({
      effects run in order. */
   const firstFromPrimary = useRef(initialFromPrimary)
   const firstDomain = useRef(initialDomain)
+
+  /* Cache: the type the table is narrowed to travels with the node (`?type=`), and
+     both leave the bar with the screen. */
+  useEffect(() => {
+    if (list === 'cache') writeParams({ [CACHE_TYPE]: cacheType })
+  }, [list, cacheType])
+  useEffect(() => {
+    if (list !== 'cache') return
+    return () => dropParams([CACHE_DOMAIN, CACHE_TYPE])
+  }, [list])
   useEffect(() => {
     void load(firstDomain.current, undefined, firstFromPrimary.current)
   }, [load])
@@ -772,5 +790,13 @@ export function Cache({ token, nodes, clusterInitialised }: {
   nodes?: { name: string; type: string }[]
   clusterInitialised?: boolean
 }) {
-  return <Lists list="cache" token={token} nodes={nodes} clusterInitialised={clusterInitialised} />
+  return (
+    <Lists
+      list="cache"
+      token={token}
+      nodes={nodes}
+      clusterInitialised={clusterInitialised}
+      initialDomain={readParam(CACHE_DOMAIN) ?? ''}
+    />
+  )
 }

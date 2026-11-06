@@ -1,3 +1,4 @@
+import { readParam, writeParams } from '../../lib/url-state'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { readPerPage, writePerPage } from '../../lib/stored-per-page'
 import {
@@ -87,6 +88,11 @@ export interface ZoneListProps extends ZoneActions {
 
 const ZONES_PER_PAGE_KEY = 'optZonesPerPage'
 
+/* The zone list's view in the address bar; `Zones` drops them with the section. */
+export const LIST_PAGE = 'page'
+export const LIST_NAME = 'name'
+export const LIST_TYPE = 'type'
+
 export function ZoneList({
   token,
   node = '',
@@ -137,13 +143,15 @@ export function ZoneList({
 
   // The filters are form state: they do not apply until "Go" is pressed,
   // just like upstream, where `refreshZones` reads them at that moment.
-  const [nameFilter, setNameFilter] = useState('')
-  const [typeFilter, setTypeFilter] = useState('')
+  /* The bar's `?name=`, `?type=` and `?page=` (`lib/url-state.ts`) are the list a
+     reload or a copied link lands on, applied as Go would apply them. */
+  const [nameFilter, setNameFilter] = useState(() => readParam(LIST_NAME) ?? '')
+  const [typeFilter, setTypeFilter] = useState(() => readParam(LIST_TYPE) ?? '')
   /* The type the list on screen was loaded with: the summary's pressed chip. */
   const [appliedType, setAppliedType] = useState('')
   /* Remembered under upstream's key (zone.js:626-632). */
   const [perPage, setPerPage] = useState(() => readPerPage(ZONES_PER_PAGE_KEY, ZONES_PER_PAGE, 10))
-  const [pageField, setPageField] = useState('1')
+  const [pageField, setPageField] = useState(() => readParam(LIST_PAGE) ?? '1')
 
   const nameRef = useRef<HTMLInputElement>(null)
 
@@ -203,6 +211,13 @@ export function ZoneList({
 
       const data = r.data
       setAppliedType(typeOverride ?? typeFilter)
+      /* What is on screen goes to the bar, replacing the entry, as Blocking keeps
+         its filter: the page (left out on 1) and the filters that were sent. */
+      writeParams({
+        [LIST_PAGE]: data.pageNumber > 1 ? String(data.pageNumber) : null,
+        [LIST_NAME]: nameFilter,
+        [LIST_TYPE]: typeOverride ?? typeFilter,
+      })
       setStale(false)
       setLastGood(new Date().toISOString())
       setZones(data.zones)
