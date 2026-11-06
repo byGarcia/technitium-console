@@ -5,6 +5,9 @@ import { Button } from '../../ui/Button'
 import { Input, Select } from '../../ui/Field'
 import { SectionHeader } from '../../ui/SectionHeader'
 import { Loading } from '../../ui/Empty'
+import { RowAction } from '../../ui/Table'
+import { ConfigState } from './ListParts'
+import { ldapConfigured } from './config-state'
 import { GroupRow, Row } from '../../ui/Form'
 import { EditableTable } from '../../ui/EditableTable'
 import {
@@ -112,6 +115,7 @@ export function Ldap({ tabs, token, onNotice }: Props) {
   /* What `apply` reads: the last local groups the server sent, kept across a
      `set` that leaves them out, without making `apply` depend on state. */
   const localGroupsRef = useRef<string[]>([])
+  const [saved, setSaved] = useState<LdapConfig | null>(null)
   const [enabled, setEnabled] = useState(false)
   const [server, setServer] = useState('')
   const [port, setPort] = useState('')
@@ -132,6 +136,7 @@ export function Ldap({ tabs, token, onNotice }: Props) {
 
   /* `loadAdminLdapConfig` (auth.js:2404-2441). */
   function apply(c: LdapConfig) {
+    setSaved(c)
     setEnabled(c.ldapEnabled)
     setServer(c.ldapServer ?? '')
     setPort(String(c.ldapPort))
@@ -275,11 +280,22 @@ export function Ldap({ tabs, token, onNotice }: Props) {
     })
   }
 
-  if (loading) return <Loading />
+  /* The header says the state SAVED on the server, from the last `get` or `set`,
+     not the unsaved checkbox (deviation 23). */
+  const header = (
+    <SectionHeader
+      title="Administration"
+      tabs={tabs}
+      titleAction={<RowAction icon="refresh" name="Refresh" disabled={loading} onClick={() => void load()} />}
+      labels={saved == null ? undefined : <ConfigState enabled={saved.ldapEnabled} configured={ldapConfigured(saved)} />}
+    />
+  )
+
+  if (loading) return <>{header}<Loading /></>
 
   return (
     <>
-      <SectionHeader title="Administration" tabs={tabs} />
+      {header}
 
       {/*
       The dense form of `Sso.tsx`, block for block. Upstream puts its two

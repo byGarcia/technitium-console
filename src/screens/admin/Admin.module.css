@@ -18,63 +18,14 @@
 
 .node { font-size: var(--t-4); padding: var(--s-3) var(--s-6); border:1px solid var(--line-field); border-radius: var(--r-2); background:var(--field); color:var(--ink); }
 
-/*
-Permissions: the concession map and its index on top, then one card per section
-with its two tables side by side.
-
-The rows themselves are no longer here. They were a CSS grid (`.prow`, `.phd`,
-`.pchk`), which is exactly why a structural read of the DOM on 2026-09-04 found
-no table with 84 cells inside it. They are `ui/Matrix` now, which is a real table with both
-axes; what stays here is only the LAYOUT, which is what belongs to a screen.
-*/
-
-/*
-The index runs beside the whole screen, and it is the narrow column.
-
-`--index-col` is the dense form's index column and this is its first wiring. Below
-`--bp-index` the index becomes a horizontal strip on its own (that behaviour
-lives inside `ui/SectionIndex`), so here it only has to stop being a column, and
-it goes FIRST so the strip lands above what it indexes and not under it.
-*/
-.withIndex {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) var(--index-col);
-  gap: var(--s-10);
-  align-items: start;
-}
-
-.column { min-width: 0; }
-
-/* The map scrolls sideways inside its panel: eleven sections do not fit at 390,
-   and the panel must not be what grows. */
-.map { padding: var(--s-7) var(--s-9); min-width: 0; margin-bottom: var(--s-11); }
-
-.perm { margin-bottom: var(--s-8); }
-.permCols { display:grid; grid-template-columns:1fr 1fr; }
-.permCol { padding: var(--s-7) var(--s-9); min-width:0; }
-.permCol + .permCol { border-left:1px solid var(--line); }
-/* A user or group name. It wraps between words, and a single word breaks only when it
-   still does not fit once the column has its room: `break-all` cut every name letter
-   by letter at the column's edge. */
+/* The Edit Permissions dialog's subject names (the list is `PermissionMap`). A
+   name wraps between words, and a single word breaks only when it still does not
+   fit once the column has its room. */
 .who { color:var(--ink); font-family:var(--font-mono); font-size: var(--t-4); overflow-wrap: break-word; }
 
 /* The matrix's EDITABLE checkbox: 18 px tall, and until now not enlarged. The
    read-only one is `ui/Matrix`'s, is disabled and is no target for anything. */
 .chkPerm { composes: hitArea from '../../ui/interaction.module.css'; margin: 0 auto; display: block; }
-
-@media (max-width: 960px) {
-  .withIndex { grid-template-columns: minmax(0, 1fr); }
-  .withIndex > :last-child { order: -1; margin-bottom: var(--s-10); }
-
-  /* The strip pins at the top (`ui/SectionIndex`), so a jump from it lands each
-     section below the strip, not under it. */
-  .anchor { scroll-margin-top: calc(var(--stuck-top, 0px) + var(--index-strip) + var(--s-9)); }
-}
-
-@media (max-width: 860px) {
-  .permCols { grid-template-columns:1fr; }
-  .permCol + .permCol { border-left:0; border-top:1px solid var(--line); }
-}
 
 /* SSO and the Cluster modals: label + control rows, as in Settings. */
 

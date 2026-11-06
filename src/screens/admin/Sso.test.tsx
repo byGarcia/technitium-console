@@ -410,3 +410,33 @@ describe('SSO: dense form', () => {
     expect(screen.queryByLabelText('Cluster Node')).not.toBeInTheDocument()
   })
 })
+
+/* Deviation 23: the saved state on the header line, and Refresh beside the title. */
+describe('SSO: the header says its state', () => {
+  it('a fresh install reads Disabled and Not configured', async () => {
+    server()
+    render(<Sso {...props} />)
+    await screen.findByLabelText('Scope Name 1')
+    const header = screen.getByRole('heading', { level: 1 }).closest('div')!.parentElement!
+    expect(within(header).getByText('Disabled')).toBeInTheDocument()
+    expect(within(header).getByText('Not configured')).toBeInTheDocument()
+  })
+
+  it('an enabled provider with its authority and client ID reads Enabled only', async () => {
+    server({ ssoEnabled: true, ssoAuthority: 'https://auth.example.com', ssoClientId: 'dns' })
+    render(<Sso {...props} />)
+    await screen.findByLabelText('Scope Name 1')
+    const header = screen.getByRole('heading', { level: 1 }).closest('div')!.parentElement!
+    expect(within(header).getByText('Enabled')).toBeInTheDocument()
+    expect(within(header).queryByText('Not configured')).toBeNull()
+  })
+
+  it('Refresh reads the config again', async () => {
+    const spy = server()
+    render(<Sso {...props} />)
+    await screen.findByLabelText('Scope Name 1')
+    await userEvent.click(screen.getByRole('button', { name: 'Refresh' }))
+    await screen.findByLabelText('Scope Name 1')
+    expect(spy.mock.calls.filter((c) => c[0] === 'admin/sso/get')).toHaveLength(2)
+  })
+})

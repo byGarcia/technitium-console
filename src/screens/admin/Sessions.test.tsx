@@ -46,11 +46,12 @@ describe('Sessions: the table', () => {
     server()
     render(<Sessions {...props} />)
 
-    expect(await screen.findByText('[5fc1a6bc90cc1d9a]')).toBeInTheDocument()
-    expect(screen.getByText('(current)')).toBeInTheDocument()
-    expect(screen.getByText('Standard')).toBeInTheDocument()
-    expect(screen.getByText('API Token')).toBeInTheDocument()
-    expect(screen.getByText('tok1')).toBeInTheDocument()
+    const t = await screen.findByRole('table')
+    expect(within(t).getByText('[5fc1a6bc90cc1d9a]')).toBeInTheDocument()
+    expect(within(t).getByText('(current)')).toBeInTheDocument()
+    expect(within(t).getByText('Standard')).toBeInTheDocument()
+    expect(within(t).getByText('API Token')).toBeInTheDocument()
+    expect(within(t).getByText('tok1')).toBeInTheDocument()
     expect(screen.getByText('Total Sessions: 2')).toBeInTheDocument()
   })
 
@@ -62,7 +63,7 @@ describe('Sessions: the table', () => {
       }),
     )
     render(<Sessions {...props} />)
-    expect(await screen.findByText('Unknown')).toBeInTheDocument()
+    expect(within(await screen.findByRole('table')).getByText('Unknown')).toBeInTheDocument()
   })
 
   it('with no sessions the table is left empty and the total says zero', async () => {
@@ -212,24 +213,26 @@ describe('Sessions: the row that is mine', () => {
   })
 })
 
-/* auth.js:937-938: upstream's menu holds "View User Details" and "Delete Session".
-   Here the first is the row's own button and the menu keeps the second, so each
-   is offered once. */
+/* auth.js:937-938: upstream's menu holds "View User Details" and "Delete Session",
+   in that order, and so does this one (deviation 23); the username opens the
+   details too, as upstream's link does. */
 describe('Sessions: the row actions', () => {
-  it('View User Details is the row button and the menu keeps only Delete Session', async () => {
+  it('the menu holds the two upstream entries in their order', async () => {
     server()
     render(<Sessions {...props} />)
     await userEvent.click(await screen.findByRole('button', { name: 'Actions for 799a4919af7636e2' }))
     const menu = screen.getByRole('menu', { name: 'Actions for 799a4919af7636e2' })
-    expect(within(menu).getAllByRole('menuitem').map((i) => i.textContent)).toEqual(['Delete Session'])
-    expect(screen.getAllByRole('button', { name: 'View User Details' }).length).toBeGreaterThan(0)
+    expect(within(menu).getAllByRole('menuitem').map((i) => i.textContent)).toEqual([
+      'View User Details',
+      'Delete Session',
+    ])
   })
 
   it('View User Details opens the details of that session user', async () => {
     const spy = server()
     render(<Sessions {...props} />)
-    const row = (await screen.findByRole('button', { name: 'Actions for 799a4919af7636e2' })).closest('tr')!
-    await userEvent.click(within(row).getByRole('button', { name: 'View User Details' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Actions for 799a4919af7636e2' }))
+    await userEvent.click(await screen.findByRole('menuitem', { name: 'View User Details' }))
 
     expect(await screen.findByRole('dialog')).toBeInTheDocument()
     expect(await screen.findByDisplayValue('testuser')).toBeInTheDocument()
@@ -237,5 +240,67 @@ describe('Sessions: the row actions', () => {
       const call = spy.mock.calls.find((c) => c[0] === 'admin/users/get')
       expect(call?.[1]?.body).toEqual({ user: 'testuser', includeGroups: 'true' })
     })
+  })
+})
+
+/* Deviation 23: the strip, the search and the row's Details. */
+describe('Sessions: the list reads like the rest', () => {
+  afterEach(() => window.history.replaceState(null, '', '/'))
+
+  it('the strip counts by type, and pressing one narrows the table and writes ?type=', async () => {
+    const spy = server()
+    const user = userEvent.setup()
+    const { unmount } = render(<Sessions {...props} />)
+    const types = await screen.findByRole('group', { name: 'Sessions by type' })
+    const calls = spy.mock.calls.length
+    await user.click(within(types).getByRole('button', { name: /API Token/ }))
+    expect(screen.getByText('Total Sessions: 2, 1 shown')).toBeInTheDocument()
+    expect(window.location.search).toBe('?type=ApiToken')
+    expect(spy.mock.calls.length).toBe(calls)
+    await user.click(within(types).getByRole('button', { name: /API Token/ }))
+    expect(screen.getByText('Total Sessions: 2')).toBeInTheDocument()
+    unmount()
+    expect(window.location.search).toBe('')
+  })
+
+  it('pressing a user in the strip writes it in the search', async () => {
+    server()
+    const user = userEvent.setup()
+    render(<Sessions {...props} />)
+    const users = await screen.findByRole('list', { name: 'Users' })
+    await user.click(within(users).getByRole('button', { name: /testuser/ }))
+    expect(screen.getByLabelText('Search')).toHaveValue('testuser')
+    expect(screen.getByText('Total Sessions: 2, 1 shown')).toBeInTheDocument()
+    expect(window.location.search).toBe('?q=testuser')
+  })
+
+  it('the search narrows by token name too', async () => {
+    server()
+    const user = userEvent.setup()
+    render(<Sessions {...props} />)
+    await screen.findByText('Total Sessions: 2')
+    await user.type(screen.getByLabelText('Search'), 'TOK1')
+    expect(within(screen.getByRole('table')).getByText('tok1')).toBeInTheDocument()
+    expect(screen.getByText('Total Sessions: 2, 1 shown')).toBeInTheDocument()
+  })
+
+  it('Details opens the type and the whole user agent under the row', async () => {
+    server()
+    const user = userEvent.setup()
+    render(<Sessions {...props} />)
+    const row = (await screen.findByRole('button', { name: 'Actions for 799a4919af7636e2' })).closest('tr')!
+    await user.click(within(row).getByRole('button', { name: 'Details' }))
+    const detail = row.nextElementSibling as HTMLElement
+    expect(within(detail).getByText('User Agent')).toBeInTheDocument()
+    expect(within(detail).getByText('API Token')).toBeInTheDocument()
+  })
+
+  it('the node picker and Create Token sit in the table toolbar', async () => {
+    server({}, 'ns1.mycluster.test')
+    render(<Sessions {...props} cluster={CLUSTER_PRIMARY} node="ns1.mycluster.test" />)
+    const create = await screen.findByRole('button', { name: 'Create Token' })
+    const search = screen.getByLabelText('Search')
+    expect(create.closest('div[class*="toolbar"]')).toBe(search.closest('div[class*="toolbar"]'))
+    expect(screen.getByLabelText('Cluster Node')).toBeInTheDocument()
   })
 })

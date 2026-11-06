@@ -1,12 +1,12 @@
 import type { ReactNode } from 'react'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useId, useState, type CSSProperties } from 'react'
 import { Button } from '../../ui/Button'
 import { Dialog } from '../../ui/Dialog'
-import { Input, Select } from '../../ui/Field'
-import { AgentCell, LastSeenCell } from '../../ui/SessionCells'
+import { Field, Input, Select } from '../../ui/Field'
 import { SectionHeader } from '../../ui/SectionHeader'
 import { Loading } from '../../ui/Empty'
 import { Warning } from '../../ui/PanelForm'
+import { DataFoot, DataTable, End, Grow } from '../../ui/DataTable'
 import { TOKEN_PRIVILEGES, TOKEN_SHOWN_ONCE } from '../modals/CreateApiToken'
 import {
   createApiToken,
@@ -21,7 +21,6 @@ import { UserDetails } from './UserDetails'
 import { fromNow, dateTime } from './dates'
 import {
   noticeFromFailure,
-  SessionCell,
   Confirm,
   MRow,
   NodePicker,
@@ -32,6 +31,11 @@ import tbl from '../../ui/Table.module.css'
 import { RowAction, Th, useSort, type Keys, Table } from '../../ui/Table'
 import { Menu } from '../../ui/Menu'
 import { Notifier } from '../../ui/Notifier'
+import { sessionKind } from '../profile/profile'
+import { SessionsSummary } from './SessionsSummary'
+import { useBarParam } from './bar-param'
+import { Applied } from './ListParts'
+import lists from './AdminLists.module.css'
 
 /*
 `refreshAdminSessions`, `showCreateApiTokenModal`, `createApiToken` and
@@ -48,6 +52,14 @@ Three things you do not see by looking at the table:
     other case (auth.js:1050-1055).
   · The delete's success alert comes out on the PAGE; the create-token modal's,
     inside the modal. Upstream picks the place on each call.
+
+The layout is deviation 23: three cells over ONE data table; its toolbar holds the
+search and, at its end, the node picker and `Create Token`, where upstream floats
+them over the table. One session per line (type, token name, partial token and
+`(current)`; the date and how long ago; the address; the user agent cut to the
+line), the user agent whole under `Details`, and upstream's `⋮` menu (View User
+Details, Delete Session). The search and the type pressed in the strip narrow what
+is drawn and ask nothing; they travel in the bar (`?q=`, `?type=`).
 */
 
 interface Props {
@@ -74,6 +86,13 @@ const KEYS: Keys<AdminSession> = {
   agent: (s) => s.lastSeenUserAgent,
 }
 
+function matches(s: AdminSession, needle: string): boolean {
+  if (needle === '') return true
+  return [s.username, s.tokenName ?? '', s.partialToken, s.lastSeenRemoteAddress, s.lastSeenUserAgent].some((v) =>
+    v.toLowerCase().includes(needle),
+  )
+}
+
 export function Sessions({ tabs, token, cluster, node: controlledNode, onNodeChange, onNotice }: Props) {
   const [localNode, setLocalNode] = useState('')
   const node = controlledNode ?? localNode
@@ -84,6 +103,8 @@ export function Sessions({ tabs, token, cluster, node: controlledNode, onNodeCha
   const [pendingDelete, setPendingDelete] = useState<AdminSession | null>(null)
   const [create, setCreate] = useState(false)
   const [viewUser, setViewUser] = useState<string | null>(null)
+  const [search, setSearch] = useBarParam('q')
+  const [kind, setKind] = useBarParam('type')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -103,7 +124,9 @@ export function Sessions({ tabs, token, cluster, node: controlledNode, onNodeCha
     void load()
   }, [load])
 
-  const { rows: visibleSessions, sort, toggle } = useSort(KEYS, sessions)
+  const needle = search.trim().toLowerCase()
+  const shown = sessions.filter((s) => (kind === '' || sessionKind(s.type).key === kind) && matches(s, needle))
+  const { rows: visibleSessions, sort, toggle } = useSort(KEYS, shown)
 
   const primary = primaryNodeName(cluster)
   const canCreateToken = primary === '' || primary === server
@@ -125,89 +148,86 @@ export function Sessions({ tabs, token, cluster, node: controlledNode, onNodeCha
     })
   }
 
+  const kindApplied = kind === '' ? null : sessionKind(kind)
+
   return (
     <>
       <SectionHeader
         title="Administration"
         tabs={tabs}
-        actions={<>{canCreateToken && (
-            <Button lead="key" variant="primary" onClick={() => setCreate(true)}>
-              Create Token
-            </Button>
-          )}
-          <NodePicker cluster={cluster} value={node} onChange={setNode} label="Cluster Node" /></>}
+        titleAction={<RowAction icon="refresh" name="Refresh" disabled={loading} onClick={() => void load()} />}
       />
 
       {loading ? (
         <Loading />
       ) : (
         <>
-          <Table
-            stack
-            header={
+          <SessionsSummary sessions={sessions} kind={kind} search={search} onKind={setKind} onSearch={setSearch} />
+          <DataTable
+            toolbar={
               <>
-                <Th field="username" sort={sort} onSort={toggle}>Username</Th>
-                <Th field="session" sort={sort} onSort={toggle}>Session</Th>
-                <Th field="lastSeen" sort={sort} onSort={toggle}>Last Seen</Th>
-                <Th field="address" sort={sort} onSort={toggle}>Remote Address</Th>
-                <Th field="agent" sort={sort} onSort={toggle}>User Agent</Th>
-                <th className={tbl.actionsCell} />
+                <Grow>
+                  <Field inline label="Search">
+                    {(id) => (
+                      <Input
+                        id={id}
+                        search
+                        placeholder="Username, token, address or user agent"
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                      />
+                    )}
+                  </Field>
+                </Grow>
+                <End>
+                  {kindApplied != null && (
+                    <Applied label={kindApplied.name} colour={kindApplied.colour} onClear={() => setKind('')} />
+                  )}
+                  <NodePicker cluster={cluster} value={node} onChange={setNode} label="Cluster Node" />
+                  {canCreateToken && (
+                    <Button lead="key" variant="primary" onClick={() => setCreate(true)}>
+                      Create Token
+                    </Button>
+                  )}
+                </End>
               </>
             }
-            isEmpty={visibleSessions.length === 0}
-            emptyText="No Session Found"
-            columns={6}
+            foot={
+              <DataFoot
+                count={
+                  shown.length === sessions.length
+                    ? `Total Sessions: ${sessions.length}`
+                    : `Total Sessions: ${sessions.length}, ${shown.length} shown`
+                }
+              />
+            }
           >
-            {visibleSessions.map((s) => (
-              /* My own session's row, washed in `--acc-bg`. The `(current)` in
-                 its token cell stays: the colour finds the row, the word says
-                 which it is. Same treatment as this node's row in `Cluster`. */
-              <tr key={s.partialToken} className={s.isCurrentSession ? tbl.rowSelf : undefined}>
-                <td className={tbl.lead}>
-                  <button
-                    type="button"
-                    className={styles.link}
-                    onClick={() => setViewUser(s.username)}
-                  >
-                    {s.username}
-                  </button>
-                </td>
-                <td className={tbl.lead}>
-                  <SessionCell session={s} />
-                </td>
-                <td className={styles.nowrap}>
-                  <LastSeenCell date={dateTime(s.lastSeen)} ago={fromNow(s.lastSeen)} />
-                </td>
-                <td className={styles.mono}>{s.lastSeenRemoteAddress}</td>
-                <td>
-                  <AgentCell>{s.lastSeenUserAgent}</AgentCell>
-                </td>
-                <td className={tbl.actionsCell}>
-                  <div className={tbl.actions}>
-                    {/* auth.js:938: upstream's menu entry says "View User Details",
-                        not the Users table's "View Details". The frequent action
-                        goes in the row and the menu keeps the rest, as in Cluster,
-                        so it is offered once. */}
-                    <RowAction
-                      icon="card"
-                      name="View User Details"
-                      onClick={() => setViewUser(s.username)}
-                    />
-                    <Menu label={`Actions for ${s.partialToken}`}>
-                      {(close) => (
-                        <button type="button" data-variant="danger" onClick={() => { close(); setPendingDelete(s) }}>
-                          Delete Session
-                        </button>
-                      )}
-                    </Menu>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </Table>
-          <div className={styles.count}>
-            <span>{`Total Sessions: ${sessions.length}`}</span>
-          </div>
+            <Table
+              stack
+              header={
+                <>
+                  <Th field="username" sort={sort} onSort={toggle}>Username</Th>
+                  <Th field="session" sort={sort} onSort={toggle}>Session</Th>
+                  <Th field="lastSeen" sort={sort} onSort={toggle}>Last Seen</Th>
+                  <Th field="address" sort={sort} onSort={toggle}>Remote Address</Th>
+                  <Th field="agent" sort={sort} onSort={toggle}>User Agent</Th>
+                  <th className={tbl.actionsCell} />
+                </>
+              }
+              isEmpty={visibleSessions.length === 0}
+              emptyText="No Session Found"
+              columns={6}
+            >
+              {visibleSessions.map((s) => (
+                <SessionLine
+                  key={s.partialToken}
+                  s={s}
+                  onUser={() => setViewUser(s.username)}
+                  onDelete={() => setPendingDelete(s)}
+                />
+              ))}
+            </Table>
+          </DataTable>
         </>
       )}
 
@@ -240,6 +260,83 @@ export function Sessions({ tabs, token, cluster, node: controlledNode, onNodeCha
           onSaved={() => void load()}
           onNotice={onNotice}
         />
+      )}
+    </>
+  )
+}
+
+/*
+One session, one line. My own session's row is washed in `--acc-bg` and still says
+`(current)`: the colour finds the row, the word says which it is (as this node's
+row in Cluster). The type is upstream's label in its series colour.
+*/
+function SessionLine({ s, onUser, onDelete }: { s: AdminSession; onUser: () => void; onDelete: () => void }) {
+  const [open, setOpen] = useState(false)
+  const detail = useId()
+  const k = sessionKind(s.type)
+  return (
+    <>
+      <tr className={[s.isCurrentSession ? tbl.rowSelf : '', open ? lists.openRow : ''].filter(Boolean).join(' ') || undefined}>
+        <td className={tbl.lead}>
+          <button type="button" className={lists.link} onClick={onUser}>
+            {s.username}
+          </button>
+        </td>
+        <td className={tbl.lead}>
+          <span className={lists.session}>
+            <span className={lists.kind} style={{ '--sw': k.colour } as CSSProperties}>{k.name}</span>
+            {s.tokenName != null && <span className={lists.tokenName}>{s.tokenName}</span>}
+            <span className={lists.partial}>{`[${s.partialToken}]`}</span>
+            {s.isCurrentSession && <span className={lists.current}>(current)</span>}
+          </span>
+        </td>
+        <td className={lists.nowrap}>
+          <span className={lists.mono}>{dateTime(s.lastSeen)}</span>
+          <span className={lists.age}>{`(${fromNow(s.lastSeen)})`}</span>
+        </td>
+        <td className={lists.mono}>{s.lastSeenRemoteAddress}</td>
+        <td className={lists.clipCell}>
+          <span className={lists.clip} title={s.lastSeenUserAgent}>{s.lastSeenUserAgent}</span>
+        </td>
+        <td className={tbl.actionsCell}>
+          <div className={tbl.actions}>
+            <RowAction
+              icon={open ? 'chevronDown' : 'chevronRight'}
+              name="Details"
+              aria-expanded={open}
+              aria-controls={detail}
+              onClick={() => setOpen((v) => !v)}
+            />
+            <Menu label={`Actions for ${s.partialToken}`}>
+              {(close) => (
+                <>
+                  <button type="button" onClick={() => { close(); onUser() }}>
+                    View User Details
+                  </button>
+                  <button type="button" data-variant="danger" onClick={() => { close(); onDelete() }}>
+                    Delete Session
+                  </button>
+                </>
+              )}
+            </Menu>
+          </div>
+        </td>
+      </tr>
+      {open && (
+        <tr id={detail} className={lists.detailRow}>
+          <td colSpan={6} className={lists.detailCell}>
+            <dl className={lists.detail}>
+              <div>
+                <dt>Type</dt>
+                <dd>{k.name}</dd>
+              </div>
+              <div className={lists.wide}>
+                <dt>User Agent</dt>
+                <dd className={lists.whole}>{s.lastSeenUserAgent}</dd>
+              </div>
+            </dl>
+          </td>
+        </tr>
       )}
     </>
   )

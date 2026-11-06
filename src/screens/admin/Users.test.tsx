@@ -30,32 +30,49 @@ function server(users = [ADMIN_USER, NEW_USER], detail = USER_DETAIL) {
 
 const props = { token: 'tok', cluster: null, onNotice: vi.fn() }
 
+/* The table, apart from the strip over it, which counts the same words. */
+const table = () => screen.findByRole('table')
+
+/* Upstream's `⋮` menu, its first entry: View Details (auth.js:1191). */
+async function viewDetails(user: ReturnType<typeof userEvent.setup>, row = 0) {
+  await user.click((await screen.findAllByRole('button', { name: /^Actions for / }))[row])
+  await user.click(await screen.findByRole('menuitem', { name: 'View Details' }))
+}
+
+/* Enable or Disable, under upstream's own words in the same menu (auth.js:1192-1193). */
+async function fromMenu(user: ReturnType<typeof userEvent.setup>, item: string, row = 0) {
+  await user.click((await screen.findAllByRole('button', { name: /^Actions for / }))[row])
+  await user.click(await screen.findByRole('menuitem', { name: item }))
+}
+
 describe('Users: the table', () => {
   it('it draws type, 2FA, state and the two logins, with the total', async () => {
     server()
     render(<Users {...props} />)
 
-    expect(await screen.findByText('Administrator')).toBeInTheDocument()
-    expect(screen.getAllByText('Local')).toHaveLength(2)
+    const t = await table()
+    expect(within(t).getByText('Administrator')).toBeInTheDocument()
+    expect(within(t).getAllByText('Local')).toHaveLength(2)
     expect(screen.getByText('Total Users: 2')).toBeInTheDocument()
     // `0001-01-01T00:00:00` is .NET's "never". Upstream formats it without
     // looking and produces "0000-12-31 23:45:16 from 0.0.0.0"; here it says
     // "Never", which is what that value means.
-    expect(screen.getAllByText('Never')).toHaveLength(2)
+    expect(within(t).getAllByText('Never')).toHaveLength(2)
     expect(screen.queryByText(/from 0\.0\.0\.0/)).toBeNull()
   })
 
   it('an SSO user comes out as Remote/SSO and with the 2FA managed elsewhere', async () => {
     server([SSO_USER])
     render(<Users {...props} />)
-    expect(await screen.findByText('Remote/SSO')).toBeInTheDocument()
-    expect(screen.getByText('SSO Managed')).toBeInTheDocument()
+    const t = await table()
+    expect(within(t).getByText('Remote/SSO')).toBeInTheDocument()
+    expect(within(t).getByText('SSO Managed')).toBeInTheDocument()
   })
 
   it('an SSO user is offered neither a password reset nor clearing the 2FA', async () => {
     server([SSO_USER])
     render(<Users {...props} />)
-    await screen.findByText('Remote/SSO')
+    await table()
     expect(screen.queryByRole('button', { name: 'Reset Password' })).not.toBeInTheDocument()
     await userEvent.click((await screen.findAllByRole('button', { name: /^Actions for / }))[0])
     expect(screen.queryByRole('button', { name: 'Disable 2FA' })).not.toBeInTheDocument()
@@ -64,8 +81,9 @@ describe('Users: the table', () => {
   it('an LDAP user comes out as Remote/LDAP with its own 2FA status (auth.js:1154-1163)', async () => {
     server([{ ...LDAP_USER, totpEnabled: true }])
     render(<Users {...props} />)
-    expect(await screen.findByText('Remote/LDAP')).toBeInTheDocument()
-    expect(screen.getByText('Enabled', { selector: 'td:nth-child(4) *' })).toBeInTheDocument()
+    const t = await table()
+    expect(within(t).getByText('Remote/LDAP')).toBeInTheDocument()
+    expect(within(t).getByText('Enabled', { selector: 'td:nth-child(4) *' })).toBeInTheDocument()
   })
 
   it('an LDAP user is offered clearing the 2FA but NOT a password reset (auth.js:1195-1205)', async () => {
@@ -87,7 +105,7 @@ describe('Users: the table', () => {
     // auth.js:1164-1166 writes `user.type` raw; the reset is only for `Local`.
     server([{ ...NEW_USER, type: 'Future', totpEnabled: true }])
     render(<Users {...props} />)
-    expect(await screen.findByText('Future')).toBeInTheDocument()
+    expect(within(await table()).getByText('Future')).toBeInTheDocument()
     await userEvent.click((await screen.findAllByRole('button', { name: /^Actions for / }))[0])
     expect(screen.queryByRole('menuitem', { name: 'Reset Password' })).not.toBeInTheDocument()
     expect(screen.queryByRole('menuitem', { name: 'Disable 2FA' })).not.toBeInTheDocument()
@@ -114,7 +132,7 @@ describe('Users: enable and disable', () => {
     const user = userEvent.setup()
     render(<Users {...props} onNotice={onNotice} />)
 
-    await user.click(await screen.findByRole('button', { name: 'Enable User' }))
+    await fromMenu(user, 'Enable')
 
     expect(spy.mock.calls.find((c) => c[0] === 'admin/users/set')?.[1]).toEqual({
       token: 'tok',
@@ -132,7 +150,7 @@ describe('Users: enable and disable', () => {
     const user = userEvent.setup()
     render(<Users {...props} />)
 
-    await user.click(await screen.findByRole('button', { name: 'Disable User' }))
+    await fromMenu(user, 'Disable')
     expect(
       screen.getByText('Are you sure you want to disable the user [testuser] account?'),
     ).toBeInTheDocument()
@@ -283,7 +301,7 @@ describe('Users: the details modal', () => {
     const user = userEvent.setup()
     render(<Users {...props} onNotice={onNotice} />)
 
-    await user.click(await screen.findByRole('button', { name: 'View Details' }))
+    await viewDetails(user)
     await screen.findByLabelText('Session Timeout')
     await user.click(screen.getByRole('button', { name: 'Save' }))
 
@@ -309,7 +327,7 @@ describe('Users: the details modal', () => {
     const user = userEvent.setup()
     render(<Users {...props} />)
 
-    await user.click(await screen.findByRole('button', { name: 'View Details' }))
+    await viewDetails(user)
     await user.clear(await screen.findByLabelText('Session Timeout'))
     await user.click(screen.getByRole('button', { name: 'Save' }))
 
@@ -322,7 +340,7 @@ describe('Users: the details modal', () => {
     const user = userEvent.setup()
     render(<Users {...props} />)
 
-    await user.click(await screen.findByRole('button', { name: 'View Details' }))
+    await viewDetails(user)
     const add = await screen.findByLabelText('Add Group')
 
     await choose(user, add, 'Administrators')
@@ -346,7 +364,7 @@ describe('Users: the details modal', () => {
     const user = userEvent.setup()
     render(<Users {...props} />)
 
-    await user.click(await screen.findByRole('button', { name: 'View Details' }))
+    await viewDetails(user)
     expect(await screen.findByLabelText('Display Name')).toBeDisabled()
     expect(screen.getByLabelText('Username')).toBeDisabled()
     // With `remotelyManagedGroups` false the groups CAN be touched: they are two
@@ -369,7 +387,7 @@ describe('Users: the details modal', () => {
     const user = userEvent.setup()
     render(<Users {...props} />)
 
-    await user.click(await screen.findByRole('button', { name: 'View Details' }))
+    await viewDetails(user)
     expect(await screen.findByLabelText('Member Of')).toBeDisabled()
 
     await user.click(screen.getByRole('button', { name: 'Save' }))
@@ -381,7 +399,7 @@ describe('Users: the details modal', () => {
     server([SSO_USER], { ...USER_DETAIL, ...SSO_USER, remotelyManagedGroups: false })
     const user = userEvent.setup()
     render(<Users {...props} />)
-    await user.click(await screen.findByRole('button', { name: 'View Details' }))
+    await viewDetails(user)
     const dialog = await screen.findByRole('dialog')
     expect(within(dialog).getByText('Remote/SSO')).toBeInTheDocument()
     expect(within(dialog).getByText('SSO Managed')).toBeInTheDocument()
@@ -397,7 +415,7 @@ describe('Users: the details modal', () => {
     const user = userEvent.setup()
     render(<Users {...props} />)
 
-    await user.click(await screen.findByRole('button', { name: 'View Details' }))
+    await viewDetails(user)
     const dialog = await screen.findByRole('dialog')
     expect(await within(dialog).findByLabelText('Display Name')).toBeDisabled()
     expect(within(dialog).getByLabelText('Username')).toBeDisabled()
@@ -421,7 +439,7 @@ describe('Users: the details modal', () => {
     const user = userEvent.setup()
     render(<Users {...props} />)
 
-    await user.click(await screen.findByRole('button', { name: 'View Details' }))
+    await viewDetails(user)
     expect(await screen.findByLabelText('Member Of')).toBeDisabled()
     await user.click(screen.getByRole('button', { name: 'Save' }))
     const body = spy.mock.calls.find((c) => c[0] === 'admin/users/set')?.[1]?.body as Record<string, string>
@@ -437,7 +455,7 @@ describe('Users: the details modal', () => {
     })
     const user = userEvent.setup()
     render(<Users {...props} />)
-    await user.click(await screen.findByRole('button', { name: 'View Details' }))
+    await viewDetails(user)
     expect(await screen.findByLabelText('Member Of')).not.toBeDisabled()
   })
 
@@ -445,7 +463,7 @@ describe('Users: the details modal', () => {
     server([NEW_USER])
     const user = userEvent.setup()
     render(<Users {...props} />)
-    await user.click(await screen.findByRole('button', { name: 'View Details' }))
+    await viewDetails(user)
     const dialog = await screen.findByRole('dialog')
     expect(await within(dialog).findByLabelText('Display Name')).toBeEnabled()
     expect(within(dialog).getByLabelText('Username')).toBeEnabled()
@@ -457,7 +475,7 @@ describe('Users: the details modal', () => {
     const user = userEvent.setup()
     render(<Users {...props} />)
 
-    await user.click(await screen.findByRole('button', { name: 'View Details' }))
+    await viewDetails(user)
     const field = await screen.findByLabelText('Username')
     await user.clear(field)
     await user.type(field, 'other')
@@ -486,9 +504,114 @@ describe('Users: the details modal', () => {
     const user = userEvent.setup()
     render(<Users {...props} />)
 
-    await user.click(await screen.findByRole('button', { name: 'View Details' }))
+    await viewDetails(user)
     const dialog = await screen.findByRole('dialog')
     expect(within(dialog).getByText('Total Sessions: 1')).toBeInTheDocument()
     expect(within(dialog).getByText('[799a4919af7636e2]')).toBeInTheDocument()
+  })
+})
+
+/* Deviation 23: the strip, the search, the menu and the row's Details. */
+describe('Users: the list reads like the rest', () => {
+  afterEach(() => window.history.replaceState(null, '', '/'))
+
+  it('the menu holds the upstream entries in their order', async () => {
+    server([{ ...NEW_USER, totpEnabled: true }])
+    const user = userEvent.setup()
+    render(<Users {...props} />)
+    await user.click((await screen.findAllByRole('button', { name: /^Actions for / }))[0])
+    expect(within(screen.getByRole('menu')).getAllByRole('menuitem').map((i) => i.textContent)).toEqual([
+      'View Details',
+      'Disable',
+      'Reset Password',
+      'Disable 2FA',
+      'Delete User',
+    ])
+  })
+
+  it('the name opens the details, as the upstream link does', async () => {
+    const spy = server([NEW_USER])
+    const user = userEvent.setup()
+    render(<Users {...props} />)
+    await user.click(await screen.findByRole('button', { name: 'testuser' }))
+    expect(await screen.findByRole('dialog')).toBeInTheDocument()
+    expect(spy.mock.calls.find((c) => c[0] === 'admin/users/get')?.[1]?.body).toEqual({
+      user: 'testuser',
+      includeGroups: 'true',
+    })
+  })
+
+  it('Details opens both logins whole under the row', async () => {
+    server([ADMIN_USER])
+    const user = userEvent.setup()
+    render(<Users {...props} />)
+    const t = await table()
+    expect(within(t).queryByText(/ from /)).toBeNull()
+    await user.click(within(t).getByRole('button', { name: 'Details' }))
+    expect(within(t).getByRole('button', { name: 'Details' })).toHaveAttribute('aria-expanded', 'true')
+    expect(within(t).getByText('Recent Login', { selector: 'dt' })).toBeInTheDocument()
+    expect(within(t).getAllByText('172.23.0.1')).toHaveLength(2)
+  })
+
+  it('the search narrows by username or display name, writes ?q= and asks nothing', async () => {
+    const spy = server()
+    const user = userEvent.setup()
+    const { unmount } = render(<Users {...props} />)
+    await screen.findByText('Total Users: 2')
+    const calls = spy.mock.calls.length
+    await user.type(screen.getByLabelText('Search'), 'test USER')
+    expect(within(await table()).getAllByRole('button', { name: /^Actions for / })).toHaveLength(1)
+    expect(screen.getByText('Total Users: 2, 1 shown')).toBeInTheDocument()
+    expect(window.location.search).toBe('?q=test+USER')
+    expect(spy.mock.calls.length).toBe(calls)
+    unmount()
+    expect(window.location.search).toBe('')
+  })
+
+  it('the strip counts the users by status and type, and pressing a state filters', async () => {
+    server([ADMIN_USER, { ...NEW_USER, disabled: true }, SSO_USER])
+    const user = userEvent.setup()
+    render(<Users {...props} />)
+    const byStatus = await screen.findByRole('group', { name: 'Users by status' })
+    const disabled = within(byStatus).getByRole('button', { name: /Disabled/ })
+    expect(disabled).toHaveTextContent('Disabled1')
+    expect(within(screen.getByRole('group', { name: 'Users by type' })).getByRole('button', { name: /Remote\/SSO/ }))
+      .toHaveTextContent('Remote/SSO1')
+
+    await user.click(disabled)
+    expect(disabled).toHaveAttribute('aria-pressed', 'true')
+    expect(window.location.search).toBe('?status=Disabled')
+    expect(screen.getByText('Total Users: 3, 1 shown')).toBeInTheDocument()
+    // The applied filter sits in the toolbar and clears it.
+    await user.click(screen.getByRole('button', { name: 'Disabled, Clear' }))
+    expect(screen.getByText('Total Users: 3')).toBeInTheDocument()
+    expect(window.location.search).toBe('')
+  })
+
+  it('2FA counts only the users whose 2FA this server keeps', async () => {
+    server([{ ...ADMIN_USER, totpEnabled: true }, NEW_USER, SSO_USER])
+    render(<Users {...props} />)
+    expect(await screen.findByRole('img', { name: '2FA Enabled 1 of 2' })).toBeInTheDocument()
+    expect(screen.getByText(/SSO Managed 1/)).toBeInTheDocument()
+  })
+
+  it('Recent Login names who logged in last, and with nobody it says so', async () => {
+    server([NEW_USER, ADMIN_USER])
+    const { unmount } = render(<Users {...props} />)
+    const card = (await screen.findByRole('heading', { name: 'Recent Login' })).parentElement!
+    expect(within(card).getByText('admin')).toBeInTheDocument()
+    unmount()
+    vi.restoreAllMocks()
+    server([NEW_USER])
+    render(<Users {...props} />)
+    const empty = (await screen.findByRole('heading', { name: 'Recent Login' })).parentElement!
+    expect(within(empty).getByText('Nobody yet')).toBeInTheDocument()
+  })
+
+  it('a filter in the address bar is read on arrival', async () => {
+    window.history.replaceState(null, '', '/admin/users/?type=Remote%2FSSO')
+    server([ADMIN_USER, SSO_USER])
+    render(<Users {...props} />)
+    expect(await screen.findByText('Total Users: 2, 1 shown')).toBeInTheDocument()
   })
 })
