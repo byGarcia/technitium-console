@@ -108,6 +108,12 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
   filterable table) and Theme (the three themes with previews).
 - **The cards over each list are one compact strip** instead of a row of tall boxes, so the table
   starts higher on the screen. The Dashboard keeps its large figures.
+- **Logs reads like Cache:** View Logs opens with cards for the log folder (files, total size,
+  newest and oldest) over a one-line-per-file table, and an open file becomes its own page with its
+  size, entries and time span, saying when only its first 2 MB are shown. Query Logs opens with
+  cards for the page on screen (response types, RCODE, top clients and names) that set the matching
+  filter, keeps its filters inside the results card, draws each entry on one line with the rest
+  under Details, and keeps the query and the open file in the address bar so a link reproduces them.
 - **Choosing a file is a drop zone** in every dialog that takes one (an app's zip, a zone file, a
   settings backup): drop the file or click to choose it, and it shows its name and size.
 - **Dialogs are one surface**, without the lines under the title and over the buttons. A

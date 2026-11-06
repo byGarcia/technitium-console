@@ -451,6 +451,10 @@ Write down here whatever you find. What is already known:
   (WebServiceZonesApi.cs:120-125). With a forwarder, `responseMetadata.nameServer`
   is the bare address (`1.1.1.1`). Checked live against v15.6.1 on 2026-11-06
   (`screens/lists/cache-node.real.json`).
+- **`logs/download?limit=2` sends the first 2 MB from offset 0** (LogManager.cs:657-676),
+  not the tail, so the viewer of a large file shows its oldest lines. `logs/list` sorts by
+  path descending, so newest first only holds because files are named by date. Sizes come
+  written (`6 KB`, `24.44 KB`, `2.39 MB`).
 - **`recordDataTemplate` is left out, not `null`,** on an app class that serves no
   APP records (`apps/list`, v15.6.1).
 - **A lease's `hostName` comes back with the scope's domain appended** (`build-01.lab.lan`
@@ -788,28 +792,24 @@ contract and SECURITY.md.
      and Protocol Types legend entries are buttons, and the week is one keyboard
      stop whose arrows move between its cells.
 
-8. **Query Logs folds its filters below 960 px** (approved on 2026-10-16;
-   `FOLD_QUERY` in `screens/logs/QueryLogs.tsx`). At 390x844 the fourteen filters
-   were one column 1,173 px tall and the first result row ended at y=1,905; at 768
-   the table still started at y=1,001. Below 960 the panel closes to its title,
-   which becomes the toggle, and `Query` closes it again; the legend keeps its seven
-   pills and puts their conditions behind its title. Above 960 nothing of this
-   exists. Its limits, and crossing one is a bug:
-   - **a folded panel says what is set**: every field that differs from what
-     `Reset` gives, by its field's own label and with the value the field shows
-     (`activeFilters`), so a filtered table never reads as the whole log;
+8. **Query Logs folds its filters below 960 px** (approved on 2026-10-16; `FOLD_QUERY`
+   in `screens/logs/QueryLogs.tsx`). Since 2026-11-06 (deviation 20) the filters are a
+   band inside the results card under a toolbar holding `Domain` and the verbs. Below
+   960 the band closes and a `Filters` toggle joins the toolbar; `Query` closes it again.
+   The legend keeps its seven pills and puts their conditions behind its title. Above
+   960 nothing of this exists: no toggle, and the band is always open. Its limits, and
+   crossing one is a bug:
+   - **a folded band says what is set**: every field it holds that differs from what
+     `Reset` gives, by its own label and with the value the field shows
+     (`activeFilters`). Domain, Page Number and Logs Per Page stay on screen and are not
+     repeated;
    - **nothing it sends changes**: the fields stay mounted while folded, and Query,
      Export, Reset, Live Update and the pager send exactly what they sent;
-   - **a validation still lands on its field**: a folded panel opens before
-     upstream's focus (logs.js:389-424 and 612-625) moves to the field that failed.
+   - **a validation still lands on its field**: a folded band opens before upstream's
+     focus (logs.js:389-424 and 612-625) moves to the field that failed.
 
-   Since 2026-11-05 Page Number and Logs Per Page sit in the results card's foot
-   (`ui/DataTable`) instead of the panel, and the folded summary still lists them
-   when they differ from what `Reset` gives.
-
-   Its words: none new. The toggles are the panel's existing title, `Filters`, and
-   the legend's, `Row colours`; the list is the fields' own labels, each followed by
-   a colon and its value.
+   Its words: none new. The toggles are `Filters` and the legend's `Row colours`; the
+   list is the fields' own labels, each followed by a colon and its value.
 9. **About reads like the other screens, and has a column for this console**
    (Adrián's decisions, 2026-10-16 and 2026-11-06; `screens/about/About.tsx`).
    Upstream's About is one centred column (index.html:3641-3680): the logo, the
@@ -1192,6 +1192,64 @@ contract and SECURITY.md.
     Updates`, `TTL`, `search domain(s)`, `Router`, `DNS`, `WINS`, `NTP`, `via`,
     `Option`, `entry`/`entries`, `route(s)`, `range(s)`, `Server`, `Host`, `File`,
     `match any`, `and N more`).
+20. **Logs reads like Cache and the zone list** (Adrián's decision, 2026-11-06). Every
+    call, confirmation, alert text, validation and its order, the export and the row menu
+    are the ones they were; what changes is the layout and what is drawn from data the
+    screen already has.
+    - **View Logs is the folder, and an open file is its own page.** The folder's header
+      is the section's, with Refresh beside the title (the same `logs/list`) and Delete
+      All Logs / Delete All Stats at the right. Under it, up to four cards
+      (`LogFilesSummary.tsx`, `log-files.ts`) read from the list: Log Files (the count
+      and the span of days), Total Size (the sum of the sizes the server writes, and the
+      largest file), Newest and Oldest (only for files named by their day, which is how
+      the server names them; each opens its file). Then one table, one line per file:
+      the name opens it, and its size carries a bar of its share of the folder. The foot
+      reads `N log files`. An empty folder says 0 and 0 B; a list that failed draws no
+      cards and the table says `Unable to load the log files.` Opening a file makes its
+      name the header (the trail's `View Logs` goes back), with Refresh (the same 2 MB
+      read), Download and Delete. Over the reader, one line says what the text holds:
+      the size the list wrote, how many lines carry the server's timestamp, the first
+      and the last of them, and, when the text reaches the viewer's 2 MB (`limit=2`
+      reads from offset 0, LogManager.cs:657-676), that only the start is shown.
+      Upstream draws the list as links with the size in brackets beside a `<pre>`, with
+      all four verbs on one screen (logs.js:119-131, index.html:3272).
+    - **The open file is in the address bar** (`?file=`, `lib/url-state.ts`): written by
+      replacing the entry, read on arrival (it opens once the list says the file exists;
+      otherwise the list stays and the parameter goes), and dropped when the screen goes.
+    - **Query Logs opens with four cards** (`QuerySummary.tsx`, `query-facts.ts`) counted
+      from the entries of the page on screen, never from the whole log, and saying so:
+      Response Types (the page's entries, `of N logs`, a bar and chips in the
+      Dashboard's colours by the same names, and `Blocked` as a count and a share of the
+      three blocked types), RCODE (by the RCODE field's labels), Top Clients and Top
+      Domains (four each, then `N more, on this page`). Pressing a type, a code, a client
+      or a name writes it in its field and runs Query from page 1, exactly as choosing it
+      there would; pressing the applied one empties the field and queries again. With
+      Live Update on, Query is off, so pressing only sets the field and the loop's next
+      turn sends it. A value the form has no option for, and the root name, are drawn but
+      cannot be pressed. They follow the page every 2 s with Live Update.
+    - **The filters are inside the results card.** Its toolbar holds `Domain` and
+      upstream's four verbs in upstream's order, with the status at its end; a band under
+      it holds the other ten filters, From/To/Order together under the Live Update edge
+      and pill; then the legend, the rows and the foot. Upstream draws a form panel over
+      the table.
+    - **One line per row.** Timestamp, Client IP Address, Domain, Type (in its series
+      colour, `zones/zone-colours`), Response Type on its row colour, RCODE and Answer
+      cut where its column ends. `Details` (chevron, `aria-expanded`) opens a line under
+      the row with `#`, `Protocol`, `Class`, the response time upstream writes under the
+      type, and the whole answer, one record per line with the same text.
+    - **The query is in the address bar** (`query-url.ts`): once a query lands, the
+      filters it sent and the page the server answered are written by replacing the
+      entry, each named as `logs/query` names it, only when it differs from what Reset
+      gives, the page past the first, and From/To as the instants the call sends. On
+      arrival they are read once, checked (an app or class that is not there, an option
+      the dropdown lacks, or a page that is not a number is dropped) and queried as Query
+      would, with Live Update off. A jump from another screen wins over the bar. The
+      parameters leave with the screen.
+    Its words, all OURS: `Log Files`, `Total Size`, `Largest`, `Newest`, `Oldest`, the
+    span's `to`, the column headers `Log File` and `Size`, `N log files`, `Size`,
+    `Entries`, `First`, `Last`, `Showing the first 2 MB. Download gives the whole file.`,
+    `Response Types`, `of N logs`, `Blocked` as a share, `Top Clients`, `Top Domains`,
+    `on this page`, `N more`, `Details` and `Refresh` (Cache's word).
 21. **My Profile is a page** (Adrián's decision, 2026-11-06). Upstream's `modalMyProfile`
     (index.html:3691-3786, auth.js:660-866) is a dialog; here it is `/profile/`, reached
     from the account menu's `My Profile` (`screens/profile/`). It is a route like the
