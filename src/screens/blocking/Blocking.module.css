@@ -18,8 +18,14 @@ What the three Blocking tabs share. Every value is a token of theme/tokens.css.
 
 /* The command bar (`AddDomainBar`): its title, one field, Block first because Enter
    blocks, Allow and Check, on one line. */
+/* The same air above and below (2026-11-06): a panel with no header adds its own top
+   padding (`ui/Panel`'s `noHeader`), which left the bar 24 px over its field and 10
+   under it. */
+.stack .commandPanel { padding-top: 0; }
 .stack .commandBody { padding: var(--s-7) var(--s-9); }
-.add { display: flex; align-items: center; gap: var(--s-5); }
+.add { display: flex; align-items: flex-start; gap: var(--s-5); }
+.add > .commandTitle { align-self: flex-start; min-height: var(--field-height); display: flex; align-items: center; }
+.add > :not(.commandField) { flex: none; }
 .commandTitle { margin: 0 var(--s-5) 0 0; font-size: var(--t-5); font-weight: 600; color: var(--ink); white-space: nowrap; }
 .commandField { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 

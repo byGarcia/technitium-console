@@ -145,7 +145,7 @@ export function AddDomainBar({
   }
 
   return (
-    <Panel>
+    <Panel className={styles.commandPanel}>
       <Body className={styles.commandBody}>
         <form
           className={styles.add}
@@ -174,6 +174,12 @@ export function AddDomainBar({
                 forget()
               }}
             />
+            {/* Under the field it is about, not under the title (2026-11-06). */}
+            {problem != null && (
+              <div id={problemId} className={styles.invalid} aria-live="polite">
+                {problem}
+              </div>
+            )}
           </div>
           <PermissionButton
             type="submit"
@@ -203,11 +209,6 @@ export function AddDomainBar({
         {/* One live region for the whole answer: the wait and the verdict that
             replaces it are announced once each. */}
         <div aria-live="polite">
-          {problem != null && (
-            <div id={problemId} className={styles.invalid}>
-              {problem}
-            </div>
-          )}
           {checking && <Loading compact announce={false} />}
           {verdict != null && <DomainCheck verdict={verdict} catalog={catalog} />}
         </div>
