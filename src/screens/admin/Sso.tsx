@@ -270,7 +270,11 @@ export function Sso({ tabs, token, onNotice }: Props) {
           a second row of links that only scroll looked like a second row of tabs, as
           it did in Settings (deviation 22). The column keeps Settings' width. */}
       <IndexedForm sections={[]} active={here}>
-        <div className={adm.formColumn}>
+        {/* Two columns on a wide screen (2026-11-06, deviation 23): the connection at
+            the left, sign-up, scopes and the group map at the right, the notes under
+            both. One column on a narrow one. */}
+        <div className={adm.split}>
+          <div className={adm.main}>
           <div id={SECTIONS[0].id}>
             <Block
               title="Single Sign-On (SSO)"
@@ -336,6 +340,8 @@ export function Sso({ tabs, token, onNotice }: Props) {
             </Block>
           </div>
 
+          </div>
+          <div className={adm.side}>
           <div id={SECTIONS[1].id}>
             <Block title="SSO User Sign Up">
               <div className={frm.row}>
@@ -513,6 +519,8 @@ export function Sso({ tabs, token, onNotice }: Props) {
             </Block>
           </div>
 
+          </div>
+          <div className={adm.span}>
           {/*
           The eight `Note!` after the controls: they explain, they do not change
           the decision; the two `Warning!` went up into the first block.
@@ -582,6 +590,7 @@ export function Sso({ tabs, token, onNotice }: Props) {
             </Note>
           </Notices>
           </Block>
+          </div>
         </div>
 
         <div className={styles.bar}>

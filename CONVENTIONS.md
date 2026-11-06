@@ -1392,9 +1392,10 @@ contract and SECURITY.md.
     - **SSO and LDAP say their state on the header line**: `Enabled` or `Disabled` as last
       read or saved (not the unsaved checkbox), and `Not configured` while the authority
       and client ID (SSO) or the server (LDAP) are empty, warn-toned only when enabled.
-      Their forms take Settings' rows and width (deviation 22), and SSO drops its section
-      index: four blocks are read in one scroll, and a row of links that only scroll looked
-      like a second row of tabs.
+      Their forms take Settings' rows (deviation 22) in two columns on a wide screen: the
+      connection at the left, what follows from it (sign-up, scopes, the group map) at the
+      right, the notes under both; one column under 1180 px. SSO drops its section index:
+      a row of links that only scroll looked like a second row of tabs.
     - **Cluster's nodes are a data table**: the node picker in its toolbar, `Total Nodes: N`
       in its foot.
     Its words, all OURS: `V`, `M`, `D` and the legend, `None`, `Search` and its three

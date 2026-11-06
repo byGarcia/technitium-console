@@ -305,7 +305,9 @@ export function Ldap({ tabs, token, onNotice }: Props) {
       is also the block that holds "Ignore SSL Certificate Errors", the control
       the first of them is about.
       */}
-      <div className={adm.formColumn}>
+      {/* Two columns on a wide screen (2026-11-06, deviation 23), as SSO's. */}
+      <div className={adm.split}>
+        <div className={adm.main}>
         <div id={SECTIONS[0].id}>
           <Block
             title="LDAP Authentication"
@@ -441,6 +443,8 @@ export function Ldap({ tabs, token, onNotice }: Props) {
           </Block>
         </div>
 
+        </div>
+        <div className={adm.side}>
         <div id={SECTIONS[1].id}>
           <Block title="LDAP User Sign Up">
             <div className={frm.row}>
@@ -558,6 +562,8 @@ export function Ldap({ tabs, token, onNotice }: Props) {
           </Block>
         </div>
 
+        </div>
+        <div className={adm.span}>
         {/* The seven `Note!`, after the controls, in an untitled block as SSO's. */}
         <Block>
           <Notices>
@@ -605,6 +611,7 @@ export function Ldap({ tabs, token, onNotice }: Props) {
             </Note>
           </Notices>
         </Block>
+        </div>
       </div>
 
       <div className={styles.bar}>

@@ -63,6 +63,21 @@ two other modules with the same values copied by hand.
 
 
 
-/* SSO's and LDAP's form, at the width of Settings' (deviation 22): a row of label,
-   help and control reads as one line of sight, not across the whole screen. */
-.formColumn { max-width: 820px; }
+/*
+SSO's and LDAP's form (2026-11-06, deviation 23): two columns on a wide screen, the
+connection at the left and what follows from it (sign-up, scopes, the group map) at
+the right, the notes under both; one column under 1180 px. Each column is a size
+container for the form rows (`ui/Form`), so a row reads label over control when its
+column is narrow.
+*/
+.split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--gap-block) var(--s-10);
+  align-items: start;
+}
+@media (min-width: 1180px) {
+  .split { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); }
+  .span { grid-column: 1 / -1; }
+}
+.main, .side, .span { display: flex; flex-direction: column; gap: var(--gap-block); min-width: 0; }
