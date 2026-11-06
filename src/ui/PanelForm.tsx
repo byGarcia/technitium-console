@@ -1,5 +1,6 @@
 import { createContext, type ReactNode, useContext } from 'react'
-import { Alert } from './Alert'
+import { Icon } from './Icon'
+import { FoldHelp } from './FoldHelp'
 import { Button } from './Button'
 import { Empty } from './Empty'
 import { Input, Textarea } from './Field'
@@ -258,25 +259,33 @@ export function Notices({ children }: { children: ReactNode }) {
 }
 
 /*
-Upstream's alerts are `<p><b>Note!</b> …</p>` in bold, inline. Here they become
-a coloured block: `Warning!` amber, `Note!` blue. They always go inside a
-`Notices`, which is what supplies the inset. When the alert supplied it itself on
-one screen and not the other, the same "Note!" came out indented in DHCP and flush
-in Settings.
+Upstream's alerts are `<p><b>Note!</b> …</p>` in bold, inline. Here they are
+compact lines (2026-11-06, Adrián: the coloured boxes they were took about 1,000 px
+of Settings › General alone): the sign, the bold word in its colour, `Warning!`
+amber and `Note!` blue, and the text in the help's size. A warning is read whole; a
+note folds to its first line with `more` (`ui/FoldHelp`), its whole text always in
+the document. They go inside a `Notices`, which supplies the inset, in the block
+they speak about.
 */
 export function Warning({ children }: { children: ReactNode }) {
   return (
-    <Alert type="warning" title="Warning!">
-      {children}
-    </Alert>
+    <div className={`${styles.callout} ${styles.warn}`} role="note">
+      <Icon name="warning" size={14} className={styles.sign} />
+      <div className={styles.calloutText}>
+        <b>Warning!</b> {children}
+      </div>
+    </div>
   )
 }
 
 export function Note({ children }: { children: ReactNode }) {
   return (
-    <Alert type="info" title="Note!">
-      {children}
-    </Alert>
+    <div className={styles.callout} role="note">
+      <Icon name="about" size={14} className={styles.sign} />
+      <FoldHelp className={styles.calloutText}>
+        <b>Note!</b> {children}
+      </FoldHelp>
+    </div>
   )
 }
 

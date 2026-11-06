@@ -26,15 +26,8 @@
 .inline { display: flex; flex-wrap: wrap; gap: var(--s-3) var(--s-9); align-items: center; }
 
 /* Upstream's Warning! and Note!, as compact lines in the block they speak about. */
-.callouts { list-style: none; margin: 0; padding: var(--s-6) var(--s-9); display: flex; flex-direction: column; gap: var(--s-4); border-bottom: 1px solid var(--line); }
+.callouts { margin: 0; padding: var(--s-6) var(--s-9); display: flex; flex-direction: column; gap: var(--s-4); border-bottom: 1px solid var(--line); }
 .callouts:last-child { border-bottom: 0; }
-.callout { display: flex; gap: var(--s-4); align-items: flex-start; font-size: var(--t-3); line-height: 1.5; color: var(--mute); }
-.callout b { color: var(--info); font-weight: 650; }
-.warn b { color: var(--warn); }
-.sign { flex: none; margin-top: var(--s-1); color: var(--info); }
-.warn .sign { color: var(--warn); }
-.calloutText { flex: 1; min-width: 0; }
-.calloutText code { font-family: var(--font-mono); color: var(--ink); }
 
 /* A value to take elsewhere (the SSO Redirect URI), with its Copy. */
 .copy {

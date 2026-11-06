@@ -1343,6 +1343,12 @@ contract and SECURITY.md.
       permissions, confirmations and texts.
     - The block headers carry no count of their rows. Quick Add and Quick Select are rows
       like their neighbours.
+    - **`Warning!` and `Note!` are compact lines** in every form built on the kit
+      (`ui/PanelForm`'s `Warning`, `Note`), Settings, DHCP's scope, Administration and
+      the dialogs that use them: the sign and the bold word in their colour, the text in
+      the help's size, a warning whole and a note folded to its first line with `more`.
+      A switch's help folds the same way (`ui/Check`'s `toggle`). Settings › General went
+      from 5,461 px to 4,777 at 1440. The whole text is always in the document.
     Its words, all OURS: `Search settings`, `more`, `less`, `No unsaved changes`, `No
     settings in <Section> match "<q>".`, `match` / `matches` (read after a sub-section's
     name), `Save` (the bar's region name).

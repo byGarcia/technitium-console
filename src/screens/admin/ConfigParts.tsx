@@ -1,6 +1,5 @@
 import { useId, useState, type ReactNode } from 'react'
-import { Icon } from '../../ui/Icon'
-import { FoldHelp } from '../../ui/FoldHelp'
+import { Note, Warning } from '../../ui/PanelForm'
 import { RowAction } from '../../ui/Table'
 import { copyText } from '../../lib/copy-text'
 import cp from './ConfigParts.module.css'
@@ -63,25 +62,12 @@ export function StackedGroup({ label, wide = false, children }: { label: string;
 }
 
 export function Callouts({ children }: { children: ReactNode }) {
-  return <ul className={cp.callouts}>{children}</ul>
+  return <div className={cp.callouts}>{children}</div>
 }
 
+/** Upstream's `Warning!` or `Note!`, the form kit's compact line (`ui/PanelForm`). */
 export function Callout({ tone, children }: { tone: 'warn' | 'note'; children: ReactNode }) {
-  return (
-    <li className={tone === 'warn' ? `${cp.callout} ${cp.warn}` : cp.callout} role="note">
-      <Icon name={tone === 'warn' ? 'warning' : 'about'} size={14} className={cp.sign} />
-      {/* A warning is read whole; a note folds to its first line, `more` opens it. */}
-      {tone === 'warn' ? (
-        <div className={cp.calloutText}>
-          <b>Warning!</b> {children}
-        </div>
-      ) : (
-        <FoldHelp className={cp.calloutText}>
-          <b>Note!</b> {children}
-        </FoldHelp>
-      )}
-    </li>
-  )
+  return tone === 'warn' ? <Warning>{children}</Warning> : <Note>{children}</Note>
 }
 
 export function CopyValue({ label, value }: { label: string; value: string }) {

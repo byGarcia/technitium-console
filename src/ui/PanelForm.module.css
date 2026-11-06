@@ -87,6 +87,15 @@ notices do not need it either, because the dialog itself is 880 at most.
   gap: var(--s-4);
 }
 
+/* A `Warning!` or `Note!` as one compact line (`Warning`, `Note`). */
+.callout { display: flex; gap: var(--s-4); align-items: flex-start; font-size: var(--t-3); line-height: 1.5; color: var(--mute); }
+.callout b { color: var(--info); font-weight: 650; }
+.warn b { color: var(--warn); }
+.sign { flex: none; margin-top: var(--s-1); color: var(--info); }
+.warn .sign { color: var(--warn); }
+.calloutText { flex: 1; min-width: 0; overflow-wrap: break-word; }
+.calloutText code { font-family: var(--font-mono); color: var(--ink); }
+
 .plain {
   composes: helpPanel from './text.module.css';
   padding: 0 var(--s-9);

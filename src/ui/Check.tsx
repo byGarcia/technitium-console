@@ -1,3 +1,4 @@
+import { FoldHelp } from './FoldHelp'
 import type { ReactNode } from 'react'
 import styles from './Check.module.css'
 
@@ -43,7 +44,9 @@ export function Check({
         />
         <span className={styles.text}>{label}</span>
       </label>
-      {help && <div className={styles.help}>{help}</div>}
+      {/* A switch's help folds to its first line with `more` (2026-11-06), as a
+          form row's does (`ui/FoldHelp`); a plain checkbox's stays whole. */}
+      {help && (toggle ? <FoldHelp className={styles.help}>{help}</FoldHelp> : <div className={styles.help}>{help}</div>)}
     </div>
   )
 }
