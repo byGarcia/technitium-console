@@ -1,0 +1,33 @@
+/*
+Block Lists Across Nodes (deviation 39): the Lists tab's card on a cluster. A sentence under
+the title, then one row per node, its name with its colour (`nodeToken`, the one
+Cache and the Dashboard give it), the count in figures and the two dates.
+*/
+.panel { margin: 0; }
+
+.note {
+  margin: 0;
+  padding: var(--s-5) var(--s-9);
+  border-bottom: 1px solid var(--line2);
+  font-size: var(--t-3);
+  color: var(--mute);
+}
+
+/* The panel draws the box; the table inside drops its own. */
+.table { border: 0; border-radius: 0; box-shadow: none; }
+
+.node { display: inline-flex; align-items: center; gap: var(--s-3); font-family: var(--font-mono); color: var(--ink); }
+.node::before {
+  content: '';
+  flex: none;
+  width: var(--s-4);
+  height: var(--s-4);
+  border-radius: var(--r-1);
+  background: var(--nd);
+}
+
+
+.count { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--ink); }
+.ago { margin-left: var(--s-3); color: var(--mute); }
+.notRead { color: var(--faint); font-style: italic; }
+.failed { color: var(--mute); overflow-wrap: break-word; }

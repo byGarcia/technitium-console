@@ -79,6 +79,7 @@ export function Blocking({
         token={token}
         permissions={permissions}
         clusterInitialised={clusterInitialised}
+        nodes={nodes}
         onDirty={setListsDirty}
       />
     )

@@ -32,6 +32,8 @@ import { UrlText } from '../../ui/UrlText'
 import { ThisServerName } from '../../ui/ClusterNodeSelect'
 import { fromNow, minuteStamp } from '../../lib/dates'
 import { changeText, keepReading, lastUpdateOf, readReadings, type Reading } from './list-history'
+import { ListsOnNodes } from './ListsOnNodes'
+import type { ClusterNode } from '../../ui/ClusterNodeSelect'
 
 /*
 The Lists tab: the "Allow / Block List URLs" field of Settings > Blocking drawn as a
@@ -77,6 +79,10 @@ every alert of the update and the save. Everything else is OURS:
 Quick Add here lists Technitium's catalogue first, as Settings does, then ours. An
 entry of ours is chosen exactly as one of theirs (`applyQuick`), and its single-URL
 entries name their rows too. Its search matches the name and the URL's host.
+
+On an initialised cluster (deviation 39) the card `Block Lists Across Nodes` (`ListsOnNodes.tsx`)
+draws each node's count and schedule, and Update Now moves into it as `Update Now on
+All Nodes`: the call carries no `node` and the server passes it on to all nodes.
 
 No node selector: `blockListUrls` is a CLUSTER-WIDE parameter (`nodeScope`,
 settings/model.ts:514), so it is read and saved on the cluster when there is one and
@@ -407,12 +413,15 @@ export function BlockLists({
   token,
   permissions,
   clusterInitialised = false,
+  nodes = [],
   onDirty,
 }: {
   tabs?: ReactNode
   token: string | null
   permissions: Permissions
   clusterInitialised?: boolean
+  /** The session's cluster nodes, for `Block Lists Across Nodes` (deviation 39). */
+  nodes?: ClusterNode[]
   /** Told whether there are unsaved changes, for the tab's mark; false on leaving. */
   onDirty?: (dirty: boolean) => void
 }) {
@@ -441,6 +450,12 @@ export function BlockLists({
   const [notice, setNotice] = useState<Notice | null>(null)
   const [busy, setBusy] = useState(false)
   const [askUpdate, setAskUpdate] = useState(false)
+  /** Update Now was triggered and its wait has not ended: `Block Lists Across Nodes` says so. */
+  const [forced, setForced] = useState(false)
+  /** Counted up each time the counts are read again after a change, so `Block Lists Across
+      Nodes` reads with them (it reads on its own when it is drawn). */
+  const [countsRead, setCountsRead] = useState(0)
+  const onEachNode = clusterInitialised && nodes.length > 0
   /** The group "Add a list" and Quick Add put lists into: a heading's ordinal, -1 for none. */
   const [group, setGroup] = useState(-1)
   const [editing, setEditing] = useState<Editing | null>(null)
@@ -560,7 +575,11 @@ export function BlockLists({
         serverNext.current = now
       }
       await readCounts()
-      if (live) setReloading(null)
+      if (live) {
+        setReloading(null)
+        setForced(false)
+        setCountsRead((n) => n + 1)
+      }
     }
     timer = setTimeout(() => void tick(), POLL_MS)
     return () => {
@@ -670,6 +689,7 @@ export function BlockLists({
     else {
       setReloading(null)
       void readCounts()
+      setCountsRead((n) => n + 1)
     }
     return canUpdate
   }
@@ -700,6 +720,7 @@ export function BlockLists({
     // main.js:2356. The label becomes "Updating Now" without reloading the settings.
     setNext(new Date(0).toISOString())
     setNotice({ type: 'success', title: 'Updating Block List!', text: 'Block list update was triggered successfully.' })
+    setForced(true)
     setReloading({ from })
   }
 
@@ -838,19 +859,35 @@ export function BlockLists({
               {!loading && last != null && (
                 <div className={statStyles.caption}>{`Last updated ${minuteStamp(last)}, ${fromNow(last)}`}</div>
               )}
-              <div className={statStyles.actions}>
-                <PermissionButton lead="refresh" size="sm"
-                  permission={modifyNeed}
-                  disabled={busy || !hasSaved}
-                  onClick={() => setAskUpdate(true)}
-                >
-                  Update Now
-                </PermissionButton>
-              </div>
+              {/* On a cluster it is `Block Lists Across Nodes`'s, named for what it does (deviation 39). */}
+              {!onEachNode && (
+                <div className={statStyles.actions}>
+                  <PermissionButton lead="refresh" size="sm"
+                    permission={modifyNeed}
+                    disabled={busy || !hasSaved}
+                    onClick={() => setAskUpdate(true)}
+                  >
+                    Update Now
+                  </PermissionButton>
+                </div>
+              )}
             </div>
           </Card>
           {statsNeed != null ? <Locked title="Domains over time" need={statsNeed} /> : <ReadingsCard readings={readings} />}
         </div>
+
+        {onEachNode && (
+          <ListsOnNodes
+            token={token}
+            nodes={nodes}
+            withCounts={statsNeed == null}
+            modifyNeed={modifyNeed}
+            canUpdate={!busy && hasSaved}
+            updating={forced}
+            refreshOn={countsRead}
+            onUpdate={() => setAskUpdate(true)}
+          />
+        )}
 
         <Panel title="Add a list">
           <Body>
