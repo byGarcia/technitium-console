@@ -54,6 +54,7 @@ export function CacheAcross({
   token,
   nodes,
   node,
+  chosen = '',
   nodeTitle,
   toolbar,
   band,
@@ -63,6 +64,8 @@ export function CacheAcross({
   /** The screen's answer for the chosen node: each new one (a move, Refresh, the
    *  read after Flush or Delete) reads every node again, for its domain. */
   node: ListNode
+  /** The node the screen read `node` from (the selector's), whose answer is reused. */
+  chosen?: string
   nodeTitle: string
   /** The screen's Domain field and Browse, as the one-node card has them. */
   toolbar: ReactNode
@@ -76,7 +79,8 @@ export function CacheAcross({
 
   useEffect(() => {
     let cancelled = false
-    void readAcross(token, domain, nodes).then((r) => {
+    const here = node.domain.toLowerCase() === domain.toLowerCase()
+    void readAcross(token, domain, nodes, { node: chosen, records: here ? (node.records ?? []) : [], zones: here ? (node.zones ?? []) : [] }).then((r) => {
       if (!cancelled) setReads(r)
     })
     return () => {
@@ -84,7 +88,7 @@ export function CacheAcross({
     }
     // `nodes` is read through its names: the Shell hands a new array on each render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, node, key])
+  }, [token, node, key, chosen])
 
   const rows = useMemo(() => (reads == null ? [] : mergeAcross(reads)), [reads])
   const held = useMemo(() => (reads == null ? [] : answered(reads)), [reads])

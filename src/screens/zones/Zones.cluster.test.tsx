@@ -103,6 +103,18 @@ describe('the zone list across nodes', () => {
     expect(within(casa).getByText('Secondary')).toBeInTheDocument()
   })
 
+  it('in the view across nodes reads no hidden one-node page, and reads it again on the way back', async () => {
+    window.history.replaceState(null, '', '/zones/?view=all')
+    const spy = server()
+    const user = userEvent.setup()
+    render(<ZoneList {...props} {...cluster} />)
+    await screen.findByText(/3 zones across 2 nodes/)
+    expect(listCalls(spy).filter((b) => b.pageNumber != null)).toHaveLength(0)
+    await user.click(screen.getByRole('button', { name: 'This node' }))
+    await screen.findByRole('columnheader', { name: /Type/ })
+    expect(listCalls(spy).filter((b) => b.pageNumber != null)).toHaveLength(1)
+  })
+
   it('says which node did not answer, with the server message, and leaves it out of the comparison', async () => {
     server()
     const user = userEvent.setup()

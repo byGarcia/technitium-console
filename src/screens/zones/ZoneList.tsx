@@ -176,6 +176,8 @@ export function ZoneList({
   const withCluster = clusterInitialised && nodes.length > 0
   const [view, setView] = useState<'node' | 'all'>(() => (readParam(LIST_VIEW) === 'all' ? 'all' : 'node'))
   const across = withCluster && view === 'all'
+  const acrossRef = useRef(across)
+  acrossRef.current = across
   const [acrossFilter, setAcrossFilter] = useState<AcrossFilter>(() => readAcrossFilter(readParam(LIST_ACROSS)))
   const [acrossPage, setAcrossPage] = useState(() => Math.max(1, Number(readParam(LIST_ACROSS_PAGE) ?? '1') || 1))
   /* Remembered under upstream's key (zone.js:626-632). */
@@ -204,6 +206,15 @@ export function ZoneList({
           /* A failed summary is not drawn: the cards would count another moment. */
           setAllZones(all)
         })
+      }
+      /* In the view across nodes the one-node page is not drawn: it is not read either
+         (review of 2026-11-06). The across view reads again on the bump below. */
+      if (acrossRef.current) {
+        setAppliedType(typeOverride ?? typeFilter)
+        setAppliedName(nameFilter)
+        setLoads((n) => n + 1)
+        setLoaded(true)
+        return
       }
       setBusy(true)
       const r = await listZones(token, {
@@ -452,6 +463,11 @@ export function ZoneList({
     setAcrossPage(1)
     setAcrossFilter('all')
     writeParams({ [LIST_VIEW]: v === 'all' ? 'all' : null, [LIST_ACROSS]: null, [LIST_ACROSS_PAGE]: null })
+    /* Back on this node, its page is read now: the across view did not read it. */
+    if (v === 'node') {
+      acrossRef.current = false
+      void load(1)
+    }
   }
 
   /* This node or every node, first in the toolbar (deviation 33). Drawn only with

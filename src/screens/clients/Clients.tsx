@@ -309,12 +309,17 @@ export function Clients({
   const placed = useRef(false)
   useEffect(() => {
     if (placed.current || top == null) return
+    /* A `Heavy blocking` filter in the link needs the log sample to know its rows:
+       the page is worked out once it is in, not on the unfiltered list (review of
+       2026-11-06). A sample that will not come (no app, no permission, a failure)
+       does not hold it. */
+    if (filter === 'heavy' && entries == null && sample.kind === 'loading') return
     placed.current = true
     if (open == null) return
     const at = sorted.findIndex((r) => r.ip === open)
     if (at >= 0) setPage(Math.floor(at / PER_PAGE) + 1)
     else if (!rows.some((r) => r.ip === open)) setOpen(null)
-  }, [top, sorted, rows, open])
+  }, [top, sorted, rows, open, filter, entries, sample.kind])
 
   /* Wide, the card always shows someone: the bar's client, or the list's first. */
   const selected = open ?? (narrow ? null : (current.rows[0]?.ip ?? null))

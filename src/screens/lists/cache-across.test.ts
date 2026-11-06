@@ -71,3 +71,14 @@ describe('merging the nodes', () => {
     expect(zonesAcross(reads)).toEqual(['api.example.com', 'cdn.example.com'])
   })
 })
+
+describe('readAcross reuses the node the screen has just read', () => {
+  it('asks every other node, and takes the known answer for the chosen one', async () => {
+    const spy = vi.spyOn(api, 'listNode').mockResolvedValue({ kind: 'ok', data: { domain: 'example.com', zones: [], records: [] } } as never)
+    const nodes = [{ name: 'ns1.test', type: 'Primary' }, { name: 'ns2.test', type: 'Secondary' }] as never
+    const out = await readAcross('t', 'example.com', nodes, { node: 'ns1.test', records: [], zones: ['api.example.com'] })
+    expect(spy.mock.calls.map((c) => c[4])).toEqual(['ns2.test'])
+    expect(out[0]).toEqual({ node: 'ns1.test', kind: 'ok', records: [], zones: ['api.example.com'] })
+    spy.mockRestore()
+  })
+})

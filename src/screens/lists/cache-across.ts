@@ -40,14 +40,19 @@ export function recordKey(r: DnsRecord): string {
   return `${r.name.toLowerCase()}\n${r.type}\n${JSON.stringify(r.rData ?? {})}`
 }
 
-/** Reads the domain from every node, once each, with that node's `node`. */
+/** Reads the domain from every node, once each, with that node's `node`. The node
+ *  the screen has just read (`known`) is not asked again: its answer is used. */
 export async function readAcross(
   token: string | null,
   domain: string,
   nodes: readonly ClusterNode[],
+  known?: { node: string; records: DnsRecord[]; zones: string[] },
 ): Promise<NodeCache[]> {
   return Promise.all(
     nodes.map(async (n): Promise<NodeCache> => {
+      if (known != null && known.node !== '' && known.node === n.name) {
+        return { node: n.name, kind: 'ok', records: known.records, zones: known.zones }
+      }
       const outcome = await listNode('cache', token, domain, undefined, n.name)
       if (outcome.kind !== 'ok') {
         return { node: n.name, kind: 'failed', message: noticeFromFailure(outcome).text }

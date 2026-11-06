@@ -629,6 +629,7 @@ export function Lists({
             token={token}
             nodes={nodes}
             node={node}
+            chosen={cacheNode.current}
             nodeTitle={nodeTitle}
             toolbar={cacheSearch}
             band={zoneBand}
