@@ -27,6 +27,12 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
 
 **Flat controls and a calmer chrome.** Design only: every control, text and step is the same.
 
+- **Cache across the cluster:** on a cluster, `All nodes` beside the node selector reads the domain
+  you are browsing from every node and lays the answers side by side: how many records each node
+  holds there, one row per record with each node's time left (or `not cached here`), and filters
+  for the records on every node or on some nodes only. A node that cannot be read says so in its
+  column. Flush Cache and Delete still act on the node chosen, and the view is kept in the address
+  bar (`?nodes=all`).
 - **Buttons are flat**, with no shine or bevel. The neutral one is a step lighter than the panel
   it sits on, so it no longer disappears in a panel header or a dialog footer. Under the pointer the
   primary button no longer grows a grey ring and the destructive one keeps its colour.

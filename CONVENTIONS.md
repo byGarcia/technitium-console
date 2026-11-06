@@ -1679,6 +1679,35 @@ contract and SECURITY.md.
     newest queries, not the period). On a narrow card the codes move to a legend under
     the bands. Its words, OURS, are declared in its header comment.
 
+35. **Cache is compared across the cluster's nodes** (Adrián's decision, 2026-11-06;
+    `screens/lists/CacheAcross.tsx`, `cache-across.ts`). Each node keeps its own cache and
+    upstream shows one at a time (`optCachedZonesClusterNode`, other-zones.js:106). On an
+    initialised cluster, `All nodes` beside Cache's node selector reads the domain on screen
+    with `cache/list` once per node, with that node's `node`, as the screen sends it, again
+    with every answer the screen gets for the chosen node (a move, Refresh, the read after
+    Flush Cache or Delete). It draws a cell per node with how many records it holds at the
+    domain (the count Cache's foot already writes, from that node's answer; nothing new is
+    asked for it) and, once, that each node keeps its own cache; one table of the records,
+    merged by name, type and value, with a TTL column per node (the time left as Cache
+    writes it, `Stale` included, or `not cached here`); and three filters with their counts,
+    `All`, `On every node` and `On some nodes only`, measured over the nodes that answered.
+    The zone chips under the domain are those of any node. Its limits, and crossing one is a
+    bug:
+    - **only `cache/list`**, with the domain the chosen node's answer names. A node whose
+      server walked down to another domain (it holds no records at the domain and one child,
+      WebServiceOtherZonesApi.cs:88-120) counts as holding nothing there;
+    - **Flush Cache and Delete are untouched**: they still go to the node chosen in the
+      selector, and the header, the path and the stale strip are still that node's read;
+    - **a node that fails says so**: its cell says `Could not read this node.` with the
+      server's message, its column's header `Not read` and its cells `not read`, never
+      `not cached here`; with no node read the table says it could not read any;
+    - **without a cluster nothing changes**: no switch, no read, and `?nodes=all` in the bar
+      is not acted on. The view is kept in the address bar as `?nodes=all` while it is drawn
+      (`lib/url-state.ts`), and leaves with the screen;
+    - each node wears the series colour of its place in the session's list of nodes
+      (`dashboard/palette.ts`, `nodeToken`), the colour deviation 36 gives its line.
+    Its words, OURS, are declared in the header comment of `CacheAcross.tsx`.
+
 ## Four constraints the server imposes
 
 These are not preferences: break them and the console works in development and

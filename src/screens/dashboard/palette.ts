@@ -47,6 +47,16 @@ export function tokenForLabel(label: string, index: number): string {
   return SEMANTIC[label] ?? CYCLE[index % CYCLE.length] ?? '--ch-1'
 }
 
+/**
+ * A cluster node's colour, by its place in the session's list of nodes (deviations
+ * 35 and 36): the same node wears the same colour in Cache's `All nodes` and in the
+ * Dashboard's Queries compared by node, whose lines `tokenForLabel` paints by the
+ * same position.
+ */
+export function nodeToken(index: number): string {
+  return CYCLE[index % CYCLE.length] ?? '--ch-1'
+}
+
 /*
 No colour fallback here, on purpose. The tokens are always there (`tokens.css`
 goes into the same bundle as this file, through `ThemeProvider`), so a fallback
