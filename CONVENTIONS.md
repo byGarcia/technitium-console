@@ -1510,11 +1510,14 @@ contract and SECURITY.md.
       longer lists Blocking, and `/settings/blocking/` still works: its folder is
       emitted and `route.ts` rewrites it to `/blocking/settings/` (`MOVED_ROUTES`). The
       page needs `Settings.canView`, as the pane did.
-    - **The versions sit where each thing is named**: this console's under its name at
-      the top, the DNS server's domain and version under the account at the foot,
-      each with its `Update` chip when there is one (`app/Versions.tsx`, same checks,
-      same dialogs). The versions card is gone.
-    Its words, all OURS: the five group headings, `Settings` as a Blocking
+    - **The brand and the versions.** At the top, Technitium's maze redrawn in its
+      blue tile (`app/BrandMark.tsx`, the same geometry as `public/img/logo.png`; Login
+      and About keep the original file), `Technitium` with this console's version
+      beside it and `Console` under it, the console's `Update` chip beside that word
+      when there is one. At the foot, above the account, a quiet card with the DNS
+      server's domain and `DNS Server <version>`, its `Update` chip at the line's end
+      (`app/Versions.tsx`: same checks, same dialogs).
+    Its words, all OURS: the five group headings, `Console` under the name, `Settings` as a Blocking
     sub-section, `Blocking › Settings` in the two links that pointed to Settings ›
     Blocking.
 

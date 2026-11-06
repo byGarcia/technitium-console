@@ -122,8 +122,9 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
 - **A sidebar grouped by task:** Monitoring, DNS, Network, Tools and System, with Query Logs and
   View Logs as entries of their own; Blocking, DHCP and Administration unfold their screens in the
   sidebar instead of tabs under the title. Blocking gets a Settings page with the blocking options.
-  The console's version sits under its name, and the server's domain and version under the account,
-  each with its Update mark.
+  The top reads Technitium Console with the console's version, Technitium's mark redrawn in its
+  blue tile; the server's domain and version sit in a card above the account, each with its Update
+  mark.
 - **Every save bar reads the same way:** it floats with a margin above the foot of the window,
   keeps a gap from the card above when at rest, and puts its buttons at the right with Save last.
 - **Administration reads like the rest of the console.** Permissions is one matrix of sections by

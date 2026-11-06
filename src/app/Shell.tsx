@@ -30,17 +30,16 @@ import {
 } from './handoff'
 import styles from './Shell.module.css'
 import { Icon, type IconName } from '../ui/Icon'
-import { publicUrl } from './base'
 import { Menu } from '../ui/Menu'
 import { ThisServerName } from '../ui/ClusterNodeSelect'
 import { FooterLinks } from '../ui/FooterLinks'
 import { Versions } from './Versions'
+import { BrandMark } from './BrandMark'
 import { BlockingMark } from './BlockingMark'
 import { useBlockingMark } from '../screens/blocking/blocking-state'
 import { Confirm } from '../ui/Confirm'
 import { Notifier } from '../ui/Notifier'
 import type { Notice } from '../lib/notice'
-import { COVER_NAME } from '../screens/LoginCover'
 import {
   silenceUpdateNotification,
   unsilenceUpdateNotification,
@@ -357,11 +356,16 @@ export function Shell({
           {({ serverMark, consoleMark }) => (
         <>
         <div className={styles.sbrand}>
-          <img className={styles.markBig} src={publicUrl('img/logo.svg')} alt="" width={28} height={28} />
+          <BrandMark size={30} />
           <span className={styles.brandText}>
-            <span className={styles.brandName}>{COVER_NAME}</span>
-            <span className={styles.brandVer}>
-              <span className={styles.chipVer} aria-label={`Web Console ${__CONSOLE_VERSION__}`}>v{__CONSOLE_VERSION__}</span>
+            <span className={styles.brandLine}>
+              <span className={styles.brandName}>Technitium</span>
+              <span className={styles.chipVer} title="Web Console version">
+                <span className={text.sr}>Web Console </span>v{__CONSOLE_VERSION__}
+              </span>
+            </span>
+            <span className={styles.brandLine}>
+              <span className={styles.brandSub}>Console</span>
               {consoleMark}
             </span>
           </span>
@@ -479,6 +483,16 @@ export function Shell({
           domain heads it because the block is about that server, which is the
           pairing upstream makes in its panel title.
           */}
+          {/* The server the account is signed in to, and the version it runs. */}
+          <div className={styles.server}>
+            <span className={styles.serverName} title={info?.dnsServerDomain}>{info?.dnsServerDomain ?? ''}</span>
+            <span className={styles.serverLine}>
+              <span className={styles.serverVer}>
+                DNS Server <b>{info?.version ?? '—'}</b>
+              </span>
+              {serverMark}
+            </span>
+          </div>
           <Menu label={displayName} text={displayName} anchor="left" asRow>
             {(close) => (
               <>
@@ -537,17 +551,6 @@ export function Shell({
               </>
             )}
           </Menu>
-          {/* The server the account is signed in to, and the version it runs. */}
-          <div className={styles.server}>
-            <span className={styles.serverName} title={info?.dnsServerDomain}>{info?.dnsServerDomain ?? ''}</span>
-            <span className={styles.serverLine}>
-              <span className={styles.serverVer} title="DNS Server version">
-                <span className={text.sr}>DNS Server </span>
-                {info?.version != null ? `v${info.version}` : '—'}
-              </span>
-              {serverMark}
-            </span>
-          </div>
         </div>
         </>
           )}
@@ -576,7 +579,11 @@ export function Shell({
             <Icon name="menu" size={18} />
           </button>
           <span className={styles.topBrand}>
-            <img className={styles.mark} src={publicUrl('img/logo.svg')} alt="" width={22} height={22} /><span className={styles.brandName}>{COVER_NAME}</span>
+            <BrandMark size={26} />
+            <span className={styles.brandText}>
+              <span className={styles.brandName}>Technitium</span>
+              <span className={styles.brandSub}>Console</span>
+            </span>
           </span>
         </header>
 

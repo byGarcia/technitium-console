@@ -416,6 +416,10 @@ before `data-theme` is set and with any value nobody declared.
   is 5.14.
   */
   --side: #131417;
+  /* The side panel's mark (`app/BrandMark.tsx`): Technitium's blue, as a tint, an edge and the walls. */
+  --brand-mark: #7aa6ff;
+  --brand-tint: rgba(102, 153, 255, 0.16);
+  --brand-edge: rgba(122, 166, 255, 0.38);
   --btn: #272b31;
   --btn-hover: #2e3339;
   --btn-line: #383f46;
@@ -661,6 +665,9 @@ wherever the attribute says `light`.
   under the pointer. `--dan-solid` carries white at 5.47:1.
   */
   --side: var(--pan);
+  --brand-mark: #3e74e6;
+  --brand-tint: rgba(62, 116, 230, 0.1);
+  --brand-edge: rgba(62, 116, 230, 0.3);
   --btn: #ffffff;
   --btn-hover: #f5f6f8;
   --btn-line: #c9cdd2;

@@ -4,17 +4,18 @@
 .side { background:var(--side); border-right:1px solid var(--line2); align-self:stretch; position:sticky; top:0; height:100vh; overflow:hidden; display:flex; flex-direction:column; }
 .sbrand { flex:none; display:flex; align-items:center; gap: var(--s-6); padding: 0 var(--s-10); height:60px; border-bottom:1px solid var(--line); font-weight: 600; letter-spacing:-.01em; color:var(--ink); }
 /*
-Technitium's logo, not a "T" in an amber square.
-
-The initial was our own invention: the logo exists, it travels in
-`public/img/logo.png` since the scaffolding and upstream uses it. Replacing
-someone else's product's mark with a letter of our own is exactly what a fork
-must not do.
+Technitium's maze, not a "T" in an amber square: the initial was our own
+invention, and replacing someone else's product's mark with a letter of our own
+is exactly what a fork must not do. Since 2026-11-06 it is the redrawn mark of
+`BrandMark.tsx`, with the same geometry.
 */
-.mark { width:22px; height:22px; flex:none; }
 /* The console's own name, written as the login cover writes it: Plex Mono,
    lower case. The logo beside it stays Technitium's, untouched. */
-.brandName { font-family: var(--font-mono); font-size: var(--t-4); letter-spacing: 0.01em; white-space: nowrap; }
+/* The name in two lines, as the reference dashboards write theirs: Technitium in
+   ink with this console's version beside it, and under it Console, the console's
+   own word, in its amber and in small capitals (2026-11-06). */
+.brandName { font: 650 var(--t-5)/1 var(--font-ui); letter-spacing: -0.01em; white-space: nowrap; color: var(--ink); }
+.brandSub { font: 700 10px/1 var(--font-ui); letter-spacing: 0.14em; text-transform: uppercase; color: var(--acc-ink); }
 /*
 The items sat 1 px from each other with 7 px of vertical padding: the list read
 as a block of text, not as twelve destinations. And there was no separation
@@ -36,22 +37,27 @@ veil, so where you are and where you point never look alike.
 .slist { padding: var(--s-9) var(--s-6); display:flex; flex-direction:column; gap: var(--s-1); flex: 1 1 auto; min-height: 0; overflow-y: auto; scrollbar-width: thin; }
 .group { display:flex; flex-direction:column; gap: var(--s-1); }
 .group + .group { margin-top: var(--s-10); }
-.s { display:flex; text-decoration:none; align-items:center; gap: var(--s-7); padding: var(--s-4) var(--s-7); border-radius: var(--r-2); font:500 var(--t-4)/1.3 var(--font-ui); color:var(--mute); background:none; border:0; cursor:pointer; text-align:left; white-space:nowrap; width:100%; position:relative; transition: background var(--t-fast), color var(--t-fast); }
+.s { display:flex; text-decoration:none; align-items:center; gap: var(--s-7); padding: var(--s-6) var(--s-7); border-radius: var(--r-2); font:500 var(--t-4)/1.3 var(--font-ui); color:var(--mute); background:none; border:0; cursor:pointer; text-align:left; white-space:nowrap; width:100%; position:relative; transition: background var(--t-fast), color var(--t-fast); }
 .s:hover { background:var(--nav-hover); color:var(--ink); }
 .s[data-active='true'],
-.s[data-active='true']:hover { background:var(--nav-active); color:var(--ink); font-weight: 600; }
+.s[data-active='true']:hover { background:var(--nav-active); color:var(--ink); font-weight: 600; box-shadow: inset 0 0 0 1px var(--nav-active-line); }
+.s[data-active='true']::before { content:''; position:absolute; left:0; top: var(--s-5); bottom: var(--s-5); width:3px; border-radius: 0 3px 3px 0; background: var(--acc); }
 .ico { display:inline-flex; flex:none; color: var(--faint); transition: color var(--t-fast); }
 .s:hover .ico { color: var(--ink); }
 .s[data-active='true'] .ico { color: var(--acc-ink); }
 .sub { display:flex; flex-direction:column; gap: var(--s-1); margin: var(--s-1) 0 var(--s-4) calc(var(--s-7) + 16px); }
-.s2 { display:block; text-decoration:none; padding: var(--s-3) var(--s-7); border-radius: var(--r-2); font:400 var(--t-4)/1.3 var(--font-ui); color:var(--mute); background:none; border:0; cursor:pointer; text-align:left; white-space:nowrap; transition: background var(--t-fast), color var(--t-fast); }
+.s2 { display:block; position:relative; text-decoration:none; padding: var(--s-4) var(--s-7); border-radius: var(--r-2); font:400 var(--t-4)/1.3 var(--font-ui); color:var(--mute); background:none; border:0; cursor:pointer; text-align:left; white-space:nowrap; transition: background var(--t-fast), color var(--t-fast); }
 .s2:hover { color:var(--ink); }
-.s2[aria-current='page'] { color:var(--ink); font-weight: 600; background:var(--nav-active); }
+/* The sub-section that is the page carries what the current entry carries: the fill,
+   the thin edge and the amber bar. */
+.s2[aria-current='page'] { color:var(--ink); font-weight: 600; background:var(--nav-active); box-shadow: inset 0 0 0 1px var(--nav-active-line); }
+.s2[aria-current='page']::before { content:''; position:absolute; left:0; top: var(--s-4); bottom: var(--s-4); width:3px; border-radius: 0 3px 3px 0; background: var(--acc); }
 /* A group's heading (2026-11-06): small, quiet, above its entries. */
 .heading { padding: 0 var(--s-7) var(--s-4); font: 650 var(--t-1)/1.2 var(--font-ui); color: var(--faint); letter-spacing: 0.06em; text-transform: uppercase; }
 /* An open section is where you are but not the page: its sub-section is. */
 .s[data-open='true'],
-.s[data-open='true']:hover { background: none; }
+.s[data-open='true']:hover { background: none; box-shadow: none; }
+.s[data-open='true']::before { display: none; }
 .subMark { display: inline-block; width: 6px; height: 6px; margin-left: var(--s-4); border-radius: 50%; background: var(--acc); vertical-align: middle; }
 .main { min-width:0; display:flex; flex-direction:column; min-height:100vh; }
 /*
@@ -193,14 +199,18 @@ seven of eight screens would gain a blank gap.
 .chromeSlot { display: flex; align-items: center; gap: var(--s-6); margin-bottom: var(--s-8); }
 .chromeSlot:empty { display: none; }
 
-/* The console's name with its version under it (2026-11-06). */
-.brandText { display: flex; flex-direction: column; gap: var(--s-2); min-width: 0; }
-.brandVer { display: flex; align-items: center; gap: var(--s-4); }
-.chipVer { font: 500 var(--t-1)/1.4 var(--font-mono); color: var(--faint); }
-.serverVer { font: 400 var(--t-1)/1.4 var(--font-mono); color: var(--faint); white-space: nowrap; }
-.markBig { width: 28px; height: 28px; flex: none; }
-.chipVer { padding: 0 var(--s-3); border: 1px solid var(--line2); border-radius: var(--r-2); }
-/* Under the account: the server it is signed in to and the version it runs. */
-.server { display: flex; flex-direction: column; gap: var(--s-2); min-width: 0; padding: 0 var(--s-5) 0 calc(26px + var(--s-5) * 2); margin-top: calc(var(--s-4) * -1); }
-.serverLine { display: flex; align-items: center; gap: var(--s-4); }
-.serverName { font: 400 var(--t-1)/1.4 var(--font-mono); color: var(--mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.sbrand > svg { flex: none; }
+.brandText { display: flex; flex-direction: column; gap: var(--s-4); min-width: 0; }
+.brandLine { display: flex; align-items: center; gap: var(--s-4); }
+.chipVer { padding: 1px var(--s-3); border: 1px solid var(--line); border-radius: var(--r-2); font: 500 var(--t-1)/1.2 var(--font-mono); color: var(--mute); }
+/*
+The server the account is signed in to (2026-11-06): a quiet card above the
+account, its domain on one line and its version on the next, the Update chip at
+that line's end when there is one. The same pairing upstream makes in its panel
+title, the domain heading what is said about that server.
+*/
+.server { display: flex; flex-direction: column; gap: var(--s-2); min-width: 0; padding: var(--s-5) var(--s-6); border: 1px solid var(--line2); border-radius: var(--r-3); }
+.serverName { font: 500 var(--t-2)/1.3 var(--font-mono); color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.serverLine { display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); min-height: 18px; }
+.serverVer { font: 400 var(--t-1)/1.3 var(--font-ui); color: var(--faint); white-space: nowrap; }
+.serverVer b { font: 500 var(--t-1)/1.3 var(--font-mono); color: var(--mute); }
