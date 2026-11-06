@@ -1,14 +1,9 @@
-/* The bar over the table: the filter, the search, and List / Tree. */
-.bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-5); padding: var(--s-7) var(--s-9); border-bottom: 1px solid var(--line2); }
-.spacer { flex: 1; }
+/* The filter group in the card's toolbar: All, Blocked, Allowed. */
 .filter { display: inline-flex; gap: var(--s-2); }
-.search { width: 220px; }
-.foot { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-5); padding: var(--s-7) var(--s-9); color: var(--mute); }
+/* Import, Export and Flush at the foot's end. */
+.verbs { display: flex; flex-wrap: wrap; gap: var(--s-3); }
 /* The name wraps at its dots only (`ui/DomainName`), never inside a label. */
 .domain { font-family: var(--font-mono); }
-.actions { text-align: right; white-space: nowrap; }
-/* The embedded tree, inset from the panel's edges as the bar above it is. */
-.tree { padding: var(--s-9) var(--s-9) 0; }
 
 /* The rule kind: an icon and a word, not only a colour. */
 .kind { display: inline-flex; align-items: center; gap: var(--s-2); }
@@ -19,7 +14,3 @@ in light the series is tuned against the other ten lines and gives 4.45:1 under
 the row hover, the text tone 5.0:1.
 */
 .allowed { color: var(--ok); }
-
-@media (max-width: 560px) {
-  .search { width: 100%; }
-}

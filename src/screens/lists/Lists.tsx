@@ -1,5 +1,5 @@
 import { ClusterNodeSelect, primaryNodeName } from '../../ui/ClusterNodeSelect'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import {
   deleteDomain,
   deleteCacheNode,
@@ -20,8 +20,7 @@ import { Field, Input, LabeledTextarea } from '../../ui/Field'
 import { SectionHeader } from '../../ui/SectionHeader'
 import { Empty, Loading } from '../../ui/Empty'
 import { StaleData } from '../StaleData'
-import { Tree, ancestors } from './Tree'
-import { Path } from './Path'
+import { ancestors } from './Tree'
 import { Children } from './CacheNav'
 import { ResourceRecords } from './Records'
 import { CacheSummary } from './CacheSummary'
@@ -74,20 +73,12 @@ const CACHE_TYPE = 'type'
 const TITLE: Record<List, string> = { cache: 'Cache', allowed: 'Allowed', blocked: 'Blocked' }
 
 /*
-The second line of the identity band, and it is OURS: upstream says nothing of
-the sort on any of the three. It is here because the three screens are one
-component and, without it, the only thing separating "what the server resolved"
-from "what you decided" is a title.
-
-English, like every other addition of ours on this screen (`Domain`, `No records
-at this node`, `Could not refresh.`), because the console's interface is English:
-upstream's literals set the language and ours follow it.
+Cache's line under its title at the root, OURS: upstream says nothing of the sort.
+It separates "what the server resolved" from the administrator's own lists. Allowed
+and Blocked lost theirs (and the identity band that carried it) on 2026-11-06: they
+are drawn only inside Rules, whose toolbar already says which list is shown.
 */
-const SUBTITLE: Record<List, string> = {
-  cache: 'What the server resolved and stored',
-  allowed: 'Domains the administrator lets through',
-  blocked: 'Domains the administrator blocks',
-}
+const SUBTITLE = 'What the server resolved and stored'
 
 /*
 `importAllowedZones` / `importBlockedZones` (other-zones.js:589-661). The
@@ -202,6 +193,9 @@ export function Lists({
   fieldName,
   onNotice,
   onChanged,
+  toolbarStart,
+  toolbarEnd,
+  footEnd,
 }: {
   list: List
   token: string | null
@@ -241,6 +235,12 @@ export function Lists({
   /** Embedded only: called after a Delete from the tree succeeded, so the host can
    *  read its own view of the list again. */
   onChanged?: () => void
+  /** Allowed and Blocked: the host's controls at the start and the end of the
+   *  card's toolbar (Rules' list and view switches), and in its foot (Rules'
+   *  Import, Export and Flush), so the tree and the host's table are one card. */
+  toolbarStart?: ReactNode
+  toolbarEnd?: ReactNode
+  footEnd?: ReactNode
 }) {
   const [clusterNode, setClusterNode] = useState<string>('')
   /* Read by `load` through a ref, so choosing a node does not rebuild it (and
@@ -511,7 +511,7 @@ export function Lists({
                 ]
           }
           title={domain === '' ? TITLE.cache : nodeTitle}
-          subtitle={domain === '' ? SUBTITLE.cache : undefined}
+          subtitle={domain === '' ? SUBTITLE : undefined}
           titleAction={
             <RowAction icon="refresh" name="Refresh" disabled={loading} onClick={() => navigate(domain)} />
           }
@@ -610,7 +610,7 @@ export function Lists({
                 </div>
               )}
               {typed.length > 0 ? (
-                <ResourceRecords records={typed} withDnssec compact node={domain} />
+                <ResourceRecords records={typed} withDnssec node={domain} />
               ) : (
                 <div className={styles.empty}>
                   <Empty title="No records at this node">
@@ -624,153 +624,134 @@ export function Lists({
           </>
         )
       ) : (
-        <div className={styles.split}>
-          <div className={styles.tree}>
-            <section className={styles.column} aria-label="Domain tree">
-              <div className={styles.browse}>
-                {/* The field is called "Domain" and the button "Browse". Upstream puts
-                    no label here (only the `placeholder`), so this one is an
-                    addition of ours and can be called whatever suits; what it
-                    cannot be called is the same as the button next to it, which
-                    does carry upstream's literal. Embedded under another "Domain"
-                    field, it takes the name the screen gives it. */}
-                <Field label={fieldName ?? 'Domain'}>
-                  {(id) => (
-                    <Input
-                      id={id}
-                      mono
-                      search
-                      placeholder="example.com"
-                      value={field}
-                      onChange={(e) => setField(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') navigate(field)
-                      }}
-                    />
-                  )}
-                </Field>
-                {/* "Browse" and not "Go": it is upstream's literal on all three list
-                    screens (Cache, Allowed and Blocked), and it also says better
-                    what it does: it takes you to that point of the tree, it sends
-                    nothing. */}
-                <Button lead="search" variant="primary" onClick={() => navigate(field)}>
-                  Browse
-                </Button>
-              </div>
-              {/*
-              Still loading is NOT the same as empty, and until 2026-09-07 it was
-              drawn the same: `node` starts null, so the first load showed "0 zones"
-              and an empty tree, the same picture a genuinely empty list shows. It is
-              the same defect that was fixed for the failure state on this very
-              screen, in the state it had not been measured in.
-
-              A first load that FAILED does not come here: it leaves `node` null too,
-              but it sets the notice, and that is what the reader has to see.
-              */}
-              {loading ? (
-                <div className={styles.body}><Loading /></div>
-              ) : (
-                <>
-                  {/* The count lives in the count bar, like the records one: in the
-                      header it looked exactly like a status pill. */}
-                  <div className={styles.count}>
-                    <span>{zones.length === 1 ? '1 zone' : `${zones.length} zones`}</span>
-                  </div>
-                  <div className={styles.body}>
-                    <Tree
-                      domain={domain}
-                      domainIdn={node?.domainIdn}
-                      zones={zones}
-                      onNavigate={navigate}
-                    />
-                  </div>
-                </>
-              )}
-            </section>
-          </div>
-
-          <div className={[styles.records, styles[list]].join(' ')}>
-            <section className={styles.column} aria-label="Records">
-              {/*
-              Cache is what the server resolved and stored; Allowed and Blocked are
-              the administrator's decisions. Three screens, one component, and until
-              this round nothing on them said which was which.
-
-              The icon and the second line are OURS (upstream has neither), and they
-              are the two channels that do not depend on the colour, which is the
-              rule `theme/tokens.css` already applies to itself in the seven
-              conditions of Logs: colour reinforces, it is never the only channel.
-              */}
-              <div className={styles.identity}>
-                <span className={styles.emblem}>
-                  <Icon name={list} size={15} />
-                </span>
-                <span className={styles.identityText}>
-                  <span className={styles.identityTitle}>{TITLE[list]}</span>
-                  <span className={styles.identitySub}>{SUBTITLE[list]}</span>
-                </span>
-              </div>
-
-              <Path domain={domain} label={nodeTitle} />
-
-              {/*
-              No count bar while the request is in flight. Saying "0 records at
-              <ROOT>" with nothing loaded yet is exactly the picture an empty list
-              shows, which is the defect the tree had fixed on 2026-09-07 and this
-              side still had.
-              */}
-              {!loading && (
-                <div className={styles.count}>
-                  <span>
-                    {records.length} records at <span className={styles.mono}>{nodeTitle}</span>
-                  </span>
-                  <div className={styles.countActs}>
-                    <Button lead="refresh" size="sm" onClick={() => navigate(domain)}>
-                      Refresh
-                    </Button>
-                    {/*
-                    `variant="danger"`, which it did not carry: deleting a node is
-                    destructive and was drawn as a plain grey button, while `Flush`
-                    next to it was already the filled red one. Same primitive, two
-                    weights: the row-sized danger is red text that fills on hover,
-                    precisely so a destructive verb in a bar does not shout.
-                    */}
-                    {mayDelete && (
-                      <PermissionButton
-                        size="sm"
-                        variant="danger"
-                        disabled={busy}
-                        permission={canDelete ? undefined : `${TITLE[list]}.canDelete`}
-                        onClick={askDeleteDomain}
-                      >
-                        Delete
-                      </PermissionButton>
+        /*
+        Allowed and Blocked, inside Blocking's Rules (2026-11-06, deviation 2): laid out
+        as Cache's node is, in ONE card. The host's controls and the Browse field in the
+        toolbar; the node as a trail under it (every step but the last opens that
+        ancestor with `direction=up`, upstream's `[up]`), with Refresh and Delete at its
+        end; the zones under the node as chips; the node's records one line each, the
+        rest under Details; the count and the host's own verbs in the foot. The tree
+        column and the identity band are gone: the host's toolbar says which list it is.
+        Every call is the one the tree made.
+        */
+        <DataTable
+          toolbar={
+            <>
+              {toolbarStart}
+              <Grow>
+                <div className={styles.search}>
+                  <Field inline label={fieldName ?? 'Domain'}>
+                    {(id) => (
+                      <Input
+                        id={id}
+                        mono
+                        search
+                        placeholder="example.com"
+                        value={field}
+                        onChange={(e) => setField(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') navigate(field)
+                        }}
+                      />
                     )}
-                  </div>
+                  </Field>
+                  {/* "Browse" and not "Go": upstream's literal on all three list
+                      screens. It takes you to that point of the tree; it sends nothing. */}
+                  <Button lead="search" variant="primary" onClick={() => navigate(field)}>
+                    Browse
+                  </Button>
+                </div>
+              </Grow>
+              {toolbarEnd}
+            </>
+          }
+          foot={
+            loading && footEnd == null ? undefined : (
+              <DataFoot
+                count={
+                  loading ? null : (
+                    <>
+                      {records.length} records at <span className={styles.mono}>{nodeTitle}</span>
+                    </>
+                  )
+                }
+              >
+                {footEnd}
+              </DataFoot>
+            )
+          }
+        >
+          {loading ? (
+            <div className={styles.empty}><Loading /></div>
+          ) : (
+            <>
+              <div className={styles.trailBand}>
+                <nav className={styles.trail} aria-label="Node">
+                  {domain === '' ? (
+                    <span className={styles.trailHere} aria-current="page">&lt;ROOT&gt;</span>
+                  ) : (
+                    <>
+                      {['', ...ancestors(domain)].map((a) => (
+                        <span key={a} className={styles.trailStep}>
+                          <button type="button" className={styles.trailUp} onClick={() => navigate(a, true)}>
+                            {a === '' ? '<ROOT>' : <DomainName name={a} />}
+                          </button>
+                          <Icon name="chevronRight" size={12} className={styles.trailSep} />
+                        </span>
+                      ))}
+                      <span className={styles.trailHere} aria-current="page"><DomainName name={nodeTitle} /></span>
+                    </>
+                  )}
+                </nav>
+                <div className={styles.trailActs}>
+                  <RowAction icon="refresh" name="Refresh" onClick={() => navigate(domain)} />
+                  {/* Danger, row-sized: red text that fills on hover. It deletes the
+                      node shown, so it sits at the end of the node's own line. */}
+                  {mayDelete && (
+                    <PermissionButton
+                      size="sm"
+                      lead="trash"
+                      variant="danger"
+                      disabled={busy}
+                      permission={canDelete ? undefined : `${TITLE[list]}.canDelete`}
+                      onClick={askDeleteDomain}
+                    >
+                      Delete
+                    </PermissionButton>
+                  )}
+                </div>
+              </div>
+              {zones.length > 0 && (
+                <div className={styles.children}>
+                  <span className={styles.childrenCount}>
+                    {zones.length === 1 ? '1 zone' : `${zones.length} zones`}
+                  </span>
+                  <Children
+                    domain={domain}
+                    zones={allChildren || zones.length <= CHILDREN_SHOWN ? zones : zones.slice(0, CHILDREN_SHOWN)}
+                    onNavigate={navigate}
+                  />
+                  {zones.length > CHILDREN_SHOWN && (
+                    <button type="button" className={styles.showIt} onClick={() => setAllChildren((v) => !v)}>
+                      {allChildren ? 'Show fewer' : `Show all ${zones.length}`}
+                    </button>
+                  )}
                 </div>
               )}
-
-              <div className={styles.bodyFlush}>
-                {loading ? (
-                  /* The tree's placeholder above already announced this wait: two
-                     `role="status"` for one request read it out twice. */
-                  <div className={styles.empty}><Loading announce={false} /></div>
-                ) : records.length > 0 ? (
-                  <ResourceRecords records={records} withDnssec={false} node={domain} />
-                ) : (
-                  <div className={styles.empty}>
-                    <Empty title="No records at this node">
-                      {zones.length > 0
-                        ? 'This node only contains sub-domains. Open one in the tree to see its records.'
-                        : 'This node has no records and no sub-domains.'}
-                    </Empty>
-                  </div>
-                )}
-              </div>
-            </section>
-          </div>
-        </div>
-
+              {records.length > 0 ? (
+                <ResourceRecords records={records} withDnssec={false} node={domain} />
+              ) : (
+                <div className={styles.empty}>
+                  <Empty title="No records at this node">
+                    {zones.length > 0
+                      ? 'This node only contains sub-domains. Open one to see its records.'
+                      : 'This node has no records and no sub-domains.'}
+                  </Empty>
+                </div>
+              )}
+            </>
+          )}
+        </DataTable>
       )}
 
       <Confirm

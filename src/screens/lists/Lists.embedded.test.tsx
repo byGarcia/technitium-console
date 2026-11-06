@@ -29,7 +29,7 @@ describe('Lists embedded', () => {
   it('draws no header and no node selector', async () => {
     vi.spyOn(api, 'listNode').mockResolvedValue({ kind: 'ok', data: { domain: '', zones: [], records: [] } })
     render(<Lists list="blocked" token="T" nodes={NODES} clusterInitialised embedded />)
-    await screen.findByText('0 zones')
+    await screen.findByText(/0 records at/)
     expect(screen.queryByRole('heading', { name: 'Blocked' })).toBeNull()
     expect(screen.queryByLabelText('Cluster Node')).toBeNull()
   })
@@ -56,14 +56,14 @@ describe('Lists embedded', () => {
   it('its first read comes from the root of the connected node by default', async () => {
     const list = vi.spyOn(api, 'listNode').mockResolvedValue({ kind: 'ok', data: { domain: '', zones: [], records: [] } })
     render(<Lists list="blocked" token="T" nodes={NODES} clusterInitialised embedded />)
-    await screen.findByText('0 zones')
+    await screen.findByText(/0 records at/)
     expect(list).toHaveBeenCalledWith('blocked', 'T', '', undefined, '')
   })
 
   it('with initialFromPrimary its first read comes from the primary node', async () => {
     const list = vi.spyOn(api, 'listNode').mockResolvedValue({ kind: 'ok', data: { domain: '', zones: [], records: [] } })
     render(<Lists list="blocked" token="T" nodes={NODES} clusterInitialised embedded initialFromPrimary />)
-    await screen.findByText('0 zones')
+    await screen.findByText(/0 records at/)
     expect(list).toHaveBeenCalledTimes(1)
     expect(list).toHaveBeenCalledWith('blocked', 'T', '', undefined, 'dev.cluster.test')
   })
@@ -111,7 +111,7 @@ describe('Lists embedded', () => {
   it('the tree field shows the name it is given as its visible label', async () => {
     vi.spyOn(api, 'listNode').mockResolvedValue({ kind: 'ok', data: { domain: '', zones: [], records: [] } })
     render(<Lists list="blocked" token="T" embedded fieldName="Browse domain" />)
-    await screen.findByText('0 zones')
+    await screen.findByText(/0 records at/)
     expect(screen.getByRole('textbox', { name: 'Browse domain' })).toBeInTheDocument()
     expect(screen.getByText('Browse domain', { selector: 'label' })).toBeInTheDocument()
     expect(screen.queryByText('Domain', { selector: 'label' })).not.toBeInTheDocument()
