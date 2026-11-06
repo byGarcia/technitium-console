@@ -1394,8 +1394,17 @@ contract and SECURITY.md.
       and client ID (SSO) or the server (LDAP) are empty, warn-toned only when enabled.
       Their forms take Settings' rows (deviation 22) in two columns on a wide screen: the
       connection at the left, what follows from it (sign-up, scopes, the group map) at the
-      right, the notes under both; one column under 1180 px. SSO drops its section index:
-      a row of links that only scroll looked like a second row of tabs.
+      right; one column under 1180 px (`ConfigParts.tsx`). A switch stands on its own line
+      with its label and help; the fields go two across, label over control over help.
+      Upstream's `Warning!` and `Note!` (shown at the end of the page in its order) sit
+      in the block they speak about as compact lines, the warnings whole before the
+      controls, each note folded to its first line with `more`: SSO's connection notes
+      (the callback path, when SSO is enabled, internal resolution, the reverse proxy,
+      the Web Service restart), sign-up's (names synced), Scopes' (the email username),
+      Group Map's; LDAP's likewise. SSO shows its Redirect URI, the value the first note
+      gives, as a line with Copy. SSO drops its section index: a row of links that only
+      scroll looked like a second row of tabs. Their words, OURS: `Redirect URI`, `Copy`,
+      `Copied`.
     - **Cluster's nodes are a data table**: the node picker in its toolbar, `Total Nodes: N`
       in its foot.
     Its words, all OURS: `V`, `M`, `D` and the legend, `None`, `Search` and its three

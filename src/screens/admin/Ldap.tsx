@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Block, Note, Notices, Radios, Warning } from '../../ui/PanelForm'
+import { Block, Radios } from '../../ui/PanelForm'
 import { Button } from '../../ui/Button'
 import { Input, Select } from '../../ui/Field'
 import { SectionHeader } from '../../ui/SectionHeader'
@@ -8,7 +8,6 @@ import { Loading } from '../../ui/Empty'
 import { RowAction } from '../../ui/Table'
 import { ConfigState } from './ListParts'
 import { ldapConfigured } from './config-state'
-import { GroupRow, Row } from '../../ui/Form'
 import { EditableTable } from '../../ui/EditableTable'
 import {
   getLdapConfig,
@@ -24,8 +23,8 @@ import {
   adminStyles as styles,
   type Notice,
 } from './parts'
-import frm from '../../ui/Form.module.css'
 import adm from './Admin.module.css'
+import { Callout, Callouts, Fields, Stacked, StackedGroup, Switch } from './ConfigParts'
 
 /*
 `refreshAdminLdapConfig`, `loadAdminLdapConfig`, `addAdminLdapGroupMapRow`,
@@ -309,25 +308,20 @@ export function Ldap({ tabs, token, onNotice }: Props) {
       <div className={adm.split}>
         <div className={adm.main}>
         <div id={SECTIONS[0].id}>
-          <Block
-            title="LDAP Authentication"
-            notices={
-              <>
-                <Warning>
-                  The Ignore SSL Certificate Errors option is not secure and should be used only for
-                  testing purposes.
-                </Warning>
-                <Warning>
-                  Any DNS related failure may cause LDAP authentication to fail to work making it
-                  impossible for LDAP users to log in to fix the DNS issue due to circular
-                  dependency. Thus, it is recommended to maintain a local administrator user account
-                  for such scenarios.
-                </Warning>
-              </>
-            }
-          >
-            <div className={frm.row}>
-              <div />
+          <Block title="LDAP Authentication">
+            <Callouts>
+              <Callout tone="warn">
+                The Ignore SSL Certificate Errors option is not secure and should be used only for
+                testing purposes.
+              </Callout>
+              <Callout tone="warn">
+                Any DNS related failure may cause LDAP authentication to fail to work making it
+                impossible for LDAP users to log in to fix the DNS issue due to circular
+                dependency. Thus, it is recommended to maintain a local administrator user account
+                for such scenarios.
+              </Callout>
+            </Callouts>
+            <Switch>
               <Check
                 toggle
                 label="Enable LDAP Authentication"
@@ -335,20 +329,18 @@ export function Ldap({ tabs, token, onNotice }: Props) {
                 onChange={setEnabled}
                 help="Enable to allow users from an LDAP directory (Active Directory, OpenLDAP, etc.) to log in using their directory credentials."
               />
-            </div>
-
-            <LdapField
-              label="LDAP Server"
-              help="Domain name or IP address of the LDAP server."
-              value={server}
-              placeholder="ldap.example.com"
-              maxLength={255}
-              onChange={setServer}
-            />
-
-            <Row label="Port">
-              {(id) => (
-                <div className={styles.ctlLine}>
+            </Switch>
+            <Fields>
+              <LdapField
+                label="LDAP Server"
+                help="Domain name or IP address of the LDAP server."
+                value={server}
+                placeholder="ldap.example.com"
+                maxLength={255}
+                onChange={setServer}
+              />
+              <Stacked label="Port" help="(default 389 for plain LDAP/StartTLS; default 636 for LDAPS)">
+                {(id) => (
                   <Input
                     id={id}
                     type="number"
@@ -357,26 +349,20 @@ export function Ldap({ tabs, token, onNotice }: Props) {
                     value={port}
                     placeholder="389"
                     onChange={(e) => setPort(e.target.value)}
-                    style={{ width: 100 }}
+                    style={{ width: 120 }}
                   />
-                  <span className={styles.suffix}>
-                    (default 389 for plain LDAP/StartTLS; default 636 for LDAPS)
-                  </span>
-                </div>
-              )}
-            </Row>
-
-            <GroupRow label="SSL Options">
-              <Radios
-                name="rdLdapSslOption"
-                value={sslOption}
-                options={SSL_OPTIONS}
-                onChange={chooseSsl}
-              />
-            </GroupRow>
-
-            <div className={frm.row}>
-              <div />
+                )}
+              </Stacked>
+              <StackedGroup label="SSL Options" wide>
+                <Radios
+                  name="rdLdapSslOption"
+                  value={sslOption}
+                  options={SSL_OPTIONS}
+                  onChange={chooseSsl}
+                />
+              </StackedGroup>
+            </Fields>
+            <Switch>
               <Check
                 toggle
                 label="Ignore SSL Certificate Errors"
@@ -384,62 +370,86 @@ export function Ldap({ tabs, token, onNotice }: Props) {
                 disabled={ignoreSslDisabled}
                 onChange={setIgnoreSsl}
               />
-            </div>
-
-            <LdapField
-              label="Bind Username"
-              help="The Distinguished Name (DN) or User Principal Name (UPN) of a service account used to search the directory. Leave empty for anonymous bind."
-              value={bindUsername}
-              placeholder="CN=svcDNS,OU=ServiceAccounts,DC=example,DC=com"
-              maxLength={512}
-              onChange={setBindUsername}
-            />
-            <LdapField
-              label="Bind Password"
-              help="The password for the above bind service account."
-              value={bindPassword}
-              placeholder="service account password"
-              type="password"
-              maxLength={255}
-              onChange={setBindPassword}
-            />
-            <LdapField
-              label="Search Base"
-              help="The base Distinguished Name (DN) used to search for user entries."
-              value={searchBase}
-              placeholder="DC=example,DC=com"
-              maxLength={512}
-              onChange={setSearchBase}
-            />
-            <LdapField
-              label="User Search Filter"
-              help={
-                <>
-                  The LDAP search filter used to find the user. Use <code>{'{0}'}</code> as a
-                  placeholder for the username. Use default <code>{'(sAMAccountName={0})'}</code> for
-                  Active Directory and <code>{'(uid={0})'}</code> for OpenLDAP. Use{' '}
-                  <code>{'(userPrincipalName={0})'}</code> if usernames in the directory are stored
-                  under &apos;userPrincipalName&apos; attribute.
-                </>
-              }
-              value={userSearchFilter}
-              placeholder="(sAMAccountName={0})"
-              maxLength={512}
-              onChange={setUserSearchFilter}
-            />
-            <LdapField
-              label="Group Attribute"
-              help={
-                <>
-                  The user attribute listing group memberships. Use default <code>memberOf</code> for
-                  Active Directory.
-                </>
-              }
-              value={groupAttribute}
-              placeholder="memberOf"
-              maxLength={255}
-              onChange={setGroupAttribute}
-            />
+            </Switch>
+            <Fields>
+              <LdapField
+                label="Bind Username"
+                help="The Distinguished Name (DN) or User Principal Name (UPN) of a service account used to search the directory. Leave empty for anonymous bind."
+                value={bindUsername}
+                placeholder="CN=svcDNS,OU=ServiceAccounts,DC=example,DC=com"
+                maxLength={512}
+                onChange={setBindUsername}
+              />
+              <LdapField
+                label="Bind Password"
+                help="The password for the above bind service account."
+                value={bindPassword}
+                placeholder="service account password"
+                type="password"
+                maxLength={255}
+                onChange={setBindPassword}
+              />
+              <LdapField
+                label="Search Base"
+                help="The base Distinguished Name (DN) used to search for user entries."
+                value={searchBase}
+                placeholder="DC=example,DC=com"
+                maxLength={512}
+                onChange={setSearchBase}
+              />
+              <LdapField
+                wide
+                label="User Search Filter"
+                help={
+                  <>
+                    The LDAP search filter used to find the user. Use <code>{'{0}'}</code> as a
+                    placeholder for the username. Use default <code>{'(sAMAccountName={0})'}</code> for
+                    Active Directory and <code>{'(uid={0})'}</code> for OpenLDAP. Use{' '}
+                    <code>{'(userPrincipalName={0})'}</code> if usernames in the directory are stored
+                    under &apos;userPrincipalName&apos; attribute.
+                  </>
+                }
+                value={userSearchFilter}
+                placeholder="(sAMAccountName={0})"
+                maxLength={512}
+                onChange={setUserSearchFilter}
+              />
+              <LdapField
+                label="Group Attribute"
+                help={
+                  <>
+                    The user attribute listing group memberships. Use default <code>memberOf</code> for
+                    Active Directory.
+                  </>
+                }
+                value={groupAttribute}
+                placeholder="memberOf"
+                maxLength={255}
+                onChange={setGroupAttribute}
+              />
+            </Fields>
+            <Callouts>
+              <Callout tone="note">
+                LDAP authentication works by binding to the directory with a service account to
+                locate the user, then re-binding as that user to validate credentials.
+              </Callout>
+              <Callout tone="note">
+                LDAP authentication will work only when all of the required parameters are
+                configured correctly. If it does not work for any reason, check the Logs section on
+                the panel and search for related error logs.
+              </Callout>
+              <Callout tone="note">
+                On Windows, the domain name used for LDAP Server above will be resolved by the DNS
+                Server internally only. Thus, make sure that the DNS Server is able to resolve the
+                configured domain name. Adding hosts file entries in the host OS will not work.
+              </Callout>
+              <Callout tone="note">
+                On Linux, the domain name used for LDAP Server above will be resolved using the
+                system&apos;s DNS server. Thus, make sure that <code>/etc/resolv.conf</code> is
+                configured with <code>127.0.0.1</code> loopback address to ensure that the resolution
+                is done using this DNS Server.
+              </Callout>
+            </Callouts>
           </Block>
         </div>
 
@@ -447,9 +457,7 @@ export function Ldap({ tabs, token, onNotice }: Props) {
         <div className={adm.side}>
         <div id={SECTIONS[1].id}>
           <Block title="LDAP User Sign Up">
-            <div className={frm.row}>
-              <div />
-              <div className={styles.group}>
+            <Switch>
                 <Check
                   toggle
                   label="Allow New User Sign Up"
@@ -457,7 +465,9 @@ export function Ldap({ tabs, token, onNotice }: Props) {
                   onChange={setAllowSignup}
                   help="Enable to allow automatically provisioning of user accounts for new users signing in via LDAP. Keep this option disabled if you do not expect new LDAP users to sign up."
                 />
-                {/* auth.js:218-222 and 2434: off while sign-up is off. */}
+            </Switch>
+            {/* auth.js:218-222 and 2434: off while sign-up is off. */}
+            <Switch>
                 <Check
                   toggle
                   label="Allow Sign Up Only For Mapped Users"
@@ -474,14 +484,28 @@ export function Ldap({ tabs, token, onNotice }: Props) {
                     </>
                   }
                 />
-              </div>
-            </div>
+            </Switch>
+            <Callouts>
+              <Callout tone="note">
+                A LDAP user wont be able to sign up if it&apos;s username is already taken by an
+                existing local or SSO user.
+              </Callout>
+              <Callout tone="note">
+                LDAP users can enable Two-Factor Authentication (2FA) such that credentials are
+                validated by the directory service while 2FA is validated by the DNS Server on each
+                login.
+              </Callout>
+              <Callout tone="note">
+                The LDAP user&apos;s Display Name is managed via the directory service and it is
+                automatically synced each time a user logs in.
+              </Callout>
+            </Callouts>
           </Block>
         </div>
 
         <div id={SECTIONS[2].id}>
           <Block title="Group Map (Optional)">
-            <div className={styles.list}>
+            <div className={`${styles.list} ${adm.listPad}`}>
               <EditableTable
                 className={styles.edit}
                 header={
@@ -531,6 +555,7 @@ export function Ldap({ tabs, token, onNotice }: Props) {
                     <td className={styles.tdel}>
                       <Button
                         variant="danger"
+                        size="sm"
                         onClick={() => setGroupMap((list) => list.filter((_, j) => j !== i))}
                       >
                         Delete
@@ -559,58 +584,20 @@ export function Ldap({ tabs, token, onNotice }: Props) {
                 synced to the mapped Local Groups each time they log in.
               </div>
             </div>
+            <Callouts>
+              <Callout tone="note">
+                When Group Map is configured, the LDAP user&apos;s group membership cannot be managed
+                locally and any group membership changes must be configured at the directory service
+                itself. LDAP users need to relogin so that any group membership changes made at the
+                directory service are applied to their user accounts. The Group Map thus allows
+                managing user access centrally via the directory service. Keep the Group Map empty if
+                group membership management for LDAP users is required to be managed via the DNS
+                Server itself.
+              </Callout>
+            </Callouts>
           </Block>
         </div>
 
-        </div>
-        <div className={adm.span}>
-        {/* The seven `Note!`, after the controls, in an untitled block as SSO's. */}
-        <Block>
-          <Notices>
-            <Note>
-              LDAP authentication works by binding to the directory with a service account to locate
-              the user, then re-binding as that user to validate credentials.
-            </Note>
-            <Note>
-              LDAP authentication will work only when all of the required parameters are configured
-              correctly. If it does not work for any reason, check the Logs section on the panel and
-              search for related error logs.
-            </Note>
-            <Note>
-              A LDAP user wont be able to sign up if it&apos;s username is already taken by an
-              existing local or SSO user.
-            </Note>
-            <Note>
-              LDAP users can enable Two-Factor Authentication (2FA) such that credentials are
-              validated by the directory service while 2FA is validated by the DNS Server on each
-              login.
-            </Note>
-            <Note>
-              The LDAP user&apos;s Display Name is managed via the directory service and it is
-              automatically synced each time a user logs in.
-            </Note>
-            <Note>
-              When Group Map is configured, the LDAP user&apos;s group membership cannot be managed
-              locally and any group membership changes must be configured at the directory service
-              itself. LDAP users need to relogin so that any group membership changes made at the
-              directory service are applied to their user accounts. The Group Map thus allows
-              managing user access centrally via the directory service. Keep the Group Map empty if
-              group membership management for LDAP users is required to be managed via the DNS
-              Server itself.
-            </Note>
-            <Note>
-              On Windows, the domain name used for LDAP Server above will be resolved by the DNS
-              Server internally only. Thus, make sure that the DNS Server is able to resolve the
-              configured domain name. Adding hosts file entries in the host OS will not work.
-            </Note>
-            <Note>
-              On Linux, the domain name used for LDAP Server above will be resolved using the
-              system&apos;s DNS server. Thus, make sure that <code>/etc/resolv.conf</code> is
-              configured with <code>127.0.0.1</code> loopback address to ensure that the resolution
-              is done using this DNS Server.
-            </Note>
-          </Notices>
-        </Block>
         </div>
       </div>
 
@@ -649,8 +636,11 @@ function LdapField({
   placeholder,
   type,
   maxLength,
+  wide,
   onChange,
 }: {
+  /** Takes the whole row (a long filter and its long help). */
+  wide?: boolean
   label: string
   help: ReactNode
   value: string
@@ -660,7 +650,7 @@ function LdapField({
   onChange: (v: string) => void
 }) {
   return (
-    <Row label={label} help={help}>
+    <Stacked label={label} help={help} wide={wide}>
       {(id) => (
         <Input
           id={id}
@@ -669,9 +659,8 @@ function LdapField({
           placeholder={placeholder}
           maxLength={maxLength}
           onChange={(e) => onChange(e.target.value)}
-          style={{ width: '100%', maxWidth: 420 }}
         />
       )}
-    </Row>
+    </Stacked>
   )
 }

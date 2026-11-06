@@ -43,7 +43,8 @@ describe('SSO: load', () => {
       server()
       render(<Sso {...props} />)
       await screen.findByLabelText('Scope Name 1')
-      expect(screen.getByText(`${window.location.origin}/dns/sso/callback`)).toBeInTheDocument()
+      // In the first note and in the Redirect URI to copy (deviation 23).
+      expect(screen.getAllByText(`${window.location.origin}/dns/sso/callback`).length).toBeGreaterThanOrEqual(1)
     } finally {
       meta.remove()
       window.history.replaceState(null, '', '/')
@@ -349,11 +350,11 @@ describe('SSO: dense form', () => {
     expect(screen.getAllByText('Single Sign-On (SSO)').filter((e) => e.closest('nav') == null)).toHaveLength(1)
   })
 
-  it('the two `Warning!` come BEFORE the first control, and the `Note!` after', async () => {
+  it('the two `Warning!` come BEFORE the first control, and the eight `Note!` after, each in its block', async () => {
     server()
     render(<Sso {...props} />)
     const first = await screen.findByLabelText('Enable Single Sign-On (SSO)')
-    const alerts = [...document.querySelectorAll('[role="alert"]')]
+    const alerts = [...document.querySelectorAll('[role="note"]')]
     const warnings = alerts.filter((a) => /Warning!/.test(a.textContent ?? ''))
     const notes = alerts.filter((a) => /Note!/.test(a.textContent ?? ''))
     expect(warnings).toHaveLength(2)

@@ -81,3 +81,6 @@ column is narrow.
   .span { grid-column: 1 / -1; }
 }
 .main, .side, .span { display: flex; flex-direction: column; gap: var(--gap-block); min-width: 0; }
+
+/* An editable list inside an SSO or LDAP block, inset as the fields are. */
+.listPad { padding: var(--s-8) var(--s-9); }

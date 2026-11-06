@@ -437,14 +437,14 @@ describe('LDAP: Test Connection', () => {
 })
 
 describe('LDAP: the dense form', () => {
-  it('is three blocks titled with upstream labels, two `Warning!` before and eight `Note!` after', async () => {
+  it('is three blocks titled with upstream labels, two `Warning!` before and eight `Note!` after, each in its block', async () => {
     server()
     render(<Ldap {...props} />)
     const first = await screen.findByLabelText('Enable LDAP Authentication')
     for (const title of ['LDAP Authentication', 'LDAP User Sign Up', 'Group Map (Optional)']) {
       expect(screen.getByRole('heading', { name: title })).toBeInTheDocument()
     }
-    const alerts = [...document.querySelectorAll('[role="alert"]')]
+    const alerts = [...document.querySelectorAll('[role="note"]')]
     const warnings = alerts.filter((a) => /Warning!/.test(a.textContent ?? ''))
     const notes = alerts.filter((a) => /Note!/.test(a.textContent ?? ''))
     expect(warnings).toHaveLength(2)
