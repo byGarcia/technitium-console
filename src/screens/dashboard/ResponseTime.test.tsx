@@ -34,16 +34,19 @@ describe('the Dashboard Response Time card', () => {
     expect(read).toHaveBeenCalledWith('t', { name: 'Query Logs (Sqlite)', classPath: 'QueryLogsSqlite.App' }, expect.objectContaining({ node: 'ns2', limit: 1000 }))
     expect(screen.getByText('12.0 ms')).toBeInTheDocument()
     expect(screen.getByText('150 ms')).toBeInTheDocument()
-    expect(screen.getByText('33.3%')).toBeInTheDocument()
-    expect(screen.getByText('3 timed')).toBeInTheDocument()
-    expect(screen.getByText('In the last 4 queries')).toBeInTheDocument()
+    expect(screen.getByText('33%')).toBeInTheDocument()
+    // How many answers it stands on comes first, against the sample.
+    expect(screen.getByText((_, el) => el?.textContent === '3 of the last 4 queries went upstream')).toBeInTheDocument()
+    // Under 20 timed answers the 95th percentile is the slowest one, and says so.
+    expect(screen.getByText('Slowest')).toBeInTheDocument()
+    expect(screen.queryByText('95th percentile')).toBeNull()
   })
 
   it('says whose log it read on the cluster aggregate', async () => {
     withApp()
     vi.spyOn(logs, 'newestQueries').mockResolvedValue({ kind: 'ok', data: [entry(5)] } as never)
     render(<Card token="t" node="" canView refreshOn={1} where=" on ns1.example" />)
-    expect(await screen.findByText('In the last query on ns1.example')).toBeInTheDocument()
+    expect(await screen.findByText((_, el) => el?.textContent === '1 of the last 1 query went upstream on ns1.example')).toBeInTheDocument()
   })
 
   it('is locked without Logs: View, and reads nothing', () => {
@@ -61,6 +64,22 @@ describe('the Dashboard Response Time card', () => {
     withApp()
     vi.spyOn(logs, 'newestQueries').mockResolvedValue({ kind: 'ok', data: [entry(), entry()] } as never)
     render(<Card token="t" node="" canView refreshOn={1} />)
-    expect(await screen.findByText('No timed queries in the latest 2.')).toBeInTheDocument()
+    expect(await screen.findByText('No query in the latest 2 went upstream.')).toBeInTheDocument()
+  })
+
+  it('names the 95th percentile once there are 20 timed answers, and writes shares in whole percents', async () => {
+    withApp()
+    vi.spyOn(logs, 'newestQueries').mockResolvedValue({ kind: 'ok', data: Array.from({ length: 20 }, (_, i) => entry(i + 1)) } as never)
+    render(<Card token="t" node="" canView refreshOn={1} />)
+    expect(await screen.findByText('95th percentile')).toBeInTheDocument()
+    expect(screen.queryByText('Slowest')).toBeNull()
+    expect(screen.getByText('0%')).toBeInTheDocument()
+  })
+})
+
+describe('wholePercent', () => {
+  it('keeps 0 and 100 for exactly none and all', async () => {
+    const { wholePercent } = await import('./response-time')
+    expect([0, 0.001, 0.004, 0.333, 0.996, 1].map(wholePercent)).toEqual(['0%', '<1%', '<1%', '33%', '>99%', '100%'])
   })
 })

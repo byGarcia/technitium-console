@@ -64,3 +64,16 @@ export function ms(v: number | null): string {
   if (v >= 1000) return `${(v / 1000).toFixed(1)} s`
   return v < 100 ? `${v.toFixed(1)} ms` : `${Math.round(v)} ms`
 }
+
+/** Under this many timed answers the 95th percentile is the slowest one, and is named so. */
+export const FEW = 20
+
+/** A share in whole percents: `<1%` and `>99%` at the edges, so 0 and 100 mean exactly that. */
+export function wholePercent(share: number): string {
+  if (share <= 0) return '0%'
+  if (share >= 1) return '100%'
+  const p = Math.round(share * 100)
+  if (p < 1) return '<1%'
+  if (p > 99) return '>99%'
+  return `${p}%`
+}

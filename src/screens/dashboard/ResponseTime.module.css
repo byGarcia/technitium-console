@@ -3,12 +3,16 @@ Response Time (deviation 28): the three figures at the left, the histogram at th
 right, one row; stacked under 760 px of card. The bars are the Total series'
 colour, the slow tail (over 100 ms) the warning one: amber only where it is slow.
 */
-.panel { container-type: inline-size; min-width: 0; }
+/* A column, so beside a taller card (From query to answer) the body takes the
+   height and the histogram's bars grow into it instead of leaving a hole. */
+.panel { container-type: inline-size; min-width: 0; display: flex; flex-direction: column; }
+.panel > :last-child { flex: 1; display: flex; flex-direction: column; }
 
 .caption { font-size: var(--t-2); color: var(--faint); }
+.caption b { font-weight: 600; color: var(--mute); }
 
-.grid { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 2fr); gap: var(--s-11); align-items: center; }
-@container (max-width: 760px) { .grid { grid-template-columns: minmax(0, 1fr); gap: var(--s-9); } }
+.grid { flex: 1; display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 2fr); gap: var(--s-11); align-items: stretch; }
+@container (max-width: 760px) { .grid { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr; gap: var(--s-9); } }
 
 .lead { margin: 0 0 var(--s-9); font-size: var(--t-3); line-height: 1.45; color: var(--mute); max-width: 46ch; }
 
@@ -18,15 +22,15 @@ colour, the slow tail (over 100 ms) the warning one: amber only where it is slow
 .facts dd { margin: var(--s-2) 0 0; font: 650 var(--t-6)/1.15 var(--font-mono); color: var(--ink); white-space: nowrap; }
 .facts dd[data-slow] { color: var(--warn); }
 
-.note { margin: var(--s-6) 0 0; font-size: var(--t-2); color: var(--faint); }
-
-.histogram { margin: 0; min-width: 0; }
+.histogram { margin: 0; min-width: 0; display: flex; flex-direction: column; justify-content: flex-end; }
 .bars {
   display: grid;
   grid-template-columns: repeat(9, minmax(0, 1fr));
   gap: var(--s-4);
   align-items: end;
-  height: 150px;
+  flex: 1;
+  min-height: 150px;
+  max-height: 260px;
   border-bottom: 1px solid var(--line);
 }
 .bucket { height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; min-width: 0; }

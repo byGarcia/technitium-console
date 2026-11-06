@@ -1676,7 +1676,12 @@ contract and SECURITY.md.
     Blocking's Blocked by client makes, again each time the statistics answer) and works
     out, from the entries that carry a `responseRtt` (answers the server had to ask for
     upstream), the median and the 95th percentile (nearest rank), the share over 100 ms
-    and a histogram in nine buckets, the slow tail in the warning colour. On the cluster
+    and a histogram in nine buckets, the slow tail in the warning colour. The caption says
+    first how many answers that is against the sample (`N of the last M queries went
+    upstream`), since on a server that answers most itself it is a handful of the thousand;
+    under 20 of them the second figure is named `Slowest`, which the nearest-rank 95th
+    percentile then is, and the share over 100 ms is in whole percents (`<1%`, never `0%`
+    for one). The histogram grows into the card's height beside From query to answer. On the cluster
     aggregate it reads the connected node's log and says so. It reads nothing without
     `Logs.canView` (locked) and says once when there is no query logs app. Its words,
     OURS, are declared in its header comment.
