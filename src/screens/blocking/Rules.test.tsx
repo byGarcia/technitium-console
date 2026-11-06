@@ -363,7 +363,7 @@ describe('Rules', () => {
   })
 
   /* Once the notice is dismissed the slot still says what happened, and offers
-     to read again, as the blocking state does (StatusPanel). */
+     to read again, as the blocking state does (BlockingStatus). */
   it('a failed first read leaves Failure and Retry in the table slot', async () => {
     const read = vi.spyOn(blocking, 'readRuleExport').mockResolvedValue({ kind: 'error', message: 'Access was denied.' })
     draw()

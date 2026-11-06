@@ -567,15 +567,43 @@ contract and SECURITY.md.
 2. **The Blocking section** (`src/screens/blocking/`; what it offers is listed
    in the CHANGELOG, v1.2.0). It replaces Allowed and Blocked with Overview, Rules
    and Lists, laid out since 2026-11-06 the way Cache and Administration are.
-   **Overview** opens with a strip of four cells (`ui/StatCard`) read from
-   `dashboard/stats/get`: `Total Queries`, `Blocked` with its `N% of total` and a bar
-   of Blocked against what got through, `Block List Domains`, and `Your Rules` with
-   their total (the server's two counts added), `Blocked`, `Allowed` and the same kind
-   of bar. Then the status block, the check panel, the two charts, Top Blocked Domains
-   and Top Domains as cards (title and `More` in the toolbar, one line per domain), and
-   Recently Blocked as a card whose rows fold the rest of the `logs/query` entry
-   (`Response Type` with its time, `RCODE`, `Protocol`, `Class`, `Answer`) under
-   `Details`, with `N blocked queries` in its foot. **Rules** is one card in both
+   **Overview** (restructured with more on 2026-11-06, Adrián's decision) carries the
+   blocking status in its header, beside the period: one pill, `Blocking is enabled`
+   in green, `Blocking is paused` with `Until <time>` in amber, `Blocking is disabled`
+   in red (neutral without `Settings.canModify`: the padlock wins), its sentence as its
+   title, and beside it the same `Disable` / `Enable` menu, calls, confirmations and
+   texts the status block had (`BlockingStatus.tsx`). Under the header, the check,
+   block or allow panel is one command bar across the page (its title, the field, still
+   named `Domain`, Block, Allow and Check, the answer under the line). Then a strip of
+   four cells (`ui/StatCard`) read from `dashboard/stats/get`: `Total Queries`,
+   `Blocked` with its `N% of total` and a bar of Blocked against what got through,
+   `Block List Domains`, and `Your Rules` with their total (the server's two counts
+   added), `Blocked`, `Allowed` and the same kind of bar; Total Queries and Blocked
+   carry their change against the previous period, the Dashboard's object, arithmetic
+   and limits (deviation 7), `vs previous hour` said once in Total Queries. Then
+   Queries over time with **Blocked by client** beside it (`BlockedBy.tsx`,
+   `blocked-sample.ts`): the newest 1,000 blocked queries of `logs/query`, read
+   through the query logs app with the three blocked classes merged exactly as
+   Recently Blocked reads them (`recentBlocked`, with a larger page), counted by client
+   (the five most blocked, each address with the name the period's Top Clients give it
+   when there is one, its count and a bar) and by query type (a stacked bar with its
+   legend, the Dashboard's Query Types colours). It is a sample, not the period, and
+   says so: `In the last N blocked queries` beside its title, `on <node>` with the
+   cluster aggregate (logs are one node's). A row's menu has upstream's `Show Query
+   Logs`, for that client, and for its response type when all its counted queries share
+   one (Query Logs filters by one). It reads again with each answer of `stats/get`,
+   never with the live figures. Without a query logs app it is not drawn and the chart
+   takes the row: Recently Blocked says why, once; without `Logs.canView` it keeps its
+   place, locked. The "Blocked share" ring is gone: it said the strip's share twice.
+   Then Top Blocked Domains and Top Domains as cards (title and `More` in the toolbar,
+   one line per domain), and Recently Blocked as a card whose rows fold the rest of the
+   `logs/query` entry (`Response Type` with its time, `RCODE`, `Protocol`, `Class`,
+   `Answer`) under `Details`, with `N blocked queries` in its foot. The Overview's new
+   words, all OURS and declared in the header comment of the file that writes them:
+   `Blocked by client`, `Blocked by type`, `In the last N blocked queries` (and `In the
+   last blocked query`), `<client>: N blocked` (each bar's name), `Actions for
+   <client>`, the status pill's three titles and three sentences (the status block's),
+   and `Could not read the blocking state.` (the status block's). **Rules** is one card in both
    views: the filter, the search and `List`/`Tree` in the toolbar; Import, Export and
    Flush at the end of the foot with the count and the pages; a row's Delete is a
    trash icon named `Delete <domain>`. The tree is Allowed's and Blocked's
@@ -662,7 +690,7 @@ contract and SECURITY.md.
      replaced.
    - **The sidebar marks Blocking when blocking is off or paused**, with the time
      it comes back in the entry's accessible name and title. It reads what the
-     Overview's status block reads (`settings/get`, on the connected node), never
+     Overview's header status reads (`settings/get`, on the connected node), never
      without `Settings.canView`, and again after any settings write made from this
      console, when the browser tab is shown again and a second after a pause ends.
      No other sidebar entry carries a mark or a count.
@@ -705,8 +733,7 @@ contract and SECURITY.md.
 5. **Last Hour moves in real time** (Adrián's decision, 2026-10-03), on the
    Dashboard and on Blocking › Overview, which read the same `stats/get`.
    Between the 60-second reloads the count tiles, the Queries chart and the
-   Query Response Types doughnut (and on Overview its figures, sparklines, bars
-   and ring) follow the server's lifetime counters (`dashboard/metrics/json`),
+   Query Response Types doughnut (and on Overview its figures and bars) follow the server's lifetime counters (`dashboard/metrics/json`),
    read every 2 seconds (`dashboard/live.ts`, `dashboard/useLive.ts`). Overview
    gained the minute reload with it. Live readings keep their timestamps across
    reloads: only readings after the last server UTC label are added. Labels name
@@ -757,7 +784,9 @@ contract and SECURITY.md.
    two things to the stock Dashboard (`screens/dashboard/compare.ts`, `jump.ts`):
    - **each figure's change against the previous period of the same length**, as
      an arrow and a percentage on its card, with what it is measured against
-     written once, in the `Total Queries` card ("vs previous hour"). The
+     written once, in the `Total Queries` card ("vs previous hour"). Blocking ›
+     Overview's strip draws the same change on its Total Queries and Blocked
+     (2026-11-06, deviation 2), under these same limits. The
      previous period is a second `dashboard/stats/get` with `type=Custom`, whose
      instants are worked out from the labels of the answer on screen, so they follow
      the server's clock, its node and its grouping. Measured against v15.6.1 and

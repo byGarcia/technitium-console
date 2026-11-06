@@ -1,7 +1,7 @@
 import { useId, useRef, useState } from 'react'
 import { addDomain, type DomainList } from '../../api/zonelists'
 import { Panel, Body } from '../../ui/Panel'
-import { Field, Input } from '../../ui/Field'
+import { Input } from '../../ui/Field'
 import { Loading } from '../../ui/Empty'
 import { PermissionButton } from '../../ui/PermissionButton'
 import { loadQuickList, type QuickEntry } from '../../lib/quick-lists'
@@ -39,6 +39,12 @@ Enter still blocks: Check is never the form's submit.
 
 The verdict answers the name it was asked for, so it goes as soon as the field
 changes, and after a Block or an Allow, which changes the answer.
+
+A COMMAND BAR (2026-11-06): one line across the Overview under its header, the
+title on the left as the field's visible name, then the field, Block, Allow and
+Check, and the answer under the whole line. It was a panel with its title in a band
+and the field labelled `Domain` over it, beside the status block. The field is still
+named `Domain`, for assistive technology: the title beside it says what it is for.
 */
 export function AddDomainBar({
   token,
@@ -59,6 +65,7 @@ export function AddDomainBar({
   /** Why the last check has no verdict: an empty field, or the server's message. */
   const [problem, setProblem] = useState<string | null>(null)
   const problemId = useId()
+  const fieldId = useId()
   const [catalog, setCatalog] = useState<QuickEntry[]>([])
   /** Numbers the checks, so a slow answer cannot land over a newer question. */
   const asked = useRef(0)
@@ -138,8 +145,8 @@ export function AddDomainBar({
   }
 
   return (
-    <Panel title="Check, block or allow a domain">
-      <Body>
+    <Panel>
+      <Body className={styles.commandBody}>
         <form
           className={styles.add}
           onSubmit={(e) => {
@@ -147,25 +154,27 @@ export function AddDomainBar({
             void run('blocked')
           }}
         >
-          <Field label="Domain">
-            {(id) => (
-              <Input
-                id={id}
-                ref={entry}
-                mono
-                className={styles.bad}
-                search
-                placeholder="example.com"
-                value={field}
-                aria-invalid={problem != null || undefined}
-                aria-describedby={problem != null ? problemId : undefined}
-                onChange={(e) => {
-                  setField(e.target.value)
-                  forget()
-                }}
-              />
-            )}
-          </Field>
+          <h2 className={styles.commandTitle}>Check, block or allow a domain</h2>
+          <div className={styles.commandField}>
+            <label className={styles.offscreen} htmlFor={fieldId}>
+              Domain
+            </label>
+            <Input
+              id={fieldId}
+              ref={entry}
+              mono
+              className={styles.bad}
+              search
+              placeholder="example.com"
+              value={field}
+              aria-invalid={problem != null || undefined}
+              aria-describedby={problem != null ? problemId : undefined}
+              onChange={(e) => {
+                setField(e.target.value)
+                forget()
+              }}
+            />
+          </div>
           <PermissionButton
             type="submit"
             variant="primary"

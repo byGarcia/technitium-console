@@ -608,7 +608,7 @@ export function Rules({
               failed ? (
                 /* The notice at the top carries the server's message; once it is
                    dismissed, the slot still says what happened and offers to read
-                   again, as the blocking state does (StatusPanel). */
+                   again, as the blocking state does (BlockingStatus). */
                 <Body>
                   <Failure>
                     Could not read the rules.{' '}
