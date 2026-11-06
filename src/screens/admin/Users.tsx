@@ -1,11 +1,12 @@
 import type { ReactNode } from 'react'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useId, useState } from 'react'
 import { Button } from '../../ui/Button'
 import { Dialog } from '../../ui/Dialog'
-import { Input } from '../../ui/Field'
+import { Field, Input } from '../../ui/Field'
 import { SectionHeader } from '../../ui/SectionHeader'
 import { Loading } from '../../ui/Empty'
 import { Tag } from '../../ui/Tag'
+import { DataFoot, DataTable, End, Grow } from '../../ui/DataTable'
 import {
   createUser,
   deleteUser,
@@ -16,19 +17,22 @@ import {
 } from '../../api/admin'
 import type { ClusterState } from '../../api/admin-cluster'
 import { UserDetails } from './UserDetails'
-import { dateTime } from './dates'
+import { DialogForm, DialogPair, dialogForm as df } from '../../ui/DialogForm'
 import {
   noticeFromFailure,
   Confirm,
   MRow,
-  adminStyles as styles,
   type Notice,
 } from './parts'
 import tbl from '../../ui/Table.module.css'
 import { RowAction, Th, useSort, type Keys, Table } from '../../ui/Table'
 import { Menu, Separator } from '../../ui/Menu'
-import { neverUsed } from '../../api/zones'
 import { Notifier } from '../../ui/Notifier'
+import { access, loginParts, totpStatus, typeColour, userStatus, userType } from './user-facts'
+import { UsersSummary } from './UsersSummary'
+import { useBarParam } from './bar-param'
+import { Applied, LoginDate } from './ListParts'
+import styles from './AdminLists.module.css'
 
 /*
 `refreshAdminUsers` and the row's seven actions (auth.js:1083-1698).
@@ -44,30 +48,14 @@ Two asymmetries of upstream's that are replicated as they are:
   · "Reset Password" is only offered to a `Local` user, and "Disable 2FA" to a
     `Local` or `RemoteLDAP` one that has it on (auth.js:1195-1205, v15.5.1).
     Since v15.5 both hang off `type`, not off the obsolete `isSsoUser`.
-*/
 
-/*
-`getAdminUsersRowHtml` (auth.js:1148-1174): the user type label and the 2FA
-status. `RemoteSSO` is "Remote/SSO" and "SSO Managed"; `RemoteLDAP` is
-"Remote/LDAP" with its own 2FA status; `Local` and ANYTHING ELSE fall to the
-`default:`, which writes `user.type` itself as the label: "Local" reads "Local"
-because that is what the server sends.
+The layout is deviation 23: four cells over ONE data table, a search in its toolbar
+with `Add User` at its end (where upstream floats it, over the table), one line per
+user, both logins whole under the row's `Details`, and upstream's `⋮` menu with its
+own items in its own order. The search, and a state or type pressed in the strip,
+narrow what is drawn and ask nothing; they travel in the bar (`?q=`, `?status=`,
+`?type=`). Words OURS: `Search`, its placeholder, `Details`, `Clear`, `N shown`.
 */
-function userType(u: AdminUser): string {
-  switch (u.type) {
-    case 'RemoteSSO':
-      return 'Remote/SSO'
-    case 'RemoteLDAP':
-      return 'Remote/LDAP'
-    default:
-      return u.type
-  }
-}
-
-function totpStatus(u: AdminUser): string {
-  if (u.type === 'RemoteSSO') return 'SSO Managed'
-  return u.totpEnabled ? 'Enabled' : 'Disabled'
-}
 
 interface Props {
   /** The section sub-navigation, drawn under the header. */
@@ -82,18 +70,13 @@ type Action =
   | { type: '2fa'; user: AdminUser }
   | { type: 'delete'; user: AdminUser }
 
-/** The date of a login, or "Never" if it is .NET's sentinel. */
-function access(iso: string, address: string): string {
-  return neverUsed(iso) ? 'Never' : `${dateTime(iso)} from ${address}`
-}
-
 /* `sortTable('tbodyAdminUsers', 0..6)`. */
 const KEYS: Keys<AdminUser> = {
   username: (u) => u.username,
   display: (u) => u.displayName,
   type: userType,
   totp: totpStatus,
-  status: (u) => (u.disabled ? 'Disabled' : 'Enabled'),
+  status: userStatus,
   recent: (u) => access(u.recentSessionLoggedOn, u.recentSessionRemoteAddress),
   previous: (u) => access(u.previousSessionLoggedOn, u.previousSessionRemoteAddress),
 }
@@ -105,6 +88,9 @@ export function Users({ tabs, token, cluster, onNotice }: Props) {
   const [reset, setReset] = useState<string | null>(null)
   const [detail, setDetail] = useState<string | null>(null)
   const [action, setAction] = useState<Action | null>(null)
+  const [search, setSearch] = useBarParam('q')
+  const [status, setStatus] = useBarParam('status')
+  const [type, setType] = useBarParam('type')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -123,7 +109,14 @@ export function Users({ tabs, token, cluster, onNotice }: Props) {
     void load()
   }, [load])
 
-  const { rows: visibleUsers, sort, toggle } = useSort(KEYS, users)
+  const needle = search.trim().toLowerCase()
+  const shown = users.filter(
+    (u) =>
+      (status === '' || userStatus(u) === status) &&
+      (type === '' || userType(u) === type) &&
+      (needle === '' || u.username.toLowerCase().includes(needle) || u.displayName.toLowerCase().includes(needle)),
+  )
+  const { rows: visibleUsers, sort, toggle } = useSort(KEYS, shown)
 
   function replaceEntry(u: AdminUser) {
     setUsers((list) => list.map((x) => (x.username === u.username ? u : x)))
@@ -158,138 +151,97 @@ export function Users({ tabs, token, cluster, onNotice }: Props) {
     onNotice({ type: 'success', title: 'User Deleted!', text: 'User account was deleted successfully.' })
   }
 
+  function enable(u: AdminUser) {
+    void change(u, { disabled: 'false' }, {
+      type: 'success',
+      title: 'User Enabled!',
+      text: `User [${u.username}] account was enabled successfully.`,
+    })
+  }
+
   return (
     <>
       <SectionHeader
-        title="Administration"
+        section="Administration"
+        title="Users"
         tabs={tabs}
-        actions={<><Button variant="primary" onClick={() => setAdd(true)}>
-            Add User
-          </Button></>}
+        titleAction={<RowAction icon="refresh" name="Refresh" disabled={loading} onClick={() => void load()} />}
       />
 
       {loading ? (
         <Loading />
       ) : (
         <>
-          <Table
-            stack
-            header={
+          <UsersSummary users={users} status={status} type={type} onStatus={setStatus} onType={setType} />
+          <DataTable
+            toolbar={
               <>
-                <Th field="username" sort={sort} onSort={toggle}>Username</Th>
-                <Th field="display" sort={sort} onSort={toggle}>Display Name</Th>
-                <Th field="type" sort={sort} onSort={toggle}>Type</Th>
-                <Th field="totp" sort={sort} onSort={toggle}>2FA Status</Th>
-                <Th field="status" sort={sort} onSort={toggle}>Status</Th>
-                <Th field="recent" sort={sort} onSort={toggle}>Recent Login</Th>
-                <Th field="previous" sort={sort} onSort={toggle}>Previous Login</Th>
-                <th className={tbl.actionsCell} />
+                <Grow>
+                  <Field inline label="Search">
+                    {(id) => (
+                      <Input
+                        id={id}
+                        search
+                        placeholder="Username or display name"
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                      />
+                    )}
+                  </Field>
+                </Grow>
+                <End>
+                  {status !== '' && (
+                    <Applied label={status} colour={status === 'Enabled' ? 'var(--ch-ok)' : 'var(--ch-drop)'} onClear={() => setStatus('')} />
+                  )}
+                  {type !== '' && <Applied label={type} colour={typeColour(type)} onClear={() => setType('')} />}
+                  <Button lead="add" variant="primary" onClick={() => setAdd(true)}>
+                    Add User
+                  </Button>
+                </End>
               </>
             }
-            isEmpty={visibleUsers.length === 0}
-            emptyText="No User Found"
-            columns={8}
+            foot={
+              <DataFoot
+                count={
+                  shown.length === users.length
+                    ? `Total Users: ${users.length}`
+                    : `Total Users: ${users.length}, ${shown.length} shown`
+                }
+              />
+            }
           >
-            {visibleUsers.map((u) => (
-              <tr key={u.username}>
-                <td className={tbl.lead}>
-                  <button
-                    type="button"
-                    className={styles.link}
-                    onClick={() => setDetail(u.username)}
-                  >
-                    {u.username}
-                  </button>
-                </td>
-                <td>{u.displayName}</td>
-                {/* `Type`, `2FA Status` and `Status` are the three columns that
-                    say what a user IS, and they were reading as three different
-                    kinds of thing: two pills and one bare word. The word does not
-                    change: `Remote/SSO` is upstream's, `SSO Managed` in the next
-                    column is its sibling, so it takes the same `info` tone, and
-                    `Remote/LDAP` is the other remote user, so it takes it too. */}
-                <td>
-                  {u.type === 'RemoteSSO' || u.type === 'RemoteLDAP' ? (
-                    <Tag tone="info">{userType(u)}</Tag>
-                  ) : (
-                    <Tag>{userType(u)}</Tag>
-                  )}
-                </td>
-                <td>
-                  {u.type === 'RemoteSSO' ? (
-                    <Tag tone="info">SSO Managed</Tag>
-                  ) : u.totpEnabled ? (
-                    <Tag tone="ok">Enabled</Tag>
-                  ) : (
-                    <Tag>Disabled</Tag>
-                  )}
-                </td>
-                <td>
-                  {u.disabled ? (
-                    <Tag>Disabled</Tag>
-                  ) : (
-                    <Tag tone="ok">Enabled</Tag>
-                  )}
-                </td>
-                {/*
-                Upstream formats the date without checking whether it is .NET's
-                minimum (auth.js:1141), so for a user who has never logged in it
-                shows "0000-12-31 23:45:16 from 0.0.0.0" (year zero, because it
-                converts to local time a date older than time zones) and an
-                address that does not exist. That is not a datum: it is a
-                sentinel value leaking onto the screen. It says "Never", which is
-                what it means, just as was done with the DNSSEC column.
-                */}
-                <td className={styles.mono}>{access(u.recentSessionLoggedOn, u.recentSessionRemoteAddress)}</td>
-                <td className={styles.mono}>{access(u.previousSessionLoggedOn, u.previousSessionRemoteAddress)}</td>
-                <td className={tbl.actionsCell}>
-                  <div className={tbl.actions}>
-                    <RowAction
-                      icon="card"
-                      name="View Details"
-                      onClick={() => setDetail(u.username)}
-                    />
-                    <RowAction
-                      icon="power"
-                      name={u.disabled ? 'Enable User' : 'Disable User'}
-                      onClick={() =>
-                        u.disabled
-                          ? void change(u, { disabled: 'false' }, {
-                              type: 'success',
-                              title: 'User Enabled!',
-                              text: `User [${u.username}] account was enabled successfully.`,
-                            })
-                          : setAction({ type: 'disable', user: u })
-                      }
-                    />
-                    <Menu label={`Actions for ${u.username}`}>
-                      {(close) => (
-                        <>
-                          {u.type === 'Local' && (
-                            <button type="button" onClick={() => { close(); setReset(u.username) }}>
-                              Reset Password
-                            </button>
-                          )}
-                          {(u.type === 'Local' || u.type === 'RemoteLDAP') && u.totpEnabled && (
-                            <button type="button" onClick={() => { close(); setAction({ type: '2fa', user: u }) }}>
-                              Disable 2FA
-                            </button>
-                          )}
-                          <Separator />
-                          <button type="button" data-variant="danger" onClick={() => { close(); setAction({ type: 'delete', user: u }) }}>
-                            Delete User
-                          </button>
-                        </>
-                      )}
-                    </Menu>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </Table>
-          <div className={styles.count}>
-            <span>{`Total Users: ${users.length}`}</span>
-          </div>
+            <Table
+              stack
+              header={
+                <>
+                  <Th field="username" sort={sort} onSort={toggle}>Username</Th>
+                  <Th field="display" sort={sort} onSort={toggle}>Display Name</Th>
+                  <Th field="type" sort={sort} onSort={toggle}>Type</Th>
+                  <Th field="totp" sort={sort} onSort={toggle}>2FA Status</Th>
+                  <Th field="status" sort={sort} onSort={toggle}>Status</Th>
+                  <Th field="recent" sort={sort} onSort={toggle}>Recent Login</Th>
+                  <Th field="previous" sort={sort} onSort={toggle}>Previous Login</Th>
+                  <th className={tbl.actionsCell} />
+                </>
+              }
+              isEmpty={visibleUsers.length === 0}
+              emptyText="No User Found"
+              columns={8}
+            >
+              {visibleUsers.map((u) => (
+                <UserLine
+                  key={u.username}
+                  u={u}
+                  onDetails={() => setDetail(u.username)}
+                  onEnable={() => enable(u)}
+                  onDisable={() => setAction({ type: 'disable', user: u })}
+                  onReset={() => setReset(u.username)}
+                  onDisable2fa={() => setAction({ type: '2fa', user: u })}
+                  onDelete={() => setAction({ type: 'delete', user: u })}
+                />
+              ))}
+            </Table>
+          </DataTable>
         </>
       )}
 
@@ -365,6 +317,146 @@ export function Users({ tabs, token, cluster, onNotice }: Props) {
         />
       )}
     </>
+  )
+}
+
+/*
+One user, one line: the name (it opens the details, as upstream's link does), the
+display name, the three states as tags, and each login's date. Both logins whole,
+`date from address` and how long ago, are under `Details`. The `⋮` menu is
+upstream's (auth.js:1190-1209): View Details, Enable or Disable, Reset Password for
+a local user, Disable 2FA when it is on, then Delete User.
+*/
+function UserLine({
+  u,
+  onDetails,
+  onEnable,
+  onDisable,
+  onReset,
+  onDisable2fa,
+  onDelete,
+}: {
+  u: AdminUser
+  onDetails: () => void
+  onEnable: () => void
+  onDisable: () => void
+  onReset: () => void
+  onDisable2fa: () => void
+  onDelete: () => void
+}) {
+  const [open, setOpen] = useState(false)
+  const detail = useId()
+  const recent = loginParts(u.recentSessionLoggedOn, u.recentSessionRemoteAddress)
+  const previous = loginParts(u.previousSessionLoggedOn, u.previousSessionRemoteAddress)
+
+  return (
+    <>
+      <tr className={open ? styles.openRow : undefined}>
+        <td className={tbl.lead}>
+          <button type="button" className={styles.link} onClick={onDetails}>
+            {u.username}
+          </button>
+        </td>
+        <td className={styles.nowrap}>{u.displayName}</td>
+        {/* `Type`, `2FA Status` and `Status` say what a user IS, as tags. A
+            remote type and its sibling `SSO Managed` take the `info` tone. */}
+        <td>
+          {u.type === 'RemoteSSO' || u.type === 'RemoteLDAP' ? (
+            <Tag tone="info">{userType(u)}</Tag>
+          ) : (
+            <Tag>{userType(u)}</Tag>
+          )}
+        </td>
+        <td>
+          {u.type === 'RemoteSSO' ? (
+            <Tag tone="info">SSO Managed</Tag>
+          ) : u.totpEnabled ? (
+            <Tag tone="ok">Enabled</Tag>
+          ) : (
+            <Tag>Disabled</Tag>
+          )}
+        </td>
+        <td>{u.disabled ? <Tag>Disabled</Tag> : <Tag tone="ok">Enabled</Tag>}</td>
+        <td>
+          <LoginDate date={recent.date} never={recent.never} />
+        </td>
+        <td>
+          <LoginDate date={previous.date} never={previous.never} />
+        </td>
+        <td className={tbl.actionsCell}>
+          <div className={tbl.actions}>
+            <RowAction
+              icon={open ? 'chevronDown' : 'chevronRight'}
+              name="Details"
+              aria-expanded={open}
+              aria-controls={detail}
+              onClick={() => setOpen((v) => !v)}
+            />
+            <Menu label={`Actions for ${u.username}`}>
+              {(close) => (
+                <>
+                  <button type="button" onClick={() => { close(); onDetails() }}>
+                    View Details
+                  </button>
+                  {u.disabled ? (
+                    <button type="button" onClick={() => { close(); onEnable() }}>
+                      Enable
+                    </button>
+                  ) : (
+                    <button type="button" onClick={() => { close(); onDisable() }}>
+                      Disable
+                    </button>
+                  )}
+                  {u.type === 'Local' && (
+                    <button type="button" onClick={() => { close(); onReset() }}>
+                      Reset Password
+                    </button>
+                  )}
+                  {(u.type === 'Local' || u.type === 'RemoteLDAP') && u.totpEnabled && (
+                    <button type="button" onClick={() => { close(); onDisable2fa() }}>
+                      Disable 2FA
+                    </button>
+                  )}
+                  <Separator />
+                  <button type="button" data-variant="danger" onClick={() => { close(); onDelete() }}>
+                    Delete User
+                  </button>
+                </>
+              )}
+            </Menu>
+          </div>
+        </td>
+      </tr>
+      {open && (
+        <tr id={detail} className={styles.detailRow}>
+          <td colSpan={8} className={styles.detailCell}>
+            <dl className={styles.detail}>
+              <Login label="Recent Login" login={recent} />
+              <Login label="Previous Login" login={previous} />
+            </dl>
+          </td>
+        </tr>
+      )}
+    </>
+  )
+}
+
+function Login({ label, login }: { label: string; login: ReturnType<typeof loginParts> }) {
+  return (
+    <div>
+      <dt>{label}</dt>
+      <dd>
+        {login.never ? (
+          'Never'
+        ) : (
+          <>
+            <span className={styles.from}>{login.date}</span> from{' '}
+            <span className={styles.from}>{login.address}</span>
+            <span className={styles.age}>{`(${login.ago})`}</span>
+          </>
+        )}
+      </dd>
+    </div>
   )
 }
 
@@ -444,52 +536,58 @@ function AddUser({
       }
     >
       <Notifier notice={notice} onClose={() => setNotice(null)} />
-      <MRow label="Display Name">
-        {(id) => (
-          <Input
-            id={id}
-            placeholder="display name"
-            maxLength={255}
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-          />
-        )}
-      </MRow>
-      <MRow label="Username">
-        {(id) => (
-          <Input
-            id={id}
-            placeholder="username"
-            maxLength={255}
-            value={user}
-            onChange={(e) => setUser(e.target.value)}
-          />
-        )}
-      </MRow>
-      <MRow label="Password">
-        {(id) => (
-          <Input
-            id={id}
-            type="password"
-            placeholder="password"
-            maxLength={255}
-            value={pass}
-            onChange={(e) => setPass(e.target.value)}
-          />
-        )}
-      </MRow>
-      <MRow label="Confirm Password">
-        {(id) => (
-          <Input
-            id={id}
-            type="password"
-            placeholder="confirm password"
-            maxLength={255}
-            value={confirm}
-            onChange={(e) => setConfirm(e.target.value)}
-          />
-        )}
-      </MRow>
+      {/* The two names, then the password and its confirmation on one line: they
+          are one thing typed twice. */}
+      <DialogForm>
+        <MRow label="Display Name">
+          {(id) => (
+            <Input
+              id={id}
+              placeholder="display name"
+              maxLength={255}
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+            />
+          )}
+        </MRow>
+        <MRow label="Username">
+          {(id) => (
+            <Input
+              id={id}
+              placeholder="username"
+              maxLength={255}
+              value={user}
+              onChange={(e) => setUser(e.target.value)}
+            />
+          )}
+        </MRow>
+        <DialogPair>
+          <MRow label="Password">
+            {(id) => (
+              <Input
+                id={id}
+                type="password"
+                placeholder="password"
+                maxLength={255}
+                value={pass}
+                onChange={(e) => setPass(e.target.value)}
+              />
+            )}
+          </MRow>
+          <MRow label="Confirm Password">
+            {(id) => (
+              <Input
+                id={id}
+                type="password"
+                placeholder="confirm password"
+                maxLength={255}
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
+              />
+            )}
+          </MRow>
+        </DialogPair>
+      </DialogForm>
     </Dialog>
   )
 }
@@ -560,29 +658,33 @@ function ResetPassword({
       }
     >
       <Notifier notice={notice} onClose={() => setNotice(null)} />
-      <MRow label="Username">{(id) => <Input id={id} value={username} readOnly />}</MRow>
-      <MRow label="New Password">
-        {(id) => (
-          <Input
-            id={id}
-            type="password"
-            maxLength={255}
-            value={blank}
-            onChange={(e) => setBlank(e.target.value)}
-          />
-        )}
-      </MRow>
-      <MRow label="Confirm Password">
-        {(id) => (
-          <Input
-            id={id}
-            type="password"
-            maxLength={255}
-            value={confirm}
-            onChange={(e) => setConfirm(e.target.value)}
-          />
-        )}
-      </MRow>
+      <DialogForm>
+        <MRow label="Username">{(id) => <Input id={id} className={df.readOnly} value={username} readOnly />}</MRow>
+        <DialogPair>
+          <MRow label="New Password">
+            {(id) => (
+              <Input
+                id={id}
+                type="password"
+                maxLength={255}
+                value={blank}
+                onChange={(e) => setBlank(e.target.value)}
+              />
+            )}
+          </MRow>
+          <MRow label="Confirm Password">
+            {(id) => (
+              <Input
+                id={id}
+                type="password"
+                maxLength={255}
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
+              />
+            )}
+          </MRow>
+        </DialogPair>
+      </DialogForm>
     </Dialog>
   )
 }

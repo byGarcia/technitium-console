@@ -1,190 +1,37 @@
 /*
 Cache, Allowed and Blocked: the domain-tree archetype.
 
-They inherited the COLLECTION archetype from Zones (one column, a filter bar, a
-table) without a round of their own, and it was the wrong shape: this is not a
-paginated collection, it is a tree. What that left on screen at 1440 was a small
-panel top-left with the tree in it and, next to it, an enormous box saying
-`0 records at <ROOT>`: most of the screen empty, and the object you came to look
-at the smallest thing on it.
-
-Round of 2026-09-07. Four things change and nothing else: the allotment, the
-identity, the path, and the weight of `Delete`. Not one control moves screen, no
-step appears that upstream does not have, and `Settings > Blocking` is not
-touched.
+Since 2026-11-06 all three read alike, in ONE card (`ui/DataTable`): the field that
+moves through the tree in its toolbar, the node's children as chips, its records
+one line each with the rest under Details, the count in its foot. Cache carries the
+node in the page's header with its cards over the card (deviation 16); Allowed and
+Blocked live inside Blocking's Rules, with the node as a trail inside the card
+(deviation 2). The tree column, the identity band and the non-clickable path that
+Allowed and Blocked had before are gone.
 */
 
-/*
-1 · THE ALLOTMENT. Two columns of the same height, and the tree is a column and
-not a box: it holds its field, its count and as many nodes as fit, scrolling
-inside itself rather than growing the page.
-*/
-.split {
-  display: grid;
-  grid-template-columns: 328px minmax(0, 1fr);
-  gap: var(--s-10);
-  align-items: stretch;
-}
-.split > * { min-width: 0; display: flex; flex-direction: column; }
-.column { composes: panel from '../../ui/Panel.module.css'; flex: 1; display: flex; flex-direction: column; min-height: 0; }
-.body { flex: 1; min-height: 0; overflow: auto; padding: var(--s-8); }
-.bodyFlush { flex: 1; min-height: 0; overflow: auto; }
-
-/*
-2 · THE IDENTITY. Cache is what the server resolved and stored; Allowed and
-Blocked are the administrator's decisions. Three channels and no one of them
-alone: the icon (the same one the rail already gives each screen), the second
-line, and the colour.
-
-The colour is NOT new: `--ch-cache` and `--ch-block` already mean "cached" and
-"blocked" in the Dashboard's chart and in the Logs rows, so using them here says
-the same thing with the same colour. `Allowed` has no series of its own (it is
-not an RCODE) and takes `--ch-ok`, which today means `NoError`; that one is an
-extension, and it is the only colour decision of this round without a precedent.
-
-What it CANNOT take is the amber, which means "this is yours to change", or the
-red, which means error and here already has two jobs.
-*/
-/*
-`--kind` and NOT `--edge`, which is what this said first: `--edge` is already a
-token (the panel's inner highlight, `inset 0 1px 0 rgba(255,255,255,.055)`), and
-setting it to a colour here quietly replaced the `box-shadow` of every panel on
-these three screens. Nothing on screen said so; `dev/uniformity.js` did, with
-`panel | no-shadow` on Cache, Allowed and Blocked against `shadow` on the other
-seven.
-*/
-.tree { --kind: var(--line); }
-.cache { --kind: var(--ch-cache); }
-.allowed { --kind: var(--ch-ok); }
-.blocked { --kind: var(--ch-block); }
-.records > .column { border-top: 3px solid var(--kind); }
-
-.identity {
-  display: flex;
-  align-items: center;
-  gap: var(--s-6);
-  padding: var(--s-6) var(--s-9);
-  border-bottom: 1px solid var(--line);
-  background: var(--pan);
-}
-.emblem {
-  width: 26px;
-  height: 26px;
-  border-radius: var(--r-2);
-  display: grid;
-  place-items: center;
-  flex: none;
-  color: var(--kind);
-  border: 1px solid var(--line);
-  background: var(--pan2);
-}
-.identityText { display: grid; gap: var(--s-1); min-width: 0; }
-.identityTitle { font-size: var(--t-4); font-weight: 650; color: var(--ink); }
-.identitySub { font-size: var(--t-2); color: var(--faint); }
-
-/*
-3 · THE PATH. The current node used to appear only inside `N records at <node>`
-on the other side, in mono and with no path: on a three-level tree there was no
-telling what the thing you were looking at hung off.
-
-It does NOT navigate, and that is deliberate: navigating is the tree's job, and a
-second clickable path would be behaviour upstream does not have. So it is a
-`<p>`, not a list of links, and it carries no interaction at all.
-*/
-.path {
-  display: flex;
-  align-items: center;
-  gap: var(--s-3);
-  flex-wrap: wrap;
-  margin: 0;
-  padding: var(--s-5) var(--s-9);
-  border-bottom: 1px solid var(--line2);
-  background: var(--pan2);
-  font: var(--t-3) var(--font-mono);
-  color: var(--faint);
-}
-.pathLabel {
-  font: 650 var(--t-1) var(--font-ui);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--faint);
-  margin-right: var(--s-1);
-}
-.pathRoot { color: var(--acc-ink); }
-.pathUp { color: var(--mute); }
-.pathSep { color: var(--faint); opacity: 0.6; }
-.pathHere { color: var(--ink); font-weight: 650; }
-
-/*
-CACHE, ONE PANEL (2026-10-16). Cache leaves the two-column split: the tree
-column becomes two bands inside the records panel (the crumbs that go up and the
-chips that go down, `CacheNav.tsx`), so the screen has one place to look and
-the records get the full width. The identity colour stays as the panel's top
-rule, the same `--ch-cache` as before; the band that repeated "Cache" under the
-section title is gone, and its sentence is the header's subtitle.
-*/
-.cachePanel {
+/* The wait for the first read, in the place the cards and the table will take:
+   `ui/Empty`'s skeleton inside a card of the table's weight. */
+.waiting {
   composes: panel from '../../ui/Panel.module.css';
-  border-top: 3px solid var(--ch-cache);
+  padding: var(--s-8) var(--s-10);
 }
 
-/* The field takes the width; Browse stays its own size beside it. */
+/*
+CACHE, LIKE A ZONE (2026-11-06, deviation 16). The node is the header (path,
+name, Refresh, Delete), its cards follow, and ONE card moves and shows: the
+Domain field and Browse in the table's toolbar, the zones under the node as a
+band of chips, and the records one line each. The field takes the toolbar's
+width; Browse stays its own size beside it.
+*/
 .search {
   display: flex;
   gap: var(--s-5);
-  align-items: flex-end;
-  padding: var(--s-8) var(--s-9);
-  border-bottom: 1px solid var(--line);
+  align-items: center;
+  min-width: 0;
 }
 .search > div { flex: 1; min-width: 0; }
 
-/* The node's line: where you are on the left, what you can do to it on the right. */
-.where {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: var(--s-5) var(--s-8);
-  padding: var(--s-5) var(--s-9);
-  border-bottom: 1px solid var(--line2);
-  background: var(--pan2);
-}
-.crumbs {
-  display: flex;
-  align-items: center;
-  gap: var(--s-3);
-  min-width: 0;
-  font: var(--t-4) var(--font-mono);
-}
-.crumbList {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--s-1) var(--s-3);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  min-width: 0;
-}
-.crumbList > li { display: flex; align-items: center; gap: var(--s-3); min-width: 0; }
-/*
-An ancestor is a link-weight button: muted until pointed at, never boxed. Boxing
-it would make three ancestors look like three actions on the same footing as
-Refresh and Delete beside them. `.hitArea` gives the 24 px target without
-growing the line.
-*/
-.crumb {
-  composes: hitArea from '../../ui/interaction.module.css';
-  border: 0;
-  padding: 0;
-  background: transparent;
-  font: inherit;
-  color: var(--mute);
-  cursor: pointer;
-  text-align: left;
-}
-.crumb:hover { color: var(--acc-ink); text-decoration: underline; }
-.crumbHere { color: var(--ink); font-weight: 650; }
 
 /*
 The children. A chip per name, wrapping, with the count in front as its label.
@@ -249,43 +96,51 @@ complete, and the ones below it would never be found.
    the count sits over its chips instead of beside them. */
 @media (max-width: 560px) {
   .children { flex-direction: column; gap: var(--s-3); }
-  .chips { max-height: calc(6.5 * (1.4em + 2 * var(--s-2) + var(--s-1)) + 6 * var(--s-3)); }
+  /* Four and a half rows here: the node's cards now stand between the chips and
+     the records, and a phone should reach the cards without scrolling past a
+     wall of names. The half row still says there is more. */
+  .chips { max-height: calc(4.5 * (1.4em + 2 * var(--s-2) + var(--s-1)) + 4 * var(--s-3)); }
 }
 
-/* 4 · The tree itself, at the weight it deserves. */
-.browse { display: flex; gap: var(--s-3); align-items: flex-end; padding: var(--s-7) var(--s-8); border-bottom: 1px solid var(--line); }
-.browse > div { flex: 1; min-width: 0; }
-
-.node { composes: compact from '../../ui/list.module.css'; font-family: var(--font-mono); }
-.ch { display: inline-flex; color: var(--mute); flex: none; }
-.label { composes: truncated from '../../ui/text.module.css'; }
-.lvl { margin-left: var(--s-9); border-left: 1px solid var(--line); padding-left: var(--s-3); }
 /*
-The current node is NOT tinted with the screen's colour, and the drawing had it
-that way.
-
-"You are here" is already said by `ui/list.module.css`, in amber, on every list
-in this console. Repainting it per screen would make one signal mean two things
-(which screen you are on, and which node is open), and it would do it by
-overriding a shared primitive from a local file, which is how two lists start
-looking different for no reason.
-
-The identity has three channels on the records side and does not need a fourth
-here.
+THE CACHE NODE'S CARDS (`CacheSummary.tsx`, deviation 16). They are `ui/StatCard`'s
+cards and use its classes; what is here is only what Cache draws and Zones does not.
 */
 
-/*
-The count strips. They keep `ui/count.module.css`'s typography and its flex
-layout (they are the same object as Zones') and gain the panel's own rule and
-step, because here they sit INSIDE the panel instead of floating above a table.
-*/
-.count {
-  composes: bar from '../../ui/count.module.css';
-  padding: var(--s-5) var(--s-9);
-  border-bottom: 1px solid var(--line2);
-  background: var(--pan2);
+/* A record type in its series colour (`RecordType` in Records.tsx): the word in the
+   colour, on a tint of it, as Zones draws its records' types. */
+.rtype {
+  display: inline-block;
+  padding: var(--s-1) var(--s-4);
+  border-radius: var(--r-1);
+  background: color-mix(in srgb, var(--rt) 16%, transparent);
+  color: var(--rt);
+  font: 600 var(--t-1)/1.5 var(--font-mono);
+  letter-spacing: 0.03em;
 }
-.countActs { display: flex; gap: var(--s-3); }
+
+
+/* Time Left: the next to expire is the card's figure, its label over it and its
+   record's type beside it. */
+.left { margin: 0; }
+.left dt { font-size: var(--t-3); color: var(--mute); }
+.left dd { margin: 0; display: flex; align-items: center; flex-wrap: wrap; gap: var(--s-3) var(--s-6); }
+
+/* DNSSEC: each state as a dot, its word and its count, on one wrapping line. */
+.states { display: flex; flex-wrap: wrap; gap: var(--s-5) var(--s-10); margin: 0; }
+.states dt { display: inline-flex; align-items: center; gap: var(--s-3); font-size: var(--t-3); color: var(--mute); transition: color var(--t-fast); }
+.states dd { margin: 0; font: 650 var(--t-6)/1.3 var(--font-ui); font-variant-numeric: tabular-nums; color: var(--ink); }
+.states > div[data-hot] dt { color: var(--ink); }
+
+/* Answered By: a server per line and its records' count at the end of it. */
+ul.servers { margin-top: 0; list-style: none; display: flex; flex-direction: column; gap: var(--s-4); }
+.servers > li { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-6); min-width: 0; }
+.server { min-width: 0; font: var(--t-4)/1.4 var(--font-mono); color: var(--ink); overflow-wrap: break-word; }
+.serverCount { flex: none; font-variant-numeric: tabular-nums; color: var(--mute); }
+
+/* The table's `Stale`, after the TTL it qualifies. */
+.stale { display: inline-flex; margin-left: var(--s-4); vertical-align: middle; }
+
 .mono { composes: mono from '../../ui/text.module.css'; }
 
 /* Records */
@@ -348,13 +203,32 @@ under its label instead of pushing out of the table.
 
 .empty { padding: var(--s-8); }
 
+/* A record's Details, open: its row loses the line under it so the two read as
+   one, and the detail line sits indented on the panel's quieter surface. */
+.openRow > td { border-bottom-color: transparent; }
+.detailRow > td { padding-top: 0; background: var(--pan2); }
+.detailRow .meta { margin-top: var(--s-3); }
+.detailLabel { margin-top: var(--s-6); font-size: var(--t-2); color: var(--faint); }
+
 /*
-Below 860 the two columns stop fitting. NEITHER side is hidden: they stack, the
-tree first because it is the main object and because it is where what you are
-about to read comes from, and the tree's panel stops stretching (it gets a cap
-and scrolls inside), so the records are not always below the fold.
+Allowed and Blocked's node, inside Rules' card: the trail to it (every step but the
+last opens that ancestor, upstream's `[up]`) and, at the end of the same line,
+Refresh and Delete, which act on the node shown. The trail's type is the page
+path's (`ui/SectionHeader`), in the mono of a DNS name.
 */
-@media (max-width: 860px) {
-  .split { grid-template-columns: minmax(0, 1fr); gap: var(--s-8); }
-  .tree .body { max-height: 250px; }
+.trailBand {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-5) var(--s-8);
+  padding: var(--s-5) var(--s-9);
+  border-bottom: 1px solid var(--line2);
 }
+.trail { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3); min-width: 0; font: var(--t-4) var(--font-mono); }
+.trailStep { display: inline-flex; align-items: center; gap: inherit; min-width: 0; }
+.trailUp { composes: hitArea from '../../ui/interaction.module.css'; border: 0; background: none; padding: 0; font: inherit; color: var(--mute); cursor: pointer; text-align: left; }
+.trailUp:hover { color: var(--acc-ink); }
+.trailSep { flex: none; color: var(--faint); }
+.trailHere { min-width: 0; color: var(--ink); font-weight: 650; }
+.trailActs { display: flex; align-items: center; gap: var(--s-3); margin-left: auto; }

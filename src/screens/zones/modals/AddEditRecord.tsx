@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { listApps } from '../../../api/apps'
 import {
   addRecord,
@@ -35,6 +35,7 @@ import {
 import { typesHiddenWhenAdding } from '../zone-view'
 import type { Notice } from '../types'
 import styles from '../Zones.module.css'
+import { recordColour } from '../zone-colours'
 import { GroupRow } from '../../../ui/Form'
 import { noticeFromFailure } from '../../../lib/notice'
 import { Notifier } from '../../../ui/Notifier'
@@ -199,7 +200,14 @@ export function AddEditRecord(p: AddEditRecordProps) {
     >
       <Notifier notice={notice} onClose={() => setNotice(null)} />
 
-      <div className={styles.fields}>
+      {/*
+      The record form in three blocks (2026-11-05), the same fields in upstream's
+      order: what the record is (Name, Type and TTL on one row), what it holds
+      (the type's own fields, under the type in its colour), and how it is kept
+      (Comments and Expiry TTL). It was one column of eleven stacked fields where
+      nothing said which ones belonged together.
+      */}
+      <div className={styles.recHead}>
         <Field label="Name">
           {(id) => (
             <div className={styles.inline}>
@@ -243,7 +251,7 @@ export function AddEditRecord(p: AddEditRecordProps) {
 
         <Field label="TTL">
           {(id) => (
-            <div className={styles.inline}>
+            <div className={`${styles.inline} ${styles.wrapSuffix}`}>
               <Input
                 id={id}
                 mono
@@ -259,6 +267,11 @@ export function AddEditRecord(p: AddEditRecordProps) {
           )}
         </Field>
 
+      </div>
+
+      <section className={styles.recData} style={{ '--rt': recordColour(f.type) } as CSSProperties}>
+        <span className={styles.recType}>{f.type}</span>
+        <div className={styles.fields}>
         <TypeFields
           f={f}
           set={set}
@@ -282,6 +295,10 @@ export function AddEditRecord(p: AddEditRecordProps) {
             Overwrite existing records
           </label>
         )}
+        </div>
+      </section>
+
+      <div className={styles.fields}>
 
         <Field label="Comments">
           {(id) => (
@@ -333,19 +350,29 @@ function TypeFields({ f, set, setF, apps, classes, onApp, onClass, editing }: Fi
   const text = (
     label: string,
     key: keyof RecordForm,
-    options: { mono?: boolean; short?: boolean; placeholder?: string } = {},
+    options: { mono?: boolean; short?: boolean; placeholder?: string; suffix?: string } = {},
   ) => (
     <Field label={label}>
-      {(id) => (
-        <Input
-          id={id}
-          mono={options.mono}
-          className={options.short ? styles.short : undefined}
-          placeholder={options.placeholder}
-          value={String(f[key] ?? '')}
-          onChange={(e) => set(key, e.target.value as never)}
-        />
-      )}
+      {(id) => {
+        const input = (
+          <Input
+            id={id}
+            mono={options.mono}
+            className={options.short ? styles.short : undefined}
+            placeholder={options.placeholder}
+            value={String(f[key] ?? '')}
+            onChange={(e) => set(key, e.target.value as never)}
+          />
+        )
+        return options.suffix == null ? (
+          input
+        ) : (
+          <div className={styles.inline}>
+            {input}
+            <span className={styles.suffix}>{options.suffix}</span>
+          </div>
+        )
+      }}
     </Field>
   )
 
@@ -414,10 +441,11 @@ function TypeFields({ f, set, setF, apps, classes, onApp, onClass, editing }: Fi
           {text('Primary Name Server', 'soaPrimaryNameServer', { mono: true })}
           {text('Responsible Person', 'soaResponsiblePerson', { mono: true, placeholder: 'email address' })}
           {text('Serial', 'soaSerial', { mono: true, short: true })}
-          {text('Refresh', 'soaRefresh', { mono: true, short: true })}
-          {text('Retry', 'soaRetry', { mono: true, short: true })}
-          {text('Expire', 'soaExpire', { mono: true, short: true })}
-          {text('Minimum', 'soaMinimum', { mono: true, short: true })}
+          {/* `seconds` after the four timers, as upstream writes it (index.html:4542-4569). */}
+          {text('Refresh', 'soaRefresh', { mono: true, short: true, suffix: 'seconds' })}
+          {text('Retry', 'soaRetry', { mono: true, short: true, suffix: 'seconds' })}
+          {text('Expire', 'soaExpire', { mono: true, short: true, suffix: 'seconds' })}
+          {text('Minimum', 'soaMinimum', { mono: true, short: true, suffix: 'seconds' })}
           <label className={styles.chk}>
             <input
               type="checkbox"
@@ -614,7 +642,7 @@ MII...
                     )
                   }
                 />
-                <Button
+                <Button variant="danger"
                   size="sm"
                   onClick={() => set('svcbParams', f.svcbParams.filter((_, j) => j !== i))}
                 >

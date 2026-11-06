@@ -32,9 +32,12 @@ compared with mark a state: a column of filled capsules read as a column of
 buttons. The neutral pill (`Unsigned`, an app's name) keeps a quiet fill and
 loses its border, because it marks a kind, not a state.
 */
-.tag { border-color: transparent; background: var(--tag-neutral); }
+.tag:not(:is(.ok, .warn, .dan, .info, .acc)) { border-color: transparent; background: var(--tag-neutral); }
 
-.tag.ok, .tag.warn, .tag.dan, .tag.info, .tag.acc {
+/* A toned tag that names something keeps its tone's filled capsule (`pill`). */
+.pill { border-color: transparent; }
+
+.tag:not(.pill):is(.ok, .warn, .dan, .info, .acc) {
   display: inline-flex;
   align-items: center;
   gap: var(--s-3);
@@ -47,7 +50,7 @@ loses its border, because it marks a kind, not a state.
   letter-spacing: 0;
 }
 
-.tag.ok::before, .tag.warn::before, .tag.dan::before, .tag.info::before, .tag.acc::before {
+.tag:not(.pill):is(.ok, .warn, .dan, .info, .acc)::before {
   content: '';
   flex: none;
   width: 7px;

@@ -1,18 +1,22 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { visibleSections, type Permission } from './sections'
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { visibleSections, visibleSubs, type Permission } from './sections'
+import { useAllNavMarks } from './nav-marks'
+import { toSlug } from './slug'
+import text from '../ui/text.module.css'
 import { toTrail, writeRoute, readRoute, translateLegacyRoute, plainClick } from './route'
 import { ChangePassword } from '../screens/modals/ChangePassword'
 import { ChangeTheme } from '../screens/modals/ChangeTheme'
 import { Configure2FA } from '../screens/modals/Configure2FA'
 import { CreateApiToken } from '../screens/modals/CreateApiToken'
-import { MyProfile } from '../screens/modals/MyProfile'
+import { Profile } from '../screens/profile/Profile'
 import { Dashboard } from '../screens/dashboard/Dashboard'
+import { Clients } from '../screens/clients/Clients'
 import { DnsClient } from '../screens/dnsclient/DnsClient'
 import { About } from '../screens/about/About'
 import { Apps } from '../screens/apps/Apps'
 import { Cache } from '../screens/lists/Lists'
 import { Blocking } from '../screens/blocking/Blocking'
-import { Settings, type RecordSettings, type ServerInfo } from '../screens/settings/Settings'
+import { MENU_TABS, Settings, type RecordSettings, type ServerInfo } from '../screens/settings/Settings'
 import { Zones } from '../screens/zones/Zones'
 import { Dhcp } from '../screens/dhcp/Dhcp'
 import { Logs } from '../screens/logs/Logs'
@@ -27,11 +31,15 @@ import {
 } from './handoff'
 import styles from './Shell.module.css'
 import { Icon, type IconName } from '../ui/Icon'
-import { publicUrl } from './base'
 import { Menu } from '../ui/Menu'
 import { ThisServerName } from '../ui/ClusterNodeSelect'
 import { FooterLinks } from '../ui/FooterLinks'
 import { Versions } from './Versions'
+import { CommandPalette, PALETTE_KEYS } from './palette/CommandPalette'
+import { accountItems, actionItems, pageItems, zoneItem, type PaletteItem, type Target } from './palette/items'
+import { listAllZones } from '../api/zones'
+import { useTheme } from '../theme/useTheme'
+import { BrandMark } from './BrandMark'
 import { BlockingMark } from './BlockingMark'
 import { useBlockingMark } from '../screens/blocking/blocking-state'
 import { Confirm } from '../ui/Confirm'
@@ -43,28 +51,47 @@ import {
   updateNotificationSilenced,
 } from '../api/user'
 
-type ModalId = 'profile' | 'password' | 'twofa' | 'token' | 'theme'
+type ModalId = 'password' | 'twofa' | 'token' | 'theme'
 
 /** One glyph per section. No icon dependency: the server's CSP does not allow a
  *  CDN and an icon font would have to ship as a file in www/. */
 /* The section icons live in `ui/Icon`, drawn; here we only say which one each
    section carries. Blocking carries Blocked's: it is the section that took its place. */
 /*
-The sidebar's three groups. It is not a new taxonomy: it is upstream's own order,
-with a gap where the kind of task already changed. What you operate daily, what you
-configure and what you consult.
+The sidebar, by what you came to do (2026-11-06, CONVENTIONS.md deviation 24).
+
+It was upstream's flat order in three unnamed groups. Now each group carries a
+short heading (`Monitoring`, `DNS`, `Network`, `Tools`, `System`, OURS), and the sections with
+screens of their own unfold them right here, under the open section: Blocking,
+DHCP and Administration. Their sub-tabs under the title are gone, so a screen is
+one click from anywhere and the page starts with its content. Logs is two entries
+under Monitoring, after Clients, Query Logs first: they are two different tools, and Query Logs
+is the one opened every day. Settings keeps its own menu beside the form (nine panes and a search do
+not fit a sidebar), so it unfolds nothing here.
 */
-const GROUPS: string[][] = [
-  ['dashboard', 'zones', 'cache', 'blocking', 'apps', 'dnsclient'],
-  ['settings', 'dhcp', 'admin'],
-  ['logs', 'about'],
+interface NavEntry {
+  section: string
+  /** An entry that is one sub-section of its section (Logs' two). */
+  sub?: string
+}
+const NAV: { heading: string | null; entries: NavEntry[] }[] = [
+  { heading: null, entries: [{ section: 'dashboard' }] },
+  { heading: 'Monitoring', entries: [{ section: 'clients' }, { section: 'logs', sub: 'Query Logs' }, { section: 'logs', sub: 'View Logs' }] },
+  { heading: 'DNS', entries: [{ section: 'zones' }, { section: 'cache' }, { section: 'blocking' }] },
+  { heading: 'Network', entries: [{ section: 'dhcp' }] },
+  { heading: 'Tools', entries: [{ section: 'dnsclient' }] },
+  { heading: 'System', entries: [{ section: 'settings' }, { section: 'apps' }, { section: 'admin' }, { section: 'about' }] },
 ]
+/** The sections whose sub-sections unfold in the sidebar. */
+const UNFOLDS = new Set(['blocking', 'dhcp', 'admin'])
 
 const ICONS: Record<string, IconName> = {
-  dashboard: 'dashboard', zones: 'zones', cache: 'cache', blocking: 'blocked',
+  dashboard: 'dashboard', clients: 'clients', zones: 'zones', cache: 'cache', blocking: 'blocked',
   apps: 'apps', dnsclient: 'dnsclient', settings: 'settings',
   dhcp: 'dhcp', admin: 'admin', logs: 'logs', about: 'about',
 }
+/* Logs' two entries: the query search, and the server's log files. */
+const SUB_ICONS: Partial<Record<string, IconName>> = { 'Query Logs': 'search', 'View Logs': 'file' }
 
 export interface ShellSession {
   token: string
@@ -129,6 +156,9 @@ export function Shell({
   const [sub, setSub] = useState<string | null>(initialRoute?.sub ?? null)
   const [displayName, setDisplayName] = useState(session.displayName)
   const [totpEnabled, setTotpEnabled] = useState(session.totpEnabled ?? false)
+  /* Bumped when an account dialog changes what My Profile shows (2FA, a new
+     token), so the page reads `user/profile/get` again (deviation 21). */
+  const [accountRevision, setAccountRevision] = useState(0)
 
   /*
   Silencing the update notice (`main.js:702-732`), which this console could read
@@ -200,6 +230,7 @@ export function Shell({
   }, [title])
 
   const current = sections.find((s) => s.id === active) ?? sections[0]
+  const navMarks = useAllNavMarks()
   /* Whether blocking is off or paused, marked on its entry (`BlockingMark.tsx`). */
   const blockingNow = useBlockingMark(session.token, permissions, sections.some((s) => s.id === 'blocking'))
 
@@ -218,6 +249,152 @@ export function Shell({
   useEffect(() => {
     if (pending != null) setPending(null)
   }, [pending])
+
+  /*
+  The command palette (deviation 26): Ctrl+K or ⌘K anywhere, or the field under the
+  brand. The zones are read when it opens, at most once a minute, and only for a
+  session that may see Zones.
+  */
+  const [palette, setPalette] = useState(false)
+  const [paletteJump, setPaletteJump] = useState(0)
+  /*
+  The address a jump asked for. The screen that remounts reads it on its first
+  render; the one it replaces may then take its own parameters out of the bar as it
+  goes, some of them a microtask later (Zones drops `?zone=` that way, so the back
+  button keeps the zone's own entry). A task after the remount, once all of that has
+  run, the bar is set back to what was asked, replacing the entry.
+  */
+  const jumpUrl = useRef<string | null>(null)
+  useEffect(() => {
+    const asked = jumpUrl.current
+    if (asked == null) return
+    /* Cleared in the task, not here: StrictMode's rehearsal runs this twice and
+       its cleanup cancels the first task. */
+    const t = window.setTimeout(() => {
+      jumpUrl.current = null
+      if (window.location.pathname + window.location.search !== asked) {
+        window.history.replaceState(null, '', asked)
+      }
+    }, 0)
+    return () => window.clearTimeout(t)
+  }, [paletteJump])
+  const theme = useTheme()
+  const zonesForPalette = useRef<{ at: number; items: PaletteItem[] } | null>(null)
+  const [zoneItems, setZoneItems] = useState<PaletteItem[]>([])
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        setPalette((v) => !v)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+  useEffect(() => {
+    if (!palette || !sections.some((x) => x.id === 'zones')) return
+    const kept = zonesForPalette.current
+    if (kept != null && Date.now() - kept.at < 60_000) {
+      setZoneItems(kept.items)
+      return
+    }
+    let alive = true
+    void listAllZones(session.token).then((zones) => {
+      if (!alive || zones == null) return
+      const items = zones.map((z) => zoneItem(z.name, z.type))
+      zonesForPalette.current = { at: Date.now(), items }
+      setZoneItems(items)
+    })
+    return () => {
+      alive = false
+    }
+  }, [palette, sections, session.token])
+
+  const paletteItems = useCallback(
+    (query: string): PaletteItem[] => {
+      const visible = (id: string) => sections.some((x) => x.id === id)
+      const pages = pageItems(
+        sections.filter((x) => x.id !== 'profile'),
+        (x) => (x.id === 'settings' ? MENU_TABS.slice() : visibleSubs(x, permissions)),
+      )
+      return [
+        ...actionItems(query, visible),
+        ...pages,
+        ...zoneItems,
+        ...accountItems({
+          canChangePassword: session.type !== 'RemoteSSO' && session.type !== 'RemoteLDAP',
+          canConfigure2fa: session.type !== 'RemoteSSO',
+        }),
+      ]
+    },
+    [sections, permissions, zoneItems, session.type],
+  )
+
+  /* A recent entry was kept in this browser, maybe by another account: it is shown
+     only where this session may go, as the entries built now are. */
+  const paletteAllows = useCallback(
+    (t: Target): boolean => {
+      const visible = (id: string) => id === 'profile' || sections.some((x) => x.id === id)
+      switch (t.kind) {
+        case 'route':
+          if (t.section === 'zones' && t.params?.zone != null) {
+            return visible('zones') && zoneItems.some((z) => z.target.kind === 'route' && z.target.params?.zone === t.params?.zone)
+          }
+          if (!visible(t.section)) return false
+          if (t.sub == null) return true
+          {
+            const sec = sections.find((x) => x.id === t.section)
+            const subs = sec == null ? [] : t.section === 'settings' ? MENU_TABS.slice() : visibleSubs(sec, permissions)
+            return subs.includes(t.sub) || (sec?.subs ?? []).includes(t.sub)
+          }
+        case 'dnsclient':
+          return visible('dnsclient')
+        case 'logs':
+          return visible('logs')
+        case 'modal':
+          if (t.id === 'password') return session.type !== 'RemoteSSO' && session.type !== 'RemoteLDAP'
+          if (t.id === 'twofa') return session.type !== 'RemoteSSO'
+          return true
+        default:
+          return true
+      }
+    },
+    [sections, permissions, zoneItems, session.type],
+  )
+
+  function runTarget(t: Target) {
+    setDrawer(false)
+    switch (t.kind) {
+      case 'route': {
+        const search = t.params != null ? `?${new URLSearchParams(t.params).toString()}` : ''
+        window.history.pushState(null, '', toTrail({ section: t.section, sub: t.sub }) + search)
+        window.dispatchEvent(new PopStateEvent('popstate'))
+        if (search !== '') {
+          /* `?check=` is spent by the screen that reads it (Blocking's check runs
+             once and drops it), so it is not written back. */
+          const kept = Object.fromEntries(Object.entries(t.params ?? {}).filter(([k]) => k !== 'check'))
+          const keptSearch = Object.keys(kept).length > 0 ? `?${new URLSearchParams(kept).toString()}` : ''
+          jumpUrl.current = keptSearch !== '' ? toTrail({ section: t.section, sub: t.sub }) + keptSearch : null
+          setPaletteJump((n) => n + 1)
+        }
+        return
+      }
+      case 'dnsclient':
+        handoff.queryDnsServer(t.domain, null, null)
+        return
+      case 'logs':
+        handoff.showQueryLogs(t.domain, t.clientIp, null)
+        return
+      case 'modal':
+        open(t.id)
+        return
+      case 'theme':
+        theme.setChoice(t.choice)
+        return
+      case 'logout':
+        onLogout()
+    }
+  }
 
   const handoff = useMemo<Handoff>(() => {
     const visible = (id: string) => sections.some((s) => s.id === id)
@@ -315,9 +492,41 @@ export function Shell({
       )}
 
       <aside className={styles.side} data-open={drawer}>
+        {/*
+        What is running sits where each thing is named (2026-11-06): this console's
+        version beside its name, the DNS server's under the account that is signed in
+        to it. `Versions` runs the update checks once and hands back each mark.
+        */}
+        <Versions
+          token={session.token}
+          serverVersion={info?.version}
+          domain={info?.dnsServerDomain}
+          markHidden={markHidden}
+          canCheckConsole={permissions?.DnsClient?.canView === true}
+        >
+          {({ serverMark, consoleMark }) => (
+        <>
         <div className={styles.sbrand}>
-          <img className={styles.mark} src={publicUrl('img/logo.png')} alt="" width={22} height={22} /> Technitium
+          <BrandMark size={30} />
+          <span className={styles.brandText}>
+            <span className={styles.brandLine}>
+              <span className={styles.brandName}>Technitium</span>
+              <span className={styles.chipVer} title="Web Console version">
+                <span className={text.sr}>Web Console </span>v{__CONSOLE_VERSION__}
+              </span>
+            </span>
+            <span className={styles.brandLine}>
+              <span className={styles.brandSub}>Console</span>
+              {consoleMark}
+            </span>
+          </span>
         </div>
+        {/* The palette's door: a field that is a button, with its shortcut. */}
+        <button type="button" className={styles.find} onClick={() => setPalette(true)} aria-keyshortcuts="Control+K Meta+K">
+          <Icon name="search" size={15} />
+          <span className={styles.findText}>Search or jump to…</span>
+          <kbd className={styles.findKeys}>{PALETTE_KEYS}</kbd>
+        </button>
         <nav className={styles.slist} role="navigation" aria-label="Sections">
           {/*
           This is a navigation menu, and until now it claimed to be a `tablist`.
@@ -338,47 +547,78 @@ export function Shell({
           `aria-current="page"` is reserved for ONE thing: the page you are on,
           which is the sub-section when there is one.
           */}
-          {GROUPS.map((group, g) => (
-            <div className={styles.group} key={g}>
-              {sections.filter((sec) => group.includes(sec.id)).map((sec) => {
-                const active = sec.id === current?.id
-                const first = sec.subs?.[0] ?? null
-                return (
-                  <div key={sec.id}>
-                    <a
-                      className={styles.s}
-                      href={toTrail({ section: sec.id, sub: first })}
-                      data-active={active}
-                      aria-current={active ? 'page' : undefined}
-                      title={sec.id === 'blocking' ? blockingNow?.label : undefined}
-                      onClick={(e) => {
-                        if (!plainClick(e)) return
-                        e.preventDefault()
-                        setActive(sec.id)
-                        setSub(first)
-                        setDrawer(false)
-                      }}
-                    >
-                      <span className={styles.ico}>
-                        <Icon name={ICONS[sec.id] ?? 'about'} size={16} />
-                      </span>
-                      {sec.label}
-                      {sec.id === 'blocking' && <BlockingMark mark={blockingNow} />}
-                    </a>
-                    {/*
-                    The sub-items are NOT here any more. The design puts a
-                    section's sub-navigation under its title, for a reason:
-                    nested here, nine panes run out of room the moment the rail
-                    drops to 60 px. What the sidebar gets back is
-                    its own shape: twelve entries, always the same twelve, instead
-                    of fourteen, eighteen or twenty-one depending on where you are.
-                    See `ui/SubTabs`.
-                    */}
-                  </div>
-                )
-              })}
-            </div>
-          ))}
+          {NAV.map((group, g) => {
+            const entries = group.entries.filter((e) => sections.some((sec) => sec.id === e.section))
+            if (entries.length === 0) return null
+            const headingId = group.heading != null ? `nav-${toSlug(group.heading)}` : undefined
+            return (
+              <div className={styles.group} key={g} role={headingId != null ? 'group' : undefined} aria-labelledby={headingId}>
+                {group.heading != null && (
+                  <span className={styles.heading} id={headingId}>{group.heading}</span>
+                )}
+                {entries.map((entry) => {
+                  const sec = sections.find((x) => x.id === entry.section)!
+                  const subs = UNFOLDS.has(sec.id) ? visibleSubs(sec, permissions) : []
+                  const target = entry.sub ?? subs[0] ?? sec.subs?.[0] ?? null
+                  const here = sec.id === current?.id
+                  const active = here && (entry.sub == null || entry.sub === currentSub)
+                  const open = here && subs.length > 0
+                  const label = entry.sub ?? sec.label
+                  return (
+                    <div key={`${sec.id}/${entry.sub ?? ''}`}>
+                      <a
+                        className={styles.s}
+                        href={toTrail({ section: sec.id, sub: target })}
+                        data-active={active}
+                        data-open={subs.length > 0 ? open : undefined}
+                        aria-current={active && !open ? 'page' : undefined}
+                        title={sec.id === 'blocking' ? blockingNow?.label : undefined}
+                        onClick={(e) => {
+                          if (!plainClick(e)) return
+                          e.preventDefault()
+                          setActive(sec.id)
+                          setSub(target)
+                          setDrawer(false)
+                        }}
+                      >
+                        <span className={styles.ico}>
+                          <Icon name={(entry.sub != null ? SUB_ICONS[entry.sub] : undefined) ?? ICONS[sec.id] ?? 'about'} size={16} />
+                        </span>
+                        {label}
+                        {sec.id === 'blocking' && <BlockingMark mark={blockingNow} />}
+                      </a>
+                      {open && (
+                        <div className={styles.sub}>
+                          {subs.map((t) => (
+                            <a
+                              key={t}
+                              className={styles.s2}
+                              href={toTrail({ section: sec.id, sub: t })}
+                              aria-current={t === currentSub ? 'page' : undefined}
+                              onClick={(e) => {
+                                if (!plainClick(e)) return
+                                e.preventDefault()
+                                setSub(t)
+                                setDrawer(false)
+                              }}
+                            >
+                              {t}
+                              {navMarks[sec.id]?.[t] != null && (
+                                <>
+                                  <span className={text.sr}>, {navMarks[sec.id]?.[t]}</span>
+                                  <span className={styles.subMark} aria-hidden="true" />
+                                </>
+                              )}
+                            </a>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )
+          })}
         </nav>
 
         {/* The server and the account, at the foot. When narrow you reach it via the drawer. */}
@@ -400,17 +640,30 @@ export function Shell({
           domain heads it because the block is about that server, which is the
           pairing upstream makes in its panel title.
           */}
-          <Versions
-            token={session.token}
-            serverVersion={info?.version}
-            domain={info?.dnsServerDomain}
-            markHidden={markHidden}
-            canCheckConsole={permissions?.DnsClient?.canView === true}
-          />
+          {/* The server the account is signed in to, and the version it runs. */}
+          <div className={styles.server}>
+            <span className={styles.serverName} title={info?.dnsServerDomain}>{info?.dnsServerDomain ?? ''}</span>
+            <span className={styles.serverLine}>
+              <span className={styles.serverVer}>
+                DNS Server <b>{info?.version ?? '—'}</b>
+              </span>
+              {serverMark}
+            </span>
+          </div>
           <Menu label={displayName} text={displayName} anchor="left" asRow>
             {(close) => (
               <>
-                <button type="button" onClick={() => { close(); open('profile') }}>
+                {/* A page since 2026-11-06 (deviation 21): it navigates to
+                    `/profile/`, where upstream opens `modalMyProfile`. */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    close()
+                    setActive('profile')
+                    setSub(null)
+                    setDrawer(false)
+                  }}
+                >
                   My Profile
                 </button>
                 {/* main.js:71-87 (v15.5.1) switches on `sessionData.type`:
@@ -456,6 +709,9 @@ export function Shell({
             )}
           </Menu>
         </div>
+        </>
+          )}
+        </Versions>
       </aside>
 
       <div className={styles.main}>
@@ -479,8 +735,15 @@ export function Shell({
           >
             <Icon name="menu" size={18} />
           </button>
+          <button type="button" className={styles.findIcon} aria-label="Search" onClick={() => setPalette(true)}>
+            <Icon name="search" size={17} />
+          </button>
           <span className={styles.topBrand}>
-            <img className={styles.mark} src={publicUrl('img/logo.png')} alt="" width={22} height={22} /> Technitium
+            <BrandMark size={26} />
+            <span className={styles.brandText}>
+              <span className={styles.brandName}>Technitium</span>
+              <span className={styles.brandSub}>Console</span>
+            </span>
           </span>
         </header>
 
@@ -500,11 +763,22 @@ export function Shell({
             destination is a page-level alert, and until now the chrome had
             nowhere to put one. */}
         <Notifier notice={chromeNotice} onClose={() => setChromeNotice(null)} />
+        {/* Keyed on the palette's jumps, so a screen it opens on a name reads the
+            address bar again even when it was already on screen. */}
+        <Fragment key={paletteJump}>
         {current?.id === 'dashboard' ? (
           <Dashboard
             token={session.token}
             nodes={session.info?.clusterNodes ?? []}
             clusterInitialised={session.info?.clusterInitialized === true}
+          />
+        ) : current?.id === 'clients' ? (
+          <Clients
+            token={session.token}
+            permissions={permissions}
+            nodes={session.info?.clusterNodes ?? []}
+            clusterInitialised={session.info?.clusterInitialized === true}
+            serverDomain={info?.dnsServerDomain}
           />
         ) : current?.id === 'dnsclient' ? (
           <DnsClient
@@ -513,12 +787,39 @@ export function Shell({
             clusterInitialised={session.info?.clusterInitialized === true}
             request={pending != null && 'dnsclient' in pending ? pending.dnsclient : undefined}
           />
+        ) : current?.id === 'profile' ? (
+          <Profile
+            token={session.token}
+            nodes={session.info?.clusterNodes ?? []}
+            clusterInitialised={session.info?.clusterInitialized === true}
+            revision={accountRevision}
+            onProfile={(p) => {
+              setDisplayName(p.displayName)
+              setTotpEnabled(p.totpEnabled)
+            }}
+            onOpen={open}
+          />
         ) : current?.id === 'about' ? (
           <About info={info} />
         ) : current?.id === 'apps' ? (
           <Apps token={session.token} />
         ) : current?.id === 'cache' ? (
           <Cache token={session.token} nodes={session.info?.clusterNodes ?? []} clusterInitialised={session.info?.clusterInitialized === true} />
+        ) : current?.id === 'blocking' && currentSub === 'Settings' && permissions?.Settings?.canView !== false ? (
+          /* Blocking's Settings page: the Settings form with its Blocking pane alone
+             (deviation 24). Same permissions as Settings' own Save. */
+          <Settings
+            only={{ pane: 'Blocking', section: 'Blocking', title: 'Settings' }}
+            token={session.token}
+            nodes={session.info?.clusterNodes ?? []}
+            clusterInitialised={session.info?.clusterInitialized === true}
+            canModify={permissions?.Settings?.canModify !== false}
+            canFlushCache={permissions?.Cache?.canDelete !== false}
+            canBackup={permissions?.Settings?.canDelete !== false}
+            serverDomain={session.info?.dnsServerDomain}
+            onServerInfo={setServerInfo}
+            onRecordSettings={setRecordSettings}
+          />
         ) : current?.id === 'blocking' ? (
           <Blocking
             token={session.token}
@@ -590,6 +891,7 @@ export function Shell({
             onRecordSettings={setRecordSettings}
           />
         ) : null}
+        </Fragment>
         </main>
 
         {/*
@@ -606,13 +908,6 @@ export function Shell({
         </footer>
       </div>
 
-      <MyProfile
-        open={modal === 'profile'}
-        onOpenChange={(o) => setModal(o ? 'profile' : null)}
-        token={session.token}
-        onSaved={setDisplayName}
-        onNotice={setChromeNotice}
-      />
       <ChangePassword
         open={modal === 'password'}
         onOpenChange={(o) => {
@@ -630,7 +925,10 @@ export function Shell({
         onOpenChange={(o) => setModal(o ? 'twofa' : null)}
         token={session.token}
         username={session.username}
-        onChanged={setTotpEnabled}
+        onChanged={(enabled) => {
+          setTotpEnabled(enabled)
+          setAccountRevision((n) => n + 1)
+        }}
         onNotice={setChromeNotice}
       />
       <CreateApiToken
@@ -638,7 +936,9 @@ export function Shell({
         onOpenChange={(o) => setModal(o ? 'token' : null)}
         username={session.username}
         token={session.token}
+        onCreated={() => setAccountRevision((n) => n + 1)}
       />
+      <CommandPalette open={palette} onOpenChange={setPalette} items={paletteItems} allowed={paletteAllows} onRun={(item) => runTarget(item.target)} />
       <ChangeTheme
         open={modal === 'theme'}
         onOpenChange={(o) => setModal(o ? 'theme' : null)}

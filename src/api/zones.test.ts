@@ -60,11 +60,11 @@ describe('zones', () => {
   when the server had answered. The other three feed dialogs that already warn on
   their own.
   */
-  it('listZones raises the failure with its reason; the rest return null', async () => {
+  it('listZones and the zone dialogs raise the failure with its reason; the catalogs return null', async () => {
     vi.spyOn(client, 'apiRequest').mockResolvedValue({ kind: 'invalid-token' })
     expect(await listZones('t')).toEqual({ kind: 'invalid-token' })
-    expect(await getZoneOptions('t', 'x')).toBeNull()
-    expect(await getZonePermissions('t', 'x')).toBeNull()
+    expect(await getZoneOptions('t', 'x')).toEqual({ kind: 'invalid-token' })
+    expect(await getZonePermissions('t', 'x')).toEqual({ kind: 'invalid-token' })
     expect(await listCatalogs('t')).toBeNull()
   })
 
@@ -119,7 +119,7 @@ describe('zones', () => {
     const spy = vi.spyOn(client, 'apiRequest').mockResolvedValue(env({ section: 'Zones' }))
     const r = await getZonePermissions('t', 'home.test')
     expect(spy.mock.calls[0][1]?.body).toMatchObject({ includeUsersAndGroups: 'true' })
-    expect(r).toMatchObject({ userPermissions: [], groupPermissions: [] })
+    expect(r).toMatchObject({ kind: 'ok', data: { userPermissions: [], groupPermissions: [] } })
   })
 
   it('the permissions serialise as name|view|modify|delete per row', () => {

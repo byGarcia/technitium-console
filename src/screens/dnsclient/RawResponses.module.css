@@ -1,0 +1,17 @@
+/*
+"Raw Responses (N)" (`RawResponses.tsx`): the disclosure, then one row per response
+in a card of its own, each opening its JSON under it.
+*/
+.raw { margin-top: var(--gap-block); }
+.frame { margin-top: var(--s-5); }
+
+.num { width: 1%; color: var(--mute); font-variant-numeric: tabular-nums; }
+.narrow { width: 1%; white-space: nowrap; }
+.mono { font-family: var(--font-mono); }
+.count { font-variant-numeric: tabular-nums; }
+.question { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--s-4); }
+.rcode { display: inline-flex; align-items: center; gap: var(--s-3); white-space: nowrap; }
+.dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+
+/* The JSON of an opened row, under it and across the whole row. */
+.open > td { padding-top: 0; }

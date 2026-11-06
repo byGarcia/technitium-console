@@ -66,8 +66,10 @@ Write down here whatever you find. What is already known:
 
 - **Optional fields that look required.** In `apps/list`, the `updateVersion`,
   `updateUrl` and `updateAvailable` fields **only exist** if the app is in the
-  store catalog and there is a compatible version there; an app installed from
-  your own zip never brings them, and if the catalog query exhausts its 5 s
+  store catalog and there is a compatible version there. They go by the app's
+  NAME, not by where it came from: a store app's zip uploaded under another name
+  brings none of them, and the same zip uploaded under the store's name brings all
+  three (checked against v15.6.1 on 2026-11-06). If the catalog query exhausts its 5 s
   timeout the list arrives whole but without them on any app. Typing them as
   required is a guaranteed bug. Be suspicious of every field you have only seen
   once.
@@ -441,6 +443,37 @@ Write down here whatever you find. What is already known:
   A name the server refuses (`not a domain`) is an `error` envelope with no
   `response` at all. Checked live against v15.6.1 on 2026-10-15
   (`screens/blocking/check-domain.real.json`).
+- **A cached negative answer is a record of the type asked**, not a marker of its
+  own: its `rData` is `{ dataType: "DnsSpecialCacheRecordData", data:
+  "NegativeCache: NxDomain; …" }` (or `NoError; …` for "no record of that type")
+  and its `dnssecStatus` is `Unknown`. With Serve Stale on (the default), expired
+  records stay in `cache/list` and the server writes their TTL as `"0 (0s)"`
+  (WebServiceZonesApi.cs:120-125). With a forwarder, `responseMetadata.nameServer`
+  is the bare address (`1.1.1.1`). Checked live against v15.6.1 on 2026-11-06
+  (`screens/lists/cache-node.real.json`).
+- **`logs/download?limit=2` sends the first 2 MB from offset 0** (LogManager.cs:657-676),
+  not the tail, so the viewer of a large file shows its oldest lines. `logs/list` sorts by
+  path descending, so newest first only holds because files are named by date. Sizes come
+  written (`6 KB`, `24.44 KB`, `2.39 MB`).
+- **The permission sections are named as the server names them**: `DnsClient` and
+  `DhcpServer`, not "DNS Client" and "DHCP"; upstream draws them as they come. Upstream's
+  Users row menu says plain `Enable` / `Disable`.
+- **`recordDataTemplate` is left out, not `null`,** on an app class that serves no
+  APP records (`apps/list`, v15.6.1).
+- **A lease's `hostName` comes back with the scope's domain appended** (`build-01.lab.lan`
+  for a client that sent `build-01`), and is `null` when the client sent none (v15.6.1,
+  2026-11-06).
+- **A reserved lease is not in `dhcp/leases/list` until a client takes it.**
+  `ListDhcpLeases` walks the leases clients hold, never the reservations; upstream
+  marks a held lease `Reserved` when its client has a reservation. An enabled scope
+  with no matching interface reports `interfaceAddress: "0.0.0.0"`. A reservation
+  inside an exclusion range is still handed out. Checked live against v15.6.1 on
+  2026-11-06 with real DHCP clients.
+- **`dnsClient/resolve` with validation on can answer a failed validation with
+  the DNSKEY/RRSIG datagram** carried by the exception, plus `warningMessage`: an A
+  query for `dnssec-failed.org` gets DNSKEY records back. `rawResponses` are whole
+  datagrams, not strings. Upstream calls it with `showInnerError: true`, so its
+  error reads `errorMessage` and then `innerErrorMessage` (common.js:165).
 
 ## How the code is written
 
@@ -532,9 +565,60 @@ contract and SECURITY.md.
    still the only one that *removes* something. The rules are in
    `src/theme/theme.ts`.
 2. **The Blocking section** (`src/screens/blocking/`; what it offers is listed
-   in the CHANGELOG, v1.2.0). It replaces Allowed and Blocked
-   with Overview, Rules and Lists. Its Quick Add also offers the console's own
-   catalogue (`extra-lists.json`) after Technitium's, and a search field.
+   in the CHANGELOG, v1.2.0). It replaces Allowed and Blocked with Overview, Rules
+   and Lists, laid out since 2026-11-06 the way Cache and Administration are.
+   **Overview** (restructured with more on 2026-11-06, Adrián's decision) carries the
+   blocking status in its header, beside the period: one pill, `Blocking is enabled`
+   in green, `Blocking is paused` with `Until <time>` in amber, `Blocking is disabled`
+   in red (neutral without `Settings.canModify`: the padlock wins), its sentence as its
+   title, and beside it the same `Disable` / `Enable` menu, calls, confirmations and
+   texts the status block had (`BlockingStatus.tsx`). Under the header, the check,
+   block or allow panel is one command bar across the page (its title, the field, still
+   named `Domain`, Block, Allow and Check, the answer under the line). Then a strip of
+   four cells (`ui/StatCard`) read from `dashboard/stats/get`: `Total Queries`,
+   `Blocked` with its `N% of total` and a bar of Blocked against what got through,
+   `Block List Domains`, and `Your Rules` with their total (the server's two counts
+   added), `Blocked`, `Allowed` and the same kind of bar; Total Queries and Blocked
+   carry their change against the previous period, the Dashboard's object, arithmetic
+   and limits (deviation 7), `vs previous hour` said once in Total Queries. Then
+   Queries over time with **Blocked by client** beside it (`BlockedBy.tsx`,
+   `blocked-sample.ts`): the newest 1,000 blocked queries of `logs/query`, read
+   through the query logs app with the three blocked classes merged exactly as
+   Recently Blocked reads them (`recentBlocked`, with a larger page), counted by client
+   (the five most blocked, each address with the name the period's Top Clients give it
+   when there is one, its count and a bar) and by query type (a stacked bar with its
+   legend, the Dashboard's Query Types colours). It is a sample, not the period, and
+   says so: `In the last N blocked queries` beside its title, `on <node>` with the
+   cluster aggregate (logs are one node's). A row's menu has upstream's `Show Query
+   Logs`, for that client, and for its response type when all its counted queries share
+   one (Query Logs filters by one). It reads again with each answer of `stats/get`,
+   never with the live figures. Without a query logs app it is not drawn and the chart
+   takes the row: Recently Blocked says why, once; without `Logs.canView` it keeps its
+   place, locked. The "Blocked share" ring is gone: it said the strip's share twice.
+   Then Top Blocked Domains and Top Domains as cards (title and `More` in the toolbar,
+   one line per domain), and Recently Blocked as a card whose rows fold the rest of the
+   `logs/query` entry (`Response Type` with its time, `RCODE`, `Protocol`, `Class`,
+   `Answer`) under `Details`, with `N blocked queries` in its foot. The Overview's new
+   words, all OURS and declared in the header comment of the file that writes them:
+   `Blocked by client`, `Blocked by type`, `In the last N blocked queries` (and `In the
+   last blocked query`), `<client>: N blocked` (each bar's name), `Actions for
+   <client>`, the status pill's three titles and three sentences (the status block's),
+   and `Could not read the blocking state.` (the status block's). **Rules** is one card in both
+   views: the filter, the search and `List`/`Tree` in the toolbar; Import, Export and
+   Flush at the end of the foot with the count and the pages; a row's Delete is a
+   trash icon named `Delete <domain>`. The tree is Allowed's and Blocked's
+   `lists/Lists.tsx`, drawn as Cache's node: a trail `<ROOT> › … › node` whose steps go
+   up with `direction=up` (upstream's `[up]`), Refresh and Delete at its end, the zones
+   under the node as chips, the records one line each with the rest under `Details`
+   (no DNSSEC column). Rules keeps its view in the address bar beside `?rule=`:
+   `?q=`, `?page=`, `?view=tree` and `?list=` (`lib/url-state.ts`). **Lists** opens
+   with a strip of three cells (the two counts, and the next update with Update Now in
+   its cell) and draws the lists in one card: `Add group` and the Settings link in the
+   toolbar, one line per list (switch, name, URL cut to the line, type, Move up, Move
+   down, Remove and `Details`, which opens the name and the whole URL), the count in
+   the foot. Every call, confirmation, alert text and validation is the one it was.
+   Its Quick Add also offers the console's own catalogue (`extra-lists.json`) after
+   Technitium's, and a search field.
    Its Overview's "Check, block or allow a domain" panel also has **Check**
    (`check-domain.ts`, `DomainCheck.tsx`): it tells whether this server blocks a
    name and why (which block lists, with the name the Lists tab gives each; which
@@ -568,7 +652,8 @@ contract and SECURITY.md.
      still `blocked/delete` then `allowed/add` (`api/blocking.ts`);
    - **what is ours is in English and says so** in the header comment of its
      file;
-   - **Settings › Blocking is untouched**: the Lists tab edits the same
+   - **the blocking options are Settings' own** (shown since 2026-11-06 as
+     Blocking › Settings, deviation 24): the Lists tab edits the same
      `blockListUrls`, through the same cleaning (`list-lines.ts` calls
      Settings' `cleanList`).
 
@@ -606,7 +691,7 @@ contract and SECURITY.md.
      replaced.
    - **The sidebar marks Blocking when blocking is off or paused**, with the time
      it comes back in the entry's accessible name and title. It reads what the
-     Overview's status block reads (`settings/get`, on the connected node), never
+     Overview's header status reads (`settings/get`, on the connected node), never
      without `Settings.canView`, and again after any settings write made from this
      console, when the browser tab is shown again and a second after a pause ends.
      No other sidebar entry carries a mark or a count.
@@ -623,7 +708,7 @@ contract and SECURITY.md.
      added, removed, switched on, switched off, changed, moved, and groups added,
      renamed and removed. Only the non-zero ones are written;
    - **the Lists tab carries a dot while there are unsaved changes**, read as
-     `Lists, unsaved changes` (`ui/SubTabs`'s `marks`). The edits still live only
+     `Lists, unsaved changes` (`app/nav-marks.ts`, on Lists' entry in the sidebar since 2026-11-06). The edits still live only
      while the tab is open, as before: leaving it leaves them, and the dot with them.
 3. **Settings jumps to the sub-tab of the invalid field.** Upstream focuses a
    hidden input and the user sees nothing; with one panel mounted at a time,
@@ -631,13 +716,12 @@ contract and SECURITY.md.
 
    And for the same reason (one save sends the fields of all nine panes, wherever
    you are), **Settings says what the save would change** (approved on
-   2026-10-16, `screens/settings/pending.ts`). While a field would be sent with a
-   value other than the one the server returned, the save bar reads
-   `Unsaved changes:` followed by the panes that hold one and how many fields each,
-   `General (2), Cache (1)`, in tab order, and each of those sub-tabs carries the
-   dot Lists carries, read as `<Tab>, unsaved changes` (`ui/SubTabs`'s `marks`).
-   Those two phrases are the only new words; the pane names are upstream's tab
-   labels. It compares what the save would send, with the save's own cleaning, so
+   2026-10-16, `screens/settings/pending.ts`). The save bar, always at the foot of
+   the window (deviation 22), reads `Unsaved changes:` followed by the panes that
+   hold one and how many fields each, `General (2), Cache (1)`, in tab order, or
+   `No unsaved changes`; each of those panes carries the dot Lists carries in the
+   Settings menu, read as `<Tab>, unsaved changes`. The pane names are upstream's
+   tab labels. It compares what the save would send, with the save's own cleaning, so
    a field put back as it was, a blank line in a list and an untouched field never
    count; nor does a field the save would not send (outside the chosen node's
    scope, or a proxy detail with no proxy type), nor the minutes of `Temporary
@@ -650,8 +734,7 @@ contract and SECURITY.md.
 5. **Last Hour moves in real time** (Adrián's decision, 2026-10-03), on the
    Dashboard and on Blocking › Overview, which read the same `stats/get`.
    Between the 60-second reloads the count tiles, the Queries chart and the
-   Query Response Types doughnut (and on Overview its figures, sparklines, bars
-   and ring) follow the server's lifetime counters (`dashboard/metrics/json`),
+   Query Response Types doughnut (and on Overview its figures and bars) follow the server's lifetime counters (`dashboard/metrics/json`),
    read every 2 seconds (`dashboard/live.ts`, `dashboard/useLive.ts`). Overview
    gained the minute reload with it. Live readings keep their timestamps across
    reloads: only readings after the last server UTC label are added. Labels name
@@ -692,14 +775,19 @@ contract and SECURITY.md.
      logged in yet and anything that looks like data would be invented;
    - **it calls nothing**: no endpoint, no asset beyond the fonts the console
      already ships, and its colours are theme tokens measured on `--field` by
-     `dev/theme-contrast.mjs`. Its only motion is the answer rows settling in,
-     and `prefers-reduced-motion` removes it.
+     `dev/theme-contrast.mjs`. Its motion is the screen's one entrance (name,
+     headline with the form's card, the answer rows one beat apart) and a
+     decorative backdrop behind it, a faint grid drifting and an amber glow
+     breathing, hidden from screen readers and clear of the text (2026-11-05);
+     `prefers-reduced-motion` removes all of it.
 
 7. **The Dashboard compares and jumps** (Adrián's decision, 2026-10-15). It adds
    two things to the stock Dashboard (`screens/dashboard/compare.ts`, `jump.ts`):
    - **each figure's change against the previous period of the same length**, as
      an arrow and a percentage on its card, with what it is measured against
-     written once, in the `Total Queries` card ("vs previous hour"). The
+     written once, in the `Total Queries` card ("vs previous hour"). Blocking ›
+     Overview's strip draws the same change on its Total Queries and Blocked
+     (2026-11-06, deviation 2), under these same limits. The
      previous period is a second `dashboard/stats/get` with `type=Custom`, whose
      instants are worked out from the labels of the answer on screen, so they follow
      the server's clock, its node and its grouping. Measured against v15.6.1 and
@@ -759,33 +847,60 @@ contract and SECURITY.md.
      and Protocol Types legend entries are buttons, and the week is one keyboard
      stop whose arrows move between its cells.
 
-8. **Query Logs folds its filters below 960 px** (approved on 2026-10-16;
-   `FOLD_QUERY` in `screens/logs/QueryLogs.tsx`). At 390x844 the fourteen filters
-   were one column 1,173 px tall and the first result row ended at y=1,905; at 768
-   the table still started at y=1,001. Below 960 the panel closes to its title,
-   which becomes the toggle, and `Query` closes it again; the legend keeps its seven
-   pills and puts their conditions behind its title. Above 960 nothing of this
-   exists. Its limits, and crossing one is a bug:
-   - **a folded panel says what is set**: every field that differs from what
-     `Reset` gives, by its field's own label and with the value the field shows
-     (`activeFilters`), so a filtered table never reads as the whole log;
+   - **The Top 1000 list can be searched** (2026-11-06, `TopStats.tsx`). Upstream's
+     `modalTopStats` has no search, and a thousand entries cannot be scanned by eye. The
+     list is one card: a `Search` field in its toolbar narrows the entries already
+     loaded, by name and, for a client, its domain, asking the server nothing.
+     Upstream's `Total Clients: N` / `Total Domains: N` moves to the card's foot, with
+     `, K shown` while the search narrows it; with no match the table says upstream's
+     `No Data`. A client's domain is written beside its name.
+8. **Query Logs folds its filters below 960 px** (approved on 2026-10-16; `FOLD_QUERY`
+   in `screens/logs/QueryLogs.tsx`). Since 2026-11-06 (deviation 20) the filters are a
+   band inside the results card under a toolbar holding `Domain` and the verbs. Below
+   960 the band closes and a `Filters` toggle joins the toolbar; `Query` closes it again.
+   The legend keeps its seven pills and puts their conditions behind its title. Above
+   960 nothing of this exists: no toggle, and the band is always open. Its limits, and
+   crossing one is a bug:
+   - **a folded band says what is set**: every field it holds that differs from what
+     `Reset` gives, by its own label and with the value the field shows
+     (`activeFilters`). Domain, Page Number and Logs Per Page stay on screen and are not
+     repeated;
    - **nothing it sends changes**: the fields stay mounted while folded, and Query,
      Export, Reset, Live Update and the pager send exactly what they sent;
-   - **a validation still lands on its field**: a folded panel opens before
-     upstream's focus (logs.js:389-424 and 612-625) moves to the field that failed.
+   - **a validation still lands on its field**: a folded band opens before upstream's
+     focus (logs.js:389-424 and 612-625) moves to the field that failed.
 
-   Its words: none new. The toggles are the panel's existing title, `Filters`, and
-   the legend's, `Row colours`; the list is the fields' own labels, each followed by
-   a colon and its value.
-9. **About has two panels for this console** (Adrián's decision, 2026-10-16;
-   `screens/about/About.tsx`). Upstream's About speaks only of the server, and its
-   card stays literal. Under the Server panel, `Web Console` gives this console's
-   version (`__CONSOLE_VERSION__`), its license, one sentence saying it is not
-   Technitium's, and four destinations as rows: `Source code`, `Release notes`,
-   `Report a problem` (so a console fault does not go to Technitium's support) and
-   `Ideas and questions`. `Support the Console` has one sentence, `Star on GitHub`
-   and the four destinations of `.github/FUNDING.yml` as buttons. Its words are all
-   ours and follow the README's `Support` and `Licence`.
+   Its words: none new. The toggles are `Filters` and the legend's `Row colours`; the
+   list is the fields' own labels, each followed by a colon and its value.
+9. **About reads like the other screens, and has a column for this console**
+   (Adrián's decisions, 2026-10-16 and 2026-11-06; `screens/about/About.tsx`).
+   Upstream's About is one centred column (index.html:3641-3680): the logo, the
+   name, `Version X`, `Server up since …` and its prose, heading after heading.
+   Here every one of its sentences and destinations stays, word for word, laid out
+   the way Zones and Cache are; nothing is asked of the server (everything comes
+   from the session's `info`), so there is no loading or failure state:
+   - **The header is the server**: the path `About ›`, Technitium's logo (the file
+     in `public/img/`, untouched), `Technitium DNS Server` and the server's domain.
+   - **What is running is the header's line**, after the domain: `DNS Server` and its
+     version, `Uptime` (the span since `uptimestamp` in its two largest units, `2d
+     3h`, `4h 5m`, `12m`) with `since` and the date, and `Web Console` with
+     `__CONSOLE_VERSION__`; without `info` they show the "no value" placeholder.
+     Whether there is an update stays in the chrome (`app/Versions`, deviation 10).
+   - **Upstream's sections are blocks**: `Documentation` holds What's New?, API
+     Documentation and Help Topics as rows, the heading as the row's link and its
+     sentence, with its own link, under it; `Support` (upstream's heading) holds its
+     four sentences as one row each; `License` holds the copyright, the warranty and
+     the source-code sentence; `Donate` keeps its heading as a link (the panel's
+     title), its sentence and `Donate Now!`. A row is one target, the link inside a
+     sentence is still its own.
+   - **This console's column**: `On GitHub`, with the console's licence and the
+     sentence saying it is not Technitium's, then four destinations as rows, `Source code`, `Release notes`, `Report a problem` (so a
+     console fault does not go to Technitium's support) and `Ideas and questions`;
+     and `Support the Console`, one sentence, `Star on GitHub` and the four
+     destinations of `.github/FUNDING.yml` as buttons.
+   Its words, all OURS: `Uptime`, the span's format, `Documentation`, `License`,
+   `On GitHub`, `Web Console`, `DNS Server`, `Version` as a card label and the
+   console's sentences, which follow the README's `Support` and `Licence`.
 10. **The console tells you when a newer console is out** (Adrián's decision,
     2026-10-18; `app/console-update.ts`, `app/Versions.tsx`, `update-check/`). The
     browser cannot ask GitHub (the CSP below has no `connect-src`), so the console
@@ -831,6 +946,714 @@ contract and SECURITY.md.
     the address. The Dashboard's Top Clients card and the Top 1000 modal draw no
     domain line for it instead; a client with a domain still shows it. Nothing
     else changes: the same call, the same rows, the same name and menu.
+12. **Zones says what a zone holds** (Adrián's decision, 2026-11-05). Four
+    differences, all reading data the same calls already bring:
+    - **A summary of the zone by type** above the records (`A 14 · NS 1 · SOA 1`),
+      counted from `zones/records/get` after Hide DNSSEC Records and before the
+      Name and Type filters. Pressing a type writes it in the Type field and runs
+      Go, exactly as typing it would; pressing the applied one empties the field
+      and runs Go. `ZoneRecords.tsx`, WHAT THE ZONE HOLDS.
+    - **The serial and the last change in the zone's header** (`Serial 16`,
+      `Last Modified: …`), from the `zone` object of the same answer. Upstream
+      shows them only in the zone list.
+    - **`Last Used: never`** for a record never used, where upstream writes
+      `0001-01-01 00:00:00 (never)`, .NET's empty date (`record-view.ts`).
+    - **The DNSSEC column says `Unsigned`, `Signed` or `Signed, no keys`.**
+      Upstream leaves the cell empty for an unsigned zone and writes `DNSSEC`,
+      blue or grey by `hasDnssecPrivateKeys` (zone.js:721-731). This one predates
+      2026-11-05 and is registered here because it was never written down.
+    - **The zone list opens with four cards** (`ZoneSummary.tsx`): all zones by
+      type (pressing a type sets the Type filter and runs Go), Health (Enabled,
+      the zones with a problem in upstream's states, Disabled), DNSSEC (signed
+      of signable) and the last zone changed. They read ONE `zones/list` with no
+      page, the only call this deviation adds: every zone the user may see,
+      about 230 bytes each, under the Zones: View the list already needs.
+    - **A zone's page opens with four cards** (`ZoneOverview.tsx`) drawn from the
+      `records/get` already loaded: Records (by type, Disabled, and Not used
+      since restart, because the server keeps `lastUsedOn` in memory only), the
+      apex SOA, the apex Name Servers, and DNSSEC. The DNSSEC menu's actions are
+      that card's buttons, with upstream's literals and the same dialogs.
+    - **Disable Zone and Delete Zone sit at the foot of a zone's page**, not in
+      its header: the same buttons and confirmations, one click as before.
+    - **Each record type and zone type has a series colour** (`zone-colours.ts`),
+      taken from the Dashboard's `--ch-*`; the type is always written beside it.
+    - **One sentence explains "Not used since restart"** in its tooltip: "The
+      server keeps a record's last use in memory only, so a restart clears it."
+13. **The open zone is in the address bar** (Adrián's request, 2026-11-05).
+    Upstream's `showEditZone` swaps two `div`s and never touches the URL, so a
+    reload always lands on the zone list. Opening a zone here pushes
+    `/zones/?zone=<name>` (the root is `.`), and Back, Forward, a reload or a copied
+    link return to it. It is a query string on the existing `/zones/` folder and not
+    `/zones/<name>/` on purpose: the server answers every path that is not a real
+    file, `/api/` or `/sso/` with an empty 404 (`DnsWebService.cs`, the `default:`
+    branch of its route handler), and zones are created at run time, so no build
+    can ship their folders. Measured on 2026-11-05: `/zones/example.net/` 404,
+    `/zones/?zone=example.net` 200. Loading such an address opens the zone without
+    a history entry; a zone that cannot be read shows the list again, as upstream
+    does on its `error` (zone.js:3583-3585). Leaving the section takes `?zone=` out
+    of the next route. `screens/zones/zone-url.ts`.
+    The zone list keeps its view there too (Adrián's request, 2026-11-06), the way
+    Blocking keeps `?rule=`: the page (`?page=`, left out on 1) and the applied
+    filters (`?name=`, `?type=`), written by replacing the entry once a list lands,
+    so a reload or a copied link asks for that page with those filters, and Back
+    still walks between the list and the zones. `lib/url-state.ts`. A zone keeps its
+    records page and filters the same way (`?rpage=`, `?rname=`, `?rtype=`); they
+    belong to that zone, so opening another one or going back to the list takes them
+    out (`zone-url.ts`). Because a link can now carry a records filter, the name
+    filter takes only `*` and `?` as wildcards and every other regular expression
+    character literally (`filter.ts`); upstream escapes only the dot, which let a
+    crafted `?rname=` hang the tab. No DNS name holds those characters.
+14. **"Delete Zones" waits for a selection** (Adrián's decision, 2026-11-05).
+    Upstream keeps the bulk delete button enabled and answers a click with nothing
+    ticked with an `alert()`, "Please select one or more zones to delete."
+    (zone.js:1139). Here it is disabled until at least one zone is ticked, so the
+    empty case shows without a click. Disabled, never hidden. With a selection it
+    asks the same confirmation, sends the same `zones/delete` and reports the same
+    success and partial-failure alerts.
+15. **A screen's result floats in the bottom right corner** (Adrián's decision,
+    2026-11-05). Upstream writes an action's result at the top of the section; here
+    a page's result (`ui/Notifier`) floats over the page at the bottom right, where
+    several stack, so nothing under it moves. A result inside a dialog stays in the
+    dialog, and the login form's stays in the form. The texts, the five seconds of
+    a success and the close button are the same.
+16. **Cache says what a node holds, and reads like a zone** (Adrián's decision,
+    2026-11-06). Upstream dumps a node's records as JSON (other-zones.js:157) under a flat
+    list of `[refresh]`, `[up]` and the children. Here the screen is laid out as a zone's:
+    - **The node is the header.** Its path (`Cache › com › google.com`, every step but
+      the last opening that ancestor with `direction=up`, as upstream's `[up]` does) and
+      its name as the title, with Refresh beside it; Delete (the node) and Flush Cache at
+      the right. At the root the title is the section's, `Cache`, with no path; the root
+      is still called `<ROOT>` in the table's foot.
+    - **The Domain field and Browse sit in the records card's toolbar**, the zones under
+      the node in a band of chips under it (the first 40, then `Show all N` / `Show
+      fewer`: the root holds every top-level domain asked for), and the records under
+      that, ONE line each: type, TTL, data and DNSSEC, with the rest (where it came
+      from, when it was used, a name server's health, its glue and RRSIG) under the
+      row's `Details`. The two `Glue` and `RRSIG` buttons are gone into it.
+    - Up to four cards between the header and that card
+      (`screens/lists/CacheSummary.tsx`, `cache-facts.ts`) read only the records of the
+      `cache/list` answer already on screen: no call is added, and they follow the node
+      exactly as the table does.
+    - **Records**: how many, by type in each type's series colour (`zones/zone-colours`).
+      Pressing a type narrows the table to it, pressing it again clears it; the foot
+      says `N of M records at <node>, TYPE only`. It is drawn from the answer on screen
+      and asks the server nothing; a new node starts unfiltered. And `Negative`: the
+      records whose `rData` is the server's special cache
+      record (`dataType: DnsSpecialCacheRecordData`) with a `data` starting
+      `NegativeCache:`. Always drawn; an empty node says 0.
+    - **Time Left**: the record that leaves the cache first and how soon, the longest
+      time left, and `Stale`: the records written `ttl: "0 (0s)"`, which the server
+      writes for a record kept past its TTL (`record.IsStale`,
+      WebServiceZonesApi.cs:120-125). Like the TTL column, it is the time left when the
+      node was read.
+    - **DNSSEC**: the records by `dnssecStatus`. Secure is `--ok`, Bogus `--dan`,
+      Indeterminate `--warn`, Unknown `--ch-3`, any other `--ch-drop`; the table's
+      DNSSEC tag takes the same tones.
+    - **Answered By**: each `responseMetadata.nameServer` and how many of the node's
+      records it gave, most first, four shown and the rest as "N more".
+    - A card whose data the node lacks is not drawn.
+    - In the records table, shared with Allowed and Blocked, a record type is drawn in
+      its series colour, and a cache record with `ttl: "0 (0s)"` carries a `Stale` tag.
+      Allowed and Blocked draw the same one-line rows, without the DNSSEC column
+      (deviation 2).
+    - Flush Cache, Delete, Refresh, the path and the chips send exactly what they sent.
+    - **The open node and the type are in the address bar** (`?domain=`, `?type=`),
+      as Blocking keeps `?rule=`: written by replacing the entry, read on arrival (the
+      first `cache/list` asks for that node instead of the root), dropped when the
+      screen goes. `lib/url-state.ts`.
+    Its words, all OURS: `Records`, `Time Left`, `Next to expire`, `Longest`, `Stale`,
+    `Negative`, `Answered By`, `N more`, `Details`, `Show all N`, `Show fewer`, `N of M
+    records at <node>, TYPE only`, `Cache` as the path's first step, and the two tooltips "Its TTL has run out.
+    The server keeps it for Serve Stale and shows its TTL as 0 (0s)." and "A cached
+    answer that the name, or a record of that type, does not exist."
+17. **Apps says what the apps are** (Adrián's decision, 2026-11-06). Everything
+    reads the `apps/list` the screen already makes (the store, its own
+    `apps/listStoreApps`); every call, confirmation, alert text, validation and
+    alert placement is the one it was.
+    - **Four cards over the installed list** (`AppsSummary.tsx`). Installed Apps:
+      how many, split in a bar into `Up to date`, `Update available` and `No store
+      version` (the server wrote none of the three update fields), the last with a
+      tooltip: "The server gives a store version only for an app whose name the DNS
+      App Store lists with a version for this server, and for none when the store
+      could not be reached." Classes: every class of every app by upstream's labels
+      (`APP Record` … `Generic`); pressing a kind sets the table's Kind filter,
+      exactly as choosing it there, and pressing the applied one clears it. Query
+      Logs: the apps whose classes have `isQueryLogs`, "Read by Query Logs in the
+      Logs section.", and how many classes are a `Query Logger`. APP Records: the
+      classes with `isAppRecordRequestHandler`, four by class path and the rest as
+      "N more", "Classes an APP record can use.". A zero is drawn as 0, `None
+      installed` when no app serves Query Logs; no card is drawn when the list
+      failed to load.
+    - **The installed apps are a table** in `ui/DataTable`: upstream's `Installed
+      Apps` header sorts it, its foot is upstream's `Total Apps: N` (apps.js:41),
+      which this console had dropped, and `No Apps Found` when the filter leaves
+      nothing. The tags are upstream's `Version X` and `Update Y` again.
+    - **A `Kind` column, and the kinds as a filter.** Each row writes the kinds of
+      its classes once each, in upstream's order. Pressing a kind on the Classes
+      card narrows the table to it; the toolbar's end then shows that kind with
+      `Clear`. A `Search` field in the toolbar narrows by name or description. Both
+      only narrow what is drawn and ask the server nothing; the foot reads `Total
+      Apps: N, M shown` while they hide rows. Both travel in the address bar
+      (`?kind=`, `?q=`, `lib/url-state.ts`), replacing the entry.
+    - **One line per app** (2026-11-06): the name with its tags, the kinds and the
+      actions. Upstream's More Details (the description, each class with its
+      labels, description and Record Data Template) opens under the row, from a
+      chevron named `More Details`; the store's rows do the same with the
+      description and `App Zip File`.
+    - **Each kind has a series colour** (`app-kinds.ts`), from the Dashboard's open
+      cycle `--ch-1` to `--ch-8`, `Generic` neutral; the kind is always written
+      beside it.
+    - **Row actions**: Config and Update as icons with their names in the tooltip,
+      `Store Update` labelled when the store has one, and the `⋮` menu carrying all
+      of them by name, Uninstall only there.
+    - **The store** is a wide dialog with a DataTable: a `Search` field narrowing by
+      name or description in the browser (`Total Apps` still counts the whole
+      catalogue; `No Apps Found` when nothing matches), the size in a `Size` column,
+      `App Zip File` in More Details, an `Installed` mark beside the version, and
+      Uninstall (with Update) in the row's `⋮` menu. Install and Update stay
+      buttons of the row.
+    - **The header's "N update(s) available" pill is gone**: the Installed Apps
+      card says it.
+    - **App Config's editor numbers its lines and says whether the text is JSON**
+      (`Valid JSON`, or `Not valid JSON:` and the browser's reason). It only
+      informs: Save sends the text as typed, valid or not.
+    - Two that predate 2026-11-06 and are registered here because they were never
+      written down: the header button says `Install from file` where upstream says
+      `Install`, and with no app installed the table's place holds a region empty
+      state (`No apps installed`, one sentence and `Open App Store`) where upstream's
+      footer says `No Apps Found`.
+18. **DNS Client lays the response out** (Adrián's decision, 2026-11-06). Upstream
+    prints `response.result` as JSON and the raw responses as a stack of JSON
+    blocks (dnsclient.js:174-194). Here the same response, and nothing else, is
+    drawn as a DNS message; no call is added and nothing is kept between queries
+    (`screens/dnsclient/response.ts`, which reads the serialised `DnsDatagram`
+    with every key optional):
+    - **Four cards** (`ResponseSummary.tsx`): Response (the RCODE in the
+      Dashboard's colour for it, Opcode, ID, the Extended DNS Error codes once
+      each), Answer (the count, the types in their Zones colours as a bar and
+      chips, Authority and Additional), Server (`Metadata`: Name Server, Protocol,
+      Round Trip Time, Datagram Size; not drawn without it) and Flags (AA, TC, RD,
+      RA, AD, CD, lit when set, each named in its tooltip; UDP Payload Size, EDNS
+      Flags; the answer records' DNSSEC statuses). A count is drawn as 0. The
+      chips count; they do not filter: the screen has no filter to drive.
+    - **The sections as tables** (`ResponseSections.tsx`): tabs `Question`,
+      `Answer`, `Authority`, `Additional`, each with its count, and `Extended DNS
+      Errors` when the answer carries any (the EDNS options of that code and the
+      client library's `DnsClientExtendedErrors`, with their source). Answer opens
+      first. RDATA is written as the server keys it; a TXT's `CharacterStrings`
+      is left out only when it repeats `Text` as one string. A `DnssecStatus` of
+      `Disabled` (validation not asked for) is a quiet word, not a pill.
+    - **The JSON stays, whole**: the last tab is upstream's
+      `JSON.stringify(result, null, 2)`, and it is the only tab when the result
+      is not a datagram.
+    - **Raw Responses (N)** keeps upstream's collapsed panel, but lists one row per
+      response (Name Server, Question, RCODE, the three counts, Round Trip Time),
+      each opening its own JSON (`RawResponses.tsx`).
+    - **The query is the toolbar of the answer's card** (2026-11-06): its first line
+      is what is asked (Domain, Type, Resolve and Import), the band under it how
+      (Server and its list, DNS-over-, EDNS Client Subnet, Enable DNSSEC Validation,
+      the node). Same fields, labels, options and verbs. The tabs and the tables
+      follow in the same card; the four cards stand above it once there is an
+      answer.
+    - **The question is the title once answered** (`DNS Client › github.com A`);
+      `DNS Client` in the trail goes back to the empty card.
+    - **The query is in the address bar** (`?domain=`, `?type=`, `?server=`,
+      `?protocol=`, `?dnssec=off`, `?ecs=`, `lib/url-state.ts`), written by
+      replacing the entry once an answer lands, only what differs from the form's
+      defaults. A bar naming a domain runs that query once on arrival, as a jump
+      from another screen does; a jump wins over the bar. They leave with the screen.
+    - **Recent queries** (`recent.ts`): the last eight that came back, newest first,
+      in this browser's storage only; the empty card lists them, and pressing one
+      fills the form and resolves it. With none, the card says `Run a query to see
+      the response.` as before.
+    - **The header flags are words, not boxes**: a set flag on a tint, an unset one
+      struck through and faint, each with its name in the tooltip.
+    Its words, all ours: the card titles `Response`, `Answer`, `Server`, `Flags`;
+    `Opcode`, `ID`, `Extended DNS Errors`, `Authority`, `Additional`, `Name
+    Server`, `Protocol`, `Round Trip Time`, `Datagram Size`, `UDP Payload Size`,
+    `EDNS Flags`, `DNSSEC`; the flags' abbreviations and their tooltip names (the
+    datagram's keys split into words); the tabs' `Question`, `Answer`,
+    `Authority`, `Additional`, `JSON`; the headers `Name`, `Type`, `Class`,
+    `TTL`, `Data`, `Source`, `Info Code`, `Extra Text`, `RCODE`; the sources
+    `EDNS` and `DNS Client`; `No Record Found` (the zone table's words); `Show
+    raw response N` / `Hide raw response N`; the Import confirmation's title
+    and verb, `Import`; and `Recent queries`.
+19. **DHCP reads like Cache and Zones** (Adrián's decision, 2026-11-06). Its two tabs
+    open with stat cards over ONE card that both finds and shows (`ui/DataTable`), a
+    row is one line with the rest under its `Details`, a scope opens as a page, and
+    the view is in the address bar. They read only DHCP's own two lists and the
+    `scopes/get` upstream's Edit already makes:
+    - **Scopes opens with three cards** (`ScopeSummary.tsx`): All Scopes (Enabled and
+      Disabled; pressing a state sets the State filter, pressing it again clears it),
+      Address Pool (the leases held in the enabled scopes, of the addresses in their
+      ranges) and Leases (Dynamic and Reserved). They read `dhcp/leases/list` beside
+      `dhcp/scopes/list`, the one call this deviation adds: the list the Leases tab
+      already loads, under the same DHCP: View, on the same node. When it fails the
+      scope table and All Scopes are untouched, no notice is raised, and the cards say
+      "The leases could not be read." instead of drawing a false zero. A range is
+      `endingAddress - startingAddress + 1`; the exclusions are not in `scopes/list`,
+      so nothing calls the remainder "free" (`pool.ts`).
+    - **The scope table** has a toolbar upstream does not: `Search` (a name, or an
+      IPv4 address its range holds, or part of its starting, ending, network or
+      interface address) and a `State` filter, both narrowing the list on screen.
+      One line per scope: Name, `Scope Range`, `Subnet Mask` (upstream's "Scope
+      Range/Subnet Mask" split in two columns), Interface, a `Leases` column (each
+      scope's leases of the addresses in its range, sortable by count) and Status.
+      Network and Broadcast are under the row's `Details`, so the table no longer
+      sorts by them. The name opens the scope; Edit Scope and Delete Scope are in the
+      row's menu, Enable or Disable Scope beside it. Same calls and confirmations.
+    - **A scope opens as a page** (`ScopePage.tsx`), not a bare form: the header is
+      the scope (`Scopes ›` back to the list, which reads it again as Cancel does; its
+      name as the title; its state and `Interface`), with `Disable Scope` (or `Enable
+      Scope`) and `Delete Scope` at the right: the row's verbs, permissions,
+      confirmations and alerts. Disabling or enabling there reads the list again and
+      stays on the page, the form as typed; deleting returns to the list, removing the
+      row without reading it again. Four cards (`ScopeOverview.tsx`) read the scope's
+      row, its `scopes/get` and the leases: Address Pool (its leases of its range; the
+      range, mask, network and broadcast), Leases (Dynamic and Reserved, and `Open in
+      Leases`, which opens the Leases tab narrowed to the scope), Reserved Leases (how
+      many, and for each whether a lease of the scope carries its MAC: `Leased` or
+      `Not leased`, "N of M leased", with the tooltip "A reservation is in the Leases
+      list only once its client has taken it.") and Options (Lease Time written `1d
+      4h 30m`, Router Address, DNS Servers or `This DNS Server`, Domain Name; `None`
+      when empty). Then the form under upstream's title, "Edit Scope". Add Scope is
+      the same page titled "Add Scope", without cards.
+    - **The scope form reads in one glance** (`ScopeForm.tsx`, `form-summary.ts`):
+      Scope stands open; the other twelve blocks are one card of lines, each its
+      title and what it holds, following what is typed, and a line opens its block
+      under it. A closed block's fields stay in the form, hidden, and Save sends them
+      all; when a save stops at a cell of a closed block, the block opens before the
+      cell takes the focus. The Ping Check `Warning!` is above its controls (DESIGN:
+      Warning before, Note after); the Ending Address says how many addresses the
+      range holds while typing, only for a valid IPv4 range; the Vendor Specific
+      Information hex samples may wrap between octets. Same fields, order, defaults,
+      texts, validation and save. The section index is gone.
+    - **Leases opens with four cards** (`LeaseSummary.tsx`), counted from the list on
+      screen: All Leases (pressing a type sets the Type filter, pressing it again
+      clears it), Leases per Scope (pressing one sets the Scope filter), Expiring Soon
+      (within the next hour, and the first to go) and Newest Lease. Refresh sits beside
+      the title, as Cache's does.
+    - **The lease table can be searched and filtered**: `Search` (IP address, MAC
+      address or host name, a MAC typed with colons finding the server's dashes),
+      Scope and Type filter the list already loaded and ask the server nothing. The
+      foot still reads `Total Leases: N`; while a filter hides rows the toolbar says
+      `N of M shown`; an empty result shows `No Lease Found`. One line per lease: IP
+      Address, Host Name, MAC Address, Type, Scope and Lease Expires with how far off
+      it is (upstream's order was Scope, MAC, IP, Type, Host, Obtained, Expires). The
+      `Client Identifier`, which upstream only sends, and both dates with their
+      distance are under `Details`; Lease Obtained left the line, so the table no
+      longer sorts by it.
+    - **The view is in the address bar** (`dhcp-url.ts`, `lib/url-state.ts`): Leases
+      keeps `?q=`, `?scope=`, `?type=`; Scopes keeps `?q=`, `?state=`, written by
+      replacing the entry, and the open scope `?scope=`, PUSHED as `?zone=` is, so
+      Back and Forward walk between the list and a scope and a reload or a link opens
+      it (a scope that cannot be read leaves the list, and the bar with it). Each tab
+      reads them only when the bar is on its own folder, since a tab is drawn before
+      the screen it replaces has dropped its search, and drops them when it goes.
+      `Open in Leases` leaves Scopes, so Back from it lands on the scope list.
+    - **A lease type has a series colour** (`lease-colours.ts`): Dynamic the blue
+      upstream gives it, Reserved the violet, always with the word beside it.
+    - **"Remove Lease?" draws its two `Warning!` paragraphs as warning blocks**, same
+      words, same order.
+    Its words, all OURS, declared in the header comment of the file that writes them:
+    the card titles `All Scopes`, `Address Pool`, `Leases`, `All Leases`, `Leases per
+    Scope`, `Expiring Soon`, `Newest Lease`, `Reserved Leases`, `Options`; `of N`,
+    `addresses in range`, `addresses in range leased`, `leased in the enabled
+    scopes`, `in the enabled scopes`, `The leases could not be read.`, `within the
+    next hour`, `next:`, `obtained`, `None`, `Open in Leases`, `N of M leased`,
+    `Leased`, `Not leased`, `N more`, `This DNS Server`, the `1d 4h 30m` lease time
+    and the reservation tooltip; the headers `Leases`, `Scope Range`, `Subnet Mask`;
+    `Search` and its placeholders `IP address, MAC address or host name` and `Scope
+    name or IP address`; `State`, `All`, `N of M shown`, `Details`, `Client
+    Identifier`, `Network`, `Broadcast`, `Interface`, `Disable Scope`, `Enable
+    Scope`, `Delete Scope` as header buttons, `N addresses`/`1 address`; and the
+    block summaries (`On`, `Off`, `ms`, `retry`/`retries`, `No domain name`, `DNS
+    Updates`, `TTL`, `search domain(s)`, `Router`, `DNS`, `WINS`, `NTP`, `via`,
+    `Option`, `entry`/`entries`, `route(s)`, `range(s)`, `Server`, `Host`, `File`,
+    `match any`, `and N more`).
+20. **Logs reads like Cache and the zone list** (Adrián's decision, 2026-11-06). Every
+    call, confirmation, alert text, validation and its order, the export and the row menu
+    are the ones they were; what changes is the layout and what is drawn from data the
+    screen already has.
+    - **View Logs is the folder, and an open file is its own page.** The folder's header
+      is the section's, with Refresh beside the title (the same `logs/list`) and Delete
+      All Logs / Delete All Stats at the right. Under it, up to four cards
+      (`LogFilesSummary.tsx`, `log-files.ts`) read from the list: Log Files (the count
+      and the span of days), Total Size (the sum of the sizes the server writes, and the
+      largest file), Newest and Oldest (only for files named by their day, which is how
+      the server names them; each opens its file). Then one table, one line per file:
+      the name opens it, and its size carries a bar of its share of the folder. The foot
+      reads `N log files`. An empty folder says 0 and 0 B; a list that failed draws no
+      cards and the table says `Unable to load the log files.` Opening a file makes its
+      name the header (the trail's `View Logs` goes back), with Refresh (the same 2 MB
+      read), Download and Delete. Over the reader, one line says what the text holds:
+      the size the list wrote, how many lines carry the server's timestamp, the first
+      and the last of them, and, when the text reaches the viewer's 2 MB (`limit=2`
+      reads from offset 0, LogManager.cs:657-676), that only the start is shown.
+      Upstream draws the list as links with the size in brackets beside a `<pre>`, with
+      all four verbs on one screen (logs.js:119-131, index.html:3272).
+    - **The open file is in the address bar** (`?file=`, `lib/url-state.ts`): written by
+      replacing the entry, read on arrival (it opens once the list says the file exists;
+      otherwise the list stays and the parameter goes), and dropped when the screen goes.
+    - **Query Logs opens with four cards** (`QuerySummary.tsx`, `query-facts.ts`) counted
+      from the entries of the page on screen, never from the whole log, and saying so:
+      Response Types (the page's entries, `of N logs`, a bar and chips in the
+      Dashboard's colours by the same names, and `Blocked` as a count and a share of the
+      three blocked types), RCODE (by the RCODE field's labels), Top Clients and Top
+      Domains (four each, then `N more, on this page`). Pressing a type, a code, a client
+      or a name writes it in its field and runs Query from page 1, exactly as choosing it
+      there would; pressing the applied one empties the field and queries again. With
+      Live Update on, Query is off, so pressing only sets the field and the loop's next
+      turn sends it. A value the form has no option for, and the root name, are drawn but
+      cannot be pressed. They follow the page every 2 s with Live Update.
+    - **The filters are inside the results card.** Its toolbar holds `Domain` and
+      upstream's four verbs in upstream's order, with the status at its end; a band under
+      it holds the other ten filters, From/To/Order together under the Live Update edge
+      and pill; then the legend, the rows and the foot. Upstream draws a form panel over
+      the table.
+    - **One line per row.** Timestamp, Client IP Address, Domain, Type (in its series
+      colour, `zones/zone-colours`), Response Type on its row colour, RCODE and Answer
+      cut where its column ends. `Details` (chevron, `aria-expanded`) opens a line under
+      the row with `#`, `Protocol`, `Class`, the response time upstream writes under the
+      type, and the whole answer, one record per line with the same text.
+    - **The query is in the address bar** (`query-url.ts`): once a query lands, the
+      filters it sent and the page the server answered are written by replacing the
+      entry, each named as `logs/query` names it, only when it differs from what Reset
+      gives, the page past the first, and From/To as the instants the call sends. On
+      arrival they are read once, checked (an app or class that is not there, an option
+      the dropdown lacks, or a page that is not a number is dropped) and queried as Query
+      would, with Live Update off. A jump from another screen wins over the bar. The
+      parameters leave with the screen.
+    Its words, all OURS: `Log Files`, `Total Size`, `Largest`, `Newest`, `Oldest`, the
+    span's `to`, the column headers `Log File` and `Size`, `N log files`, `Size`,
+    `Entries`, `First`, `Last`, `Showing the first 2 MB. Download gives the whole file.`,
+    `Response Types`, `of N logs`, `Blocked` as a share, `Top Clients`, `Top Domains`,
+    `on this page`, `N more`, `Details` and `Refresh` (Cache's word).
+21. **My Profile is a page** (Adrián's decision, 2026-11-06). Upstream's `modalMyProfile`
+    (index.html:3691-3786, auth.js:660-866) is a dialog; here it is `/profile/`, reached
+    from the account menu's `My Profile` (`screens/profile/`). It is a route like the
+    sections (`profile` in `SECTIONS`, its own folder, Back and F5, no sub-sections) but
+    in no sidebar group, and needs no permission. It calls what the dialog called and
+    nothing more: `user/profile/get` on arrival, on Refresh and after a dialog opened from
+    it changes the account (2FA, a new token); `user/profile/set` on Save;
+    `user/session/delete`. It is ONE page with everything in view (2026-11-06, Adrián:
+    four tabs were too many for so little): the header, then two columns, the sessions in
+    the main one (about two thirds) and four compact panels in the side one. Under
+    1180 px they stack as Profile, Security, Sessions, Account, Theme.
+    - **The user is the header**: the account menu's initial, `My Profile ›`, the display
+      name as the title with Refresh, and on its line the username, the Type and the 2FA
+      Status (`2FA Enabled`, `2FA Disabled`, `2FA SSO Managed`). Username and Type are the
+      dialog's two read-only fields, so they leave the form; each value keeps upstream's
+      label for a screen reader (a visually hidden `dt`).
+    - **Sessions in `ui/DataTable`**: upstream's four sortable columns and `Total
+      Sessions: N`, one row per session (the type and token name over the partial token,
+      the date over its age), the user agent whole under `Details`, a type filter in the
+      toolbar (`?type=` in the address bar, `lib/url-state.ts`; the foot says `N of M
+      sessions, TYPE only`), `Create API Token` at the toolbar's end (an API token is a
+      session of that type; the menu's same dialog, and the page reads the profile again
+      after it), and `Delete Session` as the row's button instead of a one-entry menu,
+      with upstream's confirmation. A deleted session leaves the list without a reload, as
+      `deleteMySession` removes the row, and an API token is deleted with `node` set to
+      the primary's name, empty on a standalone server (auth.js:835-838).
+    - **Profile**: the dialog's editable fields, labels over them: Display Name (locked
+      and not sent for a remote user), Session Timeout with `seconds (valid range
+      0-604800; default 1800; set 0 to disable)`, an empty timeout sent as 1800, `Profile
+      Saved!` on the page. The load writes the name into the menu and the 2FA state into
+      the session (auth.js:675-679). It no longer takes the focus a second after loading.
+    - **Security**: Password with Change Password and the 2FA Status with Configure 2FA,
+      one line each, opening the account menu's same dialogs under its same rules.
+    - **Account** (`AccountPanel.tsx`): Member Of (upstream's table of groups, as tags, or
+      `No Group Found`), and Recent Login and Previous Login, which `user/profile/get`
+      carries and the stock dialog does not draw, each on one line as how long ago, then
+      the date `from` the address as Users writes it, or `Never`.
+    - **Theme** offers Change Theme's three options as one compact strip, each with a
+      small swatch drawn in that theme's tokens, applying on click as the dialog does; the
+      menu's Change Theme stays.
+    Its words, all OURS: `Profile`, `Security`, `Account`, `Password` as block titles,
+    `2FA` before the header's status, `from`, `All`, `Details`, `Session type`, `N of M
+    sessions, TYPE only`.
+22. **Settings reads as one form** (Adrián's decision, 2026-11-06). Upstream draws nine
+    tabs over one long form whose help sits under each field. Here:
+    - **One menu at the left of the form** (`screens/settings/SettingsMenu.tsx`) holds the
+      nine sub-sections (real links to their routes, `aria-current="page"`, the dot of
+      deviation 3) and, under the current one, its titled blocks as in-page anchors
+      (`#settings-<title>`, the one in view `aria-current="location"`, only when the pane
+      has two or more). It replaces the row of sub-tabs and the second row of block links
+      (`ui/SectionIndex`) that looked like tabs and only scrolled. Under 960 px of screen it
+      folds into a bar at the top: the current sub-section and block as a button that opens
+      the same list, and the search.
+    - **Search settings** at the top of the menu (`search.ts`) narrows the current pane to
+      the rows and notices whose label, help or options' text hold every word typed, hides
+      the blocks left empty and paints the matches (CSS Custom Highlight API). It searches
+      what the form says, not field values. The other eight panes are drawn out of sight
+      (`hidden`, `inert`, reading no Quick list) only so each sub-section in the menu can
+      say how many matches it has. It asks the server nothing, changes no field, and a
+      hidden field is still saved. The words are in the address bar as `?q=`
+      (`lib/url-state.ts`): written by replacing the entry, read on arrival, kept when
+      moving between sub-sections, dropped when the screen goes.
+    - **Each row reads label, help, control**: the help under the label as one muted line,
+      a longer one cut at its end with `more` (and `less`), the whole text always in the
+      document (`ui/FoldHelp`); an editable table drops under its label and help. It is the
+      panel-form kit's row (`ui/Form`), so every page form built on it (Administration's
+      SSO, LDAP and Cluster, DHCP's scope) reads the same.
+    - **The header is the pane** (`Settings ›` and the sub-section as the title), with
+      **Backup Settings, Restore Settings and Flush Cache** at its right; **Save Settings**
+      stays in a bar on screen for the whole screen, a card floating a step above the
+      window's edge with the same air under it at the page's end, as every form's save bar
+      (`ui/PanelForm`'s `.bar`). Same calls,
+      permissions, confirmations and texts.
+    - The block headers carry no count of their rows. Quick Add and Quick Select are rows
+      like their neighbours.
+    - **The form takes the width the menu leaves** (2026-11-06, Adrián): one column,
+      never two, so the blocks are read in upstream's order.
+    - **`Warning!` and `Note!` are compact lines** in every form built on the kit
+      (`ui/PanelForm`'s `Warning`, `Note`), Settings, DHCP's scope, Administration and
+      the dialogs that use them: the sign and the bold word in their colour, the text in
+      the help's size, a warning whole and a note folded to its first line with `more`.
+      A switch's help folds the same way (`ui/Check`'s `toggle`). Settings › General went
+      from 5,461 px to 4,777 at 1440. The whole text is always in the document.
+    Its words, all OURS: `Search settings`, `more`, `less`, `No unsaved changes`, `No
+    settings in <Section> match "<q>".`, `match` / `matches` (read after a sub-section's
+    name), `Save` (the bar's region name).
+23. **Administration reads like the rest** (Adrián's decision, 2026-11-06). Every call,
+    confirmation, alert text, validation and its order, and every dialog are the ones
+    they were; what changes is the layout and what is drawn from data the screen already
+    has. Each sub-section has Refresh beside the title (the same list call it makes on
+    arrival).
+    - **Permissions is one matrix** (`PermissionMap.tsx`, `permission-map.ts`). Upstream
+      draws a row per section holding a user table and a group table with a tick per verb
+      (auth.js:2031-2073). Here the sections are the rows, under upstream's sortable
+      `Section`, and the columns are every group and then every user holding an entry in
+      any section, in the order the server first lists them, under upstream's `Group
+      Permissions` and `User Permissions`. A cell is three marks, `V`, `M`, `D`, filled for
+      each verb granted; its tooltip and its text for a reader name them, or say `None` for
+      an entry granting nothing; no entry is an empty cell, as it is a missing row upstream.
+      A population nobody holds says upstream's `No group permissions` / `No user
+      permissions` once, down its one column. The section's name (upstream's link), the
+      row's `Edit Permissions` (the `⋮` menu's only entry) and a click on the row open
+      upstream's dialog for that section. Under 720 px it folds into one block per section,
+      its groups and then its users, with upstream's two literals where it has none. The
+      eleven panels, their index and the map above them are gone: 3,252 px at 1440 became
+      979.
+    - **Users, Groups and Sessions are data tables** (`ui/DataTable`): the search in the
+      toolbar, then upstream's primary action (`Add User`, `Add Group`, and on Sessions the
+      node picker and `Create Token`) at its end, where upstream floats them over the table;
+      upstream's `Total Users: N` / `Total Groups: N` / `Total Sessions: N` in the foot, with
+      `, K shown` while a search or a filter narrows it. One line per row; the rest under the
+      row's `Details` (chevron, `aria-expanded`): a user's two logins whole (`date from
+      address` and how long ago; the row keeps each date), a group's description line by line
+      (the row cuts it to one), a session's type and whole user agent (the row cuts it). The
+      row's other control is upstream's `⋮` menu with its own entries in its own order
+      (auth.js:1190-1209, 1797-1799, 938-939): the separate View Details and Enable/Disable
+      buttons are back inside it, under upstream's words `Enable` and `Disable`. The name
+      opens the details, as upstream's link does.
+    - **Users opens with four cells** (`UsersSummary.tsx`, `user-facts.ts`) counted from
+      `admin/users/list`: Users (Enabled against Disabled), Type (by upstream's labels), 2FA
+      (enabled of the users whose 2FA this server keeps, an SSO user's being the provider's,
+      and `SSO Managed N`), Recent Login (who, how long ago, from where). Pressing a state or a
+      type narrows the table and pressing it again clears it; the applied one also sits in
+      the toolbar as a chip that clears it. **Sessions opens with three**
+      (`SessionsSummary.tsx`, `session-facts.ts`) counted from `admin/sessions/list`: Sessions
+      by type (My Profile's colours; pressing filters), Users and Remote Addresses (how many,
+      the four with most; pressing one writes it in the Search). Nothing is asked of the
+      server.
+    - **The view is in the address bar** (`bar-param.ts` over `lib/url-state.ts`): `?q=` on
+      the three lists, `?status=` and `?type=` on Users, `?type=` on Sessions; read on
+      arrival, written by replacing the entry, dropped when the sub-section goes.
+    - **SSO and LDAP say their state on the header line**: `Enabled` or `Disabled` as last
+      read or saved (not the unsaved checkbox), and `Not configured` while the authority
+      and client ID (SSO) or the server (LDAP) are empty, warn-toned only when enabled.
+      Their forms take Settings' rows (deviation 22) in two columns on a wide screen: the
+      connection at the left, what follows from it (sign-up, scopes, the group map) at the
+      right; one column under 1180 px (`ConfigParts.tsx`). A switch stands on its own line
+      with its label and help; the fields go two across, label over control over help.
+      Upstream's `Warning!` and `Note!` (shown at the end of the page in its order) sit
+      in the block they speak about as compact lines, the warnings whole before the
+      controls, each note folded to its first line with `more`: SSO's connection notes
+      (the callback path, when SSO is enabled, internal resolution, the reverse proxy,
+      the Web Service restart), sign-up's (names synced), Scopes' (the email username),
+      Group Map's; LDAP's likewise. SSO shows its Redirect URI, the value the first note
+      gives, as a line with Copy. SSO drops its section index: a row of links that only
+      scroll looked like a second row of tabs. Their words, OURS: `Redirect URI`, `Copy`,
+      `Copied`.
+    - **Cluster's nodes are a data table**: the node picker in its toolbar, `Total Nodes: N`
+      in its foot.
+    - **Every dialog body reads like Add Zone** (`ui/DialogForm`): labels over their
+      fields, short fields in pairs, related fields in a light block, choices as
+      tiles, tables one line per row with icon actions. A `Warning!` comes before the
+      controls it is about (Create API Token, Initialize and Join Cluster, Import
+      Zone, Edit Zone File, Zone Options), except where its words point up ("above":
+      Restore Settings, a created token, DNSSEC's TTL). User Details' sessions keep
+      Session, Last Seen and Remote Address on the line, the user agent under
+      `Details`; DNSSEC Properties' Rollover (days) goes under the key's `Details`, so
+      neither column sorts any more.
+    Its words, all OURS: `V`, `M`, `D` and the legend, `None`, `Search` and its three
+    placeholders, `Details`, `Clear`, `N shown`, `Users`, `Type`, `2FA`, `of`, `Recent
+    Login` as a cell title, `Nobody yet`, `Sessions`, `Remote Addresses`, `N more`,
+    `Enabled`, `Disabled` and `Not configured` on the SSO and LDAP headers, `Refresh`
+    (Cache's word).
+24. **The sidebar is grouped by task and holds the sub-sections** (Adrián's decision,
+    2026-11-06). Upstream draws one flat row of tabs. Here (`app/Shell.tsx`, `NAV`):
+    - **Five headed groups** under Dashboard: `Monitoring` (Clients since 2026-11-06,
+      deviation 25, then Query Logs, View Logs),
+      `DNS` (Zones, Cache, Blocking), `Network` (DHCP), `Tools` (DNS Client) and
+      `System` (Settings, Apps, Administration, About). Logs is two entries, one per
+      screen.
+    - **Blocking, DHCP and Administration unfold their sub-sections** under their
+      entry while open (`visibleSubs` in `app/sections.ts`); the sub-tabs under their
+      titles are gone, and each sub-screen's title is its own name under the section
+      (`Administration › Users`). Exactly one link is `aria-current="page"`: the
+      sub-section, or the entry itself when it has none. Lists' unsaved-changes dot
+      rides on its sidebar entry (`app/nav-marks.ts`). Settings keeps its own menu.
+    - **Blocking › Settings** is the Settings form with only its Blocking pane
+      (`Settings`' `only`): the same load, fields and one save, so saving there sends
+      what Settings' Save sends; no Backup, Restore or Flush Cache. Settings' menu no
+      longer lists Blocking, and `/settings/blocking/` still works: its folder is
+      emitted and `route.ts` rewrites it to `/blocking/settings/` (`MOVED_ROUTES`). The
+      page needs `Settings.canView`, as the pane did.
+    - **The brand and the versions.** At the top, Technitium's maze redrawn in its
+      blue tile (`app/BrandMark.tsx`, the same geometry as `public/img/logo.png`; Login
+      and About keep the original file), `Technitium` with this console's version
+      beside it and `Console` under it, the console's `Update` chip beside that word
+      when there is one. At the foot, above the account, a quiet card with the DNS
+      server's domain and `DNS Server <version>`, its `Update` chip at the line's end
+      (`app/Versions.tsx`: same checks, same dialogs).
+    Its words, all OURS: the five group headings, `Console` under the name, `Settings` as a Blocking
+    sub-section, `Blocking › Settings` in the two links that pointed to Settings ›
+    Blocking.
+
+25. **The Clients page** (Adrián's decisions, 2026-11-06; `src/screens/clients/`). Upstream
+    has no such screen: it is Blocking › Overview's Blocked by client card grown into a page,
+    built from that card's and the Dashboard's pieces (`useLoggingApp`, `countByClient`,
+    `BLOCKED_TYPES`, `TopRowMenu`, the top lists' rows, `Line`, Query Logs' `rowClass` pill,
+    `ui/StatCard`, `ui/DataTable`). It is a section of its own, `clients`, first under
+    `Monitoring` in the sidebar, and needs `Dashboard: View`, the permission of its main calls.
+    What it shows:
+    - **the header**: `Clients`, a subtitle (`CLIENTS_SUBTITLE`) and the Dashboard's five fixed
+      periods (no Custom) with Last Hour's live dot, read again a minute after each answer,
+      never with a hidden tab (the clients do not move with the live counters, deviation 5);
+      the cluster node selector with the Dashboard's node memory (`dashboardClusterNode`);
+    - **a strip** of four cells: `Clients` (`totalClients` of `stats/get`), `Most Active` (the
+      first of the period's Top Clients, its queries and share of `totalQueries`), `Most
+      Blocked` and `Blocked Share`, both from the log sample;
+    - **Who uses your DNS** (`WhoUses.tsx`): the period's 20 busiest clients as one bar, each
+      segment its share of `totalQueries`, its name inside when it has 6 % of the bar (not on a
+      phone), a click opening that client, and the caption with the total and how much of the
+      traffic they cover;
+    - **the list** (`ClientList.tsx`): `dashboard/stats/getTop` with `statsType=TopClients`
+      and `limit=1000`, exactly what upstream's More sends (main.js:2939), one line per
+      client: its initial (as the account row draws it), name and address, its tags, its
+      queries in the period, `N% blocked` of its queries in the sample and a thin bar of that
+      split. Two tags, each a rule the code states (`clients-model.ts`, THE TWO TAGS): `Heavy
+      blocking`, a fifth or more of its queries in the sample blocked over at least ten of
+      them, and upstream's own `rateLimited` as `Rate limited`; nothing the data cannot prove
+      (the server does not say when it first saw a client, so there is no "New"). Filter
+      chips with their counts, `All`, `Heavy blocking` (only with a sample) and `Quiet` (under
+      1 % of the period's queries), and a `Sort by` of `Most queries`, `Most blocked` and
+      `Name`. The search (`?q=`), the filter (`?filter=`), the order (`?sort=`), the page
+      (`?page=`) and the open client (`?client=`) are in the address bar, written by replacing
+      the entry, each default left out, all dropped when the page goes;
+    - **master and detail**: above `--bp-wide` (1180 px) the list is a 380 px column and the
+      open client's card sits beside it, the list's first client open when `?client=` names
+      none (and the bar stays clean); at 1180 and under the list takes the width and opening a
+      client shows its card instead, under a `Clients ›` trail that comes back, as a zone's
+      page does;
+    - **the card** (`ClientCard.tsx`): its name (or address) and tags; its address and, when a
+      DHCP lease hands it out (`dhcp/leases/list`, read only with `DhcpServer: View`, matched
+      by address), the lease's MAC address, host name and scope; its last query's age;
+      `Open in Query Logs` (the Top Clients jump) and `Copy IP`. Then, from `logs/query`
+      filtered by `clientIpAddress`, its newest 500 entries of every type: `Queries`,
+      `Blocked` (the three classes), `Cache hit rate` (`Cached` over all) and `Median response
+      time` (the median `responseRtt` of the entries that carry one, the cell left out when
+      none does); its activity over the sample's own span in 24 slices, Total and Blocked, on
+      the Dashboard's line; its five most asked and five most blocked domains, each with Top
+      Domains' or Top Blocked Domains' menu; its protocols as a stacked bar and its record
+      types as bars; and its ten latest queries (age with the time in its title, domain,
+      type, Query Logs' coloured response pill, and `responseRtt` in ms or the "no value"
+      placeholder). The log entries carry no node (checked against v15.6.1 on 2026-11-06), so
+      there is no "answered by" in a cluster: the aggregate reads the connected node's log.
+
+    - **the card's Actions** (`ClientActions.tsx`, `client-actions.ts`, approved on
+      2026-11-06), a band under its head, one line per action with its state:
+      - `Blocking Bypass List` and `QPM Limit Bypass List` (Settings' own fields): whether
+        the address is in the list, by itself or through a network entry that holds it
+        (`Through <network>`, which offers no removal: taking the address out would change
+        nothing), and `Bypass Blocking` / `Apply Blocking`, `Exempt from Rate Limiting` /
+        `Apply Rate Limiting`. The lists are read with `settings/get` (only with `Settings:
+        View`) and saved with `settings/set` carrying `node` and the one list, through
+        Settings' cleaning (`cleanList`, `false` when empty), as Blocking › Lists saves
+        `blockListUrls`. Both are cluster-wide parameters (`nodeScope`), so both calls go
+        where Lists sends its own: `cluster` on a cluster, the empty node on a standalone
+        server. A save needs `Settings: Modify` (the padlock otherwise), asks first, naming
+        the list and the address, and redraws from the server's answer with Settings'
+        `Settings Saved!`. The QPM line is drawn only when the server sends
+        `qpmLimitBypassList`;
+      - `DHCP Lease`, when a lease hands out the address: its type and DHCP › Leases'
+        conversion for it, `Convert To Reserved Lease` (`dhcp/leases/convertToReserved`) or
+        `Convert To Dynamic Lease` (`dhcp/leases/convertToDynamic`), with the lease's scope,
+        client identifier and the node the leases were read on, upstream's confirmations
+        and `Reserved!` / `Unreserved!` notices, `DhcpServer: Modify`, and the leases read
+        again after it.
+      A failure says the server's message (`Error!`). Logs and leases are read on the chosen
+      node, or on the connected one with the aggregate or without a cluster.
+
+    **The log sample** is the newest 1,000 queries of every response type (`logs/query` through
+    the query logs app, Query Logs' own call), read again with each answer of `stats/get`. It is
+    not the period, and every figure drawn from it says what it is based on (`In the last N
+    queries`, `In the latest N queries` on the card, `on <node>` with the cluster aggregate:
+    logs are one node's). Without a query logs app the two sample cells become one that says
+    why, once, with upstream's sentence and a link to Apps; the list keeps its queries, loses
+    `Heavy blocking` and the blocked share, and the card says `No query logging app` under its
+    head. Without `Logs: View` each sample cell and the card's body keep their place, locked,
+    and nothing reads the log.
+
+    Its limits, and crossing one is a bug: only endpoints upstream's console already calls
+    (`dashboard/stats/get`, `dashboard/stats/getTop`, `apps/list`, `logs/query`,
+    `dhcp/leases/list`, `settings/get`), and written only through the three Actions above
+    (`settings/set` with one list, `dhcp/leases/convertToReserved` and
+    `dhcp/leases/convertToDynamic`), upstream's actions and jumps otherwise. Its
+    words, all OURS and declared in the header comments of `Clients.tsx`, `ClientList.tsx`,
+    `ClientCard.tsx`, `ClientActions.tsx` and `WhoUses.tsx`, among them the subtitle, the strip's cells, `Who uses
+    your DNS` and its sentences, the two tags, the filters and orders with `Sort by` (listed
+    in `dev/check-parity-controls.mjs`), `N% blocked`, `Open in Query Logs`, `Copy IP`, the
+    card's four figures and its section titles, and the Actions' `Actions`, `DHCP Lease`,
+    `Applies`, `Bypassed`, `Exempt`, `Through <network>`, the four button names, `Add`,
+    `Remove`, the four confirmations (`ASK` in `ClientActions.tsx`) and `Could not read the
+    settings.` The page's folder is generated from `SECTIONS`.
+
+26. **A command palette** (Adrián's decision, 2026-11-06; `app/palette/`). Ctrl+K (⌘K
+    on a Mac), the `Search or jump to…` field under the brand, or the search button
+    in the narrow top bar opens one field over the screen. Empty, it lists the last
+    five entries run (kept in this browser, `paletteRecent`) and the first pages;
+    typing narrows every section and sub-section the user can see, Settings' panes,
+    the zones (`zones/list`, read when it opens, at most once a minute, only with
+    `Zones` visible) and the account menu's entries, plus the three themes and
+    Logout. Text that reads as a name adds the steps that take it: `Check <name> in
+    Blocking` (Blocking › Overview's check, through `?check=`, which the bar reads
+    once and drops), `Resolve <name> in DNS Client` and `Search Query Logs for
+    <name>` (the row menus' own hand-offs), `Find <name> in Cache` (`?domain=`),
+    `Search your rules for <name>` (`?q=`); an address adds `Search Query Logs for
+    client <address>`; any text adds `Search settings for <text>`. A zone or page
+    that answers comes before those steps. It calls nothing itself and changes
+    nothing: every entry lands on a screen that does what it always did. A jump
+    with parameters remounts the screen so it reads them even when it was already
+    open, and writes the address back a task later because a screen may take its
+    own parameters out as it goes (`app/Shell.tsx`, `paletteJump`). A combobox over
+    a listbox: the focus stays in the field, the arrows move `aria-activedescendant`,
+    Enter runs, Escape closes.
+    Its words, all OURS: `Search or jump to…`, `Search`, `Results`, the group names
+    (`Recent`, `Zones`, `Pages`, `Actions`, `Account`), `Page`, every action
+    sentence above, `Use the light theme`, `Use the dark theme`, `Use the system
+    theme`, `No matches for "<text>".`, `to move`, `to open`, `to close`.
+27. **Live Update is seen live** (Adrián's decision, 2026-11-06; `screens/logs/QueryLogs.tsx`).
+    Upstream's Live Update is kept as it is: page 1 every 2 s, the same request, the same
+    fields it pins and turns off. While it is on, a dot beats beside the switch with how
+    many logs arrived since it was turned on (`N new`, from the growth of
+    `totalEntries` between turns, so it counts more than a page can show; a total that
+    shrinks counts nothing), and each row that was not on the previous turn's page
+    flashes once in a light accent tint, quiet on purpose because on a busy server every
+    row of page 1 is new on every turn. No motion with reduced motion. Its words, OURS:
+    `N new` and the switch's title `Live Update reads page 1 every 2 seconds`.
 
 ## Four constraints the server imposes
 
@@ -842,9 +1665,9 @@ fails in production.
   reverse proxy with a prefix. `dev/check-prefix.sh` checks it.
 - **Real routes, one folder per route.** The server's only `MapFallback` is
   `/api/{*path}`, so a deep route with no file on disk would 404. The build emits
-  one folder with its own `index.html` for each of the console's 34 routes (11
-  sections and 23 sub-sections, from `SECTIONS`), plus the two legacy folders
-  `/allowed/` and `/blocked/`: 36 in all. The URL is real (no `#/`) and F5 brings
+  one folder with its own `index.html` for each of the console's 36 routes (12
+  sections, 23 sub-sections and `profile`, from `SECTIONS`), plus the two legacy
+  folders `/allowed/` and `/blocked/` and the moved `/settings/blocking/`: 39 in all. The URL is real (no `#/`) and F5 brings
   you back where you were, without touching a line of C#. See `vite.config.ts` and
   `app/static-routes.ts`.
 - **Content-Security-Policy**: `default-src 'self'; script-src 'self'

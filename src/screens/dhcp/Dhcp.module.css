@@ -16,11 +16,7 @@ title out again.
 .wrap { composes: screen from '../../ui/SectionHeader.module.css'; }
 
 .mono { composes: mono from '../../ui/text.module.css'; }
-.name { font-weight: 550; color: var(--ink); white-space: nowrap; }
 .date { white-space: nowrap; font-family: var(--font-mono); font-size: var(--t-3); }
-/* The count is `ui/count.module.css`'s: see there for why. */
-.total { composes: count2 below from '../../ui/count.module.css'; }
-.kv { composes: kv from '../../ui/kv.module.css'; }
 
 .paragraph { composes: paragraph from '../../ui/text.module.css'; }
 .list { margin: 0 0 var(--s-7); padding-left: var(--s-10); font-size: var(--t-4); color: var(--mute); line-height: 1.6; }
@@ -47,3 +43,178 @@ written in several places), except that here one of the copies was missing.
 .ctlLine { composes: inline from '../../ui/PanelForm.module.css'; }
 .suffix { composes: trailer from '../../ui/text.module.css'; }
 .area { composes: area from '../../ui/PanelForm.module.css'; }
+
+/* ---- What the section holds (deviation 19, 2026-11-06) ----
+
+   The cards are `ui/StatCard`'s; these are the pieces only DHCP draws. */
+
+/* Scopes has three cards, not four, in three equal columns. The same steps as
+   the four-card row. */
+.wrap .cards3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 1180px) {
+  .wrap .cards3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 560px) {
+  .wrap .cards3 { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* A card that could not read the leases says so, quietly: no figure is drawn. */
+.unread { margin-top: var(--s-5); font-size: var(--t-3); color: var(--mute); }
+
+/* Leases per Scope: one row per scope, a button that sets the Scope filter. The
+   name and its count on a line, a bar under them, as long as its share of the
+   scope with most leases. Pressed, it takes the chips' pressed look. */
+.scopeList { display: flex; flex-direction: column; gap: var(--s-2); margin: 0 calc(var(--s-5) * -1); }
+.scopeRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--s-2) var(--s-5);
+  align-items: center;
+  padding: var(--s-3) var(--s-5);
+  border: 1px solid transparent;
+  border-radius: var(--r-2);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--t-3);
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--t-fast), border-color var(--t-fast);
+}
+.scopeRow:hover { background: var(--hover); }
+.scopeRow[aria-pressed='true'] { background: var(--seg-active); border-color: var(--acc-ink); }
+.scopeRow:focus-visible { outline: var(--focus); outline-offset: var(--focus-offset); }
+.scopeName { font-weight: 600; overflow-wrap: break-word; min-width: 0; }
+.scopeCount { font-variant-numeric: tabular-nums; color: var(--mute); }
+.scopeRow[aria-pressed='true'] .scopeCount { color: var(--acc-ink); }
+.scopeTrack { grid-column: 1 / -1; height: var(--s-2); border-radius: var(--r-1); background: var(--pan2); overflow: hidden; }
+.scopeTrack > span { display: block; height: 100%; border-radius: inherit; background: var(--ch-5); }
+
+/* Newest Lease: the address under a host name. */
+.lastAddress { margin-top: var(--s-2); font: var(--t-3)/1.4 var(--font-mono); color: var(--mute); }
+
+/* Expiring Soon: the first lease to run out, under the count. */
+.next { margin-top: var(--s-6); font-size: var(--t-3); color: var(--mute); overflow-wrap: break-word; }
+.nextLabel { color: var(--mute); }
+.nextName { font-family: var(--font-mono); color: var(--ink); }
+.nextWhen { color: var(--warn); white-space: nowrap; }
+
+/* The scope table's Leases column: the count of the range, and a short track. */
+.use { display: flex; flex-direction: column; gap: var(--s-2); min-width: 96px; }
+.useText { font-variant-numeric: tabular-nums; color: var(--ink); white-space: nowrap; }
+.useOf { color: var(--mute); }
+.useTrack { display: block; height: var(--s-2); border-radius: var(--r-1); background: var(--pan2); overflow: hidden; }
+.useTrack > span { display: block; height: 100%; border-radius: inherit; background: var(--info); }
+
+/* The lease table's toolbar: the two filters at a fixed width each. */
+.filter { width: 220px; max-width: 100%; }
+.filterShort { width: 170px; max-width: 100%; }
+
+/* A scope's name in the lease table: words, so the interface face. */
+.scopeCell { font-weight: 550; color: var(--ink); white-space: nowrap; }
+
+/* A lease type: the dot of its series colour (`lease-colours.ts`) and the word. */
+.ltype { display: inline-flex; align-items: center; gap: var(--s-4); font-size: var(--t-3); color: var(--ink); white-space: nowrap; }
+.ltype::before { content: ''; width: var(--s-4); height: var(--s-4); border-radius: var(--r-1); background: var(--lt); flex: none; }
+
+/* How far off a lease's date is, beside it in brackets, as a TTL carries its
+   human part in Cache. */
+.when { font-family: var(--font-ui); font-size: var(--t-2); color: var(--mute); }
+
+/* The Remove Lease dialog's two warnings, one after the other. */
+.warnings { display: flex; flex-direction: column; gap: var(--s-5); margin-bottom: var(--s-8); }
+
+/* ---- One line per row (deviation 19, the Cache pattern) ---- */
+
+/* A lease's address: what identifies the row, so the row's weight. */
+.address { font-weight: 600; white-space: nowrap; }
+
+/* A scope's name opens its page, as a zone's name does in the zone list. */
+.opener { composes: entityLink from '../../ui/Table.module.css'; white-space: nowrap; }
+
+/* "N of M shown" in the toolbar. */
+.shown { font-size: var(--t-3); color: var(--mute); white-space: nowrap; }
+
+/* A row's Details, open: the row loses the line under it so the two read as one,
+   and the detail line sits on the panel's quieter surface (`lists/Lists.module.css`). */
+.openRow > td { border-bottom-color: transparent; }
+.detailRow > td { padding-top: 0; background: var(--pan2); }
+
+/* The detail's facts inline, label in grey and value in ink, wrapping between
+   pairs, as Cache writes a record's data. */
+.inline { display: flex; flex-wrap: wrap; gap: var(--s-3) var(--s-9); margin: var(--s-3) 0 0; min-width: 0; }
+.pair { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--s-4); min-width: 0; max-width: 100%; }
+.pair dt { font-size: var(--t-3); color: var(--faint); white-space: nowrap; }
+.pair dd { margin: 0; min-width: 0; font: var(--t-4) / 1.45 var(--font-mono); color: var(--ink); overflow-wrap: break-word; }
+
+/* ---- A scope's page ---- */
+
+/* A fact in the header, beside the state: `Interface 172.31.10.2`. */
+.fact { font-size: var(--t-3); color: var(--mute); align-self: center; }
+.fact b { font-weight: 600; color: var(--ink); font-family: var(--font-mono); }
+
+/* Address Pool: the four addresses under the meter. */
+.cardPairs { margin-top: var(--s-7); }
+
+/* Reserved Leases: one line per reservation, its name, its address and its tag. */
+.reservations { list-style: none; margin: var(--s-6) 0 0; padding: 0; display: flex; flex-direction: column; gap: var(--s-4); }
+.reservations li { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--s-4); font-size: var(--t-3); }
+.resWho { display: flex; flex-direction: column; min-width: 0; }
+.resName { font-family: var(--font-mono); color: var(--ink); overflow-wrap: break-word; }
+.resAddress { font-family: var(--font-mono); font-size: var(--t-2); color: var(--mute); }
+.more { color: var(--mute); }
+.explained { text-decoration: underline dotted; text-underline-offset: var(--s-1); cursor: help; border-radius: var(--r-1); }
+.explained:focus-visible { outline: var(--focus); outline-offset: var(--focus-offset); }
+
+/* ---- The scope form ---- */
+
+.form { min-width: 0; }
+.formTitle { margin: 0 0 var(--s-8); font-size: var(--t-6); font-weight: 650; color: var(--ink); }
+
+/* The twelve folded blocks: ONE card of lines, each its title and what it holds,
+   opening its fields under it. */
+.folds {
+  border: 1px solid var(--line);
+  border-radius: var(--r-4);
+  background: var(--pan);
+  box-shadow: var(--e-1), var(--edge);
+  overflow: clip;
+  min-width: 0;
+  /* The Scope block above keeps its own `--s-9` under it; together they make the
+     gap between two blocks. */
+  margin: calc(var(--gap-block) - var(--s-9)) 0 var(--s-9);
+}
+.fold + .fold { border-top: 1px solid var(--line2); }
+.foldHead {
+  display: grid;
+  grid-template-columns: minmax(150px, 15rem) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--s-3) var(--s-9);
+  width: 100%;
+  padding: var(--s-6) var(--s-9);
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--t-fast);
+}
+.foldHead:hover { background: var(--hover); }
+.foldHead:focus-visible { outline: var(--focus); outline-offset: calc(var(--focus-offset) * -1); }
+.foldTitle { font-size: var(--t-4); font-weight: 600; }
+.foldSummary { min-width: 0; font-size: var(--t-3); line-height: 1.45; color: var(--mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.foldChevron { color: var(--mute); }
+.fold[data-open] > .foldHead { background: var(--pan2); }
+.fold[data-open] .foldSummary { white-space: normal; }
+.foldBody { padding-bottom: var(--s-6); border-top: 1px solid var(--line2); }
+.notices { composes: notices from '../../ui/PanelForm.module.css'; margin-top: var(--s-8); }
+
+@media (max-width: 560px) {
+  .foldHead { grid-template-columns: minmax(0, 1fr) auto; padding: var(--s-6) var(--s-8); }
+  .foldSummary { grid-column: 1; grid-row: 2; white-space: normal; }
+  .foldChevron { grid-column: 2; grid-row: 1 / span 2; }
+}
+
+/* A word among addresses in a card's facts: `None`, `This DNS Server`. */
+.word { font-family: var(--font-ui); color: var(--mute); }

@@ -36,15 +36,14 @@ async function drawAll(node: ListNode, withDnssec: boolean) {
   const { container } = render(
     <ResourceRecords records={node.records} withDnssec={withDnssec} node={node.domain} />,
   )
+  // Where the answer came from, the signatures and the glue live under each row's
+  // Details (one line per record since 2026-11-06): every row is opened.
+  for (const b of screen.queryAllByRole('button', { name: 'Details' })) {
+    await userEvent.click(b)
+  }
   // The long values come out truncated: they are all expanded before looking.
   for (const b of screen.queryAllByRole('button', { name: 'show full' })) {
     await userEvent.click(b)
-  }
-  // And the DNSSEC signatures and the glue records live behind their button.
-  for (const name of ['RRSIG', 'Glue']) {
-    for (const b of screen.queryAllByRole('button', { name: name })) {
-      await userEvent.click(b)
-    }
   }
   return container
 }

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { SubTabs } from '../../ui/SubTabs'
+import { useNavMarks } from '../../app/nav-marks'
 import { ruleSearch } from './rules-model'
 import { Overview } from './Overview'
 import { Rules } from './Rules'
@@ -30,7 +30,6 @@ function dropRule(): void {
 export function Blocking({
   token,
   sub,
-  onSubChange,
   permissions,
   nodes = [],
   clusterInitialised = false,
@@ -68,25 +67,15 @@ export function Blocking({
   useEffect(() => dropRule, [])
 
   const [listsDirty, setListsDirty] = useState(false)
-
-  const tabs = (
-    <SubTabs
-      label="Blocking sections"
-      section="blocking"
-      tabs={BLOCKING_TABS}
-      active={active}
-      onChoose={onSubChange}
-      marks={listsDirty ? { Lists: 'unsaved changes' } : undefined}
-    />
-  )
+  /* The Lists dot, on its entry in the sidebar since the sub-sections unfold there. */
+  useNavMarks('blocking', listsDirty ? { Lists: 'unsaved changes' } : undefined)
 
   if (active === 'Rules') {
-    return <Rules tabs={tabs} token={token} permissions={permissions} nodes={nodes} clusterInitialised={clusterInitialised} />
+    return <Rules token={token} permissions={permissions} nodes={nodes} clusterInitialised={clusterInitialised} />
   }
   if (active === 'Lists') {
     return (
       <BlockLists
-        tabs={tabs}
         token={token}
         permissions={permissions}
         clusterInitialised={clusterInitialised}
@@ -96,7 +85,6 @@ export function Blocking({
   }
   return (
     <Overview
-      tabs={tabs}
       token={token}
       permissions={permissions}
       nodes={nodes}

@@ -1,0 +1,53 @@
+/*
+The response's four cards (`ResponseSummary.tsx`). The cards, the figure, the
+facts and the type chips are `ui/StatCard`'s; what is here is only what a DNS
+response has and a zone does not: the code beside its dot, a labelled block of
+tags, the server's name and the six header bits.
+*/
+
+/* The response code: its dot, then the word in the figure's face. */
+.code { display: flex; align-items: center; gap: var(--s-5); min-width: 0; }
+.code > :last-child { overflow-wrap: break-word; min-width: 0; }
+
+/* A label over a line of tags or a long value (Extended DNS Errors, DNSSEC, Name Server). */
+.block { margin: var(--s-6) 0 0; }
+.block:first-child { margin-top: 0; }
+.block > dt { font-size: var(--t-3); color: var(--mute); }
+.block > dd { margin: var(--s-2) 0 0; }
+.tags { display: flex; flex-wrap: wrap; gap: var(--s-3) var(--s-6); }
+
+/* Who answered: a name with its address, or a URL. Mono, it is DNS data. */
+.server { font: 600 var(--t-4)/1.4 var(--font-mono); color: var(--ink); overflow-wrap: break-word; }
+
+/* Facts that may not fit on one line wrap instead of pushing the card wider. */
+.wrapFacts { flex-wrap: wrap; row-gap: var(--s-5); }
+
+/* The type chips of the Answer card count; they do not filter, so they are not buttons. */
+.chips { margin: var(--s-5) 0 0; padding: 0; list-style: none; }
+.still { cursor: default; }
+.still:hover { background: var(--btn); border-color: var(--btn-line); }
+
+/*
+The six header bits, a strip of abbreviations: a set bit is in the info blue with
+a tint, an unset one is faint. The state is also in the item's text for a reader,
+so the colour is never the only channel.
+*/
+.flags { display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-4); list-style: none; margin: 0; padding: 0; }
+/* A flag is a word, not a control: no box at rest, the set ones as a tint. */
+.flag {
+  padding: 0 var(--s-3);
+  border-radius: var(--r-1);
+  font: 600 var(--t-3)/1.6 var(--font-mono);
+  color: var(--faint);
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in srgb, var(--faint) 50%, transparent);
+  cursor: help;
+}
+.flag[data-on] {
+  color: var(--info);
+  background: color-mix(in srgb, var(--info) 14%, transparent);
+  text-decoration: none;
+}
+.flag:focus-visible { outline: var(--focus); outline-offset: var(--focus-offset); }
+
+.hidden { composes: sr from '../../ui/text.module.css'; }

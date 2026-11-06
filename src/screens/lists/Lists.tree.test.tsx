@@ -8,6 +8,7 @@ what shipped.
 */
 import { describe, expect, it, vi, afterEach } from 'vitest'
 import { render, screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { Cache, Lists } from './Lists'
 import * as api from '../../api/zonelists'
 import * as client from '../../api/client'
@@ -45,7 +46,7 @@ describe('the path says where you are', () => {
     render(<Lists list="allowed" token="t" embedded />)
     await screen.findByText(/2 records at|1 records at/)
 
-    const path = screen.getByText('Node').parentElement!
+    const path = screen.getByRole('navigation', { name: 'Node' })
     expect(path).toHaveTextContent('<ROOT>')
     expect(path).toHaveTextContent('net')
     expect(path).toHaveTextContent('example.net')
@@ -56,40 +57,42 @@ describe('the path says where you are', () => {
     withNode(node({ zones: ['com'] }))
     render(<Cache token="t" />)
     await screen.findByText('com')
-    expect(screen.getByText('Node').parentElement).toHaveTextContent('<ROOT>')
+    expect(screen.getByRole('heading', { level: 1, name: 'Cache' })).toBeInTheDocument()
+    expect(screen.getByText('<ROOT>')).toBeInTheDocument()
   })
 
   /*
-  It does NOT navigate, and that is the point: navigating is the tree's job and a
-  second way to do it would be behaviour upstream does not have. If somebody ever
-  makes these clickable, this is what says no.
+  Since 2026-11-06 it navigates, as Cache's path does: every step but the last is
+  upstream's `[up]` taken one or more times, so it is sent with `direction=up`,
+  exactly as the tree's ancestors were. The open node is not a button.
   */
-  it('nothing in it is clickable', async () => {
-    withNode(node({ domain: 'ads.example.net', records: [NS] }))
+  it('every step but the open node goes up to it, as the [up] link', async () => {
+    const spy = withNode(node({ domain: 'ads.example.net', records: [NS] }))
     render(<Lists list="allowed" token="t" embedded />)
-    await screen.findByText('Node')
-
-    const path = screen.getByText('Node').parentElement!
-    expect(within(path).queryByRole('link')).toBeNull()
-    expect(within(path).queryByRole('button')).toBeNull()
+    const path = await screen.findByRole('navigation', { name: 'Node' })
+    expect(within(path).getAllByRole('button').map((b) => b.textContent)).toEqual(['<ROOT>', 'net', 'example.net'])
+    await userEvent.click(within(path).getByRole('button', { name: 'example.net' }))
+    expect(spy).toHaveBeenLastCalledWith('allowed', 't', 'example.net', 'up', '')
+    await userEvent.click(within(path).getByRole('button', { name: '<ROOT>' }))
+    expect(spy).toHaveBeenLastCalledWith('allowed', 't', '', 'up', '')
   })
 })
 
 describe('cache and policy are told apart', () => {
-  /* Problem 2: three screens, one component, and nothing said which was which.
-     The second line is one of the three channels, and the only one a test can
-     read; the icon and the colour are checked in the 4x4 matrix. */
-  /* Allowed and Blocked are drawn `embedded` now, inside Blocking's Rules tab:
-     without the section header, the band is the only thing naming them. */
-  it.each([
-    ['cache' as const, false, 'Cache', 'What the server resolved and stored'],
-    ['allowed' as const, true, 'Allowed', 'Domains the administrator lets through'],
-    ['blocked' as const, true, 'Blocked', 'Domains the administrator blocks'],
-  ])('%#: the identity band names the screen and what it holds', async (list, embedded, title, sub) => {
+  /* Cache names itself in its header. Allowed and Blocked are drawn only inside
+     Blocking's Rules, whose toolbar names the list (its `Tree` switch): they draw
+     no identity band of their own since 2026-11-06. */
+  it('Cache says what it holds under its title', async () => {
     withNode(node())
-    render(<Lists list={list} token="t" embedded={embedded} />)
-    expect(await screen.findByText(sub)).toBeInTheDocument()
-    expect(screen.getAllByText(title).length).toBeGreaterThan(0)
+    render(<Cache token="t" />)
+    expect(await screen.findByText('What the server resolved and stored')).toBeInTheDocument()
+  })
+
+  it.each(['allowed' as const, 'blocked' as const])('%s draws no band of its own', async (list) => {
+    withNode(node())
+    render(<Lists list={list} token="t" embedded />)
+    await screen.findByText(/^0 records at/)
+    expect(screen.queryByText(/Domains the administrator/)).toBeNull()
   })
 })
 
@@ -140,12 +143,14 @@ describe('loading is not emptiness, on either side', () => {
   content is coming and not gone), and the ear needs one: two `role="status"` for
   the same request read it out twice.
   */
-  it('both holes show a placeholder and only one of them announces it', async () => {
+  /* Allowed and Blocked are one card since 2026-11-06: one hole, announced once. */
+  it('Allowed and Blocked have one hole, and it announces its wait', async () => {
     vi.spyOn(client, 'apiRequest').mockImplementation(() => pending() as never)
     render(<Lists list="blocked" token="t" embedded />)
     await screen.findByRole('status')
-    expect(screen.getAllByText('Loading…')).toHaveLength(2)
+    expect(screen.getAllByText('Loading…')).toHaveLength(1)
     expect(screen.getAllByRole('status')).toHaveLength(1)
+    expect(screen.queryByText(/records at/)).not.toBeInTheDocument()
   })
 
   /* Cache is one panel since 2026-10-16: one hole, one placeholder, announced. */
@@ -162,7 +167,7 @@ describe('what the round was not allowed to break', () => {
     withNode(node({ domain: 'example.org', zones: ['a.example.org', 'b.example.org'] }))
     render(<Lists list="blocked" token="t" embedded />)
     expect(
-      await screen.findByText('This node only contains sub-domains. Open one in the tree to see its records.'),
+      await screen.findByText('This node only contains sub-domains. Open one to see its records.'),
     ).toBeInTheDocument()
   })
 
@@ -173,13 +178,12 @@ describe('what the round was not allowed to break', () => {
     expect(screen.getByRole('button', { name: 'Browse' })).toBeInTheDocument()
   })
 
-  /* `<ROOT>` is how you get back to the root: it is a tree node, not decoration,
-     and the path beside it must not have replaced it. */
-  it('the tree keeps its <ROOT> node', async () => {
+  /* `<ROOT>` is how you get back to the root: the trail's first step. */
+  it('the trail keeps its <ROOT> step', async () => {
     withNode(node({ domain: 'example.org', zones: [] }))
     render(<Lists list="blocked" token="t" embedded />)
-    const tree = await screen.findByLabelText('Domain tree')
-    expect(within(tree).getByText('<ROOT>')).toBeInTheDocument()
+    const path = await screen.findByRole('navigation', { name: 'Node' })
+    expect(within(path).getByRole('button', { name: '<ROOT>' })).toBeInTheDocument()
   })
 })
 
@@ -212,7 +216,7 @@ describe('loading the tree', () => {
     ;(await screen.findByRole('button', { name: 'com' })).click()
     await screen.findByRole('button', { name: 'example' })
     await new Promise((r) => setTimeout(r, 200))
-    expect(screen.getByText('Node').parentElement).toHaveTextContent('com')
+    expect(screen.getByRole('heading', { level: 1, name: 'com' })).toBeInTheDocument()
     expect(spy.mock.calls.filter((c) => c[2] === '')).toHaveLength(1)
   })
 })

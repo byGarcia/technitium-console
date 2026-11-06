@@ -71,3 +71,28 @@ fields, a figure.
 
 /* A panel with no header needs to recover the air the header used to give it. */
 .noHeader { padding-top: var(--s-9); }
+
+/*
+A card that IS a target (2026-11-05): the whole box opens something, through one
+button laid over it as its direct child (the Dashboard's figures, which open Query
+Logs). Under the pointer, or with the keyboard's focus on that button, the card
+rises one step: its shadow goes from `--e-1` to `--e-2` and its border to
+`--line-hover`. It does not move and it does not grow: nothing about it is
+transformed, so the grid around it stays put, and the rise is the same in both
+themes because the border carries it where a shadow does not show (dark).
+
+Only a card whose surface already means "click" composes it. A panel holding
+buttons among other content does not: there the buttons answer for themselves.
+*/
+.raise {
+  transition: box-shadow var(--t-medium), border-color var(--t-medium);
+}
+.raise:has(> button:hover),
+.raise:has(> button:focus-visible) {
+  box-shadow: var(--e-2), var(--edge);
+  border-color: var(--line-hover);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .raise { transition: none; }
+}

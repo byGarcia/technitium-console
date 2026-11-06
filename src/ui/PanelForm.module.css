@@ -14,6 +14,14 @@ It lives in `ui/` and not in one of the two screens, which is what stops touchin
 it again from meaning one screen rules over the other.
 */
 
+/*
+The block's own box, around the panel: a size container, so its rows ask how wide
+the BLOCK is (`ui/Form.module.css`, where a row stacks) and not the window. The
+same window leaves Settings' rows less room than Administration's, because
+Settings draws a menu beside its form.
+*/
+.unit { container-type: inline-size; }
+
 /* Only what belongs to the block: the box is painted by `ui/Panel`. */
 .block {
   margin: 0 0 var(--s-9) 0;
@@ -71,18 +79,35 @@ and the screen notice (the `Notifier`'s, above the title) is not in a section:
 capping it the same way would apply the rule where it was not decided. Dialog
 notices do not need it either, because the dialog itself is 880 at most.
 */
+/* The same breath above and below the notes (2026-11-06): the panel's 14 px. Below
+   a row they get it as a margin; at the foot the panel's padding gives it; before a
+   row its 10 px top padding plus these 4 px; first in a panel with no title, the
+   panel's own padding. */
 .notices {
-  margin: var(--s-3) var(--s-9) 0 var(--s-9);
+  margin: var(--s-9) var(--s-9) 0 var(--s-9);
   max-width: var(--notice-max);
   display: flex;
   flex-direction: column;
   gap: var(--s-4);
 }
 
+/* A `Warning!` or `Note!` as one compact line (`Warning`, `Note`). */
+.callout { display: flex; gap: var(--s-4); align-items: flex-start; font-size: var(--t-3); line-height: 1.5; color: var(--mute); }
+.callout b { color: var(--info); font-weight: 650; }
+.warn b { color: var(--warn); }
+.sign { flex: none; margin-top: var(--s-1); color: var(--info); }
+.warn .sign { color: var(--warn); }
+.calloutText { flex: 1; min-width: 0; overflow-wrap: break-word; }
+.calloutText code { font-family: var(--font-mono); color: var(--ink); }
+
 .plain {
   composes: helpPanel from './text.module.css';
   padding: 0 var(--s-9);
 }
+/* A paragraph after the notes is not one more note: a breath before it (2026-11-06). */
+.notices + .plain { margin-top: var(--s-9); }
+.notices:first-child { margin-top: 0; }
+.notices:not(:last-child) { margin-bottom: var(--s-2); }
 
 .link { font-size: var(--t-3); padding: var(--s-5) var(--s-9) 0 var(--s-9); }
 .link a { color: var(--acc-ink); }
@@ -140,6 +165,9 @@ wider than its cell would overflow the whole page.
 .bar {
   display: flex;
   align-items: center;
+  /* The verbs at the right, as Settings' Save is (2026-11-06): every save bar puts
+     them in the same place. */
+  justify-content: flex-end;
   gap: var(--s-5);
   flex-wrap: wrap;
   padding: var(--s-8) var(--s-9);
@@ -147,31 +175,18 @@ wider than its cell would overflow the whole page.
   border-radius: var(--r-4);
   background: var(--pan);
   position: sticky;
-  bottom: 0;
+  /* It floats a step above the window's edge, never against it, and at the end of
+     the page it keeps the same air below it (2026-11-06, Adrián). */
+  bottom: var(--s-9);
+  margin-bottom: var(--s-9);
   z-index: var(--layer-sticky);
   box-shadow: var(--e-2), var(--edge);
 }
 
-.spacer { flex: 1; }
-
-/* When narrow the bar stacks and the elastic spacer stops making sense: with it,
-   "Backup Settings" fell off the screen. */
+/* Narrow, the bar keeps a tighter inset. (Its elastic `.spacer` went on
+   2026-11-06 with Settings' own bar, its only user.) */
 @media (max-width: 720px) {
-  .spacer { display: none; }
   .bar { padding: var(--s-7) var(--s-8); }
-}
-
-/*
-The section count, in its label.
-
-It is the same count pill any table in the console carries
-(`ui/count.module.css`), placed here in the block's header. It is dimmed on
-purpose: it goes with the label, it does not compete with it.
-*/
-.count {
-  font: 400 var(--t-2)/1 var(--font-mono);
-  color: var(--faint);
-  font-variant-numeric: tabular-nums;
 }
 
 /*
@@ -190,7 +205,10 @@ The background is compulsory: without it, the content shows through under the
 label.
 */
 .block > [class*='_header_'] {
-  position: sticky;
+  /* A screen that already says where you are can turn it off
+     (`--block-title-position: static`): Settings, whose menu marks the block in
+     view (2026-11-06). */
+  position: var(--block-title-position, sticky);
   /* Below whatever is pinned above the form: the section index's strip
      (`--pinned`, `ui/IndexedForm`), or the narrow screen's top bar (`--stuck-top`,
      `app/Shell.module.css`), which hid the title underneath before 2026-10-16. */

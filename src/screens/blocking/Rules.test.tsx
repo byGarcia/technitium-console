@@ -192,7 +192,7 @@ describe('Rules', () => {
     await screen.findByRole('table')
     expect(read).toHaveBeenCalledTimes(2)
     await userEvent.click(screen.getByRole('button', { name: 'Tree' }))
-    const tree = await screen.findByRole('region', { name: 'Records' })
+    const tree = (await screen.findByRole('navigation', { name: 'Node' })).parentElement!
     await userEvent.click(within(tree).getByRole('button', { name: 'Delete' }))
     await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Delete' }))
     await vi.waitFor(() => expect(read).toHaveBeenCalledTimes(4))
@@ -213,7 +213,7 @@ describe('Rules', () => {
     draw()
     await screen.findByRole('table')
     await userEvent.click(screen.getByRole('button', { name: 'Tree' }))
-    const tree = await screen.findByRole('region', { name: 'Records' })
+    const tree = (await screen.findByRole('navigation', { name: 'Node' })).parentElement!
     await userEvent.click(within(tree).getByRole('button', { name: 'Delete' }))
     await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Delete' }))
     const said = await screen.findAllByText("Blocked zone 'ads.test' was deleted successfully.")
@@ -258,7 +258,7 @@ describe('Rules', () => {
     render(<Rules token="T" permissions={undefined} nodes={NODES} clusterInitialised />)
     await screen.findByRole('table')
     await userEvent.click(screen.getByRole('button', { name: 'Tree' }))
-    await screen.findByText('0 zones')
+    await screen.findByText(/^0 records at/)
     await userEvent.type(screen.getByRole('textbox', { name: 'Domain' }), 'new.test{Enter}')
     await screen.findByText("Domain 'new.test' was added to Blocked Zone successfully.")
     await vi.waitFor(() => expect(list).toHaveBeenLastCalledWith('blocked', 'T', 'new.test', undefined, 'dev.cluster.test'))
@@ -271,7 +271,7 @@ describe('Rules', () => {
     draw()
     await screen.findByRole('table')
     await userEvent.click(screen.getByRole('button', { name: 'Tree' }))
-    await screen.findByText('0 zones')
+    await screen.findByText(/^0 records at/)
     await userEvent.type(screen.getByRole('textbox', { name: 'Domain' }), 'ok.test')
     await userEvent.click(screen.getByRole('button', { name: 'Allow' }))
     await screen.findByText("Domain 'ok.test' was added to Allowed Zone successfully.")
@@ -290,7 +290,7 @@ describe('Rules', () => {
     await screen.findByText("Domain 'ok.test' was added to Allowed Zone successfully.")
     expect(list).not.toHaveBeenCalled()
     await userEvent.click(screen.getByRole('button', { name: 'Tree' }))
-    await screen.findByText('0 zones')
+    await screen.findByText(/^0 records at/)
     expect(list).toHaveBeenLastCalledWith('blocked', 'T', '', undefined, '')
     expect(within(screen.getByRole('group', { name: 'Tree' })).getByRole('button', { name: 'Blocked' }))
       .toHaveAttribute('aria-pressed', 'true')
@@ -303,7 +303,7 @@ describe('Rules', () => {
     render(<Rules token="T" permissions={{ Blocked: P(true), Allowed: P(false) }} nodes={NODES} clusterInitialised />)
     await screen.findByRole('table')
     await userEvent.click(screen.getByRole('button', { name: 'Tree' }))
-    await screen.findByText('0 zones')
+    await screen.findByText(/^0 records at/)
     await userEvent.type(screen.getByRole('textbox', { name: 'Domain' }), 'ok.test')
     await userEvent.click(screen.getByRole('button', { name: 'Allow' }))
     await screen.findByText("Domain 'ok.test' was added to Allowed Zone successfully.")
@@ -323,7 +323,7 @@ describe('Rules', () => {
     draw()
     await screen.findByRole('table')
     await userEvent.click(screen.getByRole('button', { name: 'Tree' }))
-    await screen.findByText('0 zones')
+    await screen.findByText(/^0 records at/)
     await userEvent.type(screen.getByRole('textbox', { name: 'Domain' }), 'ok.test')
     await userEvent.click(screen.getByRole('button', { name: 'Allow' }))
     await userEvent.click(screen.getByRole('button', { name: 'List' }))
@@ -331,7 +331,7 @@ describe('Rules', () => {
     await screen.findByText("Domain 'ok.test' was added to Allowed Zone successfully.")
     expect(list).toHaveBeenCalledTimes(1)
     await userEvent.click(screen.getByRole('button', { name: 'Tree' }))
-    await screen.findByText('0 zones')
+    await screen.findByText(/^0 records at/)
     expect(list).toHaveBeenLastCalledWith('blocked', 'T', '', undefined, '')
   })
 
@@ -363,7 +363,7 @@ describe('Rules', () => {
   })
 
   /* Once the notice is dismissed the slot still says what happened, and offers
-     to read again, as the blocking state does (StatusPanel). */
+     to read again, as the blocking state does (BlockingStatus). */
   it('a failed first read leaves Failure and Retry in the table slot', async () => {
     const read = vi.spyOn(blocking, 'readRuleExport').mockResolvedValue({ kind: 'error', message: 'Access was denied.' })
     draw()
@@ -393,7 +393,7 @@ describe('Rules', () => {
     render(<Rules token="T" permissions={undefined} nodes={NODES} clusterInitialised />)
     await screen.findByRole('table')
     await userEvent.click(screen.getByRole('button', { name: 'Tree' }))
-    await screen.findByText('0 zones')
+    await screen.findByText(/^0 records at/)
     expect(list).toHaveBeenLastCalledWith('blocked', 'T', '', undefined, '')
 
     await userEvent.click(screen.getByRole('button', { name: 'Flush' }))
@@ -403,7 +403,7 @@ describe('Rules', () => {
     expect(list).toHaveBeenLastCalledWith('blocked', 'T', '', undefined, 'dev.cluster.test')
 
     await userEvent.click(screen.getByRole('button', { name: 'Allowed' }))
-    await screen.findByText('0 zones')
+    await screen.findByText(/^0 records at/)
     expect(list).toHaveBeenLastCalledWith('allowed', 'T', '', undefined, '')
   })
 
@@ -459,7 +459,7 @@ describe('Rules', () => {
     await screen.findByRole('table')
     expect(screen.getByText('1 rule')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Tree' }))
-    await screen.findByText('0 zones')
+    await screen.findByText(/^0 records at/)
     expect(screen.queryByText('1 rule')).toBeNull()
   })
 
@@ -469,5 +469,33 @@ describe('Rules', () => {
     draw()
     await screen.findByRole('table')
     expect(window.location.search).toBe('?x=1')
+  })
+})
+
+describe('Rules keeps its view in the address bar (2026-11-06)', () => {
+  it('reads the search, the page, the tree and its list on arrival', async () => {
+    window.history.replaceState(null, '', '/blocking/rules/?q=ads&view=tree&list=allowed')
+    exports(['ads.example.com'], ['s.youtube.com'])
+    const list = emptyTree()
+    draw()
+    await screen.findByText(/^0 records at/)
+    expect(list).toHaveBeenCalledWith('allowed', 'T', '', undefined, '')
+    expect(within(screen.getByRole('group', { name: 'Tree' })).getByRole('button', { name: 'Allowed' }))
+      .toHaveAttribute('aria-pressed', 'true')
+    await userEvent.click(screen.getByRole('button', { name: 'List' }))
+    expect(screen.getByRole('textbox', { name: 'Filter domains' })).toHaveValue('ads')
+    expect(window.location.search).toBe('?q=ads')
+  })
+
+  it('writes what changes by replacing the entry, and drops it all with the tab', async () => {
+    exports(['ads.example.com', 'b.test'], [])
+    const length = window.history.length
+    const { unmount } = draw()
+    await screen.findByRole('table')
+    await userEvent.type(screen.getByRole('textbox', { name: 'Filter domains' }), 'b')
+    expect(window.location.search).toBe('?q=b')
+    expect(window.history.length).toBe(length)
+    unmount()
+    expect(window.location.search).toBe('')
   })
 })

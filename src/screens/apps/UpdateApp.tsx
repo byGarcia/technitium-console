@@ -1,8 +1,10 @@
+import { FilePick } from '../../ui/FilePick'
 import { useEffect, useRef, useState } from 'react'
 import { updateApp } from '../../api/apps'
 import { Button } from '../../ui/Button'
 import { Dialog } from '../../ui/Dialog'
-import { LabeledInput } from '../../ui/Field'
+import { DialogForm } from '../../ui/DialogForm'
+import { Field, LabeledInput } from '../../ui/Field'
 import { error, type AlertState } from './Apps'
 import { Notifier } from '../../ui/Notifier'
 
@@ -73,8 +75,10 @@ export function UpdateApp({
       }
     >
       <Notifier notice={alert} onClose={() => setAlert(null)} />
-      <LabeledInput label="App Name" value={name} disabled readOnly />
-      <LabeledInput label="App Zip File" type="file" ref={fileRef} />
+      <DialogForm>
+        <LabeledInput label="App Name" value={name} disabled readOnly />
+        <Field label="App Zip File">{(id) => <FilePick id={id} ref={fileRef} />}</Field>
+      </DialogForm>
     </Dialog>
   )
 }

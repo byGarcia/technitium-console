@@ -169,3 +169,17 @@ describe('Check a domain', () => {
     expect(calls).not.toContain('settings/get')
   })
 })
+
+/* `?check=`: the command palette's `Check <domain> in Blocking` (deviation 26). */
+describe('Check from the address bar', () => {
+  afterEach(() => window.history.replaceState(null, '', '/'))
+
+  it('fills the field, checks the name once and takes the parameter out', async () => {
+    window.history.replaceState(null, '', '/blocking/overview/?check=s.youtube.com')
+    const { field } = setup()
+    expect(field).toHaveValue('s.youtube.com')
+    expect(await screen.findByText('Allowed by your rule')).toBeInTheDocument()
+    expect(window.location.search).toBe('')
+    expect(calls.filter((c) => c === 'dnsClient/resolve')).toHaveLength(1)
+  })
+})

@@ -6,6 +6,9 @@ import { nextUpdateText } from '../settings/panes/Blocking'
 import { SectionHeader } from '../../ui/SectionHeader'
 import { Panel, Body } from '../../ui/Panel'
 import { RowAction, Table } from '../../ui/Table'
+import tbl from '../../ui/Table.module.css'
+import { DataTable, DataFoot, End } from '../../ui/DataTable'
+import { Card, statStyles } from '../../ui/StatCard'
 import { Field, Input, Select } from '../../ui/Field'
 import { Button } from '../../ui/Button'
 import { PermissionButton } from '../../ui/PermissionButton'
@@ -55,7 +58,7 @@ every alert of the update and the save. Everything else is OURS:
   `removed`; `list-lines.ts`, WHAT CHANGED), `Discard`, and `Save`, shortened from
   upstream's "Save Settings" (index.html:2460); and the Lists tab's mark while there
   are unsaved changes, read as `unsaved changes` (`onDirty`, `Blocking.tsx`);
-- the two `Could not read …` sentences and the link to Settings › Blocking;
+- the two `Could not read …` sentences and the link to Blocking › Settings;
 - Quick Add's search (`Search lists`, `No lists match`) and its second catalogue, the
   console's own (`extra-lists.ts`), under `More lists` after Technitium's.
 
@@ -190,6 +193,153 @@ function HeadingEditor({
         <p id={problemId} className={styles.invalid}>{editing.problem}</p>
       )}
     </form>
+  )
+}
+
+/*
+A cell of the strip that counts what the lists hold. A failed read says so instead
+of a zero; while the server reloads the lists, the figure dims and `Updating…`
+says why.
+*/
+function CountCard({
+  title,
+  colour,
+  value,
+  failed,
+  reloading,
+}: {
+  title: string
+  colour: string
+  value: number | undefined
+  failed: boolean
+  reloading: boolean
+}) {
+  return (
+    <Card title={title} colour={colour}>
+      <div className={statStyles.body}>
+        {failed ? (
+          <Failure>{COUNTS_FAILED}</Failure>
+        ) : (
+          <div className={`${statStyles.figure}${reloading ? ` ${styles.stale}` : ''}`}>
+            {value == null ? '—' : value.toLocaleString()}
+          </div>
+        )}
+        {reloading && <div className={styles.pending}>{UPDATING}</div>}
+      </div>
+    </Card>
+  )
+}
+
+/*
+A list on ONE line (2026-11-06): its switch, its name (or, without one, its URL)
+with the URL cut to the line after it, its kind, and its controls: Move up, Move
+down, Remove and `Details`, which opens the URL whole under the row. The names of
+every control are the ones the row had.
+*/
+function ListRow({
+  line,
+  name,
+  off,
+  modifyNeed,
+  canUp,
+  canDown,
+  onToggle,
+  onUp,
+  onDown,
+  onRemove,
+}: {
+  line: ListLine & { kind: 'block' | 'allow' }
+  name: string | null
+  off: boolean
+  modifyNeed: string | undefined
+  canUp: boolean
+  canDown: boolean
+  onToggle: () => void
+  onUp: () => void
+  onDown: () => void
+  onRemove: () => void
+}) {
+  const [open, setOpen] = useState(false)
+  const detail = useId()
+  const l = line
+  const faded = !l.enabled ? styles.off : undefined
+  const what = `${l.kind} list ${l.url ?? ''}`
+  const url = l.url ?? l.raw
+  return (
+    <>
+      <tr className={open ? tbl.openRow : undefined}>
+        <td className={styles.switchCell}>
+          {canToggle(l) && (
+            <label className={styles.switch}>
+              <input
+                type="checkbox"
+                aria-label={`Enabled ${what}`}
+                checked={l.enabled}
+                disabled={off}
+                onChange={onToggle}
+              />
+            </label>
+          )}
+        </td>
+        <td className={`${styles.listCell} ${faded ?? ''}`}>
+          <div className={styles.line} title={url}>
+            {name != null && <span className={styles.name}>{name}</span>}
+            <span className={name != null ? styles.urlAfter : styles.url}>{url}</span>
+          </div>
+          {/* The kind under the URL where the Type column is folded away. */}
+          <span className={`${styles.kind} ${styles.kindInline} ${KIND_CLASS[l.kind]}`}>
+            <Icon name={KIND_ICON[l.kind]} size={14} />
+            {KIND_LABEL[l.kind]}
+          </span>
+        </td>
+        <td className={`${faded ?? ''} ${styles.kindCell}`}>
+          <span className={`${styles.kind} ${KIND_CLASS[l.kind]}`}>
+            <Icon name={KIND_ICON[l.kind]} size={14} />
+            {KIND_LABEL[l.kind]}
+          </span>
+        </td>
+        <td className={tbl.actionsCell}>
+          <div className={tbl.actions}>
+            <RowAction icon="moveUp" name="Move up" aria-label={`Move up ${what}`}
+              disabled={off || !canUp} onClick={onUp} />
+            <RowAction icon="moveDown" name="Move down" aria-label={`Move down ${what}`}
+              disabled={off || !canDown} onClick={onDown} />
+            {modifyNeed == null ? (
+              <RowAction icon="trash" name="Remove" variant="danger" aria-label={`Remove ${url}`} onClick={onRemove} />
+            ) : (
+              <PermissionButton size="sm" icon variant="danger" permission={modifyNeed} aria-label={`Remove ${url}`}>
+                <Icon name="trash" size={15} />
+              </PermissionButton>
+            )}
+            <RowAction
+              icon={open ? 'chevronDown' : 'chevronRight'}
+              name="Details"
+              aria-expanded={open}
+              aria-controls={detail}
+              onClick={() => setOpen((v) => !v)}
+            />
+          </div>
+        </td>
+      </tr>
+      {open && (
+        <tr id={detail} className={tbl.detailRow}>
+          <td colSpan={4}>
+            <dl className={styles.details}>
+              {name != null && (
+                <div>
+                  <dt>Name</dt>
+                  <dd>{name}</dd>
+                </div>
+              )}
+              <div className={styles.detailWide}>
+                <dt>List URL</dt>
+                <dd className={styles.urlWhole}><UrlText url={url} /></dd>
+              </div>
+            </dl>
+          </td>
+        </tr>
+      )}
+    </>
   )
 }
 
@@ -536,52 +686,20 @@ export function BlockLists({
     const n = seen.get(id) ?? 0
     seen.set(id, n + 1)
     const name = l.url == null ? null : listName(l.url, named)
-    const faded = !l.enabled ? styles.off : undefined
-    const what = `${l.kind} list ${l.url ?? ''}`
     rows.push(
-      <tr key={`L:${id}:${n}`}>
-        <td>
-          {canToggle(l) && (
-            <label className={styles.switch}>
-              <input
-                type="checkbox"
-                aria-label={`Enabled ${what}`}
-                checked={l.enabled}
-                disabled={off}
-                onChange={() => setLines((all) => all.map((x, j) => (j === i ? toggleLine(x) : x)))}
-              />
-            </label>
-          )}
-        </td>
-        <td className={faded}>
-          {name != null && <div className={styles.name}>{name}</div>}
-          <div className={styles.url}><UrlText url={l.url ?? l.raw} /></div>
-          {/* The kind under the URL where the Type column is folded away. */}
-          <span className={`${styles.kind} ${styles.kindInline} ${KIND_CLASS[l.kind]}`}>
-            <Icon name={KIND_ICON[l.kind]} size={14} />
-            {KIND_LABEL[l.kind]}
-          </span>
-        </td>
-        <td className={`${faded ?? ''} ${styles.kindCell}`}>
-          <span className={`${styles.kind} ${KIND_CLASS[l.kind]}`}>
-            <Icon name={KIND_ICON[l.kind]} size={14} />
-            {KIND_LABEL[l.kind]}
-          </span>
-        </td>
-        <td className={styles.actions}>
-          <div className={styles.rowActions}>
-            <RowAction icon="moveUp" name="Move up" aria-label={`Move up ${what}`}
-              disabled={off || !canMove(lines, i, -1)} onClick={() => setLines((all) => moveLine(all, i, -1))} />
-            <RowAction icon="moveDown" name="Move down" aria-label={`Move down ${what}`}
-              disabled={off || !canMove(lines, i, 1)} onClick={() => setLines((all) => moveLine(all, i, 1))} />
-            <PermissionButton size="sm" variant="danger" permission={modifyNeed}
-              aria-label={`Remove ${l.url ?? l.raw}`}
-              onClick={() => setLines((all) => all.filter((_, j) => j !== i))}>
-              Remove
-            </PermissionButton>
-          </div>
-        </td>
-      </tr>,
+      <ListRow
+        key={`L:${id}:${n}`}
+        line={l as ListLine & { kind: 'block' | 'allow' }}
+        name={name}
+        off={off}
+        modifyNeed={modifyNeed}
+        canUp={canMove(lines, i, -1)}
+        canDown={canMove(lines, i, 1)}
+        onToggle={() => setLines((all) => all.map((x, j) => (j === i ? toggleLine(x) : x)))}
+        onUp={() => setLines((all) => moveLine(all, i, -1))}
+        onDown={() => setLines((all) => moveLine(all, i, 1))}
+        onRemove={() => setLines((all) => all.filter((_, j) => j !== i))}
+      />,
     )
   })
   if (edit != null && edit.group === 'new') {
@@ -606,7 +724,13 @@ export function BlockLists({
       <Notifier notice={notice} onClose={() => setNotice(null)} />
 
       <div className={shared.stack}>
-        <div className={shared.kpis3}>
+        {/*
+        What the lists give the server, as the strip of cells every list screen opens
+        with (`ui/StatCard`): how many domains the block lists and the allow lists
+        hold, and when they are downloaded next, with upstream's Update Now in that
+        cell. While the server reloads, the two counts dim and say so.
+        */}
+        <div className={`${statStyles.grid} ${shared.inStack} ${styles.strip}`}>
           {statsNeed != null ? (
             <>
               <Locked title="Block List Domains" need={statsNeed} />
@@ -614,60 +738,29 @@ export function BlockLists({
             </>
           ) : (
             <>
-              <Panel className={shared.centred}><Body>
-                <div className={shared.kpiText}>
-                  {countsFailed ? (
-                    <Failure>{COUNTS_FAILED}</Failure>
-                  ) : (
-                    <span className={`${shared.kpiValue}${reloading != null ? ` ${styles.stale}` : ''}`}>
-                      {counts ? counts.block.toLocaleString() : '—'}
-                    </span>
-                  )}
-                  {reloading != null ? (
-                    <span className={styles.pending}>{UPDATING}</span>
-                  ) : (
-                    <span className={shared.kpiSub}>{'\u00a0'}</span>
-                  )}
-                  <span className={shared.kpiLabel}>Block List Domains</span>
-                </div>
-              </Body></Panel>
-              <Panel className={shared.centred}><Body>
-                <div className={shared.kpiText}>
-                  {countsFailed ? (
-                    <Failure>{COUNTS_FAILED}</Failure>
-                  ) : (
-                    <span className={`${shared.kpiValue}${reloading != null ? ` ${styles.stale}` : ''}`}>
-                      {counts ? counts.allow.toLocaleString() : '—'}
-                    </span>
-                  )}
-                  {reloading != null ? (
-                    <span className={styles.pending}>{UPDATING}</span>
-                  ) : (
-                    <span className={shared.kpiSub}>{'\u00a0'}</span>
-                  )}
-                  <span className={shared.kpiLabel}>Allow List Domains</span>
-                </div>
-              </Body></Panel>
+              <CountCard title="Block List Domains" colour="var(--ch-block)" value={counts?.block}
+                failed={countsFailed} reloading={reloading != null} />
+              <CountCard title="Allow List Domains" colour="var(--ch-ok)" value={counts?.allow}
+                failed={countsFailed} reloading={reloading != null} />
             </>
           )}
-          <Panel className={shared.centred}><Body>
-            <div className={shared.kpi}>
-              <div className={shared.kpiText}>
-                <span className={shared.kpiValue}>{loading ? '—' : nextUpdateText(next)}</span>
-                <span className={shared.kpiSub}>{'\u00a0'}</span>
-                <span className={shared.kpiLabel}>
-                  Next update{interval != null && interval > 0 ? ` · every ${interval} h` : ''}
-                </span>
+          <Card
+            title={`Next update${interval != null && interval > 0 ? ` · every ${interval} h` : ''}`}
+            colour="var(--ch-total)"
+          >
+            <div className={statStyles.body}>
+              <div className={statStyles.figure}>{loading ? '—' : nextUpdateText(next)}</div>
+              <div className={statStyles.actions}>
+                <PermissionButton lead="refresh" size="sm"
+                  permission={modifyNeed}
+                  disabled={busy || !hasSaved}
+                  onClick={() => setAskUpdate(true)}
+                >
+                  Update Now
+                </PermissionButton>
               </div>
-              <PermissionButton lead="refresh"
-                permission={modifyNeed}
-                disabled={busy || !hasSaved}
-                onClick={() => setAskUpdate(true)}
-              >
-                Update Now
-              </PermissionButton>
             </div>
-          </Body></Panel>
+          </Card>
         </div>
 
         <Panel title="Add a list">
@@ -771,36 +864,50 @@ export function BlockLists({
           </Body>
         </Panel>
 
-        <Panel className={shared.flush}>
-          <div ref={table}>
+        {/* ONE card: Add group in its toolbar, the lists one line each (the URL whole
+            under the row's Details), the count in its foot. */}
+        <div ref={table}>
+          <DataTable
+            toolbar={
+              <>
+                <PermissionButton lead="add" size="sm" permission={modifyNeed} disabled={loading || edit?.group === 'new'}
+                  onClick={() => setEditing({ group: 'new', value: '', problem: null })}>
+                  Add group
+                </PermissionButton>
+                <End>
+                  <RouteLink to={{ section: 'blocking', sub: 'Settings' }}>More blocking settings in Blocking › Settings</RouteLink>
+                </End>
+              </>
+            }
+            foot={
+              <DataFoot
+                count={`${plural(listsCount, 'list', 'lists')} · ${disabledCount} disabled · ${plural(groupCount, 'group', 'groups')}`}
+              />
+            }
+          >
             {readFailed ? (
               <Body><Failure>Could not read the block list settings.</Failure></Body>
             ) : saved == null ? (
               <Body><Loading /></Body>
             ) : (
               <Table
-                header={<><th>Enabled</th><th>List</th><th className={styles.kindCell}>Type</th><th /></>}
+                header={
+                  <>
+                    <th className={styles.switchCell}>Enabled</th>
+                    <th>List</th>
+                    <th className={styles.kindCell}>Type</th>
+                    <th className={tbl.actionsCell} />
+                  </>
+                }
                 isEmpty={lines.length === 0 && edit?.group !== 'new'}
                 emptyText="No lists"
                 columns={4}
-                className={shared.inPanel}
               >
                 {rows}
               </Table>
             )}
-            <div className={styles.foot}>
-              <PermissionButton lead="add" size="sm" permission={modifyNeed} disabled={loading || edit?.group === 'new'}
-                onClick={() => setEditing({ group: 'new', value: '', problem: null })}>
-                Add group
-              </PermissionButton>
-              <span>
-                {plural(listsCount, 'list', 'lists')} · {disabledCount} disabled · {plural(groupCount, 'group', 'groups')}
-              </span>
-              <span className={styles.spacer} />
-              <RouteLink to={{ section: 'settings', sub: 'Blocking' }}>More blocking settings in Settings › Blocking</RouteLink>
-            </div>
-          </div>
-        </Panel>
+          </DataTable>
+        </div>
 
         {dirty && (
           <div className={styles.bar}>

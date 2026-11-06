@@ -1,7 +1,14 @@
 /*
 The screen: the cover (OURS, `LoginCover.tsx`) beside the form above 960 px and
-above it below. The form's side keeps what it always had: the card centred on
-`--bg`, the footer under it.
+above it below. The form's side is the canvas, `--bg`, with the card floating on
+it and the footer under it.
+
+Redrawn on 2026-11-05 to match the console it opens: the card is drawn as a
+dialog is (`ui/Dialog.module.css`), one surface with the floating radius, its
+mark, its body and its links in three bands divided by hairlines, and a shadow
+because it floats. Nothing in the form changed: the fields are `ui/Field`'s, the
+button is `ui/Button`'s primary, the alert is `ui/Notifier`'s, all as every
+other screen draws them.
 */
 .screen {
   min-height: 100vh;
@@ -21,55 +28,135 @@ above it below. The form's side keeps what it always had: the card centred on
      which left 258 px between them. This way the group is centred and the space
      is set by the `gap`. */
   align-content: center;
-  gap: var(--s-10);
+  gap: var(--s-11);
   background: var(--bg);
   padding: var(--s-11);
 }
-.card {
-  composes: panel from '../ui/Panel.module.css';
-  width: 340px;
-  padding: var(--s-11) var(--s-11);
-}
+
 /*
-The mark is now an `<h1>`, so what the browser gives it for being one has to be
-taken back off: an `h1` brings its own size and margins, and without this the
-screen grew all at once. The look does not change; the element does, which is
-what was missing: it was the only screen in the console with no heading at all.
+THE CARD. A dialog's surface (`--pan`, the `--btn-line` hairline, `--r-5`) and
+height 2, not 3: it floats over a page that is all canvas, not over a veil, so it
+needs less shadow to lift. It is the width of a compact dialog's content and
+never wider than the screen minus the page's padding.
+*/
+.card {
+  width: min(380px, 100%);
+  min-width: 0;
+  background: var(--pan);
+  border: 1px solid var(--btn-line);
+  border-radius: var(--r-5);
+  box-shadow: var(--e-2), var(--edge);
+  overflow: hidden;
+  animation: enter 520ms cubic-bezier(0.2, 0.9, 0.3, 1) backwards;
+  /* Third beat of the screen's one entrance, with the cover's headline: see
+     `LoginCover.module.css`, THE ENTRANCE. */
+  animation-delay: 70ms;
+}
+
+/*
+The mark is an `<h1>`, so what the browser gives it for being one has to be
+taken back off: an `h1` brings its own size and margins. It is the card's top
+band, the place a dialog puts its title, over a hairline.
 */
 .brand {
   display: flex;
   align-items: center;
   gap: var(--s-7);
-  margin: 0 0 var(--s-11);
+  margin: 0;
+  padding: var(--s-11) var(--s-11) var(--s-10);
+  border-bottom: 1px solid var(--line2);
   font-size: inherit;
   font-weight: inherit;
 }
 /* Technitium's logo, not an initial of ours. See `app/Shell.module.css`. */
 .mark { width: 28px; height: 28px; flex: none; }
-.name { font-weight: 600; letter-spacing: -0.01em; color: var(--ink); font-size: var(--t-5); }
+.name { font-weight: 650; letter-spacing: -0.01em; color: var(--ink); font-size: var(--t-6); }
+
+.body { padding: var(--s-11); }
+/* The alert, `ui/Notifier`'s slot, is the body's only child besides the form. It
+   drops in from above when it appears, so the form moving down reads as the
+   alert arriving and not as the card jumping. */
+.body > :not(.form) { animation: notice-in var(--t-medium) backwards; }
+@keyframes notice-in {
+  from { opacity: 0; transform: translateY(calc(-1 * var(--s-2))); }
+}
 .form { display: flex; flex-direction: column; gap: var(--s-9); }
-.sso { margin-top: var(--s-10); padding-top: var(--s-10); border-top: 1px solid var(--line); }
+
+/*
+The primary, the card's full width and a step below the last field. While the
+login is in flight it is `disabled`, as it always was, and `aria-busy`: then it
+keeps its full amber (a half-faded primary reads as "you cannot", not as "wait")
+and draws a ring before its label. The label does not change.
+*/
+.submit { width: 100%; margin-top: var(--s-3); }
+.submit[aria-busy='true']:disabled { opacity: 1; cursor: progress; }
+.submit[aria-busy='true']::before {
+  content: '';
+  flex: none;
+  width: var(--s-9);
+  height: var(--s-9);
+  border: var(--s-1) solid currentColor;
+  border-right-color: transparent;
+  border-radius: var(--r-full);
+  animation: spin 700ms linear infinite;
+}
+@keyframes spin { to { transform: rotate(1turn); } }
+
+/* The foot band: upstream's link, and the SSO block when the server offers it. */
+.sso {
+  padding: var(--s-10) var(--s-11);
+  border-top: 1px solid var(--line2);
+}
 .ssoLink {
   display: flex; align-items: center; justify-content: center; gap: var(--s-5);
-  font-size: var(--t-4); color: var(--mute); text-decoration: none;
-  border: 1px solid var(--line); border-radius: var(--r-2); padding: var(--s-5);
+  min-height: var(--field-height);
+  font-size: var(--t-4); font-weight: 500; color: var(--ink); text-decoration: none;
+  background: var(--btn);
+  border: 1px solid var(--btn-line); border-radius: var(--r-2); padding: var(--s-4) var(--s-8);
+  transition: background var(--t-fast), border-color var(--t-fast);
 }
+.ssoLink:hover { background: var(--btn-hover); border-color: var(--line-hover); }
 /* "Forgot Password?" is a bare link, not a button with a box: in upstream it
    sits loose above the SSO block (index.html:119). */
 .link {
   display: block; width: 100%; text-align: center;
-  background: none; border: 0; padding: 0;
+  background: none; border: 0; padding: var(--s-2) 0; border-radius: var(--r-2);
   font: inherit; font-size: var(--t-4); color: var(--mute); cursor: pointer;
+  transition: color var(--t-fast);
 }
 .link:hover { color: var(--acc-ink); }
 .orLogin { margin: var(--s-8) 0 var(--s-7); text-align: center; font-size: var(--t-3); color: var(--faint); }
 
-/* The footer, under the card and centred: it belongs to the page, not the form. */
-.footer { font-size: var(--t-3); line-height: 2; text-align: center; }
+/* The footer, under the card and centred: it belongs to the page, not the form.
+   It arrives with the card, a beat after it. */
+.footer {
+  font-size: var(--t-3); line-height: 2; text-align: center;
+  animation: enter 520ms cubic-bezier(0.2, 0.9, 0.3, 1) backwards;
+  animation-delay: 210ms;
+}
+
+/* The entrance: rise a little and appear. `backwards` and not `both`, so at rest
+   the card carries no `transform` (it would become the containing block of
+   anything fixed inside it; see `ui/Dialog.module.css`). */
+@keyframes enter {
+  from { opacity: 0; transform: translateY(var(--s-5)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card, .footer, .body > :not(.form) { animation: none; }
+  .submit[aria-busy='true']::before { animation: none; }
+  .ssoLink, .link { transition: none; }
+}
 
 /* Stacked under the cover, the card goes to the top instead of the middle: the
    cover already took the top of the screen, and centring would push the form
    further down on a phone. */
 @media (max-width: 960px) {
   .page { align-content: start; padding: var(--s-11) var(--s-10); }
+}
+@media (max-width: 560px) {
+  .page { gap: var(--s-10); }
+  .brand { padding: var(--s-10) var(--s-10) var(--s-9); }
+  .body { padding: var(--s-10); }
+  .sso { padding: var(--s-9) var(--s-10); }
 }

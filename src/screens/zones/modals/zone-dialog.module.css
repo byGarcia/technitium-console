@@ -1,0 +1,54 @@
+/*
+THE INSIDE OF THE ZONE DIALOGS (Add Zone, Import Zone, Convert Zone, Clone Zone,
+Edit Zone File), redrawn on 2026-11-05 in the language of the record form
+(`AddEditRecord`, `.recHead` and `.recData` in `../Zones.module.css`).
+
+One placement for every label: ABOVE its control, in the field label's own type
+(`ui/Field`). Add Zone had "Zone" stacked over its field and every other row
+behind a 180 px label column, so the first field and the rest of the form read
+as two forms. A group of radios or checkboxes carries the same label, a `div`
+and not a `<label>` (it governs no single control, as upstream's has no `for`).
+
+What a choice is (a zone type, an import source, a conversion target) is drawn
+as a grid of tiles, the chosen one in the accent; what follows from that choice
+goes in one block on the raised step, as the record form puts a type's fields.
+Nothing here changes a field, a text or an order: only where they sit.
+*/
+
+/* The shared pieces are `ui/DialogForm.module.css`'s, where Add Zone's were
+   lifted to on 2026-11-06 so every dialog draws the same: composed here under
+   the names the zone dialogs already use. */
+.form { composes: form from '../../../ui/DialogForm.module.css'; }
+.help { composes: help from '../../../ui/DialogForm.module.css'; }
+.chk { composes: chk from '../../../ui/DialogForm.module.css'; }
+.area { composes: area from '../../../ui/DialogForm.module.css'; }
+.tiles { composes: tiles from '../../../ui/DialogForm.module.css'; }
+.tiles1 { composes: tiles tiles1 from '../../../ui/DialogForm.module.css'; }
+.run { composes: run from '../../../ui/DialogForm.module.css'; }
+.block { composes: block from '../../../ui/DialogForm.module.css'; }
+.pair { composes: pair from '../../../ui/DialogForm.module.css'; }
+.pairShort { composes: pairShort from '../../../ui/DialogForm.module.css'; }
+.readOnly { composes: readOnly from '../../../ui/DialogForm.module.css'; }
+
+/* A list of options inside a block: each with its help, a hairline between. */
+.list { gap: 0; padding-block: var(--s-3); }
+.list > * { padding-block: var(--s-6); }
+.list > * + * { border-top: 1px solid var(--line2); }
+
+/* ── Clone Zone ────────────────────────────────────────────────────────── */
+
+/* From one zone to the other, on one line: source, arrow, new. */
+.cloneRow { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: var(--s-8); align-items: end; }
+.arrow { display: inline-flex; align-items: center; height: var(--field-height); color: var(--faint); }
+@media (max-width: 560px) {
+  .cloneRow { grid-template-columns: minmax(0, 1fr); }
+  .arrow { display: none; }
+}
+
+
+/* ── The zone-file editors (Import Zone's text editor, Edit Zone File) ────── */
+
+/* They do not wrap (upstream's `white-space: nowrap`): a zone file is read by
+   columns. Edit Zone File's is the whole dialog, so it takes the height. */
+.editor { composes: areaTall noWrap from '../Zones.module.css'; width: 100%; font-size: var(--t-3); line-height: 1.6; tab-size: 8; }
+.editorTall { min-height: min(52vh, 460px); }

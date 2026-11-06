@@ -416,6 +416,10 @@ before `data-theme` is set and with any value nobody declared.
   is 5.14.
   */
   --side: #131417;
+  /* The side panel's mark (`app/BrandMark.tsx`): Technitium's blue, as a tint, an edge and the walls. */
+  --brand-mark: #7aa6ff;
+  --brand-tint: rgba(102, 153, 255, 0.16);
+  --brand-edge: rgba(122, 166, 255, 0.38);
   --btn: #272b31;
   --btn-hover: #2e3339;
   --btn-line: #383f46;
@@ -442,7 +446,7 @@ before `data-theme` is set and with any value nobody declared.
     --glyph-tick      `#1a1205`, the value of `--on-acc`: the ink of the amber fill
     --glyph-dash      the same ink, for the indeterminate checkbox
     --glyph-tick-ok   `#052e26`, the value of `--ok-bg`: the ink of the green fill
-                      (`ui/Matrix`, a granted permission)
+                      (a granted permission in Permissions)
 
   If one of those tokens changes, the glyph that copies it has to change too.
   */
@@ -595,8 +599,6 @@ wherever the attribute says `light`.
   --ch-clients: #b88b21;
   /* The fill under a line: 18 % disappears on white, 35 % reads as on charcoal. */
   --ch-fade: 59;
-  /* A Note! reads as prose: the ink, with the word and the icon in blue. */
-  --note-ink: var(--ink);
 
   --ch-1: #227cbb;  --ch-2: #1fa580;  --ch-3: #6446af;  --ch-4: #d47d01;
   --ch-5: #19a2a3;  --ch-6: #9a0559;  --ch-7: #e43b66;  --ch-8: #886000;
@@ -663,6 +665,9 @@ wherever the attribute says `light`.
   under the pointer. `--dan-solid` carries white at 5.47:1.
   */
   --side: var(--pan);
+  --brand-mark: #3e74e6;
+  --brand-tint: rgba(62, 116, 230, 0.1);
+  --brand-edge: rgba(62, 116, 230, 0.3);
   --btn: #ffffff;
   --btn-hover: #f5f6f8;
   --btn-line: #c9cdd2;
@@ -791,11 +796,13 @@ wherever the attribute says `light`.
   --layer-drawer: 30;     /* and the drawer, over its veil */
   --layer-float: 40;     /* dropdowns: row menu, Select, account menu */
   --layer-dialog: 50;   /* the modal and its veil, above absolutely everything */
+  --layer-notice: 60;   /* a page's floating result (ui/Notifier): it may arrive while a dialog closes */
 
   --r-1: 4px;   /* colour swatch, tiny chip                   (4,5) */
   --r-2: 6px;   /* row button, menu item                        (6,7) */
   --r-3: 8px;   /* field, notice, inner block                    (8,9) */
   --r-4: 10px;  /* panel, card, table                       (10,12) */
+  --r-5: 14px;  /* a dialog: the one surface that floats over the page   */
   --r-full: 999px;
 
   /* ── Focus ──────────────────────────────────────────────────────────── */

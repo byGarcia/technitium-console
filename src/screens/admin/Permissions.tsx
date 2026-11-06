@@ -3,11 +3,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Button } from '../../ui/Button'
 import { Dialog } from '../../ui/Dialog'
 import { SectionHeader } from '../../ui/SectionHeader'
-import { SectionIndex } from '../../ui/SectionIndex'
-import { useSectionInView } from '../../ui/useSectionInView'
 import { Loading } from '../../ui/Empty'
-import { Panel } from '../../ui/Panel'
-import { Matrix, MatrixCell, MatrixEmpty, MatrixGroup, MatrixMarks, MatrixRow } from '../../ui/Matrix'
 import {
   getPermission,
   listPermissions,
@@ -16,11 +12,14 @@ import {
 } from '../../api/admin'
 import { primaryNodeName, type ClusterState } from '../../api/admin-cluster'
 import { addToTable, BLANK_OPTION, NONE_OPTION, serializeTable, type Cell } from './table'
-import { noticeFromFailure, MRow, adminStyles as styles, type Notice } from './parts'
-import { Th, useSort, type Keys } from '../../ui/Table'
+import { noticeFromFailure, MRow, type Notice } from './parts'
+import { RowAction, Table, Th, useSort, type Keys } from '../../ui/Table'
+import tbl from '../../ui/Table.module.css'
 import { Select } from '../../ui/Select'
-import { EditableTable } from '../../ui/EditableTable'
+import { DialogForm, DialogSection } from '../../ui/DialogForm'
+import perm from './Permissions.module.css'
 import { Notifier } from '../../ui/Notifier'
+import { PermissionMap } from './PermissionMap'
 
 /*
 `refreshAdminPermissions`, `showEditSectionPermissionsModal` and
@@ -28,9 +27,9 @@ import { Notifier } from '../../ui/Notifier'
 
 Three things that govern this screen:
 
-  · The list's table is READ-ONLY: permissions are edited in the modal. Here the
-    checkboxes are drawn disabled, which is the equivalent of upstream's
-    `glyphicon-ok` while still resembling the modal's table.
+  · The list is READ-ONLY: permissions are edited in the modal. The list is one
+    matrix (`PermissionMap.tsx`, deviation 23): sections down the side, groups and
+    users across.
   · The group list the modal offers INCLUDES `Everyone`, and `groups/list`'s does
     not. They are two different lists from the server and cannot be swapped
     (checked live against a v15.4).
@@ -46,13 +45,6 @@ interface Props {
   token: string | null
   cluster: ClusterState | null
   onNotice: (a: Notice) => void
-}
-
-const VERBS = ['View', 'Modify', 'Delete'] as const
-
-/** The id a section's panel and its index entry share. */
-function anchor(section: string): string {
-  return `perm-${section.toLowerCase()}`
 }
 
 export function Permissions({ tabs, token, cluster, onNotice }: Props) {
@@ -77,221 +69,16 @@ export function Permissions({ tabs, token, cluster, onNotice }: Props) {
     void load()
   }, [load])
 
-  /*
-  Which of the eleven you are looking at, for the index.
-
-  `ui/SectionIndex` deliberately does not observe the scroll (working out the
-  active one is screen wiring, not the primitive's job). This was the first screen
-  to wire it; the observer now lives in `ui/useSectionInView`, which Settings uses
-  too. An index with no current entry is half a primitive: it can take you
-  somewhere but not tell you where you are.
-  */
-  const here = useSectionInView(loading ? [] : sections.map((x) => anchor(x.section)))
-
-  /*
-  The concession map: the subjects down the side, the eleven sections across.
-
-  It exists because eleven stacked panels compare nothing, and comparing is what
-  this screen is for: "can DNS Administrators delete in Zones and not in Cache"
-  has no answer without scrolling two and a half thousand pixels and remembering.
-  The eleven sections stay below, whole and never folded; what changes is that the
-  wall stops being the only way through.
-
-  Subjects come from the sections themselves and in the server's own order, so no
-  list is invented and none is asked for twice.
-  */
-  const subjects = (() => {
-    const users: string[] = []
-    const groups: string[] = []
-    for (const s of sections) {
-      for (const p of s.userPermissions) if (!users.includes(p.username)) users.push(p.username)
-      for (const p of s.groupPermissions) if (!groups.includes(p.name)) groups.push(p.name)
-    }
-    return { users, groups }
-  })()
-
-  const hasMap = subjects.users.length + subjects.groups.length > 0
-
-  function row(who: string, population: 'user' | 'group') {
-    return sections.map((s) => {
-      const entry =
-        population === 'user'
-          ? s.userPermissions.find((p) => p.username === who)
-          : s.groupPermissions.find((p) => p.name === who)
-      /*
-      No entry at all is NOT the same as an entry that grants nothing, and the
-      two are drawn differently: an empty cell against three empty boxes. The
-      distinction is free to draw and needs no word; where it is told in full is
-      the eleven sections below, which are unchanged; a subject with no entry
-      simply has no row there.
-      */
-      if (entry == null) return <td key={s.section} />
-      return (
-        <MatrixMarks
-          key={s.section}
-          verbs={[
-            { verb: 'View', granted: entry.canView },
-            { verb: 'Modify', granted: entry.canModify },
-            { verb: 'Delete', granted: entry.canDelete },
-          ]}
-        />
-      )
-    })
-  }
-
   return (
     <>
       <SectionHeader
-        title="Administration"
+        section="Administration"
+        title="Permissions"
         tabs={tabs}
+        titleAction={<RowAction icon="refresh" name="Refresh" disabled={loading} onClick={() => void load()} />}
       />
 
-      {loading ? (
-        <Loading />
-      ) : (
-        <>
-          {/*
-          The index sits beside the WHOLE screen and not beside the map: it is
-          the dense form's index column, and what it indexes is the eleven sections below.
-          Beside the map alone it left a hole as tall as its eleven entries.
-          */}
-          <div className={styles.withIndex}>
-            <div className={styles.column}>
-              {/*
-              The concession map. No title: `Panel` groups without one, and a name
-              for this box would be product copy that upstream does not have. Its
-              own column and row headers already say what it is.
-              */}
-              {hasMap && (
-                <Panel className={styles.map}>
-                  <Matrix
-                    dense
-                    captionHidden
-                    caption="Permissions"
-                    columns={[
-                      { label: '', wide: true },
-                      ...sections.map((s) => ({ label: s.section })),
-                    ]}
-                  >
-                    {subjects.users.length > 0 && (
-                      <MatrixGroup label="User Permissions" span={sections.length + 1} />
-                    )}
-                    {subjects.users.map((u) => (
-                      <MatrixRow key={u} subject={u} stick>
-                        {row(u, 'user')}
-                      </MatrixRow>
-                    ))}
-                    {subjects.groups.length > 0 && (
-                      <MatrixGroup label="Group Permissions" span={sections.length + 1} />
-                    )}
-                    {subjects.groups.map((g) => (
-                      <MatrixRow key={g} subject={g} stick>
-                        {row(g, 'group')}
-                      </MatrixRow>
-                    ))}
-                  </Matrix>
-                </Panel>
-              )}
-
-              {/* The section's name is the panel's title, not a link: it was an
-                  orange button and did the same thing as the "Edit Permissions"
-                  next to it. Upstream does not link it either (`auth.js:1975`). */}
-              {sections.map((s) => (
-                <div
-                  key={s.section}
-                  id={anchor(s.section)}
-                  className={styles.anchor}
-                >
-                  <Panel
-                    className={styles.perm}
-                    title={s.section}
-                    actions={
-                      <Button size="sm" onClick={() => setEdit(s.section)}>
-                        Edit Permissions
-                      </Button>
-                    }
-                  >
-                    <div className={styles.permCols}>
-                      <div className={styles.permCol}>
-                        <Matrix
-                          caption="User Permissions"
-                          columns={[
-                            { label: 'Username', wide: true },
-                            ...VERBS.map((v) => ({ label: v })),
-                          ]}
-                        >
-                          {s.userPermissions.length === 0 ? (
-                            <MatrixEmpty text="No user permissions" span={4} />
-                          ) : (
-                            s.userPermissions.map((p) => (
-                              <MatrixRow key={p.username} subject={p.username}>
-                                <MatrixCell
-                                  name={`${s.section} · ${p.username} · View`}
-                                  granted={p.canView}
-                                />
-                                <MatrixCell
-                                  name={`${s.section} · ${p.username} · Modify`}
-                                  granted={p.canModify}
-                                />
-                                <MatrixCell
-                                  name={`${s.section} · ${p.username} · Delete`}
-                                  granted={p.canDelete}
-                                />
-                              </MatrixRow>
-                            ))
-                          )}
-                        </Matrix>
-                      </div>
-
-                      <div className={styles.permCol}>
-                        <Matrix
-                          caption="Group Permissions"
-                          columns={[
-                            { label: 'Group', wide: true },
-                            ...VERBS.map((v) => ({ label: v })),
-                          ]}
-                        >
-                          {s.groupPermissions.length === 0 ? (
-                            <MatrixEmpty text="No group permissions" span={4} />
-                          ) : (
-                            s.groupPermissions.map((p) => (
-                              <MatrixRow key={p.name} subject={p.name}>
-                                <MatrixCell
-                                  name={`${s.section} · ${p.name} · View`}
-                                  granted={p.canView}
-                                />
-                                <MatrixCell
-                                  name={`${s.section} · ${p.name} · Modify`}
-                                  granted={p.canModify}
-                                />
-                                <MatrixCell
-                                  name={`${s.section} · ${p.name} · Delete`}
-                                  granted={p.canDelete}
-                                />
-                              </MatrixRow>
-                            ))
-                          )}
-                        </Matrix>
-                      </div>
-                    </div>
-                  </Panel>
-                </div>
-              ))}
-
-              <div className={styles.count}>
-                <span>{`Total Sections: ${sections.length}`}</span>
-              </div>
-            </div>
-
-            {sections.length > 0 && (
-              <SectionIndex
-                sections={sections.map((s) => ({ id: anchor(s.section), label: s.section }))}
-                active={here}
-              />
-            )}
-          </div>
-        </>
-      )}
+      {loading ? <Loading /> : <PermissionMap sections={sections} onEdit={setEdit} />}
 
       {edit != null && (
         <EditPermissions
@@ -442,35 +229,35 @@ function EditPermissions({
       {loading ? (
         <Loading />
       ) : (
-        <>
+        <DialogForm>
           <PermissionsTable
             section={section}
             title="User Permissions"
             header="Username"
             rows={users}
             onChange={setUsers}
-          />
-          <MRow label="Add User">
-            {(id) => (
-              <Select
-                id={id}
-                className={styles.select}
-                value={addUser}
-                onChange={(e) => {
-                  setAddUser(e.target.value)
-                  setUsers((f) => addToTable(f, e.target.value, blankRow))
-                }}
-              >
-                <option value={BLANK_OPTION} />
-                <option value={NONE_OPTION}>None</option>
-                {userList.map((n) => (
-                  <option key={n} value={n}>
-                    {n}
-                  </option>
-                ))}
-              </Select>
-            )}
-          </MRow>
+          >
+            <MRow label="Add User" width="line">
+              {(id) => (
+                <Select
+                  id={id}
+                  value={addUser}
+                  onChange={(e) => {
+                    setAddUser(e.target.value)
+                    setUsers((f) => addToTable(f, e.target.value, blankRow))
+                  }}
+                >
+                  <option value={BLANK_OPTION} />
+                  <option value={NONE_OPTION}>None</option>
+                  {userList.map((n) => (
+                    <option key={n} value={n}>
+                      {n}
+                    </option>
+                  ))}
+                </Select>
+              )}
+            </MRow>
+          </PermissionsTable>
 
           <PermissionsTable
             section={section}
@@ -478,29 +265,29 @@ function EditPermissions({
             header="Group"
             rows={groups}
             onChange={setGroups}
-          />
-          <MRow label="Add Group">
-            {(id) => (
-              <Select
-                id={id}
-                className={styles.select}
-                value={addGroup}
-                onChange={(e) => {
-                  setAddGroup(e.target.value)
-                  setGroups((f) => addToTable(f, e.target.value, blankRow))
-                }}
-              >
-                <option value={BLANK_OPTION} />
-                <option value={NONE_OPTION}>None</option>
-                {groupList.map((n) => (
-                  <option key={n} value={n}>
-                    {n}
-                  </option>
-                ))}
-              </Select>
-            )}
-          </MRow>
-        </>
+          >
+            <MRow label="Add Group" width="line">
+              {(id) => (
+                <Select
+                  id={id}
+                  value={addGroup}
+                  onChange={(e) => {
+                    setAddGroup(e.target.value)
+                    setGroups((f) => addToTable(f, e.target.value, blankRow))
+                  }}
+                >
+                  <option value={BLANK_OPTION} />
+                  <option value={NONE_OPTION}>None</option>
+                  {groupList.map((n) => (
+                    <option key={n} value={n}>
+                      {n}
+                    </option>
+                  ))}
+                </Select>
+              )}
+            </MRow>
+          </PermissionsTable>
+        </DialogForm>
       )}
     </Dialog>
   )
@@ -516,12 +303,21 @@ const blankRow = (name: string): Row => ({
 /* `sortTable('tbodyEditPermissionsUser'|'Group', 0)`. */
 const PERMISSION_KEYS: Keys<Row> = { name: (f) => f.name }
 
+/*
+One of the two lists, as the zone's own Edit Permissions draws it
+(`zones/modals/ZonePermissions.tsx`): a section of the dialog under its title,
+the console's table (`ui/Table`) with a centred checkbox under each verb and
+Remove as the row's action, and the field that adds a name under it. It was
+`ui/EditableTable` with every input stretched to its cell, which drew each
+checkbox as a wide amber bar.
+*/
 function PermissionsTable({
   section,
   title,
   header,
   rows,
   onChange,
+  children,
 }: {
   /* Here the cells ARE controls, so they are amber and they are in the tab
      order. What does not change is their NAME: the same
@@ -532,6 +328,8 @@ function PermissionsTable({
   header: string
   rows: readonly Row[]
   onChange: (f: readonly Row[]) => void
+  /** The field that adds a name to this list. */
+  children: ReactNode
 }) {
   const { rows: visible, sort, toggle } = useSort(PERMISSION_KEYS, rows as Row[])
 
@@ -541,63 +339,51 @@ function PermissionsTable({
     onChange(rows.map((f) => (f.name === row.name ? { ...f, ...partial } : f)))
   }
 
+  const verbs = [
+    ['canView', 'View'],
+    ['canModify', 'Modify'],
+    ['canDelete', 'Delete'],
+  ] as const
+
   return (
-    <>
-      <p className={styles.sub}>{title}</p>
-      {/* The editable one does not carry the data table's panel wrapper: it is
-          another piece (`ui/EditableTable.module.css`) and lives INSIDE a panel. */}
-      <div>
-        <EditableTable
-      className={styles.edit}
-          header={
-            <>
-              <Th field="name" sort={sort} onSort={toggle}>{header}</Th>
-              <th>View</th>
-              <th>Modify</th>
-              <th>Delete</th>
-              <th className={styles.tdel} />
-            </>
-          }
-        >
-          {visible.map((f) => (
-            <tr key={f.name}>
-              <td className={styles.who}>{f.name}</td>
-              <td>
+    <DialogSection title={title}>
+      {/* Upstream puts no text when the modal's table is empty; nor does it
+          here, so as not to invent a literal that does not exist. */}
+      <Table
+        stack
+        header={
+          <>
+            <Th field="name" sort={sort} onSort={toggle}>{header}</Th>
+            {verbs.map(([, verb]) => (
+              <th key={verb} className={perm.verb}>{verb}</th>
+            ))}
+            <th className={tbl.actionsCell} />
+          </>
+        }
+      >
+        {visible.map((f) => (
+          <tr key={f.name}>
+            <td className={`${tbl.lead} ${perm.subject}`}>{f.name}</td>
+            {verbs.map(([key, verb]) => (
+              <td key={key} className={perm.verb}>
                 <input
                   type="checkbox"
-                  className={styles.chkPerm}
-                  aria-label={`${section} · ${f.name} · View`}
-                  checked={f.canView}
-                  onChange={(e) => set(f, { canView: e.target.checked })}
+                  className={perm.chkPerm}
+                  aria-label={`${section} · ${f.name} · ${verb}`}
+                  checked={f[key]}
+                  onChange={(e) => set(f, { [key]: e.target.checked })}
                 />
               </td>
-              <td>
-                <input
-                  type="checkbox"
-                  className={styles.chkPerm}
-                  aria-label={`${section} · ${f.name} · Modify`}
-                  checked={f.canModify}
-                  onChange={(e) => set(f, { canModify: e.target.checked })}
-                />
-              </td>
-              <td>
-                <input
-                  type="checkbox"
-                  className={styles.chkPerm}
-                  aria-label={`${section} · ${f.name} · Delete`}
-                  checked={f.canDelete}
-                  onChange={(e) => set(f, { canDelete: e.target.checked })}
-                />
-              </td>
-              <td className={styles.tdel}>
-                <Button onClick={() => onChange(rows.filter((x) => x.name !== f.name))}>Remove</Button>
-              </td>
-            </tr>
-          ))}
-        </EditableTable>
-        {/* Upstream puts no text when the modal's table is empty; nor does it
-            here, so as not to invent a literal that does not exist. */}
-      </div>
-    </>
+            ))}
+            <td className={tbl.actionsCell}>
+              <div className={tbl.actions}>
+                <RowAction icon="trash" name="Remove" onClick={() => onChange(rows.filter((x) => x.name !== f.name))} />
+              </div>
+            </td>
+          </tr>
+        ))}
+      </Table>
+      {children}
+    </DialogSection>
   )
 }

@@ -88,7 +88,7 @@ function inShell(ui: ReactNode, handoff: Handoff = nav()) {
 
 async function queried() {
   await userEvent.click(await screen.findByRole('button', { name: 'Query' }))
-  await screen.findByText('r1.example')
+  await screen.findByTitle('r1.example')
 }
 
 async function openRow(n: number) {
@@ -210,7 +210,7 @@ describe('Query Logs: arriving from showQueryLogs', () => {
     const query = withEntries()
     inShell(<Logs token="t" sub="Query Logs" request={{ domain: 'github.com', clientIp: null, node: '' }} />)
 
-    await screen.findByText('r1.example')
+    await screen.findByTitle('r1.example')
     expect(query).toHaveBeenCalledTimes(1)
     expect(query.mock.calls[0][1]).toMatchObject({
       name: 'Query Logs (Sqlite)',
@@ -232,7 +232,7 @@ describe('Query Logs: arriving from showQueryLogs', () => {
     const query = withEntries()
     inShell(<Logs token="t" sub="Query Logs" request={{ domain: null, clientIp: '10.0.0.7', node: '' }} />)
 
-    await screen.findByText('r1.example')
+    await screen.findByTitle('r1.example')
     expect(query.mock.calls[0][1]).toMatchObject({ qname: '', clientIpAddress: '10.0.0.7' })
     expect(screen.getByLabelText('Client IP Address')).toHaveValue('10.0.0.7')
   })
@@ -242,7 +242,7 @@ describe('Query Logs: arriving from showQueryLogs', () => {
     const query = withEntries()
     inShell(<Logs token="t" sub="Query Logs" request={{ domain: 'github.com', clientIp: null, node: 'node2.example' }} />)
 
-    await screen.findByText('r1.example')
+    await screen.findByTitle('r1.example')
     expect(query.mock.calls[0][1]).toMatchObject({ qname: 'github.com', node: 'node2.example' })
   })
 

@@ -1,5 +1,7 @@
-import { useState } from 'react'
+import { useId, useState, type ReactNode } from 'react'
+import { flushSync } from 'react-dom'
 import { Button } from '../../ui/Button'
+import { Icon } from '../../ui/Icon'
 import { Input, Textarea } from '../../ui/Field'
 import {
   buildBody,
@@ -19,17 +21,18 @@ import {
   TextRow,
   Warning,
 } from './parts'
-import { SectionHeader } from '../../ui/SectionHeader'
+import { rangeSize } from './pool'
+import { summarise, type FoldTitle } from './form-summary'
 import styles from './Dhcp.module.css'
 
 /*
 A scope's form (index.html:2560-2930). In upstream it is NOT a modal: it replaces
-the table inside the Scopes sub-tab itself, with the title "Add Scope" or "Edit
-Scope" as the case may be. It is kept that way.
+the table inside the Scopes sub-tab itself, under the title "Add Scope" or "Edit
+Scope". It is kept that way: it is the body of the scope's page (`ScopePage.tsx`).
 
 The labels, the help texts, the placeholders and the order of the thirteen groups
 are upstream literals. The "Warning!" and "Note!" alerts are bold paragraphs
-there; here they are coloured blocks, which is the only difference.
+there; here they are coloured blocks.
 
 Two dependencies between fields that upstream implements with `onclick` and that
 here are state, to the same effect:
@@ -38,17 +41,96 @@ here are state, to the same effect:
     Lease" (dhcp.js:21-25).
   · "Use This DNS Server" checked disables the DNS servers area
     (index.html:2713).
+
+Deviation 19 (2026-11-06), layout only. The thirteen blocks read in one glance:
+Scope, the block every scope needs, stands open; the other twelve are one card of
+lines, each its title and what it holds (`form-summary.ts`), and a line opens its
+block under it, as a row opens its Details. Closed, a block's fields are still in
+the form, hidden, and Save sends them all as before; when the save stops at a
+cell of a closed block, that block opens before the cell takes the focus. The Ping
+Check `Warning!` sits above the block's controls (DESIGN, "`Warning!` before,
+`Note!` after"); the Ending Address says how many addresses the range holds while
+typing (`N addresses`, ours, `pool.ts`, only for a valid IPv4 range); and the long
+hex samples of the Vendor Specific Information help may wrap between their octets.
+Same fields, same order, same defaults, same texts, same validation, same save.
 */
 
-export function ScopeForm({
+/*
+A hex sample that may break between its octets and nowhere else: a `<wbr>` after
+every colon, or every two digits when there are none. The text is the same
+characters; only where a line may end changes (`lint:breaks` keeps break-all out
+of the console, so the break points are written in).
+*/
+function Hex({ children }: { children: string }) {
+  const pieces = children.includes(':') ? children.split(/(?<=:)/) : children.match(/.{1,2}/g) ?? [children]
+  return (
+    <code>
+      {pieces.map((p, i) => (
+        <span key={i}>
+          {p}
+          {i < pieces.length - 1 && <wbr />}
+        </span>
+      ))}
+    </code>
+  )
+}
+
+/*
+A folded block: one line with its title and what it holds, opening its fields
+under it. The fields stay mounted while it is closed (`hidden`), so a save that
+stops at one of them can open the block and focus it, and nothing typed is lost
+by closing it.
+*/
+function Fold({
   title,
+  summary,
+  open,
+  onToggle,
+  notices,
+  children,
+}: {
+  title: FoldTitle
+  summary: string
+  open: boolean
+  onToggle: () => void
+  /** The block's warnings, drawn above its controls, as `Block` does. */
+  notices?: ReactNode
+  children: ReactNode
+}) {
+  const id = useId()
+  return (
+    <div className={styles.fold} data-fold={title} data-open={open || undefined}>
+      <button
+        type="button"
+        className={styles.foldHead}
+        aria-expanded={open}
+        aria-controls={`${id}-body`}
+        aria-labelledby={`${id}-title`}
+        aria-describedby={`${id}-summary`}
+        onClick={onToggle}
+      >
+        <span id={`${id}-title`} className={styles.foldTitle}>{title}</span>
+        <span id={`${id}-summary`} className={styles.foldSummary}>{summary}</span>
+        <Icon name={open ? 'chevronDown' : 'chevronRight'} size={15} className={styles.foldChevron} />
+      </button>
+      <div id={`${id}-body`} className={styles.foldBody} role="group" aria-labelledby={`${id}-title`} hidden={!open}>
+        {notices != null && <div className={styles.notices}>{notices}</div>}
+        {children}
+      </div>
+    </div>
+  )
+}
+
+export function ScopeForm({
+  heading,
   initial,
   busy,
   onSave,
   onCancel,
   onNotice,
 }: {
-  title: 'Add Scope' | 'Edit Scope'
+  /** Upstream's form title, "Edit Scope", when the page's own title is the scope. */
+  heading?: string
   initial: Form
   busy: boolean
   onSave: (body: Record<string, string>) => void
@@ -56,15 +138,35 @@ export function ScopeForm({
   onNotice: (e: ScopeError) => void
 }) {
   const [f, setF] = useState<Form>(initial)
+  const [open, setOpen] = useState<Set<FoldTitle>>(() => new Set())
+  const size = rangeSize(f.startingAddress, f.endingAddress)
+  const sum = summarise(f)
 
   function set(partial: Partial<Form>) {
     setF((prev) => ({ ...prev, ...partial }))
   }
 
+  function toggle(t: FoldTitle) {
+    setOpen((prev) => {
+      const next = new Set(prev)
+      if (next.has(t)) next.delete(t)
+      else next.add(t)
+      return next
+    })
+  }
+
+  /* The props every fold takes from its title. */
+  const fold = (t: FoldTitle) => ({ title: t, summary: sum[t], open: open.has(t), onToggle: () => toggle(t) })
+
   function save() {
     const result = buildBody(f)
     if ('error' in result) {
       onNotice(result.error)
+      /* A cell in a closed block cannot take the focus: its block opens first. */
+      const where = document.getElementById(result.error.focus)?.closest('[data-fold]')?.getAttribute('data-fold')
+      if (where != null && !open.has(where as FoldTitle)) {
+        flushSync(() => setOpen((prev) => new Set(prev).add(where as FoldTitle)))
+      }
       document.getElementById(result.error.focus)?.focus()
       return
     }
@@ -72,8 +174,8 @@ export function ScopeForm({
   }
 
   return (
-    <div>
-      <SectionHeader section="DHCP" title={title} />
+    <div className={styles.form}>
+      {heading != null && <h2 className={styles.formTitle}>{heading}</h2>}
 
       <Block title="Scope">
         <TextRow
@@ -96,6 +198,7 @@ export function ScopeForm({
           onChange={(v) => set({ endingAddress: v })}
           placeholder="Ending Address"
           width="wide"
+          suffix={size == null ? undefined : `${size} ${size === 1 ? 'address' : 'addresses'}`}
         />
         <TextRow
           label="Subnet Mask"
@@ -158,7 +261,20 @@ export function ScopeForm({
         />
       </Block>
 
-      <Block title="Ping Check">
+      <div className={styles.folds}>
+      <Fold
+        {...fold('Ping Check')}
+        notices={
+            <Warning>
+              Ping check would work as expected only when you make sure that all the client devices with
+              manually configured IP addresses on the network respond to a ping request. Devices running
+              Microsoft Windows by default drop ping requests at host firewall and will cause this ping
+              check to fail to detect in use IP addresses. It is recommended to not rely on this option
+              and instead make sure that you exclude a range of addresses using Exclusions and manually
+              assign IP addresses to your devices only in the excluded range.
+            </Warning>
+        }
+      >
         <GroupRow label="Ping Check">
           <Check
             toggle
@@ -186,19 +302,9 @@ export function ScopeForm({
           onChange={(v) => set({ pingCheckRetries: v })}
           help="The maximum number of ping requests to try."
         />
-        <Notices>
-          <Warning>
-            Ping check would work as expected only when you make sure that all the client devices with
-            manually configured IP addresses on the network respond to a ping request. Devices running
-            Microsoft Windows by default drop ping requests at host firewall and will cause this ping
-            check to fail to detect in use IP addresses. It is recommended to not rely on this option
-            and instead make sure that you exclude a range of addresses using Exclusions and manually
-            assign IP addresses to your devices only in the excluded range.
-          </Warning>
-        </Notices>
-      </Block>
+      </Fold>
 
-      <Block title="DNS">
+      <Fold {...fold('DNS')}>
         <TextRow
           label="Domain Name"
           width="wide"
@@ -238,9 +344,9 @@ export function ScopeForm({
           onChange={(v) => set({ dnsTtl: v })}
           help="The TTL value of the DNS records updated for the above provided domain name."
         />
-      </Block>
+      </Fold>
 
-      <Block title="Network Options">
+      <Fold {...fold('Network Options')}>
         <TextRow
           label="Router Address"
           width="wide"
@@ -292,9 +398,9 @@ export function ScopeForm({
           onChange={(v) => set({ ntpServerDomainNames: v })}
           help="Enter NTP server domain names (e.g. pool.ntp.org) above that the DHCP server should automatically resolve and pass the resolved IP addresses to clients as NTP server option. (Option 42)"
         />
-      </Block>
+      </Fold>
 
-      <Block title="Static Routes">
+      <Fold {...fold('Static Routes')}>
         <EditableList
           label="Static Routes"
           cellId={(row, column) => cellId('staticRoutes', row, column)}
@@ -308,9 +414,9 @@ export function ScopeForm({
           blank={() => ({ destination: '', subnetMask: '', router: '' })}
           help="The static routes to be used by the clients for accessing specified destination networks. (Option 121)"
         />
-      </Block>
+      </Fold>
 
-      <Block title="Bootstrap">
+      <Fold {...fold('Bootstrap')}>
         <TextRow
           label="Bootstrap Server Address"
           width="wide"
@@ -335,9 +441,9 @@ export function ScopeForm({
           onChange={(v) => set({ bootFileName: v })}
           help="The boot file name stored on the bootstrap TFTP server to be used by the clients. (file/Option 67)"
         />
-      </Block>
+      </Fold>
 
-      <Block title="Vendor Specific Information">
+      <Fold {...fold('Vendor Specific Information')}>
         <EditableList
           label="Vendor Specific Information"
           cellId={(row, column) => cellId('vendorInfo', row, column)}
@@ -356,34 +462,32 @@ export function ScopeForm({
               example <code>substring(vendor-class-identifier,0,9)=="PXEClient"</code>. The Vendor
               Specific Information must be either a colon (:) separated hex string or a normal hex
               string, for example{' '}
-              <code>
-                06:01:03:0A:04:00:50:58:45:09:14:00:00:11:52:61:73:70:62:65:72:72:79:20:50:69:20:42:6F:6F:74:FF
-              </code>{' '}
-              OR <code>0601030A0400505845091400001152617370626572727920506920426F6F74FF</code>.
+              <Hex>06:01:03:0A:04:00:50:58:45:09:14:00:00:11:52:61:73:70:62:65:72:72:79:20:50:69:20:42:6F:6F:74:FF</Hex>{' '}
+              OR <Hex>0601030A0400505845091400001152617370626572727920506920426F6F74FF</Hex>.
             </>
           }
         />
-      </Block>
+      </Fold>
 
-      <Block title="CAPWAP Access Controller Addresses">
+      <Fold {...fold('CAPWAP Access Controller Addresses')}>
         <AreaRow
           label="CAPWAP Access Controller Addresses"
           value={f.capwapAcIpAddresses}
           onChange={(v) => set({ capwapAcIpAddresses: v })}
           help="The Control And Provisioning of Wireless Access Points (CAPWAP) Access Controller IP addresses to be used by Wireless Termination Points to discover the Access Controllers to which it is to connect. (Option 138)"
         />
-      </Block>
+      </Fold>
 
-      <Block title="TFTP Server Addresses">
+      <Fold {...fold('TFTP Server Addresses')}>
         <AreaRow
           label="TFTP Server Addresses"
           value={f.tftpServerAddresses}
           onChange={(v) => set({ tftpServerAddresses: v })}
           help="The TFTP Server Address or the VoIP Configuration Server Address. (Option 150)"
         />
-      </Block>
+      </Fold>
 
-      <Block title="Generic DHCP Options">
+      <Fold {...fold('Generic DHCP Options')}>
         <EditableList
           label="Generic DHCP Options"
           cellId={(row, column) => cellId('genericOptions', row, column)}
@@ -403,9 +507,9 @@ export function ScopeForm({
             </>
           }
         />
-      </Block>
+      </Fold>
 
-      <Block title="Exclusions">
+      <Fold {...fold('Exclusions')}>
         <EditableList
           label="Exclusions"
           cellId={(row, column) => cellId('exclusions', row, column)}
@@ -425,9 +529,9 @@ export function ScopeForm({
             allocated in the first place.
           </Note>
         </Notices>
-      </Block>
+      </Fold>
 
-      <Block title="Advanced Options">
+      <Fold {...fold('Advanced Options')}>
         <GroupRow label="Advanced Options">
           <Check
             toggle
@@ -466,9 +570,9 @@ export function ScopeForm({
             help="This option when enabled will always use the client's MAC address as the identifier to allocate lease instead of the Client Identifier (Option 61) provided by the client in the request. Some Linux distros use a custom Client Identifier instead of the device's MAC Address which can cause issues when the Virtual Machine (VM) in which the OS is installed is cloned causing both the original and cloned clients to get same IP allocated. There can be issues too when the same client changes its Client Identifier and starts getting a different IP address lease. Enabling the Ignore Client Identifier option will fix such issues. Changing this option may cause the existing clients to get a different IP lease on renewal."
           />
         </GroupRow>
-      </Block>
+      </Fold>
 
-      <Block title="Reserved Leases">
+      <Fold {...fold('Reserved Leases')}>
         <EditableList
           label="Reserved Leases"
           cellId={(row, column) => cellId('reservedLeases', row, column)}
@@ -483,13 +587,15 @@ export function ScopeForm({
           blank={() => ({ hostName: '', hardwareAddress: '', address: '', comments: '' })}
           help="The reserved IP addresses to be assigned to specific clients based on their MAC address. Set a hostname to override the client's hostname."
         />
-      </Block>
+      </Fold>
+
+      </div>
 
       <div className={styles.bar}>
-        <Button variant="primary" disabled={busy} onClick={save}>
+        <Button onClick={onCancel}>Cancel</Button>
+        <Button variant="primary" lead="save" disabled={busy} onClick={save}>
           Save
         </Button>
-        <Button onClick={onCancel}>Cancel</Button>
       </div>
     </div>
   )

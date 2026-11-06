@@ -1,7 +1,7 @@
 /*
 The verdict of "Check a domain", under the field it answers. Every value is a token of
-theme/tokens.css. The mark is the status block's (Overview.module.css `.mark`), so the
-two blocks that share the row speak the same way; its tone is the Rules column's: the
+theme/tokens.css. The mark is Overview.module.css's `.mark` (it was the status block's,
+which shared the row until 2026-11-06); its tone is the Rules column's: the
 block colour for blocked, the text green for allowed, neutral for the rest.
 */
 .verdict {

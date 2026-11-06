@@ -36,6 +36,8 @@ Each card is a size container: its figure takes the smaller of its normal size
 (`--size`) and what fits (`--fit`, below), so a long figure never spills out.
 */
 .tile {
+  /* It rises under the pointer when it opens Query Logs (`raise`, ui/Panel). */
+  composes: raise from '../../ui/Panel.module.css';
   container-type: inline-size;
   min-width: 0;
   background: var(--pan);
@@ -198,7 +200,7 @@ The name never breaks: it ends in an ellipsis and is whole on hover.
 .topBar { grid-column: 2 / 4; display:block; position:relative; height:var(--s-2); margin-top:var(--s-1); border-radius:var(--r-full); background:var(--line2); overflow:hidden; }
 .topBar > i { position:absolute; inset:0 auto 0 0; border-radius:var(--r-full); background:var(--bar, var(--ch-total)); }
 /* Upstream draws a rate-limited client in orange. */
-.toprow.limited .topLabel, .limited td { color: var(--warn); }
+.toprow.limited .topLabel { color: var(--warn); }
 
 /*
 The three breakdowns: each a title, a stacked bar and its legend (`Breakdown.tsx`).
@@ -220,39 +222,6 @@ button.segment:hover { box-shadow: inset 0 0 0 1px var(--ink); }
 .lgStill { cursor: default; }
 .lgStill:hover { background: transparent; color: var(--mute); }
 
-/* "Top Stats" modal: the long list behind the "More" buttons. */
-.topTableWrap { overflow-x: auto; max-height: 460px; overflow-y: auto; }
-/*
-The "More" dialog's table is the console's table, with one difference that does
-have a reason: the header stays stuck to the top because the list can have three
-hundred rows inside a dialog that scrolls.
-*/
-.topTable { composes: table from '../../ui/Table.module.css'; }
-.topTable thead th { position: sticky; top: 0; }
-/* The count and the menu sit on the name's line, as in upstream's Bootstrap table.
-   `tbody` is not decoration: `.table td` has the same weight and comes later in the
-   bundle, so with `.topTable td` alone it won and the count floated between the
-   name and the domain under it. */
-.topTable tbody td { vertical-align: top; }
-/*
-The footer's "Total Domains: N" is the same count any other table in the console
-carries (`ui/count.module.css`), even though here it travels in a `tfoot`.
-*/
-.topTable tfoot th {
-  padding: var(--s-6) var(--s-7);
-  text-align: left;
-  font-size: var(--t-4);
-  font-weight: 400;
-  color: var(--mute);
-  text-transform: none;
-  letter-spacing: normal;
-  background: transparent;
-}
-/* Top 1000: a name is broken only when it cannot fit its cell. `overflow-wrap`, unlike
-   `word-break: break-all`, leaves the column's minimum width to whole names. */
-.topName { display: block; font-family: var(--font-mono); overflow-wrap: break-word; }
-.topTable .topDomain { display: block; margin-top: var(--s-1); font: var(--t-2) var(--font-mono); color: var(--faint); overflow-wrap: break-word; }
-.topCount { composes: mono from '../../ui/text.module.css'; }
 
 /*
 The steps, measured at 1440, 1280, 1024 and 390.

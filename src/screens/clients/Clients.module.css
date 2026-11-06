@@ -1,0 +1,211 @@
+/*
+The Clients page (`Clients.tsx`, `ClientList.tsx`, `ClientCard.tsx`, `WhoUses.tsx`).
+Every value is a token of theme/tokens.css. Laid out as Blocking › Overview: the
+header, the strip, the share bar, then the list and the open client's card.
+*/
+.stack { display: flex; flex-direction: column; gap: var(--gap-block); }
+.stack .strip { margin-bottom: 0; }
+
+/* The strip's four cells in one row, or two rows of two: the Overview's strip. */
+div.strip { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+/* `--bp-wide`. */
+@media (max-width: 1180px) {
+  div.strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+/* Without a query logs app the two cells read from the log are one, which says why. */
+.wide { grid-column: span 2; }
+.noApp { margin: 0; font-size: var(--t-3); line-height: 1.5; color: var(--mute); }
+.locked { display: flex; align-items: center; gap: var(--s-3); font-size: var(--t-3); color: var(--mute); }
+.lockedPage { padding: var(--s-9); border: 1px solid var(--line2); border-radius: var(--r-4); background: var(--pan); }
+
+/* A client in a cell: its address, one line, and the name under it. */
+.who { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.whoName { font-size: var(--t-2); color: var(--faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.mono { font-family: var(--font-mono); }
+/* What a sample is, in a quiet line. */
+.basis { margin: 0; font-size: var(--t-2); color: var(--faint); }
+
+/*
+WHO USES YOUR DNS (`WhoUses.tsx`): one track, a segment per busy client in the
+total's colour, each a step lighter than the one before (`--cl-mix`, set per
+segment), the open one ringed. The name sits inside when the segment is wide enough.
+*/
+.usesBody { display: flex; flex-direction: column; gap: var(--s-5); }
+.usesHint, .usesCaption { margin: 0; font-size: var(--t-2); color: var(--faint); }
+.usesBar { display: flex; gap: var(--s-1); height: var(--s-12); border-radius: var(--r-2); background: var(--pan2); overflow: hidden; }
+.usesSegment {
+  flex: 0 0 auto;
+  min-width: var(--s-2);
+  display: flex;
+  align-items: center;
+  padding: 0 var(--s-4);
+  overflow: hidden;
+  border: 0;
+  background: color-mix(in srgb, var(--ch-total) var(--cl-mix), var(--pan));
+  color: var(--ink);
+  font: 550 var(--t-2)/1 var(--font-ui);
+  cursor: pointer;
+  transition: filter var(--t-fast);
+}
+.usesSegment:hover { filter: brightness(1.15); }
+.usesSegment:focus-visible { outline: var(--focus); outline-offset: calc(-1 * var(--s-1)); }
+.usesSegment[aria-current] { box-shadow: inset 0 0 0 var(--s-1) var(--acc); }
+.usesName { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/*
+MASTER AND DETAIL, above `--bp-wide`: the list as a column, the card beside it. The
+list column keeps its width; the card takes the rest and stays in view while the
+list scrolls by.
+*/
+.master { display: grid; grid-template-columns: minmax(0, 380px) minmax(0, 1fr); gap: var(--s-9); align-items: start; }
+.masterList, .masterCard { min-width: 0; }
+
+/* THE LIST (`ClientList.tsx`). */
+.listControls { display: flex; flex-direction: column; gap: var(--s-5); padding: var(--s-7) var(--s-10); border-bottom: 1px solid var(--line2); }
+.chips { display: flex; flex-wrap: wrap; gap: var(--s-3); }
+.chipCount { margin-left: var(--s-1); color: var(--mute); font-variant-numeric: tabular-nums; }
+.sortLine { display: flex; align-items: center; justify-content: space-between; gap: var(--s-5); }
+.ofCount { font-size: var(--t-2); color: var(--faint); white-space: nowrap; }
+.listGap { padding: var(--s-9) var(--s-10); }
+.noRows { margin: 0; padding: var(--s-11) var(--s-10); text-align: center; font-size: var(--t-4); color: var(--mute); }
+.list { list-style: none; margin: 0; padding: var(--s-3); display: flex; flex-direction: column; gap: var(--s-1); }
+.line {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--s-7);
+  width: 100%;
+  padding: var(--s-6) var(--s-7);
+  border: 1px solid transparent;
+  border-radius: var(--r-3);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--t-fast), border-color var(--t-fast);
+}
+.line:hover { background: var(--hover); }
+.line:focus-visible { outline: var(--focus); outline-offset: calc(-1 * var(--s-1)); }
+.line[aria-current] { background: var(--acc-tint); border-color: var(--acc-tint-strong); }
+/* The account row's initial (`ui/Menu`'s `.row[data-initial]`), quieter until open. */
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--s-11);
+  height: var(--s-11);
+  border-radius: 50%;
+  background: var(--pan2);
+  box-shadow: inset 0 0 0 1px var(--line);
+  color: var(--mute);
+  font-size: var(--t-3);
+  font-weight: 650;
+}
+.avatar[data-current] { background: var(--acc-tint); box-shadow: inset 0 0 0 1px var(--acc-tint-strong); color: var(--acc-ink); }
+.lineWho { display: flex; flex-direction: column; gap: var(--s-1); min-width: 0; }
+.lineName { font: 550 var(--t-4)/1.35 var(--font-ui); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lineSub { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2) var(--s-4); font-size: var(--t-2); color: var(--faint); }
+.lineFigures { display: flex; flex-direction: column; align-items: flex-end; gap: var(--s-1); width: calc(var(--s-12) * 2.5); }
+.lineHits { font: 600 var(--t-4)/1.2 var(--font-mono); font-variant-numeric: tabular-nums; }
+.lineBlocked { font-size: var(--t-2); color: var(--mute); white-space: nowrap; }
+.lineBar { display: flex; width: 100%; height: var(--s-1); margin-top: var(--s-1); border-radius: var(--r-full); overflow: hidden; }
+.lineBar > i { display: block; height: 100%; flex-basis: 0; }
+.lineBarBlocked { background: var(--ch-block); }
+.lineBarAllowed { background: var(--ch-ok); }
+
+/* The tags (`Tags` in `ClientCard.tsx`): an outlined word in its colour. */
+.tags { display: inline-flex; flex-wrap: wrap; gap: var(--s-2); }
+.tagBlock, .tagWarn {
+  display: inline-block;
+  padding: 0 var(--s-3);
+  border: 1px solid currentColor;
+  border-radius: var(--r-1);
+  font: 650 var(--t-1)/1.5 var(--font-ui);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.tagBlock { color: var(--ch-block); }
+.tagWarn { color: var(--warn); }
+
+/* THE CARD (`ClientCard.tsx`): one panel, its head, then its sections. */
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-10);
+  padding: var(--s-10) var(--s-11) var(--s-11);
+  border: 1px solid var(--line2);
+  border-radius: var(--r-4);
+  background: var(--pan);
+  box-shadow: var(--e-1);
+  min-width: 0;
+}
+.cardHead { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: var(--s-8) var(--s-11); }
+.cardWho { display: flex; flex-direction: column; gap: var(--s-4); min-width: 0; }
+.cardTitleRow { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-5); }
+.cardTitle { margin: 0; font: 650 var(--t-7)/1.2 var(--font-ui); color: var(--ink); overflow-wrap: break-word; }
+.cardFacts { display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-10); margin: 0; font-size: var(--t-3); }
+.cardFacts > div { display: flex; gap: var(--s-3); align-items: baseline; }
+.cardFacts dt { color: var(--mute); }
+.cardFacts dd { margin: 0; color: var(--ink); }
+.cardActions { display: flex; flex-wrap: wrap; gap: var(--s-4); }
+.copy { display: contents; }
+.cardGap { min-width: 0; }
+
+/* The card's figures: three or four cells in one row, two by two on a phone. */
+div.figures { margin: calc(-1 * var(--s-6)) 0 0; grid-template-columns: repeat(4, minmax(0, 1fr)); box-shadow: none; }
+div.figures[data-cells='3'] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 560px) {
+  div.figures, div.figures[data-cells='3'] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+.activity { min-width: 0; }
+.pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-9) var(--s-11); }
+.part { min-width: 0; }
+.rows { display: flex; flex-direction: column; gap: var(--s-2); }
+/* A record type has no rank and no menu: its name takes their room. */
+.countRow { grid-template-columns: minmax(0, 1fr) auto; }
+.countRow > :last-child { grid-column: 1 / -1; }
+/* `--bp-stack`: one column. */
+@media (max-width: 560px) {
+  .pair { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Latest Queries: a compact table, the figures right. */
+.latest { min-width: 0; }
+table.latestTable td { padding-top: var(--s-4); padding-bottom: var(--s-4); }
+thead > tr > th.numHead { text-align: right; }
+.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.when { color: var(--mute); white-space: nowrap; }
+.domainCell { overflow-wrap: break-word; }
+
+/* `--bp-stack`: the card's edges come in, and the share bar's segments are too narrow
+   for a name (each still names itself to the pointer and the reader). */
+@media (max-width: 560px) {
+  .card { padding: var(--s-9); gap: var(--s-9); }
+  .usesName { display: none; }
+}
+
+/*
+The card's Actions (`ClientActions.tsx`): one quiet band under the head, a line per
+action with the list or the lease it acts on, its state, and its button at the end.
+*/
+.actionsArea { display: flex; flex-direction: column; gap: var(--s-4); padding: var(--s-7) var(--s-9); border: 1px solid var(--line2); border-radius: var(--r-3); background: var(--pan2); }
+.actionsTitle { margin: 0; font-size: var(--t-3); font-weight: 600; color: var(--mute); }
+/* One grid for every line, so the states and the buttons line up from line to line. */
+.actionRows { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; align-items: center; gap: var(--s-3) var(--s-8); margin: 0; }
+.actionRow { display: contents; }
+.actionRow > * { min-height: var(--s-12); display: flex; align-items: center; }
+.actionRow dt { font-size: var(--t-4); color: var(--ink); }
+.actionState { margin: 0; font-size: var(--t-4); color: var(--mute); }
+.actionDo { margin: 0; justify-self: end; }
+.actionOn { color: var(--ink); font-weight: 600; }
+.actionQuiet { display: inline-flex; align-items: center; gap: var(--s-2); color: var(--faint); font-weight: 400; }
+/* `--bp-stack`: the name and its state on one line, the button under them. */
+@media (max-width: 560px) {
+  .actionRows { grid-template-columns: minmax(0, 1fr) auto; row-gap: 0; }
+  .actionRow > * { min-height: var(--s-11); }
+  .actionDo { grid-column: 1 / -1; justify-self: start; margin-bottom: var(--s-4); }
+}

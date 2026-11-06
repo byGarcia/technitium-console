@@ -1,0 +1,244 @@
+/*
+A row of stat cards (`StatCard.tsx`; Zones, Cache, Apps, DNS Client, DHCP): four
+cards in a row, on a narrow screen two and then one. Each card's height is its content's; the row aligns their tops.
+*/
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--s-8);
+  align-items: stretch;
+  margin-bottom: var(--gap-block);
+}
+
+@media (max-width: 1180px) {
+  .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 560px) {
+  .grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+.body { padding: var(--s-7) var(--s-9) var(--s-8); margin: 0; }
+
+/* The record count: the one figure of the row, in the interface's face. */
+.figure {
+  font: 650 var(--t-title)/1.1 var(--font-ui);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.facts { display: flex; gap: var(--s-10); margin: var(--s-5) 0 0; }
+.facts dt { font-size: var(--t-3); color: var(--mute); }
+.facts dd { margin: 0; font: 600 var(--t-5)/1.3 var(--font-ui); font-variant-numeric: tabular-nums; color: var(--ink); }
+
+/* The SOA's fields in two columns of label over value. */
+.pairs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-5) var(--s-9); }
+.pairs dt { font-size: var(--t-2); color: var(--mute); }
+.pairs dd { margin: 0; font: var(--t-3)/1.4 var(--font-mono); color: var(--ink); overflow-wrap: break-word; }
+
+.list { list-style: none; display: flex; flex-direction: column; gap: var(--s-4); }
+.list li { display: flex; align-items: center; flex-wrap: wrap; gap: var(--s-4); }
+.mono { font: var(--t-4)/1.4 var(--font-mono); color: var(--ink); min-width: 0; }
+
+.state { min-height: var(--s-11); display: flex; align-items: center; }
+.quiet { font-size: var(--t-4); color: var(--mute); }
+.actions { display: flex; flex-wrap: wrap; gap: var(--s-3); margin-top: var(--s-6); }
+
+/* The zone's types, each a chip that filters the table (`onType`). */
+.types { display: flex; flex-wrap: wrap; gap: var(--s-3); margin-top: var(--s-5); }
+.typeChip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-4);
+  padding: var(--s-2) var(--s-5);
+  border: 1px solid var(--btn-line);
+  border-radius: var(--r-2);
+  background: var(--btn);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--t-3);
+  cursor: pointer;
+  transition: background var(--t-fast), border-color var(--t-fast);
+}
+.typeChip:hover { background: var(--btn-hover); border-color: var(--line-hover); }
+.typeChip[aria-pressed='true'] { background: var(--seg-active); border-color: var(--acc-ink); color: var(--acc-ink); }
+.typeName { font-family: var(--font-mono); font-weight: 600; }
+.typeCount { color: var(--mute); font-variant-numeric: tabular-nums; }
+.typeChip[aria-pressed='true'] .typeCount { color: inherit; }
+
+/* The zone list's summary (`ZoneSummary.tsx`) shares these cards. */
+.typeLabel { font-weight: 600; }
+.factsLarge dd { font: 650 var(--t-title)/1.1 var(--font-ui); letter-spacing: -0.02em; }
+.factsLarge { justify-content: space-between; margin: 0; }
+.bad { color: var(--warn); }
+.of { font-size: var(--t-5); font-weight: 500; color: var(--mute); letter-spacing: 0; }
+.caption { margin-top: var(--s-3); font-size: var(--t-3); color: var(--mute); }
+
+/* A card's series colour: a straight bar inside its left edge, clear of the
+   corners, as on the Dashboard's figures (`--tc`, set by `Card`). */
+.card { position: relative; min-width: 0; display: flex; }
+.card > * { flex: 1; min-width: 0; }
+.card::before {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  left: 0;
+  top: var(--s-8);
+  bottom: var(--s-8);
+  width: 2px;
+  border-radius: 0 2px 2px 0;
+  background: var(--tc);
+  pointer-events: none;
+}
+
+/* How a whole splits (`StackBar`): segments in their series colours. */
+.stack { display: flex; gap: 2px; height: var(--s-4); margin-top: var(--s-6); border-radius: var(--r-1); overflow: hidden; }
+.segment { display: block; flex-basis: 0; min-width: var(--s-2); height: 100%; }
+
+/* The chip's swatch: its series colour (`--sw`), as the legend's square. */
+.typeChip::before { content: ''; width: 8px; height: 8px; border-radius: 2px; background: var(--sw, var(--ch-drop)); flex: none; }
+
+/* A server's or a state's dot. */
+.dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+
+/* DNSSEC's shield: grey when the zone is unsigned, the info blue when signed. */
+.shield { display: inline-flex; color: var(--faint); margin-right: var(--s-5); }
+.shieldOn { color: var(--info); }
+.state { gap: var(--s-2); }
+
+.facts dt { display: inline-flex; align-items: center; gap: var(--s-3); }
+
+/* A share as a track and its fill (DNSSEC: signed of signable). */
+.meter { height: var(--s-4); margin-top: var(--s-6); border-radius: var(--r-1); background: var(--pan2); overflow: hidden; }
+.meter > span { display: block; height: 100%; background: var(--info); border-radius: inherit; }
+
+.lastName { font: 600 var(--t-5)/1.3 var(--font-mono); color: var(--ink); overflow-wrap: break-word; }
+.caption { display: inline-flex; align-items: center; gap: var(--s-3); }
+
+/*
+THE CARDS COME ALIVE (2026-11-05), one entrance and a few answers to the pointer,
+as the Dashboard's cards do. Every effect here is short (120 to 420 ms) and eases
+out under the console's one curve (`--t-fast`'s, `cubic-bezier(0.2, 0.9, 0.3, 1)`).
+
+  · The entrance is ONE movement, not four: the cards fade in a beat apart, and
+    inside each the bar sweeps open from the left, the meter fills and the big
+    figures count up (`ui/useCountUp`) over the same 400 ms.
+  · Nothing keeps a `transform` at rest. A card holds fixed-position bubbles (the
+    segments' tooltips, the fact's), and a transformed ancestor would become their
+    containing block and carry them off their trigger. The bar sweeps with
+    `clip-path`, the cards only fade, and the meter's fill, which holds nothing,
+    is the one element scaled, and only during its animation (`backwards`, never
+    `forwards`).
+  · A card under the pointer tints its border with its own series colour.
+  · A segment under the pointer, or whose chip is, stays as it is and the others
+    dim a little; the chip of a lit segment takes its colour in its border.
+  · A chip pressed gives way under the finger for as long as it is held.
+  · All of it is off for whoever asks the system for less motion: the entrance,
+    the count and the press. Colour changes stay; they are not motion.
+*/
+.card > * { transition: border-color var(--t-medium); }
+.card:hover > * { border-color: color-mix(in srgb, var(--tc) 55%, var(--line)); }
+
+.segment { transition: opacity var(--t-medium); }
+.stack[data-hot] > .segment:not([data-hot]) { opacity: 0.55; }
+
+.typeChip[data-hot] { border-color: color-mix(in srgb, var(--sw) 70%, var(--btn-line)); }
+.factsLarge > div { transition: color var(--t-fast); }
+.factsLarge > div[data-hot] dt { color: var(--ink); }
+
+/* The fact with more to say (Not used since restart): a dotted label and a ring. */
+.explained { cursor: help; border-radius: var(--r-1); }
+.explained dt { text-decoration: underline dotted; text-underline-offset: var(--s-1); }
+.explained:focus-visible { outline: var(--focus); outline-offset: var(--focus-offset); }
+
+.grid > .card:nth-child(2) { --i: 1; }
+.grid > .card:nth-child(3) { --i: 2; }
+.grid > .card:nth-child(4) { --i: 3; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .card {
+    animation: card-in 260ms cubic-bezier(0.2, 0.9, 0.3, 1) backwards;
+    animation-delay: calc(var(--i, 0) * 50ms);
+  }
+  .stack {
+    animation: sweep 420ms cubic-bezier(0.2, 0.9, 0.3, 1) backwards;
+    animation-delay: calc(var(--i, 0) * 50ms + 60ms);
+  }
+  .meter > span {
+    transform-origin: left center;
+    animation: fill 420ms cubic-bezier(0.2, 0.9, 0.3, 1) backwards;
+    animation-delay: calc(var(--i, 0) * 50ms + 60ms);
+  }
+  .typeChip { transition: background var(--t-fast), border-color var(--t-fast), transform var(--t-fast); }
+  .typeChip:active { transform: scale(0.96); }
+}
+
+@keyframes card-in {
+  from { opacity: 0; }
+}
+
+@keyframes sweep {
+  from { clip-path: inset(0 100% 0 0); }
+}
+
+@keyframes fill {
+  from { transform: scaleX(0); }
+}
+
+/*
+A STRIP, NOT A ROW OF BOXES (2026-11-06). The cards were full panels, 140 to 235 px
+tall, and pushed every list's table below the middle of the screen. They are now
+the cells of ONE panel: a label, the figure a step smaller, the bar and the chips,
+with a hairline between cells. The Dashboard keeps its own large figures
+(`dashboard/Figures.tsx`): there the figures are the content.
+*/
+.grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1px;
+  border: 1px solid var(--line2);
+  border-radius: var(--r-4);
+  background: var(--line2);
+  box-shadow: var(--e-1);
+  overflow: hidden;
+}
+@media (max-width: 1180px) {
+  .grid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+}
+/* On a phone two cells a row, so four figures take two rows and not the screen. */
+@media (max-width: 560px) {
+  .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .card { padding: var(--s-5) var(--s-6) var(--s-6); }
+}
+.card {
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: var(--s-6) var(--s-8) var(--s-7);
+  background: var(--pan);
+}
+.card > * { flex: none; }
+.card::before { top: var(--s-6); bottom: var(--s-6); }
+.card:hover > * { border-color: transparent; }
+.card:hover { background: color-mix(in srgb, var(--tc) 5%, var(--pan)); }
+.cardTitle { margin: 0; font-size: var(--t-3); font-weight: 550; color: var(--mute); }
+.card .body { padding: 0; }
+
+.figure { font: 650 var(--t-6)/1.15 var(--font-ui); }
+.factsLarge dd { font: 650 var(--t-6)/1.15 var(--font-ui); }
+.facts { gap: var(--s-8); margin-top: var(--s-3); }
+.facts dt { font-size: var(--t-2); }
+.facts dd { font-size: var(--t-4); }
+.stack, .meter { height: var(--s-3); margin-top: var(--s-4); }
+.types { gap: var(--s-2); margin-top: var(--s-4); }
+.typeChip { padding: 0 var(--s-4); font-size: var(--t-2); min-height: var(--s-10); }
+.caption { margin-top: var(--s-2); font-size: var(--t-2); }
+.of { font-size: var(--t-4); }
+.state { min-height: 0; }
+.shield { margin-right: var(--s-3); }
+.pairs { gap: var(--s-2) var(--s-8); margin-top: var(--s-2); }
+.pairs dd { font-size: var(--t-2); }
+.list { gap: var(--s-2); margin-top: var(--s-2); }
+.actions { margin-top: var(--s-4); }
+
+/* After `.facts dd` above, so a large fact keeps the strip's figure size. */
+.factsLarge dd { font: 650 var(--t-6)/1.15 var(--font-ui); }

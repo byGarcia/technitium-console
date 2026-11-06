@@ -1,7 +1,8 @@
 import { Button } from './Button'
-import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode, type RefObject } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type ButtonHTMLAttributes, type KeyboardEvent as ReactKeyboardEvent, type ReactNode, type RefObject } from 'react'
 import styles from './Menu.module.css'
 import { Icon, type IconName } from './Icon'
+import { useTooltip } from './Tooltip'
 
 /*
 The `⋮` menu on each row. Upstream solves it with the Bootstrap 3 dropdown; here
@@ -56,6 +57,7 @@ export function Menu({
   asRow = false,
   quiet = false,
   icon = 'plus',
+  size = 'sm',
   alignTo,
   children,
 }: {
@@ -63,6 +65,9 @@ export function Menu({
   label: string
   /** Visible text. Without it, the button is the compact `⋮` of a row. */
   text?: string
+  /** A labelled trigger beside full-size buttons (a zone's Options and DNSSEC)
+   *  takes their size; in a panel header or a row it stays small. */
+  size?: 'md' | 'sm'
   /**
    * Fired on open, for the menu that needs to know the server state right before
    * showing its options. Upstream does the same with the Dashboard's blocking
@@ -103,6 +108,16 @@ export function Menu({
   >(null)
   const trigger = useRef<HTMLButtonElement>(null)
   const list = useRef<HTMLDivElement>(null)
+  /*
+  The compact trigger is only an icon, so it shows its name (`Actions for
+  example.org`) in the console's tooltip, on hover and on focus. Its events go on
+  the button itself and not on a wrapper: the row's actions group styles exactly
+  one level down, and this button already sits one level down, inside the `div`.
+  It never describes (the text is the name) and stays shut while the menu is open,
+  so it cannot cover the list.
+  */
+  const tip = useTooltip({ text: label, placement: 'top', anchor: trigger, describe: false, off: open })
+  const compact = !asRow && text == null
 
   /*
   The list is `position: fixed`, measured from the trigger, and NOT absolute
@@ -248,7 +263,7 @@ export function Menu({
       ) : (
         <Button
           ref={trigger}
-          size="sm"
+          size={text == null ? 'sm' : size}
           className={quiet && text == null ? styles.quiet : undefined}
           icon={text == null}
           aria-haspopup="menu"
@@ -256,6 +271,7 @@ export function Menu({
           aria-label={label}
           onClick={toggleOpen}
           onKeyDown={onTriggerKeyDown}
+          {...(compact ? tip.events : {})}
         >
           {text == null ? (
             <Icon name={icon} size={16} />
@@ -267,6 +283,7 @@ export function Menu({
           )}
         </Button>
       )}
+      {compact && tip.bubble}
       {open && box && (
         <div
           className={styles.menuList}
@@ -274,6 +291,9 @@ export function Menu({
           aria-label={label}
           ref={list}
           style={box}
+          /* Which way it opened, so the entrance slides from the trigger and not
+             towards it (Menu.module.css, THE ENTRANCE). */
+          data-side={box.bottom != null ? 'up' : 'down'}
           onKeyDown={onListKeyDown}
         >
           {children(() => setOpen(false))}
@@ -283,6 +303,46 @@ export function Menu({
   )
 }
 
+/*
+A separator between two groups of items. A call site writes one between every
+pair of groups whether or not the groups end up with anything in them, because
+which items a menu holds often depends on the row (a zone's type decides five of
+its eleven). The stylesheet hides the separator that would come first, last or
+right after another one, so a group that came out empty leaves no double line.
+*/
 export function Separator() {
   return <div className={styles.sep} role="separator" />
+}
+
+/*
+An item with a leading icon, for the long menus (2026-11-05). Eleven entries in
+the same grey, with nothing but the words to tell them apart, made the zone's
+row menu a list you read from the top every time; an icon per verb and the
+groups between separators let the eye land on the one it wants.
+
+It is still a plain button, so everything above applies to it unchanged: the menu
+finds it, gives it `role="menuitem"` when it is enabled and puts it in the arrow
+order. The icon is decorative (`Icon` is `aria-hidden`), so the item's name is
+its label, exactly the literal upstream writes.
+
+`tone="danger"` is the `data-variant="danger"` the stylesheet already paints red.
+There is no amber tone on purpose: `--warn` is the accent's amber, and in this
+console amber means "this is the action", the opposite of "careful".
+*/
+export function MenuItem({
+  icon,
+  tone,
+  children,
+  ...rest
+}: {
+  icon: IconName
+  tone?: 'danger'
+  children: ReactNode
+} & Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'type' | 'children'>) {
+  return (
+    <button type="button" className={styles.item} data-variant={tone} {...rest}>
+      <Icon name={icon} size={16} />
+      {children}
+    </button>
+  )
 }

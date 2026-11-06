@@ -9,7 +9,7 @@ Drawn as one more row, the two are indistinguishable at a glance, and this is th
 only screen in the console where an action can leave the system split in two.
 
 So it goes at the end of the body, in a box of its own, and when the box is ticked
-the box ARMS: a `--dan` rule down its side and the fill that goes with it. The
+the box ARMS: a `--dan` border all round and the fill that goes with it. The
 verb in the footer does not change, because upstream does not change it and a
 design cannot invent a second verb.
 
@@ -22,15 +22,71 @@ left to do by hand; it sits after the block, where this console puts every `Note
 */
 .force {
   border: 1px solid var(--line);
-  border-left: 3px solid var(--line);
   border-radius: var(--r-3);
   padding: var(--s-6) var(--s-8);
   background: var(--pan2);
   transition: border-color var(--t-fast), background var(--t-fast);
 }
 
+/*
+Armed, the WHOLE box turns: its border to `--dan` and its fill to the danger
+tint. The soft red ring that went round it too came off on 2026-11-06: a
+zero-offset coloured halo is decoration, and the border already says it. It was
+a 3 px red rule down the left side, the side-stripe the design rules ban
+(2026-11-05): a stripe marks one edge of a box and says nothing about the box,
+and here the box is the warning.
+*/
 .force[data-armed='true'] {
   border-color: var(--dan);
-  border-left-color: var(--dan);
-  background: var(--dan-fill);
+  background: var(--dan-bg);
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .force { transition: none; }
+}
+
+/*
+THE QUESTION (`Confirm`), under the title of a `plain` dialog. It is one step
+down from the title in size and in colour (`--mute`), so title, sentence and
+verb read as three distinct steps instead of three lines of the same weight; the
+name it acts on goes back up to ink, in the data face (`.name`).
+
+A destructive one hangs under the title's text, past the triangle in front of
+it (`Dialog`'s `.lead`: one `--s-10` wide, one `--s-5` from the title), so the
+glyph sits alone in the gutter and the text keeps one left edge.
+
+`pre-wrap` keeps the multi-line confirmations' blank line and the Zones list of
+zones, one per line. `position: relative` holds the hidden copy of the sentence
+(`text.sr`) inside the dialog's scrolling body.
+*/
+.question {
+  position: relative;
+  margin: 0;
+  font-size: var(--t-5);
+  line-height: 1.55;
+  color: var(--mute);
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+
+.question[data-tone='danger'] { padding-left: calc(var(--s-10) + var(--s-5)); }
+
+.question b { font-weight: 650; color: var(--ink); }
+
+/* The object of the action: a domain, a user, a key tag. Ink and the data face;
+   its quotes or brackets stay, one step quieter, so the name is what is read. */
+.name {
+  font-family: var(--font-mono);
+  font-size: var(--t-4);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+/* The delimiters go back to the sentence's face and size: a monospace quote
+   fills a whole cell and stood off the name like a separate mark. */
+.mark { font: 400 var(--t-5) var(--font-ui); color: var(--faint); }
+
+/* The triangle in front of a destructive title (`Dialog`'s `lead`), in the red
+   of the verb it announces. */
+.danger { display: inline-flex; color: var(--dan); }

@@ -82,7 +82,28 @@ function CellBlock({ cell }: { cell: Cell }) {
         </Table>
       )
 
-    case 'pairs':
+    case 'pairs': {
+      /*
+      Four or more short pairs (an SOA, an SRV, a CAA) flow side by side, each
+      label kept with its value, and wrap (2026-11-05). One per line, an SOA was
+      220 px tall for nine short numbers. A pair whose value is long (a key, a
+      digest) keeps the two-column list, where the value has the whole width.
+      */
+      const flow = cell.pairs.length >= 4 && !cell.pairs.some((p) => LONG_ONES.includes(p.label))
+      if (flow) {
+        return (
+          <dl className={styles.flow}>
+            {cell.pairs.map((p) => (
+              <div key={p.label} className={styles.pair}>
+                <dt>{p.label}</dt>
+                <dd>
+                  <Value label={p.label} value={p.value} />
+                </dd>
+              </div>
+            ))}
+          </dl>
+        )
+      }
       return (
         <dl className={styles.kv}>
           {cell.pairs.map((p) => (
@@ -95,6 +116,7 @@ function CellBlock({ cell }: { cell: Cell }) {
           ))}
         </dl>
       )
+    }
   }
 }
 
@@ -126,12 +148,17 @@ export function DataCell({
         </div>
       )}
 
+      {/* The record's dates on ONE quiet line under its value (2026-11-05). They
+          were a bold line each, two to four lines that made every record taller
+          than its own data and read as the data. */}
       <div className={styles.meta}>
-        {footer.map((p) => (
-          <div key={p.label}>
-            <b>{p.label}</b> {p.value}
-          </div>
-        ))}
+        <div className={styles.footLine}>
+          {footer.map((p) => (
+            <span key={p.label}>
+              {p.label} {p.value}
+            </span>
+          ))}
+        </div>
         {record.comments != null && record.comments.length > 0 && (
           <div>
             <b>Comments:</b>

@@ -5,8 +5,10 @@ import { Dialog } from '../../../ui/Dialog'
 import { Field, Select } from '../../../ui/Field'
 import { Loading } from '../../../ui/Empty'
 import type { Notice } from '../types'
-import { Table } from '../../../ui/Table'
-import styles from '../Zones.module.css'
+import { RowAction, Table } from '../../../ui/Table'
+import tbl from '../../../ui/Table.module.css'
+import l from './layout.module.css'
+import styles from './ZonePermissions.module.css'
 import { noticeFromFailure } from '../../../lib/notice'
 import { Notifier } from '../../../ui/Notifier'
 
@@ -66,12 +68,13 @@ export function ZonePermissions({
     if (!open) return
     setNotice(null)
     setLoading(true)
-    void getZonePermissions(token, zone, node).then((r) => {
+    void getZonePermissions(token, zone, node).then((outcome) => {
       setLoading(false)
-      if (r == null) {
-        setNotice({ type: 'danger', title: 'Error!', text: 'Unable to connect to the server. Please try again.' })
+      if (outcome.kind !== 'ok') {
+        setNotice(noticeFromFailure(outcome))
         return
       }
+      const r = outcome.data
       setTitle(`Edit Permissions - ${r.section} / ${r.subItem === '.' ? '<root>' : r.subItem}`)
       setUsers(
         r.userPermissions.map((p) => ({
@@ -135,7 +138,7 @@ export function ZonePermissions({
       {loading ? (
         <Loading>Loading permissions…</Loading>
       ) : (
-        <div className={styles.fields}>
+        <div className={l.content}>
           <PermissionsTable
             title="User Permissions"
             rows={users}
@@ -175,72 +178,76 @@ function PermissionsTable({
     onChange(rows.map((f, j) => (j === i ? { ...f, [key]: value } : f)))
 
   return (
-    <div className={styles.group}>
-      <div className={styles.groupTitle}>{title}</div>
+    <section className={l.section}>
+      <div className={l.title}>{title}</div>
 
-      {rows.length === 0 ? (
-        <div className={styles.help}>No permissions assigned.</div>
-      ) : (
-        <Table
-          header={
-            <>
-              <th>Name</th>
-              <th style={{ width: 70 }}>View</th>
-              <th style={{ width: 70 }}>Modify</th>
-              <th style={{ width: 70 }}>Delete</th>
-              <th style={{ width: 90 }} />
-            </>
-          }
-        >
-          {rows.map((f, i) => (
-            <tr key={f.name}>
-              <td className={styles.mono}>{f.name}</td>
-              {(['canView', 'canModify', 'canDelete'] as const).map((key) => (
-                <td key={key}>
-                  <input
-                    type="checkbox"
-                    className={styles.chkPerm}
-                    aria-label={`${key} for ${f.name}`}
-                    checked={f[key]}
-                    onChange={(e) => change(i, key, e.target.checked)}
-                  />
-                </td>
-              ))}
-              <td>
-                <Button
-                  size="sm"
-                  onClick={() => onChange(rows.filter((_, j) => j !== i))}
-                >
-                  Remove
-                </Button>
+      {/* The data table's look, and its rows become blocks where the dialog is
+          narrow: the name and Remove on the first line, the three verbs under it. */}
+      <Table
+        stack
+        isEmpty={rows.length === 0}
+        emptyText="No permissions assigned."
+        columns={5}
+        header={
+          <>
+            <th>Name</th>
+            <th className={styles.verb}>View</th>
+            <th className={styles.verb}>Modify</th>
+            <th className={styles.verb}>Delete</th>
+            <th className={tbl.actionsCell} />
+          </>
+        }
+      >
+        {rows.map((f, i) => (
+          <tr key={f.name}>
+            <td className={`${tbl.lead} ${styles.who}`}>{f.name}</td>
+            {(['canView', 'canModify', 'canDelete'] as const).map((key) => (
+              <td key={key} className={styles.verb}>
+                <input
+                  type="checkbox"
+                  className={styles.chkPerm}
+                  aria-label={`${key} for ${f.name}`}
+                  checked={f[key]}
+                  onChange={(e) => change(i, key, e.target.checked)}
+                />
               </td>
-            </tr>
-          ))}
-        </Table>
-      )}
-
-      <Field label={addLabel}>
-        {(id) => (
-          <Select
-            id={id}
-            value=""
-            onChange={(e) => {
-              const v = e.target.value
-              // Upstream's two phantom entries add nobody.
-              if (v === '' || v === 'none') return
-              onChange([...rows, { name: v, canView: true, canModify: false, canDelete: false }])
-            }}
-          >
-            <option value="" />
-            <option value="none">None</option>
-            {unassigned.map((d) => (
-              <option key={d} value={d}>
-                {d}
-              </option>
             ))}
-          </Select>
-        )}
-      </Field>
-    </div>
+            {/* Remove is the row's action, as every table's: the bin with its
+                name in the tooltip. It takes the name out of this list only;
+                nothing is sent until Save. */}
+            <td className={tbl.actionsCell}>
+              <div className={tbl.actions}>
+                <RowAction icon="trash" name="Remove" onClick={() => onChange(rows.filter((_, j) => j !== i))} />
+              </div>
+            </td>
+          </tr>
+        ))}
+      </Table>
+
+      <div className={styles.add}>
+        <Field label={addLabel}>
+          {(id) => (
+            <Select
+              id={id}
+              value=""
+              onChange={(e) => {
+                const v = e.target.value
+                // Upstream's two phantom entries add nobody.
+                if (v === '' || v === 'none') return
+                onChange([...rows, { name: v, canView: true, canModify: false, canDelete: false }])
+              }}
+            >
+              <option value="" />
+              <option value="none">None</option>
+              {unassigned.map((d) => (
+                <option key={d} value={d}>
+                  {d}
+                </option>
+              ))}
+            </Select>
+          )}
+        </Field>
+      </div>
+    </section>
   )
 }

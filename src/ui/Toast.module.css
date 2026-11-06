@@ -1,29 +1,43 @@
 /*
-The passing notice. Every value is a token of theme/tokens.css.
+The passing notice, redrawn on 2026-11-05 as a notification card. Every value is a
+token of theme/tokens.css or a mix of them.
 
 Bottom centre, over the content and below any dialog (`--layer-float`, the menus'
-layer: a dialog opened while it is up covers it). At `--bp-stack` it takes the
-width of the page less the page's own gutter, so a long domain wraps instead of
-pushing the window sideways.
+layer: a dialog opened while it is up covers it). On the raised surface, the one
+the menus float on, with the dialog's hairline and the menus' shadow: it floats
+over panels, and on the panel surface it would only be told apart by its shadow.
+It is centred with auto margins and not with a `transform`: a transform makes the
+box the containing block of its fixed descendants, and the padlock's tooltip on a
+denied `Undo` is one (`Dialog.module.css` records the same trap, measured).
+
+Its cap is a card's, not a notice's: 520 px keeps the longest message it carries
+("Domain '…' was deleted from Allowed Zone successfully.") on two lines with the
+`Undo` beside it. At `--bp-stack` it takes the width of the page less the page's
+own gutter, so a long domain wraps instead of pushing the window sideways.
+
+Measured (dev/theme-contrast.mjs's composition): the message in ink on the raised
+surface 12.29:1 dark and 15.64:1 light; the tick on its badge 5.56:1 and 4.06:1.
 */
 .toast {
   position: fixed;
   z-index: var(--layer-float);
-  left: 50%;
+  left: 0;
+  right: 0;
   bottom: var(--s-11);
-  transform: translateX(-50%);
+  margin: 0 auto;
   display: flex;
   align-items: center;
   gap: var(--s-7);
-  max-width: min(var(--notice-max), calc(100vw - 2 * var(--s-9)));
-  padding: var(--s-5) var(--s-5) var(--s-5) var(--s-9);
-  border: 1px solid var(--line);
-  border-radius: var(--r-3);
+  width: max-content;
+  max-width: min(520px, calc(100vw - 2 * var(--s-9)));
+  padding: var(--s-6) var(--s-5) var(--s-6) var(--s-7);
+  border: 1px solid var(--btn-line);
+  border-radius: var(--r-4);
   background: var(--pan2);
   color: var(--ink);
   font-size: var(--t-4);
-  box-shadow: var(--shadow-menu);
-  animation: rise var(--t-medium);
+  box-shadow: var(--shadow-menu), var(--edge);
+  animation: rise 200ms cubic-bezier(0.2, 0.9, 0.3, 1);
 }
 
 /* Closed: the live region stays in the page, empty and out of the way. */
@@ -34,6 +48,19 @@ pushing the window sideways.
   overflow: hidden;
   clip-path: inset(50%);
   pointer-events: none;
+}
+
+/* The tick on a tint of the success colour: everything it says is something done. */
+.badge {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--r-2);
+  background: color-mix(in srgb, var(--ok) 16%, transparent);
+  color: var(--ok);
 }
 
 .text { margin: 0; min-width: 0; overflow-wrap: break-word; line-height: 1.45; }
@@ -49,19 +76,47 @@ pushing the window sideways.
   border: 0;
   border-radius: var(--r-2);
   background: none;
-  color: var(--mute);
+  color: var(--faint);
   cursor: pointer;
+  transition: background var(--t-fast), color var(--t-fast);
 }
-.close:hover { color: var(--ink); background: var(--hover); }
+.close:hover { color: var(--ink); background: var(--hover-strong); }
+.close:focus-visible { outline: var(--focus); outline-offset: 0; }
+
+/* The clock, drawn: from the whole width to none, linear, at the card's foot. Inset
+   by the corner's radius instead of clipped by the card: an `overflow: hidden` here
+   would also clip the padlock's tooltip, which is fixed inside it. */
+.timer {
+  position: absolute;
+  left: var(--r-4);
+  right: var(--r-4);
+  bottom: 0;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--ok);
+  opacity: 0.7;
+  transform-origin: left center;
+  animation-name: drain;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+/* The copy that leaves (Toast.tsx): it sinks and fades from where it stood. */
+.leaving {
+  pointer-events: none;
+  animation: sink 160ms cubic-bezier(0.4, 0, 1, 1) forwards;
+}
 
 @keyframes rise {
-  from { opacity: 0; transform: translate(-50%, var(--s-5)); }
-  to { opacity: 1; transform: translate(-50%, 0); }
+  from { opacity: 0; transform: translateY(var(--s-5)) scale(0.98); }
+  to { opacity: 1; transform: none; }
 }
-/* Narrow, it is not centred by a transform, so it only fades in. */
-@keyframes appear {
-  from { opacity: 0; }
-  to { opacity: 1; }
+@keyframes sink {
+  to { opacity: 0; transform: translateY(var(--s-3)) scale(0.98); }
+}
+@keyframes drain {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
 }
 
 @media (max-width: 560px) {
@@ -69,12 +124,12 @@ pushing the window sideways.
     left: var(--s-9);
     right: var(--s-9);
     bottom: var(--s-9);
-    transform: none;
+    width: auto;
     max-width: none;
-    animation-name: appear;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .toast { animation: none; }
+  .timer { display: none; }
 }

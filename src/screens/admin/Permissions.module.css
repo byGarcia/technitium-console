@@ -1,0 +1,125 @@
+/*
+The permissions matrix (`PermissionMap.tsx`, deviation 23): the sections down the
+side, the groups and the users across, inside the data table's card.
+*/
+
+.sr { composes: sr from '../../ui/text.module.css'; }
+
+/* Wider than the card when a server has many subjects: it scrolls inside it, the
+   section column held in place. */
+.scroll { overflow-x: auto; }
+
+.map { composes: table from '../../ui/Table.module.css'; }
+
+/* The two header rows: the population over its subjects. */
+.map thead th { text-align: center; vertical-align: bottom; }
+.map thead .sectionHead { text-align: left; vertical-align: middle; }
+
+.population { border-bottom-color: transparent; }
+
+/* A subject's name is a name, not a label: its own case, wrapping between words. */
+.map thead .subject {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: var(--t-3);
+  font-weight: 600;
+  color: var(--ink);
+  white-space: normal;
+  overflow-wrap: break-word;
+  min-width: calc(var(--s-12) * 2 + var(--s-8));
+  max-width: calc(var(--s-12) * 4);
+  padding-top: 0;
+  vertical-align: bottom;
+}
+
+/* A hairline before each population, so the groups read apart from the users. */
+.map .first { border-left: 1px solid var(--line2); }
+
+.cell { text-align: center; }
+.map td.cell { padding-left: var(--s-5); padding-right: var(--s-5); }
+
+/* Upstream's "No group permissions" / "No user permissions", once for every row. */
+.none {
+  text-align: center;
+  color: var(--faint);
+  font-size: var(--t-3);
+}
+
+/* The whole row opens the section's dialog. */
+.row { cursor: pointer; }
+
+.sectionCell {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  text-align: left;
+  font-weight: 400;
+  background: var(--pan);
+  padding: var(--s-7) var(--s-8) var(--s-7) var(--s-10);
+  border-bottom: 1px solid var(--line2);
+  white-space: nowrap;
+}
+.map tbody tr:last-child .sectionCell { border-bottom: 0; }
+/* The held cell keeps the row's hover veil over its own background. */
+.map tbody tr:hover .sectionCell { background: linear-gradient(var(--nav-hover), var(--nav-hover)), var(--pan); }
+
+.sectionName { composes: entityLink from '../../ui/Table.module.css'; font-size: var(--t-4); }
+
+/*
+A cell's three marks. Granted is filled in the success tones; not granted is an
+outlined box with a faint letter, so an entry that grants nothing is still seen
+as an entry and not as a gap.
+*/
+.marks { display: inline-flex; gap: var(--s-1); vertical-align: middle; }
+.mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(var(--s-9) + var(--s-1));
+  height: calc(var(--s-9) + var(--s-1));
+  border: 1px solid var(--line);
+  border-radius: var(--r-1);
+  font: 650 var(--t-1)/1 var(--font-ui);
+  color: var(--faint);
+}
+.mark[data-on] { background: var(--ok-bg); border-color: var(--ok-bd); color: var(--ok); }
+
+/* The legend in the toolbar: each letter and its verb. */
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-3) var(--s-9);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--t-3);
+  color: var(--mute);
+}
+.legend li { display: inline-flex; align-items: center; gap: var(--s-4); }
+
+/* FOLDED, under 720 px: one block per section. */
+.blocks { list-style: none; margin: 0; padding: 0; }
+.block { padding: var(--s-8) var(--s-10); border-bottom: 1px solid var(--line2); }
+.block:last-child { border-bottom: 0; }
+.blockHead { display: flex; align-items: center; justify-content: space-between; gap: var(--s-6); }
+.entries { margin-top: var(--s-6); }
+.entriesTitle { font-size: var(--t-2); color: var(--faint); margin-bottom: var(--s-3); }
+.entryList { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--s-3); }
+.entryList li { display: flex; align-items: center; justify-content: space-between; gap: var(--s-6); }
+.who { font-size: var(--t-4); color: var(--ink); overflow-wrap: break-word; min-width: 0; }
+.quiet { font-size: var(--t-3); color: var(--faint); }
+
+/*
+Edit Permissions (the dialog), drawn as the zone's own (`ZonePermissions`): the
+subject's name in the row's lead cell, and each verb's column as wide as its
+header with its checkbox centred under it.
+*/
+.subject { font-family: var(--font-mono); font-weight: 550; overflow-wrap: break-word; }
+.verb { width: 84px; text-align: center; }
+th.verb { text-align: center; }
+/* The checkbox with its enlarged target: 18 px drawn, 24 px to press. */
+.chkPerm { composes: hitArea from '../../ui/interaction.module.css'; margin: 0 auto; display: block; }
+/* Stacked, the box follows its verb's label on the line instead of centring. */
+[data-stacked] .verb { width: auto; }
+[data-stacked] .chkPerm { display: inline-block; vertical-align: middle; margin: 0; }

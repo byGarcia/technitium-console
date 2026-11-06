@@ -51,9 +51,12 @@ a state other times and a setting others.
 export function SectionHeader({
   section,
   onBack,
+  path,
   title,
   subtitle,
+  mark,
   labels,
+  titleAction,
   actions,
   tabs,
 }: {
@@ -63,12 +66,22 @@ export function SectionHeader({
    *  path: there used to be a "← Zones" above and a "ZONES" below, two elements
    *  saying the same thing two centimetres apart. */
   onBack?: () => void
+  /** A deeper path than one step (Cache's nodes, 2026-11-06): every step but the
+   *  last opens that place, and the title closes the trail. Replaces `section`. */
+  path?: { label: ReactNode; onOpen: () => void }[]
   /** The most specific name: the sub-tab if there is one, otherwise the section. */
   title: string
-  /** What the screen is for, in one sentence. Blocking only: see above. */
-  subtitle?: string
+  /** What the screen is for, in one sentence. Blocking only: see above. About
+   *  passes the server's domain here, so it takes a node (2026-11-06). */
+  subtitle?: ReactNode
+  /** An image that stands for the object, drawn before the title and what is
+   *  under it: About's Technitium logo, where upstream puts it (2026-11-06). */
+  mark?: ReactNode
   /** STATE pills. Counts go in the count bar. */
   labels?: ReactNode
+  /** A control that belongs to the title itself, drawn right after it: a
+   *  zone's refresh, where upstream puts it (index.html:555). */
+  titleAction?: ReactNode
   /** Action bar, always top right. */
   actions?: ReactNode
   /**
@@ -79,11 +92,38 @@ export function SectionHeader({
    */
   tabs?: ReactNode
 }) {
+  const named = (
+    <>
+      {titleAction != null ? (
+        <div className={styles.titleRow}>
+          <h1 className={styles.title}>{title}</h1>
+          {titleAction}
+        </div>
+      ) : (
+        <h1 className={styles.title}>{title}</h1>
+      )}
+      {subtitle != null && <p className={styles.subtitle}>{subtitle}</p>}
+      {labels != null && <div className={styles.tags}>{labels}</div>}
+    </>
+  )
   return (
     <>
     <div className={styles.hrow}>
       <div className={styles.left}>
-        {section != null && (
+        {path != null && path.length > 0 && (
+          <nav className={styles.trail} aria-label="Breadcrumb">
+            {path.map((step, i) => (
+              <span key={i} className={styles.step}>
+                <button type="button" className={styles.ctx} onClick={step.onOpen}>
+                  {step.label}
+                </button>
+                <Icon name="chevronRight" size={12} className={styles.sep} />
+              </span>
+            ))}
+            <span className={styles.here} aria-current="page">{title}</span>
+          </nav>
+        )}
+        {path == null && section != null && (
           <nav className={styles.trail} aria-label="Breadcrumb">
             {onBack != null ? (
               <button type="button" className={styles.ctx} onClick={onBack}>
@@ -93,11 +133,19 @@ export function SectionHeader({
               <span className={styles.ctx}>{section}</span>
             )}
             <Icon name="chevronRight" size={12} className={styles.sep} />
+            {/* Where you are, the trail's last step (2026-11-05): the trail used
+                to stop at the chevron, a path that led nowhere. */}
+            <span className={styles.here} aria-current="page">{title}</span>
           </nav>
         )}
-        <h1 className={styles.title}>{title}</h1>
-        {subtitle != null && <p className={styles.subtitle}>{subtitle}</p>}
-        {labels != null && <div className={styles.tags}>{labels}</div>}
+        {mark != null ? (
+          <div className={styles.marked}>
+            <span className={styles.mark}>{mark}</span>
+            <div className={styles.left}>{named}</div>
+          </div>
+        ) : (
+          named
+        )}
       </div>
       {actions != null && <div className={styles.acts}>{actions}</div>}
     </div>

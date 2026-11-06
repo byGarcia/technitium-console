@@ -25,7 +25,7 @@ export { toSlug } from './slug'
 import { toSlug } from './slug'
 export { forgetRoot, appRoot } from './base'
 import { appRoot } from './base'
-import { LEGACY_ROUTES } from './static-routes'
+import { LEGACY_ROUTES, MOVED_ROUTES } from './static-routes'
 
 export interface Route {
   section: string
@@ -88,6 +88,11 @@ export function translateLegacyRoute(): boolean {
   const trail = window.location.pathname
   if (!trail.startsWith(base)) return false
   const parts = trail.slice(base.length).split('/').filter(Boolean)
+  const moved = parts.length === 2 ? MOVED_ROUTES[parts.join('/')] : undefined
+  if (moved != null) {
+    window.history.replaceState(null, '', `${base}${moved.section}/${toSlug(moved.sub)}/${window.location.search}`)
+    return true
+  }
   const legacy = parts.length === 1 ? LEGACY_ROUTES[parts[0]] : undefined
   if (legacy == null) return false
   const params = new URLSearchParams(window.location.search)

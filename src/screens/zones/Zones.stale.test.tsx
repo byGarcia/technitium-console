@@ -28,9 +28,10 @@ const LIST = { zones: [ZONE], pageNumber: 1, totalPages: 1, totalZones: 1 }
 /** Answers well the first time and badly from the second on. */
 function goodThenBroken() {
   let n = 0
-  return vi.spyOn(client, 'apiRequest').mockImplementation(async (route) => {
+  return vi.spyOn(client, 'apiRequest').mockImplementation(async (route, opts) => {
     const base = route.split('?')[0]
-    if (base !== 'zones/list') return { kind: 'ok', data: { status: 'ok', response: {} } } as never
+    /* The summary's unpaged read (`listAllZones`) is not the list under test. */
+    if (base !== 'zones/list' || opts?.body?.pageNumber == null) return { kind: 'ok', data: { status: 'ok', response: {} } } as never
     n += 1
     return n === 1
       ? ({ kind: 'ok', data: { status: 'ok', response: LIST } } as never)
@@ -108,9 +109,10 @@ describe('stale data', () => {
   it('and when it goes well again, the mark goes away', async () => {
     const user = userEvent.setup()
     let n = 0
-    vi.spyOn(client, 'apiRequest').mockImplementation(async (route) => {
+    vi.spyOn(client, 'apiRequest').mockImplementation(async (route, opts) => {
       const base = route.split('?')[0]
-      if (base !== 'zones/list') return { kind: 'ok', data: { status: 'ok', response: {} } } as never
+      /* The summary's unpaged read (`listAllZones`) is not the list under test. */
+    if (base !== 'zones/list' || opts?.body?.pageNumber == null) return { kind: 'ok', data: { status: 'ok', response: {} } } as never
       n += 1
       return n === 2
         ? ({ kind: 'error', message: 'boom' } as never)

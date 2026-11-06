@@ -1,0 +1,44 @@
+/* SSO's and LDAP's form pieces (`ConfigParts.tsx`). */
+
+/* A switch on its own line: no empty label column beside it. */
+.switchRow { padding: var(--s-7) var(--s-9); border-bottom: 1px solid var(--line); }
+.switchRow:last-child { border-bottom: 0; }
+
+/* Fields two across, each label over control over help; one across in a narrow card. */
+.fields {
+  container-type: inline-size;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s-8) var(--s-9);
+  padding: var(--s-8) var(--s-9);
+  border-bottom: 1px solid var(--line);
+}
+.fields:last-child { border-bottom: 0; }
+.one { grid-template-columns: minmax(0, 1fr); }
+@media (max-width: 720px) { .fields { grid-template-columns: minmax(0, 1fr); } }
+
+.field { display: flex; flex-direction: column; gap: var(--s-3); min-width: 0; margin: 0; padding: 0; border: 0; }
+.wide { grid-column: 1 / -1; }
+.label { font-size: var(--t-3); font-weight: 600; color: var(--ink); padding: 0; }
+.help { font-size: var(--t-2); line-height: 1.5; color: var(--mute); overflow-wrap: break-word; }
+.help code { font-family: var(--font-mono); color: var(--ink); }
+.set legend { margin-bottom: var(--s-3); }
+.inline { display: flex; flex-wrap: wrap; gap: var(--s-3) var(--s-9); align-items: center; }
+
+/* Upstream's Warning! and Note!, as compact lines in the block they speak about. */
+.callouts { margin: 0; padding: var(--s-6) var(--s-9); display: flex; flex-direction: column; gap: var(--s-4); border-bottom: 1px solid var(--line); }
+.callouts:last-child { border-bottom: 0; }
+
+/* A value to take elsewhere (the SSO Redirect URI), with its Copy. */
+.copy {
+  display: flex;
+  align-items: center;
+  gap: var(--s-6);
+  margin: var(--s-6) var(--s-9) 0;
+  padding: var(--s-4) var(--s-4) var(--s-4) var(--s-7);
+  border: 1px solid var(--line);
+  border-radius: var(--r-3);
+  background: var(--pan2);
+}
+.copyLabel { font-size: var(--t-3); font-weight: 600; color: var(--mute); white-space: nowrap; }
+.copyValue { flex: 1; min-width: 0; font: var(--t-3) var(--font-mono); color: var(--ink); overflow-wrap: break-word; }

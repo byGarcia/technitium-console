@@ -1,12 +1,15 @@
 import type { ReactNode } from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Block, Note, Notices, Warning } from '../../ui/PanelForm'
+import { Block } from '../../ui/PanelForm'
 import { Button } from '../../ui/Button'
 import { Input, Select } from '../../ui/Field'
 import { SectionHeader } from '../../ui/SectionHeader'
 import { IndexedForm } from '../../ui/IndexedForm'
 import { useSectionInView } from '../../ui/useSectionInView'
 import { Loading } from '../../ui/Empty'
+import { RowAction } from '../../ui/Table'
+import { ConfigState } from './ListParts'
+import { ssoConfigured } from './config-state'
 import { getSsoConfig, setSsoConfig, type SsoConfig } from '../../api/admin'
 import { appRoot } from '../../app/base'
 import { mappedLocalGroup, serializeTable, type Cell } from './table'
@@ -18,8 +21,8 @@ import {
   type Notice,
 } from './parts'
 import { EditableTable } from '../../ui/EditableTable'
-import { Row } from '../../ui/Form'
-import frm from '../../ui/Form.module.css'
+import adm from './Admin.module.css'
+import { Callout, Callouts, CopyValue, Fields, Stacked, Switch } from './ConfigParts'
 
 /*
 `refreshAdminSsoConfig`, `loadAdminSsoConfig` and `saveAdminSsoConfig`
@@ -91,6 +94,7 @@ export function Sso({ tabs, token, onNotice }: Props) {
   /* What `apply` reads: the last local groups the server sent, kept across a
      `set` that leaves them out, without making `apply` depend on state. */
   const localGroupsRef = useRef<string[]>([])
+  const [saved, setSaved] = useState<SsoConfig | null>(null)
   const [enabled, setEnabled] = useState(false)
   const [authority, setAuthority] = useState('')
   const [clientId, setClientId] = useState('')
@@ -104,6 +108,7 @@ export function Sso({ tabs, token, onNotice }: Props) {
   const [confirm, setConfirm] = useState<null | 'authority' | 'metadata'>(null)
 
   function apply(c: SsoConfig) {
+    setSaved(c)
     setEnabled(c.ssoEnabled)
     setAuthority(c.ssoAuthority ?? '')
     setClientId(c.ssoClientId ?? '')
@@ -228,14 +233,23 @@ export function Sso({ tabs, token, onNotice }: Props) {
   // The section in view, once the four are on the page.
   const here = useSectionInView(loading ? [] : SECTIONS.map((x) => x.id))
 
-  if (loading) return <Loading />
+  /* The header says the state SAVED on the server, from the last `get` or `set`,
+     not the unsaved checkbox (deviation 23). */
+  const header = (
+    <SectionHeader
+      section="Administration"
+      title="SSO"
+      tabs={tabs}
+      titleAction={<RowAction icon="refresh" name="Refresh" disabled={loading} onClick={() => void load()} />}
+      labels={saved == null ? undefined : <ConfigState enabled={saved.ssoEnabled} configured={ssoConfigured(saved)} />}
+    />
+  )
+
+  if (loading) return <>{header}<Loading /></>
 
   return (
     <>
-      <SectionHeader
-        title="Administration"
-        tabs={tabs}
-      />
+      {header}
 
       {/*
       The dense form, as it stands: help in its third column, `Warning!`
@@ -252,32 +266,35 @@ export function Sso({ tabs, token, onNotice }: Props) {
       There is no `Cluster Node` here, nor a gap where one would go: that selector
       belongs to `Sessions` and to `Cluster`.
       */}
-      <IndexedForm sections={SECTIONS} active={here}>
-        <div>
+      {/* No section index (2026-11-06, deviation 23): four blocks read in one scroll, and
+          a second row of links that only scroll looked like a second row of tabs, as
+          it did in Settings (deviation 22). The column keeps Settings' width. */}
+      <IndexedForm sections={[]} active={here}>
+        {/* Two columns on a wide screen (2026-11-06, deviation 23): the connection at
+            the left, sign-up, scopes and the group map at the right, the notes under
+            both. One column on a narrow one. */}
+        {/* Two columns on a wide screen (2026-11-06, deviation 23): the connection at
+            the left, sign-up, scopes and the group map at the right; one column on a
+            narrow one. Each of upstream's `Warning!` and `Note!` sits in the block it
+            speaks about (`ConfigParts.tsx`). */}
+        <div className={adm.split}>
+          <div className={adm.main}>
           <div id={SECTIONS[0].id}>
-            <Block
-              title="Single Sign-On (SSO)"
-              notices={
-                <>
-                  <Warning>
-                    All URLs configured above must use <code>https</code> URL scheme for production
-                    environments. Using <code>http</code> URL scheme is not secure and should be used
-                    only for testing purposes.
-                  </Warning>
-                  <Warning>
-                    Any DNS related failure may cause Single Sign-On (SSO) to fail to work making it
-                    impossible for SSO users to log in to fix the DNS issue due to circular
-                    dependency. Thus, it is recommended to maintain a local administrator user
-                    account for such scenarios.
-                  </Warning>
-                </>
-              }
-            >
-              {/* The block's title is this control's label, so the label column
-                  stays empty rather than saying it twice. The grid is kept: the
-                  switch has to line up with the four fields under it. */}
-              <div className={frm.row}>
-                <div />
+            <Block title="Single Sign-On (SSO)">
+              <Callouts>
+                <Callout tone="warn">
+                  All URLs configured above must use <code>https</code> URL scheme for production
+                  environments. Using <code>http</code> URL scheme is not secure and should be used
+                  only for testing purposes.
+                </Callout>
+                <Callout tone="warn">
+                  Any DNS related failure may cause Single Sign-On (SSO) to fail to work making it
+                  impossible for SSO users to log in to fix the DNS issue due to circular
+                  dependency. Thus, it is recommended to maintain a local administrator user
+                  account for such scenarios.
+                </Callout>
+              </Callouts>
+              <Switch>
                 <Check
                   toggle
                   label="Enable Single Sign-On (SSO)"
@@ -285,79 +302,126 @@ export function Sso({ tabs, token, onNotice }: Props) {
                   onChange={setEnabled}
                   help="Enable to allow Single Sign-On (SSO) with OpenID Connect (OIDC)."
                 />
-              </div>
-
-              <SsoField
-                label="Authority (Issuer)"
-                help="The OpenID Connect (OIDC) Authority URL."
-                value={authority}
-                placeholder="https://auth.example.com"
-                onChange={setAuthority}
-              />
-              <SsoField
-                label="Client ID"
-                help="The OpenID Connect (OIDC) Client ID."
-                value={clientId}
-                placeholder="client id"
-                onChange={setClientId}
-              />
-              <SsoField
-                label="Client Secret"
-                help="The OpenID Connect (OIDC) Client Secret."
-                value={clientSecret}
-                placeholder="client secret"
-                type="password"
-                onChange={setClientSecret}
-              />
-              <SsoField
-                label="Metadata Address (Optional)"
-                help="The OpenID Connect (OIDC) metadata discovery URL to be used instead of the default one. Configure this option only if the Single Sign-On (SSO) provider uses a different discovery URL."
-                value={metadata}
-                placeholder="https://auth.example.com/.well-known/openid-configuration"
-                onChange={setMetadata}
-              />
+              </Switch>
+              <Fields>
+                <SsoField
+                  label="Authority (Issuer)"
+                  help="The OpenID Connect (OIDC) Authority URL."
+                  value={authority}
+                  placeholder="https://auth.example.com"
+                  onChange={setAuthority}
+                />
+                <SsoField
+                  label="Client ID"
+                  help="The OpenID Connect (OIDC) Client ID."
+                  value={clientId}
+                  placeholder="client id"
+                  onChange={setClientId}
+                />
+                <SsoField
+                  label="Client Secret"
+                  help="The OpenID Connect (OIDC) Client Secret."
+                  value={clientSecret}
+                  placeholder="client secret"
+                  type="password"
+                  onChange={setClientSecret}
+                />
+                <SsoField
+                  label="Metadata Address (Optional)"
+                  help="The OpenID Connect (OIDC) metadata discovery URL to be used instead of the default one. Configure this option only if the Single Sign-On (SSO) provider uses a different discovery URL."
+                  value={metadata}
+                  placeholder="https://auth.example.com/.well-known/openid-configuration"
+                  onChange={setMetadata}
+                />
+              </Fields>
+              {/* The Redirect URI the first note gives, as a value to copy (ours). */}
+              <CopyValue label="Redirect URI" value={redirectUri} />
+              <Callouts>
+                <Callout tone="note">
+                  The Single Sign-On (SSO) uses <code>/sso/callback</code> as the callback path.
+                  Thus, your SSO Redirect URI for this DNS Server should be <code>{redirectUri}</code>{' '}
+                  which needs to be configure with the SSO provider.
+                </Callout>
+                <Callout tone="note">
+                  Single Sign-On (SSO) will be enabled only when all of the required parameters are
+                  configured correctly. If SSO does not work for any reason, check the Logs section
+                  on the panel and search for related error logs.
+                </Callout>
+                <Callout tone="note">
+                  Domain names in all of the URLs configured above will be resolved by the DNS Server
+                  internally only. Thus, make sure that the DNS Server is able to resolve the domain
+                  name in the URL. Adding <code>hosts</code> file entries in the host OS will not
+                  work.
+                </Callout>
+                <Callout tone="note">
+                  When using a reverse proxy with the Web Service, you need to add{' '}
+                  <code>X-Forwarded-Proto</code> and <code>X-Forwarded-Host</code> headers to proxy
+                  request to allow the Web Service to correctly form the SSO Redirect URI. If the
+                  reverse proxy is setup to use a path prefix then make sure to add the{' '}
+                  <code>X-Forwarded-Prefix</code> header to proxy request too. These headers will be
+                  read only if the reverse proxy IP address is configured to be allowed in the{' '}
+                  <b>Reverse Proxy Addresses</b> option in Settings &gt; Web Service section. For
+                  example, if you are using nginx as the reverse proxy with a path prefix of{' '}
+                  <code>/dns</code>, then you should add the following headers:{' '}
+                  <code>proxy_set_header X-Forwarded-Proto $scheme;</code>,{' '}
+                  <code>proxy_set_header X-Forwarded-Host $host;</code>,{' '}
+                  <code>proxy_set_header X-Forwarded-Prefix /dns;</code>, and{' '}
+                  <code>proxy_redirect / /dns/;</code>
+                </Callout>
+                <Callout tone="note">
+                  The Web Service will be automatically restarted to apply these changes thus there is
+                  no need to restart the DNS Server manually.
+                </Callout>
+              </Callouts>
             </Block>
           </div>
+          </div>
 
+          <div className={adm.side}>
           <div id={SECTIONS[1].id}>
             <Block title="SSO User Sign Up">
-              <div className={frm.row}>
-                <div />
-                <div className={styles.group}>
-                  <Check
-                    toggle
-                    label="Allow New User Sign Up"
-                    checked={allowSignup}
-                    onChange={setAllowSignup}
-                    help="Enable to allow automatically provisioning of user accounts for new users signing in via Single Sign-On (SSO). Keep this option disabled if you do not expect new SSO users to sign up."
-                  />
-                  {/* v15.5.1: off while sign-up is off, on load and on click
-                      (auth.js:206-210 and 2253). Still READ when saving: upstream
-                      sends `.prop("checked")` whether it is enabled or not. */}
-                  <Check
-                    toggle
-                    label="Allow Sign Up Only For Mapped Users"
-                    checked={onlyMapped}
-                    disabled={!allowSignup}
-                    onChange={setOnlyMapped}
-                    help={
-                      <>
-                        Enable to allow a new user to sign up via Single Sign-On (SSO) only when the
-                        user is a member of at least one Remote Group that is mapped to a Local Group
-                        in the <b>Group Map</b> option below. This option allows SSO administrators
-                        to restrict SSO users to control who can sign up and get access based on
-                        their group memberships.
-                      </>
-                    }
-                  />
-                </div>
-              </div>
+              <Switch>
+                <Check
+                  toggle
+                  label="Allow New User Sign Up"
+                  checked={allowSignup}
+                  onChange={setAllowSignup}
+                  help="Enable to allow automatically provisioning of user accounts for new users signing in via Single Sign-On (SSO). Keep this option disabled if you do not expect new SSO users to sign up."
+                />
+              </Switch>
+              {/* v15.5.1: off while sign-up is off, on load and on click
+                  (auth.js:206-210 and 2253). Still READ when saving: upstream
+                  sends `.prop("checked")` whether it is enabled or not. */}
+              <Switch>
+                <Check
+                  toggle
+                  label="Allow Sign Up Only For Mapped Users"
+                  checked={onlyMapped}
+                  disabled={!allowSignup}
+                  onChange={setOnlyMapped}
+                  help={
+                    <>
+                      Enable to allow a new user to sign up via Single Sign-On (SSO) only when the
+                      user is a member of at least one Remote Group that is mapped to a Local Group
+                      in the <b>Group Map</b> option below. This option allows SSO administrators to
+                      restrict SSO users to control who can sign up and get access based on their
+                      group memberships.
+                    </>
+                  }
+                />
+              </Switch>
+              <Callouts>
+                <Callout tone="note">
+                  The Single Sign-On (SSO) user&apos;s Display Name and Username are managed via the
+                  SSO provider and they are automatically synced each time a user logs in.
+                </Callout>
+              </Callouts>
             </Block>
           </div>
 
           <div id={SECTIONS[2].id}>
             <Block title="Scopes">
-              <div className={styles.list}>
+              <div className={`${styles.list} ${adm.listPad}`}>
                 <EditableTable
                   className={styles.edit}
                   header={
@@ -382,6 +446,7 @@ export function Sso({ tabs, token, onNotice }: Props) {
                       <td className={styles.tdel}>
                         <Button
                           variant="danger"
+                          size="sm"
                           onClick={() => setScopes((list) => list.filter((_, j) => j !== i))}
                         >
                           Delete
@@ -391,7 +456,9 @@ export function Sso({ tabs, token, onNotice }: Props) {
                   ))}
                 </EditableTable>
                 <div>
-                  <Button onClick={() => setScopes((list) => [...list, ''])}>Add</Button>
+                  <Button size="sm" lead="add" onClick={() => setScopes((list) => [...list, ''])}>
+                    Add
+                  </Button>
                 </div>
                 {/*
                 This help and the Group Map one are NOT among the 27 `help=` props
@@ -409,12 +476,21 @@ export function Sso({ tabs, token, onNotice }: Props) {
                   email address as the username for all SSO users that sign up for an account.
                 </div>
               </div>
+              <Callouts>
+                <Callout tone="note">
+                  When a Single Sign-On (SSO) user signs up with the DNS Server, an account for the
+                  user is created which uses the email address as the username. If email address is
+                  not available, the preferred username is used instead. If you do not wish to use
+                  email address as the username, you can remove the <code>email</code> scope from the{' '}
+                  <b>Scopes</b> option above.
+                </Callout>
+              </Callouts>
             </Block>
           </div>
 
           <div id={SECTIONS[3].id}>
             <Block title="Group Map (Optional)">
-              <div className={styles.list}>
+              <div className={`${styles.list} ${adm.listPad}`}>
                 <EditableTable
                   className={styles.edit}
                   header={
@@ -464,6 +540,7 @@ export function Sso({ tabs, token, onNotice }: Props) {
                       <td className={styles.tdel}>
                         <Button
                           variant="danger"
+                          size="sm"
                           onClick={() => setGroupMap((list) => list.filter((_, j) => j !== i))}
                         >
                           Delete
@@ -474,6 +551,8 @@ export function Sso({ tabs, token, onNotice }: Props) {
                 </EditableTable>
                 <div>
                   <Button
+                    size="sm"
+                    lead="add"
                     onClick={() =>
                       setGroupMap((list) => [
                         ...list,
@@ -493,82 +572,24 @@ export function Sso({ tabs, token, onNotice }: Props) {
                   <b>Scopes</b> option above as required by the SSO provider.
                 </div>
               </div>
+              <Callouts>
+                <Callout tone="note">
+                  When Group Map is configured, the Single Sign-On (SSO) user&apos;s group membership
+                  cannot be managed locally and any group membership changes must be configured at
+                  the SSO provider itself. SSO users need to relogin so that any group membership
+                  changes made at SSO provider are applied to their user accounts. The Group Map thus
+                  allows managing user access centrally via the SSO provider. Keep the Group Map empty
+                  if group membership management for SSO users is required to be managed via the DNS
+                  Server itself.
+                </Callout>
+              </Callouts>
             </Block>
           </div>
-
-          {/*
-          The eight `Note!` after the controls: they explain, they do not change
-          the decision; the two `Warning!` went up into the first block.
-
-          They go inside an untitled `Block` and not loose on the page, and that
-          too came out of `dev/uniformity.js`: loose, `notice-info` split into a
-          third signature ("loose on the page" against "15px from the panel") for
-          an alert that is the same alert. In Settings the notices live inside
-          their block; these belong to the whole screen and not to any one of the
-          four, so the block that holds them has no title.
-          */}
-          <Block>
-          <Notices>
-            <Note>
-              The Single Sign-On (SSO) uses <code>/sso/callback</code> as the callback path. Thus,
-              your SSO Redirect URI for this DNS Server should be <code>{redirectUri}</code> which
-              needs to be configure with the SSO provider.
-            </Note>
-            <Note>
-              Single Sign-On (SSO) will be enabled only when all of the required parameters are
-              configured correctly. If SSO does not work for any reason, check the Logs section on
-              the panel and search for related error logs.
-            </Note>
-            <Note>
-              When a Single Sign-On (SSO) user signs up with the DNS Server, an account for the user
-              is created which uses the email address as the username. If email address is not
-              available, the preferred username is used instead. If you do not wish to use email
-              address as the username, you can remove the <code>email</code> scope from the{' '}
-              <b>Scopes</b> option above.
-            </Note>
-            <Note>
-              The Single Sign-On (SSO) user&apos;s Display Name and Username are managed via the SSO
-              provider and they are automatically synced each time a user logs in.
-            </Note>
-            <Note>
-              When Group Map is configured, the Single Sign-On (SSO) user&apos;s group membership
-              cannot be managed locally and any group membership changes must be configured at the
-              SSO provider itself. SSO users need to relogin so that any group membership changes
-              made at SSO provider are applied to their user accounts. The Group Map thus allows
-              managing user access centrally via the SSO provider. Keep the Group Map empty if group
-              membership management for SSO users is required to be managed via the DNS Server
-              itself.
-            </Note>
-            <Note>
-              The Web Service will be automatically restarted to apply these changes thus there is no
-              need to restart the DNS Server manually.
-            </Note>
-            <Note>
-              When using a reverse proxy with the Web Service, you need to add{' '}
-              <code>X-Forwarded-Proto</code> and <code>X-Forwarded-Host</code> headers to proxy
-              request to allow the Web Service to correctly form the SSO Redirect URI. If the reverse
-              proxy is setup to use a path prefix then make sure to add the{' '}
-              <code>X-Forwarded-Prefix</code> header to proxy request too. These headers will be read
-              only if the reverse proxy IP address is configured to be allowed in the{' '}
-              <b>Reverse Proxy Addresses</b> option in Settings &gt; Web Service section. For
-              example, if you are using nginx as the reverse proxy with a path prefix of{' '}
-              <code>/dns</code>, then you should add the following headers:{' '}
-              <code>proxy_set_header X-Forwarded-Proto $scheme;</code>,{' '}
-              <code>proxy_set_header X-Forwarded-Host $host;</code>,{' '}
-              <code>proxy_set_header X-Forwarded-Prefix /dns;</code>, and{' '}
-              <code>proxy_redirect / /dns/;</code>
-            </Note>
-            <Note>
-              Domain names in all of the URLs configured above will be resolved by the DNS Server
-              internally only. Thus, make sure that the DNS Server is able to resolve the domain name
-              in the URL. Adding <code>hosts</code> file entries in the host OS will not work.
-            </Note>
-          </Notices>
-          </Block>
+          </div>
         </div>
 
         <div className={styles.bar}>
-          <Button variant="primary" disabled={busy} onClick={() => save()}>
+          <Button variant="primary" lead="save" disabled={busy} onClick={() => save()}>
             Save Config
           </Button>
         </div>
@@ -631,7 +652,7 @@ function SsoField({
   onChange: (v: string) => void
 }) {
   return (
-    <Row label={label} help={help}>
+    <Stacked label={label} help={help}>
       {(id) => (
         <Input
           id={id}
@@ -640,9 +661,8 @@ function SsoField({
           placeholder={placeholder}
           maxLength={255}
           onChange={(e) => onChange(e.target.value)}
-          style={{ width: '100%', maxWidth: 420 }}
         />
       )}
-    </Row>
+    </Stacked>
   )
 }

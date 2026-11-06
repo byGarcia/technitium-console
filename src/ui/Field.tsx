@@ -1,10 +1,23 @@
 import { useId, type ComponentProps, type InputHTMLAttributes, type ReactNode, type Ref, type TextareaHTMLAttributes } from 'react'
 import styles from './Field.module.css'
 
-export function Field({ label, children }: { label: string; children: (id: string) => ReactNode }) {
+/*
+`inline` puts the label on the control's line, before it: the label of a field in
+a table's toolbar or foot (`ui/DataTable`), where a label stacked over each control
+made a bar of two-line cells. The text is the same and still the field's label.
+*/
+export function Field({
+  label,
+  inline = false,
+  children,
+}: {
+  label: string
+  inline?: boolean
+  children: (id: string) => ReactNode
+}) {
   const id = useId()
   return (
-    <div className={styles.field}>
+    <div className={inline ? `${styles.field} ${styles.inline}` : styles.field}>
       <label className={styles.label} htmlFor={id}>
         {label}
       </label>

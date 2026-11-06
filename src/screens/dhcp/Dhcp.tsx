@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { SubTabs } from '../../ui/SubTabs'
 import { ClusterNodeSelect } from '../../ui/ClusterNodeSelect'
 import { Leases } from './Leases'
 import { Scopes } from './Scopes'
@@ -55,22 +54,13 @@ export function Dhcp({
      and the parameter was already travelling empty. */
   const [node, setNode] = useState<string>(() => '')
   const [nodeLocked, setNodeLocked] = useState(false)
+  /* A scope's page asked for its leases (deviation 19): the Leases tab opens
+     narrowed to that scope. Read once by the Leases tab it mounts. */
+  const [seed, setSeed] = useState<{ scope: string; type: string } | null>(null)
   const requested = (sub ?? 'Leases') as SubTab
   const active: SubTab = SUB_TABS.includes(requested) ? requested : 'Leases'
-
-  /*
-  The bar is built once here and handed to whichever sub-screen is drawn: the same
-  object on both, so they cannot drift apart.
-  */
-  const tabs = (
-    <SubTabs
-      label="DHCP sections"
-      section="dhcp"
-      tabs={SUB_TABS}
-      active={active}
-      onChoose={(t) => onSubChange?.(t as SubTab)}
-    />
-  )
+  /* The seed is for the visit it was asked for: back on Scopes it is spent. */
+  if (active === 'Scopes' && seed != null) setSeed(null)
 
   return (
     <>
@@ -87,15 +77,24 @@ export function Dhcp({
       />
       {active === 'Scopes' ? (
         <Scopes
-          tabs={tabs}
           token={token}
           node={node}
           canModify={canModify}
           canDelete={canDelete}
           onLockNode={setNodeLocked}
+          onOpenLeases={(scope) => {
+            setSeed({ scope, type: '' })
+            onSubChange?.('Leases')
+          }}
         />
       ) : (
-        <Leases tabs={tabs} token={token} node={node} canModify={canModify} canDelete={canDelete} />
+        <Leases
+          token={token}
+          node={node}
+          canModify={canModify}
+          canDelete={canDelete}
+          seed={seed}
+        />
       )}
     </>
   )

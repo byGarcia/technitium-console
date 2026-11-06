@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { Button } from './Button'
 import { Icon, type IconName } from './Icon'
+import { Tooltip } from './Tooltip'
 import styles from './Table.module.css'
 
 /*
@@ -141,7 +142,7 @@ export function Table({
 
   const group = stack ? { role: 'rowgroup' } : {}
   return (
-    <div className={[styles.wrap, stack && styles.stackWrap, className].filter(Boolean).join(' ')}>
+    <div data-table-wrap className={[styles.wrap, stack && styles.stackWrap, className].filter(Boolean).join(' ')}>
       <table
         ref={ref}
         role={stack ? 'table' : undefined}
@@ -390,9 +391,15 @@ export function Th({
 
 /*
 The button for a row action. It carries an icon and not a label (see the measured
-reasoning in `Table.module.css`) but keeps its name in `aria-label` and in
-`title`, so the keyboard, the screen reader and the tooltip all say the same thing
-the text that used to fill the column said.
+reasoning in `Table.module.css`) but keeps its name in `aria-label`, and the
+console's own tooltip (`ui/Tooltip`) shows that same name on hover AND on keyboard
+focus. It used to be `title`, which the keyboard never sees, which waits a second
+and a half, and which no theme can draw.
+
+The bubble does not describe the button (`describe={false}`): its text IS the
+button's name, and a reader would say it twice on every row. The wrapper it adds is
+one level, which `.actions > * > button` already expects, and it is what lets the
+bubble open over a disabled action, as in `PermissionButton`.
 */
 export function RowAction({
   icon,
@@ -404,8 +411,10 @@ export function RowAction({
   name: string
 } & Omit<React.ComponentProps<typeof Button>, 'children' | 'size' | 'icon'>) {
   return (
-    <Button size="sm" icon aria-label={name} title={name} {...rest}>
-      <Icon name={icon} size={15} />
-    </Button>
+    <Tooltip text={name} placement="top" describe={false}>
+      <Button size="sm" icon aria-label={name} {...rest}>
+        <Icon name={icon} size={15} />
+      </Button>
+    </Tooltip>
   )
 }

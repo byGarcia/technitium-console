@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Ldap } from './Ldap'
 import * as client from '../../api/client'
@@ -437,14 +437,14 @@ describe('LDAP: Test Connection', () => {
 })
 
 describe('LDAP: the dense form', () => {
-  it('is three blocks titled with upstream labels, two `Warning!` before and eight `Note!` after', async () => {
+  it('is three blocks titled with upstream labels, two `Warning!` before and eight `Note!` after, each in its block', async () => {
     server()
     render(<Ldap {...props} />)
     const first = await screen.findByLabelText('Enable LDAP Authentication')
     for (const title of ['LDAP Authentication', 'LDAP User Sign Up', 'Group Map (Optional)']) {
       expect(screen.getByRole('heading', { name: title })).toBeInTheDocument()
     }
-    const alerts = [...document.querySelectorAll('[role="alert"]')]
+    const alerts = [...document.querySelectorAll('[role="note"]')]
     const warnings = alerts.filter((a) => /Warning!/.test(a.textContent ?? ''))
     const notes = alerts.filter((a) => /Note!/.test(a.textContent ?? ''))
     expect(warnings).toHaveLength(2)
@@ -471,5 +471,26 @@ describe('LDAP: the dense form', () => {
     render(<Ldap {...props} />)
     await screen.findByLabelText('LDAP Server')
     expect(screen.queryByLabelText('Cluster Node')).not.toBeInTheDocument()
+  })
+})
+
+/* Deviation 23: the saved state on the header line. */
+describe('LDAP: the header says its state', () => {
+  it('a fresh install reads Disabled and Not configured', async () => {
+    server()
+    render(<Ldap {...props} />)
+    const title = await screen.findByRole('heading', { level: 1 })
+    const header = title.closest('div')!.parentElement!
+    expect(await within(header).findByText('Disabled')).toBeInTheDocument()
+    expect(within(header).getByText('Not configured')).toBeInTheDocument()
+  })
+
+  it('a server set and enabled reads Enabled only', async () => {
+    server({ ldapEnabled: true, ldapServer: 'ldap.example.com' })
+    render(<Ldap {...props} />)
+    const title = await screen.findByRole('heading', { level: 1 })
+    const header = title.closest('div')!.parentElement!
+    expect(await within(header).findByText('Enabled')).toBeInTheDocument()
+    expect(within(header).queryByText('Not configured')).toBeNull()
   })
 })

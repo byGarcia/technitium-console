@@ -66,7 +66,7 @@ describe('zone list', () => {
     draw()
 
     expect(await screen.findByRole('button', { name: 'casa.test' })).toBeTruthy()
-    const call = spy.mock.calls.find((c) => c[0] === 'zones/list')
+    const call = spy.mock.calls.find((c) => c[0] === 'zones/list' && c[1]?.body?.pageNumber != null)
     expect(call![1]?.body).toMatchObject({ pageNumber: '1', zonesPerPage: '10', node: '' })
   })
 
@@ -84,24 +84,32 @@ describe('zone list', () => {
     draw()
     await screen.findByRole('button', { name: 'casa.test' })
 
-    const initialCalls = spy.mock.calls.filter((c) => c[0] === 'zones/list').length
+    const initialCalls = spy.mock.calls.filter((c) => c[0] === 'zones/list' && c[1]?.body?.pageNumber != null).length
     await user.type(screen.getByLabelText('Name'), 'ca')
-    expect(spy.mock.calls.filter((c) => c[0] === 'zones/list')).toHaveLength(initialCalls)
+    expect(spy.mock.calls.filter((c) => c[0] === 'zones/list' && c[1]?.body?.pageNumber != null)).toHaveLength(initialCalls)
 
     await user.click(screen.getByRole('button', { name: 'Go' }))
-    const last = spy.mock.calls.filter((c) => c[0] === 'zones/list').at(-1)
+    const last = spy.mock.calls.filter((c) => c[0] === 'zones/list' && c[1]?.body?.pageNumber != null).at(-1)
     expect(last![1]?.body).toMatchObject({ filterName: 'ca' })
   })
 
-  it('\"Delete Zones\" with nothing checked alerts instead of calling the server', async () => {
+  /* A deliberate deviation (CONVENTIONS.md): upstream keeps the button enabled
+     and answers an empty selection with an alert (zone.js:1139). Here it is
+     disabled until a zone is ticked, and never hidden. */
+  it('\"Delete Zones\" is disabled with nothing checked, and enabled once a zone is', async () => {
     const user = userEvent.setup()
     const spy = server()
     draw()
     await screen.findByRole('button', { name: 'casa.test' })
 
-    await user.click(screen.getByRole('button', { name: 'Delete Zones' }))
-    expect(await screen.findByText('Please select one or more zones to delete.')).toBeTruthy()
+    const button = screen.getByRole('button', { name: 'Delete Zones' })
+    expect(button).toBeDisabled()
+    await user.click(button)
+    expect(screen.queryByText('Please select one or more zones to delete.')).toBeNull()
     expect(spy.mock.calls.find((c) => c[0] === 'zones/delete')).toBeUndefined()
+
+    await user.click(screen.getByLabelText('Select casa.test'))
+    expect(screen.getByRole('button', { name: 'Delete Zones' })).toBeEnabled()
   })
 
   it('disabling a zone asks first, with the upstream text', async () => {
@@ -110,7 +118,9 @@ describe('zone list', () => {
     draw()
     await screen.findByRole('button', { name: 'casa.test' })
 
-    await user.click(screen.getByRole('button', { name: 'Disable Zone' }))
+    /* Disable lives in the row menu, under upstream's literal (zone.js:843). */
+    await user.click(screen.getByRole('button', { name: 'Actions for casa.test' }))
+    await user.click(screen.getByRole('menuitem', { name: 'Disable' }))
     expect(
       await screen.findByText("Are you sure you want to disable the zone 'casa.test'?"),
     ).toBeTruthy()
@@ -176,12 +186,15 @@ describe('zone list', () => {
   })
 
   it('without modify permission you can neither add nor disable', async () => {
+    const user = userEvent.setup()
     server()
     draw({ canModify: false })
     await screen.findByRole('button', { name: 'casa.test' })
 
     expect(screen.getByRole('button', { name: 'Add Zone' })).toHaveProperty('disabled', true)
-    expect(screen.getByRole('button', { name: 'Disable Zone' })).toHaveProperty('disabled', true)
+    await user.click(screen.getByRole('button', { name: 'Actions for casa.test' }))
+    /* A disabled entry is not a `menuitem` (ui/Menu): it is the plain button, off. */
+    expect(screen.getByRole('button', { name: 'Disable' })).toHaveProperty('disabled', true)
   })
 })
 
@@ -253,16 +266,16 @@ describe('records of a zone', () => {
     expect(await screen.findByText('Resource record was disabled successfully.')).toBeTruthy()
   })
 
-  it('an unsigned Primary DOES have a DNSSEC menu, but inside only \"Sign Zone\"', async () => {
+  it('an unsigned Primary DOES offer DNSSEC, but only \"Sign Zone\"', async () => {
     // `divZoneDnssecOptions` is shown for every Primary; what changes is what is
-    // inside it (zone.js:3374). An unsigned Secondary does not show it.
-    const { user } = await openZone()
-    await user.click(screen.getByRole('button', { name: 'DNSSEC actions' }))
+    // inside it (zone.js:3374). An unsigned Secondary does not show it. Since
+    // 2026-11-05 the actions are the DNSSEC card's buttons (ZoneOverview).
+    await openZone()
 
-    expect(await screen.findByRole('menuitem', { name: 'Sign Zone' })).toBeTruthy()
+    expect(await screen.findByRole('button', { name: 'Sign Zone' })).toBeTruthy()
     expect(screen.queryByRole('button', { name: 'Unsign Zone' })).toBeNull()
     expect(screen.queryByRole('button', { name: 'View DS Info' })).toBeNull()
-    expect(screen.queryByRole('button', { name: 'DNSSEC Properties' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Properties' })).toBeNull()
   })
 
   it('the path back leads to the list', async () => {
@@ -381,7 +394,7 @@ describe('zones: the cluster node', () => {
     await userEvent.click(screen.getByRole('option', { name: 'b.example (secondary)' }))
 
     await waitFor(() => {
-      const calls = spy.mock.calls.filter((c) => c[0] === 'zones/list')
+      const calls = spy.mock.calls.filter((c) => c[0] === 'zones/list' && c[1]?.body?.pageNumber != null)
       expect(calls.at(-1)![1]?.body).toMatchObject({ node: 'b.example' })
     })
   })
@@ -395,7 +408,7 @@ describe('zones: the cluster node', () => {
     await userEvent.click(screen.getByRole('option', { name: 'b.example (secondary)' }))
 
     await waitFor(() => {
-      const calls = spy.mock.calls.filter((c) => c[0] === 'zones/list')
+      const calls = spy.mock.calls.filter((c) => c[0] === 'zones/list' && c[1]?.body?.pageNumber != null)
       expect(calls.at(-1)![1]?.body).toMatchObject({ node: 'b.example', pageNumber: '2' })
     })
   })

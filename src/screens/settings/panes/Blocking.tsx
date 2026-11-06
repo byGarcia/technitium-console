@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
+import { PaneMirror } from './mirror'
 import { Button } from '../../../ui/Button'
 import { dateTime } from '../../../lib/dates'
 import { Input } from '../../../ui/Field'
@@ -19,7 +20,6 @@ import {
   settingsStyles as styles,
 } from '../parts'
 import { HelpText } from '../../../ui/Form'
-import { Field } from '../../../ui/Field'
 import { Select } from '../../../ui/Select'
 import { applyQuickEntry, loadQuickList, type QuickEntry } from '../../../lib/quick-lists'
 import type { PaneProps } from './types'
@@ -67,13 +67,15 @@ export function Blocking({ f, set, en, extra }: PaneProps & { extra: BlockingExt
   that describes it.
   */
   const [quick, setQuick] = useState<QuickEntry[]>([])
+  const mirror = useContext(PaneMirror)
   useEffect(() => {
+    if (mirror) return
     let alive = true
     void loadQuickList('quick-block-lists').then((e) => alive && setQuick(e))
     return () => {
       alive = false
     }
-  }, [])
+  }, [mirror])
 
   // No legend: it repeated the panel's title.
   return (
@@ -231,7 +233,7 @@ export function Blocking({ f, set, en, extra }: PaneProps & { extra: BlockingExt
 
       {/* Upstream places it directly under the textarea it fills, before the
           help that mentions it (`index.html:2155-2160`). */}
-      <Field label="Quick Add">
+      <Row label="Quick Add">
         {(id) => (
           <Select
             id={id}
@@ -258,7 +260,7 @@ export function Blocking({ f, set, en, extra }: PaneProps & { extra: BlockingExt
             ))}
           </Select>
         )}
-      </Field>
+      </Row>
 
       <TextRow
         label="Block List Update Interval"

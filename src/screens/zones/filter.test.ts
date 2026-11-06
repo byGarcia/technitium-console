@@ -95,9 +95,25 @@ describe('type filter', () => {
   /* The pattern is the viewer's own text, built into a RegExp the way upstream
      builds it. One that is not a valid expression filters to nothing instead
      of taking the whole console down with it. */
-  it('does not throw on a pattern that is not a valid expression', () => {
+  it('does not throw on a pattern that would not be a valid expression: its ( is literal', () => {
     expect(() => compileNameFilter('www(*', 'example.test')).not.toThrow()
-    const records = [{ name: 'www(x.example.test', type: 'A' }] as never
-    expect(filterBy(records, { name: 'www(*', type: '' }, 'example.test')).toEqual([])
+    const records = [{ name: 'www(x.example.test', type: 'A' }, { name: 'wwwx.example.test', type: 'A' }] as never
+    expect(filterBy(records, { name: 'www(*', type: '' }, 'example.test')).toEqual([records[0]])
   })
 })
+
+describe('the name filter takes only * and ? as wildcards', () => {
+  it('any other regular expression character is literal, so a link cannot hang the tab', () => {
+    const { regex } = compileNameFilter('(a+)+b*', 'casa.test')
+    expect(regex?.source).toBe('^\\(a\\+\\)\\+b.*\\.casa\\.test$')
+    const start = performance.now()
+    expect(regex?.test(`${'a'.repeat(40)}c.casa.test`)).toBe(false)
+    expect(performance.now() - start).toBeLessThan(50)
+  })
+
+  it('a name that matched before still matches', () => {
+    expect(compileNameFilter('w?w*', 'casa.test').regex?.test('www.sub.casa.test')).toBe(true)
+    expect(compileNameFilter('*', 'casa.test').regex?.test('*.casa.test')).toBe(true)
+  })
+})
+

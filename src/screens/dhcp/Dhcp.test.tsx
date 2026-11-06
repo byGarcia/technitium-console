@@ -69,13 +69,24 @@ function row(name: string) {
   return within(screen.getByRole('row', { name: new RegExp(name) }))
 }
 
+/* A scope opens from its row's menu ("Edit Scope", upstream's Edit) or its name. */
+async function editScope(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole('button', { name: /^Actions for / }))
+  await user.click(await screen.findByRole('menuitem', { name: 'Edit Scope' }))
+}
+
+/* A folded block of the scope form opens from its line (deviation 19). */
+async function openBlock(user: ReturnType<typeof userEvent.setup>, title: string) {
+  await user.click(screen.getByRole('button', { name: title, expanded: false }))
+}
+
 describe('DHCP › Leases', () => {
   it('it draws one row per lease and the total in the footer', async () => {
     vi.spyOn(api, 'listLeases').mockResolvedValue({ kind: 'ok', data: [DYNAMIC, RESERVED] })
     render(<Dhcp token="t" sub="Leases" />)
 
-    expect(await screen.findByText('192.168.1.42')).toBeInTheDocument()
-    expect(screen.getByText('192.168.1.50')).toBeInTheDocument()
+    expect(await screen.findByRole('cell', { name: '192.168.1.42' })).toBeInTheDocument()
+    expect(screen.getByRole('cell', { name: '192.168.1.50' })).toBeInTheDocument()
     expect(screen.getByText('Total Leases: 2')).toBeInTheDocument()
   })
 
@@ -100,7 +111,7 @@ describe('DHCP › Leases', () => {
   it('each row offers only the conversion its type calls for', async () => {
     vi.spyOn(api, 'listLeases').mockResolvedValue({ kind: 'ok', data: [DYNAMIC, RESERVED] })
     render(<Dhcp token="t" sub="Leases" />)
-    await screen.findByText('192.168.1.42')
+    await screen.findByRole('cell', { name: '192.168.1.42' })
 
     expect(
       row('192\\.168\\.1\\.42').getByRole('button', { name: 'Convert To Reserved Lease' }),
@@ -119,7 +130,7 @@ describe('DHCP › Leases', () => {
     vi.spyOn(api, 'listLeases').mockResolvedValue({ kind: 'ok', data: [DYNAMIC] })
     const spy = vi.spyOn(api, 'convertToReservedLease').mockResolvedValue(OK)
     render(<Dhcp token="t" sub="Leases" />)
-    await screen.findByText('192.168.1.42')
+    await screen.findByRole('cell', { name: '192.168.1.42' })
 
     await user.click(screen.getByRole('button', { name: 'Convert To Reserved Lease' }))
     expect(
@@ -143,7 +154,7 @@ describe('DHCP › Leases', () => {
     vi.spyOn(api, 'listLeases').mockResolvedValue({ kind: 'ok', data: [RESERVED] })
     vi.spyOn(api, 'convertToDynamicLease').mockResolvedValue(OK)
     render(<Dhcp token="t" sub="Leases" />)
-    await screen.findByText('192.168.1.50')
+    await screen.findByRole('cell', { name: '192.168.1.50' })
 
     await user.click(screen.getByRole('button', { name: 'Convert To Dynamic Lease' }))
     expect(
@@ -162,7 +173,7 @@ describe('DHCP › Leases', () => {
     vi.spyOn(api, 'listLeases').mockResolvedValue({ kind: 'ok', data: [DYNAMIC] })
     const spy = vi.spyOn(api, 'removeLease').mockResolvedValue(OK)
     render(<Dhcp token="t" sub="Leases" />)
-    await screen.findByText('192.168.1.42')
+    await screen.findByRole('cell', { name: '192.168.1.42' })
 
     await user.click(screen.getByRole('button', { name: /^Actions for / }))
     await user.click(await screen.findByRole('menuitem', { name: 'Remove Lease' }))
@@ -184,7 +195,7 @@ describe('DHCP › Leases', () => {
     vi.spyOn(api, 'listLeases').mockResolvedValue({ kind: 'ok', data: [DYNAMIC] })
     vi.spyOn(api, 'removeLease').mockResolvedValue({ kind: 'error', message: 'DHCP scope does not exists: Default' })
     render(<Dhcp token="t" sub="Leases" />)
-    await screen.findByText('192.168.1.42')
+    await screen.findByRole('cell', { name: '192.168.1.42' })
 
     await user.click(screen.getByRole('button', { name: /^Actions for / }))
     await user.click(await screen.findByRole('menuitem', { name: 'Remove Lease' }))
@@ -192,13 +203,13 @@ describe('DHCP › Leases', () => {
 
     const modal = within(screen.getByRole('dialog'))
     expect(await modal.findByText('DHCP scope does not exists: Default')).toBeInTheDocument()
-    expect(screen.getByText('192.168.1.42')).toBeInTheDocument()
+    expect(screen.getByRole('cell', { name: '192.168.1.42', hidden: true })).toBeInTheDocument()
   })
 
   it('without delete permission removing is not offered; without modify permission, neither is converting', async () => {
     vi.spyOn(api, 'listLeases').mockResolvedValue({ kind: 'ok', data: [DYNAMIC] })
     render(<Dhcp token="t" sub="Leases" canModify={false} canDelete={false} />)
-    await screen.findByText('192.168.1.42')
+    await screen.findByRole('cell', { name: '192.168.1.42' })
 
     expect(screen.queryByRole('button', { name: /^Actions for / })).not.toBeInTheDocument()
     expect(
@@ -214,8 +225,13 @@ describe('DHCP › Scopes', () => {
 
     expect(await screen.findByText('Default')).toBeInTheDocument()
     expect(screen.getByText('192.168.1.1 - 192.168.1.254')).toBeInTheDocument()
-    expect(screen.getByText('192.168.1.255')).toBeInTheDocument()
+    expect(screen.getByText('255.255.255.0')).toBeInTheDocument()
     expect(screen.getByText('Total Scopes: 1')).toBeInTheDocument()
+    // The network and the broadcast are under the row's Details (deviation 19).
+    expect(screen.queryByText('192.168.1.255')).not.toBeInTheDocument()
+    await userEvent.click(row('Default').getByRole('button', { name: 'Details' }))
+    expect(screen.getByText('192.168.1.0')).toBeInTheDocument()
+    expect(screen.getByText('192.168.1.255')).toBeInTheDocument()
   })
 
   it('with no scopes it says \"No Scope Found\"', async () => {
@@ -277,15 +293,24 @@ describe('DHCP › Scopes', () => {
   })
 
   it('without permissions neither \"Add Scope\", nor \"Enable\"/\"Disable\", nor \"Delete\" show', async () => {
+    const user = userEvent.setup()
     vi.spyOn(api, 'listScopes').mockResolvedValue({ kind: 'ok', data: [SCOPE] })
+    vi.spyOn(api, 'getScope').mockResolvedValue(DETAIL)
     render(<Dhcp token="t" sub="Scopes" canModify={false} canDelete={false} />)
     await screen.findByText('Default')
 
     expect(screen.queryByRole('button', { name: 'Add Scope' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Disable Scope' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /^Actions for / })).not.toBeInTheDocument()
     // "Edit" stays: it only asks for read permission.
-    expect(screen.getByRole('button', { name: 'Edit Scope' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /^Actions for / }))
+    expect(await screen.findByRole('menuitem', { name: 'Edit Scope' })).toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: 'Delete Scope' })).not.toBeInTheDocument()
+
+    // Nor on the scope's own page.
+    await user.click(screen.getByRole('menuitem', { name: 'Edit Scope' }))
+    await screen.findByRole('heading', { name: 'Edit Scope' })
+    expect(screen.queryByRole('button', { name: 'Disable Scope' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Delete Scope' })).not.toBeInTheDocument()
   })
 })
 
@@ -311,7 +336,7 @@ describe('DHCP › Scopes: the form', () => {
     render(<Dhcp token="t" sub="Scopes" />)
     await screen.findByText('Default')
 
-    await user.click(screen.getByRole('button', { name: 'Edit Scope' }))
+    await editScope(user)
 
     expect(spy).toHaveBeenCalledWith('t', 'Default', '')
     expect(await screen.findByRole('heading', { name: 'Edit Scope' })).toBeInTheDocument()
@@ -327,6 +352,7 @@ describe('DHCP › Scopes: the form', () => {
     render(<Dhcp token="t" sub="Scopes" />)
     await screen.findByText('No Scope Found')
     await user.click(screen.getByRole('button', { name: 'Add Scope' }))
+    await openBlock(user, 'DNS')
 
     const override = screen.getByLabelText('Enable DNS Overwrite For Dynamic Lease')
     expect(override).toBeEnabled()
@@ -362,7 +388,7 @@ describe('DHCP › Scopes: the form', () => {
     const spy = vi.spyOn(api, 'setScope').mockResolvedValue(OK)
     render(<Dhcp token="t" sub="Scopes" />)
     await screen.findByText('Default')
-    await user.click(screen.getByRole('button', { name: 'Edit Scope' }))
+    await editScope(user)
     await screen.findByRole('heading', { name: 'Edit Scope' })
 
     await user.clear(screen.getByLabelText('Name'))
@@ -380,9 +406,12 @@ describe('DHCP › Scopes: the form', () => {
     await screen.findByText('No Scope Found')
     await user.click(screen.getByRole('button', { name: 'Add Scope' }))
 
-    // A new exclusion is born with both cells empty.
-    const add = screen.getAllByRole('button', { name: 'Add' })
-    await user.click(add[3])
+    // A new exclusion is born with both cells empty. Its block is then closed
+    // again: the save opens it before focusing the cell.
+    await openBlock(user, 'Exclusions')
+    await user.click(screen.getByRole('button', { name: 'Add' }))
+    await user.click(screen.getByRole('button', { name: 'Exclusions', expanded: true }))
+    expect(screen.getByLabelText('Exclusions 1 Starting Address')).not.toBeVisible()
     await user.click(screen.getByRole('button', { name: 'Save' }))
 
     expect(spy).not.toHaveBeenCalled()
@@ -391,6 +420,7 @@ describe('DHCP › Scopes: the form', () => {
       screen.getByText('Please enter a valid value in the text field in focus.'),
     ).toBeInTheDocument()
     expect(screen.getByLabelText('Exclusions 1 Starting Address')).toHaveFocus()
+    expect(screen.getByRole('button', { name: 'Exclusions' })).toHaveAttribute('aria-expanded', 'true')
   })
 
   it('a `|` in a cell gives \"Invalid Character!\" with its literal text', async () => {
@@ -401,8 +431,8 @@ describe('DHCP › Scopes: the form', () => {
     await screen.findByText('No Scope Found')
     await user.click(screen.getByRole('button', { name: 'Add Scope' }))
 
-    const add = screen.getAllByRole('button', { name: 'Add' })
-    await user.click(add[3])
+    await openBlock(user, 'Exclusions')
+    await user.click(screen.getByRole('button', { name: 'Add' }))
     await user.type(screen.getByLabelText('Exclusions 1 Starting Address'), 'a|b')
     await user.type(screen.getByLabelText('Exclusions 1 Ending Address'), '10.0.1.9')
     await user.click(screen.getByRole('button', { name: 'Save' }))
@@ -447,7 +477,7 @@ describe('DHCP: the cluster node while a scope is being edited', () => {
     await screen.findByText('Default')
     expect(screen.getByRole('combobox', { name: 'Cluster Node' })).toBeEnabled()
 
-    await user.click(screen.getByRole('button', { name: 'Edit Scope' }))
+    await editScope(user)
     await screen.findByRole('heading', { name: 'Edit Scope' })
     expect(screen.getByRole('combobox', { name: 'Cluster Node' })).toBeDisabled()
 

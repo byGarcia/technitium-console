@@ -2,22 +2,18 @@
 .tags { composes: tags from '../../ui/SectionHeader.module.css'; }
 .acts { display:flex; gap: var(--s-4); flex-wrap:wrap; justify-content:flex-end; }
 
-/* Breadcrumbs: back to the list from a zone */
+/* The Type filter in the zone list's toolbar (ui/DataTable). */
+.filterMedium { width: 220px; }
 
-/* Filter bar */
-.flt { display:flex; gap: var(--s-7); align-items:flex-end; flex-wrap:wrap; margin-bottom: var(--gap-block); }
-.filterWide { flex:1; min-width:220px; }
-.filterMedium { width:190px; }
-.fltShort { width:120px; }
-
-/* Count and pagination */
-/* The count is `ui/count.module.css`'s: see there for why. */
-.count { composes: bar above from '../../ui/count.module.css'; }
-.countFoot { margin-top: var(--gap-group); margin-bottom: 0; }
 .mono { composes: mono from '../../ui/text.module.css'; }
 
 /* Table */
 .num2 { color:var(--faint); font-family:var(--font-mono); font-variant-numeric:tabular-nums; }
+/* What is the absence of something, said quietly: "Unsigned" in the DNSSEC column
+   is text in `--faint`, not a pill, so the signed zones are the ones that stand out. */
+.quiet { font-size: var(--t-3); color: var(--faint); }
+/* A serial is a number to compare down the column. */
+.serial { font-variant-numeric: tabular-nums; text-align: right; }
 
 /* A zone's name is a domain: that part does belong here, and it goes on the cell
    so the button inherits it. It wraps at its dots (`ui/DomainName`), and the
@@ -38,10 +34,31 @@
 .ttl { composes: ttl from '../../ui/record.module.css'; }
 
 .kv { composes: kv from '../../ui/kv.module.css'; }
+/* Short pairs side by side (DataCell, `flow`): label muted, value in mono. */
+.flow { display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-10); margin: 0; }
+.pair { display: inline-flex; align-items: baseline; gap: var(--s-4); min-width: 0; }
+.pair dt { font-size: var(--t-3); color: var(--mute); white-space: nowrap; }
+.pair dd { margin: 0; min-width: 0; }
 .val { font:var(--t-4)/1.45 var(--font-mono); color:var(--ink); word-break:break-word; }
 .key { composes: key from '../../ui/record.module.css'; }
 .showIt { composes: showIt from '../../ui/record.module.css'; }
 .meta { composes: meta from '../../ui/record.module.css'; }
+/* A record's dates on one line, each pair kept whole, separated by a dot. */
+.footLine { display: flex; flex-wrap: wrap; column-gap: var(--s-8); row-gap: var(--s-1); }
+.footLine > span + span::before { content: '·'; margin-right: var(--s-8); margin-left: calc(-1 * var(--s-4)); color: var(--line); }
+
+/* A zone's facts in its header, beside the state tags: quiet text, the value in ink. */
+.fact { font-size: var(--t-3); color: var(--mute); align-self: center; }
+.fact b { font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+
+/* The type and, when it applies, the Disabled pill on one line. */
+.typeCell { display: inline-flex; align-items: center; gap: var(--s-3); flex-wrap: wrap; }
+
+/* A run of records with one owner: the name is drawn once (see ZoneRecords). The
+   faded name stays in the DOM, and the stacked card shows it again. */
+.repeat > .owner { color: transparent; }
+.repeat > td { border-top-color: transparent; }
+[data-stacked] .repeat > .owner { color: inherit; }
 
 /* Dropdown menu for row and header actions */
 
@@ -101,12 +118,72 @@ button at the other end. It is not a `Panel`: a bar with a border and a backgrou
 would read as a region of the screen, and this is a strip between the filter and
 the table.
 */
-.selection {
-  display: flex;
+
+/* The gap between a zone's everyday actions and the ones that act on the whole
+   zone (ZoneRecords' header). */
+.actSep { width: 1px; align-self: stretch; margin: var(--s-2) var(--s-3); background: var(--line); }
+
+/* The zone's type in the header: a pill tinted with its series colour. */
+.ztag {
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--s-8);
-  padding: var(--s-5) 0;
-  font-size: var(--t-4);
-  color: var(--mute);
+  padding: var(--s-1) var(--s-5);
+  border-radius: var(--r-full);
+  background: color-mix(in srgb, var(--rt) 18%, transparent);
+  color: var(--rt);
+  font-size: var(--t-1);
+  font-weight: 600;
+  letter-spacing: 0.03em;
 }
+
+/* The record form's blocks (AddEditRecord). What the record is, on one row: Name
+   takes what is left, Type and TTL their own width; on a narrow dialog they stack. */
+.recHead { display: grid; grid-template-columns: minmax(0, 1fr) 150px minmax(170px, 0.7fr); gap: var(--s-8); align-items: start; }
+@media (max-width: 720px) { .recHead { grid-template-columns: minmax(0, 1fr); } }
+.recHead .medium { width: 100%; }
+/* A suffix that may go under its field when the cell is narrow, still in the cell. */
+.wrapSuffix { flex-wrap: wrap; row-gap: var(--s-2); }
+
+/* What the record holds: a block on the raised step, headed by its type in the
+   type's colour (zone-colours.ts), so the fields that change with the type read
+   as the type's. */
+.recData {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-8);
+  padding: var(--s-9) var(--s-10) var(--s-10);
+  border: 1px solid var(--line2);
+  border-radius: var(--r-3);
+  background: color-mix(in srgb, var(--pan2) 70%, transparent);
+}
+.recType {
+  align-self: flex-start;
+  padding: var(--s-1) var(--s-5);
+  border-radius: var(--r-1);
+  background: color-mix(in srgb, var(--rt) 16%, transparent);
+  color: var(--rt);
+  font: 600 var(--t-2)/1.5 var(--font-mono);
+  letter-spacing: 0.03em;
+}
+
+/* A record type in its series colour (zone-colours.ts): the word in the colour,
+   on a tint of it, so a column of types reads by colour before it is read. */
+.rtype {
+  display: inline-block;
+  padding: var(--s-1) var(--s-4);
+  border-radius: var(--r-1);
+  background: color-mix(in srgb, var(--rt) 16%, transparent);
+  color: var(--rt);
+  font: 600 var(--t-1)/1.5 var(--font-mono);
+  letter-spacing: 0.03em;
+}
+
+/* A zone type with the dot of its colour. */
+.ztype { display: inline-flex; align-items: center; gap: var(--s-4); }
+.zdot { width: 7px; height: 7px; border-radius: 2px; flex: none; }
+
+/* The fields in a DataTable's toolbar and foot (ui/DataTable), each its width. */
+.typeField { width: 170px; }
+.pageField { width: 150px; }
+.perPage { width: 200px; }
+.pageField input { text-align: center; }

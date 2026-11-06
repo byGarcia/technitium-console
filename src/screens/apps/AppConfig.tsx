@@ -1,3 +1,4 @@
+import { CodeArea } from '../../ui/CodeArea'
 import { useEffect, useState } from 'react'
 import { setAppConfig } from '../../api/apps'
 import { Button } from '../../ui/Button'
@@ -77,12 +78,11 @@ export function AppConfig({
       </p>
       <Field label="Config File">
         {(id) => (
-          <textarea
+          <CodeArea
             id={id}
-            className={styles.config}
-            spellCheck={false}
             value={config}
             onChange={(e) => setConfig(e.target.value)}
+            status={<JsonState text={config} />}
           />
         )}
       </Field>
@@ -91,4 +91,37 @@ export function AppConfig({
       </p>
     </Dialog>
   )
+}
+
+/*
+Whether the config reads as JSON (deviation 17): a DNS app's `dnsApp.config` is a
+JSON file, and a missing comma only showed after Save, as the server's error. The
+line says so while typing. It only informs: Save sends the text as it is, valid
+or not, exactly as before. An empty file says nothing.
+*/
+function JsonState({ text }: { text: string }) {
+  if (text.trim() === '') return null
+  const problem = jsonProblem(text)
+  if (problem == null) {
+    return (
+      <>
+        <span className={styles.dotOk} aria-hidden="true" /> Valid JSON
+      </>
+    )
+  }
+  return (
+    <span className={styles.bad}>
+      <span className={styles.dotBad} aria-hidden="true" /> Not valid JSON: {problem}
+    </span>
+  )
+}
+
+/** Why the text is not JSON, or null when it is. */
+function jsonProblem(text: string): string | null {
+  try {
+    JSON.parse(text)
+    return null
+  } catch (e) {
+    return e instanceof Error ? e.message : String(e)
+  }
 }

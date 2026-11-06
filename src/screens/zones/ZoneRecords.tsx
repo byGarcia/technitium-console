@@ -1,4 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { readParam, writeParams } from '../../lib/url-state'
+import { RECORDS_NAME, RECORDS_PAGE, RECORDS_TYPE } from './zone-url'
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { readPerPage, writePerPage } from '../../lib/stored-per-page'
 import {
   deletionBody,
@@ -18,26 +20,31 @@ import {
   typeLabel,
   exportZone,
   resyncZone,
+  zoneNameOf,
   type Zone,
 } from '../../api/zones'
 import { Button } from '../../ui/Button'
 import { DomainName } from '../../ui/DomainName'
 import { Field, Input, Select } from '../../ui/Field'
 import { DataCell } from './DataCell'
-import { minuteStamp as date } from '../../lib/dates'
-import { Menu, Separator } from '../../ui/Menu'
+import { ZoneOverview } from './ZoneOverview'
+import { recordColour, zoneColour } from './zone-colours'
+import { dateTime, dateWithAge } from '../../lib/dates'
+import { Menu, MenuItem, Separator } from '../../ui/Menu'
 import { filterBy } from './filter'
 import { statusText, pageWindow } from '../../lib/pagination'
 import { rowActions, recordCells, relativeName, hideDnssec, type Cell } from './record-view'
 import { zoneHeader, isSigned, writeHideDnssec, readHideDnssec } from './zone-view'
 import { SectionHeader } from '../../ui/SectionHeader'
 import { Empty, Loading } from '../../ui/Empty'
-import { Chip, Tag } from '../../ui/Tag'
+import { Tag } from '../../ui/Tag'
 import tbl from '../../ui/Table.module.css'
 import { RowAction, Th, useSort, type Keys, Table } from '../../ui/Table'
+import { type TagTone } from '../../ui/Tag'
 import styles from './Zones.module.css'
 import type { Notice, Confirmation } from './types'
 import { Pagination } from '../../ui/Pagination'
+import { DataTable, DataFoot, End, Grow } from '../../ui/DataTable'
 import { noticeFromFailure } from '../../lib/notice'
 
 /*
@@ -62,6 +69,8 @@ export interface ZoneRecordsProps {
   canModify: boolean
   canDelete: boolean
   onBack: () => void
+  /** The zone could not be read and there is nothing to draw (`Zones.tsx`). */
+  onUnavailable?: () => void
   onNotice: (a: Notice) => void
   onConfirm: (c: Confirmation) => void
   onAddRecord: (zoneInfo: ZoneDetails, records: ResourceRecord[]) => void
@@ -129,53 +138,101 @@ export function ZoneRecords(p: ZoneRecordsProps) {
   fields only in `showEditZonePage` (zone.js:3594-3610), run by Go or by a page
   link, so typing a filter changes nothing on screen until then.
   */
-  const [nameField, setNameField] = useState('')
-  const [typeField, setTypeField] = useState('')
+  /* The bar's `?rname=`, `?rtype=` and `?rpage=` (`zone-url.ts`) are the records a
+     reload or a copied link lands on: typed and applied, as Go would apply them. */
+  const [nameField, setNameField] = useState(() => readParam(RECORDS_NAME) ?? '')
+  const [typeField, setTypeField] = useState(() => readParam(RECORDS_TYPE) ?? '')
   /* What is typed in Page Number; `null` shows the page on screen (zone.js:3733). */
   const [pageDraft, setPageDraft] = useState<string | null>(null)
   const [perPageField, setPerPageField] = useState(() => readPerPage(RECORDS_PER_PAGE_KEY, RECORDS_PER_PAGE, 10))
-  const [nameFilter, setNameFilter] = useState('')
-  const [typeFilter, setTypeFilter] = useState('')
+  const [nameFilter, setNameFilter] = useState(() => readParam(RECORDS_NAME) ?? '')
+  const [typeFilter, setTypeFilter] = useState(() => readParam(RECORDS_TYPE) ?? '')
   const [perPage, setPerPage] = useState(perPageField)
-  const [page, setPage] = useState(1)
+  const [page, setPage] = useState(() => {
+    const n = Number(readParam(RECORDS_PAGE) ?? 1)
+    return Number.isInteger(n) && n > 0 ? n : 1
+  })
+
+  /* What is on screen goes to the bar, replacing the zone's entry, as the zone
+     list keeps its page: Back still returns to the list, not to another page. */
+  useEffect(() => {
+    writeParams({
+      [RECORDS_PAGE]: page > 1 ? String(page) : null,
+      [RECORDS_NAME]: nameFilter,
+      [RECORDS_TYPE]: typeFilter,
+    })
+  }, [page, nameFilter, typeFilter])
 
   /** `showEditZonePage(pageNumber)`: the fields applied, on that page or the
    *  one in Page Number (0 or empty is 1). */
-  function showPage(pageNumber?: number) {
+  function showPage(pageNumber?: number, typeOverride?: string) {
     setNameFilter(nameField)
-    setTypeFilter(typeField)
+    setTypeFilter(typeOverride ?? typeField)
+    if (typeOverride != null) setTypeField(typeOverride)
     setPerPage(perPageField)
     const n = pageNumber ?? Number(pageDraft ?? page)
     setPage(Number.isNaN(n) || n === 0 ? 1 : n)
     setPageDraft(null)
   }
 
-  const load = useCallback(async () => {
+  /* This view is keyed by zone: a read that comes back after the view is gone
+     (Back or Forward to another zone before it answered) says nothing. */
+  const alive = useRef(true)
+  useEffect(() => {
+    alive.current = true
+    return () => {
+      alive.current = false
+    }
+  }, [])
+
+  /** Reads the zone; true when it arrived. */
+  const load = useCallback(async (): Promise<boolean> => {
     setLoading(true)
     const r = await getRecords(token, zone, node)
+    if (!alive.current) return false
     setLoading(false)
 
-    if (r == null) {
-      onNotice({ type: 'danger', title: 'Error!', text: 'Unable to connect to the server. Please try again.' })
-      return
+    if (r.kind !== 'ok') {
+      onNotice(noticeFromFailure(r))
+      return false
     }
-    setZoneInfo(r.zone)
-    setRecords(r.records)
+    setZoneInfo(r.data.zone)
+    setRecords(r.data.records)
+    return true
   }, [token, zone, node, onNotice])
 
   useEffect(() => {
     void load()
   }, [load, p.refresh])
 
+  /* The records after Hide DNSSEC Records (only for a signed zone). */
+  const shown = useMemo(() => {
+    const signed = isSigned(zoneInfo?.dnssecStatus)
+    return hideDnssecRecords && signed ? hideDnssec(records) : records
+  }, [records, hideDnssecRecords, zoneInfo])
+
   // The DNSSEC filtering comes before the name/type filter, just as in
   // upstream: `editZoneRecords` already arrives trimmed to `showEditZonePage`.
-  const visible = useMemo(() => {
-    const signed = isSigned(zoneInfo?.dnssecStatus)
-    const base = hideDnssecRecords && signed ? hideDnssec(records) : records
-    return filterBy(base, { name: nameFilter, type: typeFilter }, zone)
-  }, [records, hideDnssecRecords, zoneInfo, nameFilter, typeFilter, zoneInfo])
+  const visible = useMemo(
+    () => filterBy(shown, { name: nameFilter, type: typeFilter }, zone),
+    [shown, nameFilter, typeFilter, zone],
+  )
 
   const { rows: sorted, sort, toggle } = useSort(KEYS, visible)
+
+  /*
+  WHAT THE ZONE HOLDS, by type (an exception, 2026-11-05): `A 14 · NS 1 · SOA 1`,
+  counted from the records already loaded, after Hide DNSSEC Records and before
+  the Name and Type filters, so it describes the zone and not the page. Pressing a
+  type puts it in the Type field and runs Go, the same as typing it; pressing the
+  one already applied empties the field and runs Go.
+  */
+  const byType = useMemo(() => {
+    const base = shown
+    const counts = new Map<string, number>()
+    for (const r of base) counts.set(r.type, (counts.get(r.type) ?? 0) + 1)
+    return [...counts.entries()]
+  }, [shown])
 
   const totalPages = Math.max(1, Math.ceil(visible.length / perPage))
   // Past the last page, or negative, is the last page (`showEditZonePage`).
@@ -264,7 +321,9 @@ export function ZoneRecords(p: ZoneRecordsProps) {
       return
     }
     onNotice(success)
-    if (back) p.onBack()
+    /* A deleted zone is not a place to go back to: its entry is replaced, as for
+       a zone that cannot be read (`onUnavailable`), not pushed over. */
+    if (back) (p.onUnavailable ?? p.onBack)()
     else await load()
   }
 
@@ -337,6 +396,14 @@ export function ZoneRecords(p: ZoneRecordsProps) {
     writeHideDnssec(blank)
   }
 
+  /* Nothing was ever drawn and the read failed: the list takes over, as upstream's
+     `showEditZone` does on its `error`. A later failure keeps the zone on screen. */
+  const unavailable = !loading && zoneInfo == null
+  const onUnavailable = p.onUnavailable
+  useEffect(() => {
+    if (unavailable) onUnavailable?.()
+  }, [unavailable, onUnavailable])
+
   if (loading && zoneInfo == null) {
     return <Loading>Loading zone…</Loading>
   }
@@ -349,6 +416,25 @@ export function ZoneRecords(p: ZoneRecordsProps) {
 
   const state = zoneState(zoneInfo as unknown as Zone)
   const signed = isSigned(zoneInfo.dnssecStatus)
+  /* The header's tones, upstream's (zone.js:3286-3303). */
+  const stateTone: TagTone =
+    state === 'Disabled'
+      ? 'neutral'
+      : state === 'Sync Failed' || state === 'Notify Failed'
+        ? 'warn'
+        : state === 'Expired' || state === 'Validation Failed'
+          ? 'dan'
+          : 'ok'
+  /* The catalog tag: membership in grey, or the catalog's own name in blue
+     (zone.js:3240-3256). */
+  const catalogTag =
+    zoneInfo.catalog != null
+      ? { text: zoneInfo.catalog, tone: 'neutral' as TagTone }
+      : zoneInfo.type === 'Catalog' || zoneInfo.type === 'SecondaryCatalog'
+        ? { text: zone, tone: 'info' as TagTone }
+        : null
+  /* `nameIdn (zone)` when the zone has one (zone.js:3566-3569). */
+  const title = zoneNameOf({ name: zone === '.' ? '' : zone, nameIdn: zoneInfo.nameIdn })
   const text = statusText(offset + 1, onPage.length, visible.length, currentPage, totalPages, 'records')
   const pg = pageWindow(currentPage, totalPages)
 
@@ -363,21 +449,45 @@ export function ZoneRecords(p: ZoneRecordsProps) {
       <SectionHeader
         section="Zones"
         onBack={p.onBack}
-        title={zone === '.' ? '<root>' : zone}
+        title={title}
+        titleAction={
+          /* Upstream's refresh beside the title (index.html:555): it reads the
+             zone again and shows it with the page and filters as they are typed,
+             `showEditZone(zone, page, name, type)`. */
+          <RowAction
+            icon="refresh"
+            name="Refresh"
+            disabled={busy || loading}
+            onClick={() => void load().then((ok) => ok && showPage())}
+          />
+        }
         labels={
           <>
-            <Tag>{typeLabel(zoneInfo.type)}</Tag>
-            <Tag tone={state === 'Enabled' ? 'ok' : 'neutral'}>{state}</Tag>
+            <Tag tone={stateTone}>{state}</Tag>
+            {/* The zone's type in its series colour (zone-colours.ts), as in the list. */}
+            <span className={styles.ztag} style={{ '--rt': zoneColour(zoneInfo.type) } as CSSProperties}>
+              {typeLabel(zoneInfo.type)}
+            </span>
             {signed && (
-              <Tag tone="info">DNSSEC</Tag>
+              <Tag tone={zoneInfo.hasDnssecPrivateKeys ? 'info' : 'neutral'} pill>DNSSEC</Tag>
             )}
-            {zoneInfo.catalog != null && <Tag>{zoneInfo.catalog}</Tag>}
+            {catalogTag && <Tag tone={catalogTag.tone} pill>{catalogTag.text}</Tag>}
+            {/* The secondary's expiry, under the title with its seconds, where
+                upstream writes it (zone.js:3262-3265). */}
+            {zoneInfo.expiry != null && <span className={styles.fact}>Expiry: {dateTime(zoneInfo.expiry)}</span>}
+            {/* An exception (2026-11-05): the serial and the last change, which
+                the same answer carries and upstream shows only in the list. */}
+            {zoneInfo.soaSerial != null && <span className={styles.fact}>Serial <b>{zoneInfo.soaSerial}</b></span>}
+            {zoneInfo.lastModified != null && (
+              <span className={styles.fact}>Last Modified: {dateWithAge(zoneInfo.lastModified)}</span>
+            )}
           </>
         }
         actions={
           <>
             {head?.addRecord && (
               <Button
+                lead="add"
                 variant="primary"
                 disabled={!p.canModify || busy}
                 onClick={() => p.onAddRecord(zoneInfo, records)}
@@ -385,271 +495,272 @@ export function ZoneRecords(p: ZoneRecordsProps) {
                 Add Record
               </Button>
             )}
-            {zoneInfo.disabled ? (
-              <Button disabled={!p.canModify || busy} onClick={doEnableZone}>
-                Enable Zone
-              </Button>
-            ) : (
-              <Button disabled={!p.canModify || busy} onClick={doDisableZone}>
-                Disable Zone
-              </Button>
-            )}
-            <Button variant="danger" disabled={!p.canDelete || busy} onClick={removeZone}>
-              Delete Zone
-            </Button>
-
-            <Menu label="Zone actions" text="Options">
+            <Menu size="md" label="Zone actions" text="Options">
               {(close) => (
                 <>
+                  {/* The same groups as the row menu in the zone list
+                      (ZoneList, the row's `Menu`), in the order this menu
+                      already had: the zone as a file or its refresh (a zone
+                      has one or the other, never both: zone-view.ts), its data
+                      in and out, and how it behaves and who may touch it.
+                      Enable, Disable and Delete are not in here: they are the
+                      header's own group, after this menu. */}
                   {/* The FIRST entry of upstream's Options menu (index.html:574
                       in v15.5.1). Not gated by permission: upstream shows it to
                       anyone who can open the zone, the read needs only
                       Zones: View, and it is the save that the server refuses. */}
                   {head?.editZoneFile && (
-                    <button type="button" onClick={() => { close(); p.onEditZoneFile(zone) }}>
+                    <MenuItem icon="file" onClick={() => { close(); p.onEditZoneFile(zone) }}>
                       Edit Zone File
-                    </button>
+                    </MenuItem>
                   )}
                   {head?.resync && (
-                    <button type="button" disabled={!p.canModify} onClick={() => { close(); resync() }}>
+                    <MenuItem icon="refresh" disabled={!p.canModify} onClick={() => { close(); resync() }}>
                       Resync
-                    </button>
+                    </MenuItem>
                   )}
+                  <Separator />
                   {head?.runImport && (
-                    <button type="button" disabled={!p.canModify} onClick={() => { close(); p.onImport(zone) }}>
+                    <MenuItem icon="upload" disabled={!p.canModify} onClick={() => { close(); p.onImport(zone) }}>
                       Import Zone
-                    </button>
+                    </MenuItem>
                   )}
                   {head?.runExport && (
-                    <button type="button" onClick={() => { close(); void runExport() }}>
+                    <MenuItem icon="download" onClick={() => { close(); void runExport() }}>
                       Export Zone
-                    </button>
+                    </MenuItem>
                   )}
                   {head?.convert && (
-                    <button type="button" disabled={!p.canModify} onClick={() => { close(); p.onConvert(zone, zoneInfo.type) }}>
+                    <MenuItem icon="convert" disabled={!p.canModify} onClick={() => { close(); p.onConvert(zone, zoneInfo.type) }}>
                       Convert Zone
-                    </button>
+                    </MenuItem>
                   )}
                   {head?.clone && (
-                    <button type="button" disabled={!p.canModify} onClick={() => { close(); p.onClone(zone) }}>
+                    <MenuItem icon="copy" disabled={!p.canModify} onClick={() => { close(); p.onClone(zone) }}>
                       Clone Zone
-                    </button>
+                    </MenuItem>
                   )}
+                  <Separator />
                   {head?.options && (
-                    <button type="button" disabled={!p.canModify} onClick={() => { close(); p.onOptions(zone) }}>
+                    <MenuItem icon="settings" disabled={!p.canModify} onClick={() => { close(); p.onOptions(zone) }}>
                       Zone Options
-                    </button>
+                    </MenuItem>
                   )}
                   {head?.permissions && (
-                    <button type="button" onClick={() => { close(); p.onPermissions(zone) }}>
+                    <MenuItem icon="admin" onClick={() => { close(); p.onPermissions(zone) }}>
                       Permissions
-                    </button>
+                    </MenuItem>
                   )}
                 </>
               )}
             </Menu>
-
-            {head?.dnssec && (
-              <Menu label="DNSSEC actions" text="DNSSEC">
-                {(close) => (
-                  <>
-                    {head.sign && (
-                      <button type="button" disabled={!p.canModify} onClick={() => { close(); p.onSign(zone) }}>
-                        Sign Zone
-                      </button>
-                    )}
-                    {head.toggleDnssecRecords && (
-                      <button type="button" onClick={() => { close(); toggleDnssec() }}>
-                        {hideDnssecRecords ? 'Show DNSSEC Records' : 'Hide DNSSEC Records'}
-                      </button>
-                    )}
-                    {head.viewDs && (
-                      <button type="button" onClick={() => { close(); p.onViewDs(zone) }}>
-                        View DS Info
-                      </button>
-                    )}
-                    {head.properties && (
-                      <button type="button" disabled={!p.canModify} onClick={() => { close(); p.onDnssecProperties(zone) }}>
-                        DNSSEC Properties
-                      </button>
-                    )}
-                    {head.unsign && (
-                      <>
-                        <Separator />
-                        <button type="button" disabled={!p.canModify} onClick={() => { close(); p.onUnsign(zone) }}>
-                          Unsign Zone
-                        </button>
-                      </>
-                    )}
-                  </>
-                )}
-              </Menu>
+            {/* What acts on the whole zone and is hard to take back: in the header,
+                where it is always in view, but as its own group after Options,
+                and Delete outlined in red (ui/Button, THE DESTRUCTIVE ONE). */}
+            <span className={styles.actSep} aria-hidden="true" />
+            {zoneInfo.disabled ? (
+              <Button lead="power" disabled={!p.canModify || busy} onClick={doEnableZone}>
+                Enable Zone
+              </Button>
+            ) : (
+              <Button lead="power" disabled={!p.canModify || busy} onClick={doDisableZone}>
+                Disable Zone
+              </Button>
             )}
+            <Button lead="trash" variant="danger" disabled={!p.canDelete || busy} onClick={removeZone}>
+              Delete Zone
+            </Button>
+
           </>
         }
       />
 
-      <div className={styles.flt}>
-        <div className={styles.filterWide}>
-          <Field label="Name">
-            {(id) => (
-              <Input
-                id={id}
-                search
-                placeholder="abc or a* or *b* or a?c"
-                value={nameField}
-                onChange={(e) => setNameField(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && showPage()}
-              />
-            )}
-          </Field>
-        </div>
-        <div className={styles.fltShort}>
-          <Field label="Type">
-            {(id) => (
-              <Input
-                id={id}
-                value={typeField}
-                onChange={(e) => setTypeField(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && showPage()}
-              />
-            )}
-          </Field>
-        </div>
-        <div className={styles.fltShort}>
-          <Field label="Page Number">
-            {(id) => (
-              <Input
-                id={id}
-                mono
-                value={pageDraft ?? String(currentPage)}
-                onChange={(e) => setPageDraft(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && showPage()}
-              />
-            )}
-          </Field>
-        </div>
-        <div className={styles.fltShort}>
-          <Field label="Records Per Page">
-            {(id) => (
-              <Select
-                id={id}
-                value={String(perPageField)}
-                onChange={(e) => {
-                  // Remembered at once (zone.js:634-636); applied on Go.
-                  const n = Number(e.target.value)
-                  writePerPage(RECORDS_PER_PAGE_KEY, n)
-                  setPerPageField(n)
-                }}
-              >
-                {RECORDS_PER_PAGE.map((n) => (
-                  <option key={n} value={n}>
-                    {n}
-                  </option>
-                ))}
-              </Select>
-            )}
-          </Field>
-        </div>
-        <Button variant="primary" onClick={() => showPage()}>
-          Go
-        </Button>
-      </div>
+      {head && (
+        <ZoneOverview
+          zone={zone}
+          info={zoneInfo}
+          records={shown}
+          head={head}
+          hideDnssecRecords={hideDnssecRecords}
+          canModify={p.canModify}
+          busy={busy}
+          onSign={() => p.onSign(zone)}
+          onUnsign={() => p.onUnsign(zone)}
+          onViewDs={() => p.onViewDs(zone)}
+          onProperties={() => p.onDnssecProperties(zone)}
+          onToggleDnssecRecords={toggleDnssec}
+          byType={byType}
+          activeType={typeFilter}
+          onType={(t) => showPage(1, t)}
+        />
+      )}
 
-      <div className={styles.count}>
-        <span>{text}</span>
-        {pagination}
-      </div>
-
-      <Table
-        stack
-        header={
+      {/* The records, their toolbar and their foot as one card (`ui/DataTable`). */}
+      <DataTable
+        toolbar={
           <>
-            <th style={{ width: 34 }}>#</th>
-            <Th field="name" sort={sort} onSort={toggle} style={{ width: 110 }}>Name</Th>
-            <Th field="type" sort={sort} onSort={toggle} style={{ width: 80 }}>Type</Th>
-            <Th field="ttl" sort={sort} onSort={toggle} style={{ width: 110 }}>TTL</Th>
-            <Th field="data" sort={sort} onSort={toggle}>Data</Th>
-            {/* The actions column reserved 230 px with three labels inside;
-                with icons 120 is enough and the 110 left over go to the data,
-                which is what the table is about. */}
-            <th style={{ width: 120 }} />
+            <Grow>
+              <Field inline label="Name">
+                {(id) => (
+                  <Input
+                    id={id}
+                    search
+                    placeholder="abc or a* or *b* or a?c"
+                    value={nameField}
+                    onChange={(e) => setNameField(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && showPage()}
+                  />
+                )}
+              </Field>
+            </Grow>
+            <div className={styles.typeField}>
+              <Field inline label="Type">
+                {(id) => (
+                  <Input
+                    id={id}
+                    value={typeField}
+                    onChange={(e) => setTypeField(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && showPage()}
+                  />
+                )}
+              </Field>
+            </div>
+            <Button variant="primary" onClick={() => showPage()}>
+              Go
+            </Button>
+      
+            {/* The status above the table as well as under it, as upstream draws it. */}
+            <End>
+              <span>{text}</span>
+            </End>
           </>
         }
+        foot={
+          <DataFoot count={text}>
+              <div className={styles.pageField}>
+                <Field inline label="Page Number">
+                  {(id) => (
+                    <Input
+                      id={id}
+                      mono
+                      value={pageDraft ?? String(currentPage)}
+                      onChange={(e) => setPageDraft(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && showPage()}
+                    />
+                  )}
+                </Field>
+              </div>
+              <div className={styles.perPage}>
+                <Field inline label="Records Per Page">
+                  {(id) => (
+                    <Select
+                      id={id}
+                      value={String(perPageField)}
+                      onChange={(e) => {
+                        // Remembered at once (zone.js:634-636); applied on Go.
+                        const n = Number(e.target.value)
+                        writePerPage(RECORDS_PER_PAGE_KEY, n)
+                        setPerPageField(n)
+                      }}
+                    >
+                      {RECORDS_PER_PAGE.map((n) => (
+                        <option key={n} value={n}>
+                          {n}
+                        </option>
+                      ))}
+                    </Select>
+                  )}
+                </Field>
+              </div>
+            {pagination}
+          </DataFoot>
+        }
       >
-        {onPage.length === 0 ? (
-          <tr>
-            <td colSpan={6} className={tbl.noRows}>
-              No Record Found
-            </td>
-          </tr>
-        ) : (
-          onPage.map((r, i) => {
-            const actions = rowActions(zoneInfo.type, r.type)
-            return (
-              <tr key={`${r.name}|${r.type}|${offset + i}`}>
-                <td className={styles.num2}>{offset + i + 1}</td>
-                <td className={`${styles.mono} ${tbl.lead}`}><DomainName name={relativeName(r.name, zone)} /></td>
-                <td className={tbl.lead}>
-                  <Chip>{r.type}</Chip>
-                  {r.disabled && (
-                    <div className={styles.tags}>
-                      <Tag>Disabled</Tag>
-                    </div>
-                  )}
-                </td>
-                <td className={styles.ttl}>
-                  {r.ttl} <small>({r.ttlString})</small>
-                </td>
-                <td className={styles.dataCell}>
-                  <DataCell record={r} notifyFailedFor={zoneInfo.notifyFailedFor} />
-                </td>
-                <td className={tbl.actionsCell}>
-                  {!actions.hidden && (
-                    <div className={tbl.actions}>
-                      <RowAction
-                        icon="edit"
-                        name="Edit Record"
-                        disabled={!p.canModify || busy}
-                        onClick={() => p.onEditRecord(zoneInfo, r, records)}
-                      />
-                      <RowAction
-                        icon="power"
-                        name={r.disabled ? 'Enable Record' : 'Disable Record'}
-                        disabled={actions.editingOnly || !p.canModify || busy}
-                        onClick={() => setRecordState(r, !r.disabled)}
-                      />
-                      {/* Delete, inside the menu: the same rule as in the zone
-                          list. */}
-                      <Menu label={`Actions for ${relativeName(r.name, zone)} ${r.type}`}>
-                        {(close) => (
-                          <button
-                            type="button"
-                            disabled={actions.editingOnly || !p.canDelete || busy}
-                            onClick={() => { close(); removeRecord(r) }}
-                          >
-                            Delete Record
-                          </button>
-                        )}
-                      </Menu>
-                    </div>
-                  )}
-                </td>
-              </tr>
-            )
-          })
-        )}
-      </Table>
-
-      <div className={`${styles.count} ${styles.countFoot}`}>
-        <span>{text}</span>
-        {pagination}
-      </div>
-
-      {/* The secondary zone's expiry, which upstream draws next to the title. */}
-      {'expiry' in zoneInfo && (zoneInfo as { expiry?: string }).expiry != null && (
-        <div className={styles.meta}>Expiry: {date((zoneInfo as { expiry?: string }).expiry)}</div>
-      )}
+        <Table
+          stack
+          header={
+            <>
+              <th style={{ width: 34 }}>#</th>
+              <Th field="name" sort={sort} onSort={toggle} style={{ width: 110 }}>Name</Th>
+              <Th field="type" sort={sort} onSort={toggle} style={{ width: 80 }}>Type</Th>
+              <Th field="ttl" sort={sort} onSort={toggle} style={{ width: 110 }}>TTL</Th>
+              <Th field="data" sort={sort} onSort={toggle}>Data</Th>
+              {/* The actions column reserved 230 px with three labels inside;
+                  with icons 120 is enough and the 110 left over go to the data,
+                  which is what the table is about. */}
+              <th style={{ width: 120 }} />
+            </>
+          }
+        >
+          {onPage.length === 0 ? (
+            <tr>
+              <td colSpan={6} className={tbl.noRows}>
+                No Record Found
+              </td>
+            </tr>
+          ) : (
+            onPage.map((r, i) => {
+              const actions = rowActions(zoneInfo.type, r.type)
+              /* A run of records with one owner draws the name once: the rows under
+                 it carry it too, faded out, for the screen reader and for the
+                 stacked card, where each record stands alone. */
+              const repeat = i > 0 && onPage[i - 1].name === r.name
+              return (
+                <tr key={`${r.name}|${r.type}|${offset + i}`} className={repeat ? styles.repeat : undefined}>
+                  <td className={styles.num2}>{offset + i + 1}</td>
+                  <td className={`${styles.mono} ${tbl.lead} ${styles.owner}`}><DomainName name={relativeName(r.name, zone)} /></td>
+                  <td className={tbl.lead}>
+                    <span className={styles.typeCell}>
+                      <span className={styles.rtype} style={{ '--rt': recordColour(r.type) } as CSSProperties}>
+                        {r.type}
+                      </span>
+                      {r.disabled && <Tag>Disabled</Tag>}
+                    </span>
+                  </td>
+                  <td className={styles.ttl}>
+                    {r.ttl} <small>({r.ttlString})</small>
+                  </td>
+                  <td className={styles.dataCell}>
+                    <DataCell record={r} notifyFailedFor={zoneInfo.notifyFailedFor} />
+                  </td>
+                  <td className={tbl.actionsCell}>
+                    {!actions.hidden && (
+                      <div className={tbl.actions}>
+                        <RowAction
+                          icon="edit"
+                          name="Edit Record"
+                          disabled={!p.canModify || busy}
+                          onClick={() => p.onEditRecord(zoneInfo, r, records)}
+                        />
+                        <RowAction
+                          icon="power"
+                          name={r.disabled ? 'Enable Record' : 'Disable Record'}
+                          disabled={actions.editingOnly || !p.canModify || busy}
+                          onClick={() => setRecordState(r, !r.disabled)}
+                        />
+                        {/* Delete, inside the menu: the same rule as in the zone
+                            list. */}
+                        <Menu label={`Actions for ${relativeName(r.name, zone)} ${r.type}`}>
+                          {(close) => (
+                            <MenuItem
+                              icon="trash"
+                              tone="danger"
+                              disabled={actions.editingOnly || !p.canDelete || busy}
+                              onClick={() => { close(); removeRecord(r) }}
+                            >
+                              Delete Record
+                            </MenuItem>
+                          )}
+                        </Menu>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              )
+            })
+          )}
+        </Table>
+      </DataTable>
     </>
   )
 }

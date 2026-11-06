@@ -256,33 +256,21 @@ describe('SessionProvider', () => {
   })
 
   /*
-  Corrected on 2026-09-07, when the sub-navigation left the sidebar for a bar under
-  the title (`ui/SubTabs`). What claims to be the page is now TWO things and they
-  are not in competition: the section in the sidebar (because that is where you
-  are) and the active tab in the bar. The old shape had the section deliberately
-  NOT marked so the sub-link could be; with the sub-links gone, not marking the
-  section would leave the sidebar with nothing current at all.
+  Since 2026-11-06 the sub-sections are in the sidebar again (deviation 24), and
+  ONE link claims to be the page: Logs' own entry (it is two, Query Logs and View
+  Logs), or the open section's sub-section, never its heading as well.
   */
-  it('the section and its active tab are what claim to be the current page', async () => {
+  it('one link in the sidebar claims to be the current page', async () => {
     localStorage.setItem('token', 'tok')
     vi.spyOn(client, 'apiRequest').mockResolvedValue(session())
     mount()
-    await screen.findByRole('navigation')
+    const nav = await screen.findByRole('navigation', { name: 'Sections' })
 
-    fireEvent.click(screen.getByRole('link', { name: 'Logs' }))
-    await waitFor(() =>
-      expect(screen.getByRole('link', { name: 'Logs' })).toHaveAttribute('aria-current', 'page'),
-    )
-    // And the bar under the title marks which of the two screens it is.
-    expect(screen.getByRole('link', { name: 'View Logs' })).toHaveAttribute('aria-current', 'page')
-
-    fireEvent.click(screen.getByRole('link', { name: 'Query Logs' }))
+    fireEvent.click(within(nav).getByRole('link', { name: 'Query Logs' }))
     await waitFor(() => expect(window.location.pathname).toBe('/logs/query-logs/'))
-
-    const current2 = screen
-      .getAllByRole('link')
-      .filter((a) => a.getAttribute('aria-current') === 'page')
-    expect(current2.map((a) => a.textContent)).toEqual(['Logs', 'Query Logs'])
+    const current = () =>
+      within(nav).getAllByRole('link').filter((a) => a.getAttribute('aria-current') === 'page')
+    expect(current().map((a) => a.textContent)).toEqual(['Query Logs'])
   })
 
   it('a section with sub-sections completes the address without leaving a trace in the history', async () => {
@@ -565,9 +553,12 @@ describe('the Blocking section', () => {
     servedAt('/blocked/', 'blocked')
     mount()
     const nav = await screen.findByRole('navigation', { name: 'Sections' })
-    expect(within(nav).getByRole('link', { name: 'Blocking' })).toHaveAttribute('aria-current', 'page')
     expect(window.location.pathname + window.location.search).toBe('/blocking/rules/?rule=blocked')
-    expect(screen.getByRole('link', { name: 'Rules' })).toHaveAttribute('aria-current', 'page')
+    expect(within(nav).getByRole('link', { name: 'Rules' })).toHaveAttribute('aria-current', 'page')
+    // The open section's own entry is where you are, not the page: only Rules claims it.
+    expect(
+      within(nav).getAllByRole('link').filter((l) => l.getAttribute('aria-current') === 'page').map((l) => l.textContent),
+    ).toEqual(['Rules'])
   })
 
   it('and behind a prefix', async () => {
@@ -623,14 +614,14 @@ describe('the Blocking section', () => {
     answer()
     servedAt('/blocking/lists/', 'blocking/lists')
     mount()
-    const link = await screen.findByRole('link', { name: 'More blocking settings in Settings › Blocking' })
-    expect(link).toHaveAttribute('href', '/settings/blocking/')
+    const link = await screen.findByRole('link', { name: 'More blocking settings in Blocking › Settings' })
+    expect(link).toHaveAttribute('href', '/blocking/settings/')
     expect(fireEvent.click(link)).toBe(false)
 
     const nav = screen.getByRole('navigation', { name: 'Sections' })
     await waitFor(() =>
-      expect(within(nav).getByRole('link', { name: 'Settings' })).toHaveAttribute('aria-current', 'page'),
+      expect(within(nav).getByRole('link', { name: 'Settings', current: 'page' })).toHaveAttribute('href', '/blocking/settings/'),
     )
-    expect(window.location.pathname).toBe('/settings/blocking/')
+    expect(window.location.pathname).toBe('/blocking/settings/')
   })
 })

@@ -4,60 +4,11 @@ What the three Blocking tabs share. Every value is a token of theme/tokens.css.
 .stack { display: flex; flex-direction: column; gap: var(--gap-block); }
 .row2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-9); }
 .row21 { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: var(--s-9); }
-.kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s-9); }
-/* Lists: the third card carries a date and a button, so its column never goes below
-   what they need on one line; with room to spare the three are equal. */
-.kpis3 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(max-content, 1fr); gap: var(--s-9); }
-
-/*
-A panel whose content sits in its middle. A grid row stretches its panels to the
-tallest one, and a headerless panel puts its air on top (ui/Panel `.noHeader`): the
-content stayed high with a band under it. Here the body's own padding is the only
-air, the same on every side, and the free height splits above and below. Written
-under `.stack` for the reason `.flush` is.
-*/
-.stack .centred { display: flex; flex-direction: column; justify-content: center; padding-top: 0; }
-
-/*
-A figure, the same on Overview and Lists, in the Dashboard tile's order: the number,
-its sub-line, its label. A figure without a sub-line keeps an empty one, a full line
-high, so every row of figures has its numbers, sub-lines and labels on the same three
-lines. Beside the text, on the right, whatever goes with the figure: its trend, or
-the button that acts on it.
-*/
-.kpi { display: flex; align-items: center; justify-content: space-between; gap: var(--s-9); }
-.kpiText { display: flex; flex-direction: column; gap: var(--s-1); flex: none; min-width: 0; }
-.kpiValue { font-family: var(--font-mono); font-size: var(--t-7); font-weight: 600; line-height: 1.1; }
-.kpiSub { font-family: var(--font-mono); font-size: var(--t-2); color: var(--faint); }
-/* Two figures in one card (`Your Rules`): the column becomes a grid of two, each number
-   over its word, and the two rows hand their cells to it. The label spans both. */
-.kpiPaired { display: grid; grid-template-columns: repeat(2, max-content); column-gap: var(--s-9); }
-.kpiRow { display: contents; }
-.kpiPaired > .kpiLabel { grid-column: 1 / -1; }
-.kpiLabel { font-size: var(--t-1); font-weight: var(--text-weight); letter-spacing: var(--text-tracking); text-transform: uppercase; color: var(--mute); }
-
-/*
-A table inside a panel: the panel is already its frame. ui/Table draws a border,
-corners and a shadow because elsewhere the table IS the panel; inside one they drew a
-second frame, with rounded corners showing under the panel's header. Written under
-`.stack` to outweigh ui/Table's `.wrap`, which weighs the same as one class.
-*/
-.stack .inPanel { border: 0; border-radius: 0; box-shadow: none; }
-
-/* A panel without a title whose first child brings its own air (the filter bar, a
-   table): the padding ui/Panel adds for a headerless body would be a band above it. */
-.stack .flush { padding-top: 0; }
+/* The strip of stat cards (`ui/StatCard`) inside the column: the column's gap is
+   its space, not the strip's own margin as well. */
+.stack .inStack { margin-bottom: 0; }
 
 /* `--bp-index`: a custom property cannot go inside a media query, so its value is written. */
-/* `--bp-rail`. Four figures in a row left each card too narrow for its trend beside
-   the text; two by two they keep it. Lists keeps its two counts side by side and gives
-   the date and its button the whole width under them. */
-@media (max-width: 1180px) {
-  .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .kpis3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .kpis3 > :last-child { grid-column: 1 / -1; }
-}
-
 @media (max-width: 960px) {
   .row2, .row21 { grid-template-columns: minmax(0, 1fr); }
 }
@@ -65,15 +16,31 @@ second frame, with rounded corners showing under the panel's header. Written und
 /* A menu entry without its permission (`LockedItem`): the padlock beside the verb. */
 .lockedItem { display: inline-flex; align-items: center; gap: var(--s-3); }
 
-/* The add bar: one field, Block first because Enter blocks. */
-.add { display: flex; align-items: flex-end; gap: var(--s-5); }
-.add > :first-child { flex: 1; min-width: 0; }
+/* The command bar (`AddDomainBar`): its title, one field, Block first because Enter
+   blocks, Allow and Check, on one line. */
+/* The same air above and below (2026-11-06): a panel with no header adds its own top
+   padding (`ui/Panel`'s `noHeader`), which left the bar 24 px over its field and 10
+   under it. */
+.stack .commandPanel { padding-top: 0; }
+.stack .commandBody { padding: var(--s-7) var(--s-9); }
+.add { display: flex; align-items: flex-start; gap: var(--s-5); }
+.add > .commandTitle { align-self: flex-start; min-height: var(--field-height); display: flex; align-items: center; }
+.add > :not(.commandField) { flex: none; }
+.commandTitle { margin: 0 var(--s-5) 0 0; font-size: var(--t-5); font-weight: 600; color: var(--ink); white-space: nowrap; }
+.commandField { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 
-/* `--bp-stack`. The figure steps down to `--t-6`, as the Dashboard's tiles do. */
-@media (max-width: 560px) {
+/* Said to assistive technology, not drawn: the field's name `Domain`. */
+.offscreen { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+/* `--bp-index`: the title takes its own line, the field and the verbs share the next. */
+@media (max-width: 960px) {
   .add { flex-wrap: wrap; }
-  .add > :first-child { flex-basis: 100%; }
-  .kpiValue { font-size: var(--t-6); }
+  .commandTitle { flex-basis: 100%; }
+}
+
+/* `--bp-stack`. */
+@media (max-width: 560px) {
+  .commandField { flex-basis: 100%; }
 }
 
 /* The check's sentence under the domain field when it cannot answer, with the field's

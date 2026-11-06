@@ -1,5 +1,6 @@
-import { createContext, type ReactNode, useContext, useEffect, useRef, useState } from 'react'
-import { Alert } from './Alert'
+import { createContext, type ReactNode, useContext } from 'react'
+import { Icon } from './Icon'
+import { FoldHelp } from './FoldHelp'
 import { Button } from './Button'
 import { Empty } from './Empty'
 import { Input, Textarea } from './Field'
@@ -85,54 +86,20 @@ export function Block({
   children: ReactNode
 }) {
   /*
-  The section count, COUNTED and not written by hand.
-
-  The dense-form design puts on every section label how many controls it has,
-  and its ten figures add up to 39 (the screen's total), so the drawing checks itself. That
-  property only survives if the number comes from the content: ten hand-written
-  numbers part company with the content on the first control anyone adds, and they
-  do it silently.
-
-  It is counted from the DOM and not from React's `children` because a section
-  mixes rows of several kinds (`TextRow`, `AreaRow`, `GroupRow`, `EditableList`),
-  and some carry more than one control inside. What has to be counted is what the
-  user sees.
+  No count in the header any more (2026-11-06). It said how many controls the block
+  held ("4", "9"), counted from the DOM so it could not drift; but a figure beside a
+  title reads as a quantity of something the server holds, and this one was only
+  the number of rows under it. Settings' owner read it as noise.
   */
   const prefix = useContext(AnchorPrefix)
   const anchor = prefix != null && title != null ? blockAnchor(prefix, title) : undefined
-  const box = useRef<HTMLDivElement>(null)
-  const [howMany, setHowMany] = useState<number | null>(null)
-  useEffect(() => {
-    const root = box.current
-    if (root == null) return
-    /*
-    The cells of an editable list do NOT count.
-
-    Measured: counting them, `Rate Limiting` said **18** and the ten added up to
-    54. The design says 39, and the difference is exactly the **15 cells of the two
-    QPM lists**. And the design is right: a row cell is **server data** (with
-    another configuration they are other rows and another number), so counting them
-    turns the section count into a volatile figure instead of a property of the
-    screen: 39 comparable controls and 15 data cells, kept apart on purpose.
-    */
-    const controls = [...root.querySelectorAll('input, select, textarea, [role="combobox"]')]
-    const n = controls.filter((c) => c.closest('table') == null).length
-    setHowMany(n > 0 ? n : null)
-    /* No dependency array, and on purpose: what has to be counted is the DOM as
-       already drawn, and it changes for reasons that are not props of this block
-       (a row appearing because its master switches on, a list growing). It settles
-       because `setHowMany` with the same value does not re-render. */
-  })
 
   return (
-    <div ref={box} id={anchor} data-section={anchor != null ? title : undefined} className={anchor != null ? styles.anchor : undefined}>
-      <Panel
-        title={title}
-        className={styles.block}
-        groups2
-        actions={howMany != null ? <span className={styles.count}>{howMany}</span> : undefined}
-      >
-        {notices != null && <div className={styles.notices}>{notices}</div>}
+    /* `data-block`: a block, for a screen that narrows its rows by a search
+       (`screens/settings/search.ts`) and hides a block left with none. */
+    <div id={anchor} data-section={anchor != null ? title : undefined} data-block="" className={anchor != null ? `${styles.unit} ${styles.anchor}` : styles.unit}>
+      <Panel title={title} className={styles.block} groups2>
+        {notices != null && <div className={styles.notices} data-unit="">{notices}</div>}
         {children}
       </Panel>
     </div>
@@ -188,7 +155,7 @@ export function TextRow({
             onChange={(e) => onChange(e.target.value)}
             style={
               width === 'wide'
-                ? { width: '100%', maxWidth: 420 }
+                ? { width: '100%', maxWidth: 560 }
                 : { width: width ?? 'var(--ctrl-num)' }
             }
           />
@@ -279,7 +246,8 @@ export function Radios({
             />
             <span className={check.text}>{o.label}</span>
           </label>
-          {o.help && <div className={check.help}>{o.help}</div>}
+          {/* An option's help folds to its first line with `more`, as a switch's does. */}
+          {o.help && <FoldHelp className={check.help}>{o.help}</FoldHelp>}
         </div>
       ))}
     </>
@@ -288,40 +256,48 @@ export function Radios({
 
 /** Several loose blocks carrying the panel body's inset. */
 export function Notices({ children }: { children: ReactNode }) {
-  return <div className={styles.notices}>{children}</div>
+  return <div className={styles.notices} data-unit="">{children}</div>
 }
 
 /*
-Upstream's alerts are `<p><b>Note!</b> …</p>` in bold, inline. Here they become
-a coloured block: `Warning!` amber, `Note!` blue. They always go inside a
-`Notices`, which is what supplies the inset. When the alert supplied it itself on
-one screen and not the other, the same "Note!" came out indented in DHCP and flush
-in Settings.
+Upstream's alerts are `<p><b>Note!</b> …</p>` in bold, inline. Here they are
+compact lines (2026-11-06, Adrián: the coloured boxes they were took about 1,000 px
+of Settings › General alone): the sign, the bold word in its colour, `Warning!`
+amber and `Note!` blue, and the text in the help's size. A warning is read whole; a
+note folds to its first line with `more` (`ui/FoldHelp`), its whole text always in
+the document. They go inside a `Notices`, which supplies the inset, in the block
+they speak about.
 */
 export function Warning({ children }: { children: ReactNode }) {
   return (
-    <Alert type="warning" title="Warning!">
-      {children}
-    </Alert>
+    <div className={`${styles.callout} ${styles.warn}`} role="note">
+      <Icon name="warning" size={14} className={styles.sign} />
+      <div className={styles.calloutText}>
+        <b>Warning!</b> {children}
+      </div>
+    </div>
   )
 }
 
 export function Note({ children }: { children: ReactNode }) {
   return (
-    <Alert type="info" title="Note!">
-      {children}
-    </Alert>
+    <div className={styles.callout} role="note">
+      <Icon name="about" size={14} className={styles.sign} />
+      <FoldHelp className={styles.calloutText}>
+        <b>Note!</b> {children}
+      </FoldHelp>
+    </div>
   )
 }
 
 /** Loose upstream text that is neither `Note!` nor `Warning!`. */
 export function Plain({ children }: { children: ReactNode }) {
-  return <div className={styles.plain}>{children}</div>
+  return <div className={styles.plain} data-unit="">{children}</div>
 }
 
 export function Help({ href, children }: { href: string; children: ReactNode }) {
   return (
-    <div className={styles.link}>
+    <div className={styles.link} data-unit="">
       <a href={href} target="_blank" rel="noreferrer">
         {children}
       </a>
@@ -330,7 +306,7 @@ export function Help({ href, children }: { href: string; children: ReactNode }) 
 }
 
 export function Pre({ children }: { children: ReactNode }) {
-  return <pre className={styles.pre}>{children}</pre>
+  return <pre className={styles.pre} data-unit="">{children}</pre>
 }
 
 export interface Column<T> {
@@ -437,6 +413,7 @@ export function EditableList<T extends Record<string, string>>({
               <td className={styles.tdel}>
                 <Button
                   variant="danger"
+                  size="sm"
                   disabled={disabled}
                   onClick={() => onChange(rows.filter((_, j) => j !== i))}
                 >
@@ -452,7 +429,7 @@ export function EditableList<T extends Record<string, string>>({
           does not say "there are none", it says "I do not know". */}
       {rows.length === 0 && <Empty compact>No entries.</Empty>}
       <div>
-        <Button disabled={disabled} onClick={() => onChange([...rows, blank()])}>
+        <Button size="sm" lead="add" disabled={disabled} onClick={() => onChange([...rows, blank()])}>
           Add
         </Button>
       </div>

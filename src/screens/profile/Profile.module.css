@@ -1,0 +1,207 @@
+/*
+My Profile as one page (deviation 21): the user as the header, then two columns,
+the sessions table in the main one and four compact panels stacked in the side
+one. Every value is a token.
+*/
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-block);
+}
+
+/* The header carries its own bottom margin; the page's gap replaces it, so every
+   block sits `--gap-block` from the next. */
+.page > div,
+.identityHead > div:first-child { margin-bottom: 0; }
+
+/* Read by a screen reader, not drawn: the header's labels and the theme radios. */
+.hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* THE USER IS THE HEADER: the account menu's initial, larger, before the name. */
+.identity { display: flex; align-items: flex-start; gap: var(--s-10); min-width: 0; }
+.identityHead { flex: 1; min-width: 0; }
+
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: calc(var(--s-12) + var(--s-11));
+  height: calc(var(--s-12) + var(--s-11));
+  border-radius: 50%;
+  background: var(--acc-tint);
+  box-shadow: inset 0 0 0 1px var(--acc-tint-strong);
+  color: var(--acc-ink);
+  font: 650 var(--t-7)/1 var(--font-ui);
+  letter-spacing: -0.02em;
+}
+
+/* Username, Type and 2FA on the title's line: values, their labels hidden. */
+.facts { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3) var(--s-5); margin: 0; }
+.facts > div { display: flex; align-items: center; }
+.facts dd { margin: 0; display: flex; }
+.username { font-size: var(--t-4); color: var(--mute); }
+
+/*
+THE TWO COLUMNS. Written in the order they stack (Profile, Security, Sessions,
+Account, Theme); on a wide screen the sessions take the main column across every
+row and the four panels fill the side one. The last row takes what is left over,
+so a table taller than the panels does not pull them apart.
+*/
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  grid-template-rows: auto auto auto 1fr;
+  gap: var(--s-11);
+  align-items: start;
+}
+.profileArea { grid-column: 2; grid-row: 1; }
+.securityArea { grid-column: 2; grid-row: 2; }
+.accountArea { grid-column: 2; grid-row: 3; }
+.themeArea { grid-column: 2; grid-row: 4; }
+.sessionsArea { grid-column: 1; grid-row: 1 / -1; min-width: 0; }
+
+@media (max-width: 1180px) {
+  .layout { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; }
+  .profileArea,
+  .securityArea,
+  .accountArea,
+  .themeArea,
+  .sessionsArea { grid-column: auto; grid-row: auto; }
+}
+
+/* PROFILE: the labels over the fields, the column being narrow. */
+.form { display: flex; flex-direction: column; gap: var(--s-8); padding: var(--s-8) var(--s-9) var(--s-9); }
+.timeout { display: flex; align-items: center; flex-wrap: wrap; gap: var(--s-3) var(--s-6); }
+.num { width: var(--ctrl-num); }
+.formActions { display: flex; justify-content: flex-end; }
+
+/* SECURITY: one line each, the name, its state, the action at the end. */
+.lines { list-style: none; margin: 0; padding: 0; }
+.lines li {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s-4) var(--s-6);
+  padding: var(--s-6) var(--s-9);
+  border-bottom: 1px solid var(--line2);
+}
+.lines li:last-child { border-bottom: 0; }
+.lines li > button { margin-left: auto; }
+.lineName { font-size: var(--t-4); font-weight: 600; color: var(--ink); }
+
+/* ACCOUNT: the groups, then each login on its line. */
+.account { display: flex; flex-direction: column; gap: var(--s-7); margin: 0; padding: var(--s-7) var(--s-9) var(--s-8); }
+.account dt { font-size: var(--t-2); color: var(--mute); font-weight: 550; }
+.account dd { margin: var(--s-2) 0 0; }
+.groupTags { list-style: none; display: flex; flex-wrap: wrap; gap: var(--s-3); margin: 0; padding: 0; }
+.quiet { color: var(--mute); font-size: var(--t-4); }
+.login { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--s-3); font-size: var(--t-4); color: var(--ink); }
+.ago { font-weight: 600; color: var(--ink); }
+.dot { color: var(--faint); margin-right: var(--s-3); }
+.when { color: var(--mute); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.addr { font-family: var(--font-mono); font-size: var(--t-3); color: var(--ink); }
+
+/* THE SESSIONS TABLE: one line per session. */
+.tableTitle { margin: 0; font-size: var(--t-5); font-weight: 650; color: var(--ink); }
+
+/* In two thirds of the page each session is one row of two lines, the type and
+   the name over the token, as the date is over its age, so the table fits its
+   column instead of stacking. The user agent is the column that gives. */
+.session { display: flex; flex-direction: column; gap: var(--s-1); min-width: 0; }
+.sessionLine { display: flex; align-items: baseline; gap: var(--s-5); white-space: nowrap; }
+
+/* The type as a swatch and its word, in its series colour. */
+.kind {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-3);
+  font-size: var(--t-3);
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.kind::before { content: ''; width: 8px; height: 8px; border-radius: 2px; background: var(--sw); flex: none; }
+
+.tokenName { font-weight: 600; color: var(--ink); }
+.partial { font: var(--t-3)/1.4 var(--font-mono); color: var(--mute); }
+.current { font-size: var(--t-3); font-weight: 600; color: var(--acc-ink); }
+
+.seen { font: var(--t-4)/1.4 var(--font-mono); color: var(--ink); white-space: nowrap; }
+.age { display: block; font-size: var(--t-2); color: var(--faint); white-space: nowrap; }
+.addrCell { font: var(--t-4)/1.4 var(--font-mono); color: var(--ink); white-space: nowrap; }
+
+/* The user agent cut to the line; the row's Details holds it whole. */
+.agentCell { max-width: 0; width: 30%; }
+.agent {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: var(--t-3);
+  color: var(--mute);
+}
+
+.openRow > td { border-bottom-color: transparent; }
+.detailRow > td { padding-top: 0; background: var(--pan2); }
+/* When the table stacks, the details take the whole width of the block, not the
+   width of one cell (the stacked cell rule weighs two classes and a selector). */
+.detailRow > .detailCell[colspan] { flex-basis: 100%; }
+.detail { display: flex; flex-wrap: wrap; gap: var(--s-5) var(--s-12); margin: var(--s-3) 0 0; }
+.detail dt { font-size: var(--t-2); color: var(--faint); }
+.detail dd { margin: var(--s-1) 0 0; font-size: var(--t-3); color: var(--ink); }
+.detail .wide { flex: 1 1 100%; }
+.agentFull { overflow-wrap: break-word; }
+
+/* THE THEME: one bordered strip of three lines, the picked one tinted and ticked. */
+.themes {
+  display: flex;
+  flex-direction: column;
+  margin: var(--s-7) var(--s-9) var(--s-8);
+  border: 1px solid var(--line);
+  border-radius: var(--r-3);
+  overflow: hidden;
+}
+
+.theme {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--s-6);
+  padding: var(--s-5) var(--s-7);
+  border-bottom: 1px solid var(--line2);
+  cursor: pointer;
+  transition: background var(--t-fast);
+}
+.theme:last-child { border-bottom: 0; }
+.theme:hover { background: var(--hover); }
+.theme[data-checked] { background: var(--acc-tint); }
+.theme:focus-within { outline: var(--focus); outline-offset: calc(-1 * var(--s-1)); }
+
+.themeLabel { flex: 1; min-width: 0; font-size: var(--t-4); color: var(--ink); }
+.theme[data-checked] .themeLabel { font-weight: 600; }
+.tick { flex: none; color: var(--acc-ink); }
+
+/* The swatch: drawn inside its own `data-theme`, so these tokens are that theme's. */
+.swatch {
+  display: flex;
+  flex: none;
+  width: calc(var(--s-11) + var(--s-3));
+  height: calc(var(--s-10) + var(--s-1));
+  border: 1px solid var(--line);
+  border-radius: var(--r-1);
+  overflow: hidden;
+}
+.swatchHalf { flex: 1; display: flex; align-items: flex-end; background: var(--bg); min-width: 0; }
+.swatchHalf i { display: block; width: 100%; height: 40%; background: var(--side); border-top: 1px solid var(--line); }

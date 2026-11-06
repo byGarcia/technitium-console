@@ -1,6 +1,7 @@
 import { Alert } from '../ui/Alert'
 import { Button } from '../ui/Button'
 import { dateTime } from '../lib/dates'
+import styles from './StaleData.module.css'
 
 /*
 The stale-data strip, shared by the collection screens.
@@ -22,6 +23,12 @@ kit.
 **If a fourth or fifth screen needs it, then it is a primitive** and it goes up to
 `ui/` with its decision, not by stealth.
 
+## How it is drawn (2026-11-05)
+
+As a strip: one line in the danger wash, the badge, the sentence, and `Retry` at
+the end of the line (`Alert`'s `action`) instead of after the last word, where it
+wandered with the length of the date. Same words in the same order.
+
 ## What it does NOT do
 
 It does not decide when it should be shown. That belongs to each screen, because
@@ -38,11 +45,16 @@ export function StaleData({
   onRetry: () => void
 }) {
   return (
-    <Alert type="danger" title="Could not refresh.">
-      {since != null && <> Last good data: {dateTime(since)}. </>}
-      <Button size="sm" onClick={onRetry}>
-        Retry
-      </Button>
+    <Alert
+      type="danger"
+      title="Could not refresh."
+      action={
+        <Button size="sm" onClick={onRetry}>
+          Retry
+        </Button>
+      }
+    >
+      {since != null && <> Last good data: <span className={styles.when}>{dateTime(since)}</span>. </>}
     </Alert>
   )
 }

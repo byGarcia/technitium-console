@@ -59,6 +59,16 @@ export interface ZoneDetails {
   catalog?: string | null
   notifyFailed?: boolean
   notifyFailedFor?: string[]
+  /* What upstream's zone header also reads from this same object
+     (zone.js:3199-3300): the IDN name for the title, the state chain for the
+     status tag, whether the signing keys are here, and the expiry. */
+  nameIdn?: string
+  hasDnssecPrivateKeys?: boolean
+  lastModified?: string
+  expiry?: string
+  isExpired?: boolean
+  validationFailed?: boolean
+  syncFailed?: boolean
 }
 
 export interface ZoneRecordsData {
@@ -71,19 +81,24 @@ export interface ZoneRecordsData {
  * `listZone=true`, receives every record and paginates on the client
  * (zone.js:3079). Verified against v15.4: sending it `recordsPerPage` changes
  * nothing.
+ *
+ * It returns the whole outcome, not `null` on failure: a zone that does not
+ * exist answers `status: "error"` with "No such zone was found: …", and upstream
+ * shows that message (HTTPRequest's `error` case, common.js:164). Reading every
+ * failure as "Unable to connect" told the user the server was down.
  */
 export async function getRecords(
   token: string | null,
   zone: string,
   node = '',
-): Promise<ZoneRecordsData | null> {
+): Promise<ApiOutcome<ZoneRecordsData>> {
   const outcome = await apiRequest<{ response: ZoneRecordsData }>('zones/records/get', {
     token,
     body: { domain: zone, zone, listZone: 'true', node },
   })
-  if (outcome.kind !== 'ok') return null
+  if (outcome.kind !== 'ok') return outcome
   const r = outcome.data.response
-  return { zone: r.zone, records: r.records ?? [] }
+  return { kind: 'ok', data: { zone: r.zone, records: r.records ?? [] } }
 }
 
 export interface AddRecordResponse {

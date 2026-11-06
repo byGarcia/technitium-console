@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import type { Range, TopEntry } from '../../api/dashboard'
 import { TopStats } from '../dashboard/TopStats'
-import { Panel } from '../../ui/Panel'
+import { DataTable, End } from '../../ui/DataTable'
 import { Table } from '../../ui/Table'
+import tbl from '../../ui/Table.module.css'
 import { DomainName } from '../../ui/DomainName'
 import { Menu } from '../../ui/Menu'
 import { Button } from '../../ui/Button'
@@ -10,7 +11,6 @@ import type { Notice } from '../../lib/notice'
 import { useDomainAction } from '../../lib/allow-block'
 import { missing, type Permissions } from './permissions'
 import { LockedItem } from './Locked'
-import shared from './Blocking.module.css'
 import styles from './Overview.module.css'
 
 /*
@@ -24,6 +24,10 @@ only Domain and Hits), `No domains for this period.` (upstream says "No Data") a
 the `Actions` / `Actions for <domain>` labels.
 
 The disabled item is `LockedItem`, the section's one padlocked menu entry.
+
+Drawn as every list is since 2026-11-06: ONE card (`ui/DataTable`) whose toolbar
+carries the title and upstream's `More`, one line per domain, the row menu in the
+row's action group.
 */
 
 type Kind = 'TopBlockedDomains' | 'TopDomains'
@@ -66,12 +70,16 @@ export function TopTable({
   }
 
   return (
-    <Panel
-      title={TITLE[kind]}
-      actions={
-        <Button size="sm" onClick={() => setMore(true)}>
-          More
-        </Button>
+    <DataTable
+      toolbar={
+        <>
+          <h2 className={styles.cardTitle}>{TITLE[kind]}</h2>
+          <End>
+            <Button size="sm" onClick={() => setMore(true)}>
+              More
+            </Button>
+          </End>
+        </>
       }
     >
       <Table
@@ -80,47 +88,48 @@ export function TopTable({
             <th>Domain</th>
             <th aria-label="Share" />
             <th className={styles.hitsHead}>Hits</th>
-            <th aria-label="Actions" />
+            <th className={tbl.actionsCell} aria-label="Actions" />
           </>
         }
         isEmpty={rows.length === 0}
         emptyText={failure ? undefined : 'No domains for this period.'}
         columns={4}
-        className={shared.inPanel}
       >
         {rows.map((r) => (
           <tr key={r.name}>
-            <td className={styles.name}><DomainName name={r.name} /></td>
-            <td>
+            <td className={`${styles.name} ${tbl.lead}`}><DomainName name={r.name} /></td>
+            <td className={styles.shareCell}>
               <span className={`${styles.share} ${isBlocked ? styles.shareBlocked : styles.shareTotal}`}>
                 <i style={{ width: `${top === 0 ? 0 : (r.hits * 100) / top}%` }} />
               </span>
             </td>
             <td className={styles.hits}>{r.hits.toLocaleString()}</td>
-            <td>
-              <Menu label={`Actions for ${r.name}`} quiet>
-                {(close) =>
-                  need == null ? (
-                    <button
-                      type="button"
-                      disabled={action.isBusy(r.name)}
-                      onClick={() => {
-                        close()
-                        void act(r.name)
-                      }}
-                    >
-                      {verb}
-                    </button>
-                  ) : (
-                    <LockedItem need={need}>{verb}</LockedItem>
-                  )
-                }
-              </Menu>
+            <td className={tbl.actionsCell}>
+              <div className={tbl.actions}>
+                <Menu label={`Actions for ${r.name}`}>
+                  {(close) =>
+                    need == null ? (
+                      <button
+                        type="button"
+                        disabled={action.isBusy(r.name)}
+                        onClick={() => {
+                          close()
+                          void act(r.name)
+                        }}
+                      >
+                        {verb}
+                      </button>
+                    ) : (
+                      <LockedItem need={need}>{verb}</LockedItem>
+                    )
+                  }
+                </Menu>
+              </div>
             </td>
           </tr>
         ))}
       </Table>
       <TopStats type={more ? kind : null} range={range} token={token} onClose={() => setMore(false)} />
-    </Panel>
+    </DataTable>
   )
 }

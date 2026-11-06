@@ -126,32 +126,35 @@ describe('Note! against Warning!', () => {
   differently in a panel and in a modal, which is the defect `Alert.module.css`'s
   header records having already fixed once.
   */
-  it('the PanelForm route and the direct Alert route draw the same', () => {
+  /*
+  Since 2026-11-06 the form kit's `Note!` and `Warning!` are compact lines, not the
+  page alert's box (a page result is an `Alert`; an explanation in a form is not):
+  the same icons and the same words, read as notes.
+  */
+  it('the form kit draws Note! as a compact note with the same icon and words', () => {
     const { container: viaKit } = render(<Note>text</Note>)
     const { container: viaAlert } = render(
       <Alert type="info" title="Note!">
         text
       </Alert>,
     )
-    const a = viaKit.querySelector('[role=alert]')!
+    const a = viaKit.querySelector('[role=note]')!
     const b = viaAlert.querySelector('[role=alert]')!
-
-    expect(a.className).toBe(b.className)
+    expect(a).toBeTruthy()
     expect(a.querySelector('svg')?.innerHTML).toBe(b.querySelector('svg')?.innerHTML)
-    expect(a.textContent).toBe(b.textContent)
+    expect(a.textContent?.replace(/\s+/g, ' ').trim()).toContain('Note! text')
   })
 
-  it('and the same for Warning', () => {
+  it('and Warning! likewise, read whole', () => {
     const { container: viaKit } = render(<Warning>text</Warning>)
     const { container: viaAlert } = render(
       <Alert type="warning" title="Warning!">
         text
       </Alert>,
     )
-    const a = viaKit.querySelector('[role=alert]')!
+    const a = viaKit.querySelector('[role=note]')!
     const b = viaAlert.querySelector('[role=alert]')!
-
-    expect(a.className).toBe(b.className)
     expect(a.querySelector('svg')?.innerHTML).toBe(b.querySelector('svg')?.innerHTML)
+    expect(a.textContent).toBe('Warning! text')
   })
 })

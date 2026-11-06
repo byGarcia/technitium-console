@@ -237,51 +237,58 @@ export function Login({
       <main className={styles.page}>
         <div className={styles.card}>
           <h1 className={styles.brand}>
-            <img className={styles.mark} src={publicUrl('img/logo.png')} alt="" width={28} height={28} />
+            <img className={styles.mark} src={publicUrl('img/logo.svg')} alt="" width={28} height={28} />
             <span className={styles.name}>Technitium DNS Server</span>
           </h1>
 
-          <Notifier notice={alert} onClose={() => setAlert(null)} />
+          {/* The card has three bands, as a dialog has: the mark on top, the
+              alert and the form in the body, the links at the foot. */}
+          <div className={styles.body}>
+            <Notifier inline notice={alert} onClose={() => setAlert(null)} />
 
-          <form
-            className={styles.form}
-            onSubmit={(e) => {
-              e.preventDefault()
-              void submit()
-            }}
-          >
-            <LabeledInput
-              label="Username"
-              ref={userRef}
-              value={user}
-              autoComplete="username"
-              onChange={(e) => setUser(e.target.value)}
-            />
-            <LabeledInput
-              label="Password"
-              type="password"
-              ref={passRef}
-              value={pass}
-              disabled={otpVisible}
-              autoComplete="current-password"
-              onChange={(e) => setPass(e.target.value)}
-            />
-            {otpVisible && (
+            <form
+              className={styles.form}
+              onSubmit={(e) => {
+                e.preventDefault()
+                void submit()
+              }}
+            >
               <LabeledInput
-                label="OTP"
-                mono
-                inputMode="numeric"
-                maxLength={6}
-                ref={otpRef}
-                value={totp}
-                autoComplete="one-time-code"
-                onChange={(e) => onTotpInput(e.target.value)}
+                label="Username"
+                ref={userRef}
+                value={user}
+                autoComplete="username"
+                onChange={(e) => setUser(e.target.value)}
               />
-            )}
-            <Button type="submit" variant="primary" disabled={busy}>
-              Login
-            </Button>
-          </form>
+              <LabeledInput
+                label="Password"
+                type="password"
+                ref={passRef}
+                value={pass}
+                disabled={otpVisible}
+                autoComplete="current-password"
+                onChange={(e) => setPass(e.target.value)}
+              />
+              {otpVisible && (
+                <LabeledInput
+                  label="OTP"
+                  mono
+                  inputMode="numeric"
+                  maxLength={6}
+                  ref={otpRef}
+                  value={totp}
+                  autoComplete="one-time-code"
+                  onChange={(e) => onTotpInput(e.target.value)}
+                />
+              )}
+              {/* `aria-busy` only draws the wait (a ring before the label, see the
+                  stylesheet): `disabled` is still what stops a second submit, as it
+                  always did. */}
+              <Button type="submit" variant="primary" className={styles.submit} disabled={busy} aria-busy={busy || undefined}>
+                Login
+              </Button>
+            </form>
+          </div>
 
           {/* In upstream the link goes BEFORE the SSO block, and the "or login
               with" only appears if there is SSO (index.html:119-124). */}

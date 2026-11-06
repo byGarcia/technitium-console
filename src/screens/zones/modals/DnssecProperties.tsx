@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useId, useState, type ReactNode } from 'react'
 import {
   activateKskDnsKey,
   addPrivateKey,
@@ -34,16 +34,18 @@ import {
   NX_PROOFS,
   RSA_KEY_SIZES,
   KEY_TYPES,
+  KEY_STATE_TONE,
   addKeyRollover,
   curveFor,
 } from './dnssec-options'
 import type { Notice, Confirmation } from '../types'
 import tbl from '../../../ui/Table.module.css'
-import styles from '../Zones.module.css'
+import l from './layout.module.css'
+import styles from './DnssecProperties.module.css'
+import { Tag } from '../../../ui/Tag'
 import { External } from '../../../ui/External'
 import { RFC_NSEC3_ITERATIONS, RFC_NSEC3_SALT } from '../references'
-import frm from '../../../ui/Form.module.css'
-import { Th, useSort, type Keys, Table } from '../../../ui/Table'
+import { RowAction, Th, useSort, type Keys, Table } from '../../../ui/Table'
 import { noticeFromFailure } from '../../../lib/notice'
 import { Notifier } from '../../../ui/Notifier'
 
@@ -64,14 +66,15 @@ Two things that are replicated and come as a surprise:
 */
 
 
-/* `sortTable('tableDnssecPropertiesPrivateKeysBody', 0..5)`. */
+/* `sortTable('tableDnssecPropertiesPrivateKeysBody', 0..5)`. The sixth column,
+   Rollover (days), is in each key's Details since 2026-11-06, so it no longer
+   sorts. */
 const KEYS: Keys<PrivateKey> = {
   keyTag: (k) => k.keyTag,
   keyType: (k) => k.keyType,
   algorithm: (k) => `${k.algorithm} (${k.algorithmNumber})`,
   state: (k) => k.state,
   changed: (k) => k.stateChangedOn,
-  rollover: (k) => k.rolloverDays,
 }
 
 export function DnssecProperties({
@@ -108,13 +111,14 @@ export function DnssecProperties({
 
   const load = useCallback(async () => {
     setLoading(true)
-    const r = await getProperties(token, zone, node)
+    const outcome = await getProperties(token, zone, node)
     setLoading(false)
 
-    if (r == null) {
-      setNotice({ type: 'danger', title: 'Error!', text: 'Unable to connect to the server. Please try again.' })
+    if (outcome.kind !== 'ok') {
+      setNotice(noticeFromFailure(outcome))
       return
     }
+    const r = outcome.data
 
     setProps(r)
     setDnsKeyTtl(String(r.dnsKeyTtl))
@@ -334,32 +338,33 @@ export function DnssecProperties({
       {loading && props == null ? (
         <Loading>Loading DNSSEC properties…</Loading>
       ) : (
-        <div className={styles.fields}>
-          <Table
-            header={
-              <>
-                <Th field="keyTag" sort={sort} onSort={toggle} style={{ width: 80 }}>Key Tag</Th>
-                <Th field="keyType" sort={sort} onSort={toggle} style={{ width: 130 }}>Key Type</Th>
-                <Th field="algorithm" sort={sort} onSort={toggle} style={{ width: 150 }}>Algorithm</Th>
-                <Th field="state" sort={sort} onSort={toggle} style={{ width: 110 }}>State</Th>
-                <Th field="changed" sort={sort} onSort={toggle} style={{ width: 150 }}>
-                  State Changed
-                </Th>
-                <Th field="rollover" sort={sort} onSort={toggle} style={{ width: 150 }}>
-                  Rollover (days)
-                </Th>
-                <th style={{ width: 190 }} />
-              </>
-            }
-          >
-            {visibleKeys.length === 0 ? (
-              <tr>
-                <td colSpan={7} className={tbl.noRows}>
-                  No Key Found
-                </td>
-              </tr>
-            ) : (
-              visibleKeys.map((k) => (
+        <div className={l.content}>
+          <section className={l.section}>
+            {/* The keys: the console's data table, one line per key (2026-11-06).
+                Its actions are the row's icon buttons with their names in the
+                tooltip; the date a key moves on ("ready by", "active by") and the
+                ZSK's automatic rollover field are under the row's Details. With
+                all seven columns on the line the table asked about 950 px against
+                the dialog's 828, so every key stood as a block of three lines. */}
+            <Table
+              stack
+              isEmpty={visibleKeys.length === 0}
+              emptyText="No Key Found"
+              columns={6}
+              header={
+                <>
+                  <Th field="keyTag" sort={sort} onSort={toggle}>Key Tag</Th>
+                  <Th field="keyType" sort={sort} onSort={toggle}>Key Type</Th>
+                  <Th field="algorithm" sort={sort} onSort={toggle}>Algorithm</Th>
+                  <Th field="state" sort={sort} onSort={toggle}>State</Th>
+                  <Th field="changed" sort={sort} onSort={toggle}>
+                    State Changed
+                  </Th>
+                  <th className={tbl.actionsCell} />
+                </>
+              }
+            >
+              {visibleKeys.map((k) => (
                 <KeyRow
                   key={k.keyTag}
                   privateKey={k}
@@ -372,290 +377,325 @@ export function DnssecProperties({
                   onRolloverNow={() => rollover(k)}
                   onRetire={() => retire(k)}
                 />
-              ))
-            )}
-          </Table>
+              ))}
+            </Table>
 
-          {notes.map((n) => (
-            <Alert key={n} type="info" title="Note!">
-              {n}
-            </Alert>
-          ))}
+            {notes.map((n) => (
+              <Alert key={n} type="info" title="Note!">
+                {NOTE_TEXT[n]}
+              </Alert>
+            ))}
 
-          <div className={styles.acts}>
-            <Button onClick={() => setAdding((v) => !v)}>Add Private Key</Button>
-            <Button disabled={!hasGenerated || busy} onClick={publishAll}>
-              Publish All Keys
-            </Button>
-          </div>
+            <div className={l.acts}>
+              <Button lead="add" aria-expanded={adding} onClick={() => setAdding((v) => !v)}>
+                Add Private Key
+              </Button>
+              <Button lead="upload" disabled={!hasGenerated || busy} onClick={publishAll}>
+                Publish All Keys
+              </Button>
+            </div>
 
-          {adding && (
-            <div className={styles.group}>
-              <div className={styles.groupTitle}>Add Private Key</div>
+            {adding && (
+              <div className={l.block}>
+                <div className={l.title}>Add Private Key</div>
 
-              <Field label="Key Type">
-                {(id) => (
-                  <Select
-                    id={id}
-                    value={newKey.keyType}
-                    onChange={(e) => {
-                      const keyType = e.target.value as KeyKind
-                      setNewKey((k) => ({ ...k, keyType, rolloverDays: addKeyRollover(keyType, k.generation) }))
-                    }}
-                  >
-                    {KEY_TYPES.map((t) => (
-                      <option key={t.value} value={t.value}>
-                        {t.label}
-                      </option>
-                    ))}
-                  </Select>
-                )}
-              </Field>
-
-              <Field label="Algorithm">
-                {(id) => (
-                  <Select
-                    id={id}
-                    value={newKey.algorithm}
-                    onChange={(e) => {
-                      const algorithm = e.target.value as Algorithm
-                      setNewKey((k) => ({ ...k, algorithm }))
-                    }}
-                  >
-                    {ALGORITHMS.map((a) => (
-                      <option key={a.value} value={a.value}>
-                        {a.label}
-                      </option>
-                    ))}
-                  </Select>
-                )}
-              </Field>
-
-              {newKey.algorithm === 'RSA' ? (
-                <Field label="Hash Algorithm">
-                  {(id) => (
-                    <Select
-                      id={id}
-                      value={newKey.hashAlgorithm}
-                      onChange={(e) => setNewKey((k) => ({ ...k, hashAlgorithm: e.target.value }))}
-                    >
-                      {HASHES_RSA.map((h) => (
-                        <option key={h.value} value={h.value}>
-                          {h.label}
-                        </option>
-                      ))}
-                    </Select>
-                  )}
-                </Field>
-              ) : (
-                <Field label={newKey.algorithm === 'EDDSA' ? 'EdDSA Curve' : 'ECDSA Curve'}>
-                  {(id) => (
-                    <Select
-                      id={id}
-                      value={curveFor(newKey.algorithm, newKey)}
-                      onChange={(e) => {
-                        const v = e.target.value
-                        setNewKey((k) => (k.algorithm === 'EDDSA' ? { ...k, eddsaCurve: v } : { ...k, ecdsaCurve: v }))
-                      }}
-                    >
-                      {(newKey.algorithm === 'EDDSA' ? EDDSA_CURVES : ECDSA_CURVES).map((c) => (
-                        <option key={c.value} value={c.value}>
-                          {c.label}
-                        </option>
-                      ))}
-                    </Select>
-                  )}
-                </Field>
-              )}
-
-              <div className={frm.mrowCtl}>
-                {GENERATIONS.map((g) => (
-                  <label key={g.value} className={styles.chk}>
-                    <input
-                      type="radio"
-                      name="addKeyGeneration"
-                      checked={newKey.generation === g.value}
-                      onChange={() =>
-                        // zone.js:501-526: the rollover follows, and the PEM is cleared.
-                        setNewKey((k) => ({
-                          ...k,
-                          generation: g.value,
-                          pem: '',
-                          rolloverDays: addKeyRollover(k.keyType, g.value),
-                        }))
-                      }
-                    />
-                    {g.label}
-                  </label>
-                ))}
-              </div>
-
-              {newKey.algorithm === 'RSA' && newKey.generation === 'Automatic' && (
-                <Field label="Key Size">
-                  {(id) => (
-                    <div className={styles.inline}>
+                {/* What the key is: its type, its algorithm and the algorithm's hash or curve. */}
+                <div className={l.row3}>
+                  <Field label="Key Type">
+                    {(id) => (
                       <Select
                         id={id}
-                        className={styles.short}
-                        value={newKey.keySize}
-                        onChange={(e) => setNewKey((k) => ({ ...k, keySize: e.target.value }))}
+                        value={newKey.keyType}
+                        onChange={(e) => {
+                          const keyType = e.target.value as KeyKind
+                          setNewKey((k) => ({ ...k, keyType, rolloverDays: addKeyRollover(keyType, k.generation) }))
+                        }}
                       >
-                        {RSA_KEY_SIZES.map((t) => (
-                          <option key={t} value={t}>
-                            {t}
+                        {KEY_TYPES.map((t) => (
+                          <option key={t.value} value={t.value}>
+                            {t.label}
                           </option>
                         ))}
                       </Select>
-                      <span className={styles.suffix}>bits</span>
-                    </div>
-                  )}
-                </Field>
-              )}
-
-              {newKey.generation === 'UseSpecified' && (
-                <>
-                  <Field label="Private Key">
-                    {(id) => (
-                      <Textarea
-                        placeholder={`-----BEGIN PRIVATE KEY-----
-MII...
------END PRIVATE KEY-----`}
-                        id={id}
-                        mono
-                        className={styles.area}
-                        spellCheck={false}
-                        value={newKey.pem}
-                        onChange={(e) => setNewKey((k) => ({ ...k, pem: e.target.value }))}
-                      />
                     )}
                   </Field>
-                  <div className={styles.help}>Enter a private key in PEM format.</div>
-                </>
-              )}
 
-              {/* Only a ZSK has an automatic rollover (zone.js:448-466). */}
-              {newKey.keyType === 'ZoneSigningKey' && (
-                <>
-                  <Field label="Automatic Key Rollover">
+                  <Field label="Algorithm">
                     {(id) => (
-                      <div className={styles.inline}>
+                      <Select
+                        id={id}
+                        value={newKey.algorithm}
+                        onChange={(e) => {
+                          const algorithm = e.target.value as Algorithm
+                          setNewKey((k) => ({ ...k, algorithm }))
+                        }}
+                      >
+                        {ALGORITHMS.map((a) => (
+                          <option key={a.value} value={a.value}>
+                            {a.label}
+                          </option>
+                        ))}
+                      </Select>
+                    )}
+                  </Field>
+
+                  {newKey.algorithm === 'RSA' ? (
+                    <Field label="Hash Algorithm">
+                      {(id) => (
+                        <Select
+                          id={id}
+                          value={newKey.hashAlgorithm}
+                          onChange={(e) => setNewKey((k) => ({ ...k, hashAlgorithm: e.target.value }))}
+                        >
+                          {HASHES_RSA.map((h) => (
+                            <option key={h.value} value={h.value}>
+                              {h.label}
+                            </option>
+                          ))}
+                        </Select>
+                      )}
+                    </Field>
+                  ) : (
+                    <Field label={newKey.algorithm === 'EDDSA' ? 'EdDSA Curve' : 'ECDSA Curve'}>
+                      {(id) => (
+                        <Select
+                          id={id}
+                          value={curveFor(newKey.algorithm, newKey)}
+                          onChange={(e) => {
+                            const v = e.target.value
+                            setNewKey((k) => (k.algorithm === 'EDDSA' ? { ...k, eddsaCurve: v } : { ...k, ecdsaCurve: v }))
+                          }}
+                        >
+                          {(newKey.algorithm === 'EDDSA' ? EDDSA_CURVES : ECDSA_CURVES).map((c) => (
+                            <option key={c.value} value={c.value}>
+                              {c.label}
+                            </option>
+                          ))}
+                        </Select>
+                      )}
+                    </Field>
+                  )}
+                </div>
+
+                <div className={l.title} id="addKeyGenerationLabel">Key Generation</div>
+                <div className={l.across} role="radiogroup" aria-labelledby="addKeyGenerationLabel">
+                  {GENERATIONS.map((g) => (
+                    <label key={g.value} className={l.check}>
+                      <input
+                        type="radio"
+                        name="addKeyGeneration"
+                        checked={newKey.generation === g.value}
+                        onChange={() =>
+                          // zone.js:501-526: the rollover follows, and the PEM is cleared.
+                          setNewKey((k) => ({
+                            ...k,
+                            generation: g.value,
+                            pem: '',
+                            rolloverDays: addKeyRollover(k.keyType, g.value),
+                          }))
+                        }
+                      />
+                      {g.label}
+                    </label>
+                  ))}
+                </div>
+
+                {/* The key's size or its PEM (one or the other), then the rollover. */}
+                {((newKey.algorithm === 'RSA' && newKey.generation === 'Automatic') ||
+                  newKey.generation === 'UseSpecified' ||
+                  newKey.keyType === 'ZoneSigningKey') && (
+                  <div className={l.row2}>
+                    {newKey.algorithm === 'RSA' && newKey.generation === 'Automatic' && (
+                      <Field label="Key Size">
+                        {(id) => (
+                          <div className={l.inline}>
+                            <Select
+                              id={id}
+                              className={l.short}
+                              value={newKey.keySize}
+                              onChange={(e) => setNewKey((k) => ({ ...k, keySize: e.target.value }))}
+                            >
+                              {RSA_KEY_SIZES.map((t) => (
+                                <option key={t} value={t}>
+                                  {t}
+                                </option>
+                              ))}
+                            </Select>
+                            <span className={l.suffix}>bits</span>
+                          </div>
+                        )}
+                      </Field>
+                    )}
+
+                    {newKey.generation === 'UseSpecified' && (
+                      <div className={l.field}>
+                        <Field label="Private Key">
+                          {(id) => (
+                            <Textarea
+                              placeholder={`-----BEGIN PRIVATE KEY-----
+MII...
+-----END PRIVATE KEY-----`}
+                              id={id}
+                              mono
+                              className={l.area}
+                              spellCheck={false}
+                              value={newKey.pem}
+                              onChange={(e) => setNewKey((k) => ({ ...k, pem: e.target.value }))}
+                            />
+                          )}
+                        </Field>
+                        <div className={l.help}>Enter a private key in PEM format.</div>
+                      </div>
+                    )}
+
+                    {/* Only a ZSK has an automatic rollover (zone.js:448-466). */}
+                    {newKey.keyType === 'ZoneSigningKey' && (
+                      <div className={l.field}>
+                        <Field label="Automatic Key Rollover">
+                          {(id) => (
+                            <div className={l.inline}>
+                              <Input
+                                placeholder="days"
+                                id={id}
+                                mono
+                                className={l.short}
+                                value={newKey.rolloverDays}
+                                onChange={(e) => setNewKey((k) => ({ ...k, rolloverDays: e.target.value }))}
+                              />
+                              <span className={l.suffix}>
+                                days (valid range 0-365; default 30; set 0 to disable)
+                              </span>
+                            </div>
+                          )}
+                        </Field>
+                        <div className={l.help}>
+                          The frequency at which the DNS Server must automatically rollover the key.
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div className={l.acts}>
+                  <Button variant="primary" disabled={busy} onClick={addKey}>
+                    Add Key
+                  </Button>
+                </div>
+              </div>
+            )}
+          </section>
+
+          <section className={l.section}>
+            <div className={l.title}>Proof of Non-Existence</div>
+            <div className={l.choices}>
+              {NX_PROOFS.map((n) => (
+                <div key={n.value} className={l.choice}>
+                  <label className={l.check}>
+                    <input
+                      type="radio"
+                      name="propsNxProof"
+                      checked={nxProof === n.value}
+                      onChange={() => setNxProof(n.value as NxProof)}
+                    />
+                    {n.label}
+                  </label>
+                  <div className={l.help}>{n.help}</div>
+                </div>
+              ))}
+            </div>
+
+            {nxProof === 'NSEC3' && (
+              <div className={l.row2}>
+                <div className={l.field}>
+                  <Field label="NSEC3 Iterations">
+                    {(id) => (
+                      <div className={l.inline}>
                         <Input
-                          placeholder="days"
+                          placeholder="iterations"
                           id={id}
                           mono
-                          className={styles.short}
-                          value={newKey.rolloverDays}
-                          onChange={(e) => setNewKey((k) => ({ ...k, rolloverDays: e.target.value }))}
+                          className={l.short}
+                          value={iterations}
+                          onChange={(e) => setIterations(e.target.value)}
                         />
-                        <span className={styles.suffix}>
-                          days (valid range 0-365; default 30; set 0 to disable)
-                        </span>
+                        <span className={l.suffix}>(valid range 0-50, recommended 0)</span>
                       </div>
                     )}
                   </Field>
-                  <div className={styles.help}>
-                    The frequency at which the DNS Server must automatically rollover the key.
+                  <div className={l.help}>
+                    The number of iterations used by NSEC3 for hashing the domain names. It is
+                    recommended to use 0 iterations since more iterations will increase computational
+                    costs for both the DNS Server and resolver while not providing much value against
+                    &quot;zone walking&quot; [<External href={RFC_NSEC3_ITERATIONS}>RFC 9276</External>].
                   </div>
-                </>
-              )}
-
-              <div>
-                <Button variant="primary" disabled={busy} onClick={addKey}>
-                  Add Key
-                </Button>
-              </div>
-            </div>
-          )}
-
-          <div className={styles.group}>
-            <div className={styles.groupTitle}>Proof of Non-Existence</div>
-            {NX_PROOFS.map((n) => (
-              <div key={n.value}>
-                <label className={styles.chk}>
-                  <input
-                    type="radio"
-                    name="propsNxProof"
-                    checked={nxProof === n.value}
-                    onChange={() => setNxProof(n.value as NxProof)}
-                  />
-                  {n.label}
-                </label>
-                <div className={styles.help}>{n.help}</div>
-              </div>
-            ))}
-
-            {nxProof === 'NSEC3' && (
-              <>
-                <Field label="NSEC3 Iterations">
-                  {(id) => (
-                    <Input
-                      placeholder="iterations"
-                      id={id}
-                      mono
-                      className={styles.short}
-                      value={iterations}
-                      onChange={(e) => setIterations(e.target.value)}
-                    />
-                  )}
-                </Field>
-                <div className={styles.help}>
-                  The number of iterations used by NSEC3 for hashing the domain names. It is
-                  recommended to use 0 iterations since more iterations will increase computational
-                  costs for both the DNS Server and resolver while not providing much value against
-                  &quot;zone walking&quot; [<External href={RFC_NSEC3_ITERATIONS}>RFC 9276</External>].
                 </div>
-                <Field label="NSEC3 Salt Length">
-                  {(id) => (
-                    <Input
-                      placeholder="length"
-                      id={id}
-                      mono
-                      className={styles.short}
-                      value={saltLength}
-                      onChange={(e) => setSaltLength(e.target.value)}
-                    />
-                  )}
-                </Field>
-                <div className={styles.help}>
-                  The number of bytes of random salt to generate to be used with the NSEC3 hash
-                  computation. It is recommended to not use salt by setting the length to 0
-                  [<External href={RFC_NSEC3_SALT}>RFC 9276</External>].
+                <div className={l.field}>
+                  <Field label="NSEC3 Salt Length">
+                    {(id) => (
+                      <div className={l.inline}>
+                        <Input
+                          placeholder="length"
+                          id={id}
+                          mono
+                          className={l.short}
+                          value={saltLength}
+                          onChange={(e) => setSaltLength(e.target.value)}
+                        />
+                        <span className={l.suffix}>bytes (valid range 0-32, recommended 0)</span>
+                      </div>
+                    )}
+                  </Field>
+                  <div className={l.help}>
+                    The number of bytes of random salt to generate to be used with the NSEC3 hash
+                    computation. It is recommended to not use salt by setting the length to 0
+                    [<External href={RFC_NSEC3_SALT}>RFC 9276</External>].
+                  </div>
                 </div>
-              </>
+              </div>
             )}
 
-            <div>
+            <div className={l.acts}>
               <Button disabled={busy} onClick={changeProof}>
                 Change
               </Button>
             </div>
-          </div>
+          </section>
 
-          <div className={styles.group}>
-            <Field label="DNSKEY TTL">
-              {(id) => (
-                <div className={styles.inline}>
-                  <Input
-                    placeholder="ttl"
-                    id={id}
-                    mono
-                    className={styles.short}
-                    value={dnsKeyTtl}
-                    onChange={(e) => setDnsKeyTtl(e.target.value)}
-                  />
-                  <span className={styles.suffix}>seconds</span>
-                  <Button disabled={busy} onClick={saveTtl}>
-                    Save
-                  </Button>
-                </div>
-              )}
-            </Field>
-            <div className={styles.help}>
-              The TTL value to be used for DNSKEY records. A lower value will allow quicker addition
-              or rollover to a new DNS Key at the cost of increased frequency of DNSKEY queries by
-              resolvers.
+          <section className={l.section}>
+            <div className={l.field}>
+              <Field label="DNSKEY TTL">
+                {(id) => (
+                  <div className={l.inline}>
+                    <Input
+                      placeholder="ttl"
+                      id={id}
+                      mono
+                      className={l.short}
+                      value={dnsKeyTtl}
+                      onChange={(e) => setDnsKeyTtl(e.target.value)}
+                    />
+                    <span className={l.suffix}>seconds (default 3600/1h)</span>
+                    <Button disabled={busy} onClick={saveTtl}>
+                      Update TTL
+                    </Button>
+                  </div>
+                )}
+              </Field>
+              <div className={l.help}>
+                The TTL value to be used for DNSKEY records. A lower value will allow quicker addition
+                or rollover to a new DNS Key at the cost of increased frequency of DNSKEY queries by
+                resolvers.
+              </div>
             </div>
-          </div>
+            {/* index.html, under the DNSKEY TTL. "the the" is upstream's. */}
+            <Alert type="warning" title="Warning!">
+              You MUST wait for at least the number of seconds specified by the the old TTL value to
+              elapse before making any changes to the DNS keys above to ensure that all recursive
+              resolvers would have expired the DNSKEY records from its cache. For example, if the old
+              TTL value was 3600, then you must wait for 3600 seconds (1 hour) to pass before making
+              any changes to the DNS keys.
+            </Alert>
+          </section>
         </div>
       )}
     </Dialog>
@@ -713,25 +753,45 @@ export function keyActions(k: PrivateKey): {
   }
 }
 
-/** The three footnotes, which appear according to the keys' states. */
-export function stateNotes(keys: PrivateKey[]): string[] {
-  const notes: string[] = []
+type StateNote = 'readyBy' | 'activeBy' | 'retiredRevoked'
 
-  if (keys.some((k) => k.keyType === 'KeySigningKey' && k.state === 'Published')) {
-    notes.push(
-      'A "ready by" timestamp is displayed for a Key Signing Key (KSK) that is Published. Wait until then before adding its DS record to the parent zone.',
-    )
-  }
-  if (keys.some((k) => k.keyType === 'KeySigningKey' && k.state === 'Ready')) {
-    notes.push(
-      'An "active by" timestamp is displayed for a Key Signing Key (KSK) that is Ready. The key will become active automatically.',
-    )
-  }
-  if (keys.some((k) => k.state === 'Retired' || k.state === 'Revoked')) {
-    notes.push('Retired and Revoked keys are removed automatically by the DNS Server.')
-  }
-
+/*
+The three footnotes under the keys, each shown when some key is in its state
+(zone.js:7024-7040): a Published KSK, a Ready KSK, a Retired or Revoked key of
+either type. Upstream's own words, its `<code>` and `<b>` included
+(index.html, `divDnssecPropertiesNote*`).
+*/
+export function stateNotes(keys: PrivateKey[]): StateNote[] {
+  const notes: StateNote[] = []
+  if (keys.some((k) => k.keyType === 'KeySigningKey' && k.state === 'Published')) notes.push('readyBy')
+  if (keys.some((k) => k.keyType === 'KeySigningKey' && k.state === 'Ready')) notes.push('activeBy')
+  if (keys.some((k) => k.state === 'Retired' || k.state === 'Revoked')) notes.push('retiredRevoked')
   return notes
+}
+
+const NOTE_TEXT: Record<StateNote, ReactNode> = {
+  readyBy: (
+    <>
+      The Key State for a newly published Key Signing Key (KSK) must be <code>Ready</code> before you
+      can add a DS record for it. Use the <b>View DS Info</b> option for more details on adding DS
+      record.
+    </>
+  ),
+  activeBy: (
+    <>
+      The Key State for a Key Signing Key (KSK) will automatically switch from <code>Ready</code> to{' '}
+      <code>Active</code> once you have added DS record for it and the DNS Server is able to detect it.
+      Use the <b>View DS Info</b> option for more details on adding DS record. If this is a private
+      zone, then you should manually activate the KSK so that the DNS Server stops the detection
+      process which queries for DS records periodically.
+    </>
+  ),
+  retiredRevoked: (
+    <>
+      The keys with <code>Retired</code> or <code>Revoked</code> Key State will be automatically
+      unpublished and removed when its safe to do so.
+    </>
+  ),
 }
 
 function KeyRow({
@@ -756,68 +816,89 @@ function KeyRow({
   onRetire: () => void
 }) {
   const a = keyActions(k)
+  const [open, setOpen] = useState(false)
+  const detail = useId()
+  /* The date the key moves on, when the server gives one: `ready by` wins, as
+     upstream writes only one of the two (zone.js:6890-6900). */
+  const next =
+    k.stateReadyBy != null
+      ? `(ready by: ${shortDate(k.stateReadyBy)})`
+      : k.stateActiveBy != null
+        ? `(active by: ${shortDate(k.stateActiveBy)})`
+        : null
 
   return (
-    <tr>
-      <td className={styles.mono}>{k.keyTag}</td>
-      <td>{k.keyType}</td>
-      <td>
-        {k.algorithm} ({k.algorithmNumber})
-      </td>
-      <td>
-        {k.state}
-        {k.state === 'Active' && k.isRetiring ? ' (retiring)' : ''}
-      </td>
-      <td className={styles.mono} style={{ fontSize: 11.5 }}>
-        {shortDate(k.stateChangedOn)}
-        {k.stateReadyBy != null && <div>(ready by: {shortDate(k.stateReadyBy)})</div>}
-        {k.stateReadyBy == null && k.stateActiveBy != null && (
-          <div>(active by: {shortDate(k.stateActiveBy)})</div>
-        )}
-      </td>
-      <td>
-        {a.automaticRollover ? (
-          <div className={styles.inline}>
-            <Input
-              mono
-              className={styles.short}
-              aria-label={`Rollover days for ${k.keyTag}`}
-              placeholder="days"
-              value={rollover}
-              onChange={(e) => onRollover(e.target.value)}
+    <>
+      <tr className={open ? styles.openRow : undefined}>
+        <td className={`${tbl.lead} ${styles.tag}`}>{k.keyTag}</td>
+        <td className={tbl.lead}>{k.keyType}</td>
+        <td className={styles.nowrap}>
+          {k.algorithm} <span className={styles.number}>({k.algorithmNumber})</span>
+        </td>
+        <td className={styles.nowrap}>
+          <Tag tone={KEY_STATE_TONE[k.state] ?? 'neutral'}>{k.state}</Tag>
+          {k.state === 'Active' && k.isRetiring ? ' (retiring)' : ''}
+        </td>
+        <td>
+          <span className={styles.date}>{shortDate(k.stateChangedOn)}</span>
+        </td>
+        <td className={tbl.actionsCell}>
+          {/* Each action as the row's icon button, its name in the tooltip;
+              Details last, as on every table's row. */}
+          <div className={tbl.actions}>
+            {a.remove && <RowAction icon="trash" name="Delete" disabled={busy} onClick={onDelete} />}
+            {a.activate && <RowAction icon="check" name="Activate" disabled={busy} onClick={onActivate} />}
+            {a.rollover && <RowAction icon="refresh" name="Rollover" disabled={busy} onClick={onRolloverNow} />}
+            {a.retire && <RowAction icon="power" name="Retire" disabled={busy} onClick={onRetire} />}
+            <RowAction
+              icon={open ? 'chevronDown' : 'chevronRight'}
+              name="Details"
+              aria-expanded={open}
+              aria-controls={detail}
+              onClick={() => setOpen((v) => !v)}
             />
-            <Button size="sm" disabled={busy} onClick={onSaveRollover}>
-              Save
-            </Button>
           </div>
-        ) : (
-          '—'
-        )}
-      </td>
-      <td className={tbl.actionsCell}>
-        <div className={tbl.actions}>
-          {a.remove && (
-            <Button size="sm" disabled={busy} onClick={onDelete}>
-              Delete
-            </Button>
-          )}
-          {a.activate && (
-            <Button size="sm" disabled={busy} onClick={onActivate}>
-              Activate
-            </Button>
-          )}
-          {a.rollover && (
-            <Button size="sm" disabled={busy} onClick={onRolloverNow}>
-              Rollover
-            </Button>
-          )}
-          {a.retire && (
-            <Button size="sm" disabled={busy} onClick={onRetire}>
-              Retire
-            </Button>
-          )}
-        </div>
-      </td>
-    </tr>
+        </td>
+      </tr>
+      {open && (
+        <tr id={detail} className={styles.detailRow}>
+          <td colSpan={6}>
+            <dl className={styles.detail}>
+              {next != null && (
+                <div>
+                  <dt>State Changed</dt>
+                  <dd>
+                    <span className={styles.date}>{shortDate(k.stateChangedOn)}</span>{' '}
+                    <span className={styles.when}>{next}</span>
+                  </dd>
+                </div>
+              )}
+              <div>
+                <dt>Rollover (days)</dt>
+                <dd>
+                  {a.automaticRollover ? (
+                    <span className={styles.rollover}>
+                      <Input
+                        mono
+                        className={styles.days}
+                        aria-label={`Rollover days for ${k.keyTag}`}
+                        placeholder="days"
+                        value={rollover}
+                        onChange={(e) => onRollover(e.target.value)}
+                      />
+                      <Button size="sm" disabled={busy} onClick={onSaveRollover}>
+                        Save
+                      </Button>
+                    </span>
+                  ) : (
+                    <span className={styles.none}>—</span>
+                  )}
+                </dd>
+              </div>
+            </dl>
+          </td>
+        </tr>
+      )}
+    </>
   )
 }

@@ -43,7 +43,8 @@ describe('SSO: load', () => {
       server()
       render(<Sso {...props} />)
       await screen.findByLabelText('Scope Name 1')
-      expect(screen.getByText(`${window.location.origin}/dns/sso/callback`)).toBeInTheDocument()
+      // In the first note and in the Redirect URI to copy (deviation 23).
+      expect(screen.getAllByText(`${window.location.origin}/dns/sso/callback`).length).toBeGreaterThanOrEqual(1)
     } finally {
       meta.remove()
       window.history.replaceState(null, '', '/')
@@ -349,11 +350,11 @@ describe('SSO: dense form', () => {
     expect(screen.getAllByText('Single Sign-On (SSO)').filter((e) => e.closest('nav') == null)).toHaveLength(1)
   })
 
-  it('the two `Warning!` come BEFORE the first control, and the `Note!` after', async () => {
+  it('the two `Warning!` come BEFORE the first control, and the eight `Note!` after, each in its block', async () => {
     server()
     render(<Sso {...props} />)
     const first = await screen.findByLabelText('Enable Single Sign-On (SSO)')
-    const alerts = [...document.querySelectorAll('[role="alert"]')]
+    const alerts = [...document.querySelectorAll('[role="note"]')]
     const warnings = alerts.filter((a) => /Warning!/.test(a.textContent ?? ''))
     const notes = alerts.filter((a) => /Note!/.test(a.textContent ?? ''))
     expect(warnings).toHaveLength(2)
@@ -372,15 +373,13 @@ describe('SSO: dense form', () => {
   column never takes width the controls have at 1440. See the note beside
   `SECTIONS` in `Sso.tsx`.
   */
-  it('carries the section index: the four blocks, by their titles, leading to their anchors', async () => {
+  it('has no section index any more: the four blocks are read in one scroll (deviation 23)', async () => {
     server()
     render(<Sso {...props} />)
     await screen.findByLabelText('Authority (Issuer)')
-    const [strip, column] = screen.getAllByRole('navigation', { name: 'On this page' })
-    for (const nav of [strip, column]) {
-      const links = within(nav).getAllByRole('link')
-      expect(links.map((a) => a.textContent)).toEqual(['Single Sign-On (SSO)', 'SSO User Sign Up', 'Scopes', 'Group Map (Optional)'])
-      for (const a of links) expect(document.getElementById(a.getAttribute('href')!.slice(1))).not.toBeNull()
+    expect(screen.queryByRole('navigation', { name: 'On this page' })).toBeNull()
+    for (const t of ['Single Sign-On (SSO)', 'SSO User Sign Up', 'Scopes', 'Group Map (Optional)']) {
+      expect(screen.getByRole('heading', { name: t })).toBeInTheDocument()
     }
   })
 
@@ -408,5 +407,35 @@ describe('SSO: dense form', () => {
     render(<Sso {...props} />)
     await screen.findByLabelText('Authority (Issuer)')
     expect(screen.queryByLabelText('Cluster Node')).not.toBeInTheDocument()
+  })
+})
+
+/* Deviation 23: the saved state on the header line, and Refresh beside the title. */
+describe('SSO: the header says its state', () => {
+  it('a fresh install reads Disabled and Not configured', async () => {
+    server()
+    render(<Sso {...props} />)
+    await screen.findByLabelText('Scope Name 1')
+    const header = screen.getByRole('heading', { level: 1 }).closest('div')!.parentElement!
+    expect(within(header).getByText('Disabled')).toBeInTheDocument()
+    expect(within(header).getByText('Not configured')).toBeInTheDocument()
+  })
+
+  it('an enabled provider with its authority and client ID reads Enabled only', async () => {
+    server({ ssoEnabled: true, ssoAuthority: 'https://auth.example.com', ssoClientId: 'dns' })
+    render(<Sso {...props} />)
+    await screen.findByLabelText('Scope Name 1')
+    const header = screen.getByRole('heading', { level: 1 }).closest('div')!.parentElement!
+    expect(within(header).getByText('Enabled')).toBeInTheDocument()
+    expect(within(header).queryByText('Not configured')).toBeNull()
+  })
+
+  it('Refresh reads the config again', async () => {
+    const spy = server()
+    render(<Sso {...props} />)
+    await screen.findByLabelText('Scope Name 1')
+    await userEvent.click(screen.getByRole('button', { name: 'Refresh' }))
+    await screen.findByLabelText('Scope Name 1')
+    expect(spy.mock.calls.filter((c) => c[0] === 'admin/sso/get')).toHaveLength(2)
   })
 })

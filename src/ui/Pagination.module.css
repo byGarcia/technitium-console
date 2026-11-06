@@ -5,26 +5,32 @@ measured 24. The solid one wins, which is what was drawn and what is told apart 
 a glance.
 */
 
-.pg { display: flex; gap: var(--s-2); flex-wrap: wrap; }
-
+.pg { display: flex; gap: var(--s-2); flex-wrap: wrap; align-items: center; }
+/* Redrawn on 2026-11-05: flat buttons of the control layer, a little larger to
+   hit, and the current page the chosen fill with its number in amber, the way a
+   chosen period or type is drawn (ui/Segmented). */
 .pgb {
-  min-width: 24px;
-  height: 24px;
-  padding: 0 var(--s-3);
+  min-width: 28px;
+  height: 28px;
+  padding: 0 var(--s-4);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border-radius: var(--r-2);
-  border: 1px solid var(--line);
-  background: var(--pan2);
+  border: 1px solid var(--btn-line);
+  background: var(--btn);
   color: var(--mute);
   font-size: var(--t-3);
   font-family: inherit;
+  font-variant-numeric: tabular-nums;
   cursor: pointer;
+  transition: background var(--t-fast), border-color var(--t-fast), color var(--t-fast);
 }
-
-.pgb:hover { color: var(--ink); }
-
+.pgb:hover { color: var(--ink); background: var(--btn-hover); border-color: var(--line-hover); }
+.pgb:focus-visible { outline: var(--focus); outline-offset: var(--focus-offset); }
 .pgb[aria-current='true'] {
-  background: var(--acc);
-  border-color: var(--acc);
-  color: var(--on-acc);
+  background: var(--seg-active);
+  border-color: var(--acc-ink);
+  color: var(--acc-ink);
   font-weight: 600;
 }

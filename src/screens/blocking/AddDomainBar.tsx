@@ -1,7 +1,8 @@
-import { useId, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
+import { dropParams, readParam } from '../../lib/url-state'
 import { addDomain, type DomainList } from '../../api/zonelists'
 import { Panel, Body } from '../../ui/Panel'
-import { Field, Input } from '../../ui/Field'
+import { Input } from '../../ui/Field'
 import { Loading } from '../../ui/Empty'
 import { PermissionButton } from '../../ui/PermissionButton'
 import { loadQuickList, type QuickEntry } from '../../lib/quick-lists'
@@ -39,6 +40,12 @@ Enter still blocks: Check is never the form's submit.
 
 The verdict answers the name it was asked for, so it goes as soon as the field
 changes, and after a Block or an Allow, which changes the answer.
+
+A COMMAND BAR (2026-11-06): one line across the Overview under its header, the
+title on the left as the field's visible name, then the field, Block, Allow and
+Check, and the answer under the whole line. It was a panel with its title in a band
+and the field labelled `Domain` over it, beside the status block. The field is still
+named `Domain`, for assistive technology: the title beside it says what it is for.
 */
 export function AddDomainBar({
   token,
@@ -59,14 +66,29 @@ export function AddDomainBar({
   /** Why the last check has no verdict: an empty field, or the server's message. */
   const [problem, setProblem] = useState<string | null>(null)
   const problemId = useId()
+  const fieldId = useId()
   const [catalog, setCatalog] = useState<QuickEntry[]>([])
   /** Numbers the checks, so a slow answer cannot land over a newer question. */
   const asked = useRef(0)
 
   const checkNeed = missing(permissions, 'DnsClient.canView')
 
-  async function check() {
-    const domain = field.trim()
+  /*
+  `?check=<domain>`: the command palette's `Check <domain> in Blocking` (deviation
+  26). The name goes into the field and is checked once, as a click on Check would;
+  the parameter leaves the bar by replacing the entry.
+  */
+  useEffect(() => {
+    const asked = readParam('check')
+    if (asked == null) return
+    dropParams(['check'])
+    setField(asked)
+    void check(asked)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  async function check(name?: string) {
+    const domain = (name ?? field).trim()
     if (domain === '') {
       forget()
       setProblem('Please enter a domain name to check.')
@@ -138,8 +160,8 @@ export function AddDomainBar({
   }
 
   return (
-    <Panel title="Check, block or allow a domain">
-      <Body>
+    <Panel className={styles.commandPanel}>
+      <Body className={styles.commandBody}>
         <form
           className={styles.add}
           onSubmit={(e) => {
@@ -147,25 +169,33 @@ export function AddDomainBar({
             void run('blocked')
           }}
         >
-          <Field label="Domain">
-            {(id) => (
-              <Input
-                id={id}
-                ref={entry}
-                mono
-                className={styles.bad}
-                search
-                placeholder="example.com"
-                value={field}
-                aria-invalid={problem != null || undefined}
-                aria-describedby={problem != null ? problemId : undefined}
-                onChange={(e) => {
-                  setField(e.target.value)
-                  forget()
-                }}
-              />
+          <h2 className={styles.commandTitle}>Check, block or allow a domain</h2>
+          <div className={styles.commandField}>
+            <label className={styles.offscreen} htmlFor={fieldId}>
+              Domain
+            </label>
+            <Input
+              id={fieldId}
+              ref={entry}
+              mono
+              className={styles.bad}
+              search
+              placeholder="example.com"
+              value={field}
+              aria-invalid={problem != null || undefined}
+              aria-describedby={problem != null ? problemId : undefined}
+              onChange={(e) => {
+                setField(e.target.value)
+                forget()
+              }}
+            />
+            {/* Under the field it is about, not under the title (2026-11-06). */}
+            {problem != null && (
+              <div id={problemId} className={styles.invalid} aria-live="polite">
+                {problem}
+              </div>
             )}
-          </Field>
+          </div>
           <PermissionButton
             type="submit"
             variant="primary"
@@ -194,11 +224,6 @@ export function AddDomainBar({
         {/* One live region for the whole answer: the wait and the verdict that
             replaces it are announced once each. */}
         <div aria-live="polite">
-          {problem != null && (
-            <div id={problemId} className={styles.invalid}>
-              {problem}
-            </div>
-          )}
           {checking && <Loading compact announce={false} />}
           {verdict != null && <DomainCheck verdict={verdict} catalog={catalog} />}
         </div>

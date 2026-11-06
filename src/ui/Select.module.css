@@ -59,6 +59,28 @@ over the form and has to read as something in front.
   border-radius: var(--r-3);
   background: var(--pan2);
   box-shadow: var(--e-2), var(--edge);
+  animation: list-in var(--t-fast);
+}
+
+/*
+It opens with a short fade and a slide of a few pixels away from its trigger
+(2026-11-05): down when it hangs below the field, up when it opened above it
+(`data-up`, set by `Select.tsx`). The console's one curve and its fast step.
+
+The slide is the `translate` property, and only inside the keyframes: there is no
+fill, so once the 120 ms are over the list carries no transform at all. That
+matters because the list is `position: fixed` and is measured against the window,
+and a transform left on it (or on anything around a dialog) would make it a
+containing block for whatever is fixed inside it and break that measurement.
+*/
+.list[data-up='true'] { animation-name: list-in-up; }
+
+@keyframes list-in {
+  from { opacity: 0; translate: 0 calc(-1 * var(--s-2)); }
+}
+
+@keyframes list-in-up {
+  from { opacity: 0; translate: 0 var(--s-2); }
 }
 
 .option {
@@ -149,4 +171,5 @@ in view however far down the options go.
 @media (prefers-reduced-motion: reduce) {
   .trigger,
   .chevron { transition: none; }
+  .list { animation: none; }
 }

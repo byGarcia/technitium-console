@@ -5,17 +5,23 @@ import {
 } from '../../api/dashboard'
 import { percentage, hasData, Legend, useHidden } from '../dashboard/Dashboard'
 import { Chart } from '../dashboard/Chart'
+import { Change } from '../dashboard/Figures'
+import { changes, previousLabel, previousQuery, windowOf, type Changes, type PreviousQuery } from '../dashboard/compare'
 import { InChrome } from '../../app/ChromeSlot'
 import { ClusterNodeSelect, AGGREGATE, type ClusterNode } from '../../ui/ClusterNodeSelect'
 import { SectionHeader } from '../../ui/SectionHeader'
 import { Segmented } from '../../ui/Segmented'
 import { Panel, Body } from '../../ui/Panel'
+import { Card, StackBar, statStyles } from '../../ui/StatCard'
+import { useCountUp } from '../../ui/useCountUp'
 import { Empty, Loading, Failure } from '../../ui/Empty'
 import { Notifier } from '../../ui/Notifier'
 import { noticeFromFailure, type Notice } from '../../lib/notice'
 import { StaleData } from '../StaleData'
 import { AddDomainBar } from './AddDomainBar'
-import { StatusPanel } from './StatusPanel'
+import { BlockingStatus } from './BlockingStatus'
+import { BlockedBy } from './BlockedBy'
+import { useLoggingApp } from './logging-app'
 import { TopTable } from './TopTable'
 import { RecentBlocked } from './RecentBlocked'
 import { LAST_HOUR_REFRESH_MS, useLiveView } from '../dashboard/useLive'
@@ -26,18 +32,34 @@ import styles from './Overview.module.css'
 
 /*
 The Overview tab: what blocking is doing at a glance, built from what Technitium
-already sends. The figures, the bars and the ring come from `dashboard/stats/get`, the
-Dashboard's own call, and they share its node memory (`dashboardClusterNode`): same
-data, so choosing a node here and seeing another there would be a contradiction.
+already sends. The figures, the changes and the bars come from `dashboard/stats/get`,
+the Dashboard's own call, and they share its node memory (`dashboardClusterNode`):
+same data, so choosing a node here and seeing another there would be a contradiction.
 
 The five fixed periods and not Custom: a range of your own is the Dashboard's job.
 
+LAID OUT ON 2026-11-06, top to bottom: the header with the blocking status and its
+menu beside the period (`BlockingStatus.tsx`); the check, block or allow command bar
+(`AddDomainBar.tsx`); the strip of four figures; Queries over time with Blocked by
+client beside it (`BlockedBy.tsx`, read from `logs/query`); the two top tables; and
+Recently Blocked. The "Blocked share" ring that sat beside the chart said the strip's
+percentage a second time and is gone.
+
 The words are OURS except `Total Queries` and `Blocked`, upstream's Dashboard tiles:
-the title `Overview` and its subtitle (`OVERVIEW_SUBTITLE`), `Period`, `Block List Domains`, `Your Rules` and its `blocked` and
-`allowed`, the `of total` after Blocked's share, the panel titles (`Statistics`, `Queries over time`, `Blocked share`), the
-`Allowed` series, the ring's `Share` and `Blocked share: N%`, and the chart's label.
+the title `Overview` and its subtitle (`OVERVIEW_SUBTITLE`), `Period`, `Block List Domains`, `Your Rules` and its `Blocked` and
+`Allowed`, the `of total` after Blocked's share, the strip's two bars' `Blocked N, Allowed M`, the panel titles (`Statistics`, `Queries over time`), the
+`Allowed` series and the chart's label. The changes against the previous period
+(`▲ N%`, `vs previous hour` and the rest) are the Dashboard's (deviation 7,
+`dashboard/Figures.tsx`), here on Total Queries and Blocked only.
 The two gap sentences are the ones this console's Dashboard already uses.
 */
+
+/** The previous period, asked for one answer of the period on screen. */
+interface Previous {
+  for: DashboardStats
+  query: PreviousQuery
+  data: DashboardStats
+}
 
 /** What the tab is for, under its title. OURS (CONVENTIONS.md, deviation 2). */
 export const OVERVIEW_SUBTITLE = 'How much is blocked and which domains, over the period you pick, and whether blocking is on.'
@@ -102,67 +124,95 @@ function Bars({ chart, resetOn }: { chart: ChartData; resetOn: unknown }) {
   )
 }
 
-/* A figure's trend, beside it: decorative, so hidden from assistive technology (the
-   figure says the number). */
-function Spark({ data, tone }: { data: number[]; tone: string }) {
-  if (data.length < 2) return null
-  const max = Math.max(...data, 1)
-  const step = 100 / (data.length - 1)
-  const points = data.map((v, i) => `${(i * step).toFixed(2)},${(30 - (v / max) * 28).toFixed(2)}`).join(' ')
-  return (
-    <svg className={`${styles.spark} ${tone}`} viewBox="0 0 100 32" preserveAspectRatio="none" aria-hidden="true">
-      <polyline points={`0,32 ${points} 100,32`} fill="currentColor" fillOpacity="0.18" stroke="none" />
-      <polyline points={points} fill="none" stroke="currentColor" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
-    </svg>
-  )
+/* A figure of the strip, counting up once as its card comes in (`ui/useCountUp`),
+   in the reader's own digit grouping as the stock tiles write it. Before the first
+   answer it is upstream's "no value". */
+function Figure({ value }: { value: number | undefined }) {
+  return <div className={statStyles.figure}>{value == null ? '—' : <Grouped value={value} />}</div>
 }
 
-function Kpi({
-  value,
-  sub,
-  label,
-  children,
-}: {
-  /** Two figures side by side (`Your Rules`) come as pairs, each number over its word. */
-  value: string | [string, string]
-  sub?: string | [string, string]
-  label: string
-  children?: ReactNode
-}) {
-  const paired = Array.isArray(value) && Array.isArray(sub)
+function Grouped({ value }: { value: number }) {
+  return <>{useCountUp(value).toLocaleString()}</>
+}
+
+/*
+WHAT BLOCKING IS DOING, AT A GLANCE (2026-11-06): the four figures as one strip of
+`ui/StatCard` cells, the strip every list screen opens with (Cache, Zones, Apps,
+Administration), in the series colours the charts below use. Blocked carries its
+share of the period and the bar of how the period split (Blocked against what got
+through, the bars' own two series); Your Rules carries how many rules there are
+(the server's two counts added), each count, and the same kind of bar. The trends that sat beside Total Queries and Blocked are gone: the
+chart under the strip draws the same series over the same period, larger.
+
+Total Queries and Blocked also carry their change against the previous period of the
+same length, as the Dashboard's cards do (deviation 7): what it is measured against
+said once, in Total Queries (`vs previous hour`), the arrow and the size alone in
+Blocked. Nothing is drawn when the change is not exact and current (`changes`).
+*/
+function Strip({ s, shift, against }: { s: DashboardStats['stats'] | undefined; shift: Changes | null; against: string }) {
+  const allowed = s == null ? 0 : s.totalQueries - s.totalBlocked
   return (
-    <Panel className={shared.centred}>
-      <Body>
-        <div className={`${shared.kpi}${children != null ? ` ${styles.trended}` : ''}`}>
-          <div className={`${shared.kpiText}${paired ? ` ${shared.kpiPaired}` : ''}`}>
-            {paired ? (
-              /* Both lines are laid on one two-column grid, so each number stands
-                 over its own word: written as one string, the 7 of "2 · 7" sat over
-                 the middle of "blocked · allowed". */
-              <>
-                <span className={`${shared.kpiValue} ${shared.kpiRow}`}>
-                  <span>{value[0]}</span>
-                  <span>{value[1]}</span>
-                </span>
-                <span className={`${shared.kpiSub} ${shared.kpiRow}`}>
-                  <span>{sub[0]}</span>
-                  <span>{sub[1]}</span>
-                </span>
-              </>
-            ) : (
-              <>
-                <span className={shared.kpiValue}>{value}</span>
-                {/* A figure without a sub-line keeps an empty one, a full line high, so the four
-                    labels sit on one line as the drawing has them. */}
-                <span className={shared.kpiSub}>{sub ?? '\u00a0'}</span>
-              </>
-            )}
-            <span className={shared.kpiLabel}>{label}</span>
-          </div>
-          {children}
+    <div className={`${statStyles.grid} ${shared.inStack} ${styles.strip}`}>
+      <Card title="Total Queries" colour="var(--ch-total)">
+        <div className={statStyles.body}>
+          <Figure value={s?.totalQueries} />
+          {s != null && shift?.totalQueries != null && (
+            <div className={statStyles.caption}>
+              <Change ratio={shift.totalQueries} against={against} long />
+            </div>
+          )}
         </div>
-      </Body>
-    </Panel>
+      </Card>
+      <Card title="Blocked" colour="var(--ch-block)">
+        <div className={statStyles.body}>
+          <Figure value={s?.totalBlocked} />
+          {s != null && (
+            <div className={statStyles.caption}>
+              <span>{`${percentage(s.totalBlocked, s.totalQueries)} of total`}</span>
+              <Change ratio={shift?.totalBlocked} against={against} />
+            </div>
+          )}
+          {s != null && (
+            <StackBar
+              label={`Blocked ${s.totalBlocked.toLocaleString()}, Allowed ${allowed.toLocaleString()}`}
+              parts={[
+                { key: 'Blocked', name: 'Blocked', value: s.totalBlocked, colour: 'var(--ch-block)' },
+                { key: 'Allowed', name: 'Allowed', value: allowed, colour: 'var(--ch-ok)' },
+              ]}
+            />
+          )}
+        </div>
+      </Card>
+      <Card title="Block List Domains" colour="var(--ch-drop)">
+        <div className={statStyles.body}>
+          <Figure value={s?.blockListZones} />
+        </div>
+      </Card>
+      <Card title="Your Rules" colour="var(--ch-ok)">
+        <div className={statStyles.body}>
+          <Figure value={s == null ? undefined : s.blockedZones + s.allowedZones} />
+          <dl className={statStyles.facts} aria-label="Your Rules">
+            <div>
+              <dt>Blocked</dt>
+              <dd>{s == null ? '—' : <Grouped value={s.blockedZones} />}</dd>
+            </div>
+            <div>
+              <dt>Allowed</dt>
+              <dd>{s == null ? '—' : <Grouped value={s.allowedZones} />}</dd>
+            </div>
+          </dl>
+          {s != null && (
+            <StackBar
+              label={`Blocked ${s.blockedZones.toLocaleString()}, Allowed ${s.allowedZones.toLocaleString()}`}
+              parts={[
+                { key: 'Blocked', name: 'Blocked', value: s.blockedZones, colour: 'var(--ch-block)' },
+                { key: 'Allowed', name: 'Allowed', value: s.allowedZones, colour: 'var(--ch-ok)' },
+              ]}
+            />
+          )}
+        </div>
+      </Card>
+    </div>
   )
 }
 
@@ -203,6 +253,10 @@ export function Overview({
   const [stale, setStale] = useState(false)
   const [lastGood, setLastGood] = useState<string | null>(null)
   const [notice, setNotice] = useState<Notice | null>(null)
+  /** The previous period of the answer on screen, for the strip's changes. */
+  const [prev, setPrev] = useState<Previous | null>(null)
+  const logsNeed = missing(permissions, 'Logs.canView')
+  const app = useLoggingApp(token, logsNeed == null)
 
   /*
   Read through refs, not state, for the reason Lists.tsx gives: as a dependency of
@@ -223,11 +277,34 @@ export function Overview({
     const r = await getDashboardStats(token, range, undefined, node)
     if (mine !== asked.current) return
     if (r.kind === 'ok') {
-      setData(r.data)
-      setFailure(false)
-      setStale(false)
-      setLastGood(new Date().toISOString())
-      hadData.current = true
+      /*
+      The previous period, for the strip's two changes: the Dashboard's second read
+      (deviation 7, `dashboard/compare.ts`), `type=Custom` with the instants worked
+      out from this answer's own labels. A first answer is drawn at once and its
+      changes follow; a reload waits for both, so the changes never blink.
+      */
+      const query = previousQuery(windowOf(r.data.mainChartData))
+      const ask = async (): Promise<Previous | null> => {
+        if (query == null) return null
+        const p = await getDashboardStats(token, 'Custom', { start: query.start, end: query.end }, node)
+        return p.kind === 'ok' ? { for: r.data, query, data: p.data } : null
+      }
+      const show = (p: Previous | null) => {
+        setData(r.data)
+        setPrev(p)
+        setFailure(false)
+        setStale(false)
+        setLastGood(new Date().toISOString())
+        hadData.current = true
+      }
+      if (!hadData.current) {
+        show(null)
+        const p = await ask()
+        if (mine === asked.current) setPrev(p)
+      } else {
+        const p = await ask()
+        if (mine === asked.current) show(p)
+      }
       return
     }
     /*
@@ -250,6 +327,7 @@ export function Overview({
   useEffect(() => {
     hadData.current = false
     setData(null)
+    setPrev(null)
     setFailure(false)
     setStale(false)
     void load()
@@ -268,8 +346,17 @@ export function Overview({
     const arm = () => {
       if (!cancelled && !document.hidden) timer = window.setTimeout(() => void again(), LAST_HOUR_REFRESH_MS)
     }
+    /* One chain only: a tab shown again while a read is still out waits for it,
+       which then arms the next turn itself. */
+    let running = false
     async function again() {
-      await load()
+      if (running) return
+      running = true
+      try {
+        await load()
+      } finally {
+        running = false
+      }
       arm()
     }
     function onVisibility() {
@@ -300,22 +387,36 @@ export function Overview({
   /*
   Memoised on the response: Chart.tsx destroys and rebuilds its canvas on every new
   `data` reference, so a notice or any other render would otherwise redraw and
-  re-animate both charts with the same numbers.
+  re-animate the chart with the same numbers.
   */
   const chart = useMemo(() => (view != null ? blockingChart(view.mainChartData) : null), [view])
-  const share = useMemo<ChartData | null>(
-    () =>
-      view != null
-        ? {
-            /* Blocked first: the ring starts at the top with it, as drawn and as the
-               bars stack it on the baseline. */
-            labels: ['Blocked', 'Allowed'],
-            datasets: [{ label: 'Share', data: [view.stats.totalBlocked, view.stats.totalQueries - view.stats.totalBlocked] }],
-          }
-        : null,
-    [view],
-  )
   const loading = data == null && !failure
+
+  /* Each change only for the answer on screen, as the Dashboard draws its own. */
+  const settled = data != null && view != null && prev != null && prev.for === data
+  const shift = useMemo(
+    () => (settled && data != null && view != null && prev != null ? changes(data, view, prev.data, prev.query) : null),
+    [settled, data, view, prev],
+  )
+  const against = settled && prev != null ? previousLabel(prev.query.window, range) : ''
+
+  const aggregate = clusterInitialised && node === AGGREGATE
+  /* Without a query logs app the card is not drawn: Recently Blocked says why, once. */
+  const side = logsNeed != null
+    ? <Locked title="Blocked by client" need={logsNeed} />
+    : app.kind === 'none'
+      ? null
+      : (
+          <BlockedBy
+            token={token}
+            app={app}
+            node={node}
+            aggregate={aggregate}
+            serverDomain={serverDomain}
+            names={data?.topClients ?? []}
+            refreshOn={data}
+          />
+        )
 
   return (
     <>
@@ -335,13 +436,17 @@ export function Overview({
         subtitle={OVERVIEW_SUBTITLE}
         tabs={tabs}
         actions={
-          <Segmented
-            label="Period"
-            live="LastHour"
-            options={PERIODS.map((r) => ({ id: r, label: RANGE_LABEL[r] }))}
-            active={range}
-            onChoose={setRange}
-          />
+          <div className={styles.headActions}>
+            <BlockingStatus token={token} permissions={permissions} onNotice={setNotice} />
+            <Segmented
+              label="Period"
+              live="LastHour"
+              compact
+              options={PERIODS.map((r) => ({ id: r, label: RANGE_LABEL[r] }))}
+              active={range}
+              onChoose={setRange}
+            />
+          </div>
         }
       />
       <Notifier notice={notice} onClose={() => setNotice(null)} />
@@ -349,49 +454,25 @@ export function Overview({
       <div className={shared.stack}>
         {stale && <StaleData since={lastGood} onRetry={() => void load()} />}
 
+        <AddDomainBar
+          token={token}
+          permissions={permissions}
+          onNotice={setNotice}
+          onChanged={() => void load()}
+        />
+
         {statsNeed != null ? (
           <Locked title="Statistics" need={statsNeed} />
         ) : (
-          <div className={shared.kpis}>
-            <Kpi value={s ? s.totalQueries.toLocaleString() : '—'} label="Total Queries">
-              {view && <Spark data={series(view.mainChartData, 'Total')} tone={styles.sparkTotal} />}
-            </Kpi>
-            <Kpi
-              value={s ? s.totalBlocked.toLocaleString() : '—'}
-              sub={s ? `${percentage(s.totalBlocked, s.totalQueries)} of total` : undefined}
-              label="Blocked"
-            >
-              {view && <Spark data={series(view.mainChartData, 'Blocked')} tone={styles.sparkBlocked} />}
-            </Kpi>
-            <Kpi value={s ? s.blockListZones.toLocaleString() : '—'} label="Block List Domains" />
-            <Kpi
-              value={s ? [s.blockedZones.toLocaleString(), s.allowedZones.toLocaleString()] : '—'}
-              sub={s ? ['blocked', 'allowed'] : undefined}
-              label="Your Rules"
-            />
-          </div>
+          <Strip s={s} shift={shift} against={against} />
         )}
 
-        <div className={`${shared.row2} ${styles.checkRow}`}>
-          <StatusPanel token={token} permissions={permissions} onNotice={setNotice} />
-          <AddDomainBar
-            token={token}
-            permissions={permissions}
-            onNotice={setNotice}
-            onChanged={() => void load()}
-          />
-        </div>
-
         {/* Without Dashboard.View every panel fed by the stats keeps its place and its
-            title, locked: the screen
-            does not change shape with who looks. */}
-        {statsNeed != null ? (
-          <div className={shared.row21}>
+            title, locked: the screen does not change shape with who looks. */}
+        <div className={side != null ? `${shared.row21} ${styles.chartRow}` : undefined}>
+          {statsNeed != null ? (
             <Locked title="Queries over time" need={statsNeed} />
-            <Locked title="Blocked share" need={statsNeed} />
-          </div>
-        ) : (
-          <div className={shared.row21}>
+          ) : (
             <Panel title="Queries over time">
               <Body>
                 {chart && hasData(chart) ? (
@@ -401,32 +482,9 @@ export function Overview({
                 )}
               </Body>
             </Panel>
-            <Panel title="Blocked share">
-              <Body>
-                {s && share && s.totalQueries > 0 ? (
-                  /* No legend: the hole says which share it is, and Chart.js's own
-                     would be a second one inside the canvas. The figure is laid over
-                     the canvas box, whose centre is the ring's. */
-                  <div className={styles.ring}>
-                    <Chart
-                      type="doughnut"
-                      height={180}
-                      separateLegend
-                      data={share}
-                      aria={`Blocked share: ${percentage(s.totalBlocked, s.totalQueries)}`}
-                    />
-                    <span className={styles.ringValue} aria-hidden="true">
-                      {percentage(s.totalBlocked, s.totalQueries)}
-                      <span className={styles.ringLabel}>Blocked</span>
-                    </span>
-                  </div>
-                ) : (
-                  <Gap failure={failure} loading={loading} announce={false} />
-                )}
-              </Body>
-            </Panel>
-          </div>
-        )}
+          )}
+          {side}
+        </div>
 
         {statsNeed != null ? (
           <div className={shared.row2}>
@@ -462,7 +520,7 @@ export function Overview({
           token={token}
           permissions={permissions}
           node={node}
-          aggregate={clusterInitialised && node === AGGREGATE}
+          aggregate={aggregate}
           serverDomain={serverDomain}
           refreshOn={s?.totalBlocked}
         />

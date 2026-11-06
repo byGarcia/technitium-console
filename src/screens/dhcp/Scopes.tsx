@@ -1,12 +1,15 @@
 import type { ReactNode } from 'react'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import {
   deleteScope,
   disableScope,
   enableScope,
   getScope,
+  listLeases,
   listScopes,
   setScope,
+  type DhcpLease,
+  type DhcpScope,
   type DhcpScopeRow,
 } from '../../api/dhcp'
 import { Confirm } from '../../ui/Confirm'
@@ -14,7 +17,6 @@ import { Button } from '../../ui/Button'
 import { SectionHeader } from '../../ui/SectionHeader'
 import { errorNotice, type Notice } from './notices'
 import { formFromScope, blankForm, type ScopeForm as Form } from './model'
-import { ScopeForm } from './ScopeForm'
 import { Failure, Loading } from '../../ui/Empty'
 import { Tag } from '../../ui/Tag'
 import tbl from '../../ui/Table.module.css'
@@ -23,6 +25,13 @@ import { RowAction, Th, useSort, type Keys, Table } from '../../ui/Table'
 import { Menu } from '../../ui/Menu'
 import { noticeFromFailure } from '../../lib/notice'
 import { Notifier } from '../../ui/Notifier'
+import { DataFoot, DataTable, End, Grow } from '../../ui/DataTable'
+import { Field, Input, Select } from '../../ui/Field'
+import { dropParams, readParam, writeParams } from '../../lib/url-state'
+import { ScopeSummary } from './ScopeSummary'
+import { ScopePage } from './ScopePage'
+import { leasesPerScope, matchesScope, rangeSize } from './pool'
+import { Q, SCOPE, SCOPE_PARAMS, STATE, onDhcpTab, readTabParam, writeScope } from './dhcp-url'
 
 /*
 DHCP › Scopes (dhcp.js:201-684).
@@ -39,6 +48,21 @@ are replicated as they are:
   4. **The permission to delete a scope is `Delete`, not `Modify`**
      (`WebServiceDhcpApi.cs:761`), while enabling and disabling are `Modify`.
      Saving is `Modify`.
+
+Deviation 19 (2026-11-06), laid out as Zones is:
+
+  · The list: three cards (`ScopeSummary.tsx`), then ONE card that finds and shows
+    (`ui/DataTable`): a Search over the name and the addresses and a State filter,
+    which the All Scopes card also sets, both narrowing the list on screen; one
+    line per scope (Name, Range, Subnet Mask, Interface, Leases, Status), its
+    Network and Broadcast under the row's `Details`. The name opens the scope;
+    `Edit Scope` and `Delete Scope` are in the row's menu, Enable or Disable beside
+    it. The cards and the Leases column read `dhcp/leases/list` beside
+    `scopes/list`, the one call the deviation adds; a failure of it touches nothing
+    else on the tab.
+  · A scope opens as a page (`ScopePage.tsx`): its header, four cards, its form.
+  · The address bar keeps the search (`?q=`), the state (`?state=`) and the open
+    scope (`?scope=`, pushed, so Back returns to the list; `dhcp-url.ts`).
 */
 
 export interface ScopesProps {
@@ -53,18 +77,28 @@ export interface ScopesProps {
   /** Told whether the node select must be locked: while an existing scope is
    *  being edited, as dhcp.js:479 disables it and 217 enables it again. */
   onLockNode?: (locked: boolean) => void
+  /** A scope's page asks to see its leases: the Leases tab, narrowed to it. */
+  onOpenLeases?: (scope: string) => void
 }
 
-type Editing = { title: 'Add Scope' | 'Edit Scope'; form: Form }
+type Page = { mode: 'add'; form: Form } | { mode: 'edit'; name: string; scope: DhcpScope; form: Form }
 
-/* `sortTable('tableDhcpScopesBody', 0..3)`. It sorts by the cell's text, which
-   in the two composite columns is their two label/value pairs. */
-const KEYS: Keys<DhcpScopeRow> = {
-  name: (s) => s.name,
-  range: (s) => `Range ${s.startingAddress} - ${s.endingAddress} Mask ${s.subnetMask}`,
-  network: (s) => `Network ${s.networkAddress} Broadcast ${s.broadcastAddress}`,
-  interface: (s) => s.interfaceAddress ?? '',
+/* `sortTable('tableDhcpScopesBody', 0..3)`. It sorts by the cell's text. The
+   Leases column (deviation 19) sorts by count, padded so the text sort `useSort`
+   does reads it as a number; the counts come from the leases, so the keys are
+   built with them. */
+function sortKeys(per: Map<string, number>): Keys<DhcpScopeRow> {
+  const keys: Keys<DhcpScopeRow> = {
+    name: (s) => s.name,
+    range: (s) => `${s.startingAddress} - ${s.endingAddress}`,
+    mask: (s) => s.subnetMask,
+    interface: (s) => s.interfaceAddress ?? '',
+    leases: (s) => String(per.get(s.name) ?? 0).padStart(10, '0'),
+  }
+  return keys
 }
+
+const STATES = ['Enabled', 'Disabled'] as const
 
 export function Scopes({
   tabs,
@@ -73,62 +107,121 @@ export function Scopes({
   canModify = true,
   canDelete = true,
   onLockNode,
+  onOpenLeases,
 }: ScopesProps) {
   const [scopes, setScopes] = useState<DhcpScopeRow[] | null>(null)
-  /*
-  Whether the last load failed.
-
-  The data is thrown away, as it was before (this screen does not keep the
-  previous one), so there is nothing here to "go stale" and it does not carry the
-  other collections' strip: inheriting the archetype's look is not inheriting
-  behaviour it does not have.
-
-  What does change is HOW the gap is drawn. It used to say "No Scope Found" when
-  the call had fallen over, which is the same thing a server with no scopes shows.
-  Now the failure is said, with the message the server sent.
-  */
+  /* The leases, for the cards and the Leases column; `null` when they could not
+     be read (deviation 19). Their failure is not the list's: no notice. */
+  const [leases, setLeases] = useState<DhcpLease[] | null>(null)
+  /* Whether the last load failed: said, with the server's message, and never
+     drawn as "No Scope Found". */
   const [failure, setFailure] = useState(false)
   const [notice, setNotice] = useState<Notice | null>(null)
   const [busy, setBusy] = useState(false)
-  const [editing, setEditing] = useState<Editing | null>(null)
+  const [page, setPage] = useState<Page | null>(null)
+  const [query, setQuery] = useState(() => readTabParam('Scopes', Q) ?? '')
+  const [stateFilter, setStateFilter] = useState(() => {
+    const s = readTabParam('Scopes', STATE)
+    return s === 'Enabled' || s === 'Disabled' ? s : ''
+  })
+  const [open, setOpen] = useState<Set<string>>(() => new Set())
+  /* The scope the bar asked for on arrival, opened once the list is in. */
+  const arrival = useRef(readTabParam('Scopes', SCOPE))
+
   /* Only an existing scope locks the node: Add Scope leaves it alone. */
-  const locked = editing?.title === 'Edit Scope'
+  const locked = page?.mode === 'edit'
   useEffect(() => {
     onLockNode?.(locked)
   }, [locked, onLockNode])
   useEffect(() => () => onLockNode?.(false), [onLockNode])
-  const [confirm, setConfirm] = useState<{ action: 'disable' | 'delete'; name: string } | null>(
-    null,
+  const [confirm, setConfirm] = useState<{ action: 'disable' | 'delete'; name: string } | null>(null)
+
+  /* The list's view in the bar, and the open scope: the bar follows the page,
+     replacing (it puts the scope back after StrictMode's rehearsal unmount took it
+     out); what the user does is pushed by the handlers. */
+  useEffect(() => {
+    writeParams({ [Q]: query.trim() === '' ? null : query, [STATE]: stateFilter })
+  }, [query, stateFilter])
+  const openName = page?.mode === 'edit' ? page.name : null
+  useEffect(() => {
+    if (onDhcpTab('Scopes') && readParam(SCOPE) !== openName && arrival.current == null) writeScope(openName, true)
+  }, [openName])
+  useEffect(() => () => dropParams(SCOPE_PARAMS), [])
+
+  // A failure on load is not drawn as an empty list; see `Leases`. With a scope's
+  // page open the list is read again quietly, so the page stays where it is.
+  const load = useCallback(
+    async (quiet = false) => {
+      if (!quiet) setScopes(null)
+      const [r, l] = await Promise.all([listScopes(token, node), listLeases(token, node)])
+      setLeases(l.kind === 'ok' ? l.data : null)
+      if (r.kind === 'ok') {
+        setScopes(r.data)
+        setFailure(false)
+        return
+      }
+      setScopes([])
+      setFailure(true)
+      setNotice(noticeFromFailure(r))
+    },
+    [token, node],
   )
 
-  // A failure on load is not drawn as an empty list; see `Leases`.
-  const load = useCallback(async () => {
-    setScopes(null)
-    const r = await listScopes(token, node)
-    if (r.kind === 'ok') {
-      setScopes(r.data)
-      setFailure(false)
-      return
-    }
-    setScopes([])
-    setFailure(true)
-    setNotice(noticeFromFailure(r))
-  }, [token, node])
+  /** Opens a scope's page: `push` from the list, `none` when the bar already says it. */
+  const openScope = useCallback(
+    async (name: string, how: 'push' | 'none') => {
+      setBusy(true)
+      const s = await getScope(token, name, node)
+      setBusy(false)
+      if (s == null) {
+        // A scope that cannot be read leaves the list on screen, and the bar with it.
+        if (how === 'none' && onDhcpTab('Scopes')) writeScope(null, true)
+        return
+      }
+      if (how === 'push') writeScope(name)
+      setPage({ mode: 'edit', name, scope: s, form: formFromScope(s) })
+    },
+    [token, node],
+  )
 
   useEffect(() => {
-    void load()
-  }, [load])
+    void (async () => {
+      await load()
+      const want = arrival.current
+      arrival.current = null
+      if (want != null) await openScope(want, 'none')
+    })()
+  }, [load, openScope])
+
+  /* Back and Forward between the list and a scope. */
+  useEffect(() => {
+    function onChanged() {
+      if (!onDhcpTab('Scopes')) return
+      const want = readParam(SCOPE)
+      if (want == null) {
+        setPage(null)
+        void load()
+      } else void openScope(want, 'none')
+    }
+    window.addEventListener('popstate', onChanged)
+    return () => window.removeEventListener('popstate', onChanged)
+  }, [load, openScope])
 
   // The hook goes BEFORE any return: otherwise it would stop being called as soon
   // as the table is loading.
-  const { rows: visibleScopes, sort, toggle } = useSort(KEYS, scopes ?? [])
+  const per = leasesPerScope(leases ?? [])
+  const { rows: sortedScopes, sort, toggle } = useSort(sortKeys(per), scopes ?? [])
+  const visibleScopes = sortedScopes.filter(
+    (s) =>
+      (stateFilter === '' || (stateFilter === 'Enabled') === s.enabled) && matchesScope(s, query),
+  )
+  const filtered = query.trim() !== '' || stateFilter !== ''
 
-  async function edit(name: string) {
-    setBusy(true)
-    const s = await getScope(token, name, node)
-    setBusy(false)
-    if (s == null) return
-    setEditing({ title: 'Edit Scope', form: formFromScope(s) })
+  /** Back to the list: upstream's Cancel, `refreshDhcpScopes()`, reads it again. */
+  function backToList() {
+    writeScope(null)
+    setPage(null)
+    void load()
   }
 
   async function save(body: Record<string, string>) {
@@ -141,7 +234,8 @@ export function Scopes({
       return
     }
 
-    setEditing(null)
+    writeScope(null)
+    setPage(null)
     await load()
     setNotice({
       type: 'success',
@@ -155,7 +249,7 @@ export function Scopes({
     const outcome = await enableScope(token, name, node)
     setBusy(false)
     if (outcome.kind !== 'ok') return
-    await load()
+    await load(page != null)
     setNotice({
       type: 'success',
       title: 'Scope Enabled!',
@@ -169,7 +263,7 @@ export function Scopes({
     const outcome = await disableScope(token, name, node)
     setBusy(false)
     if (outcome.kind !== 'ok') return
-    await load()
+    await load(page != null)
     setNotice({
       type: 'success',
       title: 'Scope Disabled!',
@@ -183,7 +277,12 @@ export function Scopes({
     const outcome = await deleteScope(token, name, node)
     setBusy(false)
     if (outcome.kind !== 'ok') return
-    // dhcp.js:662. It removes the row; it does not ask for the list again.
+    // dhcp.js:662. It removes the row; it does not ask for the list again. From
+    // the scope's own page, the list is where the deleted scope leaves you.
+    if (page?.mode === 'edit' && page.name === name) {
+      writeScope(null)
+      setPage(null)
+    }
     setScopes((prev) => prev?.filter((s) => s.name !== name) ?? prev)
     setNotice({
       type: 'success',
@@ -192,167 +291,303 @@ export function Scopes({
     })
   }
 
-  if (editing != null) {
+  /** Enabling asks nothing; disabling does (dhcp.js:615). */
+  function toggleState(s: DhcpScopeRow) {
+    if (s.enabled) setConfirm({ action: 'disable', name: s.name })
+    else void enable(s.name)
+  }
+
+  function toggleOpen(name: string) {
+    setOpen((prev) => {
+      const next = new Set(prev)
+      if (next.has(name)) next.delete(name)
+      else next.add(name)
+      return next
+    })
+  }
+
+  const confirmation = (
+    <Confirm
+      open={confirm !== null}
+      title={confirm?.action === 'delete' ? 'Delete Scope' : 'Disable Scope'}
+      text={
+        confirm?.action === 'delete'
+          ? `Are you sure you want to delete the DHCP scope '${confirm.name}'?`
+          : `Are you sure you want to disable the DHCP scope '${confirm?.name ?? ''}'?`
+      }
+      label={confirm?.action === 'delete' ? 'Delete' : 'Disable'}
+      busy={busy}
+      onClose={() => setConfirm(null)}
+      onConfirm={() => {
+        if (!confirm) return
+        if (confirm.action === 'delete') void remove(confirm.name)
+        else void disable(confirm.name)
+      }}
+    />
+  )
+
+  if (page != null) {
+    const row = page.mode === 'edit' ? scopes?.find((s) => s.name === page.name) : undefined
     return (
       <div className={styles.wrap}>
         <Notifier notice={notice} onClose={() => setNotice(null)} />
-        <ScopeForm
-          key={editing.title + editing.form.oldName}
-          title={editing.title}
-          initial={editing.form}
+        <ScopePage
+          key={page.mode === 'edit' ? `edit:${page.name}` : 'add'}
+          mode={page.mode}
+          row={row}
+          scope={page.mode === 'edit' ? page.scope : undefined}
+          leases={leases}
+          initial={page.form}
           busy={busy}
+          canModify={canModify}
+          canDelete={canDelete}
+          onBack={backToList}
           onSave={(body) => void save(body)}
-          onCancel={() => {
-            setEditing(null)
-            void load()
-          }}
+          onCancel={backToList}
           onNotice={(e) => setNotice({ type: 'warning', title: e.title, text: e.text })}
+          onToggle={() => row != null && toggleState(row)}
+          onDelete={() => page.mode === 'edit' && setConfirm({ action: 'delete', name: page.name })}
+          onOpenLeases={() => page.mode === 'edit' && onOpenLeases?.(page.name)}
         />
+        {confirmation}
       </div>
     )
   }
 
-  if (scopes == null) return <Loading />
-
   return (
     <div className={styles.wrap}>
       <SectionHeader
-        title="DHCP"
+        section="DHCP"
+        title="Scopes"
         tabs={tabs}
-        actions={<>{canModify && (
+        actions={
+          canModify ? (
             <Button
               variant="primary"
+              lead="add"
               onClick={() => {
                 setNotice(null)
-                setEditing({ title: 'Add Scope', form: blankForm() })
+                setPage({ mode: 'add', form: blankForm() })
               }}
             >
               Add Scope
             </Button>
-          )}</>}
+          ) : undefined
+        }
       />
 
       <Notifier notice={notice} onClose={() => setNotice(null)} />
 
-      {failure ? (
+      {scopes == null ? (
+        <Loading />
+      ) : failure ? (
         /* Solid, not dashed, and with no count: how many there are is not known.
-           The server's message goes in the notice at the top. */
+           The server's message goes in the notice. */
         <Failure>Could not load the list.</Failure>
       ) : (
-      <>
-      <Table
-        stack
-        header={
-          <>
-            <Th field="name" sort={sort} onSort={toggle}>Name</Th>
-            <Th field="range" sort={sort} onSort={toggle}>Scope Range/Subnet Mask</Th>
-            <Th field="network" sort={sort} onSort={toggle}>Network/Broadcast</Th>
-            <Th field="interface" sort={sort} onSort={toggle}>Interface</Th>
-            <th>Status</th>
-            <th className={tbl.actionsCell} />
-          </>
-        }
-        isEmpty={visibleScopes.length === 0}
-        emptyText="No Scope Found"
-        columns={6}
-      >
-        {visibleScopes.map((s) => (
-          <tr key={s.name}>
-            <td className={`${styles.name} ${tbl.lead}`}>{s.name}</td>
-            <td>
-              <dl className={styles.kv}>
-                <dt>Range</dt>
-                <dd>
-                  {s.startingAddress} - {s.endingAddress}
-                </dd>
-                <dt>Mask</dt>
-                <dd>{s.subnetMask}</dd>
-              </dl>
-            </td>
-            <td>
-              <dl className={styles.kv}>
+        <>
+          <ScopeSummary scopes={scopes} leases={leases} state={stateFilter} onState={setStateFilter} />
+
+          <DataTable
+            toolbar={
+              <>
+                <Grow>
+                  <Field inline label="Search">
+                    {(id) => (
+                      <Input
+                        id={id}
+                        search
+                        placeholder="Scope name or IP address"
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                      />
+                    )}
+                  </Field>
+                </Grow>
+                <div className={styles.filterShort}>
+                  <Field inline label="State">
+                    {(id) => (
+                      <Select id={id} value={stateFilter} onChange={(e) => setStateFilter(e.target.value)}>
+                        <option value="">All</option>
+                        {STATES.map((t) => (
+                          <option key={t} value={t}>
+                            {t}
+                          </option>
+                        ))}
+                      </Select>
+                    )}
+                  </Field>
+                </div>
+                {filtered && (
+                  <End>
+                    <span className={styles.shown}>{`${visibleScopes.length} of ${scopes.length} shown`}</span>
+                  </End>
+                )}
+              </>
+            }
+            foot={<DataFoot count={`Total Scopes: ${scopes.length}`} />}
+          >
+            <Table
+              stack
+              header={
+                <>
+                  <Th field="name" sort={sort} onSort={toggle}>Name</Th>
+                  <Th field="range" sort={sort} onSort={toggle}>Scope Range</Th>
+                  <Th field="mask" sort={sort} onSort={toggle}>Subnet Mask</Th>
+                  <Th field="interface" sort={sort} onSort={toggle}>Interface</Th>
+                  <Th field="leases" sort={sort} onSort={toggle}>Leases</Th>
+                  <th>Status</th>
+                  <th className={tbl.actionsCell} />
+                </>
+              }
+              isEmpty={visibleScopes.length === 0}
+              emptyText="No Scope Found"
+              columns={7}
+            >
+              {visibleScopes.map((s) => (
+                <ScopeRow
+                  key={s.name}
+                  scope={s}
+                  held={leases == null ? null : (per.get(s.name) ?? 0)}
+                  open={open.has(s.name)}
+                  onToggle={() => toggleOpen(s.name)}
+                  onOpen={() => void openScope(s.name, 'push')}
+                  actions={
+                    <>
+                      {canModify && (
+                        <RowAction
+                          icon="power"
+                          name={s.enabled ? 'Disable Scope' : 'Enable Scope'}
+                          disabled={busy}
+                          onClick={() => toggleState(s)}
+                        />
+                      )}
+                      <Menu label={`Actions for ${s.name}`}>
+                        {(close) => (
+                          <>
+                            <button
+                              type="button"
+                              disabled={busy}
+                              onClick={() => {
+                                close()
+                                void openScope(s.name, 'push')
+                              }}
+                            >
+                              Edit Scope
+                            </button>
+                            {canDelete && (
+                              <button
+                                type="button"
+                                data-variant="danger"
+                                disabled={busy}
+                                onClick={() => {
+                                  close()
+                                  setConfirm({ action: 'delete', name: s.name })
+                                }}
+                              >
+                                Delete Scope
+                              </button>
+                            )}
+                          </>
+                        )}
+                      </Menu>
+                    </>
+                  }
+                />
+              ))}
+            </Table>
+          </DataTable>
+        </>
+      )}
+      {confirmation}
+    </div>
+  )
+}
+
+/* A scope on ONE line; its network and broadcast under the row's Details. */
+function ScopeRow({
+  scope: s,
+  held,
+  open,
+  onToggle,
+  onOpen,
+  actions,
+}: {
+  scope: DhcpScopeRow
+  /** Its leases, `null` when they could not be read. */
+  held: number | null
+  open: boolean
+  onToggle: () => void
+  onOpen: () => void
+  actions: ReactNode
+}) {
+  const detail = useId()
+  const size = rangeSize(s.startingAddress, s.endingAddress)
+  return (
+    <>
+      <tr className={open ? styles.openRow : undefined}>
+        <td className={tbl.lead}>
+          <button type="button" className={styles.opener} onClick={onOpen}>
+            {s.name}
+          </button>
+        </td>
+        <td className={styles.mono}>
+          {s.startingAddress} - {s.endingAddress}
+        </td>
+        <td className={styles.mono}>{s.subnetMask}</td>
+        {/* `interfaceAddress` is OMITTED when null; upstream draws an empty cell
+            (dhcp.js:228). */}
+        <td className={styles.mono}>{s.interfaceAddress ?? ''}</td>
+        {/* Deviation 19: the leases this scope holds, of the addresses in its
+            range. Empty when the leases could not be read. */}
+        <td>
+          {held != null && size != null && (
+            <div className={styles.use}>
+              <span className={styles.useText}>
+                {held} <span className={styles.useOf}>of {size}</span>
+              </span>
+              <span
+                className={styles.useTrack}
+                role="img"
+                aria-label={`${s.name}: ${held} of ${size} addresses in range leased`}
+              >
+                <span style={{ width: `${Math.min(100, (held / size) * 100)}%` }} />
+              </span>
+            </div>
+          )}
+        </td>
+        <td>
+          <Tag tone={s.enabled ? 'ok' : 'neutral'}>{s.enabled ? 'Enabled' : 'Disabled'}</Tag>
+        </td>
+        <td className={tbl.actionsCell}>
+          <div className={tbl.actions}>
+            {actions}
+            <RowAction
+              icon={open ? 'chevronDown' : 'chevronRight'}
+              name="Details"
+              aria-expanded={open}
+              aria-controls={detail}
+              onClick={onToggle}
+            />
+          </div>
+        </td>
+      </tr>
+      {open && (
+        <tr id={detail} className={styles.detailRow}>
+          <td colSpan={7}>
+            <dl className={styles.inline}>
+              <div className={styles.pair}>
                 <dt>Network</dt>
                 <dd>{s.networkAddress}</dd>
+              </div>
+              <div className={styles.pair}>
                 <dt>Broadcast</dt>
                 <dd>{s.broadcastAddress}</dd>
-              </dl>
-            </td>
-            {/* `interfaceAddress` is OMITTED when null; upstream draws an
-                empty cell (dhcp.js:228). */}
-            <td className={styles.mono}>{s.interfaceAddress ?? ''}</td>
-            <td>
-              <Tag tone={s.enabled ? 'ok' : 'neutral'}>
-                {s.enabled ? 'Enabled' : 'Disabled'}
-              </Tag>
-            </td>
-            <td className={tbl.actionsCell}>
-              <div className={tbl.actions}>
-                <RowAction
-                  icon="edit"
-                  name="Edit Scope"
-                  disabled={busy}
-                  onClick={() => void edit(s.name)}
-                />
-                {canModify && (
-                  /* dhcp.js:615. Enabling asks nothing; disabling does. */
-                  <RowAction
-                    icon="power"
-                    name={s.enabled ? 'Disable Scope' : 'Enable Scope'}
-                    disabled={busy}
-                    onClick={() =>
-                      s.enabled
-                        ? setConfirm({ action: 'disable', name: s.name })
-                        : void enable(s.name)
-                    }
-                  />
-                )}
-                {canDelete && (
-                  <Menu label={`Actions for ${s.name}`}>
-                    {(close) => (
-                      <button
-                        type="button"
-                        data-variant="danger"
-                        disabled={busy}
-                        onClick={() => { close(); setConfirm({ action: 'delete', name: s.name }) }}
-                      >
-                        Delete Scope
-                      </button>
-                    )}
-                  </Menu>
-                )}
               </div>
-            </td>
-          </tr>
-        ))}
-      </Table>
-
-      <div className={styles.total}>
-        {/* The footer is the count and nothing else. When there are no rows,
-            the one that says so is the table itself, with its centred row, like
-            the rest of the console and like upstream (`dhcp.js:74`); here it was
-            left floating outside the panel, under a table with a blank body. */}
-        <span>{`Total Scopes: ${scopes.length}`}</span>
-      </div>
-      </>
+            </dl>
+          </td>
+        </tr>
       )}
-
-      <Confirm
-        open={confirm !== null}
-        title={confirm?.action === 'delete' ? 'Delete Scope' : 'Disable Scope'}
-        text={
-          confirm?.action === 'delete'
-            ? `Are you sure you want to delete the DHCP scope '${confirm.name}'?`
-            : `Are you sure you want to disable the DHCP scope '${confirm?.name ?? ''}'?`
-        }
-        label={confirm?.action === 'delete' ? 'Delete' : 'Disable'}
-        busy={busy}
-        onClose={() => setConfirm(null)}
-        onConfirm={() => {
-          if (!confirm) return
-          if (confirm.action === 'delete') void remove(confirm.name)
-          else void disable(confirm.name)
-        }}
-      />
-    </div>
+    </>
   )
 }

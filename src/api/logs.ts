@@ -183,6 +183,37 @@ export async function queryLogs(
   return apiRequest<{ response: QueryLogPage }>('logs/query', { token, body })
 }
 
+/*
+The newest queries of the log, every response type, optionally of one client: the
+Clients page's sample (CONVENTIONS.md, deviation 25). The same `logs/query` Query
+Logs sends, page 1 newest first, with only the client filled in. Logs belong to
+one node: `node` empty reads the one the console is connected to.
+*/
+export async function newestQueries(
+  token: string | null,
+  app: { name: string; classPath: string },
+  { node = '', limit, clientIpAddress = '' }: { node?: string; limit: number; clientIpAddress?: string },
+): Promise<ApiOutcome<QueryLogEntry[]>> {
+  const r = await queryLogs(token, {
+    name: app.name,
+    classPath: app.classPath,
+    pageNumber: '1',
+    entriesPerPage: String(limit),
+    descendingOrder: 'true',
+    start: '',
+    end: '',
+    clientIpAddress,
+    protocol: '',
+    responseType: '',
+    rcode: '',
+    qname: '',
+    qtype: '',
+    qclass: '',
+    node,
+  })
+  return r.kind === 'ok' ? { kind: 'ok', data: r.data.response.entries } : r
+}
+
 /** `logs/export` (logs.js:678). The same filters as `query` MINUS the three
  *  paging ones: `pageNumber`, `entriesPerPage` and `descendingOrder` do not
  *  travel. And without `ts`: of the console's six downloads, only the settings

@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, render, screen } from '@testing-library/react'
 import { Blocking } from './Blocking'
+import { useAllNavMarks } from '../../app/nav-marks'
 
 vi.mock('./Overview', () => ({ Overview: () => <p>overview</p> }))
 vi.mock('./Rules', () => ({ Rules: () => <p>rules</p> }))
@@ -38,12 +39,23 @@ describe('Blocking', () => {
     expect(window.location.pathname + window.location.search).toBe('/blocking/rules/')
   })
 
-  it('marks the Lists tab while Lists has unsaved changes, in its accessible name', () => {
-    render(<Blocking token="T" sub="Lists" onSubChange={() => {}} permissions={undefined} />)
-    expect(screen.getByRole('link', { name: 'Lists' })).toBeInTheDocument()
+  /* The dot lives on Lists' entry in the sidebar since 2026-11-06: the screen says it
+     through `app/nav-marks`, and says nothing once the changes go. */
+  it('marks Lists while it has unsaved changes, for the sidebar', () => {
+    function Probe() {
+      const marks = useAllNavMarks()
+      return <output>{marks.blocking?.Lists ?? 'none'}</output>
+    }
+    render(
+      <>
+        <Blocking token="T" sub="Lists" onSubChange={() => {}} permissions={undefined} />
+        <Probe />
+      </>,
+    )
+    expect(screen.getByRole('status')).toHaveTextContent('none')
     act(() => screen.getByRole('button', { name: 'edit' }).click())
-    expect(screen.getByRole('link', { name: 'Lists, unsaved changes' })).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByRole('status')).toHaveTextContent('unsaved changes')
     act(() => screen.getByRole('button', { name: 'discard' }).click())
-    expect(screen.getByRole('link', { name: 'Lists' })).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent('none')
   })
 })

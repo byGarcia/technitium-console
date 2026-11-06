@@ -25,16 +25,25 @@ const STROKE = {
 } as const
 
 export type IconName =
-  | 'dashboard' | 'zones' | 'cache' | 'allowed' | 'blocked' | 'apps'
+  | 'dashboard' | 'clients' | 'zones' | 'cache' | 'allowed' | 'blocked' | 'apps'
   | 'dnsclient' | 'settings' | 'dhcp' | 'admin' | 'logs' | 'about'
   | 'chevronDown' | 'chevronRight' | 'chevronLeft'
   | 'first' | 'last' | 'close' | 'menu' | 'plus' | 'sort' | 'back' | 'check'
   | 'edit' | 'power' | 'card' | 'convert' | 'warning' | 'lock'
   | 'moveUp' | 'moveDown'
-  | 'add' | 'trash' | 'refresh' | 'search' | 'download' | 'upload' | 'run' | 'store' | 'key' | 'save'
+  | 'shield' | 'add' | 'trash' | 'refresh' | 'search' | 'download' | 'upload' | 'run' | 'store' | 'key' | 'save'
+  | 'file' | 'eye' | 'copy'
+  | 'external' | 'mail'
 
 const PATHS: Record<IconName, ReactElement> = {
   // ── Leading a button's label (`ui/Button`, `lead`), 2026-11-05 ──────────
+  /* A shield with a tick: a zone's DNSSEC (Zones, the DNSSEC card). */
+  shield: (
+    <>
+      <path d="M12 3 5 6v5.5c0 4.2 2.9 8 7 9.5 4.1-1.5 7-5.3 7-9.5V6z" />
+      <path d="m9 12 2 2 4-4" />
+    </>
+  ),
   /* A cross: add something to a list (Add Zone, Add block list…). */
   add: (
     <>
@@ -119,6 +128,16 @@ const PATHS: Record<IconName, ReactElement> = {
       <rect x="13.5" y="3" width="7.5" height="5" rx="1.5" />
       <rect x="3" y="15" width="7.5" height="6" rx="1.5" />
       <rect x="13.5" y="11" width="7.5" height="10" rx="1.5" />
+    </>
+  ),
+  /* A screen and a phone side by side: the machines that ask the server. */
+  clients: (
+    <>
+      <rect x="2.5" y="4.5" width="13" height="9.5" rx="1.5" />
+      <path d="M6 19h6" />
+      <path d="M9 14v5" />
+      <rect x="17.5" y="8" width="4.5" height="11" rx="1.25" />
+      <path d="M19.75 16.5h0" />
     </>
   ),
   /* A domain tree: the root and its branches. That is what a zone is. */
@@ -290,6 +309,30 @@ Same closed body and same arc as the rest: a grid of 24 and a stroke of
       <path d="M15 13h3.5" />
     </>
   ),
+  /* A page with its corner folded: the zone as a text file (Edit Zone File). */
+  file: (
+    <>
+      <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
+      <path d="M14 3v5h5" />
+      <path d="M9 13h6" />
+      <path d="M9 17h4" />
+    </>
+  ),
+  /* An eye: open to look, not to change (View Zone, for the types whose records
+     this server does not edit). */
+  eye: (
+    <>
+      <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" />
+      <circle cx="12" cy="12" r="3" />
+    </>
+  ),
+  /* Two sheets, one over the other: make another like this (Clone Zone). */
+  copy: (
+    <>
+      <rect x="8.5" y="8.5" width="12" height="12" rx="2" />
+      <path d="M15.5 8.5v-3a2 2 0 0 0-2-2h-8a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h3" />
+    </>
+  ),
   convert: (
     <>
       <path d="M4 8h13" />
@@ -337,6 +380,22 @@ Same closed body and same arc as the rest: a grid of 24 and a stroke of
     <>
       <path d="M12 5v14" />
       <path d="m6 13 6 6 6-6" />
+    </>
+  ),
+  /* A box with an arrow leaving it: the destination opens outside the console
+     (About's link rows). */
+  external: (
+    <>
+      <path d="M14 4h6v6" />
+      <path d="M20 4 11 13" />
+      <path d="M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4" />
+    </>
+  ),
+  /* An envelope: the destination is an email address (About's support row). */
+  mail: (
+    <>
+      <rect x="3" y="5.5" width="18" height="13" rx="2" />
+      <path d="m3.5 7 8.5 6 8.5-6" />
     </>
   ),
 }

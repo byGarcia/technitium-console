@@ -1,12 +1,14 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useId, useState } from 'react'
 import { downloadAndInstall, downloadAndUpdate, listStoreApps, uninstallApp, type StoreApp } from '../../api/apps'
 import { Button } from '../../ui/Button'
-import { useSort } from '../../ui/Table'
-import { Icon } from '../../ui/Icon'
-import { Details } from '../../ui/Details'
+import { RowAction, Table, Th, useSort } from '../../ui/Table'
+import tbl from '../../ui/Table.module.css'
 import { Dialog } from '../../ui/Dialog'
 import { error, type AlertState } from './Apps'
-import { Empty, Loading } from '../../ui/Empty'
+import { Loading } from '../../ui/Empty'
+import { DataFoot, DataTable, Grow } from '../../ui/DataTable'
+import { Field, Input } from '../../ui/Field'
+import { Menu, MenuItem } from '../../ui/Menu'
 import { Tag } from '../../ui/Tag'
 import styles from './Apps.module.css'
 import { Notifier } from '../../ui/Notifier'
@@ -42,6 +44,7 @@ export function StoreApps({
   const [alert, setAlert] = useState<AlertState | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
   const [pendingUninstall, setPendingUninstall] = useState<StoreApp | null>(null)
+  const [search, setSearch] = useState('')
 
   /*
   Upstream's store header is a sort link (`sortTable('tableStoreAppsBody', 0)`,
@@ -67,6 +70,7 @@ export function StoreApps({
     if (!open) return
     setAlert(null)
     setStoreApps(null)
+    setSearch('')
     void load()
   }, [open, load])
 
@@ -127,13 +131,23 @@ export function StoreApps({
     )
   }
 
-  const { rows: sorted, toggle } = useSort<StoreApp>({ name: (a) => a.name }, storeApps ?? [])
+  /*
+  The search (deviation 17): the catalogue is 27 apps, and finding one meant
+  scrolling through all of them. It narrows what the table draws by name and
+  description, as typed, case aside; it asks the server nothing, and `Total Apps`
+  still counts the whole catalogue, as upstream's footer does.
+  */
+  const needle = search.trim().toLowerCase()
+  const found = (storeApps ?? []).filter(
+    (a) => needle === '' || a.name.toLowerCase().includes(needle) || a.description.toLowerCase().includes(needle),
+  )
+  const { rows: sorted, sort, toggle } = useSort<StoreApp>({ name: (a) => a.name }, found)
 
   return (
     <Dialog
       open={open}
       onOpenChange={onOpenChange}
-      size="medium"
+      size="wide"
       title="DNS App Store"
     >
       <Notifier notice={alert} onClose={() => setAlert(null)} />
@@ -147,100 +161,156 @@ export function StoreApps({
         onConfirm={() => pendingUninstall && uninstall(pendingUninstall)}
       />
 
-      {storeApps === null ? (
-        <Loading />
-      ) : storeApps.length === 0 ? (
-        <Empty>No Apps Found</Empty>
-      ) : (
-        <>
-          <div className={styles.sortRow}>
-            <button
-              type="button"
-              className={styles.sortBy}
-              aria-label="Sort by name"
-              onClick={() => toggle('name')}
-            >
-              Store Apps
-              <Icon name="sort" size={12} />
-            </button>
-          </div>
-          <ul className={styles.store}>
-            {sorted.map((app) => {
-              const hasUpdate = app.installed && app.updateAvailable === true
-              // apps.js:164. Installed shows ITS version; not installed, the store's.
-              const version = app.installed ? (app.installedVersion ?? app.version) : app.version
-              return (
-                <li key={app.name} className={styles.srow} aria-label={app.name}>
-                  <div>
-                    <div className={styles.sname}>
-                      {app.name}
-                      <span className={styles.slabels}>
-                        <Tag>Version {version}</Tag>
-                        {hasUpdate && <Tag tone="warn">Update {app.version}</Tag>}
-                      </span>
-                    </div>
-                    {/*
-                    The catalogue is 27 apps and the dialog was 5.868 px of
-                    scroll: to find one you rolled through six screens. Upstream
-                    is the same (same fields, same length, and no filter either),
-                    so what could not be done was to add a search box, which is a
-                    control upstream does not have.
-
-                    What CAN be done is decide what each row shows at rest, and
-                    that is a design call. Two jobs, two depths: SCANNING wants
-                    short rows and CONFIRMING wants the description, so the first
-                    two lines stay visible and the rest goes behind the same
-                    `More Details` the installed card next door already uses.
-
-                    The zip URL and the size go with it: 70 monospaced characters
-                    that matter when you are about to install, and never while
-                    you are looking for the thing.
-                    */}
-                    <p className={styles.sdesc}>{app.description}</p>
-                    <Details summary="More Details" className={styles.sdetails}>
-                      <p className={styles.sdescFull}>{app.description}</p>
-                      <div className={styles.smeta}>
-                        <div>
-                          <b>App Zip File</b>: <UrlText url={app.url} />
-                        </div>
-                        <div>
-                          <b>Size</b>: {app.size}
-                        </div>
-                      </div>
-                    </Details>
-                  </div>
-                  <div className={styles.sacts}>
-                    {!app.installed && (
-                      <Button
-                        variant="primary"
-                        disabled={busy === app.name}
-                        onClick={() => void install(app)}
-                      >
-                        Install
-                      </Button>
-                    )}
-                    {hasUpdate && (
-                      <Button disabled={busy === app.name} onClick={() => void update(app)}>
-                        Update
-                      </Button>
-                    )}
-                    {app.installed && (
-                      <Button
-                        variant="danger"
-                        disabled={busy === app.name}
-                        onClick={() => setPendingUninstall(app)}
-                      >
-                        Uninstall
-                      </Button>
-                    )}
-                  </div>
-                </li>
-              )
-            })}
-          </ul>
-          <div className={styles.total}>Total Apps: {storeApps.length}</div>
-        </>
-      )}
+      <DataTable
+        toolbar={
+          <Grow>
+            <Field inline label="Search">
+              {(id) => (
+                <Input
+                  id={id}
+                  search
+                  value={search}
+                  disabled={storeApps === null}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              )}
+            </Field>
+          </Grow>
+        }
+        /* Upstream's footer (apps.js:180-183): the count, or `No Apps Found` when
+           the store has nothing. */
+        foot={
+          storeApps != null && storeApps.length > 0 ? <DataFoot count={`Total Apps: ${storeApps.length}`} /> : undefined
+        }
+      >
+        {storeApps === null ? (
+          <Loading />
+        ) : (
+          <Table
+            stack
+            tableClass={styles.rows}
+            header={
+              <>
+                <Th field="name" sort={sort} onSort={toggle}>Store Apps</Th>
+                <th className={styles.sizeHead}>Size</th>
+                <th className={tbl.actionsCell} />
+              </>
+            }
+            isEmpty={sorted.length === 0}
+            emptyText="No Apps Found"
+            columns={3}
+          >
+            {sorted.map((app) => (
+              <StoreRow
+                key={app.name}
+                app={app}
+                busy={busy === app.name}
+                onInstall={() => void install(app)}
+                onUpdate={() => void update(app)}
+                onUninstall={() => setPendingUninstall(app)}
+              />
+            ))}
+          </Table>
+        )}
+      </DataTable>
     </Dialog>
+  )
+}
+
+/*
+One app of the catalogue. What upstream's row holds (index.html:6365, apps.js:
+151-176), with three moves of the redesign (deviation 17):
+
+  · `Installed` beside the version for an app this server has, so the installed
+    ones read without looking for their Uninstall button;
+  · the size in a column of its own, and the zip URL in More Details: 70
+    characters that matter when you are about to install, never while you look;
+  · one line per app (2026-11-06): the description and the zip URL are upstream's
+    More Details, opened under the row by the chevron that carries that name,
+    because SCANNING wants short rows and CONFIRMING wants the description.
+
+Install stays a button of the row and so does Update; Uninstall moves into the
+row's `⋮` menu, as every destructive verb that repeats once per row in this
+console. The confirmation is upstream's literal.
+*/
+function StoreRow({
+  app,
+  busy,
+  onInstall,
+  onUpdate,
+  onUninstall,
+}: {
+  app: StoreApp
+  busy: boolean
+  onInstall: () => void
+  onUpdate: () => void
+  onUninstall: () => void
+}) {
+  const hasUpdate = app.installed && app.updateAvailable === true
+  // apps.js:164. Installed shows ITS version; not installed, the store's.
+  const version = app.installed ? (app.installedVersion ?? app.version) : app.version
+  const [open, setOpen] = useState(false)
+  const detail = useId()
+  return (
+    <>
+      <tr aria-label={app.name} className={open ? styles.openRow : undefined}>
+        <td className={tbl.lead}>
+          <div className={styles.appHead}>
+            <span className={styles.appName}>{app.name}</span>
+            <Tag>Version {version}</Tag>
+            {hasUpdate && <Tag tone="warn">Update {app.version}</Tag>}
+            {app.installed && <Tag tone="ok">Installed</Tag>}
+          </div>
+        </td>
+        <td className={styles.sizeCell}>{app.size}</td>
+        <td className={tbl.actionsCell}>
+          <div className={styles.storeActs}>
+            {!app.installed && (
+              <Button variant="primary" size="sm" lead="download" disabled={busy} onClick={onInstall}>
+                Install
+              </Button>
+            )}
+            {hasUpdate && (
+              <Button size="sm" lead="download" disabled={busy} onClick={onUpdate}>
+                Update
+              </Button>
+            )}
+            {app.installed && (
+              <Menu label={`Actions for ${app.name}`}>
+                {(close) => (
+                  <>
+                    {hasUpdate && (
+                      <MenuItem icon="download" disabled={busy} onClick={() => { close(); onUpdate() }}>
+                        Update
+                      </MenuItem>
+                    )}
+                    <MenuItem icon="trash" tone="danger" disabled={busy} onClick={() => { close(); onUninstall() }}>
+                      Uninstall
+                    </MenuItem>
+                  </>
+                )}
+              </Menu>
+            )}
+            <RowAction
+              icon={open ? 'chevronDown' : 'chevronRight'}
+              name="More Details"
+              aria-expanded={open}
+              aria-controls={detail}
+              onClick={() => setOpen((v) => !v)}
+            />
+          </div>
+        </td>
+      </tr>
+      {open && (
+        <tr id={detail} className={styles.detailRow}>
+          <td colSpan={3}>
+            <p className={styles.descFull}>{app.description}</p>
+            <div className={styles.smeta}>
+              <b>App Zip File</b>: <UrlText url={app.url} />
+            </div>
+          </td>
+        </tr>
+      )}
+    </>
   )
 }

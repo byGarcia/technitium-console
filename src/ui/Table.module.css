@@ -12,7 +12,7 @@ is given a body (panel, border and corners) instead of being left floating.
 */
 .wrap {
   overflow-x: auto;
-  border: 1px solid var(--line);
+  border: 1px solid var(--line2);
   border-radius: var(--r-4);
   background: var(--pan);
   box-shadow: var(--e-1), var(--edge);
@@ -20,10 +20,15 @@ is given a body (panel, border and corners) instead of being left floating.
 
 .table { border-collapse: collapse; width: 100%; }
 
-/* The header sits on the raised step: it separates the labels from the data
-   without needing another rule line. */
+/*
+THE TABLE, redrawn on 2026-11-05 to the register of the tables this console is
+compared with: the header a quiet band halfway between the panel and the raised
+step, its labels a little lighter, every cell with more room on the sides (16 px
+at the table's edges), and the hover a veil you see without it competing with
+the data. The structure is the same: these rules only change how it looks.
+*/
 .table thead th {
-  background: var(--pan2);
+  background: color-mix(in srgb, var(--pan2) 60%, var(--pan));
   text-align: left;
   /* The same label as a panel title: see `--text-*` in tokens. The table
      header was at `--t-2` when the `--t-1` token itself has said, ever since it
@@ -33,15 +38,15 @@ is given a body (panel, border and corners) instead of being left floating.
   letter-spacing: var(--text-tracking);
   color: var(--mute);
   font-weight: var(--text-weight);
-  padding: var(--s-5) var(--s-7);
-  border-bottom: 1px solid var(--line);
+  padding: var(--s-5) var(--s-8);
+  border-bottom: 1px solid var(--line2);
   white-space: nowrap;
   /* A single height for every header; see `--row-header`. */
   height: var(--row-header);
 }
 
 .table td {
-  padding: var(--s-6) var(--s-7);
+  padding: var(--s-7) var(--s-8);
   border-bottom: 1px solid var(--line2);
   vertical-align: middle;
   color: var(--ink);
@@ -66,7 +71,9 @@ the tint.
 .table tbody tr:last-child td { border-bottom: 0; }
 
 .table tbody tr { transition: background var(--t-fast); }
-.table tbody tr:hover { background: var(--hover); }
+.table tbody tr:hover { background: var(--nav-hover); }
+.table thead th:first-child, .table td:first-child { padding-left: var(--s-10); }
+.table thead th:last-child, .table td:last-child { padding-right: var(--s-10); }
 
 /*
 Columns have rules, and until now they did not: all ten were left-aligned,
@@ -284,7 +291,8 @@ single edge, so the keyboard could not see which action it was on.
    draws no group: empty, its border was a two-pixel box at the row's end. */
 .actions:empty { display: none; }
 
-.actions > *:hover:not(:disabled),
+/* A tooltip's wrapper is a direct child too: it does not light up over a disabled action. */
+.actions > *:hover:not(:disabled, :has(> :disabled)),
 .actions > * > button:hover:not(:disabled) { background: var(--hover-strong) !important; }
 .actions > *:disabled,
 .actions > * > button:disabled { color: var(--faint); }
@@ -306,7 +314,8 @@ something you have to filter out in order to read the data.
 
 With an icon the column drops to ~100 px and the 140 left over go to the table.
 No action loses its name: it goes in `aria-label` (so the keyboard and the screen
-reader announce it just the same) and in `title`, which is the tooltip on hover.
+reader announce it just the same) and in the tooltip (`ui/Tooltip`), on hover
+and on keyboard focus.
 And the `⋮` menu carries EVERY action with its text, delete included, so no name
 lives only inside a drawing.
 */
@@ -482,3 +491,27 @@ which is where it was before.
   display: inline-grid;
   max-width: 100%;
 }
+
+/*
+A row's Details, open (2026-11-06): the row loses its line so the two read as one,
+and the detail line sits on the panel's quieter surface. The row carries `.openRow`
+and the line under it `.detailRow`, whose one cell spans the table. Written here
+once for every screen that folds a row's secondary fields under a `Details`
+chevron (`RowAction` with `chevronRight` / `chevronDown` and `aria-expanded`).
+*/
+.openRow > td { border-bottom-color: transparent; }
+.detailRow > td { padding-top: 0; background: var(--pan2); }
+
+/*
+A cell that spans several columns in a stacked row (a Details line, a group
+heading) takes the whole row, not the width of one fact. It carries no label
+(`labelCells` gives none to a spanning cell), so it is not a fact either: it starts
+its own line under the row's first one.
+*/
+.stack[data-stacked] > tbody > tr > td[colspan]:not([colspan='1']),
+.stack[data-stacked] > tbody > tr > th[colspan]:not([colspan='1']) {
+  flex-basis: 100%;
+  order: 3;
+}
+.stack[data-stacked] > tbody > tr.detailRow { padding-top: 0; }
+.stack[data-stacked] > tbody > tr.detailRow > td { margin-top: 0; padding: var(--s-4) 0 0; }

@@ -26,11 +26,10 @@ import {
   type CriterionOption,
 } from '../options'
 import type { Notice } from '../types'
-import styles from '../Zones.module.css'
+import l from './layout.module.css'
+import styles from './ZoneOptions.module.css'
 import { External } from '../../../ui/External'
 import { RFC_ZONEMD } from '../references'
-import frm from '../../../ui/Form.module.css'
-import { GroupRow } from '../../../ui/Form'
 import { Segmented } from '../../../ui/Segmented'
 import { noticeFromFailure } from '../../../lib/notice'
 import { Notifier } from '../../../ui/Notifier'
@@ -79,12 +78,13 @@ export function ZoneOptions({
     setNotice(null)
     setQuickTsig('')
     setLoading(true)
-    void getZoneOptions(token, zone, node).then((r) => {
+    void getZoneOptions(token, zone, node).then((outcome) => {
       setLoading(false)
-      if (r == null) {
-        setNotice({ type: 'danger', title: 'Error!', text: 'Unable to connect to the server. Please try again.' })
+      if (outcome.kind !== 'ok') {
+        setNotice(noticeFromFailure(outcome))
         return
       }
+      const r = outcome.data
       setResponse(r)
       setF(formFromOptions(r))
       setTab(optionsState(r).initialTab)
@@ -144,275 +144,302 @@ export function ZoneOptions({
       ) : (
         <>
           {/* A segmented control, not the pagination button's class: a tab
-              and a page number are not the same thing. */}
-          <Segmented
-            asTabs
-            label="Zone options"
-            options={TABS.filter((t) => e.tabs.includes(t.id)).map((t) => ({
-              id: t.id,
-              label: t.label,
-            }))}
-            active={tab}
-            onChoose={setTab}
-          />
+              and a page number are not the same thing. Drawn flat, as the
+              dialog's sections, and pinned while its tab scrolls. */}
+          <div className={styles.tabs}>
+            <Segmented
+              asTabs
+              flat
+              label="Zone options"
+              options={TABS.filter((t) => e.tabs.includes(t.id)).map((t) => ({
+                id: t.id,
+                label: t.label,
+              }))}
+              active={tab}
+              onChoose={setTab}
+            />
+          </div>
 
-          <div className={styles.fields}>
+          <div className={`${l.content} ${styles.panel}`}>
             {tab === 'General' && (
               <>
                 {e.catalog && (
-                  <>
-                    <Field label="Catalog Zone">
-                      {(id) => (
-                        <Select
-                          id={id}
-                          disabled={e.catalogLocked}
-                          value={f.catalog}
-                          onChange={(ev) => {
-                            const catalog = ev.target.value
-                            setF((prev) => (prev == null ? prev : chooseCatalog(prev, catalog)))
-                          }}
-                        >
-                          <option value="" />
-                          {(e.catalogLocked && f.catalog !== ''
-                            ? [f.catalog]
-                            : availableCatalogs
-                          ).map((c) => (
-                            <option key={c} value={c}>
-                              {c}
-                            </option>
-                          ))}
-                        </Select>
-                      )}
-                    </Field>
-                    {/* The General tab's explanations, index.html:5313-5348 in v15.5.1. */}
-                    <div className={styles.help}>Select a Catalog zone to register as its member zone.</div>
+                  <section className={l.section}>
+                    <div className={`${l.field} ${l.narrow}`}>
+                      <Field label="Catalog Zone">
+                        {(id) => (
+                          <Select
+                            id={id}
+                            disabled={e.catalogLocked}
+                            value={f.catalog}
+                            onChange={(ev) => {
+                              const catalog = ev.target.value
+                              setF((prev) => (prev == null ? prev : chooseCatalog(prev, catalog)))
+                            }}
+                          >
+                            <option value="" />
+                            {(e.catalogLocked && f.catalog !== ''
+                              ? [f.catalog]
+                              : availableCatalogs
+                            ).map((c) => (
+                              <option key={c} value={c}>
+                                {c}
+                              </option>
+                            ))}
+                          </Select>
+                        )}
+                      </Field>
+                      {/* The General tab's explanations, index.html:5313-5348 in v15.5.1. */}
+                      <div className={l.help}>Select a Catalog zone to register as its member zone.</div>
+                    </div>
 
-                    {e.overrideQueryAccess && (
-                      <div>
-                        <label className={styles.chk}>
-                          <input
-                            type="checkbox"
-                            disabled={e.overrideLocked}
-                            checked={f.overrideCatalogQueryAccess}
-                            onChange={(ev) => set('overrideCatalogQueryAccess', ev.target.checked)}
-                          />
-                          Override Query Access Option
-                        </label>
-                        <div className={styles.help}>Enable to override Query Access option in the Catalog zone.</div>
-                      </div>
-                    )}
-                    {e.overrideZoneTransfer && (
-                      <div>
-                        <label className={styles.chk}>
-                          <input
-                            type="checkbox"
-                            disabled={e.overrideLocked}
-                            checked={f.overrideCatalogZoneTransfer}
-                            onChange={(ev) => set('overrideCatalogZoneTransfer', ev.target.checked)}
-                          />
-                          Override Zone Transfer Option
-                        </label>
-                        <div className={styles.help}>Enable to override Zone Transfer option in the Catalog zone.</div>
-                      </div>
-                    )}
-                    {e.overrideNotify && (
-                      <div>
-                        <label className={styles.chk}>
-                          <input
-                            type="checkbox"
-                            disabled={e.overrideLocked}
-                            checked={f.overrideCatalogNotify}
-                            onChange={(ev) => set('overrideCatalogNotify', ev.target.checked)}
-                          />
-                          Override Notify Option
-                        </label>
-                        <div className={styles.help}>Enable to override Notify option in the Catalog zone.</div>
+                    {(e.overrideQueryAccess || e.overrideZoneTransfer || e.overrideNotify) && (
+                      <div className={l.block}>
+                        {e.overrideQueryAccess && (
+                          <div>
+                            <label className={l.check}>
+                              <input
+                                type="checkbox"
+                                disabled={e.overrideLocked}
+                                checked={f.overrideCatalogQueryAccess}
+                                onChange={(ev) => set('overrideCatalogQueryAccess', ev.target.checked)}
+                              />
+                              Override Query Access Option
+                            </label>
+                            <div className={l.checkHelp}>Enable to override Query Access option in the Catalog zone.</div>
+                          </div>
+                        )}
+                        {e.overrideZoneTransfer && (
+                          <div>
+                            <label className={l.check}>
+                              <input
+                                type="checkbox"
+                                disabled={e.overrideLocked}
+                                checked={f.overrideCatalogZoneTransfer}
+                                onChange={(ev) => set('overrideCatalogZoneTransfer', ev.target.checked)}
+                              />
+                              Override Zone Transfer Option
+                            </label>
+                            <div className={l.checkHelp}>Enable to override Zone Transfer option in the Catalog zone.</div>
+                          </div>
+                        )}
+                        {e.overrideNotify && (
+                          <div>
+                            <label className={l.check}>
+                              <input
+                                type="checkbox"
+                                disabled={e.overrideLocked}
+                                checked={f.overrideCatalogNotify}
+                                onChange={(ev) => set('overrideCatalogNotify', ev.target.checked)}
+                              />
+                              Override Notify Option
+                            </label>
+                            <div className={l.checkHelp}>Enable to override Notify option in the Catalog zone.</div>
+                          </div>
+                        )}
                       </div>
                     )}
                     <Alert type="info" title="Note!">
                       When a zone becomes a member of a Catalog zone, all of the Catalog zone&apos;s Options are
                       inherited unless they are explicitly overridden using the Override Options.
                     </Alert>
-                  </>
+                  </section>
                 )}
 
                 {e.primaryServer && (
-                  <>
-                    <Field
-                      label={
-                        e.primaryServerRequired
-                          ? 'Primary Name Server Addresses'
-                          : 'Primary Name Server Addresses (Optional)'
-                      }
-                    >
-                      {(id) => (
-                        <Textarea
-                          id={id}
-                          mono
-                          className={styles.area}
-                          disabled={e.primaryServerLocked}
-                          value={f.primaryNameServerAddresses}
-                          onChange={(ev) => set('primaryNameServerAddresses', ev.target.value)}
-                        />
-                      )}
-                    </Field>
-                    <div className={styles.help}>
-                      {e.primaryServerRequired
-                        ? 'Enter the primary name server addresses to sync the zone from.'
-                        : 'Enter the primary name server addresses to sync the zone from. When unspecified, the SOA Primary Name Server will be resolved and used.'}
-                    </div>
-
-                    {e.xfrProtocol && (
-                      <GroupRow modal label="Zone Transfer Protocol">
-                        {XFR_PROTOCOLS.map((x) => (
-                          <label key={x.value} className={styles.chk}>
-                            <input
-                              type="radio"
-                              name="zoneOptionsXfr"
-                              disabled={e.primaryServerLocked}
-                              checked={f.primaryZoneTransferProtocol === x.value}
-                              onChange={() => set('primaryZoneTransferProtocol', x.value)}
-                            />
-                            {x.label}
-                          </label>
-                        ))}
-                      </GroupRow>
-                    )}
-
-                    {e.tsigFromPrimary && (
-                      <Field label="TSIG Key Name (Optional)">
+                  <section className={l.section}>
+                    <div className={l.field}>
+                      <Field
+                        label={
+                          e.primaryServerRequired
+                            ? 'Primary Name Server Addresses'
+                            : 'Primary Name Server Addresses (Optional)'
+                        }
+                      >
                         {(id) => (
-                          <Select
+                          <Textarea
                             id={id}
+                            mono
+                            className={l.area}
                             disabled={e.primaryServerLocked}
-                            value={f.primaryZoneTransferTsigKeyName}
-                            onChange={(ev) => set('primaryZoneTransferTsigKeyName', ev.target.value)}
-                          >
-                            <option value="" />
-                            {availableTsigKeys.map((k) => (
-                              <option key={k} value={k}>
-                                {k}
-                              </option>
-                            ))}
-                          </Select>
+                            value={f.primaryNameServerAddresses}
+                            onChange={(ev) => set('primaryNameServerAddresses', ev.target.value)}
+                          />
                         )}
                       </Field>
+                      <div className={l.help}>
+                        {e.primaryServerRequired
+                          ? 'Enter the primary name server addresses to sync the zone from.'
+                          : 'Enter the primary name server addresses to sync the zone from. When unspecified, the SOA Primary Name Server will be resolved and used.'}
+                      </div>
+                    </div>
+
+                    {(e.xfrProtocol || e.tsigFromPrimary) && (
+                      <div className={l.row2}>
+                        {e.xfrProtocol && (
+                          <div className={l.group}>
+                            <div className={l.groupLabel}>Zone Transfer Protocol</div>
+                            <div className={l.across}>
+                              {XFR_PROTOCOLS.map((x) => (
+                                <label key={x.value} className={l.check}>
+                                  <input
+                                    type="radio"
+                                    name="zoneOptionsXfr"
+                                    disabled={e.primaryServerLocked}
+                                    checked={f.primaryZoneTransferProtocol === x.value}
+                                    onChange={() => set('primaryZoneTransferProtocol', x.value)}
+                                  />
+                                  {x.label}
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {e.tsigFromPrimary && (
+                          <Field label="TSIG Key Name (Optional)">
+                            {(id) => (
+                              <Select
+                                id={id}
+                                disabled={e.primaryServerLocked}
+                                value={f.primaryZoneTransferTsigKeyName}
+                                onChange={(ev) => set('primaryZoneTransferTsigKeyName', ev.target.value)}
+                              >
+                                <option value="" />
+                                {availableTsigKeys.map((k) => (
+                                  <option key={k} value={k}>
+                                    {k}
+                                  </option>
+                                ))}
+                              </Select>
+                            )}
+                          </Field>
+                        )}
+                      </div>
                     )}
 
                     {e.validateZone && (
-                      <div>
-                        <label className={styles.chk}>
-                          <input
-                            type="checkbox"
-                            disabled={e.primaryServerLocked}
-                            checked={f.validateZone}
-                            onChange={(ev) => set('validateZone', ev.target.checked)}
-                          />
-                          Use <External href={RFC_ZONEMD}>ZONEMD</External> to Validate Zone
-                        </label>
-                        {/* index.html:5402 in v15.5.1. */}
-                        <div className={styles.help}>
-                          When enabled, the secondary zone will be validated using the ZONEMD record after every
-                          zone transfer. The zone will get disabled if the validation fails. The zone must be DNSSEC
-                          signed for the validation to work.
+                      <div className={l.block}>
+                        <div>
+                          <label className={l.check}>
+                            <input
+                              type="checkbox"
+                              disabled={e.primaryServerLocked}
+                              checked={f.validateZone}
+                              onChange={(ev) => set('validateZone', ev.target.checked)}
+                            />
+                            Use <External href={RFC_ZONEMD}>ZONEMD</External> to Validate Zone
+                          </label>
+                          {/* index.html:5402 in v15.5.1. */}
+                          <div className={l.checkHelp}>
+                            When enabled, the secondary zone will be validated using the ZONEMD record after every
+                            zone transfer. The zone will get disabled if the validation fails. The zone must be DNSSEC
+                            signed for the validation to work.
+                          </div>
                         </div>
                       </div>
                     )}
-                  </>
+                  </section>
                 )}
               </>
             )}
 
             {tab === 'Query Access' && (
-              <>
-              <Criterion
-                name="zoneOptionsQueryAccess"
-                options={QUERY_ACCESS.filter(
-                  (o) => e.queryAccessWithNameServers || !o.value.includes('ZoneNameServers'),
-                )}
-                value={f.queryAccess}
-                locked={e.queryAccessLocked}
-                onChanged2={(v) => set('queryAccess', v)}
-                list={f.queryAccessNetworkACL}
-                listLabel="Network Access Control List (ACL)"
-                listHelp={ACL_HELP}
-                editableList={aclEditable(f.queryAccess) && !e.queryAccessLocked}
-                onList={(v) => set('queryAccessNetworkACL', v)}
-              />
-              {/* index.html:5467 in v15.5.1. */}
-              <Alert type="info" title="Note!">
-                The zone can always be queried from loopback IP addresses and internally by the DNS
-                Server irrespective of the Query Access configuration.
-              </Alert>
-              </>
+              <section className={l.section}>
+                <Criterion
+                  name="zoneOptionsQueryAccess"
+                  options={QUERY_ACCESS.filter(
+                    (o) => e.queryAccessWithNameServers || !o.value.includes('ZoneNameServers'),
+                  )}
+                  value={f.queryAccess}
+                  locked={e.queryAccessLocked}
+                  onChanged2={(v) => set('queryAccess', v)}
+                  list={f.queryAccessNetworkACL}
+                  listLabel="Network Access Control List (ACL)"
+                  listHelp={ACL_HELP}
+                  editableList={aclEditable(f.queryAccess) && !e.queryAccessLocked}
+                  onList={(v) => set('queryAccessNetworkACL', v)}
+                />
+                {/* index.html:5467 in v15.5.1. */}
+                <Alert type="info" title="Note!">
+                  The zone can always be queried from loopback IP addresses and internally by the DNS
+                  Server irrespective of the Query Access configuration.
+                </Alert>
+              </section>
             )}
 
             {tab === 'Zone Transfer' && (
               <>
-                <Criterion
-                  name="zoneOptionsZoneTransfer"
-                  options={TRANSFERS.filter(
-                    (o) => e.zoneTransferWithNameServers || !o.value.includes('ZoneNameServers'),
-                  )}
-                  value={f.zoneTransfer}
-                  locked={e.zoneTransferLocked}
-                  onChanged2={(v) => set('zoneTransfer', v)}
-                  list={f.zoneTransferNetworkACL}
-                  listLabel="Network Access Control List (ACL)"
-                  listHelp={ACL_HELP}
-                  editableList={aclEditable(f.zoneTransfer) && !e.zoneTransferLocked}
-                  onList={(v) => set('zoneTransferNetworkACL', v)}
-                />
-                {/* index.html:5522 in v15.5.1. */}
-                <Alert type="info" title="Note!">
-                  Zone transfer should be allowed only for trusted name servers to sync their secondary zone.
-                </Alert>
-                <Field label="Zone Transfer TSIG Key Names">
-                  {(id) => (
-                    <Textarea
-                      id={id}
-                      mono
-                      className={styles.area}
-                      disabled={e.zoneTransferLocked}
-                      value={f.zoneTransferTsigKeyNames}
-                      onChange={(ev) => set('zoneTransferTsigKeyNames', ev.target.value)}
-                    />
-                  )}
-                </Field>
-                {/* "Quick Add" only adds to the list above: it sends nothing. */}
-                <Field label="Quick Add">
-                  {(id) => (
-                    <Select
-                      id={id}
-                      disabled={e.zoneTransferLocked}
-                      value={quickTsig}
-                      onChange={(ev) => {
-                        setQuickTsig(ev.target.value)
-                        set('zoneTransferTsigKeyNames', applyQuickTsigKey(f.zoneTransferTsigKeyNames, ev.target.value))
-                      }}
-                    >
-                      <option value="" />
-                      <option value="none">None</option>
-                      {availableTsigKeys.map((k) => (
-                        <option key={k} value={k}>
-                          {k}
-                        </option>
-                      ))}
-                    </Select>
-                  )}
-                </Field>
-                {/* index.html:5537 in v15.5.1. */}
-                <Alert type="info" title="Note!">
-                  TSIG key names must be configured from the Settings before using them here. Entering one
-                  or more TSIG key names above will cause the DNS Server to authenticate all zone transfer
-                  requests. A secondary zone must be configured with one of the above keys to be able to
-                  perform a zone transfer.
-                </Alert>
+                <section className={l.section}>
+                  <Criterion
+                    name="zoneOptionsZoneTransfer"
+                    options={TRANSFERS.filter(
+                      (o) => e.zoneTransferWithNameServers || !o.value.includes('ZoneNameServers'),
+                    )}
+                    value={f.zoneTransfer}
+                    locked={e.zoneTransferLocked}
+                    onChanged2={(v) => set('zoneTransfer', v)}
+                    list={f.zoneTransferNetworkACL}
+                    listLabel="Network Access Control List (ACL)"
+                    listHelp={ACL_HELP}
+                    editableList={aclEditable(f.zoneTransfer) && !e.zoneTransferLocked}
+                    onList={(v) => set('zoneTransferNetworkACL', v)}
+                  />
+                  {/* index.html:5522 in v15.5.1. */}
+                  <Alert type="info" title="Note!">
+                    Zone transfer should be allowed only for trusted name servers to sync their secondary zone.
+                  </Alert>
+                </section>
+                <section className={l.section}>
+                  <Field label="Zone Transfer TSIG Key Names">
+                    {(id) => (
+                      <Textarea
+                        id={id}
+                        mono
+                        className={l.area}
+                        disabled={e.zoneTransferLocked}
+                        value={f.zoneTransferTsigKeyNames}
+                        onChange={(ev) => set('zoneTransferTsigKeyNames', ev.target.value)}
+                      />
+                    )}
+                  </Field>
+                  {/* "Quick Add" only adds to the list above: it sends nothing. */}
+                  <div className={styles.quick}>
+                    <Field label="Quick Add">
+                      {(id) => (
+                        <Select
+                          id={id}
+                          disabled={e.zoneTransferLocked}
+                          value={quickTsig}
+                          onChange={(ev) => {
+                            setQuickTsig(ev.target.value)
+                            set('zoneTransferTsigKeyNames', applyQuickTsigKey(f.zoneTransferTsigKeyNames, ev.target.value))
+                          }}
+                        >
+                          <option value="" />
+                          <option value="none">None</option>
+                          {availableTsigKeys.map((k) => (
+                            <option key={k} value={k}>
+                              {k}
+                            </option>
+                          ))}
+                        </Select>
+                      )}
+                    </Field>
+                  </div>
+                  {/* index.html:5537 in v15.5.1. */}
+                  <Alert type="info" title="Note!">
+                    TSIG key names must be configured from the Settings before using them here. Entering one
+                    or more TSIG key names above will cause the DNS Server to authenticate all zone transfer
+                    requests. A secondary zone must be configured with one of the above keys to be able to
+                    perform a zone transfer.
+                  </Alert>
+                </section>
               </>
             )}
 
             {tab === 'Notify' && (
-              <>
+              <section className={l.section}>
                 <Criterion
                   name="zoneOptionsNotify"
                   options={NOTIFICATIONS.filter((o) => {
@@ -432,22 +459,22 @@ export function ZoneOptions({
                   onList={(v) => set('notifyNameServers', v)}
                 />
                 {e.notifySeparate && (
-                  <Field label="Secondary Catalog Name Servers">
-                    {(id) => (
-                      <Textarea
-                        id={id}
-                        mono
-                        className={styles.area}
-                        disabled={f.notify !== 'SeparateNameServersForCatalogAndMemberZones'}
-                        value={f.notifySecondaryCatalogsNameServers}
-                        onChange={(ev) => set('notifySecondaryCatalogsNameServers', ev.target.value)}
-                      />
-                    )}
-                  </Field>
-                )}
-                {e.notifySeparate && (
-                  <div className={styles.help}>
-                    Enter only the IP addresses of the Secondary Catalog name servers above.
+                  <div className={l.field}>
+                    <Field label="Secondary Catalog Name Servers">
+                      {(id) => (
+                        <Textarea
+                          id={id}
+                          mono
+                          className={l.area}
+                          disabled={f.notify !== 'SeparateNameServersForCatalogAndMemberZones'}
+                          value={f.notifySecondaryCatalogsNameServers}
+                          onChange={(ev) => set('notifySecondaryCatalogsNameServers', ev.target.value)}
+                        />
+                      )}
+                    </Field>
+                    <div className={l.help}>
+                      Enter only the IP addresses of the Secondary Catalog name servers above.
+                    </div>
                   </div>
                 )}
                 {response?.notifyFailed === true && (
@@ -460,101 +487,112 @@ export function ZoneOptions({
                   Notification must be enabled to allow other name servers to trigger a zone transfer
                   immediately when the zone is updated.
                 </Alert>
-              </>
+              </section>
             )}
 
             {tab === 'Dynamic Updates' && (
               <>
-                <Criterion
-                  name="zoneOptionsUpdate"
-                  options={UPDATES.filter(
-                    (o) => e.updateWithNameServers || !o.value.includes('ZoneNameServers'),
-                  )}
-                  value={f.update}
-                  locked={false}
-                  onChanged2={(v) => set('update', v)}
-                  list={f.updateNetworkACL}
-                  listLabel="Network Access Control List (ACL)"
-                  listHelp={ACL_HELP}
-                  editableList={aclEditable(f.update)}
-                  onList={(v) => set('updateNetworkACL', v)}
-                />
-                {/* index.html:5662-5663 in v15.5.1: Note, then Warning, after the list. */}
-                <Alert type="info" title="Note!">
-                  Dynamic updates should be allowed only to trusted IP addresses since they will be able to
-                  add/delete records in the zone.
-                </Alert>
-                <Alert type="warning" title="Warning!">
-                  If no security policy is configured in the Primary Zone then access will be provided only
-                  based on the options selected here. Thus setting up a security policy in the Primary Zone
-                  is highly recommended.
-                </Alert>
+                <section className={l.section}>
+                  {/* The `Warning!` before the choice it is about (the design's
+                      rule); upstream has it after the list, beside the `Note!`
+                      (index.html:5662-5663 in v15.5.1), which stays there. */}
+                  <Alert type="warning" title="Warning!">
+                    If no security policy is configured in the Primary Zone then access will be provided only
+                    based on the options selected here. Thus setting up a security policy in the Primary Zone
+                    is highly recommended.
+                  </Alert>
+                  <Criterion
+                    name="zoneOptionsUpdate"
+                    options={UPDATES.filter(
+                      (o) => e.updateWithNameServers || !o.value.includes('ZoneNameServers'),
+                    )}
+                    value={f.update}
+                    locked={false}
+                    onChanged2={(v) => set('update', v)}
+                    list={f.updateNetworkACL}
+                    listLabel="Network Access Control List (ACL)"
+                    listHelp={ACL_HELP}
+                    editableList={aclEditable(f.update)}
+                    onList={(v) => set('updateNetworkACL', v)}
+                  />
+                  <Alert type="info" title="Note!">
+                    Dynamic updates should be allowed only to trusted IP addresses since they will be able to
+                    add/delete records in the zone.
+                  </Alert>
+                </section>
 
                 {e.securityPolicies && (
-                  <div className={styles.group}>
-                    <div className={styles.groupTitle}>Security Policy</div>
-                    {f.updateSecurityPolicies.map((row, i) => (
-                      <div key={i} className={styles.inline}>
-                        <Select
-                          aria-label={`TSIG key name ${i + 1}`}
-                          value={row.tsigKeyName}
-                          onChange={(ev) =>
-                            set(
-                              'updateSecurityPolicies',
-                              f.updateSecurityPolicies.map((x, j) =>
-                                j === i ? { ...x, tsigKeyName: ev.target.value } : x,
-                              ),
-                            )
-                          }
-                        >
-                          <option value="" />
-                          {availableTsigKeys.map((k) => (
-                            <option key={k} value={k}>
-                              {k}
-                            </option>
-                          ))}
-                        </Select>
-                        <Input
-                          mono
-                          aria-label={`Domain ${i + 1}`}
-                          value={row.domain}
-                          onChange={(ev) =>
-                            set(
-                              'updateSecurityPolicies',
-                              f.updateSecurityPolicies.map((x, j) =>
-                                j === i ? { ...x, domain: ev.target.value } : x,
-                              ),
-                            )
-                          }
-                        />
-                        <Input
-                          mono
-                          aria-label={`Allowed types ${i + 1}`}
-                          value={row.allowedTypes}
-                          onChange={(ev) =>
-                            set(
-                              'updateSecurityPolicies',
-                              f.updateSecurityPolicies.map((x, j) =>
-                                j === i ? { ...x, allowedTypes: ev.target.value } : x,
-                              ),
-                            )
-                          }
-                        />
-                        <Button
-                          size="sm"
-                          onClick={() =>
-                            set(
-                              'updateSecurityPolicies',
-                              f.updateSecurityPolicies.filter((_, j) => j !== i),
-                            )
-                          }
-                        >
-                          Remove
-                        </Button>
+                  <section className={l.section}>
+                    <div className={l.title}>Security Policy</div>
+                    {f.updateSecurityPolicies.length > 0 && (
+                      <div className={styles.policies}>
+                        {f.updateSecurityPolicies.map((row, i) => (
+                          <div key={i} className={styles.policy}>
+                            <Select
+                              aria-label={`TSIG key name ${i + 1}`}
+                              value={row.tsigKeyName}
+                              onChange={(ev) =>
+                                set(
+                                  'updateSecurityPolicies',
+                                  f.updateSecurityPolicies.map((x, j) =>
+                                    j === i ? { ...x, tsigKeyName: ev.target.value } : x,
+                                  ),
+                                )
+                              }
+                            >
+                              <option value="" />
+                              {availableTsigKeys.map((k) => (
+                                <option key={k} value={k}>
+                                  {k}
+                                </option>
+                              ))}
+                            </Select>
+                            <Input
+                              mono
+                              aria-label={`Domain ${i + 1}`}
+                              value={row.domain}
+                              onChange={(ev) =>
+                                set(
+                                  'updateSecurityPolicies',
+                                  f.updateSecurityPolicies.map((x, j) =>
+                                    j === i ? { ...x, domain: ev.target.value } : x,
+                                  ),
+                                )
+                              }
+                            />
+                            <Input
+                              mono
+                              aria-label={`Allowed types ${i + 1}`}
+                              value={row.allowedTypes}
+                              onChange={(ev) =>
+                                set(
+                                  'updateSecurityPolicies',
+                                  f.updateSecurityPolicies.map((x, j) =>
+                                    j === i ? { ...x, allowedTypes: ev.target.value } : x,
+                                  ),
+                                )
+                              }
+                            />
+                            <Button
+                              size="sm"
+                              variant="danger"
+                              lead="trash"
+                              onClick={() =>
+                                set(
+                                  'updateSecurityPolicies',
+                                  f.updateSecurityPolicies.filter((_, j) => j !== i),
+                                )
+                              }
+                            >
+                              Remove
+                            </Button>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                    <div>
+                    )}
+                    <div className={l.acts}>
                       <Button
+                        lead="add"
                         onClick={() =>
                           set('updateSecurityPolicies', [
                             ...f.updateSecurityPolicies,
@@ -574,7 +612,7 @@ export function ZoneOptions({
                       comma separator to specify more than one record type. Use ANY to specify all record
                       types.
                     </Alert>
-                  </div>
+                  </section>
                 )}
               </>
             )}
@@ -615,10 +653,10 @@ function Criterion({
 }) {
   return (
     <>
-      <div className={frm.mrowCtl}>
+      <div className={l.choices}>
         {options.map((o) => (
-          <div key={o.value}>
-            <label className={styles.chk}>
+          <div key={o.value} className={l.choice}>
+            <label className={l.check}>
               <input
                 type="radio"
                 name={name}
@@ -628,23 +666,25 @@ function Criterion({
               />
               {o.label}
             </label>
-            <div className={styles.help}>{o.help}</div>
+            <div className={l.help}>{o.help}</div>
           </div>
         ))}
       </div>
-      <Field label={listLabel}>
-        {(id) => (
-          <Textarea
-            id={id}
-            mono
-            className={styles.area}
-            disabled={!editableList}
-            value={list}
-            onChange={(ev) => onList(ev.target.value)}
-          />
-        )}
-      </Field>
-      <div className={styles.help}>{listHelp}</div>
+      <div className={l.field}>
+        <Field label={listLabel}>
+          {(id) => (
+            <Textarea
+              id={id}
+              mono
+              className={l.area}
+              disabled={!editableList}
+              value={list}
+              onChange={(ev) => onList(ev.target.value)}
+            />
+          )}
+        </Field>
+        <div className={l.help}>{listHelp}</div>
+      </div>
     </>
   )
 }

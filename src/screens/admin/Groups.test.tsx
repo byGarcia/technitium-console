@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Groups } from './Groups'
 import * as client from '../../api/client'
@@ -44,11 +44,62 @@ describe('Groups: the table', () => {
     expect(screen.getByText('Total Groups: 3')).toBeInTheDocument()
   })
 
-  it('a description with newlines is drawn over several lines', async () => {
+  /* On the row it is cut to one line; its Details holds it whole, a line per
+     line, as upstream's `<br />` draws it (deviation 23). */
+  it('a description with newlines is drawn over several lines under Details', async () => {
     server([{ name: 'Ops', description: 'first line\nsecond line' }])
+    const user = userEvent.setup()
     render(<Groups {...props} />)
-    expect(await screen.findByText('first line')).toBeInTheDocument()
+    expect(await screen.findByText('first line second line')).toBeInTheDocument()
+    const details = screen.getByRole('button', { name: 'Details' })
+    expect(details).toHaveAttribute('aria-expanded', 'false')
+    await user.click(details)
+    expect(details).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByText('first line')).toBeInTheDocument()
     expect(screen.getByText('second line')).toBeInTheDocument()
+  })
+
+  it('the menu holds the two upstream entries, and the name opens the details', async () => {
+    const spy = server()
+    const user = userEvent.setup()
+    render(<Groups {...props} />)
+    await user.click((await screen.findAllByRole('button', { name: /^Actions for / }))[0])
+    expect(within(screen.getByRole('menu')).getAllByRole('menuitem').map((i) => i.textContent)).toEqual([
+      'View Details',
+      'Delete Group',
+    ])
+    await user.keyboard('{Escape}')
+    await user.click(screen.getByRole('button', { name: 'Administrators' }))
+    await screen.findByLabelText('Members')
+    expect(spy.mock.calls.find((c) => c[0] === 'admin/groups/get')?.[1]?.body).toEqual({
+      group: 'Administrators',
+      includeUsers: 'true',
+    })
+  })
+
+  it('the search narrows by name or description, writes ?q= and asks nothing', async () => {
+    const spy = server()
+    const user = userEvent.setup()
+    const { unmount } = render(<Groups {...props} />)
+    await screen.findByText('Total Groups: 3')
+    const calls = spy.mock.calls.length
+    await user.type(screen.getByLabelText('Search'), 'super')
+    expect(screen.getAllByRole('button', { name: /^Actions for / })).toHaveLength(1)
+    expect(screen.getByText('Total Groups: 3, 1 shown')).toBeInTheDocument()
+    expect(window.location.search).toBe('?q=super')
+    expect(spy.mock.calls.length).toBe(calls)
+    unmount()
+    expect(window.location.search).toBe('')
+  })
+
+  it('a search in the address bar is read on arrival', async () => {
+    window.history.replaceState(null, '', '/admin/groups/?q=nothing-like-this')
+    server()
+    const { unmount } = render(<Groups {...props} />)
+    expect(await screen.findByText('No Group Found')).toBeInTheDocument()
+    expect(screen.getByLabelText('Search')).toHaveValue('nothing-like-this')
+    unmount()
+    window.history.replaceState(null, '', '/')
   })
 
   it('with no groups the total says zero', async () => {
@@ -113,7 +164,8 @@ describe('Groups: the details modal', () => {
     const user = userEvent.setup()
     render(<Groups {...props} onNotice={onNotice} />)
 
-    await user.click((await screen.findAllByRole('button', { name: 'View Details' }))[0])
+    await user.click((await screen.findAllByRole('button', { name: /^Actions for / }))[0])
+    await user.click(await screen.findByRole('menuitem', { name: 'View Details' }))
     await screen.findByLabelText('Members')
     await user.click(screen.getByRole('button', { name: 'Save' }))
 
@@ -133,7 +185,8 @@ describe('Groups: the details modal', () => {
     const user = userEvent.setup()
     render(<Groups {...props} />)
 
-    await user.click((await screen.findAllByRole('button', { name: 'View Details' }))[0])
+    await user.click((await screen.findAllByRole('button', { name: /^Actions for / }))[0])
+    await user.click(await screen.findByRole('menuitem', { name: 'View Details' }))
     const name = await screen.findByLabelText('Name')
     await user.clear(name)
     await user.type(name, 'Others')
@@ -149,7 +202,8 @@ describe('Groups: the details modal', () => {
     const user = userEvent.setup()
     render(<Groups {...props} />)
 
-    await user.click((await screen.findAllByRole('button', { name: 'View Details' }))[0])
+    await user.click((await screen.findAllByRole('button', { name: /^Actions for / }))[0])
+    await user.click(await screen.findByRole('menuitem', { name: 'View Details' }))
     const add = await screen.findByLabelText('Add User')
 
     await choose(user, add, 'testuser')

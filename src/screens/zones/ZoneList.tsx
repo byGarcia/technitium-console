@@ -1,3 +1,4 @@
+import { readParam, writeParams } from '../../lib/url-state'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { readPerPage, writePerPage } from '../../lib/stored-per-page'
 import {
@@ -9,6 +10,7 @@ import {
   typeLabel,
   exportZone,
   listZones,
+  listAllZones,
   zoneNameOf,
   resyncZone,
   ZONE_TYPES,
@@ -22,14 +24,17 @@ import { Field, Input, Select } from '../../ui/Field'
 import { SectionHeader } from '../../ui/SectionHeader'
 import { DomainName } from '../../ui/DomainName'
 import { Tag, type TagTone } from '../../ui/Tag'
-import { Menu, Separator } from '../../ui/Menu'
+import { Menu, MenuItem, Separator } from '../../ui/Menu'
 import { minuteStamp as date } from '../../lib/dates'
 import { statusText, pageWindow } from '../../lib/pagination'
 import tbl from '../../ui/Table.module.css'
-import { RowAction, Th, useSort, type Keys, Table } from '../../ui/Table'
+import { Th, useSort, type Keys, Table } from '../../ui/Table'
 import styles from './Zones.module.css'
 import type { Notice, Confirmation } from './types'
 import { Pagination } from '../../ui/Pagination'
+import { DataTable, DataFoot, End, Grow } from '../../ui/DataTable'
+import { ZoneSummary } from './ZoneSummary'
+import { zoneColour } from './zone-colours'
 import { noticeFromFailure } from '../../lib/notice'
 
 /*
@@ -83,6 +88,11 @@ export interface ZoneListProps extends ZoneActions {
 
 const ZONES_PER_PAGE_KEY = 'optZonesPerPage'
 
+/* The zone list's view in the address bar; `Zones` drops them with the section. */
+export const LIST_PAGE = 'page'
+export const LIST_NAME = 'name'
+export const LIST_TYPE = 'type'
+
 export function ZoneList({
   token,
   node = '',
@@ -101,6 +111,8 @@ export function ZoneList({
   refresh,
 }: ZoneListProps) {
   const [zones, setZones] = useState<Zone[]>([])
+  /* Every zone, for the summary over the list (`ZoneSummary`). */
+  const [allZones, setAllZones] = useState<Zone[] | null>(null)
   /*
   Whether the first load has come back at all. `zones` starts as an empty array,
   so without this the wait was drawn exactly like a server with no zones: "1-0 (0)
@@ -131,20 +143,43 @@ export function ZoneList({
 
   // The filters are form state: they do not apply until "Go" is pressed,
   // just like upstream, where `refreshZones` reads them at that moment.
-  const [nameFilter, setNameFilter] = useState('')
-  const [typeFilter, setTypeFilter] = useState('')
+  /* The bar's `?name=`, `?type=` and `?page=` (`lib/url-state.ts`) are the list a
+     reload or a copied link lands on, applied as Go would apply them. */
+  const [nameFilter, setNameFilter] = useState(() => readParam(LIST_NAME) ?? '')
+  const [typeFilter, setTypeFilter] = useState(() => readParam(LIST_TYPE) ?? '')
+  /* The type the list on screen was loaded with: the summary's pressed chip. */
+  const [appliedType, setAppliedType] = useState('')
   /* Remembered under upstream's key (zone.js:626-632). */
   const [perPage, setPerPage] = useState(() => readPerPage(ZONES_PER_PAGE_KEY, ZONES_PER_PAGE, 10))
-  const [pageField, setPageField] = useState('1')
+  const [pageField, setPageField] = useState(() => readParam(LIST_PAGE) ?? '1')
 
   const nameRef = useRef<HTMLInputElement>(null)
 
+  /*
+  The summary reads every zone (`listAllZones`), so it is NOT read with every
+  page or Go: only on an outside refresh (mount, a new node, a change made in a
+  dialog: `refresh`) and after a change made from the list. It runs beside the paged read, and only the newest
+  answer lands (`summarySeq`), so a slow answer for another node never paints
+  over the current one.
+  */
+  const summaryWanted = useRef(true)
+  const summarySeq = useRef(0)
+
   const load = useCallback(
-    async (page: number) => {
+    async (page: number, typeOverride?: string) => {
+      if (summaryWanted.current) {
+        summaryWanted.current = false
+        const seq = ++summarySeq.current
+        void listAllZones(token, node).then((all) => {
+          if (seq !== summarySeq.current) return
+          /* A failed summary is not drawn: the cards would count another moment. */
+          setAllZones(all)
+        })
+      }
       setBusy(true)
       const r = await listZones(token, {
         filterName: nameFilter,
-        filterType: typeFilter,
+        filterType: typeOverride ?? typeFilter,
         pageNumber: page,
         zonesPerPage: perPage,
         node,
@@ -175,6 +210,14 @@ export function ZoneList({
       }
 
       const data = r.data
+      setAppliedType(typeOverride ?? typeFilter)
+      /* What is on screen goes to the bar, replacing the entry, as Blocking keeps
+         its filter: the page (left out on 1) and the filters that were sent. */
+      writeParams({
+        [LIST_PAGE]: data.pageNumber > 1 ? String(data.pageNumber) : null,
+        [LIST_NAME]: nameFilter,
+        [LIST_TYPE]: typeOverride ?? typeFilter,
+      })
       setStale(false)
       setLastGood(new Date().toISOString())
       setZones(data.zones)
@@ -212,6 +255,7 @@ export function ZoneList({
     pageFieldRef.current = pageField
   }, [pageField])
   useEffect(() => {
+    summaryWanted.current = true
     const n = Number(pageFieldRef.current)
     void loadRef.current(pageFieldRef.current === '' || Number.isNaN(n) ? 1 : n)
   }, [refresh])
@@ -238,6 +282,7 @@ export function ZoneList({
       onNotice(noticeFromFailure(outcome))
       return
     }
+    summaryWanted.current = true
     await load(pageNumber)
     onNotice(success)
   }
@@ -310,13 +355,10 @@ export function ZoneList({
     onNotice({ type: 'success', title: 'Zone Exported!', text: 'Zone file was exported successfully.' })
   }
 
+  /* Only reachable with something ticked: the button is disabled otherwise (the
+     selection bar's comment, below), so upstream's `Missing!` alert for an empty
+     selection has no path left to it. */
   function deleteChecked() {
-    if (checkedOnes.length === 0) {
-      // A plain `alert()` in upstream, not a `showAlert` of the screen.
-      onNotice({ type: 'warning', title: 'Missing!', text: 'Please select one or more zones to delete.' })
-      return
-    }
-
     const list = zones
       .filter((z) => checkedOnes.includes(z.name))
       .map((z) => (z.nameIdn == null ? (z.name === '' ? '.' : z.name) : `${z.nameIdn} (${z.name})`))
@@ -363,6 +405,13 @@ export function ZoneList({
   const { rows: visibleZones, sort, toggle } = useSort(KEYS, zones)
 
   const allChecked = zones.length > 0 && checkedOnes.length === zones.length
+  /*
+  The Expiry column only when a zone on this page has an expiry (2026-11-05).
+  Only secondary and stub zones carry one, so on most servers it was a column
+  blank from top to bottom, taking width from the zone's name. When it shows it
+  is the same column, and it sorts the same way.
+  */
+  const withExpiry = zones.some((z) => z.expiry != null)
 
   // The last page is asked for with -1: the server works it out itself.
   const pagination = <Pagination window={pg} current={pageNumber} last={-1} onGoTo={goTo} />
@@ -376,70 +425,16 @@ export function ZoneList({
           </Button></>}
       />
 
-      <div className={styles.flt}>
-        <div className={styles.filterWide}>
-          <Field label="Name">
-            {(id) => (
-              <Input
-                id={id}
-                ref={nameRef}
-                search
-                placeholder="abc or a* or *b* or a?c"
-                value={nameFilter}
-                onChange={(e) => setNameFilter(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
-              />
-            )}
-          </Field>
-        </div>
-        <div className={styles.filterMedium}>
-          <Field label="Type">
-            {(id) => (
-              <Select id={id} value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
-                <option value="" />
-                {ZONE_TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </Select>
-            )}
-          </Field>
-        </div>
-        <div className={styles.fltShort}>
-          <Field label="Page Number">
-            {(id) => (
-              <Input
-                id={id}
-                mono
-                value={pageField}
-                onChange={(e) => setPageField(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
-              />
-            )}
-          </Field>
-        </div>
-        <div className={styles.fltShort}>
-          <Field label="Zones Per Page">
-            {(id) => (
-              <Select id={id} value={String(perPage)} onChange={(e) => {
-                const n = Number(e.target.value)
-                writePerPage(ZONES_PER_PAGE_KEY, n)
-                setPerPage(n)
-              }}>
-                {ZONES_PER_PAGE.map((n) => (
-                  <option key={n} value={n}>
-                    {n}
-                  </option>
-                ))}
-              </Select>
-            )}
-          </Field>
-        </div>
-        <Button variant="primary" disabled={busy} onClick={applyFilters}>
-          Go
-        </Button>
-      </div>
+      {allZones != null && (
+        <ZoneSummary
+          zones={allZones}
+          activeType={appliedType}
+          onType={(t) => {
+            setTypeFilter(t)
+            void load(1, t)
+          }}
+        />
+      )}
 
       {/*
       The stale-data strip. It goes ABOVE the table and not inside it: what has
@@ -453,129 +448,207 @@ export function ZoneList({
       */}
       {stale && <StaleData since={lastGood} onRetry={() => void load(pageNumber)} />}
 
-      {!loaded ? (
-        <Loading />
-      ) : (
-        <>
       {/*
-      The selection bar: what is selected, and the verb that acts on it.
-
-      `Delete Zones` used to live in the header, next to `Add Zone`, and the
-      Zones design moved it here and said why: **the button
-      lives glued to the number that says how much it acts on**. Up there it read
-      like a screen-level action, next to the one that creates a zone, and nothing
-      said it worked on the ticked rows.
-
-      The bar is ALWAYS drawn and the button is always enabled, which is not what
-      the drawing shows in its loading artboard: with nothing ticked, upstream
-      answers a click with `Please select one or more zones to delete.`, and that
-      is behaviour, not decoration. A bar that only appeared with a selection would
-      take that path off the screen; the drawing does not get to remove an
-      upstream answer.
-
-      The select-all checkbox is NOT repeated here. The drawing has one in the bar
-      and another in the table header; two controls doing the same thing is what
-      this console removes everywhere else, and the table's is the one the rows
-      align with.
+      The list, its toolbar and its foot as one card (`ui/DataTable`, 2026-11-05).
+      The selection's count and its verb sit at the toolbar's end: see below.
       */}
-      <div className={styles.selection}>
-        <span>
-          {checkedOnes.length === 0
-            ? state
-            : `${checkedOnes.length} of ${zones.length} zones selected`}
-        </span>
-        <Button lead="trash" variant="danger" disabled={!canDelete || busy} onClick={deleteChecked}>
-          Delete Zones
-        </Button>
-      </div>
-
-      <Table
-        stack
-        /* `tableClass` and not `className`: the first reaches the `<table>` and
-           the second stays on the wrapper, which has no border. Measured: with
-           `className` the `--dan` border did not appear. */
-        tableClass={stale ? styles.stale : undefined}
-        header={
+      <DataTable
+        toolbar={
           <>
-            {/* The checkbox is 18 px; it is pressed from anywhere in its cell. */}
-            <th style={{ width: 38 }} className={tbl.checkCell}>
-              <label>
-                <input
-                  disabled={stale}
-                  type="checkbox"
-                  aria-label="Select all zones"
-                  checked={allChecked}
-                  onChange={(e) => setChecked(e.target.checked ? zones.map((z) => z.name) : [])}
-                />
-              </label>
-            </th>
-            <th style={{ width: 34 }}>#</th>
-            <Th field="zone" sort={sort} onSort={toggle}>Zone</Th>
-            <Th field="type" sort={sort} onSort={toggle} style={{ width: 120 }}>Type</Th>
-            <Th field="dnssec" sort={sort} onSort={toggle} style={{ width: 90 }}>DNSSEC</Th>
-            <Th field="status" sort={sort} onSort={toggle} style={{ width: 120 }}>Status</Th>
-            <Th
-              field="serial"
-              sort={sort}
-              onSort={toggle}
-              style={{ width: 110, textAlign: 'right' }}
-            >
-              Serial
-            </Th>
-            <Th field="expiry" sort={sort} onSort={toggle} style={{ width: 110 }}>Expiry</Th>
-            <Th field="modified" sort={sort} onSort={toggle} style={{ width: 150 }}>
-              Last Modified
-            </Th>
-            {/* The actions column reserved 230 px with three labels inside;
-                with icons 120 is enough and the 110 left over go to the data,
-                which is what the table is about. */}
-            <th style={{ width: 120 }} />
+            <Grow>
+              <Field inline label="Name">
+                {(id) => (
+                  <Input
+                    id={id}
+                    ref={nameRef}
+                    search
+                    placeholder="abc or a* or *b* or a?c"
+                    value={nameFilter}
+                    onChange={(e) => setNameFilter(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
+                  />
+                )}
+              </Field>
+            </Grow>
+            <div className={styles.filterMedium}>
+              <Field inline label="Type">
+                {(id) => (
+                  <Select id={id} value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
+                    <option value="" />
+                    {ZONE_TYPES.map((t) => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
+                    ))}
+                  </Select>
+                )}
+              </Field>
+            </div>
+            <Button variant="primary" disabled={busy} onClick={applyFilters}>
+              Go
+            </Button>
+      
+          {/*
+          The selection bar: what is selected, and the verb that acts on it.
+
+          `Delete Zones` used to live in the header, next to `Add Zone`, and the
+          Zones design moved it here and said why: **the button
+          lives glued to the number that says how much it acts on**. Up there it read
+          like a screen-level action, next to the one that creates a zone, and nothing
+          said it worked on the ticked rows.
+
+          The bar is ALWAYS drawn, and the button in it is disabled until a zone is
+          ticked (Adrián's decision, 2026-11-05; a deliberate deviation in
+          CONVENTIONS.md). Upstream keeps it enabled and answers a click on an empty
+          selection with an `alert()`, `Please select one or more zones to delete.`
+          (zone.js:1139 on upstream master). This console used to replicate that,
+          but a verb glued to the count it acts on can say "nothing to act on" by
+          itself, without making you click to be told. Disabled and not hidden, as everywhere here: a bar
+          that only appeared with a selection would hide where the verb lives.
+
+          The select-all checkbox is NOT repeated here. The drawing has one in the bar
+          and another in the table header; two controls doing the same thing is what
+          this console removes everywhere else, and the table's is the one the rows
+          align with.
+          */}
+            <End>
+              {/* The status above the table as well as under it, as upstream draws
+                  it (zone.js:923); the selection's count while rows are ticked. */}
+              {loaded && (
+                <span>
+                  {checkedOnes.length === 0 ? state : `${checkedOnes.length} of ${zones.length} zones selected`}
+                </span>
+              )}
+              <Button lead="trash" variant="danger" disabled={!canDelete || busy || checkedOnes.length === 0} onClick={deleteChecked}>
+                Delete Zones
+              </Button>
+            </End>
           </>
         }
+        foot={
+          loaded ? (
+            <DataFoot count={state}>
+              <div className={styles.pageField}>
+                <Field inline label="Page Number">
+                  {(id) => (
+                    <Input
+                      id={id}
+                      mono
+                      value={pageField}
+                      onChange={(e) => setPageField(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
+                    />
+                  )}
+                </Field>
+              </div>
+              <div className={styles.perPage}>
+                <Field inline label="Zones Per Page">
+                  {(id) => (
+                    <Select id={id} value={String(perPage)} onChange={(e) => {
+                      const n = Number(e.target.value)
+                      writePerPage(ZONES_PER_PAGE_KEY, n)
+                      setPerPage(n)
+                    }}>
+                      {ZONES_PER_PAGE.map((n) => (
+                        <option key={n} value={n}>
+                          {n}
+                        </option>
+                      ))}
+                    </Select>
+                  )}
+                </Field>
+              </div>
+              {pagination}
+            </DataFoot>
+          ) : undefined
+        }
       >
-        {visibleZones.length === 0 ? (
-          <tr>
-            <td colSpan={10} className={tbl.noRows}>
-              No Zone Found
-            </td>
-          </tr>
+        {!loaded ? (
+          <Loading />
         ) : (
-          visibleZones.map((z, i) => (
-            <ZoneRow
-              key={z.name}
-              zone={z}
-              index={firstRow + i}
-              checked={checkedOnes.includes(z.name)}
-              stale={stale}
-              busy={busy}
-              canModify={canModify}
-              canDelete={canDelete}
-              onCheck={(v) =>
-                setChecked((m) => (v ? [...m, z.name] : m.filter((n) => n !== z.name)))
-              }
-              onOpen={onOpen}
-              onEditZoneFile={onEditZoneFile}
-              onEnable={enable}
-              onDisable={disable}
-              onDelete={remove}
-              onResync={resync}
-              onImport={onImport}
-              onExport={runExport}
-              onConvert={onConvert}
-              onClone={onClone}
-              onPermissions={onPermissions}
-              onOptions={onOptions}
-            />
-          ))
+          <Table
+            stack
+            /* `tableClass` and not `className`: the first reaches the `<table>` and
+               the second stays on the wrapper, which has no border. Measured: with
+               `className` the `--dan` border did not appear. */
+            tableClass={stale ? styles.stale : undefined}
+            header={
+              <>
+                {/* The checkbox is 18 px; it is pressed from anywhere in its cell. */}
+                <th style={{ width: 38 }} className={tbl.checkCell}>
+                  <label>
+                    <input
+                      disabled={stale}
+                      type="checkbox"
+                      aria-label="Select all zones"
+                      checked={allChecked}
+                      onChange={(e) => setChecked(e.target.checked ? zones.map((z) => z.name) : [])}
+                    />
+                  </label>
+                </th>
+                <th style={{ width: 34 }}>#</th>
+                <Th field="zone" sort={sort} onSort={toggle}>Zone</Th>
+                <Th field="type" sort={sort} onSort={toggle} style={{ width: 120 }}>Type</Th>
+                <Th field="dnssec" sort={sort} onSort={toggle} style={{ width: 90 }}>DNSSEC</Th>
+                <Th field="status" sort={sort} onSort={toggle} style={{ width: 120 }}>Status</Th>
+                <Th
+                  field="serial"
+                  sort={sort}
+                  onSort={toggle}
+                  style={{ width: 110, textAlign: 'right' }}
+                >
+                  Serial
+                </Th>
+                {withExpiry && <Th field="expiry" sort={sort} onSort={toggle} style={{ width: 140 }}>Expiry</Th>}
+                <Th field="modified" sort={sort} onSort={toggle} style={{ width: 150 }}>
+                  Last Modified
+                </Th>
+                {/* One `⋮` per row, as upstream has it (zone.js:828): the menu
+                    carries every action, Enable or Disable and Zone Options
+                    included. */}
+                <th style={{ width: 52 }} />
+              </>
+            }
+          >
+            {visibleZones.length === 0 ? (
+              <tr>
+                <td colSpan={withExpiry ? 10 : 9} className={tbl.noRows}>
+                  No Zone Found
+                </td>
+              </tr>
+            ) : (
+              visibleZones.map((z, i) => (
+                <ZoneRow
+                  key={z.name}
+                  zone={z}
+                  index={firstRow + i}
+                  withExpiry={withExpiry}
+                  checked={checkedOnes.includes(z.name)}
+                  stale={stale}
+                  busy={busy}
+                  canModify={canModify}
+                  canDelete={canDelete}
+                  onCheck={(v) =>
+                    setChecked((m) => (v ? [...m, z.name] : m.filter((n) => n !== z.name)))
+                  }
+                  onOpen={onOpen}
+                  onEditZoneFile={onEditZoneFile}
+                  onEnable={enable}
+                  onDisable={disable}
+                  onDelete={remove}
+                  onResync={resync}
+                  onImport={onImport}
+                  onExport={runExport}
+                  onConvert={onConvert}
+                  onClone={onClone}
+                  onPermissions={onPermissions}
+                  onOptions={onOptions}
+                />
+              ))
+            )}
+          </Table>
         )}
-      </Table>
-
-      <div className={`${styles.count} ${styles.countFoot}`}>
-        <span>{state}</span>
-        {pagination}
-      </div>
-        </>
-      )}
+      </DataTable>
     </>
   )
 }
@@ -583,6 +656,7 @@ export function ZoneList({
 interface RowProps {
   zone: Zone
   index: number
+  withExpiry: boolean
   checked: boolean
   /** With stale data the row is not selectable. */
   stale: boolean
@@ -640,16 +714,18 @@ function ZoneRow(p: RowProps) {
           : 'neutral'
 
   /*
-  The catalog the zone is a MEMBER of, and nothing else.
-
-  Before, if the zone was itself a catalog, it got a tag with its own name: the
-  cell said `catalog.test` twice in a row and the `Type` column already said
-  "Catalog". It informed of nothing. Upstream draws the tag only when there is
-  membership (`zone.js:796`: `if (zones[i].catalog != null)`), so that was an
-  addition of ours, not parity.
+  The tag under the zone's name, as upstream draws it (zone.js:796-809): the
+  catalog the zone is a member of, in grey; or, when the zone IS a catalog, its own
+  name in blue (`label-info`). An earlier version dropped the second as an
+  addition of ours: it is upstream's, and it is back. Both are names, not states,
+  so they keep the pill (`pill`) instead of the dot a state takes.
   */
   const catalogLabel =
-    z.catalog != null ? { text: z.catalog, tone: 'neutral' as TagTone } : null
+    z.catalog != null
+      ? { text: z.catalog, tone: 'neutral' as TagTone }
+      : z.type === 'Catalog' || z.type === 'SecondaryCatalog'
+        ? { text: name, tone: 'info' as TagTone }
+        : null
 
   return (
     <tr>
@@ -681,14 +757,19 @@ function ZoneRow(p: RowProps) {
         </button>
         {catalogLabel && (
           <div className={styles.tags}>
-            <Tag tone={catalogLabel.tone}>{catalogLabel.text}</Tag>
+            <Tag tone={catalogLabel.tone} pill>{catalogLabel.text}</Tag>
           </div>
         )}
       </td>
       {/* The type goes as text and not as a capsule: with Type, DNSSEC and
           Status all in capsules, three consecutive columns of pills read as a
           single smear and none of the three stood out. */}
-      <td className={tbl.meta}>{typeLabel(z.type)}</td>
+      <td className={tbl.meta}>
+        <span className={styles.ztype}>
+          <span className={styles.zdot} style={{ background: zoneColour(z.type) }} />
+          {typeLabel(z.type)}
+        </span>
+      </td>
       <td>
         {/*
         Upstream leaves the cell EMPTY when the zone is not signed
@@ -702,7 +783,7 @@ function ZoneRow(p: RowProps) {
         server cannot re-sign it, which is not the same as being signed.
         */}
         {!signed ? (
-          <Tag>Unsigned</Tag>
+          <span className={styles.quiet}>Unsigned</span>
         ) : z.hasDnssecPrivateKeys ? (
           <Tag tone="info">Signed</Tag>
         ) : (
@@ -712,74 +793,89 @@ function ZoneRow(p: RowProps) {
       <td>
         <Tag tone={stateTone}>{state}</Tag>
       </td>
-      <td className={styles.mono}>{z.soaSerial ?? ' '}</td>
-      <td className={styles.mono}>{date(z.expiry)}</td>
+      <td className={`${styles.mono} ${styles.serial}`}>{z.soaSerial ?? ' '}</td>
+      {p.withExpiry && <td className={styles.mono}>{date(z.expiry)}</td>}
       <td className={`${styles.mono} ${tbl.meta}`}>{date(z.lastModified)}</td>
       <td className={tbl.actionsCell}>
         <div className={tbl.actions}>
-          <RowAction
-            icon="settings"
-            name="Zone Options"
-            disabled={!p.canModify || p.busy || !WITH_OPTIONS.includes(z.type)}
-            onClick={() => p.onOptions(name)}
-          />
-          {/* The same icon for both states: which one applies is said by the
-              "Status" column, three columns to the left. */}
-          <RowAction
-            icon="power"
-            name={z.disabled ? 'Enable Zone' : 'Disable Zone'}
-            disabled={!p.canModify || p.busy}
-            onClick={() => (z.disabled ? p.onEnable(z) : p.onDisable(z))}
-          />
           <Menu label={`Actions for ${name}`}>
             {(close) => (
               <>
+                {/*
+                Up to eleven entries in upstream's order (zone.js:827-890 on
+                upstream master), cut into five groups by what they act on:
+                opening the zone, its state, its data going in and out, who may
+                touch it and how it behaves, and the one with no undo. Upstream
+                draws only the last divider (zone.js:889); the groups follow its
+                sequence instead of reordering it, so nothing moves from where
+                upstream puts it, and a group the zone's type leaves empty takes
+                its separator with it (ui/Menu, `Separator`).
+                */}
                 {/* v15.5 splits the first entry by type (zone.js:829-839 in
                     v15.5.1): a zone whose records you can edit gets "Edit
                     Zone" and "Edit Zone File"; any other gets "View Zone",
                     which opens the same screen. */}
                 {EDITABLE.includes(z.type) ? (
                   <>
-                    <button type="button" onClick={() => { close(); p.onOpen(name) }}>
+                    <MenuItem icon="edit" onClick={() => { close(); p.onOpen(name) }}>
                       Edit Zone
-                    </button>
-                    <button type="button" onClick={() => { close(); p.onEditZoneFile(name) }}>
+                    </MenuItem>
+                    <MenuItem icon="file" onClick={() => { close(); p.onEditZoneFile(name) }}>
                       Edit Zone File
-                    </button>
+                    </MenuItem>
                   </>
                 ) : (
-                  <button type="button" onClick={() => { close(); p.onOpen(name) }}>
+                  <MenuItem icon="eye" onClick={() => { close(); p.onOpen(name) }}>
                     View Zone
-                  </button>
+                  </MenuItem>
+                )}
+                <Separator />
+                {/* Upstream's literals: "Enable" and "Disable", not "… Zone"
+                    (zone.js:841-842). */}
+                {z.disabled ? (
+                  <MenuItem icon="power" disabled={!p.canModify || p.busy} onClick={() => { close(); p.onEnable(z) }}>
+                    Enable
+                  </MenuItem>
+                ) : (
+                  <MenuItem icon="power" disabled={!p.canModify || p.busy} onClick={() => { close(); p.onDisable(z) }}>
+                    Disable
+                  </MenuItem>
                 )}
                 {RESYNC.includes(z.type) && (
-                  <button type="button" disabled={!p.canModify} onClick={() => { close(); p.onResync(z) }}>
+                  <MenuItem icon="refresh" disabled={!p.canModify} onClick={() => { close(); p.onResync(z) }}>
                     Resync
-                  </button>
+                  </MenuItem>
                 )}
+                <Separator />
                 {IMPORT.includes(z.type) && (
-                  <button type="button" disabled={!p.canModify} onClick={() => { close(); p.onImport(name) }}>
+                  <MenuItem icon="upload" disabled={!p.canModify} onClick={() => { close(); p.onImport(name) }}>
                     Import Zone
-                  </button>
+                  </MenuItem>
                 )}
                 {EXPORT.includes(z.type) && (
-                  <button type="button" onClick={() => { close(); void p.onExport(z) }}>
+                  <MenuItem icon="download" onClick={() => { close(); void p.onExport(z) }}>
                     Export Zone
-                  </button>
+                  </MenuItem>
                 )}
                 {CONVERT.includes(z.type) && (
-                  <button type="button" disabled={!p.canModify} onClick={() => { close(); p.onConvert(name, z.type) }}>
+                  <MenuItem icon="convert" disabled={!p.canModify} onClick={() => { close(); p.onConvert(name, z.type) }}>
                     Convert Zone
-                  </button>
+                  </MenuItem>
                 )}
                 {CLONE.includes(z.type) && (
-                  <button type="button" disabled={!p.canModify} onClick={() => { close(); p.onClone(name) }}>
+                  <MenuItem icon="copy" disabled={!p.canModify} onClick={() => { close(); p.onClone(name) }}>
                     Clone Zone
-                  </button>
+                  </MenuItem>
                 )}
-                <button type="button" onClick={() => { close(); p.onPermissions(name) }}>
+                <Separator />
+                <MenuItem icon="admin" onClick={() => { close(); p.onPermissions(name) }}>
                   Permissions
-                </button>
+                </MenuItem>
+                {WITH_OPTIONS.includes(z.type) && (
+                  <MenuItem icon="settings" disabled={!p.canModify || p.busy} onClick={() => { close(); p.onOptions(name) }}>
+                    Zone Options
+                  </MenuItem>
+                )}
                 {/*
                 Delete goes back into the menu, and this time with a reason. It
                 was in the row so it would cost one click just as on the zone's
@@ -789,9 +885,9 @@ function ZoneRow(p: RowProps) {
                 in this console.
                 */}
                 <Separator />
-                <button type="button" data-variant="danger" disabled={!p.canDelete} onClick={() => { close(); p.onDelete(z) }}>
+                <MenuItem icon="trash" tone="danger" disabled={!p.canDelete} onClick={() => { close(); p.onDelete(z) }}>
                   Delete Zone
-                </button>
+                </MenuItem>
               </>
             )}
           </Menu>

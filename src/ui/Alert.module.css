@@ -1,100 +1,167 @@
 /*
-The alert is FILLED, not just tinted at the border. Two treatments coexisted:
-this one, which only painted the border and the text, and Zones' local copy
-(`.note` + `.noteWarning`), with a background. The result was that the "Note!" in
-"Delete Cluster" weighed less than the same alert inside a zone modal. The filled
-one wins, which is what was drawn and what is seen on the first pass.
+The alert, redrawn on 2026-11-05. `Alert.tsx` says which of its two looks is which
+(the closable RESULT and the standing NOTICE); this file says how each is drawn.
+
+What the two share, and why:
+
+  · **The type lives in a badge, not in the text.** Before, the whole paragraph was
+    painted green, amber, red or blue; a six-hundred-character `Note!` in blue read
+    as a link, which is why the light theme had to carry a `--note-ink` just for
+    it. Now the title is in ink, the text in the secondary ink, and the colour is a
+    22 px tile with the type's icon on a tint of the type's colour.
+  · **No saturated borders.** One hairline, of the type's colour at a quarter of
+    its strength for the notice and the control line for the result. A thick or
+    coloured left rule is the pattern the design rules ban, and it is not here.
+  · **The tints are mixed, not declared.** The wash is the type's colour at 7 %
+    into the panel surface, so the same notice is the same colour on the page, in a
+    panel and in a dialog (mixed into `transparent` it went grey on the light
+    canvas). The badge is the colour at 16 % over whatever is under it, and the
+    outlined `Note!` lets the surface show through, so those were measured on all
+    three surfaces (bg, pan, pan2), both themes, with `dev/theme-contrast.mjs`'s own
+    composition: ink on a wash 11.75:1 at worst, the secondary ink 5.42:1 at worst
+    (dark, warning), every icon on its badge 3.99:1 at worst (light, success), over
+    the 3:1 a non-text mark asks for.
+
+The type classes no longer compose `tones.module.css`: what is shared with the
+pill is the tone itself, and each type here only names it (`--notice-tone`).
 */
 
 .alert {
-  padding: var(--s-7) var(--s-8);
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-7);
+  padding: var(--s-6) var(--s-7);
+  border: 1px solid color-mix(in srgb, var(--notice-tone) 26%, transparent);
   border-radius: var(--r-3);
+  background: color-mix(in srgb, var(--notice-tone) 7%, var(--pan));
+  color: var(--mute);
   font-size: var(--t-4);
-  line-height: 1.6;
-  border: 1px solid var(--line);
-  background: var(--pan2);
-  color: var(--ink);
+  line-height: 1.55;
 }
 
-.alert b { display: inline; }
-
-/* It measured 22×17: below the 24 target minimum. */
-.close {
-  display: inline-flex; align-items: center; justify-content: center;
-  min-width: 26px; min-height: 26px;
-  float: right;
-  background: none;
-  border: 0;
-  color: inherit;
-  opacity: 0.6;
-  font-size: var(--t-6);
-  line-height: 1;
-  cursor: pointer;
-  padding: 0 0 0 var(--s-5);
-}
-
-.close:hover { opacity: 1; }
-
-/* The tones come from `ui/tones.module.css`, shared with the pill. */
-.success { composes: ok from './tones.module.css'; }
-.info    { composes: info from './tones.module.css'; }
-.warning { composes: warn from './tones.module.css'; }
-.danger  { composes: dan from './tones.module.css'; }
+.success { --notice-tone: var(--ok); }
+.info    { --notice-tone: var(--info); }
+.warning { --notice-tone: var(--warn); }
+.danger  { --notice-tone: var(--dan); }
 
 /*
-The `Note!` goes OUTLINED and the rest filled, and that is the only difference in
-treatment this file adds.
-
-This file's header says a notice is filled, and that is still true for the three
-that ask for attention. That decision solved something else: that the SAME notice
-weighed differently on two screens. This one separates two DIFFERENT notices on
-one screen, which is the one the dense-form design asked for and the one that did not exist
-today. Measured: `notice-info` and `notice-warning` gave the same signature,
-`filled | no-icon | 8px | 15px from the panel`.
+The `Note!` goes OUTLINED and the rest washed, and that is the one difference in
+treatment between the types.
 
 Only the `info` steps back, because it is the only one that explains rather than
-warns. The `warning` stays **filled and in `--warn`**: reassigning it to `--dan`
-would have made red mean two things, and `--dan` is reserved for the error, the
-validation and the destructive.
+warns (the dense-form design asked for `Note!` and `Warning!` to be told apart, and
+measured that they could not be). The `warning` keeps its wash and stays in
+`--warn`: reassigning it to `--dan` would make red mean two things, and `--dan` is
+reserved for the error, the validation and the destructive.
 
-The tone still comes from `tones.module.css`: only the background is removed here,
-so the border and the text are still the shared pair's and no second blue is born.
+Two classes and not one, so the order of the bundle does not decide: the first
+version of this rule was a single class against another single class and did
+nothing. `dev/uniformity.js` reads the result (`outlined` against `filled`).
 */
+.alert.info { background: transparent; }
+
+/* The tile that carries the type. 22 px is the first line's height, so it sits on
+   that line and not in the middle of a five-line paragraph. */
+.badge {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-top: -1px;
+  border-radius: var(--r-2);
+  background: color-mix(in srgb, var(--notice-tone) 16%, transparent);
+  color: var(--notice-tone);
+}
+
+.body {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+/* Upstream's `<b>`: bold and in ink, running into the text after it. */
+.title {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* The answer to the alert (`Retry`), at the end of the line and centred on it. */
+.action {
+  flex: none;
+  align-self: center;
+}
+
+/* 26 px: the target minimum is 24, and the old "×" measured 22×17. */
+.close {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  min-height: 26px;
+  margin: -3px calc(-1 * var(--s-2)) -3px 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-2);
+  background: none;
+  color: var(--faint);
+  cursor: pointer;
+  transition: background var(--t-fast), color var(--t-fast);
+}
+.close:hover { background: var(--hover-strong); color: var(--ink); }
+.close:focus-visible { outline: var(--focus); outline-offset: 0; }
+
 /*
-On light a whole paragraph in blue reads as a link, so the light theme sets
-`--note-ink` and the prose takes it, leaving `Note!` and the icon in blue. Dark
-does not set it, and its note stays blue throughout, as before.
+THE RESULT: what a screen or a dialog says after an action. A card on the panel
+surface with the dialog's hairline, its title on a line of its own, a short
+entrance, and the drain bar when it will go by itself.
+
+It is not floating, and that is on purpose: where an alert comes out is upstream
+behaviour (a modal's inside the modal, a screen's on the screen; CONVENTIONS.md),
+so the card keeps its place in the flow and only takes the look of a notification.
+Its width stops at the section notice's cap, so a one-line result does not become
+a banner across a 1600 px window.
 */
-.alert.info { background: transparent; color: var(--note-ink, var(--info)); }
-.alert.info > b:first-of-type, .alert.info > .icon { color: var(--info); }
+.alert.result {
+  max-width: var(--notice-max);
+  gap: var(--s-8);
+  padding: var(--s-8) var(--s-8) var(--s-8) var(--s-9);
+  border-color: var(--btn-line);
+  border-radius: var(--r-4);
+  background: var(--pan);
+  box-shadow: var(--e-1), var(--edge);
+  overflow: hidden; /* the drain bar follows the corners */
+  animation: result-in 200ms cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+.result .badge { width: 24px; height: 24px; margin-top: 0; }
+.result .title { display: block; margin-bottom: var(--s-1); }
 
-/*
-Two classes and not one, and the reason matters more than the rule.
+/* The five seconds, drawn. Linear because a clock is, and from the full width to
+   none, anchored at the start of the line. */
+.timer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: var(--notice-tone);
+  opacity: 0.7;
+  transform-origin: left center;
+  animation-name: drain;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
 
-The first version wrote `.info { background: transparent }` and **did nothing**.
-`composes` does not copy declarations: it adds the tone's class to the element, so
-there are two rules of ONE class each (this one and `tones.module.css`'s) with the
-same specificity, and the one the bundle emits later wins. It emitted the tone's:
-
-    ._info_7n07s_40{background:0 0}
-    ._info_n8r8o_11{background:var(--info-bg); …}
-
-With `.alert.info` it is two classes against one and the order stops deciding.
-
-And what really has to be remembered: **the sweep caught this, not the review**.
-It was seen because the `notice-<type>` family now takes the fill in; with the
-previous signature (`borderRadius | inset`) this change would have come out green
-while being a no-op.
-*/
-
-/*
-The icon, aligned with the first line of the text and not with the box: a
-six-hundred-character notice takes five lines, and an icon centred on that box
-floats in the middle of the paragraph.
-*/
-.icon {
-  float: left;
-  margin: 3px var(--s-3) 0 0;
+@keyframes result-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes drain {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
 }
 
 /*
@@ -111,3 +178,49 @@ and inherits; outside it does not exist and the fallback is 0, which is exactly
 what is needed.
 */
 .gap { margin-bottom: calc(var(--gap-block) - var(--gap, 0px)); }
+
+/* The floating results' corner (`Notifier`, Where it appears): bottom right, the
+   newest at the bottom, each as wide as a card and no wider; on a phone, the full
+   width less the gutter. The region lets clicks through where it is empty. */
+.region {
+  position: fixed;
+  z-index: var(--layer-notice);
+  right: var(--s-11);
+  bottom: var(--s-11);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+  width: min(400px, calc(100vw - 2 * var(--s-10)));
+  pointer-events: none;
+}
+.region:empty { display: none; }
+@media (max-width: 560px) { .region { right: var(--s-10); bottom: var(--s-10); } }
+.floating { pointer-events: auto; }
+.floating > * { max-width: none; box-shadow: var(--e-2); }
+
+/*
+The result on its way out (`Notifier` keeps a copy of it, inert and hidden from
+assistive technology, for exactly this long). It fades, rises a little, and the
+slot closes under it, so the screen below moves up instead of jumping. The drain
+bar is gone by then and is not drawn again.
+*/
+.leaving {
+  display: grid;
+  grid-template-rows: 1fr;
+  overflow: hidden;
+  pointer-events: none;
+  animation: result-out 180ms cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+.leaving > * { min-height: 0; }
+.leaving .result { animation: none; }
+.leaving .timer { display: none; }
+@keyframes result-out {
+  to { grid-template-rows: 0fr; margin-bottom: 0; opacity: 0; transform: translateY(-4px); }
+}
+
+/* Under `prefers-reduced-motion` it appears, it says how long it has without the
+   moving bar, and it goes at once (`Notifier` keeps no copy then). */
+@media (prefers-reduced-motion: reduce) {
+  .alert.result { animation: none; }
+  .timer { display: none; }
+}

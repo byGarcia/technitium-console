@@ -1,0 +1,31 @@
+/*
+DNSSEC Properties' own pieces: the cells of the keys table. The rest of its
+layout is the zone dialogs' one (`layout.module.css`).
+*/
+
+/* The key tag is the row's entity: a number, in the mono figures. */
+.tag { composes: entity from '../../../ui/Table.module.css'; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+/* The algorithm's number after its name, quieter: it says the same thing. */
+.number { color: var(--mute); white-space: nowrap; }
+
+/* When the state changed; the date the key moves on is in the row's Details. */
+.date { font-family: var(--font-mono); font-size: var(--t-3); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.when { font-size: var(--t-3); color: var(--mute); }
+.nowrap { white-space: nowrap; }
+
+/* The ZSK's rollover days and their Save, on one line. A `span`, so a stacked
+   row (`ui/Table`'s `stack`) keeps it a line and does not make it a grid. */
+.rollover { display: inline-flex; align-items: center; gap: var(--s-3); white-space: nowrap; }
+.days { width: 56px; min-height: 30px; padding-top: var(--s-2); padding-bottom: var(--s-2); }
+
+/* No rollover for this key: the dash, quiet. */
+.none { color: var(--faint); }
+
+/* The row's Details, opened under it: Cache's and the lists' detail row
+   (`screens/lists/Lists.module.css`, `.openRow` and `.detailRow`). */
+.openRow > td { border-bottom-color: transparent; }
+.detailRow > td { padding-top: 0; background: var(--pan2); }
+.detail { display: flex; flex-wrap: wrap; gap: var(--s-5) var(--s-12); margin: var(--s-3) 0 0; }
+.detail dt { font-size: var(--t-2); color: var(--faint); }
+.detail dd { margin: var(--s-1) 0 0; font-size: var(--t-3); color: var(--ink); }

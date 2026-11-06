@@ -1,16 +1,9 @@
-import styles from './Lists.module.css'
-import { Icon } from '../../ui/Icon'
-
 /*
-The domain tree.
-
-Upstream draws a FLAT LIST: `[refresh]`, `[up]` and the node's children
-(other-zones.js:120-137). Here it is drawn as a tree, which is the same thing put
-another way: the root, the current node's chain of ancestors (each of them being
-its child's `[up]`), and below them the children the server returns.
-
-`zones` already brings FULL domain names, so the labels are printed as they come
-and navigating is handing the server the string you can see.
+The domain tree's chain. Upstream draws a FLAT LIST: `[refresh]`, `[up]` and the
+node's children (other-zones.js:120-137). Cache (its header's path) and Allowed and
+Blocked (the trail inside Rules) draw the chain of ancestors as crumbs, each of them
+its child's `[up]` taken one or more times. The tree column that drew it as nested
+nodes went on 2026-11-06.
 */
 
 /** Every ancestor of the domain, from the root down and not including it. */
@@ -24,77 +17,4 @@ export function ancestors(domain: string): string[] {
     output.push(d)
   }
   return output.reverse()
-}
-
-export function Tree({
-  domain,
-  domainIdn,
-  zones,
-  onNavigate,
-}: {
-  domain: string
-  domainIdn?: string
-  zones: string[]
-  /** `up` marks the navigation as upstream's [up] link. */
-  onNavigate: (domain: string, up?: boolean) => void
-}) {
-  const string = ancestors(domain)
-  const atRoot = domain === ''
-
-  // Each ancestor nests one level more; the children hang off the current node.
-  let tree = (
-    <div className={styles.lvl}>
-      {zones.map((z) => (
-        <button key={z} type="button" className={styles.node} onClick={() => onNavigate(z)}>
-          <span className={styles.ch}><Icon name="chevronRight" size={12} /></span>
-          <span className={styles.label}>{z}</span>
-        </button>
-      ))}
-    </div>
-  )
-
-  if (!atRoot) {
-    tree = (
-      <div className={styles.lvl}>
-        <button type="button" className={styles.node} aria-current="true" disabled>
-          <span className={styles.ch}><Icon name="chevronDown" size={12} /></span>
-          <span className={styles.label}>{domainIdn ?? domain}</span>
-        </button>
-        {tree}
-      </div>
-    )
-
-    for (const parent of [...string].reverse()) {
-      const inside = tree
-      tree = (
-        <div className={styles.lvl}>
-          <button
-            type="button"
-            className={styles.node}
-            onClick={() => onNavigate(parent, true)}
-          >
-            <span className={styles.ch}><Icon name="chevronDown" size={12} /></span>
-            <span className={styles.label}>{parent}</span>
-          </button>
-          {inside}
-        </div>
-      )
-    }
-  }
-
-  return (
-    <div>
-      <button
-        type="button"
-        className={styles.node}
-        aria-current={atRoot ? 'true' : undefined}
-        onClick={atRoot ? undefined : () => onNavigate('', true)}
-        disabled={atRoot}
-      >
-        <span className={styles.ch}><Icon name="chevronDown" size={12} /></span>
-        <span className={styles.label}>&lt;ROOT&gt;</span>
-      </button>
-      {tree}
-    </div>
-  )
 }

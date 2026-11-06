@@ -1,0 +1,37 @@
+/*
+The response's sections (`ResponseSections.tsx`): the tables of a DNS message
+and the JSON, under one strip of tabs inside `ui/DataTable`'s card.
+*/
+
+/* The record type in its series colour: the zone table's chip, one definition. */
+.rtype { composes: rtype from '../zones/Zones.module.css'; }
+
+.mono { font-family: var(--font-mono); }
+.name { width: 22%; }
+.narrow { width: 1%; white-space: nowrap; }
+.ttl { width: 1%; white-space: nowrap; }
+
+/* A run of records with one owner: the name is drawn once (see Records). */
+.repeat > .owner { color: transparent; }
+.repeat > td { border-top-color: transparent; }
+[data-stacked] .repeat > .owner { color: inherit; }
+
+/* RDATA: a value alone, or its keys quiet before their values. */
+.value { font: var(--t-4)/1.45 var(--font-mono); color: var(--ink); overflow-wrap: break-word; }
+.pairs { display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-8); margin: 0; }
+.pairs > div { display: flex; gap: var(--s-4); align-items: baseline; min-width: 0; max-width: 100%; }
+.pairs dt { flex: none; font-size: var(--t-2); color: var(--mute); }
+.pairs dd { margin: 0; min-width: 0; }
+
+/* A status that is not a judgement: validation was not asked for. */
+.quiet { color: var(--mute); font-size: var(--t-3); }
+
+/* An Extended DNS Error's free text is prose, not data. */
+.text { overflow-wrap: break-word; }
+
+/* The JSON sits inside the card with the card's own air around it. */
+.json { padding: var(--s-8) var(--s-10); }
+
+/* The card's toolbar holds the query form on its own line, then the tabs. */
+.query { flex: 1 1 100%; min-width: 0; }
+.tabs { flex: 1 1 100%; min-width: 0; margin: 0 calc(var(--s-10) * -1) calc(var(--s-7) * -1); padding: 0 var(--s-10); border-top: 1px solid var(--line2); }

@@ -1,0 +1,11 @@
+/*
+Configure 2FA's secret key: the QR code and, beside it, the same key written out
+with the help that says how to use either. Side by side because they are two
+ways of entering one thing; under each other on a phone.
+*/
+.secret { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-10); }
+.secret img { flex: none; }
+.key { display: flex; flex-direction: column; gap: var(--s-5); flex: 1 1 220px; min-width: 0; }
+/* The key is DNS-side data in the sense the rule means: a value typed into
+   another program, character by character. */
+.code { font: 600 var(--t-5)/1.5 var(--font-mono); color: var(--ink); letter-spacing: 0.04em; overflow-wrap: break-word; }

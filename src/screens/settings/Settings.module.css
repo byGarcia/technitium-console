@@ -8,11 +8,28 @@
 
 .wrap {
   composes: screen from '../../ui/SectionHeader.module.css';
-  /* The save bar's sentence asks how wide the screen is, not the window (the
-     section index's room, `ui/IndexedForm`, is a container of the same width). */
+  /* The layout asks how wide the screen is, not the window: the side panel takes a
+     different share of each window. */
   container-type: inline-size;
+  /* As tall as the window at least (`data-fills-window`, `app/Shell.module.css`),
+     so on a short pane the save bar still sits at the foot and not under the last
+     field. */
+  flex: 1;
+  /*
+  The two widths of the layout (2026-11-06). The form is ONE readable column: 820 px
+  holds a 300 px label with its help beside a 470 px control, and a help line of
+  about 75 characters. The menu is the old index column with room for "Proxy &
+  Forwarders" and a count. Local names that no global token uses.
+  */
+  --settings-menu: 220px;
+  /* The form takes the rest of the width (2026-11-06, Adrián: a capped column left
+     the right of a wide screen empty). One column, never two: the blocks are read
+     in upstream's order. */
+  --settings-form: none;
+  /* The menu already marks the block in view, so a block's title does not pin
+     (`ui/PanelForm.module.css`). */
+  --block-title-position: static;
 }
-.group { composes: group from '../../ui/Form.module.css'; }
 
 /* The block-lists summary: "N allowed, M blocked", with the figures in monospace
    so they do not dance about on reload. */
@@ -20,9 +37,6 @@
 .inline { display: flex; align-items: center; gap: var(--s-7); flex-wrap: wrap; }
 .val { composes: mono from '../../ui/text.module.css'; font-size: var(--t-4); color: var(--ink); }
 
-/* Two consecutive alerts inside a modal: they group closer together than the
-   rest of the body, because they say the same thing about the same thing. */
-.notes { display: flex; flex-direction: column; gap: var(--s-5); }
 
 /*
 The textarea of a pane. `Recursion` named `settings.area` and this module
@@ -33,49 +47,260 @@ and that is where it belongs: the pane's form is that form.
 .area { composes: area from '../../ui/PanelForm.module.css'; }
 
 /*
-The save bar's `Unsaved changes: General (2), Cache (1)` (`pending.ts`). It takes the
-spacer's place between the two groups of buttons, so the buttons stay where they
-were, and it wraps inside itself when many panes do not fit on one line.
-
-That only works while there is room between the buttons. The four buttons, their
-gaps and the bar's padding take about 520 px, so on a screen narrower than 880 px (a
-1,144 px window with the side panel, any window under its 900 px drawer step) what
-was left was a column a few words wide: measured, 226 px between `Flush Cache` and
-`Backup Settings` at 768, 246 at 1024, against 402 at 1180 and 662 at 1440.
-There the sentence goes first, on a line of its own, so it reads before the verbs
-and is never squeezed between them. It asks the screen's width (`.wrap` is the
-container), the same quantity the section index asks.
+Menu and form side by side where the screen holds both (2026-11-06, deviation 22):
+the menu (`SettingsMenu.tsx`) pinned at the left, the form in one readable column
+beside it. Under 960 px of screen the menu folds into a bar above the form.
 */
-.pending {
-  flex: 1 1 0;
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--s-10);
+  align-items: start;
+}
+
+.form {
   min-width: 0;
-  margin-left: var(--s-5);
+  max-width: var(--settings-form);
+}
+
+/* What the search left out (`search.ts`), and the words it found, painted by the
+   browser over the text (`mark`). */
+.form [data-search-out] { display: none; }
+.form ::highlight(settings-search) { background-color: var(--acc-tint-strong); color: var(--ink); }
+
+/* ── The menu ─────────────────────────────────────────────────────────── */
+
+.menu {
+  position: sticky;
+  top: var(--stuck-top, 0px);
+  z-index: var(--layer-sticky);
+  min-width: 0;
+}
+
+/* Folded (narrow): one line with the current sub-section and the search, on the
+   page's own background so the form slides under it. */
+.menuTop {
+  display: flex;
+  gap: var(--s-5);
+  align-items: center;
+  padding: var(--s-5) 0;
+  background: var(--bg);
+  box-shadow: inset 0 -1px 0 var(--line2);
+}
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-5);
+  min-height: var(--field-height);
+  max-width: 55%;
+  padding: 0 var(--s-7);
+  border: 1px solid var(--line);
+  border-radius: var(--r-3);
+  background: var(--pan);
+  color: var(--ink);
+  font: 600 var(--t-4)/1.2 var(--font-ui);
+  cursor: pointer;
+  flex: none;
+}
+
+.toggle:hover { border-color: var(--line-hover); }
+.toggle:focus-visible { outline: none; box-shadow: var(--halo-focus); }
+.toggle[aria-expanded='true'] svg { transform: rotate(180deg); }
+
+.toggleText { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; text-align: left; }
+.toggleSection,
+.toggleBlock { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.toggleBlock { font-weight: 400; font-size: var(--t-2); color: var(--mute); }
+
+.search { flex: 1; min-width: 0; }
+.search input { width: 100%; }
+
+/* The list, folded: a panel that drops from the bar over the form, and only while
+   open. */
+.nav {
+  display: none;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: var(--s-4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-4);
+  background: var(--pan);
+  box-shadow: var(--shadow-menu);
+}
+
+.menu[data-open] .nav { display: block; }
+
+.tabs,
+.blocks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+}
+
+/* A sub-section: the sidebar's own entry, one step quieter. */
+.tab {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-5);
+  padding: var(--s-5) var(--s-7);
+  border-radius: var(--r-2);
+  color: var(--mute);
+  text-decoration: none;
+  font: 400 var(--t-4)/1.3 var(--font-ui);
+  transition: background var(--t-fast), color var(--t-fast);
+  /* The containing block of a mark's hidden words (`text.sr`). */
+  position: relative;
+}
+
+.tab:hover { color: var(--ink); background: var(--nav-active); }
+.tab:focus-visible { outline: none; box-shadow: var(--halo-focus); }
+.tab[aria-current='page'] { color: var(--ink); font-weight: 600; background: var(--nav-active); }
+
+/* While a search finds nothing in a sub-section, it steps back. */
+.tab[data-none] { color: var(--faint); }
+
+.tabName { min-width: 0; }
+
+/* The dot of deviation 3: a pane holding something the save would change. */
+.mark {
+  display: inline-block;
+  width: var(--s-3);
+  height: var(--s-3);
+  margin-left: var(--s-3);
+  vertical-align: super;
+  border-radius: var(--r-full);
+  background: var(--acc-ink);
+}
+
+/* How many units the search found in that sub-section. */
+.found {
+  flex: none;
+  min-width: var(--s-10);
+  padding: 0 var(--s-3);
+  border-radius: var(--r-full);
+  background: var(--acc-tint);
+  color: var(--acc-ink);
+  font: 600 var(--t-2)/1.6 var(--font-ui);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+/* The current sub-section's blocks: anchors on a hairline, the one in view marked
+   by its edge in amber, as the section index marked it. */
+.blocks {
+  margin: var(--s-2) 0 var(--s-5) var(--s-7);
+  padding-left: 0;
+  border-left: 1px solid var(--line);
+  gap: 0;
+}
+
+.block {
+  display: block;
+  margin-left: -1px;
+  padding: var(--s-3) var(--s-7);
+  border-left: 2px solid transparent;
+  color: var(--mute);
+  text-decoration: none;
+  font: 400 var(--t-3)/1.35 var(--font-ui);
+}
+
+.block:hover { color: var(--ink); }
+.block:focus-visible { outline: none; box-shadow: var(--halo-focus); border-radius: var(--r-2); }
+.block[aria-current='location'] { color: var(--acc-ink); border-left-color: var(--acc-ink); font-weight: 550; }
+
+/* Wide: the menu is a column, the toggle goes, the list is always there. */
+@container (min-width: 960px) {
+  .layout { grid-template-columns: var(--settings-menu) minmax(0, 1fr); gap: var(--s-11); }
+  /* One pane on its own (Blocking's Settings page): no menu, the form takes the width. */
+  .layout[data-only] { grid-template-columns: minmax(0, 1fr); }
+
+  .menu {
+    top: calc(var(--stuck-top, 0px) + var(--s-11));
+    max-height: calc(100vh - var(--stuck-top, 0px) - var(--s-11) * 2 - var(--field-height) * 2);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-7);
+  }
+
+  .menuTop { padding: 0; background: none; box-shadow: none; }
+  .toggle { display: none; }
+
+  .nav {
+    display: block;
+    position: static;
+    max-height: none;
+    overflow: visible;
+    padding: 0;
+    border: 0;
+    background: none;
+    box-shadow: none;
+  }
+}
+
+/* Folded, a jump to a block lands below the bar instead of under it. */
+@container (max-width: 959px) {
+  .form { --pinned: calc(var(--stuck-top, 0px) + var(--field-height) + var(--s-5) * 2); }
+}
+
+/* ── The save bar ─────────────────────────────────────────────────────── */
+
+/*
+On screen for the whole screen, as upstream's Save is always on screen: a card
+floating a step above the window's bottom edge, as the other forms' save bars do
+(`ui/PanelForm`'s `.bar`), with the same air under it at the end of the page
+(2026-11-06, Adrián), its words and its button lined up with the form's column.
+*/
+.bar {
+  position: sticky;
+  bottom: var(--s-9);
+  z-index: var(--layer-sticky);
+  margin: var(--s-10) 0 var(--s-9);
+  padding: var(--s-7) var(--s-9);
+  border: 1px solid var(--line);
+  border-radius: var(--r-4);
+  background: var(--pan);
+  box-shadow: var(--e-2), var(--edge);
+}
+
+@media (max-width: 900px) {
+  .bar { padding: var(--s-6) var(--s-8); }
+}
+
+.barInner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-8);
+  max-width: var(--settings-form);
+}
+
+
+
+.pending {
+  min-width: 0;
   font-size: var(--t-4);
   color: var(--ink);
   overflow-wrap: break-word;
 }
 
-@container (max-width: 880px) {
-  .pending {
-    order: -1;
-    flex-basis: 100%;
-    margin-left: 0;
-  }
+.pendingDot {
+  display: inline-block;
+  width: var(--s-4);
+  height: var(--s-4);
+  margin-right: var(--s-5);
+  vertical-align: middle;
+  border-radius: var(--r-full);
+  background: var(--acc-ink);
 }
 
-/* Wide, the sentence is the spacer, so the bar's own spacer steps aside. */
-@container (min-width: 881px) {
-  .besidePending { display: none; }
-}
-
-/*
-The form and its bar, inside `ui/IndexedForm`. The column keeps the screen's own
-spacing between the pane and the bar, which were the screen's children before the
-index arrived.
-*/
-.column {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-9);
-}
+.saved { color: var(--mute); }

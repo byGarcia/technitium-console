@@ -11,70 +11,8 @@
 /* The count is `ui/count.module.css`'s: see there for why. */
 .count { composes: bar below from '../../ui/count.module.css'; }
 
-/* The first column's user / group / section name opens its record. */
-/* No `word-break: break-all` of its own: it cut a name letter by letter wherever
-   the column was narrow. The shared rule breaks one only when it cannot fit. */
-.link { composes: entityLink from '../../ui/Table.module.css'; }
-
 .node { font-size: var(--t-4); padding: var(--s-3) var(--s-6); border:1px solid var(--line-field); border-radius: var(--r-2); background:var(--field); color:var(--ink); }
 
-/*
-Permissions: the concession map and its index on top, then one card per section
-with its two tables side by side.
-
-The rows themselves are no longer here. They were a CSS grid (`.prow`, `.phd`,
-`.pchk`), which is exactly why a structural read of the DOM on 2026-09-04 found
-no table with 84 cells inside it. They are `ui/Matrix` now, which is a real table with both
-axes; what stays here is only the LAYOUT, which is what belongs to a screen.
-*/
-
-/*
-The index runs beside the whole screen, and it is the narrow column.
-
-`--index-col` is the dense form's index column and this is its first wiring. Below
-`--bp-index` the index becomes a horizontal strip on its own (that behaviour
-lives inside `ui/SectionIndex`), so here it only has to stop being a column, and
-it goes FIRST so the strip lands above what it indexes and not under it.
-*/
-.withIndex {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) var(--index-col);
-  gap: var(--s-10);
-  align-items: start;
-}
-
-.column { min-width: 0; }
-
-/* The map scrolls sideways inside its panel: eleven sections do not fit at 390,
-   and the panel must not be what grows. */
-.map { padding: var(--s-7) var(--s-9); min-width: 0; margin-bottom: var(--s-11); }
-
-.perm { margin-bottom: var(--s-8); }
-.permCols { display:grid; grid-template-columns:1fr 1fr; }
-.permCol { padding: var(--s-7) var(--s-9); min-width:0; }
-.permCol + .permCol { border-left:1px solid var(--line); }
-/* A user or group name. It wraps between words, and a single word breaks only when it
-   still does not fit once the column has its room: `break-all` cut every name letter
-   by letter at the column's edge. */
-.who { color:var(--ink); font-family:var(--font-mono); font-size: var(--t-4); overflow-wrap: break-word; }
-
-/* The matrix's EDITABLE checkbox: 18 px tall, and until now not enlarged. The
-   read-only one is `ui/Matrix`'s, is disabled and is no target for anything. */
-.chkPerm { composes: hitArea from '../../ui/interaction.module.css'; margin: 0 auto; display: block; }
-
-@media (max-width: 960px) {
-  .withIndex { grid-template-columns: minmax(0, 1fr); }
-  .withIndex > :last-child { order: -1; margin-bottom: var(--s-10); }
-
-  /* The strip pins at the top (`ui/SectionIndex`), so a jump from it lands each
-     section below the strip, not under it. */
-  .anchor { scroll-margin-top: calc(var(--stuck-top, 0px) + var(--index-strip) + var(--s-9)); }
-}
-
-@media (max-width: 860px) {
-  .permCols { grid-template-columns:1fr; }
-  .permCol + .permCol { border-left:0; border-top:1px solid var(--line); }
-}
 
 /* SSO and the Cluster modals: label + control rows, as in Settings. */
 
@@ -82,7 +20,6 @@ it goes FIRST so the strip lands above what it indexes and not under it.
 .suffix { composes: trailer from '../../ui/text.module.css'; }
 .help { composes: help from '../../ui/Form.module.css'; }
 .group { composes: group from '../../ui/Form.module.css'; }
-.area { composes: area from '../../ui/PanelForm.module.css'; }
 /* The width only: the trigger's box is set by `ui/Select`. */
 .select { max-width: 420px; }
 
@@ -102,13 +39,35 @@ two other modules with the same values copied by hand.
 /* The same save bar as Settings and DHCP: STICKY. Without that, in a form as
    long as SSO's the button stays up top as you scroll down. */
 .bar { composes: bar from '../../ui/PanelForm.module.css'; }
-
-/* Modal body: the same rows, but with a narrower label. */
-.mval { font-size: var(--t-4); font-weight: 600; color:var(--ink); padding-top: var(--s-5); }
-.paragraph { composes: paragraph from '../../ui/text.module.css'; }
-.sub { margin: var(--s-10) 0 var(--s-5); font-size: var(--t-4); font-weight: 550; color:var(--ink); }
-.output { display:flex; flex-direction:column; gap: var(--s-5); }
-.link { font-size: var(--t-3); }
-.link a { color:var(--acc-ink); }
+/* At rest, after the last card, the bar keeps the gap the cards keep between them. */
+.split + .bar, .split ~ .bar { margin-top: var(--gap-block); }
 
 
+
+
+/*
+SSO's and LDAP's form (2026-11-06, deviation 23): two columns on a wide screen, the
+connection at the left and what follows from it (sign-up, scopes, the group map) at
+the right, the notes under both; one column under 1180 px. Each column is a size
+container for the form rows (`ui/Form`), so a row reads label over control when its
+column is narrow.
+*/
+.split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  /* One gap, the same between the columns as between the cards of a column. */
+  gap: var(--gap-block);
+  align-items: start;
+}
+@media (min-width: 1180px) {
+  .split { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); }
+  .span { grid-column: 1 / -1; }
+}
+.main, .side, .span { display: flex; flex-direction: column; gap: var(--gap-block); min-width: 0; }
+/* A block's own bottom margin would add to the column's gap: here the gap is the
+   only space between cards. */
+.main > * > *, .side > * > *, .span > * > *,
+.main > * > * > *, .side > * > * > *, .span > * > * > * { margin-bottom: 0; }
+
+/* An editable list inside an SSO or LDAP block, inset as the fields are. */
+.listPad { padding: var(--s-8) var(--s-9); }

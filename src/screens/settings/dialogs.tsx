@@ -1,12 +1,11 @@
+import { FilePick } from '../../ui/FilePick'
 import { useState } from 'react'
 import { Button } from '../../ui/Button'
 import { Dialog } from '../../ui/Dialog'
 import { Alert } from '../../ui/Alert'
-import { Field } from '../../ui/Field'
-import styles from './Settings.module.css'
+import { DialogField, DialogForm, DialogGroup, dialogForm as df } from '../../ui/DialogForm'
 import { BACKUP_ITEMS } from '../../api/settings'
 import { Check } from './parts'
-import { Input } from '../../ui/Field'
 
 /*
 The "are you sure?" step is `ui/Confirm`, the same dialog the other five
@@ -14,6 +13,13 @@ screens use. It is re-exported under the name it is asked for by here.
 */
 export { Confirm } from '../../ui/Confirm'
 
+/*
+The thirteen items as a checklist in two columns on the raised step
+(`ui/DialogForm`'s `.checklist`), filled down the first column and then the
+second, so they still read in upstream's order. Each item's files, the
+parenthesis its label ends in, go under its name in the help's colour: the same
+words in the same label, so the box is still named by all of them.
+*/
 function ItemList({
   selection,
   onChange,
@@ -24,15 +30,30 @@ function ItemList({
   prefix: string
 }) {
   return (
-    <div className={styles.group}>
-      {BACKUP_ITEMS.map((e) => (
-        <Check
-          key={`${prefix}-${e.key}`}
-          label={e.label}
-          checked={selection[e.key] === true}
-          onChange={(v) => onChange({ ...selection, [e.key]: v })}
-        />
-      ))}
+    <div className={df.checklist}>
+      {BACKUP_ITEMS.map((e) => {
+        const cut = e.label.lastIndexOf(' (')
+        const name = cut > 0 && e.label.endsWith(')') ? e.label.slice(0, cut) : e.label
+        const files = name === e.label ? null : e.label.slice(cut + 1)
+        return (
+          <label key={`${prefix}-${e.key}`} className={df.chk}>
+            <input
+              type="checkbox"
+              checked={selection[e.key] === true}
+              onChange={(ev) => onChange({ ...selection, [e.key]: ev.target.checked })}
+            />
+            <span>
+              {name}
+              {files != null && (
+                <>
+                  {' '}
+                  <span className={df.files}>{files}</span>
+                </>
+              )}
+            </span>
+          </label>
+        )
+      })}
     </div>
   )
 }
@@ -69,23 +90,26 @@ export function BackupDialog({
         </>
       }
     >
-      {notice && (
-        <Alert type="warning" title={notice.title}>
-          {notice.text}
-        </Alert>
-      )}
-      <p>The backup process will create a zip file for the items selected below:</p>
-      <ItemList selection={selection} onChange={onSelection} prefix="backup" />
-      <div className={styles.notes}>
-        <Alert type="info" title="Note!">
-          The Web Service or Optional Protocols TLS certificate (.pfx or .p12) files will be
-          included in the backup only if they exist within the DNS Server's config folder.
-        </Alert>
-        <Alert type="info" title="Note!">
-          It may take several minutes to generate the backup zip file if log files are selected to
-          be backed up which will depend on the size of the log files on the disk.
-        </Alert>
-      </div>
+      <DialogForm>
+        {notice && (
+          <Alert type="warning" title={notice.title}>
+            {notice.text}
+          </Alert>
+        )}
+        <DialogGroup label="The backup process will create a zip file for the items selected below:">
+          <ItemList selection={selection} onChange={onSelection} prefix="backup" />
+        </DialogGroup>
+        <div className={df.notices}>
+          <Alert type="info" title="Note!">
+            The Web Service or Optional Protocols TLS certificate (.pfx or .p12) files will be
+            included in the backup only if they exist within the DNS Server's config folder.
+          </Alert>
+          <Alert type="info" title="Note!">
+            It may take several minutes to generate the backup zip file if log files are selected to
+            be backed up which will depend on the size of the log files on the disk.
+          </Alert>
+        </div>
+      </DialogForm>
     </Dialog>
   )
 }
@@ -116,31 +140,33 @@ export function RestoreDialog({
         </>
       }
     >
-      {notice && (
-        <Alert type="warning" title={notice.title}>
-          {notice.text}
-        </Alert>
-      )}
-      <Field label="Backup Zip File">
-        {(id) => (
-          <Input id={id} type="file" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+      {/* The `Warning!` stays after the items: its words are about "above
+          selected items". */}
+      <DialogForm>
+        {notice && (
+          <Alert type="warning" title={notice.title}>
+            {notice.text}
+          </Alert>
         )}
-      </Field>
-      <p>The restore process will restore all the selected items from the backup zip file:</p>
-      <ItemList selection={selection} onChange={onSelection} prefix="restore" />
-      <p>Restore options:</p>
-      <Check
-        label="Delete Existing Files For Selected Items"
-        checked={remove}
-        onChange={setDelete}
-      />
-      <div>
+        <DialogField label="Backup Zip File">
+          {(id) => <FilePick id={id} onChange={(e) => setFile(e.target.files?.[0] ?? null)} />}
+        </DialogField>
+        <DialogGroup label="The restore process will restore all the selected items from the backup zip file:">
+          <ItemList selection={selection} onChange={onSelection} prefix="restore" />
+        </DialogGroup>
+        <DialogGroup label="Restore options:">
+          <Check
+            label="Delete Existing Files For Selected Items"
+            checked={remove}
+            onChange={setDelete}
+          />
+        </DialogGroup>
         <Alert type="warning" title="Warning!">
           The restore process will overwrite existing config files on disk for above selected items
           and reload new settings including user accounts from the backup. The current logged in
           user account and current session will be added automatically.
         </Alert>
-      </div>
+      </DialogForm>
     </Dialog>
   )
 }

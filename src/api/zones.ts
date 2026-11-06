@@ -97,6 +97,20 @@ export const ZONE_TYPES = ['Primary','Secondary','Stub','Forwarder','SecondaryFo
 /** Page sizes of upstream's dropdown (index.html, `optZonesPerPage`). */
 export const ZONES_PER_PAGE = [10, 25, 50, 100, 250, 500] as const
 
+/**
+ * `zones/list` with no page: the server answers EVERY zone the user may see, and
+ * leaves out `totalZones` and `totalPages` (WebServiceZonesApi.cs). The zone list's
+ * summary (deviation 12) reads it to count across all zones, not just the page.
+ * About 230 bytes per zone before compression.
+ */
+export async function listAllZones(token: string | null, node = ''): Promise<Zone[] | null> {
+  const outcome = await apiRequest<{ response: { zones: Zone[] } }>('zones/list', {
+    token,
+    body: { node },
+  })
+  return outcome.kind === 'ok' ? outcome.data.response.zones : null
+}
+
 export async function listZones(
   token: string | null,
   options: {
@@ -281,7 +295,7 @@ export async function getZoneOptions(
   token: string | null,
   zone: string,
   node = '',
-): Promise<ZoneOptions | null> {
+): Promise<ApiOutcome<ZoneOptions>> {
   const outcome = await apiRequest<{ response: ZoneOptions }>('zones/options/get', {
     token,
     body: {
@@ -291,7 +305,7 @@ export async function getZoneOptions(
       node,
     },
   })
-  return outcome.kind === 'ok' ? outcome.data.response : null
+  return outcome.kind === 'ok' ? { kind: 'ok', data: outcome.data.response } : outcome
 }
 
 /** The body is built by the screen, which is the one that validates (see screens/zones/options.ts). */
@@ -338,17 +352,16 @@ export async function getZonePermissions(
   token: string | null,
   zone: string,
   node = '',
-): Promise<ZonePermissions | null> {
+): Promise<ApiOutcome<ZonePermissions>> {
   const outcome = await apiRequest<{ response: ZonePermissions }>('zones/permissions/get', {
     token,
     body: { zone, includeUsersAndGroups: 'true', node },
   })
-  if (outcome.kind !== 'ok') return null
+  if (outcome.kind !== 'ok') return outcome
   const r = outcome.data.response
   return {
-    ...r,
-    userPermissions: r.userPermissions ?? [],
-    groupPermissions: r.groupPermissions ?? [],
+    kind: 'ok',
+    data: { ...r, userPermissions: r.userPermissions ?? [], groupPermissions: r.groupPermissions ?? [] },
   }
 }
 

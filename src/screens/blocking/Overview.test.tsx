@@ -5,14 +5,15 @@ import * as dashboard from '../../api/dashboard'
 import * as settings from '../../api/settings'
 import * as apps from '../../api/apps'
 import * as zonelists from '../../api/zonelists'
+import * as blocking from '../../api/blocking'
+import { SAMPLE } from './blocked-sample'
 import { SlotProvider } from '../../app/ChromeSlot'
 import { Overview, blockingChart } from './Overview'
 
-/** Your Rules: each number with the word under it, in the card's two columns. */
+/** Your Rules: each number with the word over it, in the strip's cell. */
 function rulePairs() {
-  const text = screen.getByText('Your Rules', { selector: 'span' }).parentElement!
-  const [numbers, words] = [...text.children].slice(0, 2).map((row) => [...row.children].map((c) => c.textContent))
-  return numbers.map((n, i) => [n, words[i]])
+  const facts = screen.getByLabelText('Your Rules')
+  return [...facts.children].map((pair) => [pair.querySelector('dd')!.textContent, pair.querySelector('dt')!.textContent])
 }
 
 /* Every `data` the charts were handed, by chart: Chart.tsx rebuilds its canvas on a
@@ -27,7 +28,7 @@ vi.mock('../dashboard/Chart', () => ({
   Chart: ({ aria, data, legendOrder, hidden, separateLegend }: {
     aria: string; data: unknown; legendOrder?: readonly string[]; hidden?: ReadonlySet<string>; separateLegend?: boolean
   }) => {
-    const key = aria.startsWith('Blocked share') ? 'ring' : 'bars'
+    const key = 'bars'
     drawn.set(key, [...(drawn.get(key) ?? []), data])
     legends.set(key, legendOrder)
     hiddenOf.set(key, { hidden, separate: separateLegend })
@@ -75,17 +76,6 @@ describe('blockingChart', () => {
 })
 
 describe('Overview', () => {
-  /* As drawn, and as the bars stack: the ring starts at the top with Blocked. */
-  it('the ring draws Blocked first, then what got through', async () => {
-    serve()
-    render(<Overview token="T" permissions={undefined} />)
-    await screen.findByRole('img', { name: 'Blocked share: 26.09%' })
-    expect(drawn.get('ring')?.at(-1)).toEqual({
-      labels: ['Blocked', 'Allowed'],
-      datasets: [{ label: 'Share', data: [5310, 20354 - 5310] }],
-    })
-  })
-
   it('the bars read Allowed, then Blocked, in their legend', async () => {
     serve()
     render(<Overview token="T" permissions={undefined} />)
@@ -116,14 +106,16 @@ describe('Overview', () => {
     /* The ring writes the same share in its hole: the figure is looked for in its card. */
     expect(within(screen.getByText('5,310').parentElement!).getByText('26.09% of total')).toBeInTheDocument()
     expect(screen.getByText('74,779')).toBeInTheDocument()
-    expect(rulePairs()).toEqual([['1', 'blocked'], ['1', 'allowed']])
+    expect(rulePairs()).toEqual([['1', 'Blocked'], ['1', 'Allowed']])
   })
 
-  it('draws the stacked bars and the blocked share', async () => {
+  /* The ring beside the chart said the strip's share a second time (2026-11-06). */
+  it('draws the stacked bars, and the share only once, in the strip', async () => {
     serve()
     render(<Overview token="T" permissions={undefined} />)
     expect(await screen.findByRole('img', { name: 'Allowed and blocked queries over time' })).toBeInTheDocument()
-    expect(screen.getByRole('img', { name: 'Blocked share: 26.09%' })).toBeInTheDocument()
+    expect(screen.getAllByText(/26\.09%/)).toHaveLength(1)
+    expect(screen.queryByRole('heading', { name: 'Blocked share' })).toBeNull()
   })
 
   it('the period asks the server again', async () => {
@@ -186,7 +178,7 @@ describe('Overview', () => {
   it('without Dashboard.canView the charts and both tops keep their place, locked', () => {
     serve()
     render(<Overview token="T" permissions={{ Dashboard: { canView: false, canModify: false, canDelete: false } }} />)
-    for (const title of ['Statistics', 'Queries over time', 'Blocked share', 'Top Blocked Domains', 'Top Domains']) {
+    for (const title of ['Statistics', 'Queries over time', 'Top Blocked Domains', 'Top Domains']) {
       /* The heading sits in the panel's header; the panel is the header's parent. */
       const panel = screen.getByRole('heading', { name: title }).parentElement!.parentElement!
       expect(within(panel).getByText('Requires Dashboard: View')).toBeInTheDocument()
@@ -199,14 +191,15 @@ describe('Overview', () => {
     serve().mockResolvedValue({ ...OK, data: { ...OK.data, stats: { ...STATS, blockedZones: 10000, allowedZones: 1234 } } })
     render(<Overview token="T" permissions={undefined} />)
     await screen.findByText((10000).toLocaleString())
-    expect(rulePairs()).toEqual([[(10000).toLocaleString(), 'blocked'], [(1234).toLocaleString(), 'allowed']])
+    expect(rulePairs()).toEqual([[(10000).toLocaleString(), 'Blocked'], [(1234).toLocaleString(), 'Allowed']])
   })
 
   it('while the figures travel the top tables do not claim there are no domains', () => {
     serve().mockReturnValue(new Promise(() => {}))
     render(<Overview token="T" permissions={undefined} />)
     expect(screen.queryByText('No domains for this period.')).not.toBeInTheDocument()
-    expect(screen.getAllByText('—').length).toBe(4)
+    // Total Queries, Blocked, Block List Domains, and Your Rules' figure and two counts.
+    expect(screen.getAllByText('—').length).toBe(6)
   })
 
   it('a first read that fails says so with the message from the server', async () => {
@@ -249,14 +242,12 @@ describe('Overview', () => {
     render(<Overview token="T" permissions={undefined} />)
     await screen.findByText('20,354')
     const bars = drawn.get('bars')!.at(-1)
-    const ring = drawn.get('ring')!.at(-1)
     const renders = drawn.get('bars')!.length
     // An empty Block raises a notice: the screen renders again, the stats do not change.
     await userEvent.click(screen.getByRole('button', { name: 'Block' }))
     expect(await screen.findByText('Please enter a domain name to block.')).toBeInTheDocument()
     expect(drawn.get('bars')!.length).toBeGreaterThan(renders)
     expect(drawn.get('bars')!.at(-1)).toBe(bars)
-    expect(drawn.get('ring')!.at(-1)).toBe(ring)
   })
 
   it('choosing a node asks that node and remembers it for the Dashboard', async () => {
@@ -302,7 +293,7 @@ describe('Overview', () => {
     serve().mockResolvedValue({ kind: 'ok', data: { ...OK.data, stats: zero, mainChartData: flat } })
     render(<Overview token="T" permissions={undefined} />)
     expect(await screen.findByText('0% of total')).toBeInTheDocument()
-    expect(screen.getAllByText('No queries for this period.').length).toBe(2)
+    expect(screen.getAllByText('No queries for this period.').length).toBe(1)
     expect(screen.queryByRole('img', { name: 'Allowed and blocked queries over time' })).not.toBeInTheDocument()
   })
 })
@@ -374,5 +365,130 @@ describe('Overview: Last Hour in real time', () => {
     await act(async () => { await vi.advanceTimersByTimeAsync(130_000) })
     expect(spy).not.toHaveBeenCalled()
     expect(live).not.toHaveBeenCalled()
+  })
+})
+
+describe('the strip (2026-11-06)', () => {
+  it('Your Rules counts every rule, then each list, and Blocked says its share', async () => {
+    serve()
+    render(<Overview token="T" permissions={undefined} />)
+    await screen.findByText('20,354')
+    const rules = screen.getByRole('heading', { level: 2, name: 'Your Rules' }).parentElement!
+    expect(rules.children[1].firstElementChild).toHaveTextContent('2')
+    expect(screen.getAllByRole('img', { name: /^Blocked [\d,]+, Allowed [\d,]+$/ })).toHaveLength(2)
+  })
+})
+
+describe('the layout of 2026-11-06', () => {
+  const LOGGER = {
+    name: 'Query Logs (Sqlite)', description: null, version: '1', dnsApps: [{
+      classPath: 'QueryLogsSqlite.App', description: '', isAppRecordRequestHandler: false, recordDataTemplate: null,
+      isRequestController: false, isAuthoritativeRequestHandler: false, isRequestBlockingHandler: false,
+      isQueryLogger: true, isQueryLogs: true, isPostProcessor: false,
+    }],
+  }
+
+  it('the blocking status and its menu sit in the header, before the period', async () => {
+    serve()
+    render(<Overview token="T" permissions={undefined} />)
+    const pill = await screen.findByText('Blocking is enabled')
+    const header = screen.getByRole('heading', { level: 1, name: 'Overview' }).closest('div')!.parentElement!.parentElement!
+    const menu = within(header).getByRole('button', { name: 'Blocking options' })
+    const period = within(header).getByRole('group', { name: 'Period' })
+    expect(header).toContainElement(pill)
+    expect(menu).toHaveTextContent('Disable')
+    expect(pill.compareDocumentPosition(period) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('the check, block or allow bar comes before the figures', async () => {
+    serve()
+    render(<Overview token="T" permissions={undefined} />)
+    await screen.findByText('20,354')
+    const bar = screen.getByRole('heading', { name: 'Check, block or allow a domain' })
+    const strip = screen.getByRole('heading', { level: 2, name: 'Total Queries' })
+    expect(bar.compareDocumentPosition(strip) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(screen.getByLabelText('Domain')).toBeInTheDocument()
+  })
+
+  it('without a query logging app there is no Blocked by client, and the reason is said once', async () => {
+    serve()
+    render(<Overview token="T" permissions={undefined} />)
+    expect(await screen.findByText('No query logging app')).toBeInTheDocument()
+    expect(screen.getAllByText(/Please install the 'Query Logs \(Sqlite\)' DNS App/)).toHaveLength(1)
+    expect(screen.queryByRole('heading', { name: 'Blocked by client' })).toBeNull()
+  })
+
+  it('with a query logging app, Blocked by client sits beside the chart and counts the sample', async () => {
+    serve()
+    vi.mocked(apps.listApps).mockResolvedValue({ kind: 'ok', data: { response: { apps: [LOGGER] } } } as never)
+    const sample = vi.spyOn(blocking, 'recentBlocked').mockResolvedValue({
+      kind: 'ok',
+      data: { partial: false, entries: [{
+        rowNumber: 1, timestamp: '2026-11-06T10:00:00Z', clientIpAddress: '10.0.0.5', protocol: 'Udp',
+        responseType: 'Blocked', rcode: 'NxDomain', qname: 'ads.example', qtype: 'A', qclass: 'IN', answer: null,
+      }] },
+    })
+    render(<Overview token="T" permissions={undefined} />)
+    expect(await screen.findByRole('img', { name: '10.0.0.5: 1 blocked' })).toBeInTheDocument()
+    expect(screen.getByText('In the last blocked query')).toBeInTheDocument()
+    const row = screen.getByRole('heading', { name: 'Queries over time' }).parentElement!.parentElement!.parentElement!
+    expect(within(row).getByRole('heading', { name: 'Blocked by client' })).toBeInTheDocument()
+    expect(sample).toHaveBeenCalledWith('T', { name: 'Query Logs (Sqlite)', classPath: 'QueryLogsSqlite.App' }, 'cluster', SAMPLE)
+  })
+
+  it('without Logs.canView, Blocked by client keeps its place, locked, and no log is read', async () => {
+    serve()
+    const sample = vi.spyOn(blocking, 'recentBlocked')
+    render(<Overview token="T" permissions={{ Logs: { canView: false, canModify: false, canDelete: false } }} />)
+    await screen.findByText('20,354')
+    const panel = screen.getByRole('heading', { name: 'Blocked by client' }).parentElement!.parentElement!
+    expect(within(panel).getByText('Requires Logs: View')).toBeInTheDocument()
+    expect(sample).not.toHaveBeenCalled()
+  })
+})
+
+describe('the strip compares with the previous period', () => {
+  const MIN = 60_000
+  const LAST = Date.UTC(2026, 10, 6, 11, 0)
+  /* A Last Hour answer whose minutes end at `last`: `total` queries a minute, `blocked` of them blocked. */
+  function hour(last: number, total: number, blocked: number) {
+    const instants = Array.from({ length: 60 }, (_, i) => new Date(last - (59 - i) * MIN).toISOString())
+    return {
+      ...OK.data,
+      stats: { ...STATS, totalQueries: 60 * total, totalBlocked: 60 * blocked },
+      mainChartData: {
+        labelFormat: 'HH:mm', labels: instants, instants,
+        /* Every counted series: the comparison sums them all, bucket by bucket. */
+        datasets: ['Total', 'No Error', 'Server Failure', 'NX Domain', 'Refused', 'Authoritative', 'Recursive',
+          'Cached', 'Blocked', 'Dropped', 'Clients'].map((label) => ({
+          label,
+          data: instants.map(() => (label === 'Total' ? total : label === 'Blocked' ? blocked : 0)),
+        })),
+      },
+    }
+  }
+
+  it('Total Queries says what it is measured against, Blocked only its change', async () => {
+    vi.spyOn(settings, 'getSettings').mockResolvedValue({ enableBlocking: true } as never)
+    vi.spyOn(apps, 'listApps').mockResolvedValue({ kind: 'ok', data: { response: { apps: [] } } } as never)
+    vi.spyOn(dashboard, 'getMetrics').mockResolvedValue({ kind: 'error', message: 'not here' })
+    const spy = vi.spyOn(dashboard, 'getDashboardStats').mockImplementation(async (_t, type) =>
+      ({ kind: 'ok', data: type === 'Custom' ? hour(LAST - 60 * MIN, 1, 1) : hour(LAST, 2, 1) }) as never)
+    render(<Overview token="T" permissions={undefined} />)
+    expect(await screen.findByText('+100.0% vs previous hour')).toBeInTheDocument()
+    const total = screen.getByRole('heading', { level: 2, name: 'Total Queries' }).parentElement!
+    expect(within(total).getByText('vs previous hour', { exact: false, selector: '[aria-hidden="true"]' })).toBeInTheDocument()
+    const blocked = screen.getByRole('heading', { level: 2, name: 'Blocked' }).parentElement!
+    expect(within(blocked).getByText('0.0% vs previous hour')).toBeInTheDocument()
+    expect(within(blocked).queryByText(/vs previous hour/, { selector: '[aria-hidden="true"]' })).toBeNull()
+    expect(spy.mock.calls.find((c) => c[1] === 'Custom')?.[3]).toBe('cluster')
+  })
+
+  it('without labels to measure from, no change is drawn and nothing more is asked', async () => {
+    const spy = serve()
+    render(<Overview token="T" permissions={undefined} />)
+    await screen.findByText('20,354')
+    expect(screen.queryByText(/vs previous/)).toBeNull()
+    expect(spy.mock.calls.some((c) => c[1] === 'Custom')).toBe(false)
   })
 })

@@ -1,0 +1,21 @@
+/*
+Edit Permissions' own pieces: the two tables are the console's data table
+(`ui/Table`), each under its title as a section of the dialog.
+*/
+
+/* The subject: a user or a group name, the row's entity. */
+.who { font-family: var(--font-mono); font-weight: 550; overflow-wrap: break-word; }
+
+/* A verb's column: its header centred over its box, which it was not (the box
+   was centred and the header left-aligned, so each VIEW stood off its column). */
+.verb { width: 84px; text-align: center; }
+th.verb { text-align: center; }
+
+/* The checkbox with its enlarged target (see `Zones.module.css`). */
+.chkPerm { composes: chkPerm from '../Zones.module.css'; }
+/* Stacked, the box follows its verb's label on the line instead of centring. */
+[data-stacked] .verb { width: auto; }
+[data-stacked] .chkPerm { display: inline-block; vertical-align: middle; }
+
+/* Add User and Add Group pick one name: they do not need the table's width. */
+.add { max-width: 320px; }

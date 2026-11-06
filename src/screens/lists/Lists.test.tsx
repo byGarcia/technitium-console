@@ -67,7 +67,7 @@ describe('tree navigation', () => {
   it('each section asks for its own endpoint', async () => {
     const spy = withNode(node())
     render(<Lists list="blocked" token="t" embedded />)
-    await screen.findByText('Domains the administrator blocks')
+    await screen.findByText(/^0 records at/)
     expect(spy.mock.calls[0][0]).toBe('blocked')
   })
 
@@ -78,7 +78,7 @@ describe('tree navigation', () => {
     render(<Lists list="allowed" token="t" embedded />)
     await userEvent.type(await screen.findByLabelText('Domain'), 'org')
     await userEvent.click(screen.getByRole('button', { name: 'Browse' }))
-    expect(await screen.findByText('foo.example.org')).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'foo.example.org' })).toBeInTheDocument()
     expect(screen.getByText(/1 records at/)).toBeInTheDocument()
   })
 
@@ -120,9 +120,13 @@ describe('records table', () => {
     expect(screen.getByText('(3m38s)')).toBeInTheDocument()
   })
 
-  it('it keeps the response metadata on the grey line', async () => {
+  it('it keeps the response metadata on the grey line, under the record Details on Cache', async () => {
     withNode(node({ domain: 'example.com', records: [REG_CACHE] }))
     render(<Cache token="t" />)
+    const details = await screen.findByRole('button', { name: 'Details' })
+    expect(screen.queryByText(/via 8\.8\.8\.8/)).toBeNull()
+    await userEvent.click(details)
+    expect(details).toHaveAttribute('aria-expanded', 'true')
     const meta = await screen.findByText(/via 8\.8\.8\.8/)
     expect(meta).toHaveTextContent('179 bytes')
     expect(meta).toHaveTextContent('43 ms')
@@ -139,7 +143,8 @@ describe('records table', () => {
     render(<Lists list="allowed" token="t" embedded />)
     await screen.findByText('Name Server')
     expect(screen.queryByRole('columnheader', { name: 'DNSSEC' })).not.toBeInTheDocument()
-    // But the DNSSEC state is not lost: it drops down to the grey line.
+    // But the DNSSEC state is not lost: it drops down to the grey line, under Details.
+    await userEvent.click(screen.getByRole('button', { name: 'Details' }))
     expect(screen.getByText(/DNSSEC Unknown/)).toBeInTheDocument()
   })
 
@@ -217,7 +222,7 @@ describe('Allowed', () => {
   it('Delete only appears when the node has records', async () => {
     withNode(node({ domain: 'home.test', zones: ['a.home.test'], records: [] }))
     const { unmount } = render(<Lists list="allowed" token="t" embedded />)
-    await screen.findByText('a.home.test')
+    await screen.findByRole('button', { name: 'a.home.test' })
     expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument()
     unmount()
 

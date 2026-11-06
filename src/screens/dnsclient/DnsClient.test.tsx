@@ -1,10 +1,14 @@
 import { describe, expect, it, vi, afterEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { DnsClient } from './DnsClient'
 import * as api from '../../api/dnsclient'
 
-afterEach(() => vi.restoreAllMocks())
+afterEach(() => {
+  vi.restoreAllMocks()
+  // The recent queries live in this browser's storage: each test starts with none.
+  localStorage.removeItem('dnsclient-recent')
+})
 
 describe('DNS Client', () => {
   it('it requires the domain with the literal text of upstream', async () => {
@@ -30,16 +34,46 @@ describe('DNS Client', () => {
     expect(spy.mock.calls[0][1].runImport).toBeFalsy()
     spy.mockClear()
     await userEvent.click(screen.getByRole('button', { name: 'Import' }))
+    await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Import' }))
     expect(spy.mock.calls[0][1].runImport).toBe(true)
   })
 
-  it('on importing it confirms with the literal text', async () => {
+  /*
+  `confirm()` before importing (dnsclient.js:148-151), which this console had lost:
+  Import sent at once, and an import can create a primary zone. The text is
+  upstream's, with the domain as it will travel.
+  */
+  it('Import asks first with the literal text, and Cancel sends nothing', async () => {
+    const spy = vi.spyOn(api, 'resolve').mockResolvedValue({
+      kind: 'ok', data: { status: 'ok', response: { result: {} } },
+    } as never)
+    render(<DnsClient token="t" />)
+    await userEvent.type(screen.getByLabelText('Domain'), 'home.test')
+    await userEvent.click(screen.getByRole('button', { name: 'Import' }))
+    const dialog = await screen.findByRole('dialog')
+    expect(dialog).toHaveTextContent(
+      "Importing all the records from the response of this query will add them into an existing primary or conditional forwarder zone. If a matching zone does not exists, a new primary zone for 'home.test' will be created.",
+    )
+    expect(dialog).toHaveTextContent('Are you sure you want to import all records?')
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }))
+    expect(spy).not.toHaveBeenCalled()
+  })
+
+  it('the import confirmation comes after both validations', async () => {
+    render(<DnsClient token="t" />)
+    await userEvent.click(screen.getByRole('button', { name: 'Import' }))
+    expect(await screen.findByText('Please enter a domain name to query.')).toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('on importing it reports with the literal text', async () => {
     vi.spyOn(api, 'resolve').mockResolvedValue({
       kind: 'ok', data: { status: 'ok', response: { result: {} } },
     } as never)
     render(<DnsClient token="t" />)
     await userEvent.type(screen.getByLabelText('Domain'), 'home.test')
     await userEvent.click(screen.getByRole('button', { name: 'Import' }))
+    await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Import' }))
     expect(
       await screen.findByText('Resource records resolved by this DNS client query were successfully imported into this server.'),
     ).toBeInTheDocument()
@@ -72,7 +106,7 @@ describe('DNS Client', () => {
     render(<DnsClient token="t" />)
     await userEvent.type(screen.getByLabelText('Domain'), 'home.test')
     await userEvent.click(screen.getByRole('button', { name: 'Resolve' }))
-    await screen.findByText('Response')
+    await screen.findByLabelText('DNS response for home.test A')
     expect(screen.queryByText(/Raw Responses/)).not.toBeInTheDocument()
   })
 
@@ -83,6 +117,7 @@ describe('DNS Client', () => {
     render(<DnsClient token="t" />)
     await userEvent.type(screen.getByLabelText('Domain'), 'home.test')
     await userEvent.click(screen.getByRole('button', { name: 'Import' }))
+    await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Import' }))
     expect(await screen.findByText('Watch out for this')).toBeInTheDocument()
     expect(screen.queryByText(/successfully imported/)).not.toBeInTheDocument()
   })

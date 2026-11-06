@@ -6,9 +6,11 @@ in two places and reasoned: the button lives glued to the number that says how m
 it acts on". It stayed in the header, next to `Add Zone`, where it reads as a
 screen-level action and nothing says it works on the ticked rows.
 
-What these tests hold is the half that a drawing cannot: the bar is always there and
-the button always works, because with nothing ticked **upstream answers**, and that
-answer is behaviour.
+What these tests hold is the half that a drawing cannot: the bar is always there,
+and the button in it is disabled, never hidden, until a zone is ticked. That last
+part is a deliberate deviation (CONVENTIONS.md, Adrián's decision of 2026-11-05):
+upstream keeps it enabled and answers an empty selection with an alert
+(zone.js:1139).
 */
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
@@ -49,17 +51,23 @@ describe('the zone selection bar', () => {
     expect(header.textContent).not.toContain('Delete Zones')
   })
 
-  /* The screen owns the notifier, so the answer is checked where it is raised. */
-  it('with nothing ticked the verb still answers, instead of being unreachable', async () => {
+  /* Disabled, not hidden: the verb stays where it lives, and says by itself
+     that there is nothing to act on. */
+  it('with nothing ticked the verb is there but disabled, and asks nothing', async () => {
     const spy = vi.spyOn(client, 'apiRequest').mockResolvedValue(zones)
     const notices: { text?: string }[] = []
     const user = userEvent.setup()
     render(<ZoneList {...props} onNotice={(n: { text?: string }) => notices.push(n)} />)
     await screen.findByRole('button', { name: 'casa.test' })
 
-    await user.click(screen.getByRole('button', { name: 'Delete Zones' }))
-    expect(notices.map((n) => n.text)).toContain('Please select one or more zones to delete.')
+    const button = screen.getByRole('button', { name: 'Delete Zones' })
+    expect(button).toBeDisabled()
+    await user.click(button)
+    expect(notices).toEqual([])
     expect(spy.mock.calls.find((c) => c[0] === 'zones/delete')).toBeUndefined()
+
+    await user.click(screen.getByLabelText('Select casa.test'))
+    expect(screen.getByRole('button', { name: 'Delete Zones' })).toBeEnabled()
   })
 
   it('and with rows ticked it says how many it would act on', async () => {

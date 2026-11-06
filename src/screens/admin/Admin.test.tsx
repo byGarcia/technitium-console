@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Admin, SUB_TABS } from './Admin'
+import { SECTIONS } from '../../app/sections'
 import * as client from '../../api/client'
 import { CLUSTER_PRIMARY, CLUSTER_NOT_INITIALISED, GROUPS, PERMISSIONS, ADMIN_SESSION, SSO, LDAP, ADMIN_USER } from './admin.fixture'
 import { choose, valueShown } from '../../test/dropdown'
@@ -34,23 +35,21 @@ function server(cluster = CLUSTER_NOT_INITIALISED) {
 }
 
 /*
-The sub-navigation moved on 2026-09-07: it was the Shell's side panel and it is now
-a bar under the title (`ui/SubTabs`), which is what the design draws. So
-the title is the SECTION and the active screen is the tab marked as the page.
+The sub-navigation is in the sidebar again since 2026-11-06 (deviation 24): the
+screen draws no bar, and its title is the screen under `Administration ›`.
 */
-describe('Admin: the sub-navigation is a bar under the title', () => {
+describe('Admin: the screen is its sub-section', () => {
   it('with no `sub` it starts on Sessions, just like upstream', async () => {
     server()
     render(<Admin token="tok" />)
-    expect(await screen.findByRole('heading', { name: 'Administration' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Sessions' })).toHaveAttribute('aria-current', 'page')
+    expect(await screen.findByRole('heading', { level: 1, name: 'Sessions' })).toBeInTheDocument()
+    expect(screen.getByText('Administration')).toBeInTheDocument()
   })
 
   it('a sub-tab that does not exist falls to Sessions instead of going blank', async () => {
     server()
     render(<Admin token="tok" sub="Invented" />)
-    expect(await screen.findByRole('heading', { name: 'Administration' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Sessions' })).toHaveAttribute('aria-current', 'page')
+    expect(await screen.findByRole('heading', { level: 1, name: 'Sessions' })).toBeInTheDocument()
   })
 
   it('the seven sub-tabs draw without breaking and only one at a time', async () => {
@@ -73,13 +72,13 @@ describe('Admin: the sub-navigation is a bar under the title', () => {
   })
 
   it('LDAP sits between SSO and Cluster, as in upstream (index.html:2926-2928)', async () => {
+    // The order the sidebar unfolds them in, and the screen's own.
+    const admin = SECTIONS.find((x) => x.id === 'admin')!
+    expect(admin.subs).toEqual(['Sessions', 'Users', 'Groups', 'Permissions', 'SSO', 'LDAP', 'Cluster'])
+    expect([...SUB_TABS]).toEqual(admin.subs)
     server()
     render(<Admin token="tok" sub="LDAP" />)
-    await screen.findByLabelText('Enable LDAP Authentication')
-    const names = screen.getAllByRole('link').map((a) => a.textContent)
-    expect(names).toEqual(['Sessions', 'Users', 'Groups', 'Permissions', 'SSO', 'LDAP', 'Cluster'])
-    expect(screen.getByRole('link', { name: 'LDAP' })).toHaveAttribute('aria-current', 'page')
-    expect(screen.getByRole('link', { name: 'LDAP' }).getAttribute('href')).toMatch(/\/admin\/ldap\/$/)
+    expect(await screen.findByRole('heading', { level: 1, name: 'LDAP' })).toBeInTheDocument()
   })
 
   it('the cluster state is asked for ONCE and the sub-tabs share it', async () => {
