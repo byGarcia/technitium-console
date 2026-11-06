@@ -99,12 +99,19 @@ written in several places), except that here one of the copies was missing.
 .nextName { font-family: var(--font-mono); color: var(--ink); }
 .nextWhen { color: var(--warn); white-space: nowrap; }
 
-/* The scope table's Leases column: the count of the range, and a short track. */
-.use { display: flex; flex-direction: column; gap: var(--s-2); min-width: 96px; }
+/* The scope table's Leases column (deviations 19 and 30): the count of the range
+   and its share on one line, a short track, the two types under it; above 80% the
+   share and the track take the warning colour. */
+.use { display: flex; flex-direction: column; gap: var(--s-2); min-width: 128px; }
+.useLine { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-5); }
 .useText { font-variant-numeric: tabular-nums; color: var(--ink); white-space: nowrap; }
 .useOf { color: var(--mute); }
+.usePct { font-variant-numeric: tabular-nums; color: var(--mute); white-space: nowrap; }
+.use[data-high] .usePct { color: var(--warn); font-weight: 600; }
 .useTrack { display: block; height: var(--s-2); border-radius: var(--r-1); background: var(--pan2); overflow: hidden; }
 .useTrack > span { display: block; height: 100%; border-radius: inherit; background: var(--info); }
+.use[data-high] .useTrack > span { background: var(--warn); }
+.useSplit { font-size: var(--t-2); color: var(--mute); font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 /* The lease table's toolbar: the two filters at a fixed width each. */
 .filter { width: 220px; max-width: 100%; }

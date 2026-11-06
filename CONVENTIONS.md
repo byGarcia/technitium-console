@@ -1668,6 +1668,20 @@ contract and SECURITY.md.
     And **the row's round trip is back in Query Logs**: upstream draws `(N.NN ms)` under
     the response type (logs.js:517); it had gone under `Details` only.
 
+30. **DHCP shows each scope's usage** (Adrián's decision, 2026-11-06; `screens/dhcp/Scopes.tsx`,
+    `scopeUsage` and `percent` in `pool.ts`). The scope table's Leases column (deviation 19) becomes
+    each ENABLED scope's usage: the leases of `dhcp/leases/list` that carry its name, Dynamic and
+    Reserved together, against the addresses in its range (`endingAddress - startingAddress + 1`
+    from `scopes/list`), as `N of M`, the share in whole percents (`<1%` for a few leases in a wide
+    range, never `0%`), a bar, and `Dynamic N, Reserved N` under it. Above 80%, as the share is
+    written (`81%` is over, `80%` is not), the share and the bar take the warning colour. The
+    exclusions are not in `scopes/list` and reading them is one `scopes/get` per scope, so the size
+    is the range's and the bar's name says so. A disabled scope shows no bar; a range that is not
+    IPv4 none either. The column sorts by the share. No call is added: the two lists deviation 19
+    already reads, on the same node, under the same `DhcpServer: View`. Its words, OURS: `N of M`,
+    `X%`, `<1%`, `Dynamic N, Reserved N`, and the bar's name `<scope>: N of the M addresses in its
+    range leased, X%`.
+
 ## Four constraints the server imposes
 
 These are not preferences: break them and the console works in development and

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { DhcpLease, DhcpScopeRow } from '../../api/dhcp'
-import { expiringSoon, ipv4, leaseKey, leaseTime, leasesPerScope, matchesScope, matchesSearch, newest, poolTotals, rangeSize } from './pool'
+import { expiringSoon, ipv4, leaseKey, leaseTime, leasesPerScope, matchesScope, matchesSearch, newest, percent, poolTotals, rangeSize, scopeUsage } from './pool'
 
 const NOW = Date.parse('2026-11-06T07:00:00Z')
 
@@ -130,5 +130,51 @@ describe('the scope search and the lease time', () => {
     expect(leaseTime(1, 0, 0)).toBe('1d')
     expect(leaseTime(0, 4, 30)).toBe('4h 30m')
     expect(leaseTime(0, 0, 0)).toBe('0m')
+  })
+})
+
+describe('a scope usage (deviation 30)', () => {
+  it('sizes an IPv4 range with both ends, across octets, and refuses what is not one', () => {
+    expect(rangeSize('10.77.0.100', '10.77.0.199')).toBe(100)
+    expect(rangeSize('10.0.0.5', '10.0.0.5')).toBe(1)
+    expect(rangeSize('10.0.0.250', '10.0.1.10')).toBe(17)
+    expect(rangeSize('172.16.0.0', '172.31.255.255')).toBe(1048576)
+    expect(rangeSize('10.0.0.9', '10.0.0.1')).toBeNull()
+    expect(rangeSize('fe80::1', 'fe80::9')).toBeNull()
+  })
+
+  it('counts the leases that carry the scope name, Dynamic and Reserved apart and together', () => {
+    const leases = [
+      lease({ clientIdentifier: 'a' }),
+      lease({ clientIdentifier: 'b' }),
+      lease({ clientIdentifier: 'c', type: 'Reserved' }),
+      lease({ clientIdentifier: 'd', scope: 'Guest' }),
+    ]
+    expect(scopeUsage(OFFICE, leases)).toEqual({ leased: 3, dynamic: 2, reserved: 1, size: 100, share: 0.03, high: false })
+    expect(scopeUsage(OFFICE, [])).toEqual({ leased: 0, dynamic: 0, reserved: 0, size: 100, share: 0, high: false })
+  })
+
+  it('writes the share in whole percents, and a few leases in a wide range as <1%', () => {
+    expect(percent(0)).toBe('0%')
+    expect(percent(0.004)).toBe('<1%')
+    expect(percent(0.03)).toBe('3%')
+    expect(percent(0.805)).toBe('81%')
+    expect(percent(1)).toBe('100%')
+    expect(percent(1.2)).toBe('120%')
+  })
+
+  it('is high only above 80% as the column writes it', () => {
+    const many = (n: number) => Array.from({ length: n }, (_, i) => lease({ clientIdentifier: String(i) }))
+    expect(scopeUsage(OFFICE, many(80))?.high).toBe(false)
+    expect(scopeUsage(OFFICE, many(81))?.high).toBe(true)
+    expect(scopeUsage(OFFICE, many(100))?.high).toBe(true)
+    const wide = { ...OFFICE, startingAddress: '10.77.0.1', endingAddress: '10.77.3.232' } // 1,000 addresses
+    expect(scopeUsage(wide, many(804))?.high).toBe(false) // 80.4% is written 80%
+    expect(scopeUsage(wide, many(805))?.high).toBe(true) // 80.5% is written 81%
+  })
+
+  it('has none for a disabled scope or a range that is not IPv4', () => {
+    expect(scopeUsage({ ...OFFICE, enabled: false }, [lease({})])).toBeNull()
+    expect(scopeUsage({ ...OFFICE, startingAddress: 'x' }, [lease({})])).toBeNull()
   })
 })
