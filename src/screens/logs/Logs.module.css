@@ -381,3 +381,6 @@ tr[data-fresh] > td { animation: row-in 1.1s ease-out; }
   padding-left: var(--s-8);
   margin-left: calc(-1 * var(--s-8));
 }
+
+/* The response's round trip under its type, in the row (upstream's `font-size: 12px` line). */
+.rttRow { display: block; margin-top: var(--s-2); font: 400 var(--t-1)/1.2 var(--font-mono); color: var(--faint); white-space: nowrap; }

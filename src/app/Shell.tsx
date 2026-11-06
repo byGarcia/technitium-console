@@ -771,6 +771,8 @@ export function Shell({
             token={session.token}
             nodes={session.info?.clusterNodes ?? []}
             clusterInitialised={session.info?.clusterInitialized === true}
+            canViewLogs={permissions?.Logs?.canView !== false}
+            serverDomain={info?.dnsServerDomain}
           />
         ) : current?.id === 'clients' ? (
           <Clients

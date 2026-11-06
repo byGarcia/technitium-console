@@ -426,6 +426,9 @@ function QueryRow({
         <td>
           {/* The row's colour, in this cell: see `.tone` in Logs.module.css. */}
           <span className={styles.tone}>{e.responseType}</span>
+          {/* logs.js:517: the round trip under the response type, as upstream draws
+              it in the row (it had gone under Details only; back on 2026-11-06). */}
+          {e.responseRtt != null && <span className={styles.rttRow}>({e.responseRtt.toFixed(2)} ms)</span>}
         </td>
         <td>{e.rcode}</td>
         <td className={`${styles.mono} ${styles.answer}`}>

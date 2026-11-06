@@ -1655,6 +1655,19 @@ contract and SECURITY.md.
     row of page 1 is new on every turn. No motion with reduced motion. Its words, OURS:
     `N new` and the switch's title `Live Update reads page 1 every 2 seconds`.
 
+28. **The Dashboard shows response times** (Adrián's decision, 2026-11-06;
+    `screens/dashboard/ResponseTime.tsx`, `response-time.ts`). A card under the Queries
+    row reads the newest 1,000 entries of the first query logs app (`logs/query`, the read
+    Blocking's Blocked by client makes, again each time the statistics answer) and works
+    out, from the entries that carry a `responseRtt` (answers the server had to ask for
+    upstream), the median and the 95th percentile (nearest rank), the share over 100 ms
+    and a histogram in nine buckets, the slow tail in the warning colour. On the cluster
+    aggregate it reads the connected node's log and says so. It reads nothing without
+    `Logs.canView` (locked) and says once when there is no query logs app. Its words,
+    OURS, are declared in its header comment.
+    And **the row's round trip is back in Query Logs**: upstream draws `(N.NN ms)` under
+    the response type (logs.js:517); it had gone under `Details` only.
+
 ## Four constraints the server imposes
 
 These are not preferences: break them and the console works in development and

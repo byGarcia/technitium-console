@@ -208,6 +208,16 @@ describe('Query Logs: what Live Update brings', () => {
 })
 
 describe('Query Logs: one line per row', () => {
+  it('draws the round trip under the response type, as upstream does (logs.js:517)', async () => {
+    const user = userEvent.setup()
+    setUp(page({ entries: [ENTRIES[2], ENTRIES[0]] }))
+    render(<Logs token="t" sub="Query Logs" />)
+    await screen.findByLabelText('App Name')
+    await user.click(screen.getByRole('button', { name: 'Query' }))
+    const rows = await screen.findAllByText('(4.50 ms)')
+    expect(rows).toHaveLength(2)
+  })
+
   it('holds when, who, what and how it was answered; the rest is under Details', async () => {
     const user = userEvent.setup()
     setUp(page({ entries: [ENTRIES[2]] }))

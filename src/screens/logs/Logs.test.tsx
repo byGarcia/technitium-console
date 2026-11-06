@@ -491,10 +491,11 @@ describe('Logs › Query Logs: the table', () => {
 
     expect(await screen.findByTitle('github.com')).toBeInTheDocument()
     expect(inTable().getByText('A 140.82.121.3')).toBeInTheDocument()
-    /* The response time is under the row's Details, with the rest of the row. */
-    expect(screen.queryByText('(12.82 ms)')).not.toBeInTheDocument()
+    /* The response time is under the response type in the row, as upstream draws it
+       (logs.js:517, back on 2026-11-06), and again in Details beside the type. */
+    expect(screen.getAllByText('(12.82 ms)')).toHaveLength(1)
     await user.click(screen.getByRole('button', { name: 'Details' }))
-    expect(screen.getByText('(12.82 ms)')).toBeInTheDocument()
+    expect(screen.getAllByText('(12.82 ms)')).toHaveLength(2)
   })
 
   it('the timestamp is two unbreakable pieces, date and time, so a narrow table breaks it only between them', async () => {

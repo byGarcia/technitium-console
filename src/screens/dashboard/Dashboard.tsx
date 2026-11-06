@@ -10,6 +10,7 @@ import { FIGURES, TOTAL, num2, percentage, type Metric } from './metrics'
 import { Line, Placeholder, Top, hasData } from './Panels'
 import { Breakdown } from './Breakdown'
 import { Heatmap } from './Heatmap'
+import { ResponseTime } from './ResponseTime'
 import {
   bucketWindow, periodFilters, protocolFilter, queryTypeFilter, responseTypeFilter,
 } from './jump'
@@ -50,10 +51,16 @@ export function Dashboard({
   token,
   nodes = [],
   clusterInitialised = false,
+  canViewLogs = false,
+  serverDomain,
 }: {
   token: string | null
   nodes?: ClusterNode[]
   clusterInitialised?: boolean
+  /** Response Time reads the query log (deviation 28): only when the Shell says the
+   *  session may (`Logs.canView`); otherwise the card is locked and nothing is read. */
+  canViewLogs?: boolean
+  serverDomain?: string
 }) {
   /*
   Which node this screen is reading. Upstream offers the aggregate here and
@@ -464,6 +471,15 @@ export function Dashboard({
           </Panel>
         </div>
       </div>
+
+      <ResponseTime
+        token={token}
+        node={!clusterInitialised || node === AGGREGATE ? '' : node}
+        onConnected={clusterInitialised && node === AGGREGATE}
+        serverDomain={serverDomain}
+        canView={canViewLogs}
+        refreshOn={data}
+      />
 
       <div className={styles.lists}>
         <Top

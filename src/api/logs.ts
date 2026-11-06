@@ -211,7 +211,8 @@ export async function newestQueries(
     qclass: '',
     node,
   })
-  return r.kind === 'ok' ? { kind: 'ok', data: r.data.response.entries } : r
+  /* An answer with no `entries` (no log yet) is an empty sample, not a crash. */
+  return r.kind === 'ok' ? { kind: 'ok', data: r.data.response?.entries ?? [] } : r
 }
 
 /** `logs/export` (logs.js:678). The same filters as `query` MINUS the three

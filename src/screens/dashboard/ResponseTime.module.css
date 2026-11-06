@@ -1,0 +1,48 @@
+/*
+Response Time (deviation 28): the three figures at the left, the histogram at the
+right, one row; stacked under 760 px of card. The bars are the Total series'
+colour, the slow tail (over 100 ms) the warning one: amber only where it is slow.
+*/
+.panel { margin-top: var(--s-8); container-type: inline-size; }
+
+.caption { font-size: var(--t-2); color: var(--faint); }
+
+.grid { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 2fr); gap: var(--s-11); align-items: center; }
+@container (max-width: 760px) { .grid { grid-template-columns: minmax(0, 1fr); gap: var(--s-9); } }
+
+.lead { margin: 0 0 var(--s-9); font-size: var(--t-3); line-height: 1.45; color: var(--mute); max-width: 46ch; }
+
+.facts { margin: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-8); }
+.facts > div { min-width: 0; }
+.facts dt { font-size: var(--t-2); color: var(--mute); }
+.facts dd { margin: var(--s-2) 0 0; font: 650 var(--t-6)/1.15 var(--font-mono); color: var(--ink); white-space: nowrap; }
+.facts dd[data-slow] { color: var(--warn); }
+
+.note { margin: var(--s-6) 0 0; font-size: var(--t-2); color: var(--faint); }
+
+.histogram { margin: 0; min-width: 0; }
+.bars {
+  display: grid;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  gap: var(--s-4);
+  align-items: end;
+  height: 150px;
+  border-bottom: 1px solid var(--line);
+}
+.bucket { height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; min-width: 0; }
+.count { font: 500 var(--t-1)/1 var(--font-mono); color: var(--faint); text-align: center; margin-bottom: var(--s-2); min-height: 1em; }
+.bar { display: block; width: min(100%, 40px); border-radius: var(--r-1) var(--r-1) 0 0; background: var(--ch-total); transition: height var(--t-fast); }
+.bucket[data-slow] .bar { background: var(--warn); }
+
+.axis { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: var(--s-4); margin-top: var(--s-3); }
+.axis span { font: 400 var(--t-1)/1.2 var(--font-mono); color: var(--faint); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.unit { margin-top: var(--s-2); font-size: var(--t-1); color: var(--faint); text-align: center; }
+
+/* A narrow card names each bucket by its upper edge: `10-20` would not fit. */
+.short { display: none; }
+@container (max-width: 520px) {
+  .full { display: none; }
+  .short { display: inline; }
+}
+
+@media (prefers-reduced-motion: reduce) { .bar { transition: none; } }
