@@ -429,6 +429,15 @@ export function Shell({
   */
   const currentSub = current?.subs != null ? (sub ?? current.subs[0] ?? null) : null
 
+  /* The page you are on is in view in the sidebar (2026-11-06). Its list scrolls
+     inside the panel, and arriving straight on a section low in it (an
+     Administration sub-page at 900 px of height) left the current entry below the
+     fold. `nearest`, so an entry already in view does not move the list. */
+  const navRef = useRef<HTMLElement>(null)
+  useEffect(() => {
+    navRef.current?.querySelector<HTMLElement>('[aria-current="page"]')?.scrollIntoView?.({ block: 'nearest' })
+  }, [active, currentSub])
+
   /*
   The URL follows the state, and the state follows the URL. The guard is in
   `writeRoute`, which does not touch history if the route is already the current
@@ -527,7 +536,7 @@ export function Shell({
           <span className={styles.findText}>Search or jump to…</span>
           <kbd className={styles.findKeys}>{PALETTE_KEYS}</kbd>
         </button>
-        <nav className={styles.slist} role="navigation" aria-label="Sections">
+        <nav ref={navRef} className={styles.slist} role="navigation" aria-label="Sections">
           {/*
           This is a navigation menu, and until now it claimed to be a `tablist`.
 
