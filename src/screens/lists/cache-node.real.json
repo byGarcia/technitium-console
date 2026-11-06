@@ -1,0 +1,360 @@
+{
+ "domain": "github.com",
+ "zones": [
+  "api.github.com"
+ ],
+ "records": [
+  {
+   "name": "github.com",
+   "type": "A",
+   "ttl": "0 (0s)",
+   "rData": {
+    "ipAddress": "20.250.119.67"
+   },
+   "dnssecStatus": "Insecure",
+   "responseMetadata": {
+    "nameServer": "1.1.1.1",
+    "protocol": "Udp",
+    "datagramSize": "55 bytes",
+    "roundTripTime": "1.23 ms"
+   },
+   "lastUsedOn": "2026-11-06T05:58:30.7756175Z"
+  },
+  {
+   "name": "github.com",
+   "type": "NS",
+   "ttl": "211 (3m31s)",
+   "rData": {
+    "nameServer": "ns-421.awsdns-52.com"
+   },
+   "dnssecStatus": "Insecure",
+   "nameServerMetadata": {
+    "totalQueries": 0,
+    "answerRate": "0%",
+    "smoothedRoundTripTime": "0 ms",
+    "smoothedPenaltyRoundTripTime": "0 ms",
+    "netRoundTripTime": "0 ms",
+    "isMisconfigured": false
+   },
+   "responseMetadata": {
+    "nameServer": "1.1.1.1",
+    "protocol": "Udp",
+    "datagramSize": "294 bytes",
+    "roundTripTime": "13.78 ms"
+   },
+   "lastUsedOn": "2026-11-06T05:58:35.1366147Z"
+  },
+  {
+   "name": "github.com",
+   "type": "NS",
+   "ttl": "211 (3m31s)",
+   "rData": {
+    "nameServer": "dns3.p08.nsone.net"
+   },
+   "dnssecStatus": "Insecure",
+   "nameServerMetadata": {
+    "totalQueries": 0,
+    "answerRate": "0%",
+    "smoothedRoundTripTime": "0 ms",
+    "smoothedPenaltyRoundTripTime": "0 ms",
+    "netRoundTripTime": "0 ms",
+    "isMisconfigured": false
+   },
+   "responseMetadata": {
+    "nameServer": "1.1.1.1",
+    "protocol": "Udp",
+    "datagramSize": "294 bytes",
+    "roundTripTime": "13.78 ms"
+   },
+   "lastUsedOn": "2026-11-06T05:58:35.1366147Z"
+  },
+  {
+   "name": "github.com",
+   "type": "NS",
+   "ttl": "211 (3m31s)",
+   "rData": {
+    "nameServer": "dns4.p08.nsone.net"
+   },
+   "dnssecStatus": "Insecure",
+   "nameServerMetadata": {
+    "totalQueries": 0,
+    "answerRate": "0%",
+    "smoothedRoundTripTime": "0 ms",
+    "smoothedPenaltyRoundTripTime": "0 ms",
+    "netRoundTripTime": "0 ms",
+    "isMisconfigured": false
+   },
+   "responseMetadata": {
+    "nameServer": "1.1.1.1",
+    "protocol": "Udp",
+    "datagramSize": "294 bytes",
+    "roundTripTime": "13.78 ms"
+   },
+   "lastUsedOn": "2026-11-06T05:58:35.1366147Z"
+  },
+  {
+   "name": "github.com",
+   "type": "NS",
+   "ttl": "211 (3m31s)",
+   "rData": {
+    "nameServer": "ns-1283.awsdns-32.org"
+   },
+   "dnssecStatus": "Insecure",
+   "nameServerMetadata": {
+    "totalQueries": 0,
+    "answerRate": "0%",
+    "smoothedRoundTripTime": "0 ms",
+    "smoothedPenaltyRoundTripTime": "0 ms",
+    "netRoundTripTime": "0 ms",
+    "isMisconfigured": false
+   },
+   "responseMetadata": {
+    "nameServer": "1.1.1.1",
+    "protocol": "Udp",
+    "datagramSize": "294 bytes",
+    "roundTripTime": "13.78 ms"
+   },
+   "lastUsedOn": "2026-11-06T05:58:35.1366147Z"
+  },
+  {
+   "name": "github.com",
+   "type": "NS",
+   "ttl": "211 (3m31s)",
+   "rData": {
+    "nameServer": "dns2.p08.nsone.net"
+   },
+   "dnssecStatus": "Insecure",
+   "nameServerMetadata": {
+    "totalQueries": 0,
+    "answerRate": "0%",
+    "smoothedRoundTripTime": "0 ms",
+    "smoothedPenaltyRoundTripTime": "0 ms",
+    "netRoundTripTime": "0 ms",
+    "isMisconfigured": false
+   },
+   "responseMetadata": {
+    "nameServer": "1.1.1.1",
+    "protocol": "Udp",
+    "datagramSize": "294 bytes",
+    "roundTripTime": "13.78 ms"
+   },
+   "lastUsedOn": "2026-11-06T05:58:35.1366147Z"
+  },
+  {
+   "name": "github.com",
+   "type": "NS",
+   "ttl": "211 (3m31s)",
+   "rData": {
+    "nameServer": "ns-1707.awsdns-21.co.uk"
+   },
+   "dnssecStatus": "Insecure",
+   "nameServerMetadata": {
+    "totalQueries": 0,
+    "answerRate": "0%",
+    "smoothedRoundTripTime": "0 ms",
+    "smoothedPenaltyRoundTripTime": "0 ms",
+    "netRoundTripTime": "0 ms",
+    "isMisconfigured": false
+   },
+   "responseMetadata": {
+    "nameServer": "1.1.1.1",
+    "protocol": "Udp",
+    "datagramSize": "294 bytes",
+    "roundTripTime": "13.78 ms"
+   },
+   "lastUsedOn": "2026-11-06T05:58:35.1366147Z"
+  },
+  {
+   "name": "github.com",
+   "type": "NS",
+   "ttl": "211 (3m31s)",
+   "rData": {
+    "nameServer": "dns1.p08.nsone.net"
+   },
+   "dnssecStatus": "Insecure",
+   "nameServerMetadata": {
+    "totalQueries": 0,
+    "answerRate": "0%",
+    "smoothedRoundTripTime": "0 ms",
+    "smoothedPenaltyRoundTripTime": "0 ms",
+    "netRoundTripTime": "0 ms",
+    "isMisconfigured": false
+   },
+   "responseMetadata": {
+    "nameServer": "1.1.1.1",
+    "protocol": "Udp",
+    "datagramSize": "294 bytes",
+    "roundTripTime": "13.78 ms"
+   },
+   "lastUsedOn": "2026-11-06T05:58:35.1366147Z"
+  },
+  {
+   "name": "github.com",
+   "type": "NS",
+   "ttl": "211 (3m31s)",
+   "rData": {
+    "nameServer": "ns-520.awsdns-01.net"
+   },
+   "dnssecStatus": "Insecure",
+   "nameServerMetadata": {
+    "totalQueries": 0,
+    "answerRate": "0%",
+    "smoothedRoundTripTime": "0 ms",
+    "smoothedPenaltyRoundTripTime": "0 ms",
+    "netRoundTripTime": "0 ms",
+    "isMisconfigured": false
+   },
+   "responseMetadata": {
+    "nameServer": "1.1.1.1",
+    "protocol": "Udp",
+    "datagramSize": "294 bytes",
+    "roundTripTime": "13.78 ms"
+   },
+   "lastUsedOn": "2026-11-06T05:58:35.1366147Z"
+  },
+  {
+   "name": "github.com",
+   "type": "SOA",
+   "ttl": "1284 (21m24s)",
+   "rData": {
+    "primaryNameServer": "dns1.p08.nsone.net",
+    "responsiblePerson": "hostmaster@nsone.net",
+    "serial": 1656468023,
+    "refresh": "43200 (12h)",
+    "retry": "7200 (2h)",
+    "expire": "1209600 (2w)",
+    "minimum": "3600 (1h)"
+   },
+   "dnssecStatus": "Insecure",
+   "responseMetadata": {
+    "nameServer": "1.1.1.1",
+    "protocol": "Udp",
+    "datagramSize": "136 bytes",
+    "roundTripTime": "13.27 ms"
+   },
+   "lastUsedOn": "2026-11-06T05:58:35.1887449Z"
+  },
+  {
+   "name": "github.com",
+   "type": "MX",
+   "ttl": "0 (0s)",
+   "rData": {
+    "preference": 0,
+    "exchange": "github-com.mail.protection.outlook.com"
+   },
+   "dnssecStatus": "Insecure",
+   "responseMetadata": {
+    "nameServer": "1.1.1.1",
+    "protocol": "Udp",
+    "datagramSize": "122 bytes",
+    "roundTripTime": "13.79 ms"
+   },
+   "lastUsedOn": "2026-11-06T05:58:35.0485124Z"
+  },
+  {
+   "name": "github.com",
+   "type": "TXT",
+   "ttl": "0 (0s)",
+   "rData": {
+    "text": "serval-domain-verification-ydryhj=qbkiEakpwEpTvHh5fIiCqtaue",
+    "splitText": false,
+    "characterStrings": [
+     "serval-domain-verification-ydryhj=qbkiEakpwEpTvHh5fIiCqtaue"
+    ],
+    "characterStringsBase64": [
+     "c2VydmFsLWRvbWFpbi12ZXJpZmljYXRpb24teWRyeWhqPXFia2lFYWtwd0VwVHZIaDVmSWlDcXRhdWU="
+    ]
+   },
+   "dnssecStatus": "Insecure",
+   "responseMetadata": {
+    "nameServer": "1.1.1.1",
+    "protocol": "Tcp",
+    "datagramSize": "1928 bytes",
+    "roundTripTime": "0.88 ms"
+   },
+   "lastUsedOn": "2026-11-06T05:58:35.0887994Z"
+  },
+  {
+   "name": "github.com",
+   "type": "TXT",
+   "ttl": "0 (0s)",
+   "rData": {
+    "text": "v=spf1 ip4:192.30.252.0/22 include:spf.protection.outlook.com include:_netblocks.google.com include:_netblocks2.google.com include:mail.zendesk.com include:_spf.salesforce.com include:servers.mcsv.net include:mktomail.com include:sendgrid.net ip4:62.253.227.114 ip4:166.78.69.169 ip4:166.78.69.170 ip4:166.78.71.131 ~all",
+    "splitText": false,
+    "characterStrings": [
+     "v=spf1 ip4:192.30.252.0/22 include:spf.protection.outlook.com include:_netblocks.google.com include:_netblocks2.google.com include:mail.zendesk.com include:_spf.salesforce.com include:servers.mcsv.net include:mktomail.com include:sendgrid.net ip4:62.253.2",
+     "27.114 ip4:166.78.69.169 ip4:166.78.69.170 ip4:166.78.71.131 ~all"
+    ],
+    "characterStringsBase64": [
+     "dj1zcGYxIGlwNDoxOTIuMzAuMjUyLjAvMjIgaW5jbHVkZTpzcGYucHJvdGVjdGlvbi5vdXRsb29rLmNvbSBpbmNsdWRlOl9uZXRibG9ja3MuZ29vZ2xlLmNvbSBpbmNsdWRlOl9uZXRibG9ja3MyLmdvb2dsZS5jb20gaW5jbHVkZTptYWlsLnplbmRlc2suY29tIGluY2x1ZGU6X3NwZi5zYWxlc2ZvcmNlLmNvbSBpbmNsdWRlOnNlcnZlcnMubWNzdi5uZXQgaW5jbHVkZTpta3RvbWFpbC5jb20gaW5jbHVkZTpzZW5kZ3JpZC5uZXQgaXA0OjYyLjI1My4y",
+     "MjcuMTE0IGlwNDoxNjYuNzguNjkuMTY5IGlwNDoxNjYuNzguNjkuMTcwIGlwNDoxNjYuNzguNzEuMTMxIH5hbGw="
+    ]
+   },
+   "dnssecStatus": "Insecure",
+   "responseMetadata": {
+    "nameServer": "1.1.1.1",
+    "protocol": "Tcp",
+    "datagramSize": "1928 bytes",
+    "roundTripTime": "0.88 ms"
+   },
+   "lastUsedOn": "2026-11-06T05:58:35.0887994Z"
+  },
+  {
+   "name": "github.com",
+   "type": "TXT",
+   "ttl": "0 (0s)",
+   "rData": {
+    "text": "adobe-idp-site-verification=b92c9e999aef825edc36e0a3d847d2dbad5b2fc0e05c79ddd7a16139b48ecf4b",
+    "splitText": false,
+    "characterStrings": [
+     "adobe-idp-site-verification=b92c9e999aef825edc36e0a3d847d2dbad5b2fc0e05c79ddd7a16139b48ecf4b"
+    ],
+    "characterStringsBase64": [
+     "YWRvYmUtaWRwLXNpdGUtdmVyaWZpY2F0aW9uPWI5MmM5ZTk5OWFlZjgyNWVkYzM2ZTBhM2Q4NDdkMmRiYWQ1YjJmYzBlMDVjNzlkZGQ3YTE2MTM5YjQ4ZWNmNGI="
+    ]
+   },
+   "dnssecStatus": "Insecure",
+   "responseMetadata": {
+    "nameServer": "1.1.1.1",
+    "protocol": "Tcp",
+    "datagramSize": "1928 bytes",
+    "roundTripTime": "0.88 ms"
+   },
+   "lastUsedOn": "2026-11-06T05:58:35.0887994Z"
+  },
+  {
+   "name": "github.com",
+   "type": "AAAA",
+   "ttl": "125 (2m5s)",
+   "rData": {
+    "dataType": "DnsSpecialCacheRecordData",
+    "data": "NegativeCache: NoError; Synthesized: Result from negative cache"
+   },
+   "dnssecStatus": "Unknown",
+   "responseMetadata": {
+    "nameServer": "1.1.1.1",
+    "protocol": "Udp",
+    "datagramSize": "155 bytes",
+    "roundTripTime": "5.23 ms"
+   },
+   "lastUsedOn": "2026-11-06T05:58:30.842007Z"
+  },
+  {
+   "name": "github.com",
+   "type": "DS",
+   "ttl": "0 (0s)",
+   "rData": {
+    "dataType": "DnsSpecialCacheRecordData",
+    "data": "NegativeCache: NoError; Synthesized: Result from negative cache"
+   },
+   "dnssecStatus": "Unknown",
+   "responseMetadata": {
+    "nameServer": "1.1.1.1",
+    "protocol": "Udp",
+    "datagramSize": "600 bytes",
+    "roundTripTime": "0.95 ms"
+   },
+   "lastUsedOn": "2026-11-06T05:58:35.1885941Z"
+  }
+ ]
+}
