@@ -3,7 +3,8 @@
 # technitium-console
 
 **A modern administration console for [Technitium DNS Server](https://github.com/TechnitiumSoftware/DnsServer).**
-Everything the stock console does, with blocking in one place, light and dark themes, and a layout
+Everything the stock console does, plus the screens it never had: who uses your DNS and what gets
+blocked for each device, every cluster node side by side, a search that jumps anywhere, and a layout
 that works on your phone.
 
 [![License](https://img.shields.io/github/license/byGarcia/technitium-console)](LICENSE)
@@ -14,38 +15,73 @@ that works on your phone.
 
 </div>
 
-| Dashboard | Blocking |
+| Dashboard | Clients |
 |---|---|
-| ![The dashboard](docs/screenshots/dashboard.png) | ![Blocking › Overview](docs/screenshots/blocking-overview.png) |
+| ![The dashboard](docs/screenshots/dashboard.png) | ![Clients, with one client open](docs/screenshots/clients.png) |
 
-**Latest: [v1.3.4](https://github.com/byGarcia/technitium-console/releases/latest) for Technitium DNS
-Server 15.5.x and 15.6.x**, with a Dashboard that moves in real time and compares periods, Allowed and Blocked as one
-Blocking section, a light theme, plus LDAP, the zone file editor and everything else 15.5 and 15.6
-brought.
+**Latest release: [v1.3.4](https://github.com/byGarcia/technitium-console/releases/latest) for
+Technitium DNS Server 15.5.x and 15.6.x.** What is coming next is under
+[Unreleased](CHANGELOG.md#unreleased).
 [What's new](CHANGELOG.md) · [Which console for which server](CHANGELOG.md#which-version-for-which-server) · [Installing](#installing) · [Technitium in Docker](#docker)
 
-It replaces the console the server ships with. Install it and the DNS service
-behaves exactly as before; remove it and you are back to the original. Nothing on
-the server side changes: this console talks to it only through its documented
-`/api` endpoints.
+It replaces the console the server ships with. Install it and the DNS service behaves exactly as
+before; remove it and you are back to the original. Nothing on the server side changes: this console
+talks to it only through the `/api` endpoints the stock console already uses.
 
 - **Every feature of the stock console**: zones, settings, DHCP, apps, logs and administration,
   through the same 132 API endpoints, with Technitium's own users and permissions.
-- **A Dashboard that answers at a glance**: every figure with its trend and its change against the
-  previous period, a week by hour, and charts that open Query Logs on what you click.
-- **Blocking in one place**: what it is doing, your own rules and your lists, and a check that tells
-  you why a domain is blocked, [below](#blocking-in-one-place).
-- **Light, dark or your system's theme**, measured for contrast in both.
-- **Works on a phone**: no section scrolls sideways at 390 px.
+- **Know who uses your DNS**: a Clients page with every device, how much it asks and how much of it
+  is blocked, and a card per client with its domains, its latest queries and one-click actions.
+- **A Dashboard that answers at a glance**: trends against the previous period, response times,
+  how each query was answered, and charts that open Query Logs on what you click or drag across.
+- **Blocking in one place**: what it is doing, your own rules, your lists and their settings, and a
+  check that tells you why a domain is blocked.
+- **Built for clusters**: zones, cache, query logs, DHCP and block lists from every node side by
+  side, with what disagrees between them marked.
+- **Ctrl K to anywhere**: any page, settings pane, zone or account action, or a domain to check,
+  resolve or look up in the logs.
+- **Light, dark or your system's theme**, measured for contrast in both, and **it works on a phone**:
+  no section scrolls sideways at 390 px.
 - **Nothing extra to run**: no backend, no database, no second login. It installs into the server's
   web folder or a Docker volume, and removing it brings the stock console back.
+
+## Know who uses your DNS
+
+The stock console lists your top clients as names and counts on the Dashboard. Here they are a
+page of their own, under **Monitoring › Clients**:
+
+- **Every client of the period**, with its queries, the share of them that was blocked and a tag
+  when a fifth or more is blocked or the server is rate limiting it. Filter, sort and search them,
+  or see the twenty busiest as one bar of who sends your traffic.
+- **A card for each client**: its address and, when your DHCP server hands it out, its MAC address
+  and host name; its queries, blocked share, cache hit rate and median response time; its activity
+  over time; the domains it asks for most and the ones blocked most, each with Block and Allow; the
+  protocols and record types it uses; and its ten latest queries.
+- **Act on it from there**: let it bypass blocking, exempt it from rate limiting, or turn its DHCP
+  lease into a reserved one. Each action is the server's own setting, asks before it saves and
+  needs the same permission it needs in Settings or DHCP.
+
+![A client's card: its actions, figures, activity and domains](docs/screenshots/client-detail.png)
+
+## A Dashboard that answers
+
+- **Every figure with its trend** and its change against the previous period, and a week by hour.
+- **Response Time**: the median and the 95th percentile of the answers the server had to fetch,
+  the share over 100 ms and a histogram, from the newest thousand queries.
+- **From query to answer**: one diagram from all the queries, through how the server answered them
+  (cache, recursion, its own zones, blocking) to what it answered (No Error, NX Domain, Server
+  Failure, Refused). Click a band to open those queries.
+- **Click a point, or drag across the chart**, and Query Logs opens on exactly that window.
+- **Last Hour moves in real time**, and Query Logs' Live Update shows what arrived since you turned
+  it on.
+
+![Response Time and From query to answer on the Dashboard](docs/screenshots/dashboard-response.png)
 
 ## Blocking, in one place
 
 The stock console spreads blocking over three places: Allowed and Blocked are two separate domain
 trees, and the block lists sit in Settings › Blocking. This console brings them together in one
-**Blocking** section, with what blocking is doing, your own rules and your lists each in one place.
-It is the one part of the console that goes beyond a new look:
+**Blocking** section:
 
 - **Overview** shows what blocking is doing: Total Queries and Blocked with their trend, the blocked
   share, allowed against blocked over time, the top blocked domains and the last ten blocked
@@ -53,47 +89,94 @@ It is the one part of the console that goes beyond a new look:
 - **Rules** puts every domain you blocked or allowed by hand in one table, filtered, searchable and
   paged however many there are. The domain tree you already know is one switch away.
 - **Lists** turns your block and allow lists into rows, each with its readable name, an Enabled
-  switch and Remove. Add one by URL or with Quick Add, update them all with Update Now, and nothing
-  changes until you Save.
+  switch and Remove, when each was last updated, and how the number of blocked domains has grown.
+  Add one by URL or with Quick Add, and Save and Update Now in one step.
+- **Settings** holds the blocking settings that used to live in Settings › Blocking.
 - **Check a domain** and see whether this server blocks it and why: which block lists, which of your
-  rules, or which allow rule lets it through.
+  rules, or which allow rule lets it through. As you type, it tells you whether one of your rules
+  already covers it.
 - **Group your lists** under named headings, saved as plain comment lines, so the stock console still
-  reads them.
-- **Undo** a rule you deleted from the Rules table, and see in the sidebar when blocking is off or
-  paused.
-- **Block or allow a domain** from Overview or Rules, or from the menu on any row of Top Domains and
-  Top Blocked Domains.
+  reads them, and **undo** a rule you deleted.
 
-| Rules | Lists |
+| Overview | Lists |
 |---|---|
-| ![Blocking › Rules](docs/screenshots/blocking-rules.png) | ![Blocking › Lists](docs/screenshots/blocking-lists.png) |
+| ![Blocking › Overview](docs/screenshots/blocking-overview.png) | ![Blocking › Lists](docs/screenshots/blocking-lists.png) |
 
-## What it looks like
-
-| Zones | Settings |
+| Rules | Settings |
 |---|---|
-| ![Zones](docs/screenshots/zones.png) | ![Settings](docs/screenshots/settings.png) |
+| ![Blocking › Rules](docs/screenshots/blocking-rules.png) | ![Blocking › Settings](docs/screenshots/blocking-settings.png) |
 
-| Cache, and the tree in Blocking › Rules | Apps |
+## Built for clusters
+
+Each node of a Technitium cluster keeps its own cache, query log, DHCP leases and copy of the block
+lists, and the stock console shows one node at a time. Here, on a cluster, **All nodes** lays them
+side by side:
+
+- **Zones**: every zone with its type and serial on each node, and a health cell for a zone missing
+  on a node or serials that disagree.
+- **Cache**: the records each node holds for a domain, with each node's time to live.
+- **Query Logs**: the newest queries of every node in one table, with a Node column, live.
+- **DHCP**: every node's leases and scopes together, each row acting on its own node.
+- **Block lists**: each node's blocked domains and when it last updated its copy.
+- **Administration › Cluster** compares the nodes' settings and marks the ones that differ, and
+  splits the queries by node. The Dashboard can draw a line per node.
+
+A node that does not answer is named once with the server's message and left out of the
+comparison. The cluster views are new: if you run a cluster, a report of how they behave on yours is
+very welcome.
+
+## Ctrl K to anywhere
+
+Press **Ctrl K** (⌘K on a Mac), or the search field under the logo, and type. Pages, sections,
+Settings panes, your zones and the account menu are one keystroke away. Type a domain and it offers
+to check it in Blocking, resolve it in DNS Client, find it in Cache or search Query Logs for it; type
+an address and it searches the logs for that client.
+
+![The command palette](docs/screenshots/command-palette.png)
+
+## Every screen, reorganised
+
+The sidebar is grouped by what you came to do: **Monitoring** (Clients, Query Logs, View Logs),
+**DNS** (Zones, Cache, Blocking), **Network** (DHCP), **Tools** (DNS Client) and **System**
+(Settings, Apps, Administration, About). Every screen was redrawn in the same language, and many say
+more than they used to:
+
+- **Zones** says what each zone holds and adds a host record (with its reverse record) from the list
+  in one line; the open zone is in the address bar.
+- **Cache** reads like a zone, with the path to where you are.
+- **DHCP** shows how full each scope is.
+- **DNS Client** lays the answer out by section, record by record.
+- **Settings** is one form with a search; **Apps** says what each app is for; **My Profile** is a
+  page.
+
+| Zones | A zone |
 |---|---|
-| ![The domain tree](docs/screenshots/cache.png) | ![Apps](docs/screenshots/apps.png) |
+| ![Zones](docs/screenshots/zones.png) | ![A zone's records](docs/screenshots/zone-records.png) |
 
-| Query Logs | Login |
+| Query Logs | Cache |
 |---|---|
-| ![Query Logs](docs/screenshots/query-logs.png) | ![The login screen](docs/screenshots/login.png) |
+| ![Query Logs with Live Update on](docs/screenshots/query-logs.png) | ![Cache](docs/screenshots/cache.png) |
 
-![Blocking › Overview in the light theme](docs/screenshots/blocking-overview-light.png)
+| DNS Client | Settings |
+|---|---|
+| ![DNS Client](docs/screenshots/dns-client.png) | ![Settings](docs/screenshots/settings.png) |
 
-**Light or dark, or whatever your system uses**, from Change Theme in the account menu, as in the
-stock console. Both themes are measured: every text colour reaches 4.5:1 on every surface it is
-drawn on.
+| Apps | Administration |
+|---|---|
+| ![Apps](docs/screenshots/apps.png) | ![Administration › Permissions](docs/screenshots/administration.png) |
 
-The domain tree is one component, shared by Cache and by the Tree view of Blocking › Rules, and the
-screens it served used to be indistinguishable. The tree is the object you came to look at, so it is
-a column and not a box; the path says where you are; and the colour on the records panel is the one
-that already means *cached* and *blocked* in the Dashboard chart and in the Logs rows.
+| View Logs | My Profile |
+|---|---|
+| ![View Logs](docs/screenshots/logs.png) | ![My Profile](docs/screenshots/profile.png) |
 
-<img src="docs/screenshots/mobile.png" alt="The console at 390 px" width="320" align="right">
+| About | Login |
+|---|---|
+| ![About](docs/screenshots/about.png) | ![The login screen](docs/screenshots/login.png) |
+
+![The Dashboard in the light theme](docs/screenshots/dashboard-light.png)
+
+**Light or dark, or whatever your system uses**, from Change Theme in the account menu or from
+Ctrl K. Both themes are measured: every text colour reaches 4.5:1 on every surface it is drawn on.
 
 **It works on a phone.** The stock console overflows horizontally on a 390 px
 screen in twelve of its sections. This one does not overflow in any: the tables
@@ -101,41 +184,43 @@ reflow, the navigation collapses, and the actions stay reachable. That was not a
 side effect. It was a defect found by measuring every section at 390 px and
 fixed one by one.
 
-<br clear="right">
+![The Dashboard, Clients and the menu at 390 px](docs/screenshots/mobile.png)
 
 ## Safe to put in front of your DNS
 
-**Design only. Zero functionality.** That is the rule the whole project is built on, and it is
-worth stating plainly because it is unusual:
+**What the stock console does, this one does the same way.** That is the rule the whole project is
+built on:
 
-> Any behavioural difference from the upstream console is a bug, **even when it
+> Any difference from the stock console in something it already does is a bug, **even when it
 > looks like an improvement**.
 
-Same controls, same steps, same wording, same validation order. If a feature was
-missing before, it is still missing. If a confirmation asked twice, it still asks
-twice. You are changing how the console looks, not what your DNS server does.
-That is the only reason it is safe to put a third-party interface in front of
-infrastructure.
+Same controls, same steps, same wording, same validation order. If a confirmation asked twice, it
+still asks twice. What this console adds sits beside that, under four limits:
 
-A few deliberate exceptions are written down rather than slipped in: **Blocking**,
-above; the **Dashboard's** comparisons with the previous period, its week by hour and
-its jumps to Query Logs; and the **login cover** beside the stock form. They call only
-endpoints the server already has, and each of their files declares the words that are
-its own; `/allowed/` and `/blocked/` still land. Their limits, and the other
-deliberate deviations, are in
-[CONVENTIONS.md](CONVENTIONS.md#deliberate-deviations-from-upstream-behaviour).
+- **Only endpoints the stock console already calls.** Nothing new is asked of your server, and the
+  same permissions guard every call.
+- **Read first.** Almost everything added only reads. The additions that write (a client's
+  Bypass Blocking and rate limit exemption, its lease conversion, the quick host record, Save and
+  Update Now, undoing a deleted rule, the headings in your lists) send exactly what the stock
+  console sends for the same change and need the permission it asks for; the client's actions
+  ask before they save.
+- **Every addition is written down**, with its limits, in
+  [CONVENTIONS.md](CONVENTIONS.md#deliberate-deviations-from-upstream-behaviour), and the words that
+  are this console's own are declared in each file.
+- **Old addresses still land**: `/allowed/`, `/blocked/` and `/settings/blocking/` take you to their
+  new place.
 
 ## How thoroughly
 
 | | |
 |---|---|
 | Checked against | Technitium DNS Server 15.6.2 |
-| Sections | 11 |
-| Routes, each a real URL | 34 |
+| Sections | 12 |
+| Routes, each a real URL | 36 |
 | API endpoints the stock console calls, and this one calls too | 132 of 132 |
 | Sortable columns kept | 64 of 66, and the two missing are declared |
-| Dialogs, checked one by one | 44 |
-| Tests | 1,838 |
+| Dialogs and confirmations | 111 and 34 |
+| Tests | 2,651 |
 
 Every figure in that table comes from a script in `dev/` (`check-endpoints.mjs`,
 `check-parity-sort.mjs`, `dialog-inventory.sh`) and not from this paragraph.
@@ -457,7 +542,7 @@ route, and it also says which parts belong upstream instead. Everybody taking pa
 ## ❤️ Support
 
 This console is free and stays free, and it will never ask your DNS server for anything it does not
-already answer. If it made the machine your whole network resolves through nicer to look at, there
+already answer. If it made the machine your whole network resolves through easier to run, there
 is [GitHub Sponsors](https://github.com/sponsors/byGarcia),
 [Ko-fi](https://ko-fi.com/bygarcia),
 [Liberapay](https://liberapay.com/bygarcia) and
@@ -466,7 +551,7 @@ as much.
 
 And if you have not already: **[Technitium DNS Server](https://github.com/TechnitiumSoftware/DnsServer)
 is the thing doing the actual work here**, written and maintained by one person. It takes donations
-too, and that is the more useful place to start.
+too.
 
 ---
 
