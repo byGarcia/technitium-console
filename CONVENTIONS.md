@@ -1679,6 +1679,48 @@ contract and SECURITY.md.
     newest queries, not the period). On a narrow card the codes move to a legend under
     the bands. Its words, OURS, are declared in its header comment.
 
+33. **Zones across cluster nodes** (Adrián's decision, 2026-11-06; `screens/zones/AcrossNodes.tsx`,
+    `across-nodes.ts`). With an initialised cluster the zone list's toolbar starts with `This
+    node` / `All nodes`. `All nodes` reads `zones/list` with no page once per cluster node
+    (`clusterNodes` of the session), with that node's `node` and the applied Name filter as
+    upstream's `filterName` (the server filters before any page), and lays the answers side by
+    side, one line per zone name: a column per node with that node's zone type, its serial and a
+    `Disabled` pill, or `not on this node`, and a `Health` cell, the first that applies of `Only
+    on N nodes` (an answering node does not hold it), `Serial differs` (two holders give
+    different `soaSerial`; a node that gives none is not compared), `Disabled on a node` and
+    `Healthy`. Chips with their counts filter it, each on its own rule: `All`, `On every node`,
+    `Only on some nodes`, `Serial differs`. A node that fails to answer is said once above the
+    table (`<node> did not answer: <the server's message>`), its column head says `(No answer)`,
+    its cells `No answer`, and it is left out of every comparison. The type filter and the summary
+    cards stand down in this view (they are one node's); the zone's name opens it as the list does,
+    on the node the screen reads. The view (`?view=all`), the chip (`?across=`) and its page
+    (`?apage=`, client side over the merged lines, at Zones Per Page) are in the address bar,
+    written by replacing the entry, defaults left out, dropped with the section. Without a cluster
+    nothing is drawn and `?view=` means nothing. Read only: its only call is `zones/list`, which
+    upstream already sends with `node`. Its words, OURS, are declared in the header comment of
+    `AcrossNodes.tsx`; `Zones view` is the toggle's accessible name (`ACCESSIBLE_NAMES` in
+    `dev/check-parity-controls.mjs`).
+
+34. **Quick add of a host record** (Adrián's decision, 2026-11-06; `screens/zones/QuickAdd.tsx`,
+    `quick-add.ts`). A band of the zone list's toolbar, in both views: `Domain`, `IP Address`,
+    upstream's `Add reverse (PTR) record` and `Create reverse zone if it does not exists` (the
+    second enabled only while the first is ticked, as in the Add Record dialog), and `Add`, which
+    needs `Zones: Modify` (the padlock otherwise). It refuses before sending, in this order: an
+    empty name and an empty address (upstream's `Missing!` texts of Add Record), an address that
+    is neither IPv4 nor IPv6 (`Invalid!`), a name no zone of this node holds (`Missing!`, with
+    `Add Zone` on the notice), and a zone that takes no records from here (only `Primary` and
+    `Forwarder`, the types whose row offers Edit Zone, and never an internal zone). The zone is the
+    longest of the zones the list knows (the summary's unpaged read of this node) that the name
+    ends in, whole labels only; the type is `A` or `AAAA` by the address's family. It sends what
+    the dialog sends for that record (`buildRecordBody`): `zones/records/add` with `node` in the
+    query, `ttl` the server's default record TTL (the dialog's placeholder), `overwrite=false`,
+    `ptr` and `createPtrZone` as ticked, and `updateSvcbHints=true`, upstream's answer when the
+    zone's records are not loaded (`zoneHasSvcbAutoHint`). Success is the dialog's `Record Added!`
+    with `Open <zone>` on the notice (a notice may now carry one action, `lib/notice.ts`); failure
+    is the server's `Error!`. After an add the list and its cards are read again. Its words, OURS:
+    `Invalid!` and the texts of the last three refusals (in `quick-add.ts`), `Open <zone>` and the
+    two placeholders.
+
 ## Four constraints the server imposes
 
 These are not preferences: break them and the console works in development and

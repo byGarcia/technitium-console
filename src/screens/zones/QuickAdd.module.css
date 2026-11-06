@@ -1,0 +1,39 @@
+/*
+The quick add of a host record (`QuickAdd.tsx`, deviation 34): a band of its own
+under the zone list's toolbar controls, on the same card, divided by a hairline.
+*/
+.band {
+  flex: 1 1 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-5) var(--s-7);
+  padding-top: var(--s-7);
+  border-top: 1px dashed var(--line2);
+}
+
+.title {
+  font-size: var(--t-1);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.name { flex: 1 1 200px; min-width: 0; }
+.address { flex: 1 1 260px; min-width: 0; }
+
+.check {
+  composes: check from '../../ui/Check.module.css';
+  align-items: center;
+  font-size: var(--t-3);
+  color: var(--mute);
+  white-space: nowrap;
+}
+.check input { margin-top: 0; }
+
+/* On a phone the band's title takes its own line, so the two fields line up
+   under it instead of the first one sharing a line with it. */
+@media (max-width: 560px) {
+  .title { flex-basis: 100%; }
+}

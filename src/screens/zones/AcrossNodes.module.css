@@ -1,0 +1,32 @@
+/*
+The zone list across cluster nodes (`AcrossNodes.tsx`, deviation 33).
+*/
+
+/* The filters as chips with their counts, on their own line of the toolbar, as
+   the Clients list draws them. */
+.chips { flex: 1 1 100%; display: flex; flex-wrap: wrap; gap: var(--s-3); }
+.chipCount { margin-left: var(--s-1); color: var(--mute); font-variant-numeric: tabular-nums; }
+
+/* A node that did not answer, said once above the table with the server's words. */
+.failed {
+  list-style: none;
+  margin: 0;
+  padding: var(--s-6) var(--s-10);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  border-bottom: 1px solid var(--line2);
+  font-size: var(--t-3);
+  color: var(--mute);
+}
+.failed li::before { content: ''; display: inline-block; width: 7px; height: 7px; margin-right: var(--s-4); border-radius: 50%; background: var(--dan); vertical-align: middle; }
+.failed b { color: var(--ink); font-weight: 600; }
+
+/* A node's column head: its name, and its role (or `No answer`) under it. */
+.nodeHead { min-width: 130px; }
+.nodeName { display: block; text-transform: none; letter-spacing: 0; }
+.nodeType { display: block; font-weight: 400; color: var(--faint); text-transform: none; letter-spacing: 0; }
+
+/* A zone on a node: its type, then its serial and Disabled under it. */
+.held { display: flex; flex-direction: column; gap: var(--s-1); }
+.facts { display: inline-flex; align-items: center; gap: var(--s-4); font-size: var(--t-3); color: var(--mute); font-variant-numeric: tabular-nums; }

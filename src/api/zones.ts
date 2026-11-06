@@ -104,11 +104,29 @@ export const ZONES_PER_PAGE = [10, 25, 50, 100, 250, 500] as const
  * About 230 bytes per zone before compression.
  */
 export async function listAllZones(token: string | null, node = ''): Promise<Zone[] | null> {
+  const outcome = await readNodeZones(token, node)
+  return outcome.kind === 'ok' ? outcome.data : null
+}
+
+/**
+ * The same unpaged `zones/list` for one cluster node, keeping the failure: the
+ * zone list across nodes (deviation 33) says which node did not answer and with
+ * the server's message. `filterName` is upstream's own parameter, which the server
+ * applies before any page (WebServiceZonesApi.cs, `ListZones`), so it narrows the
+ * unpaged answer too. Only sent when there is a filter, as the summary's read
+ * sends nothing but `node`.
+ */
+export async function readNodeZones(
+  token: string | null,
+  node: string,
+  filterName = '',
+): Promise<ApiOutcome<Zone[]>> {
   const outcome = await apiRequest<{ response: { zones: Zone[] } }>('zones/list', {
     token,
-    body: { node },
+    body: filterName === '' ? { node } : { filterName, node },
   })
-  return outcome.kind === 'ok' ? outcome.data.response.zones : null
+  if (outcome.kind !== 'ok') return outcome
+  return { kind: 'ok', data: outcome.data.response.zones ?? [] }
 }
 
 export async function listZones(

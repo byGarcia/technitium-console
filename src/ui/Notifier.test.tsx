@@ -27,4 +27,18 @@ describe('Notifier', () => {
     await userEvent.click(screen.getByRole('button'))
     expect(close).toHaveBeenCalledOnce()
   })
+
+  it('draws the way on a result carries, which closes it and runs (deviation 34)', async () => {
+    const close = vi.fn()
+    const run = vi.fn()
+    render(
+      <Notifier
+        notice={{ type: 'success', title: 'Record Added!', text: 'Resource record was added successfully.', action: { label: 'Open casa.test', run } }}
+        onClose={close}
+      />,
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'Open casa.test' }))
+    expect(close).toHaveBeenCalledOnce()
+    expect(run).toHaveBeenCalledOnce()
+  })
 })
