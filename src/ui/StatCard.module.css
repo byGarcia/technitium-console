@@ -205,8 +205,10 @@ with a hairline between cells. The Dashboard keeps its own large figures
 @media (max-width: 1180px) {
   .grid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
 }
+/* On a phone two cells a row, so four figures take two rows and not the screen. */
 @media (max-width: 560px) {
-  .grid { grid-template-columns: minmax(0, 1fr); }
+  .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .card { padding: var(--s-5) var(--s-6) var(--s-6); }
 }
 .card {
   flex-direction: column;
