@@ -103,6 +103,9 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
   cards for the DNS Server version, the uptime and the console version, and Technitium's
   documentation, support, license and donate sections as blocks of link rows, every sentence and
   link as upstream writes it, with this console's links in their own column.
+- **My Profile is a page** (`/profile/`) instead of a dialog: the user as the header, cards for
+  sessions, 2FA, groups and logins, the profile form, a Security block with the account actions,
+  the sessions in a filterable table, and the theme choice with previews.
 - **Choosing a file is a drop zone** in every dialog that takes one (an app's zip, a zone file, a
   settings backup): drop the file or click to choose it, and it shows its name and size.
 - **Dialogs are one surface**, without the lines under the title and over the buttons. A
