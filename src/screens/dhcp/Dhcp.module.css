@@ -180,7 +180,9 @@ written in several places), except that here one of the copies was missing.
   box-shadow: var(--e-1), var(--edge);
   overflow: clip;
   min-width: 0;
-  margin-bottom: var(--s-9);
+  /* The Scope block above keeps its own `--s-9` under it; together they make the
+     gap between two blocks. */
+  margin: calc(var(--gap-block) - var(--s-9)) 0 var(--s-9);
 }
 .fold + .fold { border-top: 1px solid var(--line2); }
 .foldHead {
