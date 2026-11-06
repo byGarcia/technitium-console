@@ -1,0 +1,74 @@
+/*
+The Clients page (`Clients.tsx`, `ClientDetail.tsx`). Every value is a token of
+theme/tokens.css. Laid out as Blocking › Overview: the header, the strip, then one
+card that holds the table.
+*/
+.stack { display: flex; flex-direction: column; gap: var(--gap-block); }
+.stack .strip { margin-bottom: 0; }
+
+/* The strip's four cells in one row, or two rows of two: the same rule as the
+   Overview's strip. Written with the element to outweigh the grid's own class. */
+div.strip { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+/* `--bp-wide`. */
+@media (max-width: 1180px) {
+  div.strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+/* Without a query logs app the two cells read from the log are one, which says why. */
+.wide { grid-column: span 2; }
+.noApp { margin: 0; font-size: var(--t-3); line-height: 1.5; color: var(--mute); }
+.locked { display: flex; align-items: center; gap: var(--s-3); font-size: var(--t-3); color: var(--mute); }
+.lockedPage { padding: var(--s-9); border: 1px solid var(--line2); border-radius: var(--r-4); background: var(--pan); }
+
+/* A client in a cell: its address, one line, and the name under it. */
+.who { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.whoName { font-size: var(--t-2); color: var(--faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* What the sample is, at the toolbar's end and in a row's details. */
+.basis { font-size: var(--t-2); color: var(--faint); }
+
+/* The table: the address in the console's face for addresses, the figures right. */
+.ip { font-family: var(--font-mono); white-space: nowrap; }
+.name { overflow-wrap: break-word; }
+.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+/* Written with the element to outweigh `.table td`'s colour. */
+tbody td.blockedNum { color: var(--ch-block); }
+/* Written to outweigh `.table thead th` of ui/Table, which sets every header left. */
+thead > tr > th.numHead { text-align: right; }
+thead > tr > th.shareHead { width: 24%; }
+.shareCell { width: 24%; }
+.shareLine { display: flex; align-items: center; gap: var(--s-5); }
+.share { display: block; position: relative; flex: 1; height: var(--s-3); min-width: var(--s-12); border-radius: var(--r-1); background: var(--line2); }
+.share > i { position: absolute; inset: 0 auto 0 0; border-radius: var(--r-1); background: var(--ch-total); }
+.pct { min-width: var(--s-12); font: var(--t-2) var(--font-mono); color: var(--mute); text-align: right; white-space: nowrap; }
+/* Upstream draws a rate-limited client in orange. */
+.limited .ip { color: var(--warn); }
+/* In a stacked row the share takes a line of its own, its bar the room its label leaves. */
+.table[data-stacked] .shareCell { width: auto; flex-basis: 100%; display: flex; align-items: center; }
+.table[data-stacked] .shareLine { flex: 1; }
+
+/* A row's details: what they are based on and the jump, then the lists. */
+.detail { display: flex; flex-direction: column; gap: var(--s-9); padding: var(--s-5) 0 var(--s-8); }
+.detailHead { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-5) var(--s-9); }
+.detailFacts { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-3) var(--s-9); min-width: 0; }
+.lastSeen { font-size: var(--t-3); color: var(--mute); }
+.lastSeen time { font-family: var(--font-mono); color: var(--ink); }
+.ago { color: var(--faint); }
+.quiet { margin: 0; font-size: var(--t-3); color: var(--mute); }
+.detailGap { min-width: 0; }
+
+/* Three columns: the two lists and the two breakdowns stacked beside them. */
+.detailGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-9) var(--s-11); }
+.part { min-width: 0; }
+.domains { display: flex; flex-direction: column; gap: var(--s-2); }
+.types { display: flex; flex-direction: column; gap: var(--s-9); min-width: 0; }
+.mono { font-family: var(--font-mono); }
+/* `--bp-wide`: the two lists side by side, the breakdowns under them, side by side. */
+@media (max-width: 1180px) {
+  .detailGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .types { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-11); }
+}
+/* `--bp-stack`: one column. */
+@media (max-width: 560px) {
+  .detailGrid, .types { grid-template-columns: minmax(0, 1fr); }
+  .types { gap: var(--s-9); }
+}

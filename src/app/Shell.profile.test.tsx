@@ -78,9 +78,9 @@ describe('My Profile in the Shell', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Admin Renamed' })).toBeInTheDocument()
     const nav = screen.getByRole('navigation', { name: 'Sections' })
     expect(within(nav).queryByText('My Profile')).not.toBeInTheDocument()
-    /* Twelve: Logs is two entries (Query Logs, View Logs) since 2026-11-06, and no
-       section is open to unfold its sub-sections. */
-    expect(within(nav).getAllByRole('link')).toHaveLength(12)
+    /* Thirteen: Logs is two entries (Query Logs, View Logs) and Clients joined
+       Monitoring on 2026-11-06, and no section is open to unfold its sub-sections. */
+    expect(within(nav).getAllByRole('link')).toHaveLength(13)
   })
 
   it('its sessions table opens the account menu dialog that creates a token', async () => {

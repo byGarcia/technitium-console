@@ -1494,7 +1494,8 @@ contract and SECURITY.md.
     (Cache's word).
 24. **The sidebar is grouped by task and holds the sub-sections** (Adrián's decision,
     2026-11-06). Upstream draws one flat row of tabs. Here (`app/Shell.tsx`, `NAV`):
-    - **Five headed groups** under Dashboard: `Monitoring` (Query Logs, View Logs),
+    - **Five headed groups** under Dashboard: `Monitoring` (Clients since 2026-11-06,
+      deviation 25, then Query Logs, View Logs),
       `DNS` (Zones, Cache, Blocking), `Network` (DHCP), `Tools` (DNS Client) and
       `System` (Settings, Apps, Administration, About). Logs is two entries, one per
       screen.
@@ -1521,6 +1522,51 @@ contract and SECURITY.md.
     sub-section, `Blocking › Settings` in the two links that pointed to Settings ›
     Blocking.
 
+25. **The Clients page** (Adrián's decision, 2026-11-06; `src/screens/clients/`). Upstream
+    has no such screen: it is Blocking › Overview's Blocked by client card grown into a page,
+    built from that card's and the Dashboard's pieces (`useLoggingApp`, `countByClient`,
+    `BLOCKED_TYPES`, `TopRowMenu`, the top lists' rows, `ui/StatCard`, `ui/DataTable`). It is a
+    section of its own, `clients`, first under `Monitoring` in the sidebar, and needs
+    `Dashboard: View`, the permission of its main calls. What it shows:
+    - **the header**: `Clients`, a subtitle (`CLIENTS_SUBTITLE`) and the Dashboard's five fixed
+      periods (no Custom) with Last Hour's live dot, read again a minute after each answer,
+      never with a hidden tab (the clients do not move with the live counters, deviation 5);
+      the cluster node selector with the Dashboard's node memory (`dashboardClusterNode`);
+    - **a strip** of four cells: `Clients` (`totalClients` of `stats/get`), `Most Active` (the
+      first of the period's Top Clients, its queries and share of `totalQueries`), `Most
+      Blocked` and `Blocked Share`, both from the log sample;
+    - **the table**: `dashboard/stats/getTop` with `statsType=TopClients` and `limit=1000`,
+      exactly what upstream's More sends (main.js:2939), one line per client: the address, its
+      name (`domain`), its share of the period's queries as a bar and a percentage, its queries,
+      and its blocked queries in the sample (the "no value" placeholder when the client is not in the
+      sample, which is not zero). The search (address or name, Top Stats' `matchesTop`), the order and the page
+      are in the address bar (`?q=`, `?sort=` as a column name, `-` before it for descending,
+      `?page=`), with the open client (`?client=`), written by replacing the entry and dropped
+      when the page goes. Figures sort as figures and addresses in natural order (`10.0.0.2`
+      before `10.0.0.10`), with upstream's click rule (ascending unless already ascending);
+    - **a client's details**, under its row: `logs/query` filtered by `clientIpAddress`, the
+      newest 500 entries of every type, counted into its five most asked and five most blocked
+      domains (each with Top Domains' or Top Blocked Domains' menu), its query and response
+      types as stacked bars, and its last query's time. `Show Query Logs` jumps for the client.
+
+    **The log sample** is the newest 1,000 queries of every response type (`logs/query` through
+    the query logs app, Query Logs' own call), read again with each answer of `stats/get`. It is
+    not the period, and every figure drawn from it says what it is based on (`In the last N
+    queries`, `on <node>` with the cluster aggregate: logs are one node's). Blocked is the three
+    classes `totalBlocked` adds up. Without a query logs app the two sample cells become one
+    that says why, once, with upstream's sentence and a link to Apps; the table drops its
+    Blocked column and a client's details say `No query logging app`. Without `Logs: View`
+    each sample cell and the details keep their place, locked, and nothing reads the log.
+
+    Its limits, and crossing one is a bug: only endpoints upstream's console already calls
+    (`dashboard/stats/get`, `dashboard/stats/getTop`, `apps/list`, `logs/query`), nothing
+    written to the server, upstream's actions and jumps only. Its words, all OURS and declared
+    in the header comments of `Clients.tsx` and `ClientDetail.tsx`: the subtitle, `Most
+    Active`, `Most Blocked`, `Blocked Share`, `N queries, X% of total`, `N blocked in the last
+    N queries`, `In the last N queries`, `Blocked: in the last N queries`, `The N most active
+    are listed`, `Last query`, `No queries.`, `No queries from this client.`, `No clients for
+    this period.`, `N clients` with `, K shown`, the column names `Client`, `Name`, `Share`,
+    `Queries` and `Blocked`, and `Details`. The page's folder is generated from `SECTIONS`.
 26. **A command palette** (Adrián's decision, 2026-11-06; `app/palette/`). Ctrl+K (⌘K
     on a Mac), the `Search or jump to…` field under the brand, or the search button
     in the narrow top bar opens one field over the screen. Empty, it lists the last
@@ -1556,9 +1602,9 @@ fails in production.
   reverse proxy with a prefix. `dev/check-prefix.sh` checks it.
 - **Real routes, one folder per route.** The server's only `MapFallback` is
   `/api/{*path}`, so a deep route with no file on disk would 404. The build emits
-  one folder with its own `index.html` for each of the console's 35 routes (11
+  one folder with its own `index.html` for each of the console's 36 routes (12
   sections, 23 sub-sections and `profile`, from `SECTIONS`), plus the two legacy
-  folders `/allowed/` and `/blocked/`: 37 in all. The URL is real (no `#/`) and F5 brings
+  folders `/allowed/` and `/blocked/` and the moved `/settings/blocking/`: 39 in all. The URL is real (no `#/`) and F5 brings
   you back where you were, without touching a line of C#. See `vite.config.ts` and
   `app/static-routes.ts`.
 - **Content-Security-Policy**: `default-src 'self'; script-src 'self'

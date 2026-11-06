@@ -10,6 +10,7 @@ import { Configure2FA } from '../screens/modals/Configure2FA'
 import { CreateApiToken } from '../screens/modals/CreateApiToken'
 import { Profile } from '../screens/profile/Profile'
 import { Dashboard } from '../screens/dashboard/Dashboard'
+import { Clients } from '../screens/clients/Clients'
 import { DnsClient } from '../screens/dnsclient/DnsClient'
 import { About } from '../screens/about/About'
 import { Apps } from '../screens/apps/Apps'
@@ -64,7 +65,7 @@ short heading (`Monitoring`, `DNS`, `Network`, `Tools`, `System`, OURS), and the
 screens of their own unfold them right here, under the open section: Blocking,
 DHCP and Administration. Their sub-tabs under the title are gone, so a screen is
 one click from anywhere and the page starts with its content. Logs is two entries
-under Monitoring, Query Logs first: they are two different tools, and Query Logs
+under Monitoring, after Clients, Query Logs first: they are two different tools, and Query Logs
 is the one opened every day. Settings keeps its own menu beside the form (nine panes and a search do
 not fit a sidebar), so it unfolds nothing here.
 */
@@ -75,7 +76,7 @@ interface NavEntry {
 }
 const NAV: { heading: string | null; entries: NavEntry[] }[] = [
   { heading: null, entries: [{ section: 'dashboard' }] },
-  { heading: 'Monitoring', entries: [{ section: 'logs', sub: 'Query Logs' }, { section: 'logs', sub: 'View Logs' }] },
+  { heading: 'Monitoring', entries: [{ section: 'clients' }, { section: 'logs', sub: 'Query Logs' }, { section: 'logs', sub: 'View Logs' }] },
   { heading: 'DNS', entries: [{ section: 'zones' }, { section: 'cache' }, { section: 'blocking' }] },
   { heading: 'Network', entries: [{ section: 'dhcp' }] },
   { heading: 'Tools', entries: [{ section: 'dnsclient' }] },
@@ -85,7 +86,7 @@ const NAV: { heading: string | null; entries: NavEntry[] }[] = [
 const UNFOLDS = new Set(['blocking', 'dhcp', 'admin'])
 
 const ICONS: Record<string, IconName> = {
-  dashboard: 'dashboard', zones: 'zones', cache: 'cache', blocking: 'blocked',
+  dashboard: 'dashboard', clients: 'clients', zones: 'zones', cache: 'cache', blocking: 'blocked',
   apps: 'apps', dnsclient: 'dnsclient', settings: 'settings',
   dhcp: 'dhcp', admin: 'admin', logs: 'logs', about: 'about',
 }
@@ -734,6 +735,14 @@ export function Shell({
             token={session.token}
             nodes={session.info?.clusterNodes ?? []}
             clusterInitialised={session.info?.clusterInitialized === true}
+          />
+        ) : current?.id === 'clients' ? (
+          <Clients
+            token={session.token}
+            permissions={permissions}
+            nodes={session.info?.clusterNodes ?? []}
+            clusterInitialised={session.info?.clusterInitialized === true}
+            serverDomain={info?.dnsServerDomain}
           />
         ) : current?.id === 'dnsclient' ? (
           <DnsClient

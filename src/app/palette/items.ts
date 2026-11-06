@@ -39,7 +39,7 @@ export interface PaletteItem {
 const ICONS: Record<string, IconName> = {
   dashboard: 'dashboard', zones: 'zones', cache: 'cache', blocking: 'blocked',
   apps: 'apps', dnsclient: 'dnsclient', settings: 'settings', dhcp: 'dhcp',
-  admin: 'admin', logs: 'logs', about: 'about', profile: 'admin',
+  admin: 'admin', logs: 'logs', about: 'about', profile: 'admin', clients: 'clients',
 }
 
 /** Every section and sub-section this user can see, as `Section › Sub`. */
@@ -132,10 +132,10 @@ export function score(item: PaletteItem, query: string): number | null {
   const words = query.toLowerCase().split(/\s+/).filter(Boolean)
   if (words.length === 0) return 0
   const label = item.label.toLowerCase()
-  const hay = `${label} ${(item.keywords ?? '').toLowerCase()} ${(item.hint ?? '').toLowerCase()}`
+  const haystack = `${label} ${(item.keywords ?? '').toLowerCase()} ${(item.hint ?? '').toLowerCase()}`
   let total = 0
   for (const w of words) {
-    const at = hay.indexOf(w)
+    const at = haystack.indexOf(w)
     if (at < 0) return null
     if (label.startsWith(w)) total += 3
     else if (new RegExp(`(^|[^a-z0-9])${w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`).test(label)) total += 2

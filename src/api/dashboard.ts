@@ -122,14 +122,30 @@ export async function getTop(
   limit = 1000,
   node?: string,
 ): Promise<TopEntry[]> {
+  const outcome = await readTop(token, statsType, type, limit, node)
+  return outcome.kind === 'ok' ? outcome.data : []
+}
+
+/*
+The same call with its whole outcome, for the Clients page (CONVENTIONS.md,
+deviation 25): its table IS this list, so a failure drawn as an empty list would
+say "no clients" when the call never arrived. The Top Stats modal keeps `getTop`.
+*/
+export async function readTop(
+  token: string | null,
+  statsType: Range,
+  type: TopKind,
+  limit = 1000,
+  node?: string,
+): Promise<ApiOutcome<TopEntry[]>> {
   const outcome = await apiRequest<{ response: Record<string, TopEntry[]> }>('dashboard/stats/getTop', {
     token,
     node,
     body: { type: statsType, statsType: type, limit: String(limit) },
   })
-  if (outcome.kind !== 'ok') return []
+  if (outcome.kind !== 'ok') return outcome
   const r = outcome.data.response
-  return r.topClients ?? r.topDomains ?? r.topBlockedDomains ?? []
+  return { kind: 'ok', data: r.topClients ?? r.topDomains ?? r.topBlockedDomains ?? [] }
 }
 
 export function deleteAllStats(token: string | null): Promise<ApiOutcome> {

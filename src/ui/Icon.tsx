@@ -25,7 +25,7 @@ const STROKE = {
 } as const
 
 export type IconName =
-  | 'dashboard' | 'zones' | 'cache' | 'allowed' | 'blocked' | 'apps'
+  | 'dashboard' | 'clients' | 'zones' | 'cache' | 'allowed' | 'blocked' | 'apps'
   | 'dnsclient' | 'settings' | 'dhcp' | 'admin' | 'logs' | 'about'
   | 'chevronDown' | 'chevronRight' | 'chevronLeft'
   | 'first' | 'last' | 'close' | 'menu' | 'plus' | 'sort' | 'back' | 'check'
@@ -128,6 +128,16 @@ const PATHS: Record<IconName, ReactElement> = {
       <rect x="13.5" y="3" width="7.5" height="5" rx="1.5" />
       <rect x="3" y="15" width="7.5" height="6" rx="1.5" />
       <rect x="13.5" y="11" width="7.5" height="10" rx="1.5" />
+    </>
+  ),
+  /* A screen and a phone side by side: the machines that ask the server. */
+  clients: (
+    <>
+      <rect x="2.5" y="4.5" width="13" height="9.5" rx="1.5" />
+      <path d="M6 19h6" />
+      <path d="M9 14v5" />
+      <rect x="17.5" y="8" width="4.5" height="11" rx="1.25" />
+      <path d="M19.75 16.5h0" />
     </>
   ),
   /* A domain tree: the root and its branches. That is what a zone is. */
