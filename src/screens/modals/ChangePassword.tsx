@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { apiRequest } from '../../api/client'
 import { Button } from '../../ui/Button'
 import { Dialog } from '../../ui/Dialog'
-import { Row } from '../../ui/Form'
+import { DialogField, DialogForm, DialogPair } from '../../ui/DialogForm'
 import { Input } from '../../ui/Field'
 import { noticeFromFailure, type Notice } from '../../lib/notice'
 import { Notifier } from '../../ui/Notifier'
@@ -117,68 +117,73 @@ export function ChangePassword({
       }
     >
       <Notifier notice={alert} onClose={() => setAlert(null)} />
-      <Row modal label="Username">
-        {(id) => <Input id={id} placeholder="username" value={username ?? ''} disabled />}
-      </Row>
-      <Row modal label="Current Password">
-        {(id) => (
-          <Input
-            id={id}
-            ref={currentRef}
-            type="password"
-            placeholder="current password"
-            maxLength={255}
-            autoFocus={currentPassword == null}
-            disabled={currentPassword != null}
-            value={current}
-            onChange={(e) => setCurrent(e.target.value)}
-          />
-        )}
-      </Row>
-      <Row modal label="New Password">
-        {(id) => (
-          <Input
-            id={id}
-            ref={nextRef}
-            type="password"
-            placeholder="new password"
-            maxLength={255}
-            autoFocus={currentPassword != null}
-            value={next}
-            onChange={(e) => setNext(e.target.value)}
-          />
-        )}
-      </Row>
-      <Row modal label="Confirm Password">
-        {(id) => (
-          <Input
-            id={id}
-            ref={confirmRef}
-            type="password"
-            placeholder="confirm password"
-            maxLength={255}
-            value={confirm}
-            onChange={(e) => setConfirm(e.target.value)}
-          />
-        )}
-      </Row>
-      {totpEnabled && (
-        <Row modal label="Enter OTP" help="Enter the 6-digit code you see in your authenticator app.">
+      {/* The new password and its confirmation on one line: one thing typed twice. */}
+      <DialogForm>
+        <DialogField label="Username">
+          {(id) => <Input id={id} placeholder="username" value={username ?? ''} disabled />}
+        </DialogField>
+        <DialogField label="Current Password">
           {(id) => (
             <Input
               id={id}
-              ref={totpRef}
-              mono
-              placeholder="OTP"
-              inputMode="numeric"
-              maxLength={6}
-              autoComplete="off"
-              value={totp}
-              onChange={(e) => setTotp(e.target.value)}
+              ref={currentRef}
+              type="password"
+              placeholder="current password"
+              maxLength={255}
+              autoFocus={currentPassword == null}
+              disabled={currentPassword != null}
+              value={current}
+              onChange={(e) => setCurrent(e.target.value)}
             />
           )}
-        </Row>
-      )}
+        </DialogField>
+        <DialogPair>
+          <DialogField label="New Password">
+            {(id) => (
+              <Input
+                id={id}
+                ref={nextRef}
+                type="password"
+                placeholder="new password"
+                maxLength={255}
+                autoFocus={currentPassword != null}
+                value={next}
+                onChange={(e) => setNext(e.target.value)}
+              />
+            )}
+          </DialogField>
+          <DialogField label="Confirm Password">
+            {(id) => (
+              <Input
+                id={id}
+                ref={confirmRef}
+                type="password"
+                placeholder="confirm password"
+                maxLength={255}
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
+              />
+            )}
+          </DialogField>
+        </DialogPair>
+        {totpEnabled && (
+          <DialogField label="Enter OTP" width="short" help="Enter the 6-digit code you see in your authenticator app.">
+            {(id) => (
+              <Input
+                id={id}
+                ref={totpRef}
+                mono
+                placeholder="OTP"
+                inputMode="numeric"
+                maxLength={6}
+                autoComplete="off"
+                value={totp}
+                onChange={(e) => setTotp(e.target.value)}
+              />
+            )}
+          </DialogField>
+        )}
+      </DialogForm>
     </Dialog>
   )
 }

@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { installApp } from '../../api/apps'
 import { Button } from '../../ui/Button'
 import { Dialog } from '../../ui/Dialog'
+import { DialogForm } from '../../ui/DialogForm'
 import { Field, LabeledInput } from '../../ui/Field'
 import { error, type AlertState } from './Apps'
 import { Notifier } from '../../ui/Notifier'
@@ -78,8 +79,10 @@ export function InstallApp({
       }
     >
       <Notifier notice={alert} onClose={() => setAlert(null)} />
-      <LabeledInput label="App Name" value={name} onChange={(e) => setName(e.target.value)} />
-      <Field label="App Zip File">{(id) => <FilePick id={id} ref={fileRef} />}</Field>
+      <DialogForm>
+        <LabeledInput label="App Name" value={name} onChange={(e) => setName(e.target.value)} />
+        <Field label="App Zip File">{(id) => <FilePick id={id} ref={fileRef} />}</Field>
+      </DialogForm>
     </Dialog>
   )
 }

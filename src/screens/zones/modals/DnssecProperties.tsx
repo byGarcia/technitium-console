@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useId, useState, type ReactNode } from 'react'
 import {
   activateKskDnsKey,
   addPrivateKey,
@@ -45,7 +45,7 @@ import styles from './DnssecProperties.module.css'
 import { Tag } from '../../../ui/Tag'
 import { External } from '../../../ui/External'
 import { RFC_NSEC3_ITERATIONS, RFC_NSEC3_SALT } from '../references'
-import { Th, useSort, type Keys, Table } from '../../../ui/Table'
+import { RowAction, Th, useSort, type Keys, Table } from '../../../ui/Table'
 import { noticeFromFailure } from '../../../lib/notice'
 import { Notifier } from '../../../ui/Notifier'
 
@@ -66,14 +66,15 @@ Two things that are replicated and come as a surprise:
 */
 
 
-/* `sortTable('tableDnssecPropertiesPrivateKeysBody', 0..5)`. */
+/* `sortTable('tableDnssecPropertiesPrivateKeysBody', 0..5)`. The sixth column,
+   Rollover (days), is in each key's Details since 2026-11-06, so it no longer
+   sorts. */
 const KEYS: Keys<PrivateKey> = {
   keyTag: (k) => k.keyTag,
   keyType: (k) => k.keyType,
   algorithm: (k) => `${k.algorithm} (${k.algorithmNumber})`,
   state: (k) => k.state,
   changed: (k) => k.stateChangedOn,
-  rollover: (k) => k.rolloverDays,
 }
 
 export function DnssecProperties({
@@ -339,17 +340,17 @@ export function DnssecProperties({
       ) : (
         <div className={l.content}>
           <section className={l.section}>
-            {/* The keys: the console's data table, whose rows become blocks when
-                it does not fit (`stack`). At this dialog's 880 px it never does:
-                measured on 2026-11-05 with three actions on a row, the seven columns
-                ask for 868 px against 828, the headers alone for about 817. So each
-                key is a block: its tag, its type and its actions on the first line,
-                the rest as labelled facts under them. */}
+            {/* The keys: the console's data table, one line per key (2026-11-06).
+                Its actions are the row's icon buttons with their names in the
+                tooltip; the date a key moves on ("ready by", "active by") and the
+                ZSK's automatic rollover field are under the row's Details. With
+                all seven columns on the line the table asked about 950 px against
+                the dialog's 828, so every key stood as a block of three lines. */}
             <Table
               stack
               isEmpty={visibleKeys.length === 0}
               emptyText="No Key Found"
-              columns={7}
+              columns={6}
               header={
                 <>
                   <Th field="keyTag" sort={sort} onSort={toggle}>Key Tag</Th>
@@ -358,9 +359,6 @@ export function DnssecProperties({
                   <Th field="state" sort={sort} onSort={toggle}>State</Th>
                   <Th field="changed" sort={sort} onSort={toggle}>
                     State Changed
-                  </Th>
-                  <Th field="rollover" sort={sort} onSort={toggle}>
-                    Rollover (days)
                   </Th>
                   <th className={tbl.actionsCell} />
                 </>
@@ -818,69 +816,89 @@ function KeyRow({
   onRetire: () => void
 }) {
   const a = keyActions(k)
+  const [open, setOpen] = useState(false)
+  const detail = useId()
+  /* The date the key moves on, when the server gives one: `ready by` wins, as
+     upstream writes only one of the two (zone.js:6890-6900). */
+  const next =
+    k.stateReadyBy != null
+      ? `(ready by: ${shortDate(k.stateReadyBy)})`
+      : k.stateActiveBy != null
+        ? `(active by: ${shortDate(k.stateActiveBy)})`
+        : null
 
   return (
-    <tr>
-      <td className={`${tbl.lead} ${styles.tag}`}>{k.keyTag}</td>
-      <td className={tbl.lead}>{k.keyType}</td>
-      <td>
-        {k.algorithm} <span className={styles.number}>({k.algorithmNumber})</span>
-      </td>
-      <td>
-        <Tag tone={KEY_STATE_TONE[k.state] ?? 'neutral'}>{k.state}</Tag>
-        {k.state === 'Active' && k.isRetiring ? ' (retiring)' : ''}
-      </td>
-      <td>
-        <div className={styles.date}>{shortDate(k.stateChangedOn)}</div>
-        {k.stateReadyBy != null && <div className={styles.when}>(ready by: {shortDate(k.stateReadyBy)})</div>}
-        {k.stateReadyBy == null && k.stateActiveBy != null && (
-          <div className={styles.when}>(active by: {shortDate(k.stateActiveBy)})</div>
-        )}
-      </td>
-      <td>
-        {a.automaticRollover ? (
-          <span className={styles.rollover}>
-            <Input
-              mono
-              className={styles.days}
-              aria-label={`Rollover days for ${k.keyTag}`}
-              placeholder="days"
-              value={rollover}
-              onChange={(e) => onRollover(e.target.value)}
+    <>
+      <tr className={open ? styles.openRow : undefined}>
+        <td className={`${tbl.lead} ${styles.tag}`}>{k.keyTag}</td>
+        <td className={tbl.lead}>{k.keyType}</td>
+        <td className={styles.nowrap}>
+          {k.algorithm} <span className={styles.number}>({k.algorithmNumber})</span>
+        </td>
+        <td className={styles.nowrap}>
+          <Tag tone={KEY_STATE_TONE[k.state] ?? 'neutral'}>{k.state}</Tag>
+          {k.state === 'Active' && k.isRetiring ? ' (retiring)' : ''}
+        </td>
+        <td>
+          <span className={styles.date}>{shortDate(k.stateChangedOn)}</span>
+        </td>
+        <td className={tbl.actionsCell}>
+          {/* Each action as the row's icon button, its name in the tooltip;
+              Details last, as on every table's row. */}
+          <div className={tbl.actions}>
+            {a.remove && <RowAction icon="trash" name="Delete" disabled={busy} onClick={onDelete} />}
+            {a.activate && <RowAction icon="check" name="Activate" disabled={busy} onClick={onActivate} />}
+            {a.rollover && <RowAction icon="refresh" name="Rollover" disabled={busy} onClick={onRolloverNow} />}
+            {a.retire && <RowAction icon="power" name="Retire" disabled={busy} onClick={onRetire} />}
+            <RowAction
+              icon={open ? 'chevronDown' : 'chevronRight'}
+              name="Details"
+              aria-expanded={open}
+              aria-controls={detail}
+              onClick={() => setOpen((v) => !v)}
             />
-            <Button size="sm" disabled={busy} onClick={onSaveRollover}>
-              Save
-            </Button>
-          </span>
-        ) : (
-          <span className={styles.none}>—</span>
-        )}
-      </td>
-      <td className={tbl.actionsCell}>
-        {/* Each action with its icon before its name; Delete keeps its red. */}
-        <div className={tbl.actions}>
-          {a.remove && (
-            <Button variant="danger" size="sm" lead="trash" disabled={busy} onClick={onDelete}>
-              Delete
-            </Button>
-          )}
-          {a.activate && (
-            <Button size="sm" lead="check" disabled={busy} onClick={onActivate}>
-              Activate
-            </Button>
-          )}
-          {a.rollover && (
-            <Button size="sm" lead="refresh" disabled={busy} onClick={onRolloverNow}>
-              Rollover
-            </Button>
-          )}
-          {a.retire && (
-            <Button size="sm" lead="power" disabled={busy} onClick={onRetire}>
-              Retire
-            </Button>
-          )}
-        </div>
-      </td>
-    </tr>
+          </div>
+        </td>
+      </tr>
+      {open && (
+        <tr id={detail} className={styles.detailRow}>
+          <td colSpan={6}>
+            <dl className={styles.detail}>
+              {next != null && (
+                <div>
+                  <dt>State Changed</dt>
+                  <dd>
+                    <span className={styles.date}>{shortDate(k.stateChangedOn)}</span>{' '}
+                    <span className={styles.when}>{next}</span>
+                  </dd>
+                </div>
+              )}
+              <div>
+                <dt>Rollover (days)</dt>
+                <dd>
+                  {a.automaticRollover ? (
+                    <span className={styles.rollover}>
+                      <Input
+                        mono
+                        className={styles.days}
+                        aria-label={`Rollover days for ${k.keyTag}`}
+                        placeholder="days"
+                        value={rollover}
+                        onChange={(e) => onRollover(e.target.value)}
+                      />
+                      <Button size="sm" disabled={busy} onClick={onSaveRollover}>
+                        Save
+                      </Button>
+                    </span>
+                  ) : (
+                    <span className={styles.none}>—</span>
+                  )}
+                </dd>
+              </div>
+            </dl>
+          </td>
+        </tr>
+      )}
+    </>
   )
 }

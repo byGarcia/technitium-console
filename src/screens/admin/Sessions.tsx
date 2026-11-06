@@ -24,7 +24,6 @@ import {
   Confirm,
   MRow,
   NodePicker,
-  adminStyles as styles,
   type Notice,
 } from './parts'
 import tbl from '../../ui/Table.module.css'
@@ -36,6 +35,7 @@ import { SessionsSummary } from './SessionsSummary'
 import { useBarParam } from './bar-param'
 import { Applied } from './ListParts'
 import lists from './AdminLists.module.css'
+import { DialogForm, DialogPair, dialogForm as df } from '../../ui/DialogForm'
 
 /*
 `refreshAdminSessions`, `showCreateApiTokenModal`, `createApiToken` and
@@ -422,6 +422,9 @@ function CreateApiToken({
     <Dialog
       open={open}
       onOpenChange={(o) => !o && onClose()}
+      /* 720, as the user menu's own Create API Token: the same dialog from two
+         entrances, and the token it shows is a long line. */
+      size="medium"
       title="Create API Token"
       actions={
         <>
@@ -435,48 +438,51 @@ function CreateApiToken({
     >
       <Notifier notice={notice} onClose={() => setNotice(null)} />
 
+      {/* The privileges `Warning!` goes before the fields (the design's rule: a
+          warning can change your decision, so it is read first). The one under
+          the token stays under it: its words point at "the token value above".
+          The token made is shown in read-only fields, to be selected and copied. */}
       {created != null ? (
-        <div className={styles.output}>
-          <MRow label="Username">{(id) => <Input id={id} value={created.username} readOnly />}</MRow>
-          <MRow label="Token Name">
-            {(id) => <Input id={id} value={created.tokenName} readOnly />}
-          </MRow>
-          <MRow label="Token">{(id) => <Input id={id} mono value={created.token} readOnly />}</MRow>
+        <DialogForm>
+          <DialogPair>
+            <MRow label="Username">{(id) => <Input id={id} className={df.readOnly} value={created.username} readOnly />}</MRow>
+            <MRow label="Token Name">
+              {(id) => <Input id={id} className={df.readOnly} value={created.tokenName} readOnly />}
+            </MRow>
+          </DialogPair>
+          <MRow label="Token">{(id) => <Input id={id} mono className={df.readOnly} value={created.token} readOnly />}</MRow>
           <Warning>{TOKEN_SHOWN_ONCE}</Warning>
-        </div>
+        </DialogForm>
       ) : loading ? (
         <Loading />
       ) : (
-        <>
-          <MRow label="Username">
-            {(id) => (
-              <Select
-                id={id}
-                className={styles.select}
-                value={user}
-                onChange={(e) => setUser(e.target.value)}
-              >
-                {users.map((u) => (
-                  <option key={u} value={u}>
-                    {u}
-                  </option>
-                ))}
-              </Select>
-            )}
-          </MRow>
-          <MRow label="Token Name">
-            {(id) => (
-              <Input
-                id={id}
-                value={name}
-                placeholder="token name"
-                maxLength={255}
-                onChange={(e) => setName(e.target.value)}
-              />
-            )}
-          </MRow>
+        <DialogForm>
           <Warning>{TOKEN_PRIVILEGES}</Warning>
-        </>
+          <DialogPair>
+            <MRow label="Username">
+              {(id) => (
+                <Select id={id} value={user} onChange={(e) => setUser(e.target.value)}>
+                  {users.map((u) => (
+                    <option key={u} value={u}>
+                      {u}
+                    </option>
+                  ))}
+                </Select>
+              )}
+            </MRow>
+            <MRow label="Token Name">
+              {(id) => (
+                <Input
+                  id={id}
+                  value={name}
+                  placeholder="token name"
+                  maxLength={255}
+                  onChange={(e) => setName(e.target.value)}
+                />
+              )}
+            </MRow>
+          </DialogPair>
+        </DialogForm>
       )}
     </Dialog>
   )

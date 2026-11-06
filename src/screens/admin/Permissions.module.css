@@ -109,3 +109,17 @@ as an entry and not as a gap.
 .entryList li { display: flex; align-items: center; justify-content: space-between; gap: var(--s-6); }
 .who { font-size: var(--t-4); color: var(--ink); overflow-wrap: break-word; min-width: 0; }
 .quiet { font-size: var(--t-3); color: var(--faint); }
+
+/*
+Edit Permissions (the dialog), drawn as the zone's own (`ZonePermissions`): the
+subject's name in the row's lead cell, and each verb's column as wide as its
+header with its checkbox centred under it.
+*/
+.subject { font-family: var(--font-mono); font-weight: 550; overflow-wrap: break-word; }
+.verb { width: 84px; text-align: center; }
+th.verb { text-align: center; }
+/* The checkbox with its enlarged target: 18 px drawn, 24 px to press. */
+.chkPerm { composes: hitArea from '../../ui/interaction.module.css'; margin: 0 auto; display: block; }
+/* Stacked, the box follows its verb's label on the line instead of centring. */
+[data-stacked] .verb { width: auto; }
+[data-stacked] .chkPerm { display: inline-block; vertical-align: middle; margin: 0; }

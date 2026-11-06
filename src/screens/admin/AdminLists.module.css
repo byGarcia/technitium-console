@@ -28,6 +28,9 @@ under the row's Details, the way Cache, Apps and My Profile draw their lists.
 
 /* The session cell on one line: type swatch and word, token name, partial token. */
 .session { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--s-5); white-space: nowrap; }
+/* User Details' sessions keep it on the row's one line: the Sessions tab lets it
+   wrap, its page is wider than the dialog. */
+.sessionLine { composes: session; flex-wrap: nowrap; }
 .kind {
   display: inline-flex;
   align-items: center;

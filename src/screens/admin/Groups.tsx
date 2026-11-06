@@ -20,7 +20,6 @@ import {
   noticeFromFailure,
   Confirm,
   MRow,
-  adminStyles as styles,
   type Notice,
 } from './parts'
 import tbl from '../../ui/Table.module.css'
@@ -29,6 +28,7 @@ import { Menu, Separator } from '../../ui/Menu'
 import { Notifier } from '../../ui/Notifier'
 import { useBarParam } from './bar-param'
 import lists from './AdminLists.module.css'
+import { DialogForm, DialogPair, dialogForm as df } from '../../ui/DialogForm'
 
 /*
 `refreshAdminGroups`, `addGroup`, `showGroupDetailsModal`, `saveGroupDetails` and
@@ -329,30 +329,31 @@ function AddGroup({
       }
     >
       <Notifier notice={notice} onClose={() => setNotice(null)} />
-      <MRow label="Name">
-        {(id) => (
-          <Input
-            id={id}
-            placeholder="group name"
-            maxLength={255}
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-        )}
-      </MRow>
-      <MRow label="Description">
-        {(id) => (
-          <Textarea
-            mono
-            id={id}
-            className={styles.area}
-            rows={5}
-            maxLength={255}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-          />
-        )}
-      </MRow>
+      <DialogForm>
+        <MRow label="Name">
+          {(id) => (
+            <Input
+              id={id}
+              placeholder="group name"
+              maxLength={255}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          )}
+        </MRow>
+        <MRow label="Description">
+          {(id) => (
+            <Textarea
+              id={id}
+              className={df.area}
+              rows={5}
+              maxLength={255}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          )}
+        </MRow>
+      </DialogForm>
     </Dialog>
   )
 }
@@ -423,10 +424,10 @@ function GroupDetail({
       open
       onOpenChange={(o) => !o && onClose()}
       title="Group Details"
-      /* 880 because of the list it carries inside, not because of its two fields.
-         It is the same reason `User Details` is 880. At 560 the members list and its
-         `Add User` shared a column half the width of the names in it. */
-      size="wide"
+      /* 720: its members list and their `Add User` side by side (2026-11-06).
+         It was 880 while each sat behind a 180 px label column; with the labels
+         above them the pair fits the form-with-branches width. */
+      size="medium"
       actions={
         <>
           <Button variant="primary" disabled={busy || loading} onClick={() => void save()}>
@@ -439,7 +440,7 @@ function GroupDetail({
       {loading ? (
         <Loading />
       ) : (
-        <>
+        <DialogForm>
           <MRow label="Name">
             {(id) => (
               <Input
@@ -454,9 +455,8 @@ function GroupDetail({
           <MRow label="Description">
             {(id) => (
               <Textarea
-                mono
                 id={id}
-                className={styles.area}
+                className={df.area}
                 rows={3}
                 maxLength={255}
                 value={description}
@@ -464,40 +464,44 @@ function GroupDetail({
               />
             )}
           </MRow>
-          <MRow label="Members">
-            {(id) => (
-              <Textarea
-                mono
-                id={id}
-                className={styles.area}
-                rows={7}
-                value={members}
-                onChange={(e) => setMembers(e.target.value)}
-              />
-            )}
-          </MRow>
-          <MRow label="Add User">
-            {(id) => (
-              <Select
-                id={id}
-                className={styles.select}
-                value={addUser}
-                onChange={(e) => {
-                  setAddUser(e.target.value)
-                  setMembers((t) => addToList(t, e.target.value))
-                }}
-              >
-                <option value={BLANK_OPTION} />
-                <option value={NONE_OPTION}>None</option>
-                {users.map((u) => (
-                  <option key={u} value={u}>
-                    {u}
-                  </option>
-                ))}
-              </Select>
-            )}
-          </MRow>
-        </>
+          {/* The members, one per line, and beside them the list that adds one
+              (upstream's `optGroupDetailsUserList`), as User Details pairs its
+              groups with Add Group. */}
+          <DialogPair shape="wide">
+            <MRow label="Members">
+              {(id) => (
+                <Textarea
+                  mono
+                  id={id}
+                  className={df.area}
+                  rows={7}
+                  value={members}
+                  onChange={(e) => setMembers(e.target.value)}
+                />
+              )}
+            </MRow>
+            <MRow label="Add User">
+              {(id) => (
+                <Select
+                  id={id}
+                  value={addUser}
+                  onChange={(e) => {
+                    setAddUser(e.target.value)
+                    setMembers((t) => addToList(t, e.target.value))
+                  }}
+                >
+                  <option value={BLANK_OPTION} />
+                  <option value={NONE_OPTION}>None</option>
+                  {users.map((u) => (
+                    <option key={u} value={u}>
+                      {u}
+                    </option>
+                  ))}
+                </Select>
+              )}
+            </MRow>
+          </DialogPair>
+        </DialogForm>
       )}
     </Dialog>
   )

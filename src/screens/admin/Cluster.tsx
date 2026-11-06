@@ -1,10 +1,11 @@
 import type { ReactNode } from 'react'
-import { useCallback, useEffect, useId, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Alert } from '../../ui/Alert'
 import { Button } from '../../ui/Button'
 import { Dialog } from '../../ui/Dialog'
 import { Input, Select, Textarea } from '../../ui/Field'
-import { Radios } from '../../ui/PanelForm'
+import { DialogBlock, DialogForm, DialogGroup, DialogPair, Tile, dialogForm as df } from '../../ui/DialogForm'
+import { HelpText } from '../../ui/External'
 import { SectionHeader } from '../../ui/SectionHeader'
 import { DataFoot, DataTable, End } from '../../ui/DataTable'
 import { Empty, Loading } from '../../ui/Empty'
@@ -40,7 +41,6 @@ import {
 import tbl from '../../ui/Table.module.css'
 import { RowAction, Th, useSort, type Keys, Table } from '../../ui/Table'
 import { Menu, Separator } from '../../ui/Menu'
-import { GroupRow } from '../../ui/Form'
 import { Notifier } from '../../ui/Notifier'
 
 /*
@@ -547,29 +547,67 @@ function QuickAdd({
   label: string
 }) {
   const [value, setValue] = useState('')
-  const id = useId()
   return (
-    <div className={styles.ctlLine}>
-      <label className={styles.suffix} htmlFor={id}>
-        {label}
-      </label>
-      <Select
-        id={id}
-        className={styles.select}
-        value={value}
-        onChange={(e) => {
-          setValue(e.target.value)
-          if (e.target.value !== '') onAdd(e.target.value)
-        }}
-      >
-        <option value="" />
-        {ips.map((ip) => (
-          <option key={ip} value={ip}>
-            {ip}
-          </option>
-        ))}
-      </Select>
-    </div>
+    <MRow label={label}>
+      {(id) => (
+        <Select
+          id={id}
+          value={value}
+          onChange={(e) => {
+            setValue(e.target.value)
+            if (e.target.value !== '') onAdd(e.target.value)
+          }}
+        >
+          <option value="" />
+          {ips.map((ip) => (
+            <option key={ip} value={ip}>
+              {ip}
+            </option>
+          ))}
+        </Select>
+      )}
+    </MRow>
+  )
+}
+
+/*
+A list of this server's addresses and, beside it, the Quick Add list that adds
+one to it, as User Details pairs its groups with Add Group. The help stays under
+the list it explains.
+*/
+function AddressList({
+  label,
+  help,
+  list,
+  ips,
+  onChange,
+}: {
+  label: string
+  help: string
+  list: string
+  ips: string[]
+  onChange: (update: (t: string) => string) => void
+}) {
+  return (
+    <DialogPair shape="wide">
+      <MRow label={label} help={help}>
+        {(id) => (
+          <Textarea
+            mono
+            id={id}
+            className={df.area}
+            rows={3}
+            spellCheck={false}
+            value={list}
+            onChange={(e) => {
+              const v = e.target.value
+              onChange(() => v)
+            }}
+          />
+        )}
+      </MRow>
+      <QuickAdd ips={ips} label="Quick Add" onAdd={(ip) => onChange((t) => addIp(t, ip))} />
+    </DialogPair>
   )
 }
 
@@ -660,12 +698,20 @@ function NewCluster({
       {loading ? (
         <Loading />
       ) : alreadyThere ? null : (
-        <>
-          <p className={styles.paragraph}>
+        <DialogForm>
+          <p className={df.paragraph}>
             The initialization of a new Cluster will make the current DNS Server its Primary node.
             You can add other DNS Servers to this Cluster later which will get added as Secondary
             nodes. No data will be lost on this DNS Server in this process.
           </p>
+
+          {/* Before the fields (the design's rule: a warning can change the
+              decision, so it is read first). Upstream has it after them. */}
+          <Alert type="warning" title="Warning!">
+            The Cluster Domain name cannot be changed later. Make sure that you enter the correct
+            domain name before proceeding. You can update the DNS Server Domain Name later if needed
+            from Settings but it must always be a subdomain name of the Cluster Domain name.
+          </Alert>
 
           <MRow
             label="Cluster Domain"
@@ -682,69 +728,44 @@ function NewCluster({
             )}
           </MRow>
 
-          <MRow
+          <AddressList
             label="Primary Node IP Addresses"
             help="The static IP addresses of this DNS Server that will be accessible by all other DNS Servers to be added later as Secondary nodes. Enter IP addresses one below another in the above text field or use the Quick Add list to add available IP addresses on the server."
-          >
-            {(id) => (
-              <>
-                <Textarea
-                  mono
-                  id={id}
-                  className={styles.area}
-                  rows={3}
-                  spellCheck={false}
-                  value={list}
-                  onChange={(e) => setList(e.target.value)}
-                />
-                <QuickAdd
-                  ips={ips}
-                  label="Quick Add"
-                  onAdd={(ip) => setList((t) => addIp(t, ip))}
-                />
-              </>
-            )}
-          </MRow>
+            list={list}
+            ips={ips}
+            onChange={setList}
+          />
 
-          <Alert type="info" title="Note!">
-            When the Cluster is initialized, the DNS Server Domain Name will be changed such that the
-            current hostname is a subdomain name of the Cluster Domain name specified above. For
-            example, if the current DNS Server Domain Name is <code>ns1.mydomain.tld</code> or just{' '}
-            <code>ns1</code> then the new domain name will be <code>ns1.mycluster.tld</code>.
-          </Alert>
-          <Alert type="info" title="Note!">
-            If the Web Service does not have HTTPS enabled, then the initialization process will
-            enable it automatically with a self-signed certificate. However, it is recommended to
-            manually configure HTTPS with a valid certificate before initializing the Cluster. This
-            certificate must include the new expected DNS Server Domain Name, as mentioned in the
-            above note, as the Subject Common Name or Subject Alternative Name (SAN) so that it
-            validates when a Secondary node tries to join the Cluster. Once a node joins the Cluster,
-            it uses DANE-EE for server authentication and the domain name in the certificate is no
-            longer required to match the DNS Server Domain Name.
-          </Alert>
-          <Alert type="info" title="Note!">
-            The initialization process will create two zones if they do not exist. The first zone
-            will be the Cluster Primary zone named as the Cluster Domain name specified above where
-            the Cluster will automatically manage domain name records for all the nodes. The second
-            zone will be the Cluster Catalog zone that uses <code>cluster-catalog</code> as the
-            subdomain name of the Cluster Domain name. Use this Cluster Catalog zone for automatic
-            provisioning of Secondary zones on all of the Cluster Secondary nodes.
-          </Alert>
-          <Alert type="warning" title="Warning!">
-            The Cluster Domain name cannot be changed later. Make sure that you enter the correct
-            domain name before proceeding. You can update the DNS Server Domain Name later if needed
-            from Settings but it must always be a subdomain name of the Cluster Domain name.
-          </Alert>
-          <div className={styles.link}>
-            <a
-              href="https://blog.technitium.com/2025/11/understanding-clustering-and-how-to.html"
-              target="_blank"
-              rel="noreferrer"
-            >
-              Help: Understanding Clustering And How To Configure It
-            </a>
+          <div className={df.notices}>
+            <Alert type="info" title="Note!">
+              When the Cluster is initialized, the DNS Server Domain Name will be changed such that the
+              current hostname is a subdomain name of the Cluster Domain name specified above. For
+              example, if the current DNS Server Domain Name is <code>ns1.mydomain.tld</code> or just{' '}
+              <code>ns1</code> then the new domain name will be <code>ns1.mycluster.tld</code>.
+            </Alert>
+            <Alert type="info" title="Note!">
+              If the Web Service does not have HTTPS enabled, then the initialization process will
+              enable it automatically with a self-signed certificate. However, it is recommended to
+              manually configure HTTPS with a valid certificate before initializing the Cluster. This
+              certificate must include the new expected DNS Server Domain Name, as mentioned in the
+              above note, as the Subject Common Name or Subject Alternative Name (SAN) so that it
+              validates when a Secondary node tries to join the Cluster. Once a node joins the Cluster,
+              it uses DANE-EE for server authentication and the domain name in the certificate is no
+              longer required to match the DNS Server Domain Name.
+            </Alert>
+            <Alert type="info" title="Note!">
+              The initialization process will create two zones if they do not exist. The first zone
+              will be the Cluster Primary zone named as the Cluster Domain name specified above where
+              the Cluster will automatically manage domain name records for all the nodes. The second
+              zone will be the Cluster Catalog zone that uses <code>cluster-catalog</code> as the
+              subdomain name of the Cluster Domain name. Use this Cluster Catalog zone for automatic
+              provisioning of Secondary zones on all of the Cluster Secondary nodes.
+            </Alert>
           </div>
-        </>
+          <HelpText href="https://blog.technitium.com/2025/11/understanding-clustering-and-how-to.html">
+            Help: Understanding Clustering And How To Configure It
+          </HelpText>
+        </DialogForm>
       )}
     </Dialog>
   )
@@ -877,169 +898,158 @@ function JoinCluster({
       {loading ? (
         <Loading />
       ) : alreadyThere ? null : (
-        <>
-          <p className={styles.paragraph}>
+        <DialogForm>
+          <p className={df.paragraph}>
             Joining a Cluster will make this DNS Server its Secondary node. This process will
             overwrite configuration on this DNS Server for Allowed, Blocked, Apps, Settings and
             Administration sections. The DNS Server will automatically synchronize its configuration
             with the Primary node in the Cluster.
           </p>
 
-          <MRow
-            label="Secondary Node IP Addresses"
-            help="The static IP addresses of this DNS Server that will be accessible by all other DNS Server nodes in the Cluster. Enter IP addresses one below another in the above text field or use the Quick Add list to add available IP addresses on the server."
-          >
-            {(id) => (
-              <>
-                <Textarea
-                  mono
-                  id={id}
-                  className={styles.area}
-                  rows={3}
-                  spellCheck={false}
-                  value={list}
-                  onChange={(e) => setList(e.target.value)}
-                />
-                <QuickAdd
-                  ips={ips}
-                  label="Quick Add"
-                  onAdd={(v) => setList((t) => addIp(t, v))}
-                />
-              </>
-            )}
-          </MRow>
-
-          <MRow
-            label="Primary Node URL"
-            help="The Web Service HTTPS URL of the Primary node in the Cluster."
-          >
-            {(id) => (
-              <Input
-                id={id}
-                placeholder="URL"
-                maxLength={255}
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-              />
-            )}
-          </MRow>
-
-          <MRow
-            label="Primary Node IP Address (Optional)"
-            help="The IP address of the Primary node in the Cluster. When unspecified, domain name in the Primary node URL will be resolved and used."
-          >
-            {(id) => (
-              <Input
-                id={id}
-                placeholder="IP address"
-                maxLength={255}
-                value={ip}
-                onChange={(e) => setIp(e.target.value)}
-              />
-            )}
-          </MRow>
-
-          {/* It went with `frm.rowCtl` (the column of a PAGE row) inside a
-              modal, which is the same oversight `MRow` had. */}
-          <GroupRow modal label="Certificate Validation">
-            <Radios
-              name="joinClusterCertificateValidation"
-              value={ignore}
-              onChange={setIgnore}
-              options={[
-                {
-                  value: 'false',
-                  label: 'Validate Certificate With PKI and DANE (Recommended)',
-                  help: 'The Primary node Web Service TLS certificate will be validated using PKI and DANE to ensure that your connection is secure.',
-                },
-                {
-                  value: 'true',
-                  label: 'Ignore Certificate Validation Errors',
-                  help: 'Use this options only when you know that the Primary node Web Service is using a self-signed TLS certificate and is reachable on a private network.',
-                },
-              ]}
-            />
-          </GroupRow>
-
-          <MRow
-            label="Primary Node Username"
-            help="The username of an administrator on the Primary node in the Cluster."
-          >
-            {(id) => (
-              <Input
-                id={id}
-                placeholder="username"
-                maxLength={255}
-                value={user}
-                onChange={(e) => setUser(e.target.value)}
-              />
-            )}
-          </MRow>
-
-          <MRow label="Primary Node Password" help="The password of the administrator user specified above.">
-            {(id) => (
-              <Input
-                id={id}
-                type="password"
-                maxLength={255}
-                disabled={needsTotp}
-                value={pass}
-                onChange={(e) => setPass(e.target.value)}
-              />
-            )}
-          </MRow>
-
-          {needsTotp && (
-            <MRow
-              label="Primary Node OTP"
-              help="Enter the 6-digit code you see in your authenticator app for the administrator user specified above."
-            >
-              {(id) => (
-                <Input
-                  id={id}
-                  placeholder="OTP"
-                  maxLength={6}
-                  autoComplete="off"
-                  value={totp}
-                  onChange={(e) => setTotp(e.target.value)}
-                />
-              )}
-            </MRow>
-          )}
-
-          <Alert type="info" title="Note!">
-            The process to join the Cluster may take a while to complete depending on the amount of
-            initial config data that needs to be synchronized from the Primary node. Please be
-            patient till the process completes.
-          </Alert>
-          <Alert type="info" title="Note!">
-            If the Web Service does not have HTTPS enabled, then the joining process will enable it
-            automatically with a self-signed certificate. However, its recommended to manually
-            configure HTTPS with a valid certificate before joining the cluster. This certificate
-            should optionally include the new expected DNS Server Domain Name, which will be a
-            subdomain name of the Cluster Domain name, as the Subject Common Name or Subject
-            Alternative Name (SAN).
-          </Alert>
-          <Alert type="info" title="Note!">
-            The Ignore Certificate Validation Errors option when selected is used only for the
-            initial connection to the Primary node during the joining process. Once the DNS Server
-            joins the Cluster, it will always use DANE-EE for authentication using the TLSA records
-            in the Cluster Primary zone that are added for each node in the Cluster.
-          </Alert>
+          {/* Before the fields (the design's rule: a warning can change the
+              decision, so it is read first). Upstream has it after them. */}
           <Alert type="warning" title="Warning!">
             Joining a Cluster will cause configuration on this DNS Server to be overwritten
             permanently for Allowed, Blocked, Apps, Settings and Administration sections!
           </Alert>
-          <div className={styles.link}>
-            <a
-              href="https://blog.technitium.com/2025/11/understanding-clustering-and-how-to.html"
-              target="_blank"
-              rel="noreferrer"
+
+          <AddressList
+            label="Secondary Node IP Addresses"
+            help="The static IP addresses of this DNS Server that will be accessible by all other DNS Server nodes in the Cluster. Enter IP addresses one below another in the above text field or use the Quick Add list to add available IP addresses on the server."
+            list={list}
+            ips={ips}
+            onChange={setList}
+          />
+
+          {/* Where the Primary node is and how to trust it, on the raised step:
+              its URL and address, the two ways of validating its certificate as
+              tiles (each with its explanation), and the administrator to sign in
+              as, the name and the password on one line. */}
+          <DialogBlock>
+            <MRow
+              label="Primary Node URL"
+              help="The Web Service HTTPS URL of the Primary node in the Cluster."
             >
-              Help: Understanding Clustering And How To Configure It
-            </a>
+              {(id) => (
+                <Input
+                  id={id}
+                  placeholder="URL"
+                  maxLength={255}
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                />
+              )}
+            </MRow>
+
+            <MRow
+              label="Primary Node IP Address (Optional)"
+              help="The IP address of the Primary node in the Cluster. When unspecified, domain name in the Primary node URL will be resolved and used."
+            >
+              {(id) => (
+                <Input
+                  id={id}
+                  placeholder="IP address"
+                  maxLength={255}
+                  value={ip}
+                  onChange={(e) => setIp(e.target.value)}
+                />
+              )}
+            </MRow>
+
+            <DialogGroup label="Certificate Validation" radios={`${df.tiles} ${df.tiles1}`}>
+              <Tile
+                name="joinClusterCertificateValidation"
+                checked={ignore === 'false'}
+                onChange={() => setIgnore('false')}
+                help="The Primary node Web Service TLS certificate will be validated using PKI and DANE to ensure that your connection is secure."
+              >
+                Validate Certificate With PKI and DANE (Recommended)
+              </Tile>
+              <Tile
+                name="joinClusterCertificateValidation"
+                checked={ignore === 'true'}
+                onChange={() => setIgnore('true')}
+                help="Use this options only when you know that the Primary node Web Service is using a self-signed TLS certificate and is reachable on a private network."
+              >
+                Ignore Certificate Validation Errors
+              </Tile>
+            </DialogGroup>
+
+            <DialogPair>
+              <MRow
+                label="Primary Node Username"
+                help="The username of an administrator on the Primary node in the Cluster."
+              >
+                {(id) => (
+                  <Input
+                    id={id}
+                    placeholder="username"
+                    maxLength={255}
+                    value={user}
+                    onChange={(e) => setUser(e.target.value)}
+                  />
+                )}
+              </MRow>
+
+              <MRow label="Primary Node Password" help="The password of the administrator user specified above.">
+                {(id) => (
+                  <Input
+                    id={id}
+                    type="password"
+                    maxLength={255}
+                    disabled={needsTotp}
+                    value={pass}
+                    onChange={(e) => setPass(e.target.value)}
+                  />
+                )}
+              </MRow>
+            </DialogPair>
+
+            {needsTotp && (
+              <MRow
+                label="Primary Node OTP"
+                width="short"
+                help="Enter the 6-digit code you see in your authenticator app for the administrator user specified above."
+              >
+                {(id) => (
+                  <Input
+                    id={id}
+                    placeholder="OTP"
+                    maxLength={6}
+                    autoComplete="off"
+                    value={totp}
+                    onChange={(e) => setTotp(e.target.value)}
+                  />
+                )}
+              </MRow>
+            )}
+          </DialogBlock>
+
+          <div className={df.notices}>
+            <Alert type="info" title="Note!">
+              The process to join the Cluster may take a while to complete depending on the amount of
+              initial config data that needs to be synchronized from the Primary node. Please be
+              patient till the process completes.
+            </Alert>
+            <Alert type="info" title="Note!">
+              If the Web Service does not have HTTPS enabled, then the joining process will enable it
+              automatically with a self-signed certificate. However, its recommended to manually
+              configure HTTPS with a valid certificate before joining the cluster. This certificate
+              should optionally include the new expected DNS Server Domain Name, which will be a
+              subdomain name of the Cluster Domain name, as the Subject Common Name or Subject
+              Alternative Name (SAN).
+            </Alert>
+            <Alert type="info" title="Note!">
+              The Ignore Certificate Validation Errors option when selected is used only for the
+              initial connection to the Primary node during the joining process. Once the DNS Server
+              joins the Cluster, it will always use DANE-EE for authentication using the TLSA records
+              in the Cluster Primary zone that are added for each node in the Cluster.
+            </Alert>
           </div>
-        </>
+          <HelpText href="https://blog.technitium.com/2025/11/understanding-clustering-and-how-to.html">
+            Help: Understanding Clustering And How To Configure It
+          </HelpText>
+        </DialogForm>
       )}
     </Dialog>
   )
@@ -1179,29 +1189,29 @@ function ClusterOptions({
       {loading ? (
         <Loading />
       ) : (
-        <>
+        <DialogForm>
           <MRow label="Cluster Domain" help="The fully qualified domain name of the Cluster.">
             {(id) => <Input id={id} placeholder="domain name" value={domain} disabled readOnly />}
           </MRow>
-          {intervals.map(([label, value, suffix, set, help]) => (
-            <MRow key={label} label={label} help={help}>
-              {(id) => (
-                <div className={styles.ctlLine}>
+          {/* The four intervals on the raised step: one setting each, a number
+              with its unit after it. */}
+          <DialogBlock>
+            {intervals.map(([label, value, suffix, set, help]) => (
+              <MRow key={label} label={label} help={help} width="short" suffix={suffix}>
+                {(id) => (
                   <Input
                     id={id}
                     type="number"
                     placeholder="seconds"
-                    style={{ width: 100 }}
                     disabled={!isPrimary}
                     value={value}
                     onChange={(e) => set(e.target.value)}
                   />
-                  <span className={styles.suffix}>{suffix}</span>
-                </div>
-              )}
-            </MRow>
-          ))}
-        </>
+                )}
+              </MRow>
+            ))}
+          </DialogBlock>
+        </DialogForm>
       )}
     </Dialog>
   )
@@ -1279,25 +1289,13 @@ function EditOwnNode({
       {loading ? (
         <Loading />
       ) : (
-        <MRow
+        <AddressList
           label="Node IP Addresses"
           help="The static IP addresses of this DNS Server that will be accessible by all other DNS Server nodes in the Cluster. Enter IP addresses one below another in the above text field or use the Quick Add list to add available IP addresses on the server."
-        >
-          {(id) => (
-            <>
-              <Textarea
-                mono
-                id={id}
-                className={styles.area}
-                rows={3}
-                spellCheck={false}
-                value={list}
-                onChange={(e) => setList(e.target.value)}
-              />
-              <QuickAdd ips={ips} label="Quick Add" onAdd={(ip) => setList((t) => addIp(t, ip))} />
-            </>
-          )}
-        </MRow>
+          list={list}
+          ips={ips}
+          onChange={setList}
+        />
       )}
     </Dialog>
   )
@@ -1359,33 +1357,35 @@ function EditPrimaryNode({
       }
     >
       <Notifier notice={notice} onClose={() => setNotice(null)} />
-      <MRow label="Primary Node URL" help="The Web Service HTTPS URL of the Primary node in the Cluster.">
-        {(id) => (
-          <Input
-            id={id}
-            placeholder="URL"
-            maxLength={255}
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-          />
-        )}
-      </MRow>
-      <MRow
-        label="Primary Node IP Addresses (Optional)"
-        help="The IP addresses of the Primary node in the Cluster. When unspecified, domain name in the Primary node URL will be resolved and used."
-      >
-        {(id) => (
-          <Textarea
-            mono
-            id={id}
-            className={styles.area}
-            rows={3}
-            spellCheck={false}
-            value={list}
-            onChange={(e) => setList(e.target.value)}
-          />
-        )}
-      </MRow>
+      <DialogForm>
+        <MRow label="Primary Node URL" help="The Web Service HTTPS URL of the Primary node in the Cluster.">
+          {(id) => (
+            <Input
+              id={id}
+              placeholder="URL"
+              maxLength={255}
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+            />
+          )}
+        </MRow>
+        <MRow
+          label="Primary Node IP Addresses (Optional)"
+          help="The IP addresses of the Primary node in the Cluster. When unspecified, domain name in the Primary node URL will be resolved and used."
+        >
+          {(id) => (
+            <Textarea
+              mono
+              id={id}
+              className={df.area}
+              rows={3}
+              spellCheck={false}
+              value={list}
+              onChange={(e) => setList(e.target.value)}
+            />
+          )}
+        </MRow>
+      </DialogForm>
     </Dialog>
   )
 }
@@ -1438,24 +1438,26 @@ function RemoveNode({
       }
     >
       <Notifier notice={notice} onClose={() => setNotice(null)} />
-      <p className={styles.paragraph}>
-        The Remove Node process will ask the selected Secondary node to leave the Cluster gracefully.
-        The Secondary will then initiate Leave Cluster process as if the Leave Cluster action was
-        performed on that node itself.
-      </p>
-      <p className={styles.paragraph}>
-        Are you sure you want to remove the Secondary node from the Cluster?
-      </p>
-      <ForceBlock
-        label="Force Remove Node"
-        help="Enabling this option will cause the Secondary node to be deleted from the Cluster without asking the node to leave gracefully."
-        checked={force}
-        onChange={setForce}
-      />
-      <Alert type="info" title="Note!">
-        Use the Force Remove Node option only when the Secondary node is unreachable/decommissioned
-        and cannot leave the Cluster gracefully.
-      </Alert>
+      <DialogForm>
+        <p className={df.paragraph}>
+          The Remove Node process will ask the selected Secondary node to leave the Cluster gracefully.
+          The Secondary will then initiate Leave Cluster process as if the Leave Cluster action was
+          performed on that node itself.
+        </p>
+        <p className={df.paragraph}>
+          Are you sure you want to remove the Secondary node from the Cluster?
+        </p>
+        <ForceBlock
+          label="Force Remove Node"
+          help="Enabling this option will cause the Secondary node to be deleted from the Cluster without asking the node to leave gracefully."
+          checked={force}
+          onChange={setForce}
+        />
+        <Alert type="info" title="Note!">
+          Use the Force Remove Node option only when the Secondary node is unreachable/decommissioned
+          and cannot leave the Cluster gracefully.
+        </Alert>
+      </DialogForm>
     </Dialog>
   )
 }
@@ -1505,32 +1507,36 @@ function PromoteNode({
       }
     >
       <Notifier notice={notice} onClose={() => setNotice(null)} />
-      <p className={styles.paragraph}>
-        The promote To Primary node process will resync complete configuration from the Primary node
-        and then proceed to delete it from the Cluster followed by upgrading the selected Secondary
-        node to become the Primary node in the Cluster. The former Primary node when deleted will
-        cause it to delete all its own Cluster configuration leaving the Cluster without causing any
-        other data loss.
-      </p>
-      <p className={styles.paragraph}>
-        Are you sure you want to promote the selected Secondary node to become the Primary node in
-        the Cluster?
-      </p>
-      <ForceBlock
-        label="Force Delete Current Primary Node"
-        help="Enabling this option will cause the current Primary node to be deleted from the Cluster without resyncing complete configuration from it and without inform it."
-        checked={force}
-        onChange={setForce}
-      />
-      <Alert type="info" title="Note!">
-        Use the Force Delete Current Primary Node option only when the Primary node is
-        unreachable/decommissioned and thus cannot be deleted from the Cluster gracefully.
-      </Alert>
-      <Alert type="info" title="Note!">
-        The process to promote to Primary node may take a while to complete depending on the size of
-        the complete configuration being resynced and the number of local zones that need to be
-        converted. Please be patient till the process completes.
-      </Alert>
+      <DialogForm>
+        <p className={df.paragraph}>
+          The promote To Primary node process will resync complete configuration from the Primary node
+          and then proceed to delete it from the Cluster followed by upgrading the selected Secondary
+          node to become the Primary node in the Cluster. The former Primary node when deleted will
+          cause it to delete all its own Cluster configuration leaving the Cluster without causing any
+          other data loss.
+        </p>
+        <p className={df.paragraph}>
+          Are you sure you want to promote the selected Secondary node to become the Primary node in
+          the Cluster?
+        </p>
+        <ForceBlock
+          label="Force Delete Current Primary Node"
+          help="Enabling this option will cause the current Primary node to be deleted from the Cluster without resyncing complete configuration from it and without inform it."
+          checked={force}
+          onChange={setForce}
+        />
+        <div className={df.notices}>
+          <Alert type="info" title="Note!">
+            Use the Force Delete Current Primary Node option only when the Primary node is
+            unreachable/decommissioned and thus cannot be deleted from the Cluster gracefully.
+          </Alert>
+          <Alert type="info" title="Note!">
+            The process to promote to Primary node may take a while to complete depending on the size of
+            the complete configuration being resynced and the number of local zones that need to be
+            converted. Please be patient till the process completes.
+          </Alert>
+        </div>
+      </DialogForm>
     </Dialog>
   )
 }
@@ -1577,23 +1583,25 @@ function LeaveCluster({
       }
     >
       <Notifier notice={notice} onClose={() => setNotice(null)} />
-      <p className={styles.paragraph}>
-        The Leave Cluster process will remove all Cluster configuration from this Secondary node and
-        leave the Cluster gracefully. There will be no data loss except for the Cluster
-        configuration. You will need to re-join the Cluster again to use this DNS Server as a
-        Secondary node.
-      </p>
-      <p className={styles.paragraph}>Are you sure you want to leave the Cluster?</p>
-      <ForceBlock
-        label="Force Leave Cluster"
-        help="Enabling this option will cause this Secondary node to leave the Cluster without informing the Primary node."
-        checked={force}
-        onChange={setForce}
-      />
-      <Alert type="info" title="Note!">
-        Use the Force Leave Cluster option only when the Primary node is unreachable/decommissioned
-        and thus cannot leave the Cluster gracefully.
-      </Alert>
+      <DialogForm>
+        <p className={df.paragraph}>
+          The Leave Cluster process will remove all Cluster configuration from this Secondary node and
+          leave the Cluster gracefully. There will be no data loss except for the Cluster
+          configuration. You will need to re-join the Cluster again to use this DNS Server as a
+          Secondary node.
+        </p>
+        <p className={df.paragraph}>Are you sure you want to leave the Cluster?</p>
+        <ForceBlock
+          label="Force Leave Cluster"
+          help="Enabling this option will cause this Secondary node to leave the Cluster without informing the Primary node."
+          checked={force}
+          onChange={setForce}
+        />
+        <Alert type="info" title="Note!">
+          Use the Force Leave Cluster option only when the Primary node is unreachable/decommissioned
+          and thus cannot leave the Cluster gracefully.
+        </Alert>
+      </DialogForm>
     </Dialog>
   )
 }
@@ -1640,25 +1648,27 @@ function DeleteCluster({
       }
     >
       <Notifier notice={notice} onClose={() => setNotice(null)} />
-      <p className={styles.paragraph}>
-        The Delete Cluster process will remove all Cluster configuration from this Primary node.
-        There will be no data loss except for the Cluster configuration. You will need to
-        re-initialize the Cluster again to use clustering features on this DNS Server.
-      </p>
-      <p className={styles.paragraph}>Are you sure you want to delete the Cluster?</p>
-      <ForceBlock
-        label="Force Delete Cluster"
-        help="Enabling this option will cause this Primary node to delete the Cluster for itself even when other Secondary nodes still exist, orphaning them."
-        checked={force}
-        onChange={setForce}
-      />
-      <Alert type="info" title="Note!">
-        You can delete the Cluster only when there are no Secondary nodes in the Cluster. Use the
-        Force Delete Cluster option only when you wish this Primary node to be removed from the
-        Cluster even when there are Secondary nodes in the Cluster. In this case, the Secondary nodes
-        will become orphaned and you will need to promote one of them to be the new Primary node
-        manually.
-      </Alert>
+      <DialogForm>
+        <p className={df.paragraph}>
+          The Delete Cluster process will remove all Cluster configuration from this Primary node.
+          There will be no data loss except for the Cluster configuration. You will need to
+          re-initialize the Cluster again to use clustering features on this DNS Server.
+        </p>
+        <p className={df.paragraph}>Are you sure you want to delete the Cluster?</p>
+        <ForceBlock
+          label="Force Delete Cluster"
+          help="Enabling this option will cause this Primary node to delete the Cluster for itself even when other Secondary nodes still exist, orphaning them."
+          checked={force}
+          onChange={setForce}
+        />
+        <Alert type="info" title="Note!">
+          You can delete the Cluster only when there are no Secondary nodes in the Cluster. Use the
+          Force Delete Cluster option only when you wish this Primary node to be removed from the
+          Cluster even when there are Secondary nodes in the Cluster. In this case, the Secondary nodes
+          will become orphaned and you will need to promote one of them to be the new Primary node
+          manually.
+        </Alert>
+      </DialogForm>
     </Dialog>
   )
 }

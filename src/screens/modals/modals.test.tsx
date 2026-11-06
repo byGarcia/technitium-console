@@ -111,6 +111,13 @@ describe('Create API Token', () => {
     expect(await screen.findByText('Please enter a token name.')).toBeInTheDocument()
   })
 
+  /* The privileges Warning! is read before the fields (the design's rule). */
+  it('the privileges warning comes before the fields', () => {
+    render(<CreateApiToken open onOpenChange={() => {}} username="admin" token="t" />)
+    const warning = screen.getByText(/^The token allows access to API calls/)
+    expect(warning.compareDocumentPosition(screen.getByLabelText('Token Name')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
   it('it creates the token, swaps the form for the output and warns once (auth.js:377-389)', async () => {
     const spy = vi.spyOn(client, 'apiRequest').mockResolvedValue(
       ok({ status: 'ok', username: 'admin', tokenName: 'orbiter', token: 'abc' }),

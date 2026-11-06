@@ -12,10 +12,12 @@ import {
 } from '../../api/admin'
 import { primaryNodeName, type ClusterState } from '../../api/admin-cluster'
 import { addToTable, BLANK_OPTION, NONE_OPTION, serializeTable, type Cell } from './table'
-import { noticeFromFailure, MRow, adminStyles as styles, type Notice } from './parts'
-import { RowAction, Th, useSort, type Keys } from '../../ui/Table'
+import { noticeFromFailure, MRow, type Notice } from './parts'
+import { RowAction, Table, Th, useSort, type Keys } from '../../ui/Table'
+import tbl from '../../ui/Table.module.css'
 import { Select } from '../../ui/Select'
-import { EditableTable } from '../../ui/EditableTable'
+import { DialogForm, DialogSection } from '../../ui/DialogForm'
+import perm from './Permissions.module.css'
 import { Notifier } from '../../ui/Notifier'
 import { PermissionMap } from './PermissionMap'
 
@@ -226,35 +228,35 @@ function EditPermissions({
       {loading ? (
         <Loading />
       ) : (
-        <>
+        <DialogForm>
           <PermissionsTable
             section={section}
             title="User Permissions"
             header="Username"
             rows={users}
             onChange={setUsers}
-          />
-          <MRow label="Add User">
-            {(id) => (
-              <Select
-                id={id}
-                className={styles.select}
-                value={addUser}
-                onChange={(e) => {
-                  setAddUser(e.target.value)
-                  setUsers((f) => addToTable(f, e.target.value, blankRow))
-                }}
-              >
-                <option value={BLANK_OPTION} />
-                <option value={NONE_OPTION}>None</option>
-                {userList.map((n) => (
-                  <option key={n} value={n}>
-                    {n}
-                  </option>
-                ))}
-              </Select>
-            )}
-          </MRow>
+          >
+            <MRow label="Add User" width="line">
+              {(id) => (
+                <Select
+                  id={id}
+                  value={addUser}
+                  onChange={(e) => {
+                    setAddUser(e.target.value)
+                    setUsers((f) => addToTable(f, e.target.value, blankRow))
+                  }}
+                >
+                  <option value={BLANK_OPTION} />
+                  <option value={NONE_OPTION}>None</option>
+                  {userList.map((n) => (
+                    <option key={n} value={n}>
+                      {n}
+                    </option>
+                  ))}
+                </Select>
+              )}
+            </MRow>
+          </PermissionsTable>
 
           <PermissionsTable
             section={section}
@@ -262,29 +264,29 @@ function EditPermissions({
             header="Group"
             rows={groups}
             onChange={setGroups}
-          />
-          <MRow label="Add Group">
-            {(id) => (
-              <Select
-                id={id}
-                className={styles.select}
-                value={addGroup}
-                onChange={(e) => {
-                  setAddGroup(e.target.value)
-                  setGroups((f) => addToTable(f, e.target.value, blankRow))
-                }}
-              >
-                <option value={BLANK_OPTION} />
-                <option value={NONE_OPTION}>None</option>
-                {groupList.map((n) => (
-                  <option key={n} value={n}>
-                    {n}
-                  </option>
-                ))}
-              </Select>
-            )}
-          </MRow>
-        </>
+          >
+            <MRow label="Add Group" width="line">
+              {(id) => (
+                <Select
+                  id={id}
+                  value={addGroup}
+                  onChange={(e) => {
+                    setAddGroup(e.target.value)
+                    setGroups((f) => addToTable(f, e.target.value, blankRow))
+                  }}
+                >
+                  <option value={BLANK_OPTION} />
+                  <option value={NONE_OPTION}>None</option>
+                  {groupList.map((n) => (
+                    <option key={n} value={n}>
+                      {n}
+                    </option>
+                  ))}
+                </Select>
+              )}
+            </MRow>
+          </PermissionsTable>
+        </DialogForm>
       )}
     </Dialog>
   )
@@ -300,12 +302,21 @@ const blankRow = (name: string): Row => ({
 /* `sortTable('tbodyEditPermissionsUser'|'Group', 0)`. */
 const PERMISSION_KEYS: Keys<Row> = { name: (f) => f.name }
 
+/*
+One of the two lists, as the zone's own Edit Permissions draws it
+(`zones/modals/ZonePermissions.tsx`): a section of the dialog under its title,
+the console's table (`ui/Table`) with a centred checkbox under each verb and
+Remove as the row's action, and the field that adds a name under it. It was
+`ui/EditableTable` with every input stretched to its cell, which drew each
+checkbox as a wide amber bar.
+*/
 function PermissionsTable({
   section,
   title,
   header,
   rows,
   onChange,
+  children,
 }: {
   /* Here the cells ARE controls, so they are amber and they are in the tab
      order. What does not change is their NAME: the same
@@ -316,6 +327,8 @@ function PermissionsTable({
   header: string
   rows: readonly Row[]
   onChange: (f: readonly Row[]) => void
+  /** The field that adds a name to this list. */
+  children: ReactNode
 }) {
   const { rows: visible, sort, toggle } = useSort(PERMISSION_KEYS, rows as Row[])
 
@@ -325,63 +338,51 @@ function PermissionsTable({
     onChange(rows.map((f) => (f.name === row.name ? { ...f, ...partial } : f)))
   }
 
+  const verbs = [
+    ['canView', 'View'],
+    ['canModify', 'Modify'],
+    ['canDelete', 'Delete'],
+  ] as const
+
   return (
-    <>
-      <p className={styles.sub}>{title}</p>
-      {/* The editable one does not carry the data table's panel wrapper: it is
-          another piece (`ui/EditableTable.module.css`) and lives INSIDE a panel. */}
-      <div>
-        <EditableTable
-      className={styles.edit}
-          header={
-            <>
-              <Th field="name" sort={sort} onSort={toggle}>{header}</Th>
-              <th>View</th>
-              <th>Modify</th>
-              <th>Delete</th>
-              <th className={styles.tdel} />
-            </>
-          }
-        >
-          {visible.map((f) => (
-            <tr key={f.name}>
-              <td className={styles.who}>{f.name}</td>
-              <td>
+    <DialogSection title={title}>
+      {/* Upstream puts no text when the modal's table is empty; nor does it
+          here, so as not to invent a literal that does not exist. */}
+      <Table
+        stack
+        header={
+          <>
+            <Th field="name" sort={sort} onSort={toggle}>{header}</Th>
+            {verbs.map(([, verb]) => (
+              <th key={verb} className={perm.verb}>{verb}</th>
+            ))}
+            <th className={tbl.actionsCell} />
+          </>
+        }
+      >
+        {visible.map((f) => (
+          <tr key={f.name}>
+            <td className={`${tbl.lead} ${perm.subject}`}>{f.name}</td>
+            {verbs.map(([key, verb]) => (
+              <td key={key} className={perm.verb}>
                 <input
                   type="checkbox"
-                  className={styles.chkPerm}
-                  aria-label={`${section} · ${f.name} · View`}
-                  checked={f.canView}
-                  onChange={(e) => set(f, { canView: e.target.checked })}
+                  className={perm.chkPerm}
+                  aria-label={`${section} · ${f.name} · ${verb}`}
+                  checked={f[key]}
+                  onChange={(e) => set(f, { [key]: e.target.checked })}
                 />
               </td>
-              <td>
-                <input
-                  type="checkbox"
-                  className={styles.chkPerm}
-                  aria-label={`${section} · ${f.name} · Modify`}
-                  checked={f.canModify}
-                  onChange={(e) => set(f, { canModify: e.target.checked })}
-                />
-              </td>
-              <td>
-                <input
-                  type="checkbox"
-                  className={styles.chkPerm}
-                  aria-label={`${section} · ${f.name} · Delete`}
-                  checked={f.canDelete}
-                  onChange={(e) => set(f, { canDelete: e.target.checked })}
-                />
-              </td>
-              <td className={styles.tdel}>
-                <Button onClick={() => onChange(rows.filter((x) => x.name !== f.name))}>Remove</Button>
-              </td>
-            </tr>
-          ))}
-        </EditableTable>
-        {/* Upstream puts no text when the modal's table is empty; nor does it
-            here, so as not to invent a literal that does not exist. */}
-      </div>
-    </>
+            ))}
+            <td className={tbl.actionsCell}>
+              <div className={tbl.actions}>
+                <RowAction icon="trash" name="Remove" onClick={() => onChange(rows.filter((x) => x.name !== f.name))} />
+              </div>
+            </td>
+          </tr>
+        ))}
+      </Table>
+      {children}
+    </DialogSection>
   )
 }

@@ -120,6 +120,13 @@ export function EditZoneFile({
 
       {loaded && (
         <div className={z.form}>
+          {/* The `Warning!` first, as Import Zone's: a warning can change the
+              decision, so it is read before the controls (upstream has it last). */}
+          <Alert type="warning" title="Warning!">
+            Overwrite SOA serial option when used to set a lower SOA serial value than the
+            current SOA serial will cause secondary zones to fail to sync and require a manual
+            resync.
+          </Alert>
           {/* The editor is the dialog: it takes the height (2026-11-05). */}
           <Field label="Zone File Editor">
             {(id) => (
@@ -143,11 +150,6 @@ export function EditZoneFile({
 
           <Alert type="info" title="Note!">
             The $ORIGIN and $TTL values will be automatically set if not specified.
-          </Alert>
-          <Alert type="warning" title="Warning!">
-            Overwrite SOA serial option when used to set a lower SOA serial value than the
-            current SOA serial will cause secondary zones to fail to sync and require a manual
-            resync.
           </Alert>
         </div>
       )}

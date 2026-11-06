@@ -1,8 +1,7 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useId, useState, type CSSProperties } from 'react'
 import { Button } from '../../ui/Button'
 import { Dialog } from '../../ui/Dialog'
 import { Input, Select, Textarea } from '../../ui/Field'
-import { AgentCell, LastSeenCell } from '../../ui/SessionCells'
 import { Loading } from '../../ui/Empty'
 import {
   deleteAdminSession,
@@ -17,7 +16,6 @@ import { addToList, BLANK_OPTION, NONE_OPTION } from './table'
 import { dateTime, fromNow } from './dates'
 import {
   noticeFromFailure,
-  SessionCell,
   Check,
   Confirm,
   MRow,
@@ -26,8 +24,10 @@ import {
   type Notice,
 } from './parts'
 import tbl from '../../ui/Table.module.css'
-import frm from '../../ui/Form.module.css'
-import { Th, useSort, type Keys, Table } from '../../ui/Table'
+import lists from './AdminLists.module.css'
+import { sessionKind } from '../profile/profile'
+import { DialogBlock, DialogForm, DialogPair, DialogSection, dialogForm as df } from '../../ui/DialogForm'
+import { RowAction, Th, useSort, type Keys, Table } from '../../ui/Table'
 import { Notifier } from '../../ui/Notifier'
 import { Menu } from '../../ui/Menu'
 
@@ -72,7 +72,8 @@ interface Props {
 }
 
 
-/* `sortTable('tbodyUserDetailsActiveSessions', 0..3)`. */
+/* `sortTable('tbodyUserDetailsActiveSessions', 0..3)`. The fourth column, User
+   Agent, is in each session's Details since 2026-11-06, so it no longer sorts. */
 const KEYS: Keys<AdminSession> = {
   session: (s) =>
     [s.tokenName ?? '', `[${s.partialToken}]`, s.isCurrentSession ? '(current)' : '', s.type]
@@ -80,7 +81,6 @@ const KEYS: Keys<AdminSession> = {
       .join(' '),
   lastSeen: (s) => s.lastSeen,
   address: (s) => s.lastSeenRemoteAddress,
-  agent: (s) => s.lastSeenUserAgent,
 }
 
 export function UserDetails({ open, username, token, cluster, onClose, onSaved, onNotice }: Props) {
@@ -209,152 +209,128 @@ export function UserDetails({ open, username, token, cluster, onClose, onSaved, 
         {loading || detail == null ? (
           <Loading />
         ) : (
-          <>
-            <MRow label="Display Name">
-              {(id) => (
-                <Input
-                  id={id}
-                  value={displayName}
-                  placeholder="display name"
-                  maxLength={255}
-                  disabled={profileLocked}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                />
-              )}
-            </MRow>
+          <DialogForm>
+            {/* Who the account is: its two names on one line. */}
+            <DialogPair>
+              <MRow label="Display Name">
+                {(id) => (
+                  <Input
+                    id={id}
+                    value={displayName}
+                    placeholder="display name"
+                    maxLength={255}
+                    disabled={profileLocked}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                  />
+                )}
+              </MRow>
+              <MRow label="Username">
+                {(id) => (
+                  <Input
+                    id={id}
+                    value={newUser}
+                    placeholder="username"
+                    maxLength={255}
+                    disabled={profileLocked}
+                    onChange={(e) => setNewUser(e.target.value)}
+                  />
+                )}
+              </MRow>
+            </DialogPair>
 
-            <MRow label="Username">
-              {(id) => (
-                <Input
-                  id={id}
-                  value={newUser}
-                  placeholder="username"
-                  maxLength={255}
-                  disabled={profileLocked}
-                  onChange={(e) => setNewUser(e.target.value)}
-                />
-              )}
-            </MRow>
-
-            <MValue label="Type" value={typeLabel} />
-            <MValue label="2FA Status" value={totpLabel} />
-
-            <div className={frm.mrow}>
-              <div />
-              <Check
-                toggle
-                label="Disable User Account"
-                checked={disabled}
-                onChange={setDisabled}
-              />
-            </div>
-
-            <MRow label="Session Timeout">
-              {(id) => (
-                <div className={styles.ctlLine}>
+            {/* How the account stands: what it is, its 2FA, whether it is off and
+                how long its sessions last, together on the raised step. */}
+            <DialogBlock>
+              <DialogPair>
+                <MValue label="Type" value={typeLabel} />
+                <MValue label="2FA Status" value={totpLabel} />
+              </DialogPair>
+              <Check toggle label="Disable User Account" checked={disabled} onChange={setDisabled} />
+              <MRow
+                label="Session Timeout"
+                width="short"
+                suffix="seconds (valid range 0-604800; default 1800; set 0 to disable)"
+              >
+                {(id) => (
                   <Input
                     id={id}
                     type="number"
                     placeholder="1800"
-                    style={{ width: 100 }}
                     value={timeout}
                     onChange={(e) => setTimeoutSeconds(e.target.value)}
                   />
-                  <span className={styles.suffix}>
-                    seconds (valid range 0-604800; default 1800; set 0 to disable)
-                  </span>
-                </div>
-              )}
-            </MRow>
+                )}
+              </MRow>
+            </DialogBlock>
 
-            <MRow label="Member Of">
-              {(id) => (
-                <Textarea
-                  mono
-                  id={id}
-                  rows={5}
-                  className={styles.area}
-                  disabled={groupsLocked}
-                  value={memberOf}
-                  onChange={(e) => setMemberOf(e.target.value)}
-                />
-              )}
-            </MRow>
+            {/* The groups, one per line, and beside them the list that adds one
+                to it (upstream's `optUserDetailsGroupList`). */}
+            <DialogPair shape="wide">
+              <MRow label="Member Of">
+                {(id) => (
+                  <Textarea
+                    mono
+                    id={id}
+                    rows={5}
+                    className={df.area}
+                    disabled={groupsLocked}
+                    value={memberOf}
+                    onChange={(e) => setMemberOf(e.target.value)}
+                  />
+                )}
+              </MRow>
+              <MRow label="Add Group">
+                {(id) => (
+                  <Select
+                    id={id}
+                    disabled={groupsLocked}
+                    value={addGroup}
+                    onChange={(e) => {
+                      setAddGroup(e.target.value)
+                      setMemberOf((t) => addToList(t, e.target.value))
+                    }}
+                  >
+                    <option value={BLANK_OPTION} />
+                    <option value={NONE_OPTION}>None</option>
+                    {(detail.groups ?? []).map((g) => (
+                      <option key={g} value={g}>
+                        {g}
+                      </option>
+                    ))}
+                  </Select>
+                )}
+              </MRow>
+            </DialogPair>
 
-            <MRow label="Add Group">
-              {(id) => (
-                <Select
-                  id={id}
-                  className={styles.select}
-                  disabled={groupsLocked}
-                  value={addGroup}
-                  onChange={(e) => {
-                    setAddGroup(e.target.value)
-                    setMemberOf((t) => addToList(t, e.target.value))
-                  }}
+            {/* The sessions as the Sessions tab draws them, one line each and the
+                type in its colour, with three columns on the line and not four:
+                at the dialog's 880 px the four asked about 850 px of table and
+                every session stood as a block (measured again with the date and
+                its age on the line: still too wide). How long ago it was seen and
+                the user agent are under the row's Details. */}
+            <DialogSection title="Active Sessions">
+              <div>
+                <Table
+                  stack
+                  header={
+                    <>
+                      <Th field="session" sort={sort} onSort={toggle}>Session</Th>
+                      <Th field="lastSeen" sort={sort} onSort={toggle}>Last Seen</Th>
+                      <Th field="address" sort={sort} onSort={toggle}>Remote Address</Th>
+                      <th className={tbl.actionsCell} />
+                    </>
+                  }
                 >
-                  <option value={BLANK_OPTION} />
-                  <option value={NONE_OPTION}>None</option>
-                  {(detail.groups ?? []).map((g) => (
-                    <option key={g} value={g}>
-                      {g}
-                    </option>
+                  {visibleSessions.map((s) => (
+                    <SessionLine key={s.partialToken} s={s} onDelete={() => setPendingDelete(s)} />
                   ))}
-                </Select>
-              )}
-            </MRow>
-
-            <p className={styles.sub}>Active Sessions</p>
-            <Table
-              header={
-                <>
-                  <Th field="session" sort={sort} onSort={toggle}>Session</Th>
-                  <Th field="lastSeen" sort={sort} onSort={toggle}>Last Seen</Th>
-                  <Th field="address" sort={sort} onSort={toggle}>Remote Address</Th>
-                  <Th field="agent" sort={sort} onSort={toggle}>User Agent</Th>
-                  <th className={tbl.actionsCell} />
-                </>
-              }
-            >
-              {visibleSessions.map((s) => (
-                <tr key={s.partialToken}>
-                  <td>
-                    <SessionCell session={s} />
-                  </td>
-                  <td className={styles.nowrap}>
-                    <LastSeenCell date={dateTime(s.lastSeen)} ago={fromNow(s.lastSeen)} />
-                  </td>
-                  <td className={styles.mono}>{s.lastSeenRemoteAddress}</td>
-                  <td>
-                    <AgentCell>{s.lastSeenUserAgent}</AgentCell>
-                  </td>
-                  <td className={tbl.actionsCell}>
-                    <div className={tbl.actions}>
-                      {/* Inside the menu, as in "Administration > Sessions" and as
-                          in upstream, which also puts it in a dropdown
-                          (`auth.js`, `deleteUserSession`). Loose it was the only
-                          row "Delete" without the friction the rule demands, in a
-                          console with no undo. */}
-                      <Menu label={`Actions for ${s.partialToken}`}>
-                        {(close) => (
-                          <button
-                            type="button"
-                            data-variant="danger"
-                            onClick={() => { close(); setPendingDelete(s) }}
-                          >
-                            Delete Session
-                          </button>
-                        )}
-                      </Menu>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </Table>
-            <div className={styles.count}>
-              <span>{`Total Sessions: ${sessions.length}`}</span>
-            </div>
-          </>
+                </Table>
+                <div className={styles.count}>
+                  <span>{`Total Sessions: ${sessions.length}`}</span>
+                </div>
+              </div>
+            </DialogSection>
+          </DialogForm>
         )}
       </Dialog>
 
@@ -366,6 +342,76 @@ export function UserDetails({ open, username, token, cluster, onClose, onSaved, 
         onClose={() => setPendingDelete(null)}
         onConfirm={() => pendingDelete && void deleteSession(pendingDelete)}
       />
+    </>
+  )
+}
+
+/*
+One session, one line, as `Administration > Sessions` draws it without its
+username (the dialog is the user's), and with how long ago and the user agent
+in its Details. Delete stays in the row's menu, as there and
+as upstream's dropdown (`deleteUserSession`): in a console with no undo it keeps
+the friction the rule asks for.
+*/
+function SessionLine({ s, onDelete }: { s: AdminSession; onDelete: () => void }) {
+  const [open, setOpen] = useState(false)
+  const detail = useId()
+  const k = sessionKind(s.type)
+  return (
+    <>
+      <tr className={[s.isCurrentSession ? tbl.rowSelf : '', open ? lists.openRow : ''].filter(Boolean).join(' ') || undefined}>
+        <td className={tbl.lead}>
+          <span className={lists.sessionLine}>
+            <span className={lists.kind} style={{ '--sw': k.colour } as CSSProperties}>{k.name}</span>
+            {s.tokenName != null && <span className={lists.tokenName}>{s.tokenName}</span>}
+            <span className={lists.partial}>{`[${s.partialToken}]`}</span>
+            {s.isCurrentSession && <span className={lists.current}>(current)</span>}
+          </span>
+        </td>
+        <td className={lists.mono}>{dateTime(s.lastSeen)}</td>
+        <td className={lists.mono}>{s.lastSeenRemoteAddress}</td>
+        <td className={tbl.actionsCell}>
+          <div className={tbl.actions}>
+            <RowAction
+              icon={open ? 'chevronDown' : 'chevronRight'}
+              name="Details"
+              aria-expanded={open}
+              aria-controls={detail}
+              onClick={() => setOpen((v) => !v)}
+            />
+            <Menu label={`Actions for ${s.partialToken}`}>
+              {(close) => (
+                <button type="button" data-variant="danger" onClick={() => { close(); onDelete() }}>
+                  Delete Session
+                </button>
+              )}
+            </Menu>
+          </div>
+        </td>
+      </tr>
+      {open && (
+        <tr id={detail} className={lists.detailRow}>
+          <td colSpan={4} className={lists.detailCell}>
+            <dl className={lists.detail}>
+              <div>
+                <dt>Type</dt>
+                <dd>{k.name}</dd>
+              </div>
+              <div>
+                <dt>Last Seen</dt>
+                <dd>
+                  <span className={lists.from}>{dateTime(s.lastSeen)}</span>
+                  <span className={lists.age}>{`(${fromNow(s.lastSeen)})`}</span>
+                </dd>
+              </div>
+              <div className={lists.wide}>
+                <dt>User Agent</dt>
+                <dd className={lists.whole}>{s.lastSeenUserAgent}</dd>
+              </div>
+            </dl>
+          </td>
+        </tr>
+      )}
     </>
   )
 }

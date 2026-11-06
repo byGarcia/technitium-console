@@ -108,10 +108,20 @@ export function ImportZone({
       {/*
       Redrawn on 2026-11-05, same controls in upstream's order: the three import
       options as one list with each help under its box, how the file is handed
-      over as two tiles, then the file or the editor, then upstream's two notes.
+      over as two tiles, then the file or the editor and upstream's note; its
+      warning opens the dialog (2026-11-06).
       Every label sits above its control (`zone-dialog.module.css`).
       */}
       <div className={z.form}>
+        {/* Before the options it is about (the design's rule: a warning can
+            change the decision, so it is read first); upstream has it last.
+            The `Note!` stays after the file it explains. */}
+        <Alert type="warning" title="Warning!">
+          Overwrite SOA serial option when used to set a lower SOA serial value than the
+          current SOA serial will cause secondary zones to fail to sync and require a manual
+          resync.
+        </Alert>
+
         <Group label="Import Options">
           <div className={`${z.block} ${z.list}`}>
             <Check
@@ -174,11 +184,6 @@ export function ImportZone({
 
         <Alert type="info" title="Note!">
           The $ORIGIN and $TTL values will be automatically set if not specified.
-        </Alert>
-        <Alert type="warning" title="Warning!">
-          Overwrite SOA serial option when used to set a lower SOA serial value than the
-          current SOA serial will cause secondary zones to fail to sync and require a manual
-          resync.
         </Alert>
       </div>
     </Dialog>

@@ -615,3 +615,38 @@ describe('Users: the list reads like the rest', () => {
     expect(await screen.findByText('Total Users: 2, 1 shown')).toBeInTheDocument()
   })
 })
+
+/* Redrawn 2026-11-06: the sessions as the Sessions tab draws them, one line each
+   with three columns, the user agent whole under the row's Details. */
+describe('Users: the details modal, its sessions', () => {
+  it('a session is one line; its user agent is under Details and Delete stays in the menu', async () => {
+    const session = {
+      username: 'testuser',
+      tokenName: null,
+      partialToken: 'abcd1234abcd1234',
+      isCurrentSession: false,
+      type: 'Standard',
+      lastSeen: '2026-11-06T10:00:00Z',
+      lastSeenRemoteAddress: '192.0.2.7',
+      lastSeenUserAgent: 'Mozilla/5.0 (X11; Linux x86_64)',
+    }
+    server([NEW_USER], { ...USER_DETAIL, sessions: [session] } as never)
+    const user = userEvent.setup()
+    render(<Users {...props} />)
+    await viewDetails(user)
+    const dialog = await screen.findByRole('dialog', { name: 'User Details' })
+    const sessions = within(dialog).getByRole('region', { name: 'Active Sessions' })
+    const table = within(sessions).getByRole('table')
+    expect(within(table).getAllByRole('columnheader').map((h) => h.textContent?.trim()).filter(Boolean)).toEqual([
+      'Session',
+      'Last Seen',
+      'Remote Address',
+    ])
+    expect(within(table).queryByText('Mozilla/5.0 (X11; Linux x86_64)')).not.toBeInTheDocument()
+    await user.click(within(table).getByRole('button', { name: 'Details' }))
+    expect(within(table).getByText('Mozilla/5.0 (X11; Linux x86_64)')).toBeInTheDocument()
+    await user.click(within(table).getByRole('button', { name: 'Actions for abcd1234abcd1234' }))
+    expect(await screen.findByRole('menuitem', { name: 'Delete Session' })).toBeInTheDocument()
+    expect(within(sessions).getByText('Total Sessions: 1')).toBeInTheDocument()
+  })
+})

@@ -1,8 +1,7 @@
 import type { ClusterState } from '../../api/admin-cluster'
 import styles from './Admin.module.css'
-import frm from '../../ui/Form.module.css'
 import { Select } from '../../ui/Select'
-import { Row } from '../../ui/Form'
+import { DialogField, DialogValue } from '../../ui/DialogForm'
 export { Check } from '../../ui/Check'
 
 /* The pieces Administration's six sub-tabs share. */
@@ -13,23 +12,19 @@ export { noticeFromFailure } from '../../lib/notice'
 
 
 /*
-`MRow` is `ui/Form`'s row in its modal variant. It was a third copy (the other
-two lived in the Settings and DHCP parts), and on top of that it had a bug of its
-own: it used `frm.rowCtl` instead of `frm.mrowCtl`, so an Administration modal's
-control was laid out with the rules of a page row.
+`MRow` is a dialog field: its label above its control and its help under it
+(`ui/DialogForm`, since 2026-11-06). It was `ui/Form`'s modal row, the label in
+a 180 px column at the left, which left Administration's dialogs reading as a
+different product from Add Zone. The props are the same, so every dialog that
+used it moved with it.
 */
-export function MRow(props: Omit<Parameters<typeof Row>[0], 'modal'>) {
-  return <Row {...props} modal />
+export function MRow(props: Parameters<typeof DialogField>[0]) {
+  return <DialogField {...props} />
 }
 
-/** Read-only row: the "Type" and "2FA Status" of the details modal. */
+/** Read-only value: the "Type" and "2FA Status" of the details dialog. */
 export function MValue({ label, value }: { label: string; value: string }) {
-  return (
-    <div className={frm.mrow}>
-      <div className={frm.mrowLabel}>{label}</div>
-      <div className={styles.mval}>{value}</div>
-    </div>
-  )
+  return <DialogValue label={label}>{value}</DialogValue>
 }
 
 

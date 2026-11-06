@@ -181,6 +181,22 @@ describe('Permissions: the editing modal', () => {
     return { user, spy }
   }
 
+  /* Redrawn 2026-11-06 as the zone's own Edit Permissions: each list a section
+     under its title holding the console's table, its verbs as real checkboxes
+     and Remove as the row's action. */
+  it('each list is a titled section with a table of checkboxes and a Remove action per row', async () => {
+    await open()
+    const dialog = screen.getByRole('dialog')
+    const groups = within(dialog).getByRole('region', { name: 'Group Permissions' })
+    const table = within(groups).getByRole('table')
+    expect(within(table).getAllByRole('columnheader').map((h) => h.textContent?.trim())).toEqual(
+      expect.arrayContaining(['View', 'Modify', 'Delete']),
+    )
+    expect(within(table).getByRole('checkbox', { name: 'Dashboard · Everyone · View' })).toHaveAttribute('type', 'checkbox')
+    expect(within(table).getAllByRole('button', { name: 'Remove' }).length).toBeGreaterThan(0)
+    expect(within(groups).getByLabelText('Add Group')).toBeInTheDocument()
+  })
+
   it('it asks for the section with users and groups', async () => {
     const { spy } = await open()
     expect(spy.mock.calls.find((c) => c[0] === 'admin/permissions/get')?.[1]).toEqual({

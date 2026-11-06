@@ -3,12 +3,12 @@ import { apiRequest } from '../../api/client'
 import { Button } from '../../ui/Button'
 import { Confirm } from '../../ui/Confirm'
 import { Dialog } from '../../ui/Dialog'
-import { GroupRow, Row } from '../../ui/Form'
+import { DialogBlock, DialogField, DialogForm, DialogGroup, DialogPair, dialogForm as df } from '../../ui/DialogForm'
 import { Loading } from '../../ui/Empty'
 import { Input } from '../../ui/Field'
 import { noticeFromFailure, type Notice } from '../../lib/notice'
 import { Notifier } from '../../ui/Notifier'
-import txt from '../../ui/text.module.css'
+import styles from './Configure2FA.module.css'
 
 /*
 A replica of `showConfigure2FAModal` / `enable2FA` / `disable2FA`
@@ -152,44 +152,51 @@ export function Configure2FA({
     >
       <Notifier notice={alert} onClose={() => setAlert(null)} />
       {init != null && (
-        <>
-          <p className={txt.paragraph}>
+        <DialogForm>
+          <p className={df.paragraph}>
             When you enable Two-factor Authentication (2FA) using Time-based One-time Password
             (TOTP), you will be required to enter a one-time password (OTP) in addition to your
             password when you login. You will need to use an authenticator app like{' '}
             <b>Microsoft Authenticator</b> or <b>Google Authenticator</b> to generate the OTP when
             you login.
           </p>
-          <Row modal label="Username">
-            {(id) => <Input id={id} placeholder="username" value={username ?? ''} disabled />}
-          </Row>
-          <Row modal label="2FA Status">
-            {(id) => <Input id={id} value={init.totpEnabled ? 'Enabled' : 'Disabled'} readOnly />}
-          </Row>
+          <DialogPair>
+            <DialogField label="Username">
+              {(id) => <Input id={id} placeholder="username" value={username ?? ''} disabled />}
+            </DialogField>
+            <DialogField label="2FA Status">
+              {(id) => <Input id={id} className={df.readOnly} value={init.totpEnabled ? 'Enabled' : 'Disabled'} readOnly />}
+            </DialogField>
+          </DialogPair>
           {!init.totpEnabled && (
-            <>
-              <GroupRow
-                modal
-                label="Secret Key"
-                help="Scan the QR Code or manually enter the secret key (spaces don't matter) given above in your authenticator app."
-              >
-                {/* White in every theme, not a token: it is the code's quiet zone, and a
-                    scanner needs dark modules on a light ground. Allowed by name in
-                    `dev/check-colour-tokens.mjs`. */}
-                <img
-                  src={`data:image/png;base64,${init.qrCodePngImage}`}
-                  alt="QR code for the authenticator app"
-                  width={200}
-                  height={200}
-                  style={{ background: '#fff', padding: 8, borderRadius: 8 }}
-                />
-                <span className={txt.mono} data-testid="secret">
-                  {groupedSecret(init.secret)}
-                </span>
-              </GroupRow>
-              <Row
-                modal
+            /* What enabling takes, on the raised step: the code to scan with its
+               key written beside it, then the code the app answers with. */
+            <DialogBlock>
+              <DialogGroup label="Secret Key">
+                <div className={styles.secret}>
+                  {/* White in every theme, not a token: it is the code's quiet zone, and a
+                      scanner needs dark modules on a light ground. Allowed by name in
+                      `dev/check-colour-tokens.mjs`. */}
+                  <img
+                    src={`data:image/png;base64,${init.qrCodePngImage}`}
+                    alt="QR code for the authenticator app"
+                    width={200}
+                    height={200}
+                    style={{ background: '#fff', padding: 8, borderRadius: 8 }}
+                  />
+                  <div className={styles.key}>
+                    <span className={styles.code} data-testid="secret">
+                      {groupedSecret(init.secret)}
+                    </span>
+                    <div className={df.help}>
+                      Scan the QR Code or manually enter the secret key (spaces don&apos;t matter) given above in your authenticator app.
+                    </div>
+                  </div>
+                </div>
+              </DialogGroup>
+              <DialogField
                 label="Enter OTP"
+                width="short"
                 help="Enter the 6-digit code you see in your authenticator app."
               >
                 {(id) => (
@@ -205,10 +212,10 @@ export function Configure2FA({
                     onChange={(e) => setTotp(e.target.value)}
                   />
                 )}
-              </Row>
-            </>
+              </DialogField>
+            </DialogBlock>
           )}
-        </>
+        </DialogForm>
       )}
       {/* Upstream asks with a native `confirm()`; the sentence is upstream's, whole. */}
       <Confirm

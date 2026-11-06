@@ -493,6 +493,14 @@ export function ZoneOptions({
             {tab === 'Dynamic Updates' && (
               <>
                 <section className={l.section}>
+                  {/* The `Warning!` before the choice it is about (the design's
+                      rule); upstream has it after the list, beside the `Note!`
+                      (index.html:5662-5663 in v15.5.1), which stays there. */}
+                  <Alert type="warning" title="Warning!">
+                    If no security policy is configured in the Primary Zone then access will be provided only
+                    based on the options selected here. Thus setting up a security policy in the Primary Zone
+                    is highly recommended.
+                  </Alert>
                   <Criterion
                     name="zoneOptionsUpdate"
                     options={UPDATES.filter(
@@ -507,15 +515,9 @@ export function ZoneOptions({
                     editableList={aclEditable(f.update)}
                     onList={(v) => set('updateNetworkACL', v)}
                   />
-                  {/* index.html:5662-5663 in v15.5.1: Note, then Warning, after the list. */}
                   <Alert type="info" title="Note!">
                     Dynamic updates should be allowed only to trusted IP addresses since they will be able to
                     add/delete records in the zone.
-                  </Alert>
-                  <Alert type="warning" title="Warning!">
-                    If no security policy is configured in the Primary Zone then access will be provided only
-                    based on the options selected here. Thus setting up a security policy in the Primary Zone
-                    is highly recommended.
                   </Alert>
                 </section>
 
