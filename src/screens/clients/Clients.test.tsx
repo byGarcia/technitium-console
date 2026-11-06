@@ -93,7 +93,7 @@ describe('Clients', () => {
   it('asks for the period stats and the Top Clients of More, then the newest queries of the log', async () => {
     const { get, tops, newest } = serve()
     draw()
-    await screen.findByText('3 clients')
+    await clientsInTable()
     expect(get).toHaveBeenCalledWith('T', 'LastHour', undefined, 'cluster')
     expect(tops).toHaveBeenCalledWith('T', 'LastHour', 'TopClients', LIMIT, 'cluster')
     expect(LIMIT).toBe(1000)
