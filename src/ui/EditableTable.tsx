@@ -43,13 +43,17 @@ export function EditableTable({
     if (ref.current != null) markCheckColumns(ref.current)
   })
 
+  /* The wrapper scrolls sideways when a row is wider than its room (Edit Permissions
+     at 390 px: a name, three checkbox columns and Remove), so nothing is cut off. */
   return (
-    <table ref={ref} className={[styles.table, className].filter(Boolean).join(' ')}>
-      <thead>
-        <tr>{header}</tr>
-      </thead>
-      <tbody>{children}</tbody>
-    </table>
+    <div className={styles.scroll}>
+      <table ref={ref} className={[styles.table, className].filter(Boolean).join(' ')}>
+        <thead>
+          <tr>{header}</tr>
+        </thead>
+        <tbody>{children}</tbody>
+      </table>
+    </div>
   )
 }
 

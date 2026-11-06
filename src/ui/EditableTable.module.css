@@ -15,8 +15,13 @@ Administration, with the same values copied by hand.
 
 `border-collapse: separate` and not `collapse`: only a separated table keeps its
 corners round, and the lines are drawn on the cells' bottoms so there is no double
-border to collapse.
+border to collapse. It does not clip (`overflow: hidden`): in a narrow dialog that
+cut off the row's own Remove.
 */
+/* The table's room: it scrolls sideways rather than cut a row off, and it is the
+   container the narrow rule below measures. */
+.scroll { overflow-x: auto; min-width: 0; container-type: inline-size; }
+
 .table {
   width: 100%;
   border-collapse: separate;
@@ -24,8 +29,13 @@ border to collapse.
   border: 1px solid var(--line2);
   border-radius: var(--r-3);
   background: var(--pan);
-  overflow: hidden;
 }
+
+/* The band's corners follow the frame's: the table does not clip its content (a
+   row wider than a dialog must stay reachable, not be cut off), so the header's
+   two end cells round themselves. */
+.table thead th:first-child { border-top-left-radius: var(--r-3); }
+.table thead th:last-child { border-top-right-radius: var(--r-3); }
 
 .table th {
   text-align: left;
@@ -70,8 +80,8 @@ checkbox as a bar across its column.
 .table [data-check] {
   width: 1%;
   text-align: center;
-  padding-left: var(--s-8);
-  padding-right: var(--s-8);
+  padding-left: var(--s-5);
+  padding-right: var(--s-5);
 }
 .table td[data-check] > input[type='checkbox'] {
   width: var(--ctrl);
@@ -80,4 +90,12 @@ checkbox as a bar across its column.
   display: inline-block;
   margin: 0;
   vertical-align: middle;
+}
+
+/* A narrow room (a dialog on a phone): tighter cells, so a name, three checkbox
+   columns and the row's Remove fit before anything has to scroll. */
+@container (max-width: 420px) {
+  .table th,
+  .table td { padding-left: var(--s-3); padding-right: var(--s-3); }
+  .table [data-check] { padding-left: var(--s-2); padding-right: var(--s-2); }
 }
