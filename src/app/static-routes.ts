@@ -29,7 +29,17 @@ export const LEGACY_ROUTES: Record<string, { section: string; sub: string; rule:
   blocked: { section: 'blocking', sub: 'Rules', rule: 'blocked' },
 }
 
+/*
+A sub-section that moved to another section keeps its folder, and `route.ts`
+rewrites it to the new place before reading the route: Settings' Blocking pane is
+Blocking's `Settings` page since 2026-11-06 (CONVENTIONS.md, deviation 24).
+*/
+export const MOVED_ROUTES: Record<string, { section: string; sub: string }> = {
+  'settings/blocking': { section: 'blocking', sub: 'Settings' },
+}
+
 export const STATIC_ROUTES: string[] = [
   ...SECTIONS.flatMap((s) => [s.id, ...(s.subs ?? []).map((t) => `${s.id}/${toSlug(t)}`)]),
   ...Object.keys(LEGACY_ROUTES),
+  ...Object.keys(MOVED_ROUTES),
 ]

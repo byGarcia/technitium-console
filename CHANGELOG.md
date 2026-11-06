@@ -119,6 +119,11 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
   field's help sits under its label, folded to one line; the save bar stays at the foot of the
   window and says what would change; Backup, Restore and Flush Cache move to the header. Notes and warnings
   are compact lines instead of boxes, and long helps fold to one line with *more*, in every form.
+- **A sidebar grouped by task:** Monitoring, DNS, Network, Tools and System, with Query Logs and
+  View Logs as entries of their own; Blocking, DHCP and Administration unfold their screens in the
+  sidebar instead of tabs under the title. Blocking gets a Settings page with the blocking options.
+  The console's version sits under its name, and the server's domain and version under the account,
+  each with its Update mark.
 - **Every save bar reads the same way:** it floats with a margin above the foot of the window,
   keeps a gap from the card above when at rest, and puts its buttons at the right with Save last.
 - **Administration reads like the rest of the console.** Permissions is one matrix of sections by

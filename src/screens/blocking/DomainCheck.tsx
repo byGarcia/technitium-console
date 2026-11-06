@@ -16,7 +16,7 @@ says how each one is reached). Every sentence here is OURS:
   disabled`, `Not blocked: blocking is paused` and `Cannot tell`;
 - `Listed as`, `Rule`, and the links `Open Lists` and `Open Rules`;
 - the two "cannot tell" sentences, which quote the server's labels `Blocking Bypass
-  List` and `Allow TXT Blocking Report`, and their link `Settings › Blocking`;
+  List` and `Allow TXT Blocking Report`, and their link `Blocking › Settings`;
 - under a "Not blocked", what was not read: `Your allow rules were not checked.`,
   `The blocking settings were not checked.`, `Could not read your allow rules.` and
   `Could not read the blocking settings.`, with the padlock's `Requires X: Y`.
@@ -78,7 +78,7 @@ function Fact({ label, children }: { label: string; children: ReactNode }) {
   )
 }
 
-const BLOCKING_SETTINGS = <RouteLink to={{ section: 'settings', sub: 'Blocking' }}>Settings › Blocking</RouteLink>
+const BLOCKING_SETTINGS = <RouteLink to={{ section: 'blocking', sub: 'Settings' }}>Blocking › Settings</RouteLink>
 
 export function DomainCheck({ verdict, catalog }: { verdict: Verdict; catalog: readonly QuickEntry[] }) {
   const { title, icon, tone } = look(verdict)

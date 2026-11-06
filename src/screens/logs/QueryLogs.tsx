@@ -845,7 +845,8 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
   return (
     <div className={styles.wrap}>
       <SectionHeader
-        title="Logs"
+        section="Logs"
+        title="Query Logs"
         tabs={tabs}
         labels={f.appName !== '' ? <Tag>app: {f.appName}</Tag> : undefined}
       />

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { checkForUpdate, type UpdateInfo } from '../api/user'
 import { checkConsoleUpdate, newerConsole } from './console-update'
 import { Dialog } from '../ui/Dialog'
@@ -29,8 +29,23 @@ the silencing preference is not re-read: `checkForUpdate` refuses to call the
 endpoint while it is on, which is upstream's behaviour and not this component's
 decision.
 */
-export function Versions({ token, serverVersion, domain, markHidden = false, canCheckConsole = false }: {
+/** The two marks, for a caller that draws the versions itself (the sidebar). */
+export interface VersionMarks {
+  /** `Update`, beside the DNS server's version, or nothing. */
+  serverMark: ReactNode
+  /** `Update`, beside this console's version, or nothing. */
+  consoleMark: ReactNode
+}
+
+export function Versions({ token, serverVersion, domain, markHidden = false, canCheckConsole = false, children }: {
   token: string
+  /**
+   * Since 2026-11-06 the sidebar draws the versions where they belong: this
+   * console's beside its name at the top, the server's under the account at the
+   * foot. It gets the marks here and the dialogs stay with the checks. Without it,
+   * the block of both versions as before.
+   */
+  children?: (marks: VersionMarks) => ReactNode
   serverVersion?: string
   domain?: string
   /* The session may use DNS Client, which the console's own check goes through
@@ -86,9 +101,35 @@ export function Versions({ token, serverVersion, domain, markHidden = false, can
 
   /* main.js: when the feed sends no title, upstream writes this one itself. */
   const title = info?.updateTitle ?? 'New Update Available!'
+  const markClass = children != null ? styles.chip : styles.mark
+  const serverMark = info && !markHidden && (
+    <button
+      type="button"
+      className={markClass}
+      onClick={() => setOpen(true)}
+      title={title}
+      aria-label="DNS Server update available"
+    >
+      <span className={styles.dot} aria-hidden="true" />
+      Update
+    </button>
+  )
+  const consoleMark = consoleLatest && !markHidden && (
+    <button
+      type="button"
+      className={markClass}
+      onClick={() => setConsoleOpen(true)}
+      title={CONSOLE_TITLE}
+      aria-label="Web Console update available"
+    >
+      <span className={styles.dot} aria-hidden="true" />
+      Update
+    </button>
+  )
 
   return (
     <>
+      {children != null ? children({ serverMark: serverMark || null, consoleMark: consoleMark || null }) : (
       <div className={styles.block}>
         {domain && <div className={styles.host}><DomainName name={domain} /></div>}
 
@@ -98,18 +139,7 @@ export function Versions({ token, serverVersion, domain, markHidden = false, can
               keep their right edges aligned in one column, which is the whole
               reason for reading them stacked. */}
           <span className={styles.ver}>
-            {info && !markHidden && (
-              <button
-                type="button"
-                className={styles.mark}
-                onClick={() => setOpen(true)}
-                title={title}
-                aria-label="DNS Server update available"
-              >
-                <span className={styles.dot} aria-hidden="true" />
-                Update
-              </button>
-            )}
+            {serverMark}
             <span className={styles.num}>{serverVersion ?? '—'}</span>
           </span>
         </div>
@@ -125,22 +155,12 @@ export function Versions({ token, serverVersion, domain, markHidden = false, can
         <div className={styles.row}>
           <span className={styles.name}>Web Console</span>
           <span className={styles.ver}>
-            {consoleLatest && !markHidden && (
-              <button
-                type="button"
-                className={styles.mark}
-                onClick={() => setConsoleOpen(true)}
-                title={CONSOLE_TITLE}
-                aria-label="Web Console update available"
-              >
-                <span className={styles.dot} aria-hidden="true" />
-                Update
-              </button>
-            )}
+            {consoleMark}
             <span className={styles.num}>{__CONSOLE_VERSION__}</span>
           </span>
         </div>
       </div>
+      )}
 
       {info && (
         <Dialog open={open} onOpenChange={setOpen} title={title} size="compact">

@@ -58,7 +58,7 @@ every alert of the update and the save. Everything else is OURS:
   `removed`; `list-lines.ts`, WHAT CHANGED), `Discard`, and `Save`, shortened from
   upstream's "Save Settings" (index.html:2460); and the Lists tab's mark while there
   are unsaved changes, read as `unsaved changes` (`onDirty`, `Blocking.tsx`);
-- the two `Could not read …` sentences and the link to Settings › Blocking;
+- the two `Could not read …` sentences and the link to Blocking › Settings;
 - Quick Add's search (`Search lists`, `No lists match`) and its second catalogue, the
   console's own (`extra-lists.ts`), under `More lists` after Technitium's.
 
@@ -875,7 +875,7 @@ export function BlockLists({
                   Add group
                 </PermissionButton>
                 <End>
-                  <RouteLink to={{ section: 'settings', sub: 'Blocking' }}>More blocking settings in Settings › Blocking</RouteLink>
+                  <RouteLink to={{ section: 'blocking', sub: 'Settings' }}>More blocking settings in Blocking › Settings</RouteLink>
                 </End>
               </>
             }

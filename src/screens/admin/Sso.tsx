@@ -237,7 +237,8 @@ export function Sso({ tabs, token, onNotice }: Props) {
      not the unsaved checkbox (deviation 23). */
   const header = (
     <SectionHeader
-      title="Administration"
+      section="Administration"
+      title="SSO"
       tabs={tabs}
       titleAction={<RowAction icon="refresh" name="Refresh" disabled={loading} onClick={() => void load()} />}
       labels={saved == null ? undefined : <ConfigState enabled={saved.ssoEnabled} configured={ssoConfigured(saved)} />}

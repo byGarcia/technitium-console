@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, afterEach } from 'vitest'
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { Settings, SUB_TABS } from './Settings'
+import { Settings, SUB_TABS, MENU_TABS } from './Settings'
 import { SETTINGS } from './settings.fixture'
 import * as client from '../../api/client'
 import { valueShown } from '../../test/dropdown'
@@ -797,14 +797,16 @@ describe('Settings: one form (2026-11-06)', () => {
     expect(within(trail).getByText('Cache')).toHaveAttribute('aria-current', 'page')
   })
 
-  it('the menu lists the nine sub-sections as links to their routes, the current one marked as the page', async () => {
+  /* Eight since 2026-11-06: Blocking's pane is Blocking › Settings (deviation 24). */
+  it('the menu lists its eight sub-sections as links to their routes, the current one marked as the page', async () => {
     server()
     const onSubChange = vi.fn()
     await mount({ sub: 'Recursion', onSubChange })
-    const links = SUB_TABS.map((t) => within(menu()).getByRole('link', { name: t }))
+    expect(within(menu()).queryByRole('link', { name: 'Blocking' })).not.toBeInTheDocument()
+    const links = MENU_TABS.map((t) => within(menu()).getByRole('link', { name: t }))
     expect(links.map((a) => a.getAttribute('href'))).toEqual([
       '/settings/general/', '/settings/web-service/', '/settings/optional-protocols/', '/settings/tsig/',
-      '/settings/recursion/', '/settings/cache/', '/settings/blocking/', '/settings/proxy-forwarders/', '/settings/logging/',
+      '/settings/recursion/', '/settings/cache/', '/settings/proxy-forwarders/', '/settings/logging/',
     ])
     expect(links.filter((a) => a.getAttribute('aria-current') === 'page').map((a) => a.textContent)).toEqual(['Recursion'])
     await userEvent.click(within(menu()).getByRole('link', { name: 'Logging' }))

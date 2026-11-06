@@ -220,6 +220,8 @@ beside it. Under 960 px of screen the menu folds into a bar above the form.
 /* Wide: the menu is a column, the toggle goes, the list is always there. */
 @container (min-width: 960px) {
   .layout { grid-template-columns: var(--settings-menu) minmax(0, 1fr); gap: var(--s-11); }
+  /* One pane on its own (Blocking's Settings page): no menu, the form takes the width. */
+  .layout[data-only] { grid-template-columns: minmax(0, 1fr); }
 
   .menu {
     top: calc(var(--stuck-top, 0px) + var(--s-11));

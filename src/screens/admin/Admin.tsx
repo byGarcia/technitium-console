@@ -8,7 +8,6 @@ import { Sso } from './Sso'
 import { Ldap } from './Ldap'
 import { Cluster } from './Cluster'
 import { Notifier, type Notice } from './parts'
-import { SubTabs } from '../../ui/SubTabs'
 
 /*
 Administration. Seven sub-tabs and thirty-three endpoints: the console's second largest
@@ -53,7 +52,7 @@ export interface AdminProps {
   onSubChange?: (sub: SubTab) => void
 }
 
-export function Admin({ token, sub, onSubChange }: AdminProps) {
+export function Admin({ token, sub }: AdminProps) {
   const [notice, setNotice] = useState<Notice | null>(null)
   const [cluster, setCluster] = useState<ClusterState | null>(null)
   /*
@@ -109,44 +108,27 @@ export function Admin({ token, sub, onSubChange }: AdminProps) {
   const requested = (sub ?? 'Sessions') as SubTab
   const active: SubTab = SUB_TABS.includes(requested) ? requested : 'Sessions'
 
-  /*
-  The bar is built ONCE here and handed to whichever sub-screen is drawn: it is
-  the same object on the seven, and building it in each of them is how seven copies
-  end up drifting apart.
-  */
-  const tabs = (
-    <SubTabs
-      label="Administration sections"
-      section="admin"
-      tabs={SUB_TABS}
-      active={active}
-      onChoose={(t) => onSubChange?.(t as SubTab)}
-    />
-  )
-
   return (
     <div>
       <Notifier notice={notice} onClose={() => setNotice(null)} />
 
       {active === 'Sessions' && (
-        <Sessions tabs={tabs}
-          token={token}
+        <Sessions token={token}
           cluster={cluster}
           node={node}
           onNodeChange={setNode}
           onNotice={notify}
         />
       )}
-      {active === 'Users' && <Users tabs={tabs} token={token} cluster={cluster} onNotice={notify} />}
-      {active === 'Groups' && <Groups tabs={tabs} token={token} onNotice={notify} />}
+      {active === 'Users' && <Users token={token} cluster={cluster} onNotice={notify} />}
+      {active === 'Groups' && <Groups token={token} onNotice={notify} />}
       {active === 'Permissions' && (
-        <Permissions tabs={tabs} token={token} cluster={cluster} onNotice={notify} />
+        <Permissions token={token} cluster={cluster} onNotice={notify} />
       )}
-      {active === 'SSO' && <Sso tabs={tabs} token={token} onNotice={notify} />}
-      {active === 'LDAP' && <Ldap tabs={tabs} token={token} onNotice={notify} />}
+      {active === 'SSO' && <Sso token={token} onNotice={notify} />}
+      {active === 'LDAP' && <Ldap token={token} onNotice={notify} />}
       {active === 'Cluster' && (
-        <Cluster tabs={tabs}
-          token={token}
+        <Cluster token={token}
           cluster={cluster}
           node={node}
           onNodeChange={setNode}

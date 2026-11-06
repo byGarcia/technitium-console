@@ -174,7 +174,8 @@ export function Cluster({ tabs, token, cluster, node: controlledNode, onNodeChan
       says `Cluster Not Initialized` in full, and a pill would repeat half of it.
       */}
       <SectionHeader
-        title="Administration"
+        section="Administration"
+        title="Cluster"
         tabs={tabs}
         labels={
           initialised && ownType != null ? (

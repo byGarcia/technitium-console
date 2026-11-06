@@ -72,7 +72,8 @@ export function Permissions({ tabs, token, cluster, onNotice }: Props) {
   return (
     <>
       <SectionHeader
-        title="Administration"
+        section="Administration"
+        title="Permissions"
         tabs={tabs}
         titleAction={<RowAction icon="refresh" name="Refresh" disabled={loading} onClick={() => void load()} />}
       />

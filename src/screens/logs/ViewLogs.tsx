@@ -395,7 +395,8 @@ export function ViewLogs({
   return (
     <div className={styles.wrap}>
       <SectionHeader
-        title="Logs"
+        section="Logs"
+        title="View Logs"
         tabs={tabs}
         titleAction={
           <RowAction icon="refresh" name="Refresh" disabled={loadingList} onClick={() => void load()} />

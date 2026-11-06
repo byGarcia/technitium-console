@@ -624,7 +624,8 @@ contract and SECURITY.md.
      still `blocked/delete` then `allowed/add` (`api/blocking.ts`);
    - **what is ours is in English and says so** in the header comment of its
      file;
-   - **Settings › Blocking is untouched**: the Lists tab edits the same
+   - **the blocking options are Settings' own** (shown since 2026-11-06 as
+     Blocking › Settings, deviation 24): the Lists tab edits the same
      `blockListUrls`, through the same cleaning (`list-lines.ts` calls
      Settings' `cleanList`).
 
@@ -679,7 +680,7 @@ contract and SECURITY.md.
      added, removed, switched on, switched off, changed, moved, and groups added,
      renamed and removed. Only the non-zero ones are written;
    - **the Lists tab carries a dot while there are unsaved changes**, read as
-     `Lists, unsaved changes` (`ui/SubTabs`'s `marks`). The edits still live only
+     `Lists, unsaved changes` (`app/nav-marks.ts`, on Lists' entry in the sidebar since 2026-11-06). The edits still live only
      while the tab is open, as before: leaving it leaves them, and the dot with them.
 3. **Settings jumps to the sub-tab of the invalid field.** Upstream focuses a
    hidden input and the user sees nothing; with one panel mounted at a time,
@@ -1462,6 +1463,31 @@ contract and SECURITY.md.
     Login` as a cell title, `Nobody yet`, `Sessions`, `Remote Addresses`, `N more`,
     `Enabled`, `Disabled` and `Not configured` on the SSO and LDAP headers, `Refresh`
     (Cache's word).
+24. **The sidebar is grouped by task and holds the sub-sections** (Adrián's decision,
+    2026-11-06). Upstream draws one flat row of tabs. Here (`app/Shell.tsx`, `NAV`):
+    - **Five headed groups** under Dashboard: `Monitoring` (Query Logs, View Logs),
+      `DNS` (Zones, Cache, Blocking), `Network` (DHCP), `Tools` (DNS Client) and
+      `System` (Settings, Apps, Administration, About). Logs is two entries, one per
+      screen.
+    - **Blocking, DHCP and Administration unfold their sub-sections** under their
+      entry while open (`visibleSubs` in `app/sections.ts`); the sub-tabs under their
+      titles are gone, and each sub-screen's title is its own name under the section
+      (`Administration › Users`). Exactly one link is `aria-current="page"`: the
+      sub-section, or the entry itself when it has none. Lists' unsaved-changes dot
+      rides on its sidebar entry (`app/nav-marks.ts`). Settings keeps its own menu.
+    - **Blocking › Settings** is the Settings form with only its Blocking pane
+      (`Settings`' `only`): the same load, fields and one save, so saving there sends
+      what Settings' Save sends; no Backup, Restore or Flush Cache. Settings' menu no
+      longer lists Blocking, and `/settings/blocking/` still works: its folder is
+      emitted and `route.ts` rewrites it to `/blocking/settings/` (`MOVED_ROUTES`). The
+      page needs `Settings.canView`, as the pane did.
+    - **The versions sit where each thing is named**: this console's under its name at
+      the top, the DNS server's domain and version under the account at the foot,
+      each with its `Update` chip when there is one (`app/Versions.tsx`, same checks,
+      same dialogs). The versions card is gone.
+    Its words, all OURS: the five group headings, `Settings` as a Blocking
+    sub-section, `Blocking › Settings` in the two links that pointed to Settings ›
+    Blocking.
 
 ## Four constraints the server imposes
 

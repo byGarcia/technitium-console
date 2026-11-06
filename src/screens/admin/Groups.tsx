@@ -105,7 +105,8 @@ export function Groups({ tabs, token, onNotice }: Props) {
   return (
     <>
       <SectionHeader
-        title="Administration"
+        section="Administration"
+        title="Groups"
         tabs={tabs}
         titleAction={<RowAction icon="refresh" name="Refresh" disabled={loading} onClick={() => void load()} />}
       />

@@ -229,7 +229,8 @@ export function Leases({
     <div className={styles.wrap}>
       {/* The section as the header, Refresh beside the title as Cache has it. */}
       <SectionHeader
-        title="DHCP"
+        section="DHCP"
+        title="Leases"
         tabs={tabs}
         titleAction={
           <RowAction icon="refresh" name="Refresh" disabled={leases == null} onClick={() => void load()} />

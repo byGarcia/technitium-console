@@ -98,6 +98,13 @@ export const SUB_TABS = [
 
 export type SubTab = (typeof SUB_TABS)[number]
 
+/*
+The panes Settings' own menu offers. `Blocking` is drawn by Blocking's `Settings`
+page since 2026-11-06 (deviation 24): the form still holds its fields and the one
+save still sends them, but the place to change them is the section they belong to.
+*/
+export const MENU_TABS = SUB_TABS.filter((t) => t !== 'Blocking')
+
 /** What `updateDnsSettingsDataAndGui` takes from a settings response. */
 export interface ServerInfo {
   dnsServerDomain: string
@@ -134,6 +141,14 @@ function recordSettingsOf(s: DnsSettings): RecordSettings {
 }
 
 export interface SettingsProps {
+  /**
+   * One pane on its own, outside Settings (since 2026-11-06 Blocking's
+   * `Settings` page draws the `Blocking` pane): no menu, no search, no Backup,
+   * Restore or Flush Cache, the header in the section that holds it. The form,
+   * its load and its one save are the same, so saving there sends what Settings'
+   * Save sends.
+   */
+  only?: { pane: SubTab; section: string; title: string }
   /** The cluster nodes, for the node selector. */
   nodes?: { name: string; type: string }[]
   clusterInitialised?: boolean
@@ -163,6 +178,7 @@ export interface SettingsProps {
 
 export function Settings({
   token,
+  only,
   sub,
   onSubChange,
   canModify = true,
@@ -254,9 +270,9 @@ export function Settings({
     void load()
   }, [load])
 
-  const requested = (sub ?? 'General') as SubTab
+  const requested = (only?.pane ?? sub ?? 'General') as SubTab
   const valid: SubTab = SUB_TABS.includes(requested) ? requested : 'General'
-  const active: SubTab = jump?.from === valid ? jump.tab : valid
+  const active: SubTab = only != null ? only.pane : jump?.from === valid ? jump.tab : valid
 
   const set = useCallback((partial: Partial<SettingsForm>) => {
     setForm((f) => (f ? { ...f, ...partial } : f))
@@ -506,8 +522,8 @@ export function Settings({
   return (
     <div className={styles.wrap} data-fills-window="" data-searching={searching ? '' : undefined}>
       <SectionHeader
-        section="Settings"
-        title={active}
+        section={only?.section ?? 'Settings'}
+        title={only?.title ?? active}
         actions={
           <>
             <ClusterNodeSelect
@@ -529,6 +545,8 @@ export function Settings({
             `Settings.canDelete`, not `canModify`: a backup asking for the DELETE
             permission is not what anyone would assume.
             */}
+            {only == null && (
+            <>
             <PermissionButton
               lead="download"
               permission={canBackup ? undefined : 'Settings.canDelete'}
@@ -560,15 +578,18 @@ export function Settings({
             >
               Flush Cache
             </PermissionButton>
+            </>
+            )}
           </>
         }
       />
 
       <Notifier notice={notice} onClose={() => setNotice(null)} />
 
-      <div className={styles.layout}>
+      <div className={styles.layout} data-only={only != null ? '' : undefined}>
+        {only == null && (
         <SettingsMenu
-          tabs={SUB_TABS}
+          tabs={MENU_TABS}
           active={active}
           onChoose={(t) => onSubChange?.(t as SubTab)}
           marks={Object.fromEntries(pending.map((p) => [p.pane, 'unsaved changes']))}
@@ -580,6 +601,7 @@ export function Settings({
           open={menuOpen}
           onOpen={setMenuOpen}
         />
+        )}
 
         <div className={styles.form}>
           <BlockAnchors prefix="settings">

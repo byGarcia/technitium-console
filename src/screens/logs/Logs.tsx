@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { SubTabs } from '../../ui/SubTabs'
 import { ClusterNodeSelect } from '../../ui/ClusterNodeSelect'
 import { QueryLogs } from './QueryLogs'
 import { ViewLogs } from './ViewLogs'
@@ -43,7 +42,6 @@ export interface LogsProps {
 }
 
 export function Logs({
-  onSubChange,
   nodes = [],
   clusterInitialised = false,
   token,
@@ -59,20 +57,6 @@ export function Logs({
   const requested = (sub ?? 'View Logs') as SubTab
   const active: SubTab = SUB_TABS.includes(requested) ? requested : 'View Logs'
 
-  /*
-  The bar is built once here and handed to whichever sub-screen is drawn: the same
-  object on both, so they cannot drift apart.
-  */
-  const tabs = (
-    <SubTabs
-      label="Logs sections"
-      section="logs"
-      tabs={SUB_TABS}
-      active={active}
-      onChoose={(t) => onSubChange?.(t as SubTab)}
-    />
-  )
-
   return (
     <>
       {/* Upstream mounts one here (`optDhcpClusterNode` / `optLogsClusterNode`).
@@ -86,10 +70,9 @@ export function Logs({
         label="Cluster Node"
       />
       {active === 'Query Logs' ? (
-        <QueryLogs tabs={tabs} token={token} node={node} request={request} />
+        <QueryLogs token={token} node={node} request={request} />
       ) : (
-        <ViewLogs tabs={tabs}
-          token={token}
+        <ViewLogs token={token}
           node={node}
           canDeleteLogs={canDeleteLogs}
           canDeleteStats={canDeleteStats}

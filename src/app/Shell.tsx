@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { visibleSections, type Permission } from './sections'
+import { visibleSections, visibleSubs, type Permission } from './sections'
+import { useAllNavMarks } from './nav-marks'
+import { toSlug } from './slug'
+import text from '../ui/text.module.css'
 import { toTrail, writeRoute, readRoute, translateLegacyRoute, plainClick } from './route'
 import { ChangePassword } from '../screens/modals/ChangePassword'
 import { ChangeTheme } from '../screens/modals/ChangeTheme'
@@ -51,21 +54,40 @@ type ModalId = 'password' | 'twofa' | 'token' | 'theme'
 /* The section icons live in `ui/Icon`, drawn; here we only say which one each
    section carries. Blocking carries Blocked's: it is the section that took its place. */
 /*
-The sidebar's three groups. It is not a new taxonomy: it is upstream's own order,
-with a gap where the kind of task already changed. What you operate daily, what you
-configure and what you consult.
+The sidebar, by what you came to do (2026-11-06, CONVENTIONS.md deviation 24).
+
+It was upstream's flat order in three unnamed groups. Now each group carries a
+short heading (`Monitoring`, `DNS`, `Network`, `Tools`, `System`, OURS), and the sections with
+screens of their own unfold them right here, under the open section: Blocking,
+DHCP and Administration. Their sub-tabs under the title are gone, so a screen is
+one click from anywhere and the page starts with its content. Logs is two entries
+under Monitoring, Query Logs first: they are two different tools, and Query Logs
+is the one opened every day. Settings keeps its own menu beside the form (nine panes and a search do
+not fit a sidebar), so it unfolds nothing here.
 */
-const GROUPS: string[][] = [
-  ['dashboard', 'zones', 'cache', 'blocking', 'apps', 'dnsclient'],
-  ['settings', 'dhcp', 'admin'],
-  ['logs', 'about'],
+interface NavEntry {
+  section: string
+  /** An entry that is one sub-section of its section (Logs' two). */
+  sub?: string
+}
+const NAV: { heading: string | null; entries: NavEntry[] }[] = [
+  { heading: null, entries: [{ section: 'dashboard' }] },
+  { heading: 'Monitoring', entries: [{ section: 'logs', sub: 'Query Logs' }, { section: 'logs', sub: 'View Logs' }] },
+  { heading: 'DNS', entries: [{ section: 'zones' }, { section: 'cache' }, { section: 'blocking' }] },
+  { heading: 'Network', entries: [{ section: 'dhcp' }] },
+  { heading: 'Tools', entries: [{ section: 'dnsclient' }] },
+  { heading: 'System', entries: [{ section: 'settings' }, { section: 'apps' }, { section: 'admin' }, { section: 'about' }] },
 ]
+/** The sections whose sub-sections unfold in the sidebar. */
+const UNFOLDS = new Set(['blocking', 'dhcp', 'admin'])
 
 const ICONS: Record<string, IconName> = {
   dashboard: 'dashboard', zones: 'zones', cache: 'cache', blocking: 'blocked',
   apps: 'apps', dnsclient: 'dnsclient', settings: 'settings',
   dhcp: 'dhcp', admin: 'admin', logs: 'logs', about: 'about',
 }
+/* Logs' two entries: the query search, and the server's log files. */
+const SUB_ICONS: Partial<Record<string, IconName>> = { 'Query Logs': 'search', 'View Logs': 'file' }
 
 export interface ShellSession {
   token: string
@@ -204,6 +226,7 @@ export function Shell({
   }, [title])
 
   const current = sections.find((s) => s.id === active) ?? sections[0]
+  const navMarks = useAllNavMarks()
   /* Whether blocking is off or paused, marked on its entry (`BlockingMark.tsx`). */
   const blockingNow = useBlockingMark(session.token, permissions, sections.some((s) => s.id === 'blocking'))
 
@@ -319,8 +342,29 @@ export function Shell({
       )}
 
       <aside className={styles.side} data-open={drawer}>
+        {/*
+        What is running sits where each thing is named (2026-11-06): this console's
+        version beside its name, the DNS server's under the account that is signed in
+        to it. `Versions` runs the update checks once and hands back each mark.
+        */}
+        <Versions
+          token={session.token}
+          serverVersion={info?.version}
+          domain={info?.dnsServerDomain}
+          markHidden={markHidden}
+          canCheckConsole={permissions?.DnsClient?.canView === true}
+        >
+          {({ serverMark, consoleMark }) => (
+        <>
         <div className={styles.sbrand}>
-          <img className={styles.mark} src={publicUrl('img/logo.svg')} alt="" width={22} height={22} /><span className={styles.brandName}>{COVER_NAME}</span>
+          <img className={styles.markBig} src={publicUrl('img/logo.svg')} alt="" width={28} height={28} />
+          <span className={styles.brandText}>
+            <span className={styles.brandName}>{COVER_NAME}</span>
+            <span className={styles.brandVer}>
+              <span className={styles.chipVer} aria-label={`Web Console ${__CONSOLE_VERSION__}`}>v{__CONSOLE_VERSION__}</span>
+              {consoleMark}
+            </span>
+          </span>
         </div>
         <nav className={styles.slist} role="navigation" aria-label="Sections">
           {/*
@@ -342,47 +386,78 @@ export function Shell({
           `aria-current="page"` is reserved for ONE thing: the page you are on,
           which is the sub-section when there is one.
           */}
-          {GROUPS.map((group, g) => (
-            <div className={styles.group} key={g}>
-              {sections.filter((sec) => group.includes(sec.id)).map((sec) => {
-                const active = sec.id === current?.id
-                const first = sec.subs?.[0] ?? null
-                return (
-                  <div key={sec.id}>
-                    <a
-                      className={styles.s}
-                      href={toTrail({ section: sec.id, sub: first })}
-                      data-active={active}
-                      aria-current={active ? 'page' : undefined}
-                      title={sec.id === 'blocking' ? blockingNow?.label : undefined}
-                      onClick={(e) => {
-                        if (!plainClick(e)) return
-                        e.preventDefault()
-                        setActive(sec.id)
-                        setSub(first)
-                        setDrawer(false)
-                      }}
-                    >
-                      <span className={styles.ico}>
-                        <Icon name={ICONS[sec.id] ?? 'about'} size={16} />
-                      </span>
-                      {sec.label}
-                      {sec.id === 'blocking' && <BlockingMark mark={blockingNow} />}
-                    </a>
-                    {/*
-                    The sub-items are NOT here any more. The design puts a
-                    section's sub-navigation under its title, for a reason:
-                    nested here, nine panes run out of room the moment the rail
-                    drops to 60 px. What the sidebar gets back is
-                    its own shape: twelve entries, always the same twelve, instead
-                    of fourteen, eighteen or twenty-one depending on where you are.
-                    See `ui/SubTabs`.
-                    */}
-                  </div>
-                )
-              })}
-            </div>
-          ))}
+          {NAV.map((group, g) => {
+            const entries = group.entries.filter((e) => sections.some((sec) => sec.id === e.section))
+            if (entries.length === 0) return null
+            const headingId = group.heading != null ? `nav-${toSlug(group.heading)}` : undefined
+            return (
+              <div className={styles.group} key={g} role={headingId != null ? 'group' : undefined} aria-labelledby={headingId}>
+                {group.heading != null && (
+                  <span className={styles.heading} id={headingId}>{group.heading}</span>
+                )}
+                {entries.map((entry) => {
+                  const sec = sections.find((x) => x.id === entry.section)!
+                  const subs = UNFOLDS.has(sec.id) ? visibleSubs(sec, permissions) : []
+                  const target = entry.sub ?? subs[0] ?? sec.subs?.[0] ?? null
+                  const here = sec.id === current?.id
+                  const active = here && (entry.sub == null || entry.sub === currentSub)
+                  const open = here && subs.length > 0
+                  const label = entry.sub ?? sec.label
+                  return (
+                    <div key={`${sec.id}/${entry.sub ?? ''}`}>
+                      <a
+                        className={styles.s}
+                        href={toTrail({ section: sec.id, sub: target })}
+                        data-active={active}
+                        data-open={subs.length > 0 ? open : undefined}
+                        aria-current={active && !open ? 'page' : undefined}
+                        title={sec.id === 'blocking' ? blockingNow?.label : undefined}
+                        onClick={(e) => {
+                          if (!plainClick(e)) return
+                          e.preventDefault()
+                          setActive(sec.id)
+                          setSub(target)
+                          setDrawer(false)
+                        }}
+                      >
+                        <span className={styles.ico}>
+                          <Icon name={(entry.sub != null ? SUB_ICONS[entry.sub] : undefined) ?? ICONS[sec.id] ?? 'about'} size={16} />
+                        </span>
+                        {label}
+                        {sec.id === 'blocking' && <BlockingMark mark={blockingNow} />}
+                      </a>
+                      {open && (
+                        <div className={styles.sub}>
+                          {subs.map((t) => (
+                            <a
+                              key={t}
+                              className={styles.s2}
+                              href={toTrail({ section: sec.id, sub: t })}
+                              aria-current={t === currentSub ? 'page' : undefined}
+                              onClick={(e) => {
+                                if (!plainClick(e)) return
+                                e.preventDefault()
+                                setSub(t)
+                                setDrawer(false)
+                              }}
+                            >
+                              {t}
+                              {navMarks[sec.id]?.[t] != null && (
+                                <>
+                                  <span className={text.sr}>, {navMarks[sec.id]?.[t]}</span>
+                                  <span className={styles.subMark} aria-hidden="true" />
+                                </>
+                              )}
+                            </a>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )
+          })}
         </nav>
 
         {/* The server and the account, at the foot. When narrow you reach it via the drawer. */}
@@ -404,13 +479,6 @@ export function Shell({
           domain heads it because the block is about that server, which is the
           pairing upstream makes in its panel title.
           */}
-          <Versions
-            token={session.token}
-            serverVersion={info?.version}
-            domain={info?.dnsServerDomain}
-            markHidden={markHidden}
-            canCheckConsole={permissions?.DnsClient?.canView === true}
-          />
           <Menu label={displayName} text={displayName} anchor="left" asRow>
             {(close) => (
               <>
@@ -469,7 +537,21 @@ export function Shell({
               </>
             )}
           </Menu>
+          {/* The server the account is signed in to, and the version it runs. */}
+          <div className={styles.server}>
+            <span className={styles.serverName} title={info?.dnsServerDomain}>{info?.dnsServerDomain ?? ''}</span>
+            <span className={styles.serverLine}>
+              <span className={styles.serverVer} title="DNS Server version">
+                <span className={text.sr}>DNS Server </span>
+                {info?.version != null ? `v${info.version}` : '—'}
+              </span>
+              {serverMark}
+            </span>
+          </div>
         </div>
+        </>
+          )}
+        </Versions>
       </aside>
 
       <div className={styles.main}>
@@ -545,6 +627,21 @@ export function Shell({
           <Apps token={session.token} />
         ) : current?.id === 'cache' ? (
           <Cache token={session.token} nodes={session.info?.clusterNodes ?? []} clusterInitialised={session.info?.clusterInitialized === true} />
+        ) : current?.id === 'blocking' && currentSub === 'Settings' && permissions?.Settings?.canView !== false ? (
+          /* Blocking's Settings page: the Settings form with its Blocking pane alone
+             (deviation 24). Same permissions as Settings' own Save. */
+          <Settings
+            only={{ pane: 'Blocking', section: 'Blocking', title: 'Settings' }}
+            token={session.token}
+            nodes={session.info?.clusterNodes ?? []}
+            clusterInitialised={session.info?.clusterInitialized === true}
+            canModify={permissions?.Settings?.canModify !== false}
+            canFlushCache={permissions?.Cache?.canDelete !== false}
+            canBackup={permissions?.Settings?.canDelete !== false}
+            serverDomain={session.info?.dnsServerDomain}
+            onServerInfo={setServerInfo}
+            onRecordSettings={setRecordSettings}
+          />
         ) : current?.id === 'blocking' ? (
           <Blocking
             token={session.token}

@@ -26,6 +26,9 @@ export interface Section {
   /** Sub-sections, with upstream's literal labels. They are only shown when their
    *  section is active, exactly as the sub-tabs are today. */
   subs?: string[]
+  /** A sub-section that asks for another section's permission: Blocking's
+   *  `Settings` is the Settings form, so it needs `Settings` to be seen. */
+  subPermissions?: Partial<Record<string, string>>
 }
 
 export const SECTIONS: Section[] = [
@@ -33,11 +36,11 @@ export const SECTIONS: Section[] = [
   { id: 'zones', label: 'Zones', permission: 'Zones' },
   { id: 'cache', label: 'Cache', permission: 'Cache' },
   { id: 'blocking', label: 'Blocking', permission: ['Blocked', 'Allowed'],
-    subs: ['Overview', 'Rules', 'Lists'] },
+    subs: ['Overview', 'Rules', 'Lists', 'Settings'], subPermissions: { Settings: 'Settings' } },
   { id: 'apps', label: 'Apps', permission: 'Apps' },
   { id: 'dnsclient', label: 'DNS Client', permission: 'DnsClient' },
   { id: 'settings', label: 'Settings', permission: 'Settings',
-    subs: ['General','Web Service','Optional Protocols','TSIG','Recursion','Cache','Blocking','Proxy & Forwarders','Logging'] },
+    subs: ['General','Web Service','Optional Protocols','TSIG','Recursion','Cache','Proxy & Forwarders','Logging'] },
   { id: 'dhcp', label: 'DHCP', permission: 'DhcpServer', subs: ['Leases','Scopes'] },
   { id: 'admin', label: 'Administration', permission: 'Administration',
     subs: ['Sessions','Users','Groups','Permissions','SSO','LDAP','Cluster'] },
@@ -57,5 +60,16 @@ export function visibleSections(
     if (s.permission == null) return true
     const keys = typeof s.permission === 'string' ? [s.permission] : s.permission
     return keys.some((k) => permissions[k]?.canView !== false)
+  })
+}
+
+/** The sub-sections of `section` this user can see. */
+export function visibleSubs(
+  section: Section,
+  permissions: Record<string, Permission> | undefined,
+): string[] {
+  return (section.subs ?? []).filter((t) => {
+    const key = section.subPermissions?.[t]
+    return key == null || permissions == null || permissions[key]?.canView !== false
   })
 }

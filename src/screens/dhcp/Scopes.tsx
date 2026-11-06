@@ -357,7 +357,8 @@ export function Scopes({
   return (
     <div className={styles.wrap}>
       <SectionHeader
-        title="DHCP"
+        section="DHCP"
+        title="Scopes"
         tabs={tabs}
         actions={
           canModify ? (

@@ -140,3 +140,24 @@ Amber and not the red upstream uses: in this console red is what destroys
 /* Upstream's two `Note!`, after the links: they explain, they do not change the
    decision. Same rule as every other `Note!` in the console. */
 .notes { display: grid; gap: var(--s-5); margin-top: var(--s-9); }
+
+/*
+The mark as a small chip beside a version (2026-11-06), for the sidebar that draws
+the versions itself: this console's beside its name, the server's under the
+account. Amber, as the strip was, and no bigger than the version it rides on.
+*/
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: 0 var(--s-3);
+  height: 18px;
+  border: 0;
+  border-radius: var(--r-2);
+  background: var(--acc-tint);
+  color: var(--acc-ink);
+  font: 600 var(--t-1)/1 var(--font-ui);
+  cursor: pointer;
+}
+.chip:hover { background: var(--acc-tint-strong); }
+.chip:focus-visible { outline: 2px solid var(--acc); outline-offset: 1px; }

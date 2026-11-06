@@ -153,7 +153,8 @@ export function Sessions({ tabs, token, cluster, node: controlledNode, onNodeCha
   return (
     <>
       <SectionHeader
-        title="Administration"
+        section="Administration"
+        title="Sessions"
         tabs={tabs}
         titleAction={<RowAction icon="refresh" name="Refresh" disabled={loading} onClick={() => void load()} />}
       />
