@@ -4,6 +4,9 @@ import { REAL, realServer } from '../../test/real-blocking'
 import { nextUpdateText } from '../settings/panes/Blocking'
 import { BlockLists } from './BlockLists'
 
+/* A strip's figure, not the same number in the Domains over time readings. */
+const FIGURE = { selector: 'div' }
+
 /*
 The Lists tab fed with the harness's real `settings/get` and `dashboard/stats/get`
 (`test/real-blocking.ts`) and the real built-in Quick Add catalog. The harness's
@@ -60,8 +63,8 @@ describe('Lists against the harness', () => {
   it('the figures and the next update are the server ones', async () => {
     render(<BlockLists token="T" permissions={undefined} />)
     await screen.findByRole('table')
-    expect(await screen.findByText(STATS.blockListZones.toLocaleString())).toBeInTheDocument()
-    expect(screen.getByText(STATS.allowListZones.toLocaleString())).toBeInTheDocument()
+    expect(await screen.findByText(STATS.blockListZones.toLocaleString(), FIGURE)).toBeInTheDocument()
+    expect(screen.getByText(STATS.allowListZones.toLocaleString(), FIGURE)).toBeInTheDocument()
     expect(screen.getByText(nextUpdateText(REAL.settings.response.blockListNextUpdatedOn))).toBeInTheDocument()
     expect(screen.getByText(`Next update · every ${REAL.settings.response.blockListUpdateIntervalHours} h`))
       .toBeInTheDocument()

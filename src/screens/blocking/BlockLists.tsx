@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from 'react'
+import { useCallback, useContext, useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { readSettings, setSettings, forceUpdateBlockLists } from '../../api/settings'
 import { getDashboardStats } from '../../api/dashboard'
 import { loadQuickList, type QuickEntry } from '../../lib/quick-lists'
@@ -29,6 +29,9 @@ import { missing, type Permissions } from './permissions'
 import shared from './Blocking.module.css'
 import styles from './BlockLists.module.css'
 import { UrlText } from '../../ui/UrlText'
+import { ThisServerName } from '../../ui/ClusterNodeSelect'
+import { fromNow, minuteStamp } from '../../lib/dates'
+import { changeText, keepReading, lastUpdateOf, readReadings, type Reading } from './list-history'
 
 /*
 The Lists tab: the "Allow / Block List URLs" field of Settings > Blocking drawn as a
@@ -60,7 +63,16 @@ every alert of the update and the save. Everything else is OURS:
   are unsaved changes, read as `unsaved changes` (`onDirty`, `Blocking.tsx`);
 - the two `Could not read …` sentences and the link to Blocking › Settings;
 - Quick Add's search (`Search lists`, `No lists match`) and its second catalogue, the
-  console's own (`extra-lists.ts`), under `More lists` after Technitium's.
+  console's own (`extra-lists.ts`), under `More lists` after Technitium's;
+- (2026-11-06, deviation 32) the Next update cell's `Last updated <time>, <ago>`,
+  worked out from the server's own two values (`list-history.ts`, `lastUpdateOf`);
+  the fourth cell `Domains over time` with its readings (`<time>`, the count, its
+  change as `+1,904`), `No readings yet.` and its sentence `Kept in this browser when
+  the count changes.`, and under the Block List Domains figure the last change,
+  `<change> since <time>` (`list-history.ts`); and
+  the save bar's `Save and Update Now`, which runs Save and then, only if Save
+  succeeded and left lists to update, Update Now with its own confirmation, calls
+  and texts.
 
 Quick Add here lists Technitium's catalogue first, as Settings does, then ours. An
 entry of ours is chosen exactly as one of theirs (`applyQuick`), and its single-URL
@@ -207,12 +219,15 @@ function CountCard({
   value,
   failed,
   reloading,
+  since,
 }: {
   title: string
   colour: string
   value: number | undefined
   failed: boolean
   reloading: boolean
+  /** The figure's last change, from the readings kept in this browser. */
+  since?: string | null
 }) {
   return (
     <Card title={title} colour={colour}>
@@ -225,6 +240,50 @@ function CountCard({
           </div>
         )}
         {reloading && <div className={styles.pending}>{UPDATING}</div>}
+        {!reloading && !failed && since != null && <div className={statStyles.caption}>{since}</div>}
+      </div>
+    </Card>
+  )
+}
+
+/*
+The count over time (deviation 32, `list-history.ts`): the newest readings this
+browser kept of `Block List Domains`, each with its change against the one before.
+Three are drawn; up to 30 are kept, so the oldest drawn still has its change.
+*/
+const READINGS_SHOWN = 3
+
+/** `+1,904 since <time>`: the figure on screen against the reading before it. */
+function lastChange(readings: Reading[], count: number | undefined): string | null {
+  const n = readings.length
+  if (count == null || n < 2 || readings[n - 1].count !== count) return null
+  return `${changeText(count, readings[n - 2].count)} since ${minuteStamp(readings[n - 2].at)}`
+}
+
+function ReadingsCard({ readings }: { readings: Reading[] }) {
+  const shown = readings.slice(-READINGS_SHOWN).reverse()
+  const from = readings.length - shown.length
+  return (
+    <Card title="Domains over time" colour="var(--ch-block)">
+      <div className={statStyles.body}>
+        {shown.length === 0 ? (
+          <div className={statStyles.quiet}>No readings yet.</div>
+        ) : (
+          <ol className={styles.readings} aria-label="Block List Domains, newest first">
+            {shown.map((r, i) => {
+              const at = readings.length - 1 - i
+              const change = changeText(r.count, at > 0 ? readings[at - 1].count : undefined)
+              return (
+                <li key={`${r.at}:${at}`}>
+                  <span className={styles.readingAt}>{minuteStamp(r.at)}</span>
+                  <span className={styles.readingCount}>{r.count.toLocaleString()}</span>
+                  <span className={styles.readingChange}>{at >= from && change != null ? change : ''}</span>
+                </li>
+              )
+            })}
+          </ol>
+        )}
+        <p className={styles.readingsNote}>Kept in this browser when the count changes.</p>
       </div>
     </Card>
   )
@@ -358,6 +417,7 @@ export function BlockLists({
   onDirty?: (dirty: boolean) => void
 }) {
   const node = clusterInitialised ? 'cluster' : ''
+  const server = useContext(ThisServerName)
   const viewNeed = missing(permissions, 'Settings.canView')
   const modifyNeed = missing(permissions, 'Settings.canModify')
   const statsNeed = missing(permissions, 'Dashboard.canView')
@@ -371,6 +431,8 @@ export function BlockLists({
   const [hasSaved, setHasSaved] = useState(false)
   const [counts, setCounts] = useState<{ block: number; allow: number } | null>(null)
   const [countsFailed, setCountsFailed] = useState(false)
+  /** `Block List Domains` as this browser has seen it change (`list-history.ts`). */
+  const [readings, setReadings] = useState<Reading[]>(() => readReadings(server))
   const [catalog, setCatalog] = useState<QuickEntry[]>([])
   /** The console's own entries, once Technitium's are known to leave out repeats. */
   const [more, setMore] = useState<QuickEntry[]>([])
@@ -467,7 +529,8 @@ export function BlockLists({
     }
     setCountsFailed(false)
     setCounts({ block: r.data.stats.blockListZones, allow: r.data.stats.allowListZones })
-  }, [token, node, statsNeed])
+    setReadings(keepReading(server, r.data.stats.blockListZones))
+  }, [token, node, statsNeed, server])
 
   useEffect(() => {
     void readCounts()
@@ -515,6 +578,7 @@ export function BlockLists({
 
   const off = modifyNeed != null
   const loading = saved == null
+  const last = lastUpdateOf(next, interval)
   const heads = headingIndexes(lines)
   /* What the chosen group still means: a Discard or a Quick Add that emptied the
      headings leaves an ordinal that no longer exists, and that is no group. */
@@ -569,13 +633,14 @@ export function BlockLists({
     setInvalid(null)
   }
 
-  async function save() {
+  /** Save. True when it succeeded and left lists for Update Now to download. */
+  async function save(): Promise<boolean> {
     setBusy(true)
     const r = await setSettings(token, saveBody(lines, node))
     setBusy(false)
     if (r.kind !== 'ok') {
       setNotice(noticeFromFailure(r))
-      return
+      return false
     }
     const read = fromUrls(r.data.response.blockListUrls)
     setSaved(read)
@@ -594,12 +659,23 @@ export function BlockLists({
     serverUrls.current = urls
     serverNext.current = answered
     const interval = r.data.response.blockListUpdateIntervalHours ?? 0
-    if (!changed) return
+    const canUpdate = r.data.response.blockListUrls != null
+    if (!changed) return canUpdate
     if (urls.length > 0 && interval > 0) setReloading({ from: answered })
     else {
       setReloading(null)
       void readCounts()
     }
+    return canUpdate
+  }
+
+  /*
+  Save and Update Now: Save as it is, and then, only when it succeeded, Update Now as
+  it is, from its confirmation on. Update Now is offered only while there are saved
+  lists (`hasSaved`), so a Save that empties them stops there.
+  */
+  async function saveAndUpdate() {
+    if (await save()) setAskUpdate(true)
   }
 
   async function updateNow() {
@@ -739,7 +815,7 @@ export function BlockLists({
           ) : (
             <>
               <CountCard title="Block List Domains" colour="var(--ch-block)" value={counts?.block}
-                failed={countsFailed} reloading={reloading != null} />
+                failed={countsFailed} reloading={reloading != null} since={lastChange(readings, counts?.block)} />
               <CountCard title="Allow List Domains" colour="var(--ch-ok)" value={counts?.allow}
                 failed={countsFailed} reloading={reloading != null} />
             </>
@@ -750,6 +826,9 @@ export function BlockLists({
           >
             <div className={statStyles.body}>
               <div className={statStyles.figure}>{loading ? '—' : nextUpdateText(next)}</div>
+              {!loading && last != null && (
+                <div className={statStyles.caption}>{`Last updated ${minuteStamp(last)}, ${fromNow(last)}`}</div>
+              )}
               <div className={statStyles.actions}>
                 <PermissionButton lead="refresh" size="sm"
                   permission={modifyNeed}
@@ -761,6 +840,7 @@ export function BlockLists({
               </div>
             </div>
           </Card>
+          {statsNeed != null ? <Locked title="Domains over time" need={statsNeed} /> : <ReadingsCard readings={readings} />}
         </div>
 
         <Panel title="Add a list">
@@ -914,6 +994,10 @@ export function BlockLists({
             <span>Unsaved changes to the block list URLs: {changes}</span>
             <span className={styles.spacer} />
             <Button disabled={busy} onClick={() => saved && setLines(saved)}>Discard</Button>
+            <PermissionButton lead="refresh" disabled={busy} permission={modifyNeed}
+              onClick={() => void saveAndUpdate()}>
+              Save and Update Now
+            </PermissionButton>
             <PermissionButton variant="primary" disabled={busy} permission={modifyNeed} onClick={() => void save()}>
               Save
             </PermissionButton>

@@ -1,6 +1,8 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { dropParams, readParam } from '../../lib/url-state'
 import { addDomain, type DomainList } from '../../api/zonelists'
+import { readRuleExport } from '../../api/blocking'
+import { Icon } from '../../ui/Icon'
 import { Panel, Body } from '../../ui/Panel'
 import { Input } from '../../ui/Field'
 import { Loading } from '../../ui/Empty'
@@ -11,6 +13,8 @@ import { checkDomain, verdictOf, type Verdict } from './check-domain'
 import { DomainCheck } from './DomainCheck'
 import { moreLists } from './extra-lists'
 import { missing, type Permissions } from './permissions'
+import { asciiName, ruleHint } from './rule-match'
+import { mergeRules, type Rule } from './rules-model'
 import styles from './Blocking.module.css'
 
 /*
@@ -46,17 +50,41 @@ title on the left as the field's visible name, then the field, Block, Allow and
 Check, and the answer under the whole line. It was a panel with its title in a band
 and the field labelled `Domain` over it, beside the status block. The field is still
 named `Domain`, for assistive technology: the title beside it says what it is for.
+
+ALREADY ONE OF YOUR RULES? (2026-11-06, CONVENTIONS.md, deviation 32), OURS with
+its words (`rule-match.ts`: `Already blocked: it is one of your rules.`, `Already
+blocked by your rule <rule>, which covers its subdomains.`, the same two for
+allowed, `It wins over your blocked rule <rule>.`, `Not one of your rules.` and its
+two halves, `Your blocked rules were not checked: …` and the allowed one, `Check
+asks the block lists.`, and `Could not read your rules.`). As the name is typed, the
+line under the field says whether one of your own rules, the name or a parent,
+already covers it. The rules are the Rules table's own when the bar sits on Rules
+(`rules`); on Overview the bar reads `blocked/export` and `allowed/export` itself,
+each only with its View permission, ONCE, the first time a name is typed, and keeps
+them; a Block or an Allow made here drops them, so the next name reads them again.
+Never a read per keystroke, and never the DNS query Check makes: the block lists
+are Check's to answer. It is tied to the field with `aria-describedby`, not a live
+region, so a screen reader is not read a sentence per letter.
 */
+const HINT_CLASS = { blocked: styles.hintBlocked, allowed: styles.hintAllowed, none: styles.hintNone } as const
+
 export function AddDomainBar({
   token,
   permissions,
   onNotice,
   onChanged,
+  rules,
+  rulesFailed = false,
 }: {
   token: string | null
   permissions: Permissions
   onNotice: (n: Notice) => void
   onChanged: (list: DomainList, domain: string) => void
+  /** The rules the screen already holds (Rules' table), null while it reads them.
+      Left out, the bar reads them itself, once (Overview). */
+  rules?: readonly Rule[] | null
+  /** The screen's read of `rules` failed. */
+  rulesFailed?: boolean
 }) {
   const [field, setField] = useState('')
   const [busy, setBusy] = useState(false)
@@ -72,6 +100,45 @@ export function AddDomainBar({
   const asked = useRef(0)
 
   const checkNeed = missing(permissions, 'DnsClient.canView')
+  const blockedNeed = missing(permissions, 'Blocked.canView')
+  const allowedNeed = missing(permissions, 'Allowed.canView')
+  const hintId = useId()
+
+  /*
+  The bar's own copy of the rules, when the screen gives none: `undefined` until a
+  name is first typed, then the read in flight, the rules, or a failure.
+  */
+  const [own, setOwn] = useState<{ rules: Rule[] | null; failed: boolean } | undefined>(undefined)
+  const ownAsked = useRef(0)
+  const wantsOwn = rules === undefined && (blockedNeed == null || allowedNeed == null)
+  useEffect(() => {
+    if (!wantsOwn || own !== undefined || field.trim() === '') return
+    const mine = ++ownAsked.current
+    setOwn({ rules: null, failed: false })
+    const read = (list: DomainList, may: boolean) => (may ? readRuleExport(list, token) : null)
+    void Promise.all([read('blocked', blockedNeed == null), read('allowed', allowedNeed == null)]).then(([b, a]) => {
+      if (mine !== ownAsked.current) return
+      const failed = [b, a].some((o) => o != null && o.kind !== 'ok')
+      setOwn({
+        rules: failed ? null : mergeRules(b?.kind === 'ok' ? b.data : null, a?.kind === 'ok' ? a.data : null),
+        failed,
+      })
+    })
+  }, [wantsOwn, own, field, token, blockedNeed, allowedNeed])
+  useEffect(() => () => {
+    ownAsked.current++
+  }, [])
+
+  const known = rules !== undefined ? rules : (own?.rules ?? null)
+  const knownFailed = rules !== undefined ? rulesFailed : (own?.failed ?? false)
+  const ascii = asciiName(field)
+  const hint = ascii == null || problem != null
+    ? null
+    : knownFailed
+      ? { tone: 'none' as const, text: 'Could not read your rules.' }
+      : known == null
+        ? null
+        : ruleHint(ascii, known, { blocked: blockedNeed, allowed: allowedNeed })
 
   /*
   `?check=<domain>`: the command palette's `Check <domain> in Blocking` (deviation
@@ -151,6 +218,11 @@ export function AddDomainBar({
 
     setField('')
     forget()
+    /* The rules changed: the bar's own copy is read again with the next name. */
+    if (rules === undefined) {
+      ownAsked.current++
+      setOwn(undefined)
+    }
     onNotice(
       list === 'allowed'
         ? { type: 'success', title: 'Allowed!', text: `Domain '${domain}' was added to Allowed Zone successfully.` }
@@ -183,7 +255,7 @@ export function AddDomainBar({
               placeholder="example.com"
               value={field}
               aria-invalid={problem != null || undefined}
-              aria-describedby={problem != null ? problemId : undefined}
+              aria-describedby={problem != null ? problemId : hint != null ? hintId : undefined}
               onChange={(e) => {
                 setField(e.target.value)
                 forget()
@@ -193,6 +265,12 @@ export function AddDomainBar({
             {problem != null && (
               <div id={problemId} className={styles.invalid} aria-live="polite">
                 {problem}
+              </div>
+            )}
+            {hint != null && (
+              <div id={hintId} className={`${styles.ruleHint} ${HINT_CLASS[hint.tone]}`}>
+                {hint.tone !== 'none' && <Icon name={hint.tone} size={14} />}
+                <span>{hint.text}</span>
               </div>
             )}
           </div>

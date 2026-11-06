@@ -49,3 +49,12 @@ What the three Blocking tabs share. Every value is a token of theme/tokens.css.
 .bad[aria-invalid],
 .bad[aria-invalid]:focus { border-color: var(--dan); }
 .invalid { color: var(--dan); font-size: var(--t-2); margin-top: var(--s-4); }
+
+/* Whether the name typed is already one of your rules (`rule-match.ts`): one quiet
+   line under the field, the rule's icon and colour when one covers it, as the Rule
+   column of Rules draws them. */
+.ruleHint { display: flex; align-items: flex-start; gap: var(--s-3); margin-top: var(--s-4); font-size: var(--t-2); line-height: 1.4; }
+.ruleHint > svg { flex: none; margin-top: 1px; }
+.hintBlocked { color: var(--ch-block); }
+.hintAllowed { color: var(--ok); }
+.hintNone { color: var(--mute); }

@@ -33,6 +33,12 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
   differences". A node that does not answer says so with the server's message. Needs Settings: View.
 - **DHCP scope usage:** each enabled scope's row in DHCP › Scopes shows how many of the addresses in
   its range are leased, Dynamic and Reserved, as a share and a bar that turns amber above 80%.
+- **Blocking › Lists remembers and saves in one step:** the Next update cell says when the lists
+  were last updated (the server's next update less its interval), a Domains over time cell keeps
+  the Block List Domains count each time it changes, in this browser only, with what each update
+  added or removed, and the save bar has Save and Update Now, which saves and then asks to update
+  as Update Now does. The Block, Allow and Check bar says as you type whether one of your own
+  rules, the name or a parent, already blocks or allows it, from the rules it reads once.
 - **Buttons are flat**, with no shine or bevel. The neutral one is a step lighter than the panel
   it sits on, so it no longer disappears in a panel header or a dialog footer. Under the pointer the
   primary button no longer grows a grey ring and the destructive one keeps its colour.

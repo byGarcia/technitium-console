@@ -37,6 +37,7 @@ beforeEach(() => {
     if (path === 'dnsClient/resolve') return json(ANSWERS[url.searchParams.get('domain') ?? ''])
     if (path === 'settings/get') return json(REAL.settings)
     if (path === 'allowed/export') return new Response(REAL.allowedExport, { headers: { 'Content-Type': 'text/plain' } })
+    if (path === 'blocked/export') return new Response('', { headers: { 'Content-Type': 'text/plain' } })
     throw new Error(`unexpected ${path}`)
   })
 })
@@ -97,7 +98,11 @@ describe('Check a domain', () => {
   it('asks DNS Client, the settings and the allow rules, and changes nothing', async () => {
     await check('example.com')
     await screen.findByText('Not blocked')
-    expect(calls.filter((c) => !c.includes('json/')).sort()).toEqual(['allowed/export', 'dnsClient/resolve', 'settings/get'])
+    /* The check's three, and the bar's one read of your rules while the name was typed
+       (deviation 32): once for the whole name, not once per letter. */
+    expect(calls.filter((c) => !c.includes('json/')).sort()).toEqual([
+      'allowed/export', 'allowed/export', 'blocked/export', 'dnsClient/resolve', 'settings/get',
+    ])
     const url = new URL(String(vi.mocked(fetch).mock.calls.find((c) => String(c[0]).includes('dnsClient/resolve'))![0]), 'http://x')
     expect(Object.fromEntries(url.searchParams)).toEqual({
       server: 'this-server', domain: 'example.com', type: 'A', protocol: 'UDP', dnssec: 'false', eDnsClientSubnet: '',
