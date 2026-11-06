@@ -99,6 +99,10 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
   with one line per app and a search, More Details opening under the row, and each kind of DNS app
   has its own colour; pressing a kind on the cards narrows the table. The installed list says
   `Total Apps` again. App Config numbers its lines and says whether the text is valid JSON.
+- **About reads like the rest of the console:** the server as the header with its logo and domain,
+  cards for the DNS Server version, the uptime and the console version, and Technitium's
+  documentation, support, license and donate sections as blocks of link rows, every sentence and
+  link as upstream writes it, with this console's links in their own column.
 - **Choosing a file is a drop zone** in every dialog that takes one (an app's zip, a zone file, a
   settings backup): drop the file or click to choose it, and it shows its name and size.
 - **Dialogs are one surface**, without the lines under the title and over the buttons. A

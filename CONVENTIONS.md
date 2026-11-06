@@ -807,15 +807,35 @@ contract and SECURITY.md.
    Its words: none new. The toggles are the panel's existing title, `Filters`, and
    the legend's, `Row colours`; the list is the fields' own labels, each followed by
    a colon and its value.
-9. **About has two panels for this console** (Adrián's decision, 2026-10-16;
-   `screens/about/About.tsx`). Upstream's About speaks only of the server, and its
-   card stays literal. Under the Server panel, `Web Console` gives this console's
-   version (`__CONSOLE_VERSION__`), its license, one sentence saying it is not
-   Technitium's, and four destinations as rows: `Source code`, `Release notes`,
-   `Report a problem` (so a console fault does not go to Technitium's support) and
-   `Ideas and questions`. `Support the Console` has one sentence, `Star on GitHub`
-   and the four destinations of `.github/FUNDING.yml` as buttons. Its words are all
-   ours and follow the README's `Support` and `Licence`.
+9. **About reads like the other screens, and has a column for this console**
+   (Adrián's decisions, 2026-10-16 and 2026-11-06; `screens/about/About.tsx`).
+   Upstream's About is one centred column (index.html:3641-3680): the logo, the
+   name, `Version X`, `Server up since …` and its prose, heading after heading.
+   Here every one of its sentences and destinations stays, word for word, laid out
+   the way Zones and Cache are; nothing is asked of the server (everything comes
+   from the session's `info`), so there is no loading or failure state:
+   - **The header is the server**: the path `About ›`, Technitium's logo (the file
+     in `public/img/`, untouched), `Technitium DNS Server` and the server's domain.
+   - **Three cards** (`ui/StatCard`): `DNS Server` (Version), `Uptime` (the span
+     since `uptimestamp` in its two largest units, `2d 3h`, `4h 5m`, `12m`, and `Up
+     since` with the date) and `Web Console` (`__CONSOLE_VERSION__`, its licence
+     and one sentence saying it is not Technitium's). Without `info` they show the "no value" placeholder.
+     Whether there is an update stays in the chrome (`app/Versions`, deviation 10).
+   - **Upstream's sections are blocks**: `Documentation` holds What's New?, API
+     Documentation and Help Topics as rows, the heading as the row's link and its
+     sentence, with its own link, under it; `Support` (upstream's heading) holds its
+     four sentences as one row each; `License` holds the copyright, the warranty and
+     the source-code sentence; `Donate` keeps its heading as a link (the panel's
+     title), its sentence and `Donate Now!`. A row is one target, the link inside a
+     sentence is still its own.
+   - **This console's column**, under its card: `On GitHub` with four
+     destinations as rows, `Source code`, `Release notes`, `Report a problem` (so a
+     console fault does not go to Technitium's support) and `Ideas and questions`;
+     and `Support the Console`, one sentence, `Star on GitHub` and the four
+     destinations of `.github/FUNDING.yml` as buttons.
+   Its words, all OURS: `Uptime`, the span's format, `Documentation`, `License`,
+   `On GitHub`, `Web Console`, `DNS Server`, `Version` as a card label and the
+   console's sentences, which follow the README's `Support` and `Licence`.
 10. **The console tells you when a newer console is out** (Adrián's decision,
     2026-10-18; `app/console-update.ts`, `app/Versions.tsx`, `update-check/`). The
     browser cannot ask GitHub (the CSP below has no `connect-src`), so the console
