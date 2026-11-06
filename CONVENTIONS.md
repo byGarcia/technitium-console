@@ -1879,6 +1879,32 @@ contract and SECURITY.md.
     `ui/AcrossNodes.tsx`; `Query Logs view` is the toggle's accessible name (`ACCESSIBLE_NAMES` in
     `dev/check-parity-controls.mjs`).
 
+38. **DHCP is read across the cluster's nodes** (Adrián's decision, 2026-11-06;
+    `screens/dhcp/across.ts`, `Dhcp.tsx`, `Leases.tsx`, `Scopes.tsx`). Each node runs its own
+    DHCP server and upstream shows one at a time (`optDhcpClusterNode`). On an initialised
+    cluster both tabs' toolbars start with `This node` / `All nodes`; the choice is the
+    section's, so it stays when the tab changes. `All nodes` reads, once per node with that
+    node's `node`, `dhcp/leases/list` on Leases and `dhcp/scopes/list` with `dhcp/leases/list`
+    on Scopes, the calls each tab already makes, and draws every node's rows together with a
+    sortable `Node` column first, in the node's colour. The cards over each table count every
+    row, so they sum the nodes. Its limits, and crossing one is a bug:
+    - **a row acts on its node**: a lease's two conversions and Remove Lease, a scope's Enable,
+      Disable, Edit Scope and Delete Scope, and the save of a scope opened from the view, are sent
+      with the row's `node`. Add Scope stays on the node chosen in the selector. A scope opened
+      from the view carries its node in the bar (`?on=`) beside `?scope=`, so a reload or Back
+      opens it on that node;
+    - **scope usage is per node** (deviation 30): a row's bar counts only its own node's leases,
+      and the Address Pool card adds each node's scopes and leases apart, since two nodes can
+      each have a scope of the same name; a lease is known by its node too;
+    - **a node that fails says so**, with the words of deviation 37, above the table; on Scopes a
+      node counts as read only when both of its lists answered, so no usage mixes a node's scopes
+      with leases it did not send. With no node read the tab says it could not load the list;
+    - **without a cluster nothing changes**: no toggle, the calls, keys and counts the tabs always
+      had, and `?nodes=all` is not acted on. The view is `?nodes=all` while it is drawn, read on
+      arrival only on DHCP's folders, and leaves with the section.
+    Its words, OURS: `Node`, and those of `ui/AcrossNodes.tsx`; `DHCP view` is the toggle's
+    accessible name (`ACCESSIBLE_NAMES` in `dev/check-parity-controls.mjs`).
+
 ## Four constraints the server imposes
 
 These are not preferences: break them and the console works in development and

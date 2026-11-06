@@ -1,4 +1,5 @@
 import type { DhcpLease, DhcpScopeRow } from '../../api/dhcp'
+import type { NodeLease, NodeScopeRow } from './across'
 
 /*
 WHAT THE SECTION HOLDS (deviation 19 in CONVENTIONS.md, 2026-11-06). The figures
@@ -72,14 +73,18 @@ export interface ScopeUsage {
   high: boolean
 }
 
-export function scopeUsage(scope: DhcpScopeRow, leases: DhcpLease[]): ScopeUsage | null {
+/* In the `All nodes` view (deviation 38) a lease counts only in the scope of its own
+   node; with one node neither carries a node and the rule is the name alone. */
+const sameNode = (l: NodeLease, s: NodeScopeRow) => (l.node ?? '') === (s.node ?? '')
+
+export function scopeUsage(scope: NodeScopeRow, leases: NodeLease[]): ScopeUsage | null {
   if (!scope.enabled) return null
   const size = rangeSize(scope.startingAddress, scope.endingAddress)
   if (size == null) return null
   let dynamic = 0
   let reserved = 0
   for (const l of leases) {
-    if (l.scope !== scope.name) continue
+    if (l.scope !== scope.name || !sameNode(l, scope)) continue
     if (l.type === 'Reserved') reserved++
     else dynamic++
   }
@@ -103,14 +108,19 @@ export interface PoolTotals {
 }
 
 /** The pool of the scopes that are serving: a disabled scope leases nothing. */
-export function poolTotals(scopes: DhcpScopeRow[], leases: DhcpLease[]): PoolTotals {
-  const per = leasesPerScope(leases)
+export function poolTotals(scopes: NodeScopeRow[], leases: NodeLease[]): PoolTotals {
+  /* By node and scope name (deviation 38); with one node, by the name alone. */
+  const per = new Map<string, number>()
+  for (const l of leases) {
+    const k = `${l.node ?? ''}\n${l.scope}`
+    per.set(k, (per.get(k) ?? 0) + 1)
+  }
   let addresses = 0
   let leased = 0
   for (const s of scopes) {
     if (!s.enabled) continue
     addresses += rangeSize(s.startingAddress, s.endingAddress) ?? 0
-    leased += per.get(s.name) ?? 0
+    leased += per.get(`${s.node ?? ''}\n${s.name}`) ?? 0
   }
   return { addresses, leased }
 }
@@ -161,8 +171,10 @@ export function matchesSearch(l: DhcpLease, query: string): boolean {
 }
 
 /** A lease's identity in the list: the pair every action on it sends. */
-export function leaseKey(l: DhcpLease): string {
-  return `${l.scope}\n${l.clientIdentifier}`
+export function leaseKey(l: NodeLease): string {
+  /* In the `All nodes` view the node too: two nodes can lease to the same client. */
+  const own = `${l.scope}\n${l.clientIdentifier}`
+  return l.node == null ? own : `${l.node}\n${own}`
 }
 
 /*

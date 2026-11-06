@@ -33,6 +33,10 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
   and Live Update follows every node. A node that cannot be read is named with the server's
   message. Export and paging stay per node, and the view is kept in the address bar
   (`?nodes=all`).
+- **DHCP across the cluster:** on a cluster, `All nodes` in DHCP › Leases and Scopes shows every
+  node's leases and scopes together with a Node column, the cards adding the nodes up. Converting
+  or removing a lease and enabling, disabling, editing or deleting a scope act on the row's node,
+  and each scope's usage counts its own node's leases. A node that cannot be read is named.
 - **Settings compared across cluster nodes:** Administration › Cluster shows a curated set of each
   node's settings side by side (domain, version, end points, recursion, DNSSEC, rate limits, default
   TTLs, blocking, forwarders, logging), the ones that differ first and marked, with "Show only

@@ -8,9 +8,7 @@ import {
   listLeases,
   listScopes,
   setScope,
-  type DhcpLease,
   type DhcpScope,
-  type DhcpScopeRow,
 } from '../../api/dhcp'
 import { Confirm } from '../../ui/Confirm'
 import { Button } from '../../ui/Button'
@@ -31,7 +29,11 @@ import { dropParams, readParam, writeParams } from '../../lib/url-state'
 import { ScopeSummary } from './ScopeSummary'
 import { ScopePage } from './ScopePage'
 import { matchesScope, percent, scopeUsage, type ScopeUsage } from './pool'
-import { Q, SCOPE, SCOPE_PARAMS, STATE, onDhcpTab, readTabParam, writeScope } from './dhcp-url'
+import { Q, SCOPE, SCOPE_NODE, SCOPE_PARAMS, STATE, onDhcpTab, readTabParam, writeScope } from './dhcp-url'
+import { scopeKey, scopesAcross, type NodeLease, type NodeScopeRow } from './across'
+import type { DhcpCluster } from './Leases'
+import { NodeName, NodesFailed, type NodeFailure } from '../../ui/AcrossNodes'
+import { nodeToken } from '../dashboard/palette'
 
 /*
 DHCP › Scopes (dhcp.js:201-684).
@@ -70,6 +72,14 @@ addresses in its range, as `N of M`, the share and a bar, in the warning colour
 above 80%, with the two types under it. A disabled scope has no bar; the column
 sorts by the share. Its words, OURS: `N of M`, `X%` (`<1%`), `Dynamic N, Reserved
 N`, and the bar's name `<scope>: N of the M addresses in its range leased, X%`.
+
+Deviation 38 (2026-11-06; `across.ts`): on a cluster, `All nodes` reads every
+node's scopes and leases and draws the scopes together with a Node column first;
+the cards sum the nodes, each row's usage counts its own node's leases, a node that
+did not answer is named, and a row's Enable, Disable, Edit Scope and Delete Scope
+go to the row's node, as does the save of a scope opened from it (`?on=` in the
+bar). Add Scope stays on the node chosen in the selector. Its words, OURS: `Node`,
+and those of `ui/AcrossNodes`.
 */
 
 export interface ScopesProps {
@@ -86,23 +96,29 @@ export interface ScopesProps {
   onLockNode?: (locked: boolean) => void
   /** A scope's page asks to see its leases: the Leases tab, narrowed to it. */
   onOpenLeases?: (scope: string) => void
+  cluster?: DhcpCluster
 }
 
-type Page = { mode: 'add'; form: Form } | { mode: 'edit'; name: string; scope: DhcpScope; form: Form }
+/* `on` is the node the scope was opened on from the `All nodes` view (deviation
+   38); `undefined` is the node the screen reads. */
+type Page =
+  | { mode: 'add'; form: Form }
+  | { mode: 'edit'; name: string; on?: string; scope: DhcpScope; form: Form }
 
 /* `sortTable('tableDhcpScopesBody', 0..3)`. It sorts by the cell's text. The
    Leases column (deviation 19) sorts by the share of the range leased (deviation
    30), padded so the text sort `useSort` does reads it as a number, a scope with
    no bar before any with one; the shares come from the leases, so the keys are
    built with them. */
-function sortKeys(usage: Map<string, ScopeUsage | null>): Keys<DhcpScopeRow> {
-  const keys: Keys<DhcpScopeRow> = {
+function sortKeys(usage: Map<string, ScopeUsage | null>): Keys<NodeScopeRow> {
+  const keys: Keys<NodeScopeRow> = {
+    node: (s) => s.node ?? '',
     name: (s) => s.name,
     range: (s) => `${s.startingAddress} - ${s.endingAddress}`,
     mask: (s) => s.subnetMask,
     interface: (s) => s.interfaceAddress ?? '',
     leases: (s) => {
-      const u = usage.get(s.name)
+      const u = usage.get(scopeKey(s))
       return u == null ? '' : String(Math.round(u.share * 1e6)).padStart(12, '0')
     },
   }
@@ -119,11 +135,16 @@ export function Scopes({
   canDelete = true,
   onLockNode,
   onOpenLeases,
+  cluster,
 }: ScopesProps) {
-  const [scopes, setScopes] = useState<DhcpScopeRow[] | null>(null)
+  const [scopes, setScopes] = useState<NodeScopeRow[] | null>(null)
   /* The leases, for the cards and the Leases column; `null` when they could not
      be read (deviation 19). Their failure is not the list's: no notice. */
-  const [leases, setLeases] = useState<DhcpLease[] | null>(null)
+  const [leases, setLeases] = useState<NodeLease[] | null>(null)
+  /* The `All nodes` view (deviation 38): the nodes that did not answer. */
+  const across = cluster?.across === true
+  const nodeKey = across ? cluster.nodes.map((n) => n.name).join('\n') : ''
+  const [failed, setFailed] = useState<{ nodes: NodeFailure[]; answered: number } | null>(null)
   /* Whether the last load failed: said, with the server's message, and never
      drawn as "No Scope Found". */
   const [failure, setFailure] = useState(false)
@@ -136,8 +157,10 @@ export function Scopes({
     return s === 'Enabled' || s === 'Disabled' ? s : ''
   })
   const [open, setOpen] = useState<Set<string>>(() => new Set())
-  /* The scope the bar asked for on arrival, opened once the list is in. */
+  /* The scope the bar asked for on arrival, opened once the list is in, on the
+     node `?on=` names when it was opened from the `All nodes` view. */
   const arrival = useRef(readTabParam('Scopes', SCOPE))
+  const arrivalNode = useRef(readTabParam('Scopes', SCOPE_NODE) ?? undefined)
 
   /* Only an existing scope locks the node: Add Scope leaves it alone. */
   const locked = page?.mode === 'edit'
@@ -145,7 +168,7 @@ export function Scopes({
     onLockNode?.(locked)
   }, [locked, onLockNode])
   useEffect(() => () => onLockNode?.(false), [onLockNode])
-  const [confirm, setConfirm] = useState<{ action: 'disable' | 'delete'; name: string } | null>(null)
+  const [confirm, setConfirm] = useState<{ action: 'disable' | 'delete'; name: string; on?: string } | null>(null)
 
   /* The list's view in the bar, and the open scope: the bar follows the page,
      replacing (it puts the scope back after StrictMode's rehearsal unmount took it
@@ -154,9 +177,12 @@ export function Scopes({
     writeParams({ [Q]: query.trim() === '' ? null : query, [STATE]: stateFilter })
   }, [query, stateFilter])
   const openName = page?.mode === 'edit' ? page.name : null
+  const openOn = page?.mode === 'edit' ? page.on : undefined
   useEffect(() => {
-    if (onDhcpTab('Scopes') && readParam(SCOPE) !== openName && arrival.current == null) writeScope(openName, true)
-  }, [openName])
+    if (onDhcpTab('Scopes') && arrival.current == null && (readParam(SCOPE) !== openName || (readParam(SCOPE_NODE) ?? undefined) !== openOn)) {
+      writeScope(openName, true, openOn)
+    }
+  }, [openName, openOn])
   useEffect(() => () => dropParams(SCOPE_PARAMS), [])
 
   // A failure on load is not drawn as an empty list; see `Leases`. With a scope's
@@ -164,6 +190,15 @@ export function Scopes({
   const load = useCallback(
     async (quiet = false) => {
       if (!quiet) setScopes(null)
+      if (nodeKey !== '') {
+        const all = await scopesAcross(token, nodeKey.split('\n').map((name) => ({ name, type: '' })))
+        setFailed({ nodes: all.failed, answered: all.answered })
+        setLeases(all.leases)
+        setScopes(all.scopes)
+        setFailure(all.answered === 0)
+        return
+      }
+      setFailed(null)
       const [r, l] = await Promise.all([listScopes(token, node), listLeases(token, node)])
       setLeases(l.kind === 'ok' ? l.data : null)
       if (r.kind === 'ok') {
@@ -175,22 +210,23 @@ export function Scopes({
       setFailure(true)
       setNotice(noticeFromFailure(r))
     },
-    [token, node],
+    [token, node, nodeKey],
   )
 
-  /** Opens a scope's page: `push` from the list, `none` when the bar already says it. */
+  /** Opens a scope's page: `push` from the list, `none` when the bar already says
+   *  it. `on` is the row's node in the `All nodes` view (deviation 38). */
   const openScope = useCallback(
-    async (name: string, how: 'push' | 'none') => {
+    async (name: string, how: 'push' | 'none', on?: string) => {
       setBusy(true)
-      const s = await getScope(token, name, node)
+      const s = await getScope(token, name, on ?? node)
       setBusy(false)
       if (s == null) {
         // A scope that cannot be read leaves the list on screen, and the bar with it.
         if (how === 'none' && onDhcpTab('Scopes')) writeScope(null, true)
         return
       }
-      if (how === 'push') writeScope(name)
-      setPage({ mode: 'edit', name, scope: s, form: formFromScope(s) })
+      if (how === 'push') writeScope(name, false, on)
+      setPage({ mode: 'edit', name, on, scope: s, form: formFromScope(s) })
     },
     [token, node],
   )
@@ -200,7 +236,9 @@ export function Scopes({
       await load()
       const want = arrival.current
       arrival.current = null
-      if (want != null) await openScope(want, 'none')
+      const on = arrivalNode.current
+      arrivalNode.current = undefined
+      if (want != null) await openScope(want, 'none', on)
     })()
   }, [load, openScope])
 
@@ -212,7 +250,7 @@ export function Scopes({
       if (want == null) {
         setPage(null)
         void load()
-      } else void openScope(want, 'none')
+      } else void openScope(want, 'none', readParam(SCOPE_NODE) ?? undefined)
     }
     window.addEventListener('popstate', onChanged)
     return () => window.removeEventListener('popstate', onChanged)
@@ -221,7 +259,7 @@ export function Scopes({
   // The hook goes BEFORE any return: otherwise it would stop being called as soon
   // as the table is loading.
   const usage = useMemo(
-    () => new Map((scopes ?? []).map((s) => [s.name, leases == null ? null : scopeUsage(s, leases)])),
+    () => new Map((scopes ?? []).map((s) => [scopeKey(s), leases == null ? null : scopeUsage(s, leases)])),
     [scopes, leases],
   )
   const { rows: sortedScopes, sort, toggle } = useSort(sortKeys(usage), scopes ?? [])
@@ -240,7 +278,7 @@ export function Scopes({
 
   async function save(body: Record<string, string>) {
     setBusy(true)
-    const outcome = await setScope(token, body, node)
+    const outcome = await setScope(token, body, (page?.mode === 'edit' ? page.on : undefined) ?? node)
     setBusy(false)
 
     if (outcome.kind !== 'ok') {
@@ -258,9 +296,9 @@ export function Scopes({
     })
   }
 
-  async function enable(name: string) {
+  async function enable(name: string, on?: string) {
     setBusy(true)
-    const outcome = await enableScope(token, name, node)
+    const outcome = await enableScope(token, name, on ?? node)
     setBusy(false)
     if (outcome.kind !== 'ok') return
     await load(page != null)
@@ -271,10 +309,10 @@ export function Scopes({
     })
   }
 
-  async function disable(name: string) {
+  async function disable(name: string, on?: string) {
     setConfirm(null)
     setBusy(true)
-    const outcome = await disableScope(token, name, node)
+    const outcome = await disableScope(token, name, on ?? node)
     setBusy(false)
     if (outcome.kind !== 'ok') return
     await load(page != null)
@@ -285,19 +323,19 @@ export function Scopes({
     })
   }
 
-  async function remove(name: string) {
+  async function remove(name: string, on?: string) {
     setConfirm(null)
     setBusy(true)
-    const outcome = await deleteScope(token, name, node)
+    const outcome = await deleteScope(token, name, on ?? node)
     setBusy(false)
     if (outcome.kind !== 'ok') return
     // dhcp.js:662. It removes the row; it does not ask for the list again. From
     // the scope's own page, the list is where the deleted scope leaves you.
-    if (page?.mode === 'edit' && page.name === name) {
+    if (page?.mode === 'edit' && page.name === name && page.on === on) {
       writeScope(null)
       setPage(null)
     }
-    setScopes((prev) => prev?.filter((s) => s.name !== name) ?? prev)
+    setScopes((prev) => prev?.filter((s) => !(s.name === name && s.node === on)) ?? prev)
     setNotice({
       type: 'success',
       title: 'Scope Deleted!',
@@ -306,9 +344,9 @@ export function Scopes({
   }
 
   /** Enabling asks nothing; disabling does (dhcp.js:615). */
-  function toggleState(s: DhcpScopeRow) {
-    if (s.enabled) setConfirm({ action: 'disable', name: s.name })
-    else void enable(s.name)
+  function toggleState(s: NodeScopeRow) {
+    if (s.enabled) setConfirm({ action: 'disable', name: s.name, on: s.node })
+    else void enable(s.name, s.node)
   }
 
   function toggleOpen(name: string) {
@@ -334,14 +372,16 @@ export function Scopes({
       onClose={() => setConfirm(null)}
       onConfirm={() => {
         if (!confirm) return
-        if (confirm.action === 'delete') void remove(confirm.name)
-        else void disable(confirm.name)
+        if (confirm.action === 'delete') void remove(confirm.name, confirm.on)
+        else void disable(confirm.name, confirm.on)
       }}
     />
   )
 
   if (page != null) {
-    const row = page.mode === 'edit' ? scopes?.find((s) => s.name === page.name) : undefined
+    const row = page.mode === 'edit' ? scopes?.find((s) => s.name === page.name && s.node === page.on) : undefined
+    /* The scope's own node's leases, in the `All nodes` view (deviation 38). */
+    const own = page.mode === 'edit' && leases != null ? leases.filter((l) => l.node === page.on) : leases
     return (
       <div className={styles.wrap}>
         <Notifier notice={notice} onClose={() => setNotice(null)} />
@@ -350,7 +390,7 @@ export function Scopes({
           mode={page.mode}
           row={row}
           scope={page.mode === 'edit' ? page.scope : undefined}
-          leases={leases}
+          leases={own}
           initial={page.form}
           busy={busy}
           canModify={canModify}
@@ -360,13 +400,16 @@ export function Scopes({
           onCancel={backToList}
           onNotice={(e) => setNotice({ type: 'warning', title: e.title, text: e.text })}
           onToggle={() => row != null && toggleState(row)}
-          onDelete={() => page.mode === 'edit' && setConfirm({ action: 'delete', name: page.name })}
+          onDelete={() => page.mode === 'edit' && setConfirm({ action: 'delete', name: page.name, on: page.on })}
           onOpenLeases={() => page.mode === 'edit' && onOpenLeases?.(page.name)}
         />
         {confirmation}
       </div>
     )
   }
+
+  const colourOf = (name: string) =>
+    `var(${nodeToken(Math.max(0, (cluster?.nodes ?? []).findIndex((n) => n.name === name)))})`
 
   return (
     <div className={styles.wrap}>
@@ -394,6 +437,11 @@ export function Scopes({
 
       {scopes == null ? (
         <Loading />
+      ) : failure && failed != null ? (
+        <>
+          <NodesFailed failed={failed.nodes} answered={0} />
+          <Failure>Could not load the list.</Failure>
+        </>
       ) : failure ? (
         /* Solid, not dashed, and with no count: how many there are is not known.
            The server's message goes in the notice. */
@@ -405,6 +453,7 @@ export function Scopes({
           <DataTable
             toolbar={
               <>
+                {cluster?.toggle}
                 <Grow>
                   <Field inline label="Search">
                     {(id) => (
@@ -441,10 +490,12 @@ export function Scopes({
             }
             foot={<DataFoot count={`Total Scopes: ${scopes.length}`} />}
           >
+            {failed != null && <NodesFailed failed={failed.nodes} answered={failed.answered} />}
             <Table
               stack
               header={
                 <>
+                  {across && <Th field="node" sort={sort} onSort={toggle}>Node</Th>}
                   <Th field="name" sort={sort} onSort={toggle}>Name</Th>
                   <Th field="range" sort={sort} onSort={toggle}>Scope Range</Th>
                   <Th field="mask" sort={sort} onSort={toggle}>Subnet Mask</Th>
@@ -456,16 +507,17 @@ export function Scopes({
               }
               isEmpty={visibleScopes.length === 0}
               emptyText="No Scope Found"
-              columns={7}
+              columns={across ? 8 : 7}
             >
               {visibleScopes.map((s) => (
                 <ScopeRow
-                  key={s.name}
+                  key={scopeKey(s)}
                   scope={s}
-                  usage={usage.get(s.name) ?? null}
-                  open={open.has(s.name)}
-                  onToggle={() => toggleOpen(s.name)}
-                  onOpen={() => void openScope(s.name, 'push')}
+                  usage={usage.get(scopeKey(s)) ?? null}
+                  nodeColour={across && s.node != null ? colourOf(s.node) : undefined}
+                  open={open.has(scopeKey(s))}
+                  onToggle={() => toggleOpen(scopeKey(s))}
+                  onOpen={() => void openScope(s.name, 'push', s.node)}
                   actions={
                     <>
                       {canModify && (
@@ -484,7 +536,7 @@ export function Scopes({
                               disabled={busy}
                               onClick={() => {
                                 close()
-                                void openScope(s.name, 'push')
+                                void openScope(s.name, 'push', s.node)
                               }}
                             >
                               Edit Scope
@@ -496,7 +548,7 @@ export function Scopes({
                                 disabled={busy}
                                 onClick={() => {
                                   close()
-                                  setConfirm({ action: 'delete', name: s.name })
+                                  setConfirm({ action: 'delete', name: s.name, on: s.node })
                                 }}
                               >
                                 Delete Scope
@@ -522,15 +574,18 @@ export function Scopes({
 function ScopeRow({
   scope: s,
   usage: u,
+  nodeColour,
   open,
   onToggle,
   onOpen,
   actions,
 }: {
-  scope: DhcpScopeRow
+  scope: NodeScopeRow
   /** Its usage (deviation 30); `null` when the scope is disabled, its range is
    *  not IPv4, or the leases could not be read. */
   usage: ScopeUsage | null
+  /** In the `All nodes` view, the colour of the row's node, drawn first. */
+  nodeColour?: string
   open: boolean
   onToggle: () => void
   onOpen: () => void
@@ -540,6 +595,11 @@ function ScopeRow({
   return (
     <>
       <tr className={open ? styles.openRow : undefined}>
+        {nodeColour != null && (
+          <td className={styles.nodeCell}>
+            <NodeName name={s.node ?? ''} colour={nodeColour} />
+          </td>
+        )}
         <td className={tbl.lead}>
           <button type="button" className={styles.opener} onClick={onOpen}>
             {s.name}
@@ -593,7 +653,7 @@ function ScopeRow({
       </tr>
       {open && (
         <tr id={detail} className={styles.detailRow}>
-          <td colSpan={7}>
+          <td colSpan={nodeColour != null ? 8 : 7}>
             <dl className={styles.inline}>
               <div className={styles.pair}>
                 <dt>Network</dt>

@@ -387,6 +387,7 @@ const ACCESSIBLE_NAMES = new Set([
   'Entries by RCODE',
   'Zones view',
   'Query Logs view',
+  'DHCP view',
 ])
 /*
 The Blocking section is the deliberate exception that adds a screen

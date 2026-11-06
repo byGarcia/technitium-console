@@ -225,3 +225,6 @@ written in several places), except that here one of the copies was missing.
 
 /* A word among addresses in a card's facts: `None`, `This DNS Server`. */
 .word { font-family: var(--font-ui); color: var(--mute); }
+
+/* Across the cluster (deviation 38): the row's node, first. */
+.nodeCell { white-space: nowrap; }
