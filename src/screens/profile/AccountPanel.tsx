@@ -5,17 +5,20 @@ import { login } from './profile'
 import styles from './Profile.module.css'
 
 /*
-The account's facts beside the Profile form (2026-11-06): the groups, as upstream's
-Member Of table listed them, and the two logins `user/profile/get` carries, written
-as Users writes them (`date from address`, or `Never`). They were two of the
-page's four cards; on a page of tabs they sit with the form they describe.
+The account's facts, a compact panel in the page's side column (2026-11-06): the
+groups, as upstream's Member Of table listed them, as tags (or `No Group Found`,
+upstream's empty foot), and the two logins `user/profile/get` carries, each on one
+line written as Users writes them (`date from address`, or `Never`), after how long
+ago it was.
 */
-export function AccountPanel({ profile }: { profile: Profile }) {
+export function AccountPanel({ profile, className }: { profile: Profile; className?: string }) {
   const groups = profile.memberOfGroups ?? []
-  const recent = login(profile.recentSessionLoggedOn, profile.recentSessionRemoteAddress)
-  const previous = login(profile.previousSessionLoggedOn, profile.previousSessionRemoteAddress)
+  const logins = [
+    ['Recent Login', login(profile.recentSessionLoggedOn, profile.recentSessionRemoteAddress)],
+    ['Previous Login', login(profile.previousSessionLoggedOn, profile.previousSessionRemoteAddress)],
+  ] as const
   return (
-    <Panel title="Account">
+    <Panel title="Account" className={className}>
       <dl className={styles.account}>
         <div>
           <dt>Member Of</dt>
@@ -33,29 +36,28 @@ export function AccountPanel({ profile }: { profile: Profile }) {
             )}
           </dd>
         </div>
-        {[
-          ['Recent Login', recent],
-          ['Previous Login', previous],
-        ].map(([label, l]) => {
-          const v = l as ReturnType<typeof login>
-          return (
-            <div key={label as string}>
-              <dt>{label as string}</dt>
-              <dd>
-                {v.never ? (
-                  'Never'
-                ) : (
-                  <>
-                    <span className={styles.ago}>{v.ago}</span>
-                    <span className={styles.when}>
-                      {v.date} from <span className={styles.addr}>{v.address}</span>
+        {logins.map(([label, v]) => (
+          <div key={label}>
+            <dt>{label}</dt>
+            <dd className={styles.login}>
+              {v.never ? (
+                'Never'
+              ) : (
+                <>
+                  <span className={styles.ago}>{v.ago}</span>
+                  {/* The dot travels with the date, so a narrow column breaks
+                      the line before it and never leaves it hanging. */}
+                  <span className={styles.when}>
+                    <span className={styles.dot} aria-hidden="true">
+                      ·
                     </span>
-                  </>
-                )}
-              </dd>
-            </div>
-          )
-        })}
+                    {v.date} from <span className={styles.addr}>{v.address}</span>
+                  </span>
+                </>
+              )}
+            </dd>
+          </div>
+        ))}
       </dl>
     </Panel>
   )

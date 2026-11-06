@@ -3,7 +3,7 @@ import { dateTime, fromNow } from '../../lib/dates'
 
 /*
 What the My Profile page reads from `user/profile/get`, worked out once so the
-header, the cards and the form say the same thing.
+header, the panels and the table say the same thing.
 
 Since v15.5 everything hangs off `type` (auth.js:684-703), not off the obsolete
 `isSsoUser`:
@@ -40,8 +40,8 @@ export function canConfigure2fa(p: Pick<Profile, 'type'>): boolean {
 
 /*
 A session's type, by the words of upstream's label (auth.js:723-739) and a series
-colour of its own, so the card's bar, its chips and the table's rows draw the same
-type the same way. An unknown type is upstream's amber `Unknown`.
+colour of its own, so the filter and the table's rows draw the same type the
+same way. An unknown type is upstream's amber `Unknown`.
 */
 export interface SessionKind {
   key: string
@@ -72,11 +72,6 @@ export function byKind(sessions: readonly SessionRow[]): { kind: SessionKind; co
   return order
     .filter((k) => counts.has(k))
     .map((k) => ({ kind: k === 'Unknown' ? UNKNOWN : KINDS[k], count: counts.get(k) ?? 0 }))
-}
-
-/** The API tokens among the sessions: the ones `Create API Token` makes. */
-export function tokenCount(sessions: readonly SessionRow[]): number {
-  return sessions.filter((s) => s.type === 'ApiToken').length
 }
 
 /* `0001-01-01T00:00:00` is .NET's `default(DateTime)`: the login never happened. */

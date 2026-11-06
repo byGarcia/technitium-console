@@ -43,7 +43,7 @@ export const SECTIONS: Section[] = [
     subs: ['Sessions','Users','Groups','Permissions','SSO','LDAP','Cluster'] },
   { id: 'logs', label: 'Logs', permission: 'Logs', subs: ['View Logs','Query Logs'] },
   { id: 'about', label: 'About', permission: null },
-  { id: 'profile', label: 'My Profile', permission: null, subs: ['Profile', 'Security', 'Sessions', 'Theme'] },
+  { id: 'profile', label: 'My Profile', permission: null },
 ]
 
 export interface Permission { canView: boolean; canModify: boolean; canDelete: boolean }

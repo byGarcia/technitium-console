@@ -3,8 +3,7 @@ import { deleteSession, getProfile, setProfile, type Profile as ProfileData, typ
 import { Button } from '../../ui/Button'
 import { Confirm } from '../../ui/Confirm'
 import { Loading } from '../../ui/Empty'
-import { Input } from '../../ui/Field'
-import { Row } from '../../ui/Form'
+import { Field, Input } from '../../ui/Field'
 import { Trailer } from '../../ui/PanelForm'
 import { Panel } from '../../ui/Panel'
 import { SectionHeader } from '../../ui/SectionHeader'
@@ -15,7 +14,6 @@ import { primaryNodeName, type ClusterNode } from '../../ui/ClusterNodeSelect'
 import { noticeFromFailure, type Notice } from '../../lib/notice'
 import { dropParams, readParam, writeParams } from '../../lib/url-state'
 import { AccountPanel } from './AccountPanel'
-import { SubTabs } from '../../ui/SubTabs'
 import { SessionsTable } from './SessionsTable'
 import { ThemeChoice } from './ThemeChoice'
 import {
@@ -24,7 +22,6 @@ import {
   canConfigure2fa,
   initial,
   isRemote,
-  tokenCount,
   totpStatus,
   userType,
 } from './profile'
@@ -34,10 +31,14 @@ import styles from './Profile.module.css'
 MY PROFILE IS A PAGE (deviation 21 in CONVENTIONS.md, 2026-11-06). Upstream's
 `modalMyProfile` (index.html:3691-3786, `showMyProfileModal` / `saveMyProfile` /
 `deleteMySession`, auth.js:660-866) is a dialog over whatever screen you were on.
-Here it is `/profile/`, reached from the account menu's `My Profile`, laid out as a
-zone's page: the user as the header, four cards (`ProfileSummary.tsx`), the
-dialog's form, the account's other actions, the sessions in a table
-(`SessionsTable.tsx`) and the theme (`ThemeChoice.tsx`).
+Here it is `/profile/`, reached from the account menu's `My Profile`, and it is ONE
+page with everything in view (2026-11-06, Adrián: four tabs were too many for so
+little): the user as the header, then two columns. The main one, about two thirds,
+is the sessions table (`SessionsTable.tsx`), whose toolbar also creates an API
+token, since a token is a session of that type. The side one stacks four compact
+panels: Profile (the dialog's form), Security, Account (`AccountPanel.tsx`) and
+Theme (`ThemeChoice.tsx`). Under 1180 px they stack in the order Profile,
+Security, Sessions, Account, Theme, which is the order they are written in.
 
 It calls what the dialog called, and nothing else: `user/profile/get` on arrival
 (and on Refresh, and after a dialog opened from here changes the account),
@@ -47,9 +48,10 @@ Configure 2FA and Create API Token open the account menu's own dialogs, unchange
 What the dialog did and still holds, in its words:
 
   · the form's fields, labels, placeholders and order: Display Name (locked for
-    a remote user, and then NOT sent, auth.js:794-797), Username, Type, Session
-    Timeout with its `seconds (valid range 0-604800; default 1800; set 0 to
-    disable)`; an empty timeout travels as 1800 (auth.js:787-789);
+    a remote user, and then NOT sent, auth.js:794-797), Session Timeout with its
+    `seconds (valid range 0-604800; default 1800; set 0 to disable)`; an empty
+    timeout travels as 1800 (auth.js:787-789). Username and Type are not fields
+    here: the header writes them, each named by its label for a screen reader;
   · the load writes the display name into the account menu and the 2FA state into
     the session (auth.js:675-679), and a save writes the name the SERVER returns;
   · `Profile Saved!` / `User profile was saved successfully.` on the page, as
@@ -61,16 +63,15 @@ What the dialog did and still holds, in its words:
     session was deleted successfully.`. An API token travels with `node`, the
     primary's name (`getPrimaryClusterNodeName`, empty on a standalone server).
 
-What changes, all part of deviation 21: it is a page and not a dialog; the
-`Member Of` table is the Member Of card; the 2FA Status is a card; the sessions
-table is a `ui/DataTable` with a type filter; nothing takes the focus a second
-after the load (upstream focuses Display Name, which a page that you scroll must
-not do); the header and the Security block are new arrangements of what the
-account menu already offers.
+What changes, all part of deviation 21: it is a page and not a dialog; Username,
+Type and the 2FA Status are the header's; the `Member Of` table is tags in the
+Account panel; the sessions table is a `ui/DataTable` with a type filter; nothing
+takes the focus a second after the load (upstream focuses Display Name, which a
+page that you scroll must not do); Security and the toolbar's Create API Token are
+new places for what the account menu already offers.
 
-Words OURS: `Security`, `Password`, `API Tokens`, `Profile` and `Theme` as the
-blocks' titles (the last is the Change Theme dialog's own label), and the API
-Tokens count's `token`/`tokens`.
+Words OURS: `Profile`, `Security`, `Account` and `Password` as titles (`Theme` is
+the Change Theme dialog's own label), and `2FA` before the header's status.
 */
 
 export type AccountDialog = 'password' | 'twofa' | 'token'
@@ -83,11 +84,6 @@ export interface ProfileFacts {
 
 const TYPE_PARAM = 'type'
 
-/* The page's tabs, each a route (`/profile/`, `/profile/security/`…), as the
-   sub-sections of Settings and Administration are (2026-11-06). */
-const TABS = ['Profile', 'Security', 'Sessions', 'Theme'] as const
-type Tab = (typeof TABS)[number]
-
 export function Profile({
   token,
   nodes = [],
@@ -95,13 +91,8 @@ export function Profile({
   revision = 0,
   onProfile,
   onOpen,
-  sub,
-  onSubChange,
 }: {
   token: string | null
-  /** The tab on screen, the route's sub-section (`/profile/security/`…). */
-  sub?: string | null
-  onSubChange?: (sub: string) => void
   nodes?: readonly ClusterNode[]
   clusterInitialised?: boolean
   /** Bumped by the Shell when a dialog opened from here changed the account. */
@@ -120,7 +111,6 @@ export function Profile({
   const [pendingDelete, setPendingDelete] = useState<SessionRow | null>(null)
   const [deleting, setDeleting] = useState<string | null>(null)
   const [kind, setKind] = useState(() => readParam(TYPE_PARAM) ?? '')
-  const active = (TABS as readonly string[]).includes(sub ?? '') ? (sub as Tab) : 'Profile'
   const onProfileRef = useRef(onProfile)
   onProfileRef.current = onProfile
 
@@ -196,7 +186,8 @@ export function Profile({
   }
 
   const title = profile == null ? 'My Profile' : profile.displayName || profile.username
-  const tokens = tokenCount(sessions)
+
+  const totpTone = profile?.totpEnabled && profile.type !== 'RemoteSSO' ? 'ok' : 'neutral'
 
   return (
     <div className={styles.page}>
@@ -217,144 +208,116 @@ export function Profile({
             }
             labels={
               profile == null ? undefined : (
-                <>
-                  <span className={styles.username}>{profile.username}</span>
-                  <Tag tone={remote ? 'info' : 'neutral'}>{userType(profile)}</Tag>
-                  {/* The 2FA state, on the header's line: it was a card. */}
-                  <span data-testid="totp-status">
-                    <Tag tone={profile.totpEnabled && profile.type !== 'RemoteSSO' ? 'ok' : 'neutral'}>
-                      2FA {totpStatus(profile)}
-                    </Tag>
-                  </span>
-                </>
+                /* Username and Type, the dialog's two read-only fields, and the
+                   2FA Status: each a value named by upstream's label, which a
+                   screen reader says and the eye does not need. */
+                <dl className={styles.facts}>
+                  <div>
+                    <dt className={styles.hidden}>Username</dt>
+                    <dd className={styles.username}>{profile.username}</dd>
+                  </div>
+                  <div>
+                    <dt className={styles.hidden}>Type</dt>
+                    <dd>
+                      <Tag tone={remote ? 'info' : 'neutral'}>{userType(profile)}</Tag>
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className={styles.hidden}>2FA Status</dt>
+                    <dd data-testid="totp-status">
+                      <Tag tone={totpTone}>2FA {totpStatus(profile)}</Tag>
+                    </dd>
+                  </div>
+                </dl>
               )
             }
           />
         </div>
       </div>
 
-      {profile != null && (
-        <SubTabs
-          label="Profile sections"
-          section="profile"
-          tabs={TABS}
-          active={active}
-          onChoose={(t) => onSubChange?.(t)}
-        />
-      )}
-
       {profile == null ? (
         loading && <Loading />
       ) : (
-        <>
-          {active === 'Profile' && (
-            <div className={styles.columns}>
-            <Panel title="Profile">
-              <form
-                className={styles.form}
-                onSubmit={(e) => {
-                  e.preventDefault()
-                  void save()
-                }}
-              >
-                <Row modal label="Display Name">
-                  {(id) => (
+        <div className={styles.layout}>
+          <Panel title="Profile" className={styles.profileArea}>
+            <form
+              className={styles.form}
+              onSubmit={(e) => {
+                e.preventDefault()
+                void save()
+              }}
+            >
+              <Field label="Display Name">
+                {(id) => (
+                  <Input
+                    id={id}
+                    placeholder="display name"
+                    maxLength={255}
+                    value={displayName}
+                    disabled={remote}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                  />
+                )}
+              </Field>
+              <Field label="Session Timeout">
+                {(id) => (
+                  <div className={styles.timeout}>
                     <Input
                       id={id}
-                      placeholder="display name"
-                      maxLength={255}
-                      value={displayName}
-                      disabled={remote}
-                      onChange={(e) => setDisplayName(e.target.value)}
+                      type="number"
+                      placeholder="1800"
+                      className={styles.num}
+                      value={timeout}
+                      onChange={(e) => setTimeoutSeconds(e.target.value)}
                     />
-                  )}
-                </Row>
-                <Row modal label="Username">
-                  {(id) => <Input id={id} placeholder="username" value={profile.username} disabled />}
-                </Row>
-                <Row modal label="Type">
-                  {(id) => (
-                    <output id={id} className={styles.typeValue}>
-                      {userType(profile)}
-                    </output>
-                  )}
-                </Row>
-                <Row modal label="Session Timeout">
-                  {(id) => (
-                    <div className={styles.inline}>
-                      <Input
-                        id={id}
-                        type="number"
-                        placeholder="1800"
-                        className={styles.num}
-                        value={timeout}
-                        onChange={(e) => setTimeoutSeconds(e.target.value)}
-                      />
-                      <Trailer>seconds (valid range 0-604800; default 1800; set 0 to disable)</Trailer>
-                    </div>
-                  )}
-                </Row>
-                <div className={styles.formActions}>
-                  <Button type="submit" variant="primary" lead="save" disabled={saving}>
-                    Save
-                  </Button>
-                </div>
-              </form>
-            </Panel>
-              <AccountPanel profile={profile} />
-            </div>
-          )}
-          {active === 'Security' && (
-            <div className={styles.single}>
-            <Panel title="Security">
-              <ul className={styles.security}>
-                {canChangePassword(profile) && (
-                  <li>
-                    <div className={styles.secText}>
-                      <span className={styles.secName}>Password</span>
-                    </div>
-                    <Button size="sm" lead="lock" onClick={() => onOpen?.('password')}>
-                      Change Password
-                    </Button>
-                  </li>
+                    <Trailer>seconds (valid range 0-604800; default 1800; set 0 to disable)</Trailer>
+                  </div>
                 )}
+              </Field>
+              <div className={styles.formActions}>
+                <Button type="submit" variant="primary" lead="save" disabled={saving}>
+                  Save
+                </Button>
+              </div>
+            </form>
+          </Panel>
+
+          <Panel title="Security" groups2 className={styles.securityArea}>
+            <ul className={styles.lines}>
+              {canChangePassword(profile) && (
                 <li>
-                  <div className={styles.secText}>
-                    <span className={styles.secName}>2FA Status</span>
-                    <Tag tone={profile.totpEnabled && profile.type !== 'RemoteSSO' ? 'ok' : 'neutral'}>
-                      {totpStatus(profile)}
-                    </Tag>
-                  </div>
-                  {canConfigure2fa(profile) && (
-                    <Button size="sm" lead="shield" onClick={() => onOpen?.('twofa')}>
-                      Configure 2FA
-                    </Button>
-                  )}
-                </li>
-                <li>
-                  <div className={styles.secText}>
-                    <span className={styles.secName}>API Tokens</span>
-                    <span className={styles.secValue}>{`${tokens} ${tokens === 1 ? 'token' : 'tokens'}`}</span>
-                  </div>
-                  <Button size="sm" lead="key" onClick={() => onOpen?.('token')}>
-                    Create API Token
+                  <span className={styles.lineName}>Password</span>
+                  <Button size="sm" lead="lock" onClick={() => onOpen?.('password')}>
+                    Change Password
                   </Button>
                 </li>
-              </ul>
-            </Panel>
-            </div>
-          )}
-          {active === 'Sessions' && (
-          <SessionsTable
-            sessions={sessions}
-            kind={activeKind}
-            onKind={setKind}
-            onDelete={setPendingDelete}
-            busy={deleting}
-          />
-          )}
-          {active === 'Theme' && <ThemeChoice />}
-        </>
+              )}
+              <li>
+                <span className={styles.lineName}>2FA Status</span>
+                <Tag tone={totpTone}>{totpStatus(profile)}</Tag>
+                {canConfigure2fa(profile) && (
+                  <Button size="sm" lead="shield" onClick={() => onOpen?.('twofa')}>
+                    Configure 2FA
+                  </Button>
+                )}
+              </li>
+            </ul>
+          </Panel>
+
+          <div className={styles.sessionsArea}>
+            <SessionsTable
+              sessions={sessions}
+              kind={activeKind}
+              onKind={setKind}
+              onDelete={setPendingDelete}
+              onCreateToken={() => onOpen?.('token')}
+              busy={deleting}
+            />
+          </div>
+
+          <AccountPanel profile={profile} className={styles.accountArea} />
+          <ThemeChoice className={styles.themeArea} />
+        </div>
       )}
 
       <Confirm

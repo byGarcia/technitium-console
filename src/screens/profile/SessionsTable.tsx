@@ -1,6 +1,7 @@
 import { useId, useState, type CSSProperties } from 'react'
 import type { SessionRow } from '../../api/user'
-import { DataTable, DataFoot, Grow } from '../../ui/DataTable'
+import { DataTable, DataFoot, End, Grow } from '../../ui/DataTable'
+import { Button } from '../../ui/Button'
 import { Segmented } from '../../ui/Segmented'
 import { RowAction, Table, Th, useSort, type Keys } from '../../ui/Table'
 import tbl from '../../ui/Table.module.css'
@@ -14,15 +15,18 @@ The user's own sessions (deviation 21), upstream's `tbodyMyProfileActiveSessions
 columns, `Session`, `Last Seen`, `Remote Address` and `User Agent`, and the same
 `Total Sessions: N` in its foot.
 
-  · One line per session: its type (the label upstream writes, in the series
-    colour the Active Sessions card gives it), the token name if it has one, the
-    partial token, `(current)`. The user agent is cut to the line; the row's
-    `Details` holds it whole.
+  · One row per session, two lines tall: its type (the label upstream writes, in
+    a series colour of its own, `sessionKind`) and the token name if it has one,
+    then the partial token and `(current)`; the date, then how long ago. The user
+    agent is cut to the line; the row's `Details` holds it whole.
   · `Delete Session` is the row's own button instead of the only entry of a `⋮`
     menu; it asks upstream's confirmation as before (the page owns it).
-  · The toolbar's type filter and the card's chips are the same state: they narrow
-    what is drawn and ask the server nothing; the foot says `N of M sessions, TYPE
-    only` while it does.
+  · The toolbar's type filter narrows what is drawn and asks the server nothing;
+    the foot says `N of M sessions, TYPE only` while it does.
+  · `Create API Token` sits at the toolbar's end: an API token IS a session of
+    that type, so the verb that makes one belongs with the list that holds them.
+    It opens the account menu's own dialog, and the page reads the profile again
+    once a token is made (the Shell's `revision`).
 
 Words OURS: `All`, `Details`, `Type`, `Session type` (the filter's name), and `N of M sessions, TYPE only`.
 */
@@ -40,6 +44,7 @@ export function SessionsTable({
   kind,
   onKind,
   onDelete,
+  onCreateToken,
   busy,
 }: {
   sessions: SessionRow[]
@@ -47,6 +52,7 @@ export function SessionsTable({
   kind: string
   onKind: (kind: string) => void
   onDelete: (row: SessionRow) => void
+  onCreateToken: () => void
   /** The partial token whose delete is on its way. */
   busy: string | null
 }) {
@@ -71,6 +77,11 @@ export function SessionsTable({
               />
             )}
           </Grow>
+          <End>
+            <Button lead="key" onClick={onCreateToken}>
+              Create API Token
+            </Button>
+          </End>
         </>
       }
       foot={
@@ -115,13 +126,17 @@ function SessionLine({ r, onDelete, busy }: { r: SessionRow; onDelete: (r: Sessi
       <tr className={open ? styles.openRow : undefined}>
         <td className={tbl.lead}>
           <span className={styles.session}>
-            <span className={styles.kind} style={{ '--sw': k.colour } as CSSProperties}>{k.name}</span>
-            {r.tokenName != null && <span className={styles.tokenName}>{r.tokenName}</span>}
-            <span className={styles.partial}>{`[${r.partialToken}]`}</span>
-            {r.isCurrentSession && <span className={styles.current}>(current)</span>}
+            <span className={styles.sessionLine}>
+              <span className={styles.kind} style={{ '--sw': k.colour } as CSSProperties}>{k.name}</span>
+              {r.tokenName != null && <span className={styles.tokenName}>{r.tokenName}</span>}
+            </span>
+            <span className={styles.sessionLine}>
+              <span className={styles.partial}>{`[${r.partialToken}]`}</span>
+              {r.isCurrentSession && <span className={styles.current}>(current)</span>}
+            </span>
           </span>
         </td>
-        <td className={styles.seenCell}>
+        <td>
           <span className={styles.seen}>{dateTime(r.lastSeen)}</span>{' '}
           <small className={styles.age}>{`(${fromNow(r.lastSeen)})`}</small>
         </td>
@@ -144,7 +159,7 @@ function SessionLine({ r, onDelete, busy }: { r: SessionRow; onDelete: (r: Sessi
       </tr>
       {open && (
         <tr id={detail} className={styles.detailRow}>
-          <td colSpan={5}>
+          <td colSpan={5} className={styles.detailCell}>
             <dl className={styles.detail}>
               <div>
                 <dt>Type</dt>
