@@ -6,6 +6,7 @@ import { Dialog } from '../../ui/Dialog'
 import { Input, Select, Textarea } from '../../ui/Field'
 import { Radios } from '../../ui/PanelForm'
 import { SectionHeader } from '../../ui/SectionHeader'
+import { DataFoot, DataTable, End } from '../../ui/DataTable'
 import { Empty, Loading } from '../../ui/Empty'
 import { Tag } from '../../ui/Tag'
 import {
@@ -198,7 +199,8 @@ export function Cluster({ tabs, token, cluster, node: controlledNode, onNodeChan
               Delete Cluster
             </Button>
           )}
-          <NodePicker cluster={state} value={node} onChange={setNode} label="Cluster Node" /></>}
+          </>}
+        titleAction={<RowAction icon="refresh" name="Refresh" disabled={loading} onClick={() => void load()} />}
       />
 
       {loading ? (
@@ -218,7 +220,16 @@ export function Cluster({ tabs, token, cluster, node: controlledNode, onNodeChan
           This server is not part of a cluster. Create one, or join an existing cluster.
         </Empty>
       ) : (
-        <>
+        <DataTable
+          /* Deviation 23: the node picker is the table's toolbar, and `Total Nodes`
+             its foot, as every list now has them. */
+          toolbar={
+            <End>
+              <NodePicker cluster={state} value={node} onChange={setNode} label="Cluster Node" />
+            </End>
+          }
+          foot={<DataFoot count={`Total Nodes: ${nodes.length}`} />}
+        >
           <Table
             stack
             header={
@@ -331,10 +342,7 @@ export function Cluster({ tabs, token, cluster, node: controlledNode, onNodeChan
               </tr>
             ))}
           </Table>
-          <div className={styles.count}>
-            <span>{`Total Nodes: ${nodes.length}`}</span>
-          </div>
-        </>
+        </DataTable>
       )}
 
       <Confirm

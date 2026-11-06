@@ -1,10 +1,11 @@
 import type { ReactNode } from 'react'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useId, useState } from 'react'
 import { Button } from '../../ui/Button'
 import { Dialog } from '../../ui/Dialog'
-import { Input, Select, Textarea } from '../../ui/Field'
+import { Field, Input, Select, Textarea } from '../../ui/Field'
 import { SectionHeader } from '../../ui/SectionHeader'
 import { Loading } from '../../ui/Empty'
+import { DataFoot, DataTable, End, Grow } from '../../ui/DataTable'
 import {
   createGroup,
   deleteGroup,
@@ -24,19 +25,26 @@ import {
 } from './parts'
 import tbl from '../../ui/Table.module.css'
 import { RowAction, Th, useSort, type Keys, Table } from '../../ui/Table'
-import { Menu } from '../../ui/Menu'
+import { Menu, Separator } from '../../ui/Menu'
 import { Notifier } from '../../ui/Notifier'
+import { useBarParam } from './bar-param'
+import lists from './AdminLists.module.css'
 
 /*
 `refreshAdminGroups`, `addGroup`, `showGroupDetailsModal`, `saveGroupDetails` and
 `deleteGroup` (auth.js:1699-1937).
 
 One table detail that is not decoration: the description is drawn with its
-newlines turned into `<br />` (auth.js:1731), because the field is a textarea of
-up to 255 characters and can carry them.
+newlines kept (auth.js:1731 turns them into `<br />`), because the field is a
+textarea of up to 255 characters and can carry them. On the row it is cut to one
+line; the row's `Details` holds it whole, line by line (deviation 23).
 
 And one about saving: `newGroup` only travels if the name CHANGED. Always sending
 it would make the server try to rename the group to itself.
+
+The layout is deviation 23: one data table, a search in its toolbar (`?q=`, it asks
+nothing) with `Add Group` at its end, where upstream floats it over the table, and
+upstream's `⋮` menu (View Details, then Delete Group).
 */
 
 interface Props {
@@ -58,6 +66,7 @@ export function Groups({ tabs, token, onNotice }: Props) {
   const [add, setAdd] = useState(false)
   const [detail, setDetail] = useState<string | null>(null)
   const [pendingDelete, setPendingDelete] = useState<AdminGroup | null>(null)
+  const [search, setSearch] = useBarParam('q')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -76,7 +85,11 @@ export function Groups({ tabs, token, onNotice }: Props) {
     void load()
   }, [load])
 
-  const { rows: visibleGroups, sort, toggle } = useSort(KEYS, groups)
+  const needle = search.trim().toLowerCase()
+  const shown = groups.filter(
+    (g) => needle === '' || g.name.toLowerCase().includes(needle) || g.description.toLowerCase().includes(needle),
+  )
+  const { rows: visibleGroups, sort, toggle } = useSort(KEYS, shown)
 
   async function remove(g: AdminGroup) {
     setPendingDelete(null)
@@ -94,16 +107,47 @@ export function Groups({ tabs, token, onNotice }: Props) {
       <SectionHeader
         title="Administration"
         tabs={tabs}
-        actions={<><Button variant="primary" onClick={() => setAdd(true)}>
-            Add Group
-          </Button></>}
+        titleAction={<RowAction icon="refresh" name="Refresh" disabled={loading} onClick={() => void load()} />}
       />
 
       {loading ? (
         <Loading />
       ) : (
-        <>
+        <DataTable
+          toolbar={
+            <>
+              <Grow>
+                <Field inline label="Search">
+                  {(id) => (
+                    <Input
+                      id={id}
+                      search
+                      placeholder="Name or description"
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                    />
+                  )}
+                </Field>
+              </Grow>
+              <End>
+                <Button lead="add" variant="primary" onClick={() => setAdd(true)}>
+                  Add Group
+                </Button>
+              </End>
+            </>
+          }
+          foot={
+            <DataFoot
+              count={
+                shown.length === groups.length
+                  ? `Total Groups: ${groups.length}`
+                  : `Total Groups: ${groups.length}, ${shown.length} shown`
+              }
+            />
+          }
+        >
           <Table
+            stack
             header={
               <>
                 <Th field="name" sort={sort} onSort={toggle}>Name</Th>
@@ -116,45 +160,15 @@ export function Groups({ tabs, token, onNotice }: Props) {
             columns={3}
           >
             {visibleGroups.map((g) => (
-              <tr key={g.name}>
-                <td>
-                  <button
-                    type="button"
-                    className={styles.link}
-                    onClick={() => setDetail(g.name)}
-                  >
-                    {g.name}
-                  </button>
-                </td>
-                <td>
-                  {g.description.split('\n').map((line, i) => (
-                    // eslint-disable-next-line react/no-array-index-key
-                    <div key={i}>{line}</div>
-                  ))}
-                </td>
-                <td className={tbl.actionsCell}>
-                  <div className={tbl.actions}>
-                    <RowAction
-                      icon="card"
-                      name="View Details"
-                      onClick={() => setDetail(g.name)}
-                    />
-                    <Menu label={`Actions for ${g.name}`}>
-                      {(close) => (
-                        <button type="button" data-variant="danger" onClick={() => { close(); setPendingDelete(g) }}>
-                          Delete Group
-                        </button>
-                      )}
-                    </Menu>
-                  </div>
-                </td>
-              </tr>
+              <GroupLine
+                key={g.name}
+                g={g}
+                onDetails={() => setDetail(g.name)}
+                onDelete={() => setPendingDelete(g)}
+              />
             ))}
           </Table>
-          <div className={styles.count}>
-            <span>{`Total Groups: ${groups.length}`}</span>
-          </div>
-        </>
+        </DataTable>
       )}
 
       <Confirm
@@ -190,6 +204,70 @@ export function Groups({ tabs, token, onNotice }: Props) {
             })
           }}
         />
+      )}
+    </>
+  )
+}
+
+/* One group, one line: the name opens its details; the description is cut to the
+   line, and whole, newlines kept, under `Details`. */
+function GroupLine({ g, onDetails, onDelete }: { g: AdminGroup; onDetails: () => void; onDelete: () => void }) {
+  const [open, setOpen] = useState(false)
+  const detail = useId()
+  return (
+    <>
+      <tr className={open ? lists.openRow : undefined}>
+        <td className={tbl.lead}>
+          <button type="button" className={lists.link} onClick={onDetails}>
+            {g.name}
+          </button>
+        </td>
+        <td className={lists.descCell}>
+          <span className={lists.clip} title={g.description}>
+            {g.description.split('\n').join(' ')}
+          </span>
+        </td>
+        <td className={tbl.actionsCell}>
+          <div className={tbl.actions}>
+            <RowAction
+              icon={open ? 'chevronDown' : 'chevronRight'}
+              name="Details"
+              aria-expanded={open}
+              aria-controls={detail}
+              onClick={() => setOpen((v) => !v)}
+            />
+            <Menu label={`Actions for ${g.name}`}>
+              {(close) => (
+                <>
+                  <button type="button" onClick={() => { close(); onDetails() }}>
+                    View Details
+                  </button>
+                  <Separator />
+                  <button type="button" data-variant="danger" onClick={() => { close(); onDelete() }}>
+                    Delete Group
+                  </button>
+                </>
+              )}
+            </Menu>
+          </div>
+        </td>
+      </tr>
+      {open && (
+        <tr id={detail} className={lists.detailRow}>
+          <td colSpan={3} className={lists.detailCell}>
+            <dl className={lists.detail}>
+              <div className={lists.wide}>
+                <dt>Description</dt>
+                <dd>
+                  {g.description.split('\n').map((line, i) => (
+                    // eslint-disable-next-line react/no-array-index-key
+                    <div key={i} className={lists.whole}>{line}</div>
+                  ))}
+                </dd>
+              </div>
+            </dl>
+          </td>
+        </tr>
       )}
     </>
   )

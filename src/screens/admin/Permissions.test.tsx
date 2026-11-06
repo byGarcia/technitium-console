@@ -5,6 +5,7 @@ import { Permissions } from './Permissions'
 import * as client from '../../api/client'
 import { CLUSTER_PRIMARY, PERMISSIONS } from './admin.fixture'
 import { choose } from '../../test/dropdown'
+import { mockSystemTheme, resetTheme } from '../../test/system-theme'
 
 afterEach(() => vi.restoreAllMocks())
 
@@ -41,55 +42,68 @@ function server(sections = PERMISSIONS, detail: Record<string, unknown> = DETAIL
 
 const props = { token: 'tok', cluster: null, onNotice: vi.fn() }
 
-describe('Permissions: the list', () => {
-  it('it draws one card per section with its two tables and the total', async () => {
-    server()
-    render(<Permissions {...props} />)
+/* A section's row in the matrix, by its row header. */
+async function rowOf(section: string) {
+  return (await screen.findByRole('rowheader', { name: section })).closest('tr')!
+}
 
-    /* The section's name is the panel's TITLE, not a button: it was an
-       orange link and did the same thing as the "Edit Permissions" next to it:
-       two controls for one action. Upstream does not link it either.
-
-       It is `getAllBy` and not `getBy` because the name now appears twice on the
-       screen on purpose: once as this panel's title and once as a column of the
-       concession map. */
-    expect(await screen.findByRole('heading', { name: 'Dashboard' })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Zones' })).toBeInTheDocument()
-    expect(screen.getAllByRole('button', { name: 'Edit Permissions' })).toHaveLength(2)
-    expect(screen.getByText('Total Sections: 2')).toBeInTheDocument()
-    /* One caption per section table, plus the map's rowgroup header for each
-       population that has anyone in it. */
-    expect(screen.getAllByText('User Permissions')).toHaveLength(3)
-    expect(screen.getAllByText('Group Permissions')).toHaveLength(3)
-  })
-
+describe('Permissions: the matrix', () => {
   /*
-  The map is the round's first decision: eleven stacked panels compare nothing,
-  and comparing across sections is what this screen is for. It is a table like the
-  sections, only transposed: the sections across, one row per subject.
+  Deviation 23: upstream's list is a row per section holding two small tables; here
+  it is ONE matrix with the sections as rows and every subject as a column, groups
+  first and then users, under upstream's two titles.
   */
-  it('draws the concession map with the sections as its columns', async () => {
+  it('draws the sections as rows and the groups, then the users, as columns', async () => {
     server()
     render(<Permissions {...props} />)
     const map = await screen.findByRole('table', { name: 'Permissions' })
-    for (const section of ['Dashboard', 'Zones']) {
-      expect(within(map).getByRole('columnheader', { name: section })).toBeInTheDocument()
-    }
-    expect(within(map).getByRole('rowheader', { name: 'Administrators' })).toBeInTheDocument()
+    expect(within(map).getAllByRole('rowheader').map((h) => h.textContent)).toEqual(['Dashboard', 'Zones'])
+    const heads = within(map).getAllByRole('columnheader').map((h) => h.textContent)
+    expect(heads).toEqual([
+      'Section',
+      'Group Permissions',
+      'User Permissions',
+      'Edit Permissions',
+      'Administrators',
+      'Everyone',
+      'testuser',
+    ])
+    expect(screen.getByText('Total Sections: 2')).toBeInTheDocument()
   })
 
-  it('the index has one entry per section, and they point at its panel', async () => {
+  it('a cell says the verbs granted; no entry is an empty cell', async () => {
     server()
     render(<Permissions {...props} />)
-    const index = await screen.findByRole('navigation', { name: 'On this page' })
-    expect(within(index).getAllByRole('link')).toHaveLength(2)
-    expect(within(index).getByRole('link', { name: 'Zones' })).toHaveAttribute('href', '#perm-zones')
+    const dashboard = await rowOf('Dashboard')
+    const cells = within(dashboard).getAllByRole('cell')
+    // Administrators, Everyone, testuser, then the row's action.
+    expect(cells[0]).toHaveTextContent('View, Modify, Delete')
+    expect(cells[1]).toHaveTextContent('View')
+    expect(cells[1]).not.toHaveTextContent('Modify')
+    expect(cells[2]).toHaveTextContent('')
+    expect(cells[2].textContent).toBe('')
+    const zones = within(await rowOf('Zones')).getAllByRole('cell')
+    expect(zones[1].textContent).toBe('')
+    expect(zones[2]).toHaveTextContent('View')
   })
 
-  it('with no per-user permissions the upstream literal comes out', async () => {
-    server()
+  it('an entry that grants nothing is still drawn, and says None', async () => {
+    server([
+      {
+        section: 'Logs',
+        userPermissions: [],
+        groupPermissions: [{ name: 'Everyone', canView: false, canModify: false, canDelete: false }],
+      },
+    ])
     render(<Permissions {...props} />)
-    expect(await screen.findByText('No user permissions')).toBeInTheDocument()
+    const cells = within(await rowOf('Logs')).getAllByRole('cell')
+    expect(cells[0]).toHaveTextContent('None')
+  })
+
+  it('with nobody holding a user permission the upstream literal comes out once', async () => {
+    server([PERMISSIONS[0]])
+    render(<Permissions {...props} />)
+    expect(await screen.findAllByText('No user permissions')).toHaveLength(1)
   })
 
   it('with no per-group permissions its own literal comes out', async () => {
@@ -98,35 +112,38 @@ describe('Permissions: the list', () => {
     expect(await screen.findByText('No group permissions')).toBeInTheDocument()
   })
 
-  /*
-  The one thing this round had to RESOLVE and not merely draw: a cell has a name
-  written in the DOM, `{Section} · {Subject} · {Verb}`, and the grid it lives in
-  is a table with both axes. Before this the eleven sections were a CSS grid, and a
-  structural read of the DOM found no table with 84 cells inside.
-  */
-  it('the list is read-only: its checkboxes are disabled', async () => {
+  it('the Section header sorts the rows, as upstream does', async () => {
     server()
+    const user = userEvent.setup()
     render(<Permissions {...props} />)
-    expect(await screen.findByLabelText('Dashboard · Administrators · View')).toBeDisabled()
-    expect(screen.getByLabelText('Dashboard · Everyone · Modify')).not.toBeChecked()
+    const map = await screen.findByRole('table', { name: 'Permissions' })
+    // Already in order, so the first press reverses it, as upstream's `sortTable` does.
+    await user.click(within(map).getByRole('button', { name: 'Section' }))
+    expect(within(map).getAllByRole('rowheader').map((h) => h.textContent)).toEqual(['Zones', 'Dashboard'])
+    await user.click(within(map).getByRole('button', { name: 'Section' }))
+    expect(within(map).getAllByRole('rowheader').map((h) => h.textContent)).toEqual(['Dashboard', 'Zones'])
   })
 
-  it('a section is a table with its verbs as columns and its subject as the row', async () => {
-    server()
+  it('the name, the row button and a click on the row each open the section', async () => {
+    const spy = server()
+    const user = userEvent.setup()
     render(<Permissions {...props} />)
-    await screen.findByRole('heading', { name: 'Dashboard' })
-    const panel = document.getElementById('perm-dashboard')!
-    const groups = within(panel).getByRole('table', { name: 'Group Permissions' })
-    for (const verb of ['View', 'Modify', 'Delete']) {
-      expect(within(groups).getByRole('columnheader', { name: verb })).toHaveAttribute(
-        'scope',
-        'col',
-      )
+    const sectionOf = () => {
+      const body = spy.mock.calls.filter((c) => c[0] === 'admin/permissions/get').at(-1)?.[1]?.body
+      return (body as Record<string, string> | undefined)?.section
     }
-    expect(within(groups).getByRole('rowheader', { name: 'Everyone' })).toHaveAttribute(
-      'scope',
-      'row',
-    )
+
+    await user.click(await screen.findByRole('button', { name: 'Zones' }))
+    expect(await screen.findByRole('dialog', { name: 'Edit Permissions - Zones' })).toBeInTheDocument()
+    expect(sectionOf()).toBe('Zones')
+    await user.keyboard('{Escape}')
+
+    await user.click(within(await rowOf('Dashboard')).getByRole('button', { name: 'Edit Permissions' }))
+    expect(await screen.findByRole('dialog', { name: 'Edit Permissions - Dashboard' })).toBeInTheDocument()
+    await user.keyboard('{Escape}')
+
+    await user.click(within(await rowOf('Zones')).getAllByRole('cell')[0])
+    expect(await screen.findByRole('dialog', { name: 'Edit Permissions - Zones' })).toBeInTheDocument()
   })
 
   it('with no sections the total says zero', async () => {
@@ -136,15 +153,30 @@ describe('Permissions: the list', () => {
   })
 })
 
+describe('Permissions: folded on a phone', () => {
+  afterEach(() => resetTheme())
+
+  it('one block per section, its groups then its users, with the upstream literals', async () => {
+    mockSystemTheme(true) // every media query matches: the narrow layout
+    server()
+    render(<Permissions {...props} />)
+    const blocks = await screen.findByRole('list', { name: 'Permissions' })
+    const items = within(blocks).getAllByRole('listitem').filter((li) => li.parentElement === blocks)
+    expect(items).toHaveLength(2)
+    expect(within(items[0]).getByText('No user permissions')).toBeInTheDocument()
+    expect(within(items[0]).getByText('Everyone')).toBeInTheDocument()
+    expect(within(items[1]).getByText('testuser')).toBeInTheDocument()
+    expect(within(items[1]).getByRole('button', { name: 'Edit Permissions' })).toBeInTheDocument()
+  })
+})
+
 describe('Permissions: the editing modal', () => {
   async function open(cluster = null as never) {
     const spy = server()
     const user = userEvent.setup()
     render(<Permissions {...props} cluster={cluster} />)
-    // It opens through its panel's button, which is the only control left.
-    await screen.findByRole('heading', { name: 'Dashboard' })
-    const panel = document.getElementById('perm-dashboard')!
-    await user.click(within(panel).getByRole('button', { name: 'Edit Permissions' }))
+    // It opens through the section's row.
+    await user.click(within(await rowOf('Dashboard')).getByRole('button', { name: 'Edit Permissions' }))
     await screen.findByRole('dialog')
     return { user, spy }
   }
@@ -218,9 +250,7 @@ describe('Permissions: the editing modal', () => {
     const user = userEvent.setup()
     render(<Permissions {...props} onNotice={onNotice} />)
 
-    await screen.findByRole('heading', { name: 'Dashboard' })
-    const panel = document.getElementById('perm-dashboard')!
-    await user.click(within(panel).getByRole('button', { name: 'Edit Permissions' }))
+    await user.click(within(await rowOf('Dashboard')).getByRole('button', { name: 'Edit Permissions' }))
     await screen.findByRole('dialog')
     await user.click(screen.getByRole('button', { name: 'Save' }))
 

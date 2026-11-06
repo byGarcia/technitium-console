@@ -7,6 +7,9 @@ import { SectionHeader } from '../../ui/SectionHeader'
 import { IndexedForm } from '../../ui/IndexedForm'
 import { useSectionInView } from '../../ui/useSectionInView'
 import { Loading } from '../../ui/Empty'
+import { RowAction } from '../../ui/Table'
+import { ConfigState } from './ListParts'
+import { ssoConfigured } from './config-state'
 import { getSsoConfig, setSsoConfig, type SsoConfig } from '../../api/admin'
 import { appRoot } from '../../app/base'
 import { mappedLocalGroup, serializeTable, type Cell } from './table'
@@ -91,6 +94,7 @@ export function Sso({ tabs, token, onNotice }: Props) {
   /* What `apply` reads: the last local groups the server sent, kept across a
      `set` that leaves them out, without making `apply` depend on state. */
   const localGroupsRef = useRef<string[]>([])
+  const [saved, setSaved] = useState<SsoConfig | null>(null)
   const [enabled, setEnabled] = useState(false)
   const [authority, setAuthority] = useState('')
   const [clientId, setClientId] = useState('')
@@ -104,6 +108,7 @@ export function Sso({ tabs, token, onNotice }: Props) {
   const [confirm, setConfirm] = useState<null | 'authority' | 'metadata'>(null)
 
   function apply(c: SsoConfig) {
+    setSaved(c)
     setEnabled(c.ssoEnabled)
     setAuthority(c.ssoAuthority ?? '')
     setClientId(c.ssoClientId ?? '')
@@ -228,14 +233,22 @@ export function Sso({ tabs, token, onNotice }: Props) {
   // The section in view, once the four are on the page.
   const here = useSectionInView(loading ? [] : SECTIONS.map((x) => x.id))
 
-  if (loading) return <Loading />
+  /* The header says the state SAVED on the server, from the last `get` or `set`,
+     not the unsaved checkbox (deviation 23). */
+  const header = (
+    <SectionHeader
+      title="Administration"
+      tabs={tabs}
+      titleAction={<RowAction icon="refresh" name="Refresh" disabled={loading} onClick={() => void load()} />}
+      labels={saved == null ? undefined : <ConfigState enabled={saved.ssoEnabled} configured={ssoConfigured(saved)} />}
+    />
+  )
+
+  if (loading) return <>{header}<Loading /></>
 
   return (
     <>
-      <SectionHeader
-        title="Administration"
-        tabs={tabs}
-      />
+      {header}
 
       {/*
       The dense form, as it stands: help in its third column, `Warning!`
