@@ -1,0 +1,204 @@
+/*
+My Profile as a page (deviation 21): the user as the header, the cards, two blocks
+side by side (the dialog's form and the account's actions), the sessions table and
+the theme. Every value is a token.
+*/
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-block);
+}
+
+/* The header and the cards row carry their own bottom margin; the page's gap
+   replaces it, so every block sits `--gap-block` from the next. */
+.page > div,
+.identityHead > div:first-child { margin-bottom: 0; }
+
+/* THE USER IS THE HEADER: the account menu's initial, larger, before the name. */
+.identity { display: flex; align-items: flex-start; gap: var(--s-10); min-width: 0; }
+.identityHead { flex: 1; min-width: 0; }
+
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: calc(var(--s-12) + var(--s-11));
+  height: calc(var(--s-12) + var(--s-11));
+  border-radius: 50%;
+  background: var(--acc-tint);
+  box-shadow: inset 0 0 0 1px var(--acc-tint-strong);
+  color: var(--acc-ink);
+  font: 650 var(--t-7)/1 var(--font-ui);
+  letter-spacing: -0.02em;
+}
+
+.username { font-size: var(--t-4); color: var(--mute); align-self: center; }
+
+/* The 2FA card: its state as the card's figure, in words. */
+.bigState { font: 650 var(--t-6)/1.2 var(--font-ui); color: var(--ink); }
+.shieldOk { color: var(--ok); }
+
+/* The Member Of card: the groups as quiet lines. */
+.groups { list-style: none; margin: var(--s-6) 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--s-3); }
+.groups li {
+  padding: var(--s-1) var(--s-5);
+  border: 1px solid var(--line);
+  border-radius: var(--r-2);
+  background: var(--pan2);
+  font-size: var(--t-3);
+  color: var(--ink);
+  overflow-wrap: break-word;
+  min-width: 0;
+}
+.groups li.more { border-color: transparent; background: transparent; color: var(--mute); }
+
+/* The Logins card: two logins, the recent one larger. */
+.logins { display: flex; flex-direction: column; gap: var(--s-8); }
+.logins dt { font-size: var(--t-3); color: var(--mute); }
+.logins dd { margin: var(--s-1) 0 0; display: flex; flex-direction: column; gap: var(--s-1); }
+.ago { font: 650 var(--t-6)/1.2 var(--font-ui); color: var(--ink); }
+.agoSmall { font: 600 var(--t-5)/1.3 var(--font-ui); color: var(--ink); }
+.when { font-size: var(--t-3); color: var(--mute); font-variant-numeric: tabular-nums; }
+.addr { font-family: var(--font-mono); color: var(--ink); }
+
+/* Two blocks side by side on a wide screen, the form the wider. */
+.columns {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: var(--s-11);
+  align-items: start;
+}
+
+@media (max-width: 1180px) {
+  .columns { grid-template-columns: minmax(0, 1fr); }
+}
+
+.form { padding: var(--s-8) var(--s-10) var(--s-10); }
+.inline { display: flex; align-items: center; flex-wrap: wrap; gap: var(--s-6); }
+.num { width: var(--ctrl-num); }
+.typeValue { display: block; padding: var(--s-3) 0; font-weight: 650; color: var(--ink); }
+.formActions { display: flex; justify-content: flex-end; margin-top: var(--s-8); }
+
+/* The account's actions: one line each, the action at the end. */
+.security { list-style: none; margin: 0; padding: 0; }
+.security li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--s-5) var(--s-8);
+  padding: var(--s-9) var(--s-10);
+  border-bottom: 1px solid var(--line2);
+}
+.security li:last-child { border-bottom: 0; }
+.secText { display: flex; align-items: center; flex-wrap: wrap; gap: var(--s-6); min-width: 0; }
+.secName { font-size: var(--t-4); font-weight: 600; color: var(--ink); }
+.secValue { font-size: var(--t-4); color: var(--mute); font-variant-numeric: tabular-nums; }
+
+/* THE SESSIONS TABLE: one line per session. */
+.tableTitle { margin: 0; font-size: var(--t-5); font-weight: 650; color: var(--ink); }
+
+.session { display: inline-flex; align-items: center; flex-wrap: wrap; gap: var(--s-3) var(--s-5); min-width: 0; }
+/* On a wide table each session is one line: the user agent is the column that gives. */
+@media (min-width: 1181px) {
+  .session { flex-wrap: nowrap; white-space: nowrap; }
+  .seenCell { white-space: nowrap; }
+}
+
+/* The type as a swatch and its word, the colour the card's chip has. */
+.kind {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-3);
+  font-size: var(--t-3);
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.kind::before { content: ''; width: 8px; height: 8px; border-radius: 2px; background: var(--sw); flex: none; }
+
+.tokenName { font-weight: 600; color: var(--ink); overflow-wrap: break-word; min-width: 0; }
+.partial { font: var(--t-3)/1.4 var(--font-mono); color: var(--mute); }
+.current { font-size: var(--t-3); font-weight: 600; color: var(--acc-ink); }
+
+.seen { font: var(--t-4)/1.4 var(--font-mono); color: var(--ink); white-space: nowrap; }
+.age { font-size: var(--t-2); color: var(--faint); white-space: nowrap; }
+.addrCell { font: var(--t-4)/1.4 var(--font-mono); color: var(--ink); white-space: nowrap; }
+
+/* The user agent cut to the line; the row's Details holds it whole. */
+.agentCell { max-width: 0; width: 34%; }
+.agent {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: var(--t-3);
+  color: var(--mute);
+}
+
+.openRow > td { border-bottom-color: transparent; }
+.detailRow > td { padding-top: 0; background: var(--pan2); }
+.detail { display: flex; flex-wrap: wrap; gap: var(--s-5) var(--s-12); margin: var(--s-3) 0 0; }
+.detail dt { font-size: var(--t-2); color: var(--faint); }
+.detail dd { margin: var(--s-1) 0 0; font-size: var(--t-3); color: var(--ink); }
+.detail .wide { flex: 1 1 100%; }
+.agentFull { overflow-wrap: break-word; }
+
+/* THE THEME: three options, each with a sketch of the theme it picks. */
+.themes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--s-10);
+  padding: var(--s-10);
+}
+
+@media (max-width: 720px) {
+  .themes { grid-template-columns: minmax(0, 1fr); }
+}
+
+.theme {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-6);
+  padding: var(--s-6);
+  border: 1px solid var(--line);
+  border-radius: var(--r-3);
+  background: var(--pan);
+  cursor: pointer;
+  transition: border-color var(--t-fast), background var(--t-fast);
+}
+.theme:hover { border-color: var(--line-hover); background: var(--hover); }
+.theme[data-checked] { border-color: var(--acc-ink); background: var(--acc-tint); }
+.theme:focus-within { outline: var(--focus); outline-offset: var(--focus-offset); }
+
+.themeLabel { display: inline-flex; align-items: center; gap: var(--s-5); font-size: var(--t-4); color: var(--ink); }
+.themeLabel input { accent-color: var(--acc); margin: 0; }
+
+.preview {
+  display: flex;
+  height: calc(var(--s-12) * 3);
+  border-radius: var(--r-2);
+  overflow: hidden;
+  border: 1px solid var(--line);
+}
+
+/* Drawn inside its own `data-theme`: these tokens are that theme's. */
+.sketch { flex: 1; display: flex; background: var(--bg); min-width: 0; }
+.sketchSide {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  width: 28%;
+  padding: var(--s-5) var(--s-3);
+  background: var(--side);
+  border-right: 1px solid var(--line);
+}
+.sketchSide i { display: block; height: var(--s-2); border-radius: var(--r-1); background: var(--line-hover); }
+.sketchSide i:first-child { background: var(--acc); width: 70%; }
+.sketchMain { flex: 1; display: flex; flex-direction: column; gap: var(--s-3); padding: var(--s-5); min-width: 0; }
+.sketchTitle { display: block; height: var(--s-3); width: 45%; border-radius: var(--r-1); background: var(--ink); }
+.sketchCards { display: flex; gap: var(--s-3); flex: 1; }
+.sketchCards i { flex: 1; border-radius: var(--r-1); background: var(--pan); border: 1px solid var(--line); }
+.sketchAcc { display: block; height: var(--s-3); width: 30%; border-radius: var(--r-1); background: var(--acc); }

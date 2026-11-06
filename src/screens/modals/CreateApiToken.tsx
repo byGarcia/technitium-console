@@ -38,11 +38,14 @@ export function CreateApiToken({
   onOpenChange,
   username,
   token,
+  onCreated,
 }: {
   open: boolean
   onOpenChange: (o: boolean) => void
   username: string
   token: string | null
+  /** A token was created: My Profile's sessions list has one more. */
+  onCreated?: () => void
 }) {
   const [name, setName] = useState('')
   const [created, setCreated] = useState<Created | null>(null)
@@ -75,6 +78,7 @@ export function CreateApiToken({
     if (outcome.kind === 'ok') {
       // `user/createToken` answers flat: username, tokenName and token at the top.
       setCreated(outcome.data)
+      onCreated?.()
       setAlert({
         type: 'success',
         title: 'Token Created!',

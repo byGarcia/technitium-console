@@ -236,10 +236,10 @@ describe('writeRoute', () => {
     expect(window.history.length).toBe(before2)
   })
 
-  /* 34 since Blocking (three tabs) replaced Allowed and Blocked (none): eleven
-     sections and twenty-three sub-sections. The two legacy folders are not
-     sections and are not in this walk. */
-  it('what gets written reads back the same, across all 34 routes', () => {
+  /* 35: eleven sections, twenty-three sub-sections, and My Profile, a page since
+     2026-11-06 (deviation 21) and in no sidebar group. The two legacy folders are
+     not sections and are not in this walk. */
+  it('what gets written reads back the same, across all 35 routes', () => {
     servedAt('/')
     for (const s of SECTIONS) {
       for (const sub of s.subs ?? [null]) {
@@ -278,5 +278,22 @@ describe('the `<meta>` name is the same on both sides of the build', () => {
     expect(written, 'vite.config.ts no longer emits a route meta').toBeTruthy()
     expect(read, 'app/base.ts no longer reads a route meta').toBeTruthy()
     expect(read).toBe(written)
+  })
+})
+
+/* My Profile is a page (deviation 21): a folder of its own, so `/profile/`
+   survives an F5, also behind a prefix. */
+describe('the profile route', () => {
+  it('is built as a folder and is not a sub-section', () => {
+    expect(STATIC_ROUTES).toContain('profile')
+    expect(STATIC_ROUTES.filter((r) => r.startsWith('profile/'))).toEqual([])
+  })
+
+  it('reads back from its own folder, with and without a prefix', () => {
+    servedAt('/profile/', 'profile')
+    expect(readRoute(SECTIONS)).toEqual({ section: 'profile', sub: null })
+    servedAt('/dns/profile/?type=ApiToken', 'profile')
+    expect(appRoot()).toBe('/dns/')
+    expect(readRoute(SECTIONS)).toEqual({ section: 'profile', sub: null })
   })
 })

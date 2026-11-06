@@ -10,6 +10,12 @@ always match the label: the "DNS Client" tab is governed by `DnsClient` and "DHC
 by `DhcpServer`. `About` has no permission: it is always visible.
 
 Each section is hidden if its `canView` is false (main.js:119-250).
+
+`profile` is not a section: it is the account menu's `My Profile`, a page since
+2026-11-06 (CONVENTIONS.md, deviation 21) where upstream has a dialog. It is listed
+here so it is a route like the others (its folder, `readRoute`, Back and F5), and
+it is drawn in no sidebar group (`GROUPS` in `Shell.tsx`), so the sidebar keeps its
+eleven entries. Every user has a profile, so it needs no permission.
 */
 export interface Section {
   id: string
@@ -37,6 +43,7 @@ export const SECTIONS: Section[] = [
     subs: ['Sessions','Users','Groups','Permissions','SSO','LDAP','Cluster'] },
   { id: 'logs', label: 'Logs', permission: 'Logs', subs: ['View Logs','Query Logs'] },
   { id: 'about', label: 'About', permission: null },
+  { id: 'profile', label: 'My Profile', permission: null },
 ]
 
 export interface Permission { canView: boolean; canModify: boolean; canDelete: boolean }
