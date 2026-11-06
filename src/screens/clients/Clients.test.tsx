@@ -5,6 +5,7 @@ import * as dashboard from '../../api/dashboard'
 import * as apps from '../../api/apps'
 import * as logs from '../../api/logs'
 import * as dhcp from '../../api/dhcp'
+import * as settings from '../../api/settings'
 import type { QueryLogEntry } from '../../api/logs'
 import { HandoffContext, type Handoff } from '../../app/handoff'
 import { SAMPLE } from '../blocking/blocked-sample'
@@ -92,7 +93,10 @@ function serve({ withApp = true, sample = SAMPLE_ENTRIES, top = TOP, stats = STA
     data: o.clientIpAddress ? CLIENT_ENTRIES.filter((e) => e.clientIpAddress === o.clientIpAddress) : sample,
   }))
   const lease = vi.spyOn(dhcp, 'listLeases').mockResolvedValue({ kind: 'ok', data: leases })
-  return { get, tops, list, newest, lease }
+  const read = vi.spyOn(settings, 'readSettings').mockResolvedValue(
+    { kind: 'ok', data: { blockingBypassList: [], qpmLimitBypassList: [] } } as never,
+  )
+  return { get, tops, list, newest, lease, read }
 }
 
 /** Narrow (`--bp-wide` and under): the list and the card take turns. */
@@ -130,10 +134,11 @@ describe('Clients', () => {
     await listed()
     expect(get).toHaveBeenCalledWith('T', 'LastHour', undefined, 'cluster')
     expect(tops).toHaveBeenCalledWith('T', 'LastHour', 'TopClients', LIMIT, 'cluster')
+    /* Without a cluster the log and the leases are this server's. */
     expect(newest).toHaveBeenCalledWith('T', { name: 'Query Logs (Sqlite)', classPath: 'QueryLogsSqlite.App' }, {
-      node: 'cluster', limit: SAMPLE, clientIpAddress: '',
+      node: '', limit: SAMPLE, clientIpAddress: '',
     })
-    expect(lease).toHaveBeenCalledWith('T', 'cluster')
+    expect(lease).toHaveBeenCalledWith('T', '')
   })
 
   it('the strip and the share bar: the busiest clients with what they cover, a click opens one', async () => {
@@ -199,7 +204,7 @@ describe('Clients', () => {
     await listed()
     expect(await screen.findByRole('heading', { level: 2, name: 'phone.home.arpa' })).toBeInTheDocument()
     expect(params().get('client')).toBeNull()
-    expect(newest).toHaveBeenCalledWith('T', expect.anything(), { node: 'cluster', limit: DETAIL_SAMPLE, clientIpAddress: '10.0.0.1' })
+    expect(newest).toHaveBeenCalledWith('T', expect.anything(), { node: '', limit: DETAIL_SAMPLE, clientIpAddress: '10.0.0.1' })
     await userEvent.click(within(screen.getByRole('list', { name: 'Clients' })).getByRole('button', { name: /^10.0.0.2/ }))
     expect(params().get('client')).toBe('10.0.0.2')
     expect(await screen.findByRole('heading', { level: 2, name: '10.0.0.2' })).toBeInTheDocument()
@@ -249,6 +254,22 @@ describe('Clients', () => {
     expect(within(card).queryByText('Median response time')).not.toBeInTheDocument()
     expect(within(card).queryByText('MAC')).not.toBeInTheDocument()
     expect(lease).not.toHaveBeenCalled()
+  })
+
+  it('the card carries its Actions: the lists read where they live, the lease read again after a conversion', async () => {
+    const { read, lease } = serve()
+    vi.spyOn(dhcp, 'convertToDynamicLease').mockResolvedValue({ kind: 'ok', data: {} })
+    draw({ clusterInitialised: true, nodes: [{ name: 'dns1', type: 'Primary' }] as never })
+    const card = await screen.findByRole('region', { name: 'phone.home.arpa' })
+    /* The two lists are cluster-wide: read on the cluster, as Blocking › Lists. */
+    expect(read).toHaveBeenCalledWith('T', 'cluster')
+    const actions = within(card).getByRole('region', { name: 'Actions' })
+    expect(await within(actions).findByRole('button', { name: 'Bypass Blocking' })).toBeEnabled()
+    /* The page's lease is a reserved one: the inverse is offered. */
+    await userEvent.click(within(actions).getByRole('button', { name: 'Convert To Dynamic Lease' }))
+    await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Convert' }))
+    expect(await screen.findByText('The reserved lease was converted to dynamic lease successfully.')).toBeInTheDocument()
+    expect(lease).toHaveBeenCalledTimes(2)
   })
 
   it('narrow, the list takes the width, a client is a page of its own with Clients to come back', async () => {
@@ -309,6 +330,7 @@ describe('Clients', () => {
     vi.spyOn(dashboard, 'readTop').mockResolvedValue({ kind: 'ok', data: [] })
     vi.spyOn(apps, 'listApps').mockResolvedValue({ kind: 'ok', data: { response: { apps: [] } } } as never)
     vi.spyOn(dhcp, 'listLeases').mockResolvedValue({ kind: 'ok', data: [] })
+    vi.spyOn(settings, 'readSettings').mockReturnValue(new Promise(() => {}))
     draw()
     expect(await screen.findByText('Boom')).toBeInTheDocument()
     expect(screen.getAllByText('Could not load this data.').length).toBeGreaterThan(0)
@@ -320,6 +342,7 @@ describe('Clients', () => {
     vi.spyOn(dashboard, 'readTop').mockReturnValue(new Promise(() => {}))
     vi.spyOn(apps, 'listApps').mockReturnValue(new Promise(() => {}))
     vi.spyOn(dhcp, 'listLeases').mockReturnValue(new Promise(() => {}))
+    vi.spyOn(settings, 'readSettings').mockReturnValue(new Promise(() => {}))
     draw()
     expect(screen.getByRole('status')).toHaveTextContent('Loading')
   })

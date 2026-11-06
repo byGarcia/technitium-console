@@ -187,3 +187,25 @@ thead > tr > th.numHead { text-align: right; }
   .card { padding: var(--s-9); gap: var(--s-9); }
   .usesName { display: none; }
 }
+
+/*
+The card's Actions (`ClientActions.tsx`): one quiet band under the head, a line per
+action with the list or the lease it acts on, its state, and its button at the end.
+*/
+.actionsArea { display: flex; flex-direction: column; gap: var(--s-4); padding: var(--s-7) var(--s-9); border: 1px solid var(--line2); border-radius: var(--r-3); background: var(--pan2); }
+.actionsTitle { margin: 0; font-size: var(--t-3); font-weight: 600; color: var(--mute); }
+/* One grid for every line, so the states and the buttons line up from line to line. */
+.actionRows { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; align-items: center; gap: var(--s-3) var(--s-8); margin: 0; }
+.actionRow { display: contents; }
+.actionRow > * { min-height: var(--s-12); display: flex; align-items: center; }
+.actionRow dt { font-size: var(--t-4); color: var(--ink); }
+.actionState { margin: 0; font-size: var(--t-4); color: var(--mute); }
+.actionDo { margin: 0; justify-self: end; }
+.actionOn { color: var(--ink); font-weight: 600; }
+.actionQuiet { display: inline-flex; align-items: center; gap: var(--s-2); color: var(--faint); font-weight: 400; }
+/* `--bp-stack`: the name and its state on one line, the button under them. */
+@media (max-width: 560px) {
+  .actionRows { grid-template-columns: minmax(0, 1fr) auto; row-gap: 0; }
+  .actionRow > * { min-height: var(--s-11); }
+  .actionDo { grid-column: 1 / -1; justify-self: start; margin-bottom: var(--s-4); }
+}

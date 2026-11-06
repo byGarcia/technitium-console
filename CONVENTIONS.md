@@ -1573,6 +1573,30 @@ contract and SECURITY.md.
       placeholder). The log entries carry no node (checked against v15.6.1 on 2026-11-06), so
       there is no "answered by" in a cluster: the aggregate reads the connected node's log.
 
+    - **the card's Actions** (`ClientActions.tsx`, `client-actions.ts`, approved on
+      2026-11-06), a band under its head, one line per action with its state:
+      - `Blocking Bypass List` and `QPM Limit Bypass List` (Settings' own fields): whether
+        the address is in the list, by itself or through a network entry that holds it
+        (`Through <network>`, which offers no removal: taking the address out would change
+        nothing), and `Bypass Blocking` / `Apply Blocking`, `Exempt from Rate Limiting` /
+        `Apply Rate Limiting`. The lists are read with `settings/get` (only with `Settings:
+        View`) and saved with `settings/set` carrying `node` and the one list, through
+        Settings' cleaning (`cleanList`, `false` when empty), as Blocking › Lists saves
+        `blockListUrls`. Both are cluster-wide parameters (`nodeScope`), so both calls go
+        where Lists sends its own: `cluster` on a cluster, the empty node on a standalone
+        server. A save needs `Settings: Modify` (the padlock otherwise), asks first, naming
+        the list and the address, and redraws from the server's answer with Settings'
+        `Settings Saved!`. The QPM line is drawn only when the server sends
+        `qpmLimitBypassList`;
+      - `DHCP Lease`, when a lease hands out the address: its type and DHCP › Leases'
+        conversion for it, `Convert To Reserved Lease` (`dhcp/leases/convertToReserved`) or
+        `Convert To Dynamic Lease` (`dhcp/leases/convertToDynamic`), with the lease's scope,
+        client identifier and the node the leases were read on, upstream's confirmations
+        and `Reserved!` / `Unreserved!` notices, `DhcpServer: Modify`, and the leases read
+        again after it.
+      A failure says the server's message (`Error!`). Logs and leases are read on the chosen
+      node, or on the connected one with the aggregate or without a cluster.
+
     **The log sample** is the newest 1,000 queries of every response type (`logs/query` through
     the query logs app, Query Logs' own call), read again with each answer of `stats/get`. It is
     not the period, and every figure drawn from it says what it is based on (`In the last N
@@ -1585,12 +1609,17 @@ contract and SECURITY.md.
 
     Its limits, and crossing one is a bug: only endpoints upstream's console already calls
     (`dashboard/stats/get`, `dashboard/stats/getTop`, `apps/list`, `logs/query`,
-    `dhcp/leases/list`), nothing written to the server, upstream's actions and jumps only. Its
+    `dhcp/leases/list`, `settings/get`), and written only through the three Actions above
+    (`settings/set` with one list, `dhcp/leases/convertToReserved` and
+    `dhcp/leases/convertToDynamic`), upstream's actions and jumps otherwise. Its
     words, all OURS and declared in the header comments of `Clients.tsx`, `ClientList.tsx`,
-    `ClientCard.tsx` and `WhoUses.tsx`, among them the subtitle, the strip's cells, `Who uses
+    `ClientCard.tsx`, `ClientActions.tsx` and `WhoUses.tsx`, among them the subtitle, the strip's cells, `Who uses
     your DNS` and its sentences, the two tags, the filters and orders with `Sort by` (listed
     in `dev/check-parity-controls.mjs`), `N% blocked`, `Open in Query Logs`, `Copy IP`, the
-    card's four figures and its section titles. The page's folder is generated from `SECTIONS`.
+    card's four figures and its section titles, and the Actions' `Actions`, `DHCP Lease`,
+    `Applies`, `Bypassed`, `Exempt`, `Through <network>`, the four button names, `Add`,
+    `Remove`, the four confirmations (`ASK` in `ClientActions.tsx`) and `Could not read the
+    settings.` The page's folder is generated from `SECTIONS`.
 
 27. **Live Update is seen live** (Adrián's decision, 2026-11-06; `screens/logs/QueryLogs.tsx`).
     Upstream's Live Update is kept as it is: page 1 every 2 s, the same request, the same

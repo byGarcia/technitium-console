@@ -80,6 +80,7 @@ export function ClientCard({
   refreshOn,
   onNotice,
   heading = true,
+  actions,
 }: {
   row: ClientRow
   token: string | null
@@ -97,6 +98,8 @@ export function ClientCard({
   onNotice: (n: Notice) => void
   /** Its name as the card's title; off where the page's own title already says it. */
   heading?: boolean
+  /** The Actions area (`ClientActions.tsx`), under the head. */
+  actions?: ReactNode
 }) {
   const handoff = useHandoff()
   const action = useDomainAction(token, onNotice)
@@ -153,6 +156,8 @@ export function ClientCard({
           <CopyIp ip={row.ip} />
         </div>
       </header>
+
+      {actions}
 
       {gap != null ? (
         <div className={styles.cardGap}>{gap}</div>
