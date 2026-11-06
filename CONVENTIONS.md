@@ -1847,6 +1847,64 @@ contract and SECURITY.md.
       opens Query Logs for its bucket, as the aggregate's does (deviation 7).
     Its words, OURS: `Compare nodes` and `Left out: could not read N.` (`Dashboard.tsx`).
 
+37. **Query Logs is read across the cluster's nodes** (Adrián's decision, 2026-11-06;
+    `screens/logs/QueryLogs.tsx`, `query-across.ts`). Each node keeps its own query log and
+    upstream reads one at a time (`optLogsClusterNode`). On an initialised cluster the toolbar
+    starts with `This node` / `All nodes`, as the zone list's does. `All nodes` sends the form's
+    query to every node (`clusterNodes` of the session), the same `logs/query` with the same app,
+    class and filters and that node's `node`, on page 1, newest first, at the chosen Logs Per
+    Page, and draws the newest N of all the answers merged by their timestamp, a tie kept in the
+    order of the nodes, with a `Node` column after the timestamp in the node's colour
+    (`nodeToken`, as Cache and the Dashboard give it). A line over the legend gives each node's
+    own `totalEntries` for the filters (`Matching logs on each node`); the cards count the merged
+    page, and their `of N logs` is the nodes' totals summed. Its limits, and crossing one is a
+    bug:
+    - **only the newest page**: paging a merge would need every node's entries down to an
+      instant no node can be asked for, so while the view is on Page Number and Order are pinned
+      to 1 and Descending and disabled, as Live Update pins them, the status says `Newest N
+      across the nodes` and the pager offers that one page;
+    - **Live Update works in it**: the same 2 s loop asks every node each turn, a row flashes by
+      its node and number, and the arrivals counter sums each node's growth (a node that did not
+      answer a turn keeps the total it had);
+    - **a row acts on its node**: its Query DNS Server hands over the row's node, and its menu is
+      named `Actions for row N on <node>`; Allow and Block are as they were. Export stays the
+      node chosen in the selector;
+    - **a node that fails says so**: once above the totals, `<node> did not answer: <the server's
+      message>`, the words of deviation 33, and under them that its rows are missing (`No node
+      answered.` with none); it takes no part in the totals or the merge;
+    - **without a cluster nothing changes**: no toggle, one call with the screen's node, and
+      `?nodes=all` in the bar is not acted on. The view is kept in the bar as `?nodes=all` while
+      it is drawn, read on arrival only on Query Logs' own folder, and leaves with the screen.
+    Its words, OURS, are declared in the header comments of `QueryLogs.tsx` and
+    `ui/AcrossNodes.tsx`; `Query Logs view` is the toggle's accessible name (`ACCESSIBLE_NAMES` in
+    `dev/check-parity-controls.mjs`).
+
+38. **DHCP is read across the cluster's nodes** (Adrián's decision, 2026-11-06;
+    `screens/dhcp/across.ts`, `Dhcp.tsx`, `Leases.tsx`, `Scopes.tsx`). Each node runs its own
+    DHCP server and upstream shows one at a time (`optDhcpClusterNode`). On an initialised
+    cluster both tabs' toolbars start with `This node` / `All nodes`; the choice is the
+    section's, so it stays when the tab changes. `All nodes` reads, once per node with that
+    node's `node`, `dhcp/leases/list` on Leases and `dhcp/scopes/list` with `dhcp/leases/list`
+    on Scopes, the calls each tab already makes, and draws every node's rows together with a
+    sortable `Node` column first, in the node's colour. The cards over each table count every
+    row, so they sum the nodes. Its limits, and crossing one is a bug:
+    - **a row acts on its node**: a lease's two conversions and Remove Lease, a scope's Enable,
+      Disable, Edit Scope and Delete Scope, and the save of a scope opened from the view, are sent
+      with the row's `node`. Add Scope stays on the node chosen in the selector. A scope opened
+      from the view carries its node in the bar (`?on=`) beside `?scope=`, so a reload or Back
+      opens it on that node;
+    - **scope usage is per node** (deviation 30): a row's bar counts only its own node's leases,
+      and the Address Pool card adds each node's scopes and leases apart, since two nodes can
+      each have a scope of the same name; a lease is known by its node too;
+    - **a node that fails says so**, with the words of deviation 37, above the table; on Scopes a
+      node counts as read only when both of its lists answered, so no usage mixes a node's scopes
+      with leases it did not send. With no node read the tab says it could not load the list;
+    - **without a cluster nothing changes**: no toggle, the calls, keys and counts the tabs always
+      had, and `?nodes=all` is not acted on. The view is `?nodes=all` while it is drawn, read on
+      arrival only on DHCP's folders, and leaves with the section.
+    Its words, OURS: `Node`, and those of `ui/AcrossNodes.tsx`; `DHCP view` is the toggle's
+    accessible name (`ACCESSIBLE_NAMES` in `dev/check-parity-controls.mjs`).
+
 ## Four constraints the server imposes
 
 These are not preferences: break them and the console works in development and

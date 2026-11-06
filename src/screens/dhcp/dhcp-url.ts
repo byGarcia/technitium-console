@@ -25,10 +25,14 @@ export const Q = 'q'
 export const SCOPE = 'scope'
 export const TYPE = 'type'
 export const STATE = 'state'
+/* The `All nodes` view of both tabs (deviation 38), written by `Dhcp.tsx`. */
+export const NODES = 'nodes'
+/* The node of the scope open from the `All nodes` view, beside `?scope=`. */
+export const SCOPE_NODE = 'on'
 
 /** The parameters each tab writes, and drops when it goes. */
 export const LEASE_PARAMS = [Q, SCOPE, TYPE]
-export const SCOPE_PARAMS = [Q, STATE, SCOPE]
+export const SCOPE_PARAMS = [Q, STATE, SCOPE, SCOPE_NODE]
 
 /** Whether the bar is on this tab's folder (Leases is also the section's own). */
 export function onDhcpTab(tab: 'Leases' | 'Scopes'): boolean {
@@ -45,13 +49,17 @@ export function readTabParam(tab: 'Leases' | 'Scopes', name: string): string | n
 /**
  * Writes the open scope (`null` for the list). Pushed for what the user does, so
  * Back returns; replaced for a correction (a scope that could not be read). Does
- * nothing when the bar already says it.
+ * nothing when the bar already says it. A scope opened from the `All nodes` view
+ * (deviation 38) carries its node as `?on=`, so a reload opens it on that node.
  */
-export function writeScope(name: string | null, replaceEntry = false): void {
-  if (readParam(SCOPE) === name && onDhcpTab('Scopes')) return
+export function writeScope(name: string | null, replaceEntry = false, node?: string): void {
+  const on = name == null ? null : (node ?? null)
+  if (readParam(SCOPE) === name && readParam(SCOPE_NODE) === on && onDhcpTab('Scopes')) return
   const params = new URLSearchParams(window.location.search)
   if (name == null) params.delete(SCOPE)
   else params.set(SCOPE, name)
+  if (on == null) params.delete(SCOPE_NODE)
+  else params.set(SCOPE_NODE, on)
   const out = params.toString()
   const blank = toTrail({ section: 'dhcp', sub: 'Scopes' }) + (out === '' ? '' : `?${out}`)
   if (replaceEntry) window.history.replaceState(null, '', blank)

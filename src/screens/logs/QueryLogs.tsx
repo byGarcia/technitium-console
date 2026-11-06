@@ -38,6 +38,16 @@ import { dropParams, writeParams } from '../../lib/url-state'
 import { recordColour } from '../zones/zone-colours'
 import { QuerySummary, type Pick } from './QuerySummary'
 import { QUERY_PARAMS, filtersFromBar, queryParams } from './query-url'
+import { Segmented } from '../../ui/Segmented'
+import type { ClusterNode } from '../../ui/ClusterNodeSelect'
+import { NodeName, NodesFailed } from '../../ui/AcrossNodes'
+import { nodeToken } from '../dashboard/palette'
+import { readParam } from '../../lib/url-state'
+import { toTrail } from '../../app/route'
+import {
+  acrossStatus, failures, mergedPage, nodeTotals, queryAcross, rowKey,
+  type NodeEntry, type NodeLogs,
+} from './query-across'
 
 /*
 Logs › Query Logs (logs.js:20-101 and 270-710).
@@ -84,7 +94,27 @@ the zone list read: what the page holds, then ONE card that both asks and shows.
     `Details`, beside upstream's row menu.
   · **The query is in the address bar** (`query-url.ts`), written once a query
     lands and read on arrival, which queries it with Live Update off.
+
+ACROSS THE CLUSTER'S NODES (deviation 37, 2026-11-06; the rules are in
+`query-across.ts`). On an initialised cluster the toolbar starts with `This node`
+/ `All nodes`. `All nodes` sends the form's query to every node, page 1 newest
+first, and draws the newest N of all of them with a Node column, each node's total
+for the filters, and the nodes that did not answer. It pins Page Number and Order
+while it is on, as Live Update does, because only the newest page can be merged;
+the pager offers that one page. Live Update works in it, every node each turn.
+Export stays the chosen node's, and a row's Query DNS Server asks the row's node.
+The view is `?nodes=all` in the address bar. Its words, OURS: `Query Logs view`
+(the toggle's accessible name), `This node`, `All nodes`, `Newest N across the
+nodes`, `Matching logs on each node` and `Node`, and those of `ui/AcrossNodes`.
 */
+
+/* The `All nodes` view in the address bar (deviation 37), as Cache keeps its own. */
+export const QUERY_NODES = 'nodes'
+
+/** Whether the bar is on Query Logs' own folder: another screen's `?nodes=` is not this one's. */
+function onQueryLogs(): boolean {
+  return window.location.pathname === toTrail({ section: 'logs', sub: 'Query Logs' })
+}
 
 
 export const ENTRIES_PER_PAGE_KEY = 'optQueryLogsEntriesPerPage'
@@ -343,6 +373,9 @@ export interface QueryLogsProps {
   node?: string
   /** `showQueryLogs` from another screen: these filters, queried on arrival. */
   request?: QueryLogsRequest
+  /** The session's cluster nodes, for the `All nodes` view (deviation 37). */
+  nodes?: ClusterNode[]
+  clusterInitialised?: boolean
 }
 
 /** The fields the folded band does not repeat: they stay on screen below 960. */
@@ -395,6 +428,7 @@ function QueryRow({
   handoff,
   action,
   fresh = false,
+  nodeColour,
 }: {
   e: QueryLogEntry
   node: string
@@ -402,6 +436,9 @@ function QueryRow({
   action: ReturnType<typeof useDomainAction>
   /** It came in on Live Update's last turn: it flashes once. */
   fresh?: boolean
+  /** In the `All nodes` view (deviation 37): the row's node wears this colour in
+   *  its own column, and `node` is the row's. */
+  nodeColour?: string
 }) {
   const [open, setOpen] = useState(false)
   const detail = useId()
@@ -413,6 +450,11 @@ function QueryRow({
         <td className={`${styles.mono} ${styles.stamp}`}>
           <Stamp text={dateTime(e.timestamp)} />
         </td>
+        {nodeColour != null && (
+          <td className={styles.nodeCell}>
+            <NodeName name={node} colour={nodeColour} />
+          </td>
+        )}
         <td className={styles.mono}>
           <Clip text={e.clientIpAddress} className={styles.clipClient} />
         </td>
@@ -443,10 +485,11 @@ function QueryRow({
               aria-controls={detail}
               onClick={() => setOpen((v) => !v)}
             />
-            <Menu label={`Actions for row ${e.rowNumber}`}>
+            {/* A row number is only unique on its node: merged, the menu names it too. */}
+            <Menu label={nodeColour != null ? `Actions for row ${e.rowNumber} on ${node}` : `Actions for row ${e.rowNumber}`}>
               {(close) => {
                 const verb = verbFor(e.responseType)
-                const key = String(e.rowNumber)
+                const key = rowKey(e)
                 /* The domain is the row's `qname` as it came (the root is the empty
                    string, not the dot drawn above). */
                 const domain = e.qname ?? ''
@@ -482,7 +525,7 @@ function QueryRow({
       </tr>
       {open && (
         <tr id={detail} className={styles.detailRow}>
-          <td colSpan={8}>
+          <td colSpan={nodeColour != null ? 9 : 8}>
             <dl className={styles.details}>
               <div>
                 <dt>#</dt>
@@ -519,7 +562,7 @@ function QueryRow({
   )
 }
 
-export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
+export function QueryLogs({ tabs, token, node = '', request, nodes = [], clusterInitialised = false }: QueryLogsProps) {
   const [apps, setApps] = useState<{ name: string; classPaths: string[] }[] | null>(null)
   const [f, setF] = useState<Filters>(() => defaultFilters('', ''))
   const [page, setPage] = useState<QueryLogPage | null>(null)
@@ -535,13 +578,29 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
   switch counts how many arrived since it was turned on. It reads only what the
   loop already reads; the loop, its calls and its timing are upstream's.
   */
-  const seen = useRef<{ rows: Set<number>; total: number; asked: string } | null>(null)
-  const [fresh, setFresh] = useState<ReadonlySet<number>>(() => new Set())
+  const seen = useRef<{ rows: Set<string>; totals: Map<string, number>; asked: string } | null>(null)
+  const [fresh, setFresh] = useState<ReadonlySet<string>>(() => new Set())
   const [arrived, setArrived] = useState(0)
   /* What the Live Update switch says right now, for the guard at the top of
      `query`: set in the same handler as the switch, so a click on the
      pagination one frame after it already sees it. */
   const liveRef = useRef(false)
+  /* This node or all of them (deviation 37), only on an initialised cluster;
+     without one `?nodes=` means nothing and the screen is as it always was. */
+  const withCluster = clusterInitialised && nodes.length > 0
+  const [view, setView] = useState<'node' | 'all'>(() =>
+    onQueryLogs() && readParam(QUERY_NODES) === 'all' ? 'all' : 'node',
+  )
+  const across = withCluster && view === 'all'
+  /* Read by `query`, set in the same handler as the toggle. */
+  const acrossRef = useRef(across)
+  const nodesRef = useRef(nodes)
+  useEffect(() => {
+    acrossRef.current = across
+    nodesRef.current = nodes
+  }, [across, nodes])
+  /* Every node's answer to the merged query on screen: the totals and the failures. */
+  const [reads, setReads] = useState<NodeLogs[] | null>(null)
   /* Below 960 the band folds (see FOLD_QUERY); it starts closed. */
   const fold = useMedia(FOLD_QUERY)
   const [filtersOpen, setFiltersOpen] = useState(false)
@@ -655,42 +714,70 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
         return
       }
 
+      /* What each node's total was when the page landed: one node on its own is
+         `''`, which is how its rows are keyed too (`rowKey`). */
+      let landed: QueryLogPage
+      let totals: Map<string, number>
+      const merging = acrossRef.current
       if (!live) setBusy(true)
-      const outcome = await queryLogs(token, params(filters, pageNumber))
-      if (!live) setBusy(false)
+      if (merging) {
+        /* Deviation 37: every node, page 1 newest first (`query-across.ts`). */
+        const answers = await queryAcross(token, params(filters, '1'), nodesRef.current)
+        if (!live) setBusy(false)
+        /* A turn that started in the other view lands nothing. */
+        if (!acrossRef.current) return
+        setReads(answers)
+        landed = mergedPage(answers, Number(params(filters, '1').entriesPerPage))
+        totals = new Map(nodeTotals(answers).map((t) => [t.node, t.total]))
+      } else {
+        const outcome = await queryLogs(token, params(filters, pageNumber))
+        if (!live) setBusy(false)
 
-      if (outcome.kind !== 'ok') {
-        if (!live) {
-          setNotice(noticeFromFailure(outcome))
+        if (outcome.kind !== 'ok') {
+          if (!live) {
+            setNotice(noticeFromFailure(outcome))
+          }
+          return
         }
-        return
+        if (acrossRef.current) return
+        landed = outcome.data.response
+        totals = new Map([['', landed.totalEntries]])
+        setReads(null)
       }
 
-      const landed = outcome.data.response
       if (live && liveRef.current) {
         /* Only a turn that asked what the last one asked is compared with it: a
-           filter or node changed in between starts a new count from there. */
-        const asked = JSON.stringify(params(filters, pageNumber))
+           filter, node or view changed in between starts a new count from there. */
+        const asked = JSON.stringify([merging, params(filters, pageNumber)])
         const before = seen.current?.asked === asked ? seen.current : null
         if (seen.current != null && before == null) setFresh((f) => (f.size === 0 ? f : new Set()))
-        const rows = new Set(landed.entries.map((e) => e.rowNumber))
+        const rows = new Set(landed.entries.map(rowKey))
         if (before != null) {
-          setFresh(new Set(landed.entries.filter((e) => !before.rows.has(e.rowNumber)).map((e) => e.rowNumber)))
-          /* Counted from the log's total, not the page: more than a page can arrive
-             between two turns. A total that shrinks (logs deleted) counts nothing. */
-          const grew = landed.totalEntries - before.total
+          setFresh(new Set(landed.entries.map(rowKey).filter((k) => !before.rows.has(k))))
+          /* Counted from each log's total, not the page: more than a page can arrive
+             between two turns. A total that shrinks (logs deleted) counts nothing,
+             and a node that did not answer this turn keeps the total it had. */
+          let grew = 0
+          for (const [n, total] of totals) {
+            const was = before.totals.get(n)
+            if (was != null && total > was) grew += total - was
+          }
           if (grew > 0) setArrived((n) => n + grew)
+          for (const [n, total] of before.totals) if (!totals.has(n)) totals.set(n, total)
         }
-        seen.current = { rows, total: landed.totalEntries, asked }
+        seen.current = { rows, totals, asked }
       } else if (!live) {
         seen.current = null
         setFresh((f) => (f.size === 0 ? f : new Set()))
       }
       setPage(landed)
-      setApplied(filters)
+      /* The merged view sent page 1, newest first, whatever the form held. */
+      setApplied(merging ? { ...filters, pageNumber: '1', descendingOrder: 'true' } : filters)
       /* The query on screen goes to the bar, replacing the entry: the filters it
          sent and the page the server answered (`query-url.ts`). */
-      writeParams(queryParams(filters, resetRef.current, landed.pageNumber))
+      writeParams(
+        queryParams(merging ? { ...filters, descendingOrder: 'true' } : filters, resetRef.current, landed.pageNumber),
+      )
     },
     [token, params, reveal],
   )
@@ -701,7 +788,11 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
   }, [query])
 
   /* The bar's query leaves with the screen, as Cache's node does. */
-  useEffect(() => () => dropParams(QUERY_PARAMS), [])
+  useEffect(() => () => dropParams([...QUERY_PARAMS, QUERY_NODES]), [])
+  /* `?nodes=all` while the merged view is drawn: a single server's bar never carries it. */
+  useEffect(() => {
+    writeParams({ [QUERY_NODES]: across ? 'all' : null })
+  }, [across])
 
   /*
   A node change runs the query again when there are results on screen
@@ -718,7 +809,8 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
     if (lastNode.current === node) return
     lastNode.current = node
     const shown = shownRef.current
-    if (shown.page != null && !shown.live) void queryRef.current(filtersRef.current.pageNumber, false)
+    /* The merged view reads every node whichever is chosen: nothing to read again. */
+    if (shown.page != null && !shown.live && !acrossRef.current) void queryRef.current(filtersRef.current.pageNumber, false)
   }, [node])
 
   /* Declared after `queryRef`, which the jump's arrival uses below. */
@@ -807,6 +899,25 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
     setF(defaultFilters(first?.name ?? '', first?.classPaths[0] ?? ''))
   }
 
+  /*
+  This node or all of them (deviation 37). `All nodes` pins page 1 and newest first
+  in the form, as Live Update does, since those are what it sends. With results on
+  screen the query runs again in the new view; with Live Update on, the loop's next
+  turn picks the view up by itself.
+  */
+  function chooseView(v: 'node' | 'all') {
+    if (v === view) return
+    setView(v)
+    acrossRef.current = v === 'all' && withCluster
+    setReads(null)
+    if (v === 'all') {
+      const next = { ...filtersRef.current, pageNumber: '1', descendingOrder: 'true' }
+      setF(next)
+      filtersRef.current = next
+    }
+    if (page != null && !liveRef.current) void query(filtersRef.current.pageNumber, false)
+  }
+
   function toggleLive(checked: boolean) {
     if (checked) {
       // logs.js:34-42. Pins page and order, and empties the date range.
@@ -874,6 +985,11 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
 
   if (apps == null) return <Loading />
 
+  /* The page on screen is a merge when its rows carry their node (deviation 37). */
+  const merged = page != null && reads != null && across
+  const status = page == null ? '' : merged ? acrossStatus(page.entries.length) : statusText(page)
+  const colourOf = (name: string) => `var(${nodeToken(Math.max(0, nodes.findIndex((n) => n.name === name)))})`
+
   /* What the folded band lists (FOLD_QUERY): its own fields that are set. */
   const active = activeFilters(f, defaultFilters(apps[0]?.name ?? '', apps[0]?.classPaths[0] ?? '')).filter(
     (a) => !ALWAYS_SHOWN.includes(a.label),
@@ -928,6 +1044,20 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
       <DataTable
         toolbar={
           <>
+            {/* This node or every node, first in the toolbar (deviation 37), as the
+                zone list has it. Drawn only with a cluster. */}
+            {withCluster && (
+              <Segmented
+                compact
+                label="Query Logs view"
+                options={[
+                  { id: 'node', label: 'This node' },
+                  { id: 'all', label: 'All nodes' },
+                ]}
+                active={across ? 'all' : 'node'}
+                onChoose={chooseView}
+              />
+            )}
             <Grow>
               <Field inline label="Domain">
                 {(id) => (
@@ -992,20 +1122,20 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
             </div>
             {page != null && (
               <End>
-                <span>{statusText(page)}</span>
+                <span>{status}</span>
               </End>
             )}
           </>
         }
         foot={
-          <DataFoot count={page != null ? statusText(page) : null}>
+          <DataFoot count={page != null ? status : null}>
             <div className={styles.pageField}>
               <Field inline label="Page Number">
                 {(id) => (
                   <Input
                     id={id}
                     type="number"
-                    disabled={live}
+                    disabled={live || across}
                     value={f.pageNumber}
                     onChange={(e) => set({ pageNumber: e.target.value })}
                   />
@@ -1033,6 +1163,7 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
               </Field>
             </div>
             {/* logs.js:589. "Last" is asked for with -1; the server resolves it. */}
+            {/* Merged, the one page there is: the newest (deviation 37). */}
             {page != null && (
               <Pagination
                 window={pageWindow(page.pageNumber, page.totalPages)}
@@ -1157,7 +1288,7 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
               <label htmlFor="ql-order">Order</label>
               <Select
                 id="ql-order"
-                disabled={live}
+                disabled={live || across}
                 value={f.descendingOrder}
                 onChange={(e) => set({ descendingOrder: e.target.value })}
               >
@@ -1201,6 +1332,21 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
           </div>
         </div>
 
+        {across && reads != null && (
+          <>
+            <NodesFailed failed={failures(reads)} answered={nodeTotals(reads).length} />
+            {/* Each node's own total for the filters (deviation 37). */}
+            <div className={styles.nodeTotals}>
+              <span className={styles.nodeTotalsTitle}>Matching logs on each node</span>
+              {nodeTotals(reads).map((t) => (
+                <span key={t.node} className={styles.nodeTotal}>
+                  <NodeName name={t.node} colour={colourOf(t.node)} />
+                  <span className={styles.nodeTotalCount}>{t.total.toLocaleString('en-US')}</span>
+                </span>
+              ))}
+            </div>
+          </>
+        )}
         {page != null && (
           <>
             {/* Always all seven, whether or not they appear on this page: see `LEGEND_ROWS`. */}
@@ -1212,6 +1358,7 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
               header={
                 <>
                   <th>Timestamp</th>
+                  {merged && <th>Node</th>}
                   <th>Client IP Address</th>
                   <th>Domain</th>
                   <th>Type</th>
@@ -1222,9 +1369,20 @@ export function QueryLogs({ tabs, token, node = '', request }: QueryLogsProps) {
                 </>
               }
             >
-              {page.entries.map((e) => (
-                <QueryRow key={e.rowNumber} e={e} node={node} handoff={handoff} action={action} fresh={fresh.has(e.rowNumber)} />
-              ))}
+              {page.entries.map((e) => {
+                const on = (e as Partial<NodeEntry>).node
+                return (
+                  <QueryRow
+                    key={rowKey(e)}
+                    e={e}
+                    node={on ?? node}
+                    handoff={handoff}
+                    action={action}
+                    fresh={fresh.has(rowKey(e))}
+                    nodeColour={merged && on != null ? colourOf(on) : undefined}
+                  />
+                )
+              })}
             </Table>
           </>
         )}

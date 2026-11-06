@@ -1,5 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ClusterNodeSelect } from '../../ui/ClusterNodeSelect'
+import { Segmented } from '../../ui/Segmented'
+import { dropParams, readParam, writeParams } from '../../lib/url-state'
+import { NODES, onDhcpTab } from './dhcp-url'
 import { Leases } from './Leases'
 import { Scopes } from './Scopes'
 
@@ -13,9 +16,14 @@ sub-tabs are independent screens (each with its own loading and its own state), 
 they can be split up: in upstream they are two different functions,
 `refreshDhcpLeases` and `refreshDhcpScopes`, and they share no form.
 
-Upstream's cluster node selector (`optDhcpClusterNode`) is not mounted: this
-console has no cluster mode yet. The `node` parameter travels all the same,
-empty, on all ten calls, which is what upstream sends with a single server.
+Upstream's cluster node selector (`optDhcpClusterNode`) is mounted over both tabs;
+without a cluster it draws nothing and `node` travels empty, which is what upstream
+sends with a single server.
+
+On an initialised cluster both tabs' toolbars start with `This node` / `All nodes`
+(deviation 38, `across.ts`): every node's rows together, each with its node. The
+choice is the section's, so it stays when the tab changes, and is `?nodes=all` in
+the address bar while it is drawn. `DHCP view` is the toggle's accessible name.
 */
 
 export const SUB_TABS = ['Leases', 'Scopes'] as const
@@ -62,6 +70,30 @@ export function Dhcp({
   /* The seed is for the visit it was asked for: back on Scopes it is spent. */
   if (active === 'Scopes' && seed != null) setSeed(null)
 
+  /* This node or all of them (deviation 38), only on an initialised cluster. */
+  const withCluster = clusterInitialised && nodes.length > 0
+  const [view, setView] = useState<'node' | 'all'>(() =>
+    (onDhcpTab('Leases') || onDhcpTab('Scopes')) && readParam(NODES) === 'all' ? 'all' : 'node',
+  )
+  const across = withCluster && view === 'all'
+  useEffect(() => {
+    writeParams({ [NODES]: across ? 'all' : null })
+  }, [across])
+  useEffect(() => () => dropParams([NODES]), [])
+  const viewToggle = withCluster ? (
+    <Segmented
+      compact
+      label="DHCP view"
+      options={[
+        { id: 'node', label: 'This node' },
+        { id: 'all', label: 'All nodes' },
+      ]}
+      active={across ? 'all' : 'node'}
+      onChoose={setView}
+    />
+  ) : undefined
+  const cluster = withCluster ? { nodes, across, toggle: viewToggle } : undefined
+
   return (
     <>
       {/* Upstream mounts one here (`optDhcpClusterNode` / `optLogsClusterNode`).
@@ -82,6 +114,7 @@ export function Dhcp({
           canModify={canModify}
           canDelete={canDelete}
           onLockNode={setNodeLocked}
+          cluster={cluster}
           onOpenLeases={(scope) => {
             setSeed({ scope, type: '' })
             onSubChange?.('Leases')
@@ -94,6 +127,7 @@ export function Dhcp({
           canModify={canModify}
           canDelete={canDelete}
           seed={seed}
+          cluster={cluster}
         />
       )}
     </>

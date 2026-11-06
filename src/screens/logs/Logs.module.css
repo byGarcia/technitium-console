@@ -384,3 +384,19 @@ tr[data-fresh] > td { animation: row-in 1.1s ease-out; }
 
 /* The response's round trip under its type, in the row (upstream's `font-size: 12px` line). */
 .rttRow { display: block; margin-top: var(--s-2); font: 400 var(--t-1)/1.2 var(--font-mono); color: var(--faint); white-space: nowrap; }
+
+/*
+Across the cluster's nodes (deviation 37, `query-across.ts`): the row's node in its
+own column, and each node's total for the filters on a line over the legend.
+*/
+.nodeCell { white-space: nowrap; }
+.nodeTotals {
+  display: flex; flex-wrap: wrap; align-items: center;
+  gap: var(--s-4) var(--s-9);
+  padding: var(--s-6) var(--s-10);
+  border-bottom: 1px solid var(--line2);
+  font-size: var(--t-3);
+}
+.nodeTotalsTitle { font-size: var(--t-2); font-weight: 600; color: var(--mute); }
+.nodeTotal { display: inline-flex; align-items: center; gap: var(--s-5); }
+.nodeTotalCount { font-variant-numeric: tabular-nums; color: var(--ink); font-weight: 600; }

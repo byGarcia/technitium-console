@@ -1,0 +1,28 @@
+/*
+The pieces the `All nodes` views of Query Logs and DHCP share (`AcrossNodes.tsx`,
+deviations 37 and 38), drawn as Zones and Cache draw theirs.
+*/
+
+/* A node's name after a square of its colour, as Cache's column heads have it. */
+.name { display: inline-flex; align-items: center; gap: var(--s-3); white-space: nowrap; }
+.name::before {
+  content: '';
+  flex: none;
+  width: var(--s-4);
+  height: var(--s-4);
+  border-radius: var(--r-1);
+  background: var(--nd);
+}
+
+/* The nodes that did not answer, with the server's words, then that it is partial. */
+.failed {
+  padding: var(--s-6) var(--s-10);
+  border-bottom: 1px solid var(--line2);
+  font-size: var(--t-3);
+  color: var(--mute);
+}
+.failed ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--s-3); }
+.failed li { overflow-wrap: break-word; }
+.failed li::before { content: ''; display: inline-block; width: 7px; height: 7px; margin-right: var(--s-4); border-radius: 50%; background: var(--dan); vertical-align: middle; }
+.failed b { color: var(--ink); font-weight: 600; }
+.failed p { margin: var(--s-3) 0 0; }

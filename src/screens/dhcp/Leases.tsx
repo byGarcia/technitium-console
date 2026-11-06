@@ -4,7 +4,6 @@ import {
   convertToReservedLease,
   listLeases,
   removeLease,
-  type DhcpLease,
 } from '../../api/dhcp'
 import { Confirm } from '../../ui/Confirm'
 import { Button } from '../../ui/Button'
@@ -28,6 +27,10 @@ import { LEASE_TYPES, LeaseSummary } from './LeaseSummary'
 import { leaseColour } from './lease-colours'
 import { leaseKey, matchesSearch } from './pool'
 import { LEASE_PARAMS, Q, SCOPE, TYPE, readTabParam } from './dhcp-url'
+import { leasesAcross, type NodeLease } from './across'
+import type { ClusterNode } from '../../ui/ClusterNodeSelect'
+import { NodeName, NodesFailed, type NodeFailure } from '../../ui/AcrossNodes'
+import { nodeToken } from '../dashboard/palette'
 
 /*
 DHCP › Leases (dhcp.js:37-199).
@@ -59,7 +62,20 @@ placeholder, `All`, `N of M shown`, `Details` and `Client Identifier`.
 Rows are found by their scope and client identifier (`leaseKey`), not by their
 position: the position in the sorted, filtered table is not the position in the
 list, and acting on a sorted table must act on the row that was clicked.
+
+Deviation 38 (2026-11-06; `across.ts`): on a cluster, `All nodes` reads every
+node's leases and draws them together with a Node column first; the cards sum
+them, a node that did not answer is named, and a row's conversions and Remove
+Lease go to the row's node. Its words, OURS: `Node`, and those of `ui/AcrossNodes`.
 */
+
+/** The section's `This node` / `All nodes` choice (deviation 38), on a cluster only. */
+export interface DhcpCluster {
+  nodes: ClusterNode[]
+  across: boolean
+  /** The toggle, drawn first in the toolbar. */
+  toggle: ReactNode
+}
 
 export interface LeasesProps {
   /** The section sub-navigation, drawn under the header. */
@@ -72,11 +88,13 @@ export interface LeasesProps {
   canDelete?: boolean
   /** The filter a scope's page asked for on its way here; it wins over the bar. */
   seed?: { scope: string; type: string } | null
+  cluster?: DhcpCluster
 }
 
 /* `sortTable('tableDhcpLeasesBody', 0..6)`, less Lease Obtained, which is in the
    row's details now. */
-const KEYS: Keys<DhcpLease> = {
+const KEYS: Keys<NodeLease> = {
+  node: (l) => l.node ?? '',
   scope: (l) => l.scope,
   mac: (l) => l.hardwareAddress,
   address: (l) => l.address,
@@ -97,8 +115,13 @@ export function Leases({
   canModify = true,
   canDelete = true,
   seed = null,
+  cluster,
 }: LeasesProps) {
-  const [leases, setLeases] = useState<DhcpLease[] | null>(null)
+  const [leases, setLeases] = useState<NodeLease[] | null>(null)
+  /* The `All nodes` view (deviation 38): the nodes that did not answer. */
+  const across = cluster?.across === true
+  const [failed, setFailed] = useState<{ nodes: NodeFailure[]; answered: number } | null>(null)
+  const nodeKey = across ? cluster.nodes.map((n) => n.name).join('\n') : ''
   /*
   Whether the last load failed. It used to say "No Lease Found" when the call had
   fallen over, which is the same thing a server with no leases shows. Now the
@@ -130,6 +153,15 @@ export function Leases({
 
   const load = useCallback(async () => {
     setLeases(null)
+    if (nodeKey !== '') {
+      const all = await leasesAcross(token, nodeKey.split('\n').map((name) => ({ name, type: '' })))
+      setNow(Date.now())
+      setFailed({ nodes: all.failed, answered: all.answered })
+      setLeases(all.leases)
+      setFailure(all.answered === 0)
+      return
+    }
+    setFailed(null)
     const r = await listLeases(token, node)
     if (r.kind === 'ok') {
       setNow(Date.now())
@@ -140,7 +172,7 @@ export function Leases({
     setLeases([])
     setFailure(true)
     setNotice(noticeFromFailure(r))
-  }, [token, node])
+  }, [token, node, nodeKey])
 
   useEffect(() => {
     void load()
@@ -176,10 +208,12 @@ export function Leases({
     if (lease == null) return
 
     setBusy(true)
+    /* The row's node in the `All nodes` view (deviation 38). */
+    const on = lease.node ?? node
     const outcome =
       type === 'reserve'
-        ? await convertToReservedLease(token, lease.scope, lease.clientIdentifier, node)
-        : await convertToDynamicLease(token, lease.scope, lease.clientIdentifier, node)
+        ? await convertToReservedLease(token, lease.scope, lease.clientIdentifier, on)
+        : await convertToDynamicLease(token, lease.scope, lease.clientIdentifier, on)
     setBusy(false)
 
     if (outcome.kind !== 'ok') return
@@ -208,7 +242,7 @@ export function Leases({
     if (key == null || lease == null) return
 
     setBusy(true)
-    const outcome = await removeLease(token, lease.scope, lease.clientIdentifier, node)
+    const outcome = await removeLease(token, lease.scope, lease.clientIdentifier, lease.node ?? node)
     setBusy(false)
 
     if (outcome.kind !== 'ok') {
@@ -224,6 +258,9 @@ export function Leases({
       text: 'The DHCP lease was removed successfully.',
     })
   }
+
+  const colourOf = (name: string) =>
+    `var(${nodeToken(Math.max(0, (cluster?.nodes ?? []).findIndex((n) => n.name === name)))})`
 
   return (
     <div className={styles.wrap}>
@@ -241,6 +278,11 @@ export function Leases({
 
       {leases == null ? (
         <Loading />
+      ) : failure && failed != null ? (
+        <>
+          <NodesFailed failed={failed.nodes} answered={0} />
+          <Failure>Could not load the list.</Failure>
+        </>
       ) : failure ? (
         /* Solid, not dashed, and with no count: how many there are is not known.
            The server's message goes in the notice. */
@@ -259,6 +301,7 @@ export function Leases({
           <DataTable
             toolbar={
               <>
+                {cluster?.toggle}
                 <Grow>
                   <Field inline label="Search">
                     {(id) => (
@@ -309,10 +352,12 @@ export function Leases({
             }
             foot={<DataFoot count={`Total Leases: ${leases.length}`} />}
           >
+            {failed != null && <NodesFailed failed={failed.nodes} answered={failed.answered} />}
             <Table
               stack
               header={
                 <>
+                  {across && <Th field="node" sort={sort} onSort={toggle}>Node</Th>}
                   <Th field="address" sort={sort} onSort={toggle}>IP Address</Th>
                   <Th field="host" sort={sort} onSort={toggle}>Host Name</Th>
                   <Th field="mac" sort={sort} onSort={toggle}>MAC Address</Th>
@@ -324,7 +369,7 @@ export function Leases({
               }
               isEmpty={visibleLeases.length === 0}
               emptyText="No Lease Found"
-              columns={7}
+              columns={across ? 8 : 7}
             >
               {visibleLeases.map((l) => {
                 const key = leaseKey(l)
@@ -333,6 +378,7 @@ export function Leases({
                     key={key}
                     lease={l}
                     now={now}
+                    nodeColour={across && l.node != null ? colourOf(l.node) : undefined}
                     open={open.has(key)}
                     onToggle={() => toggleOpen(key)}
                     actions={
@@ -466,12 +512,15 @@ their distance are one press away, in the row's Details.
 function LeaseRow({
   lease: l,
   now,
+  nodeColour,
   open,
   onToggle,
   actions,
 }: {
-  lease: DhcpLease
+  lease: NodeLease
   now: number
+  /** In the `All nodes` view, the colour of the row's node, drawn first. */
+  nodeColour?: string
   open: boolean
   onToggle: () => void
   actions: ReactNode
@@ -480,6 +529,11 @@ function LeaseRow({
   return (
     <>
       <tr className={open ? styles.openRow : undefined}>
+        {nodeColour != null && (
+          <td className={styles.nodeCell}>
+            <NodeName name={l.node ?? ''} colour={nodeColour} />
+          </td>
+        )}
         <td className={`${styles.mono} ${styles.address} ${tbl.lead}`}>{l.address}</td>
         <td className={styles.mono}>{l.hostName}</td>
         <td className={styles.mono}>{l.hardwareAddress}</td>
@@ -505,7 +559,7 @@ function LeaseRow({
       </tr>
       {open && (
         <tr id={detail} className={styles.detailRow}>
-          <td colSpan={7}>
+          <td colSpan={nodeColour != null ? 8 : 7}>
             <dl className={styles.inline}>
               <div className={styles.pair}>
                 <dt>Client Identifier</dt>
