@@ -1907,12 +1907,6 @@ contract and SECURITY.md.
     Its words, OURS: `Node`, and those of `ui/AcrossNodes.tsx`; `DHCP view` is the toggle's
     accessible name (`ACCESSIBLE_NAMES` in `dev/check-parity-controls.mjs`).
 
-42. **The login's password field helps** (Adrián's decision, 2026-11-06; `screens/Login.tsx`).
-    A `Show password` button at the field's right edge shows what was typed (`Hide
-    password` to hide it again, `aria-pressed`), and a `Caps Lock is on` line appears
-    under the field while it has the focus and Caps Lock is on (read from the key
-    events, gone on leaving the field). What is sent, the steps and the texts are
-    upstream's. Its words, OURS: those three.
 39. **Block lists across the cluster's nodes** (Adrián's decision, 2026-11-06;
     `screens/blocking/ListsOnNodes.tsx`, `lists-on-nodes.ts`). The list URLs are one cluster-wide
     setting, but each node fetches and keeps its own copy of the lists on its own timer. On an
@@ -1964,6 +1958,12 @@ contract and SECURITY.md.
     canvas takes no keyboard focus, as deviation 7 already has it, so nothing changes for the
     keyboard. Its words, OURS: the Queries hint becomes "Click a point to open Query Logs for that
     minute/hour/day/month, or drag to choose a window" (`Dashboard.tsx`).
+42. **The login's password field helps** (Adrián's decision, 2026-11-06; `screens/Login.tsx`).
+    A `Show password` button at the field's right edge shows what was typed (`Hide
+    password` to hide it again, `aria-pressed`), and a `Caps Lock is on` line appears
+    under the field while it has the focus and Caps Lock is on (read from the key
+    events, gone on leaving the field). What is sent, the steps and the texts are
+    upstream's. Its words, OURS: those three.
 
 ## Four constraints the server imposes
 
