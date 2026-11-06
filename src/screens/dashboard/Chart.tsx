@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import {
   Chart as ChartJS,
   LineController, DoughnutController, BarController,
@@ -11,6 +11,8 @@ import type { ChartData } from '../../api/dashboard'
 import { readPalette, type Palette, type Series } from './palette'
 import { byLegendOrder } from './legend-order'
 import { useTheme } from '../../theme/useTheme'
+import { DRAG_THRESHOLD_PX, bucketAt, selectionBox, spanOf } from './drag-window'
+import styles from './Chart.module.css'
 
 ChartJS.register(LineController, DoughnutController, BarController, LineElement, PointElement, ArcElement, BarElement, CategoryScale, LinearScale, Legend, Tooltip, Filler)
 
@@ -132,6 +134,7 @@ export function Chart({
   legendOrder,
   onPick,
   pickable,
+  onPickRange,
   series,
 }: {
   type: ChartType
@@ -163,6 +166,13 @@ export function Chart({
   */
   onPick?: (index: number) => void
   pickable?: (index: number) => boolean
+  /*
+  A drag across a line chart, by its first and last bucket (deviation 41): the
+  Dashboard opens Query Logs for that window. A press that does not travel is still
+  a click (`onPick`). Pointer events, so a mouse, a pen and a finger all drag; the
+  canvas leaves vertical swipes to the page.
+  */
+  onPickRange?: (first: number, last: number) => void
   /** A line chart whose series choose their own colour token (the Queries compared
    *  by node, deviation 36). Read when the chart is drawn and when data arrives. */
   series?: Series
@@ -171,8 +181,12 @@ export function Chart({
   const seriesRef = useRef(series)
   seriesRef.current = series
   /* Read at click time, so a new function from the caller needs no rebuild. */
-  const pick = useRef({ onPick, pickable })
-  pick.current = { onPick, pickable }
+  const pick = useRef({ onPick, pickable, onPickRange })
+  pick.current = { onPick, pickable, onPickRange }
+  /* The press being dragged, and whether the click that ends it is the drag's. */
+  const drag = useRef<{ id: number; x: number; first: number; dragging: boolean } | null>(null)
+  const dragged = useRef(false)
+  const [selection, setSelection] = useState<{ left: number; width: number; top: number; height: number } | null>(null)
   const chart = useRef<ChartJS | null>(null)
   /*
   The palette is read from the tokens, and the tokens change with the theme. A
@@ -208,6 +222,8 @@ export function Chart({
         ...(type === 'doughnut' ? { cutout: '70%' } : {}),
         interaction: { intersect: false, mode: 'index' },
         onClick: (event, _elements, c) => {
+          /* The click a drag ends with is the drag's, not a point's. */
+          if (dragged.current) return
           const index = pickAt(c, event)
           if (index != null) pick.current.onPick?.(index)
         },
@@ -384,9 +400,94 @@ export function Chart({
     return pick.current.pickable == null || pick.current.pickable(index) ? index : null
   }
 
+  /* The bucket under a pointer, by the x scale of the chart on screen. */
+  function bucketUnder(clientX: number): number | null {
+    const c = chart.current
+    const canvas = ref.current
+    const x = c?.scales?.x
+    if (c == null || canvas == null || x == null || c.chartArea == null) return null
+    const rect = canvas.getBoundingClientRect()
+    return bucketAt(clientX - rect.left, c.chartArea, (px) => x.getValueForPixel(px), c.data.labels?.length ?? 0)
+  }
+
+  function onPointerDown(e: ReactPointerEvent<HTMLDivElement>) {
+    if (pick.current.onPickRange == null || e.button !== 0) return
+    const first = bucketUnder(e.clientX)
+    if (first == null) return
+    drag.current = { id: e.pointerId, x: e.clientX, first, dragging: false }
+    dragged.current = false
+  }
+
+  function onPointerMove(e: ReactPointerEvent<HTMLDivElement>) {
+    const d = drag.current
+    const c = chart.current
+    if (d == null || d.id !== e.pointerId || c == null) return
+    if (!d.dragging) {
+      if (Math.abs(e.clientX - d.x) < DRAG_THRESHOLD_PX) return
+      d.dragging = true
+      /* The rest of the drag comes here even when it leaves the canvas. */
+      ref.current?.setPointerCapture?.(e.pointerId)
+      showTooltip(c, false)
+    }
+    const last = bucketUnder(e.clientX)
+    if (last == null) return
+    const [a, b] = spanOf(d.first, last)
+    const x = c.scales.x
+    setSelection(selectionBox(a, b, c.chartArea, (i) => x.getPixelForValue(i), c.data.labels?.length ?? 0))
+  }
+
+  /* The tooltip would sit on the window being drawn: it stands down while dragging. */
+  function showTooltip(c: ChartJS | null, on: boolean) {
+    const tooltip = c?.options?.plugins?.tooltip
+    if (c == null || tooltip == null) return
+    tooltip.enabled = on
+    if (!on) c.tooltip?.setActiveElements([], { x: 0, y: 0 })
+    c.update('none')
+  }
+
+  function onPointerUp(e: ReactPointerEvent<HTMLDivElement>) {
+    const d = drag.current
+    if (d == null || d.id !== e.pointerId) return
+    drag.current = null
+    setSelection(null)
+    if (d.dragging) showTooltip(chart.current, true)
+    if (!d.dragging) return
+    const last = bucketUnder(e.clientX)
+    /* The click that follows this release belongs to the drag; it is let go after it. */
+    dragged.current = true
+    window.setTimeout(() => {
+      dragged.current = false
+    }, 0)
+    if (last == null) return
+    const [a, b] = spanOf(d.first, last)
+    pick.current.onPickRange?.(a, b)
+  }
+
+  function onPointerCancel() {
+    if (drag.current?.dragging) showTooltip(chart.current, true)
+    drag.current = null
+    setSelection(null)
+  }
+
+  const drags = onPickRange != null
   return (
-    <div style={{ height: height }}>
+    <div
+      className={styles.wrap}
+      style={{ height: height }}
+      data-drag={drags ? '' : undefined}
+      onPointerDown={drags ? onPointerDown : undefined}
+      onPointerMove={drags ? onPointerMove : undefined}
+      onPointerUp={drags ? onPointerUp : undefined}
+      onPointerCancel={drags ? onPointerCancel : undefined}
+    >
       <canvas ref={ref} role="img" aria-label={aria} />
+      {selection != null && (
+        <div
+          className={styles.selection}
+          data-testid="chart-selection"
+          style={{ left: selection.left, width: selection.width, top: selection.top, height: selection.height }}
+        />
+      )}
     </div>
   )
 }

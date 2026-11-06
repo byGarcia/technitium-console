@@ -11,7 +11,8 @@ the query run, and with no query-logging app installed it says so exactly as it
 does from a row menu. What a chart adds is only which fields are filled:
 
   · a point of the Queries chart: `From` and `To`, the minute, hour, day or month
-    that point counts;
+    that point counts; a drag across it (deviation 41): from the start of the first
+    bucket it covers to the end of the last;
   · a slice or a bar: the value, where Query Logs has a field for it, and the
     period the chart counts, so the list answers for the same span.
 
@@ -40,6 +41,15 @@ export function spanFilters(from: number, to: number): QueryLogsFilters {
 export function bucketWindow(chart: ChartData | undefined, index: number): QueryLogsFilters | null {
   const b = bucketsOf(chart)?.buckets[index]
   return b != null ? spanFilters(b.from, b.to) : null
+}
+
+/** The span from the start of bucket `first` to the end of bucket `last`, the window
+ *  a drag across the Queries chart chose (deviation 41), or `null` without instants. */
+export function bucketsWindow(chart: ChartData | undefined, first: number, last: number): QueryLogsFilters | null {
+  const buckets = bucketsOf(chart)?.buckets
+  const a = buckets?.[Math.min(first, last)]
+  const b = buckets?.[Math.max(first, last)]
+  return a != null && b != null ? spanFilters(a.from, b.to) : null
 }
 
 /** The whole period a chart counts. */
