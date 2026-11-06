@@ -29,6 +29,8 @@ export function Dialog({
   actions,
   close = 'Close',
   size = 'form',
+  lead,
+  plain = false,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -53,17 +55,31 @@ export function Dialog({
    * lower because our typography runs tighter.
    */
   size?: 'compact' | 'form' | 'medium' | 'wide'
+  /** A glyph before the title: a confirmation's tone. Decorative, so hidden from
+   *  assistive technology; the title and the verb carry the meaning. */
+  lead?: ReactNode
+  /** One surface with no hairlines: the title, the body and the actions flow as
+   *  one block. For a question in a few lines (`ui/Confirm`), where two rules
+   *  would cut it into three boxes. */
+  plain?: boolean
 }) {
   return (
     <RadixDialog.Root open={open} onOpenChange={onOpenChange}>
       <RadixDialog.Portal>
         <RadixDialog.Overlay className={styles.overlay} />
         <RadixDialog.Content
-          className={`${styles.content} ${styles[size]}`}
+          className={`${styles.content} ${styles[size]}${plain ? ` ${styles.plain}` : ''}`}
           data-size={size}
         >
           <div className={styles.head}>
-            <RadixDialog.Title className={styles.title}>{title}</RadixDialog.Title>
+            {lead ? (
+              <div className={styles.heading}>
+                <span className={styles.lead} aria-hidden="true">{lead}</span>
+                <RadixDialog.Title className={styles.title}>{title}</RadixDialog.Title>
+              </div>
+            ) : (
+              <RadixDialog.Title className={styles.title}>{title}</RadixDialog.Title>
+            )}
             <RadixDialog.Close className={styles.close} aria-label="Close">
               <Icon name="close" size={16} />
             </RadixDialog.Close>

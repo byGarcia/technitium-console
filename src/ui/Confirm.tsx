@@ -4,6 +4,7 @@ import { Check } from './Check'
 import { Dialog } from './Dialog'
 import styles from './Confirm.module.css'
 import { Icon } from './Icon'
+import text from './text.module.css'
 
 /*
 The "are you sure?" step.
@@ -69,6 +70,14 @@ export function Confirm({
       open={open}
       onOpenChange={(o) => !o && onClose()}
       title={title}
+      lead={
+        variant === 'danger' ? (
+          <span className={styles.danger}>
+            <Icon name="warning" size={16} />
+          </span>
+        ) : undefined
+      }
+      plain
       actions={
         <Button variant={variant} disabled={busy || inProgress} onClick={confirm}>
           {label}
@@ -78,22 +87,67 @@ export function Confirm({
       size="compact"
     >
       {/*
-      The question beside a badge of its tone (2026-11-05): a destructive one is
-      red, the triangle and the solid red verb in the footer (`ui/Button`), so it
-      reads as dangerous before it is read; any other is the note in amber, the
-      colour of its verb. The
-      question is the dialog's text, so it is drawn in ink, not muted.
+      Redrawn 2026-11-06: one surface, read top to bottom in one glance. The
+      title says what, the name says on what, the sentence says the rest, and
+      the verb ends it. A destructive one is told by the red triangle in front
+      of the title and the solid red verb (`ui/Button`); there is no badge in the
+      body any more, and any other confirmation carries no glyph at all, because
+      a question that is not dangerous needs no decoration to be asked. The
+      sentence hangs under the title's text, past the triangle, so the left edge
+      reads as one column.
       */}
-      <div className={styles.ask} data-tone={variant}>
-        <span className={styles.badge}>
-          <Icon name={variant === 'danger' ? 'warning' : 'about'} size={18} />
-        </span>
-        {/* `pre-wrap`: there are multi-line confirmations (the Zones ones), and
-            without this they read as one run-on paragraph on one screen and not on
-            another. */}
-        <div className={styles.question}>{body}</div>
+      <div className={styles.question} data-tone={variant}>
+        <Sentence body={body} />
       </div>
     </Dialog>
+  )
+}
+
+/*
+The name in the sentence.
+
+Upstream writes the object of the action inside the sentence, between quotes
+(`'com'`), brackets (`[testuser]`) or, for a DNSSEC key, parentheses (`(12345)`),
+and there it drowns: it is the one word you check before pressing the verb. So it
+is drawn in the data face and in ink, with its delimiters kept and quieted.
+
+The characters do not change, but the DOM does (the name becomes an element of
+its own), and a split string is no longer one text node: a screen reader could
+read it in pieces and `getByText` would stop finding it. So the drawn copy is
+hidden from assistive technology and the sentence, whole and untouched, goes
+beside it for whoever does not see the screen. Only a plain string is marked; a
+sentence that comes as elements is the caller's own drawing and is left alone.
+
+The quote is only taken as one when it opens after a space or the start and
+closes before a space, punctuation or the end, so an apostrophe inside a word
+never opens a name.
+*/
+const NAME = /(?<=^|[\s(])'[^'\n]+'(?=$|[\s.,?!:;)])|\[[^\]\n]+\]|\(\d+\)/g
+
+function Sentence({ body }: { body: ReactNode }) {
+  if (typeof body !== 'string') return <>{body}</>
+  const parts: ReactNode[] = []
+  let at = 0
+  for (const m of body.matchAll(NAME)) {
+    const i = m.index
+    if (i > at) parts.push(body.slice(at, i))
+    const s = m[0]
+    parts.push(
+      <span key={i} className={styles.name}>
+        <span className={styles.mark}>{s[0]}</span>
+        {s.slice(1, -1)}
+        <span className={styles.mark}>{s[s.length - 1]}</span>
+      </span>,
+    )
+    at = i + s.length
+  }
+  if (at === 0) return <>{body}</>
+  if (at < body.length) parts.push(body.slice(at))
+  return (
+    <>
+      <span className={text.sr}>{body}</span>
+      <span aria-hidden="true">{parts}</span>
+    </>
   )
 }
 
