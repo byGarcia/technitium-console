@@ -1,98 +1,13 @@
 import type { ResourceRecord, ZoneDetails } from '../../api/records'
 import { Button } from '../../ui/Button'
-import { Panel } from '../../ui/Panel'
 import { Tag } from '../../ui/Tag'
 import { DomainName } from '../../ui/DomainName'
 import type { ZoneHeader } from './zone-view'
-import { useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { useRef, useState, type CSSProperties } from 'react'
 import { Icon } from '../../ui/Icon'
 import { useTooltip } from '../../ui/Tooltip'
-import { useCountUp } from '../../ui/useCountUp'
+import { Card, Count, StackBar, hotEvents, statStyles as styles } from '../../ui/StatCard'
 import { recordColour } from './zone-colours'
-import styles from './ZoneOverview.module.css'
-
-/** A card with its series colour as a straight bar inside its left edge, the way
- *  the Dashboard's figures carry theirs. */
-export function Card({ title, colour, children }: { title: string; colour: string; children: ReactNode }) {
-  return (
-    <div className={styles.card} style={{ '--tc': colour } as CSSProperties}>
-      <Panel title={title}>{children}</Panel>
-    </div>
-  )
-}
-
-/** A big figure, which counts up once as its card comes in (`ui/useCountUp`). */
-export function Count({ value }: { value: number }) {
-  return <>{useCountUp(value)}</>
-}
-
-export interface Part {
-  key: string
-  /** The words the screen already writes for it: `A`, `Primary`, `Enabled`. */
-  name: string
-  value: number
-  colour: string
-}
-
-/*
-How a whole splits, as one bar of coloured segments.
-
-Each segment shows its own words in the tooltip, `A 4` or `Enabled 12`: the same
-text its chip or its fact already writes, and the bar's `aria-label` already
-says, so nothing new is read. A segment is not a tab stop (the bar is one image to
-a reader, and the chips beside it are the keyboard's way to the same types), so
-its bubble is drawn for the pointer and the eye (`describe: false`).
-
-`hot` is the type lit from outside, by hovering or focusing its chip; a segment
-under the pointer lights itself. Either way the others dim a little, so the eye
-goes from the chip to its share of the bar.
-*/
-export function StackBar({
-  parts,
-  label,
-  hot = null,
-  onHot,
-}: {
-  parts: Part[]
-  label: string
-  hot?: string | null
-  onHot?: (key: string | null) => void
-}) {
-  const [own, setOwn] = useState<string | null>(null)
-  const total = parts.reduce((n, p) => n + p.value, 0)
-  if (total === 0) return null
-  const lit = own ?? hot
-  const light = (key: string | null) => {
-    setOwn(key)
-    onHot?.(key)
-  }
-  return (
-    <div className={styles.stack} role="img" aria-label={label} data-hot={lit != null || undefined}>
-      {parts
-        .filter((p) => p.value > 0)
-        .map((p) => (
-          <Segment key={p.key} part={p} lit={lit === p.key} onHot={light} />
-        ))}
-    </div>
-  )
-}
-
-function Segment({ part, lit, onHot }: { part: Part; lit: boolean; onHot: (key: string | null) => void }) {
-  const ref = useRef<HTMLSpanElement>(null)
-  const tip = useTooltip({ text: `${part.name} ${part.value}`, placement: 'top', anchor: ref, describe: false })
-  return (
-    <span
-      ref={ref}
-      className={styles.segment}
-      data-hot={lit || undefined}
-      style={{ flexGrow: part.value, background: part.colour }}
-      onMouseEnter={() => { tip.events.onMouseEnter(); onHot(part.key) }}
-      onMouseLeave={() => { tip.events.onMouseLeave(); onHot(null) }}
-    >
-      {tip.bubble}
-    </span>
-  )
-}
 
 /*
 Not used since restart, and why it is not "never".
@@ -118,16 +33,6 @@ function NotUsed({ value }: { value: number }) {
       </dd>
     </div>
   )
-}
-
-/** The chips' side of `hot`: hovering or focusing a chip lights its segment. */
-export function hotEvents(key: string, setHot: (key: string | null) => void) {
-  return {
-    onMouseEnter: () => setHot(key),
-    onMouseLeave: () => setHot(null),
-    onFocus: () => setHot(key),
-    onBlur: () => setHot(null),
-  }
 }
 
 /*

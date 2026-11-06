@@ -2,9 +2,8 @@ import { typeLabel, zoneNameOf, zoneState, type Zone } from '../../api/zones'
 import { fromNow } from '../../lib/dates'
 import { useState, type CSSProperties } from 'react'
 import { Icon } from '../../ui/Icon'
-import { Card, Count, StackBar, hotEvents } from './ZoneOverview'
+import { Card, Count, StackBar, hotEvents, statStyles as styles } from '../../ui/StatCard'
 import { zoneColour } from './zone-colours'
-import styles from './ZoneOverview.module.css'
 
 /*
 THE ZONES AT A GLANCE (deviation 12 in CONVENTIONS.md, 2026-11-05): four cards

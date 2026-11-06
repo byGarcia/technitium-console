@@ -1,6 +1,6 @@
 /*
-A zone at a glance (`ZoneOverview.tsx`): four cards in a row, on a narrow screen
-two and then one. Each card's height is its content's; the row aligns their tops.
+A row of stat cards (`StatCard.tsx`; Zones, Cache, Apps, DNS Client, DHCP): four
+cards in a row, on a narrow screen two and then one. Each card's height is its content's; the row aligns their tops.
 */
 .grid {
   display: grid;
