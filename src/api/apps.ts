@@ -31,7 +31,8 @@ export interface DnsAppDetail {
   classPath: string
   description: string
   isAppRecordRequestHandler: boolean
-  recordDataTemplate: string | null
+  /** Omitted, not `null`, on a class that serves no APP records (checked on v15.6.1). */
+  recordDataTemplate?: string | null
   isRequestController: boolean
   isAuthoritativeRequestHandler: boolean
   isRequestBlockingHandler: boolean
