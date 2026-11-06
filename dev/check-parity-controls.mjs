@@ -402,6 +402,16 @@ const BLOCKING_OWN_LABELS = new Map([
   ['Add to group', 'the group a new list goes into, blocking/BlockLists.tsx:666; declared ours at BlockLists.tsx:48'],
 ])
 const onlyInBlocking = (label) => (LABEL_FILES.get(label) ?? []).every((f) => f.startsWith(BLOCKING))
+/*
+The console's own update notice (deviation 10) has no upstream counterpart, so
+the names of its two Copy buttons are ours. Each passes ONLY while the one file
+that draws the notice is the only one that writes it.
+*/
+const NOTICE_OWN_LABELS = new Map([
+  ['Copy the installer command', 'app/Versions.tsx, the console update dialog (deviation 10)'],
+  ['Copy the Docker command', 'app/Versions.tsx, the console update dialog (deviation 10)'],
+])
+const onlyInNotice = (label) => (LABEL_FILES.get(label) ?? []).every((f) => f === join(SOURCE, 'app/Versions.tsx'))
 
 const labels = [...OUR_LABELS]
 const upstreamLabels = labels.filter((l) => theirWords.includes(asWords(l)))
@@ -409,16 +419,23 @@ const accessible = labels.filter((l) => !upstreamLabels.includes(l) && ACCESSIBL
 const blockingOwn = labels.filter(
   (l) => !upstreamLabels.includes(l) && !accessible.includes(l) && BLOCKING_OWN_LABELS.has(l) && onlyInBlocking(l),
 )
-const strayLabels = labels.filter((l) => !upstreamLabels.includes(l) && !accessible.includes(l) && !blockingOwn.includes(l))
+const noticeOwn = labels.filter(
+  (l) => !upstreamLabels.includes(l) && !accessible.includes(l) && NOTICE_OWN_LABELS.has(l) && onlyInNotice(l),
+)
+const strayLabels = labels.filter(
+  (l) => !upstreamLabels.includes(l) && !accessible.includes(l) && !blockingOwn.includes(l) && !noticeOwn.includes(l),
+)
 
 console.log('')
 for (const l of blockingOwn) console.log(`  BLOCKING OWN  label: ${l}  (${BLOCKING_OWN_LABELS.get(l)})`)
+for (const l of noticeOwn) console.log(`  NOTICE OWN    label: ${l}  (${NOTICE_OWN_LABELS.get(l)})`)
 for (const l of strayLabels) console.log(`  NOT UPSTREAM  label: ${l}`)
 console.log(
   strayLabels.length === 0
     ? `LABEL PARITY: ${upstreamLabels.length} of our ${labels.length} labels exist upstream; ` +
         `${accessible.length} are accessible names upstream leaves unnamed (ACCESSIBLE_NAMES) and ` +
-        `${blockingOwn.length} are the Blocking section's own (BLOCKING_OWN_LABELS).`
+        `${blockingOwn.length} are the Blocking section's own (BLOCKING_OWN_LABELS) and ` +
+        `${noticeOwn.length} the update notice's own (NOTICE_OWN_LABELS).`
     : `LABEL PARITY: ${strayLabels.length} of ${labels.length} labels are not upstream's.`,
 )
 
