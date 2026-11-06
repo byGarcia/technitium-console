@@ -70,7 +70,7 @@ export function Logs({
         label="Cluster Node"
       />
       {active === 'Query Logs' ? (
-        <QueryLogs token={token} node={node} request={request} />
+        <QueryLogs token={token} node={node} request={request} nodes={nodes} clusterInitialised={clusterInitialised} />
       ) : (
         <ViewLogs token={token}
           node={node}

@@ -27,6 +27,12 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
 
 **Flat controls and a calmer chrome.** Design only: every control, text and step is the same.
 
+- **Query Logs across the cluster:** on a cluster, `All nodes` in Query Logs sends the query to
+  every node and shows the newest entries of all of them in one table, newest first, with a Node
+  column and each node's own total for the filters. Only the newest page is offered in this view,
+  and Live Update follows every node. A node that cannot be read is named with the server's
+  message. Export and paging stay per node, and the view is kept in the address bar
+  (`?nodes=all`).
 - **Settings compared across cluster nodes:** Administration › Cluster shows a curated set of each
   node's settings side by side (domain, version, end points, recursion, DNSSEC, rate limits, default
   TTLs, blocking, forwarders, logging), the ones that differ first and marked, with "Show only

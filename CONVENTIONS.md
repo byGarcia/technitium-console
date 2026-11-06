@@ -1847,6 +1847,38 @@ contract and SECURITY.md.
       opens Query Logs for its bucket, as the aggregate's does (deviation 7).
     Its words, OURS: `Compare nodes` and `Left out: could not read N.` (`Dashboard.tsx`).
 
+37. **Query Logs is read across the cluster's nodes** (Adrián's decision, 2026-11-06;
+    `screens/logs/QueryLogs.tsx`, `query-across.ts`). Each node keeps its own query log and
+    upstream reads one at a time (`optLogsClusterNode`). On an initialised cluster the toolbar
+    starts with `This node` / `All nodes`, as the zone list's does. `All nodes` sends the form's
+    query to every node (`clusterNodes` of the session), the same `logs/query` with the same app,
+    class and filters and that node's `node`, on page 1, newest first, at the chosen Logs Per
+    Page, and draws the newest N of all the answers merged by their timestamp, a tie kept in the
+    order of the nodes, with a `Node` column after the timestamp in the node's colour
+    (`nodeToken`, as Cache and the Dashboard give it). A line over the legend gives each node's
+    own `totalEntries` for the filters (`Matching logs on each node`); the cards count the merged
+    page, and their `of N logs` is the nodes' totals summed. Its limits, and crossing one is a
+    bug:
+    - **only the newest page**: paging a merge would need every node's entries down to an
+      instant no node can be asked for, so while the view is on Page Number and Order are pinned
+      to 1 and Descending and disabled, as Live Update pins them, the status says `Newest N
+      across the nodes` and the pager offers that one page;
+    - **Live Update works in it**: the same 2 s loop asks every node each turn, a row flashes by
+      its node and number, and the arrivals counter sums each node's growth (a node that did not
+      answer a turn keeps the total it had);
+    - **a row acts on its node**: its Query DNS Server hands over the row's node, and its menu is
+      named `Actions for row N on <node>`; Allow and Block are as they were. Export stays the
+      node chosen in the selector;
+    - **a node that fails says so**: once above the totals, `<node> did not answer: <the server's
+      message>`, the words of deviation 33, and under them that its rows are missing (`No node
+      answered.` with none); it takes no part in the totals or the merge;
+    - **without a cluster nothing changes**: no toggle, one call with the screen's node, and
+      `?nodes=all` in the bar is not acted on. The view is kept in the bar as `?nodes=all` while
+      it is drawn, read on arrival only on Query Logs' own folder, and leaves with the screen.
+    Its words, OURS, are declared in the header comments of `QueryLogs.tsx` and
+    `ui/AcrossNodes.tsx`; `Query Logs view` is the toggle's accessible name (`ACCESSIBLE_NAMES` in
+    `dev/check-parity-controls.mjs`).
+
 ## Four constraints the server imposes
 
 These are not preferences: break them and the console works in development and
