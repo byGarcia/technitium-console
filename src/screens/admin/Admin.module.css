@@ -73,7 +73,8 @@ column is narrow.
 .split {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: var(--gap-block) var(--s-10);
+  /* One gap, the same between the columns as between the cards of a column. */
+  gap: var(--gap-block);
   align-items: start;
 }
 @media (min-width: 1180px) {
@@ -81,6 +82,10 @@ column is narrow.
   .span { grid-column: 1 / -1; }
 }
 .main, .side, .span { display: flex; flex-direction: column; gap: var(--gap-block); min-width: 0; }
+/* A block's own bottom margin would add to the column's gap: here the gap is the
+   only space between cards. */
+.main > * > *, .side > * > *, .span > * > *,
+.main > * > * > *, .side > * > * > *, .span > * > * > * { margin-bottom: 0; }
 
 /* An editable list inside an SSO or LDAP block, inset as the fields are. */
 .listPad { padding: var(--s-8) var(--s-9); }
