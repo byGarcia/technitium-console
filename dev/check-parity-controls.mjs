@@ -382,6 +382,7 @@ const ACCESSIBLE_NAMES = new Set([
   'DHCP sections',
   'Logs sections',
   'Settings sections',
+  'Response sections',
 ])
 /*
 The Blocking section is the deliberate exception that adds a screen
@@ -403,15 +404,17 @@ const BLOCKING_OWN_LABELS = new Map([
 ])
 const onlyInBlocking = (label) => (LABEL_FILES.get(label) ?? []).every((f) => f.startsWith(BLOCKING))
 /*
-The console's own update notice (deviation 10) has no upstream counterpart, so
-the names of its two Copy buttons are ours. Each passes ONLY while the one file
-that draws the notice is the only one that writes it.
+Labels a numbered deviation in CONVENTIONS.md adds outside Blocking, each with the
+one file that may write it and the deviation that declares it. Each passes ONLY
+while that file is the only one that writes it.
 */
-const NOTICE_OWN_LABELS = new Map([
-  ['Copy the installer command', 'app/Versions.tsx, the console update dialog (deviation 10)'],
-  ['Copy the Docker command', 'app/Versions.tsx, the console update dialog (deviation 10)'],
+const DEVIATION_OWN_LABELS = new Map([
+  ['Copy the installer command', { file: 'app/Versions.tsx', why: 'the console update dialog (deviation 10)' }],
+  ['Copy the Docker command', { file: 'app/Versions.tsx', why: 'the console update dialog (deviation 10)' }],
+  ['Kind', { file: 'screens/apps/Apps.tsx', why: 'the installed apps filter (deviation 17)' }],
 ])
-const onlyInNotice = (label) => (LABEL_FILES.get(label) ?? []).every((f) => f === join(SOURCE, 'app/Versions.tsx'))
+const onlyInOwnFile = (label) =>
+  (LABEL_FILES.get(label) ?? []).every((f) => f === join(SOURCE, DEVIATION_OWN_LABELS.get(label).file))
 
 const labels = [...OUR_LABELS]
 const upstreamLabels = labels.filter((l) => theirWords.includes(asWords(l)))
@@ -420,7 +423,7 @@ const blockingOwn = labels.filter(
   (l) => !upstreamLabels.includes(l) && !accessible.includes(l) && BLOCKING_OWN_LABELS.has(l) && onlyInBlocking(l),
 )
 const noticeOwn = labels.filter(
-  (l) => !upstreamLabels.includes(l) && !accessible.includes(l) && NOTICE_OWN_LABELS.has(l) && onlyInNotice(l),
+  (l) => !upstreamLabels.includes(l) && !accessible.includes(l) && DEVIATION_OWN_LABELS.has(l) && onlyInOwnFile(l),
 )
 const strayLabels = labels.filter(
   (l) => !upstreamLabels.includes(l) && !accessible.includes(l) && !blockingOwn.includes(l) && !noticeOwn.includes(l),
@@ -428,14 +431,17 @@ const strayLabels = labels.filter(
 
 console.log('')
 for (const l of blockingOwn) console.log(`  BLOCKING OWN  label: ${l}  (${BLOCKING_OWN_LABELS.get(l)})`)
-for (const l of noticeOwn) console.log(`  NOTICE OWN    label: ${l}  (${NOTICE_OWN_LABELS.get(l)})`)
+for (const l of noticeOwn) {
+  const own = DEVIATION_OWN_LABELS.get(l)
+  console.log(`  DEVIATION OWN label: ${l}  (${own.file}, ${own.why})`)
+}
 for (const l of strayLabels) console.log(`  NOT UPSTREAM  label: ${l}`)
 console.log(
   strayLabels.length === 0
     ? `LABEL PARITY: ${upstreamLabels.length} of our ${labels.length} labels exist upstream; ` +
         `${accessible.length} are accessible names upstream leaves unnamed (ACCESSIBLE_NAMES) and ` +
         `${blockingOwn.length} are the Blocking section's own (BLOCKING_OWN_LABELS) and ` +
-        `${noticeOwn.length} the update notice's own (NOTICE_OWN_LABELS).`
+        `${noticeOwn.length} a deviation's own (DEVIATION_OWN_LABELS).`
     : `LABEL PARITY: ${strayLabels.length} of ${labels.length} labels are not upstream's.`,
 )
 
