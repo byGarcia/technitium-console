@@ -52,20 +52,32 @@ describe('the readings of Block List Domains', () => {
     expect(readReadings('dns2').map((r) => r.count)).toEqual([2])
   })
 
+  /* The storage is replaced whole (`stubGlobal`), not spied on: Node 22 (the CI's) and
+     Node 26 expose it differently, and a spy that does not catch the call proves nothing. */
   it('a storage that refuses keeps nothing and breaks nothing: the reading is still returned', () => {
-    vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
-      throw new DOMException('QuotaExceededError')
+    const real = localStorage
+    vi.stubGlobal('localStorage', {
+      getItem: (k: string) => real.getItem(k),
+      setItem: () => {
+        throw new DOMException('QuotaExceededError')
+      },
+      removeItem: (k: string) => real.removeItem(k),
     })
     expect(keepReading('dns1', 7, '2026-11-01T00:00:00Z')).toEqual([{ at: '2026-11-01T00:00:00Z', count: 7 }])
-    vi.restoreAllMocks()
+    vi.unstubAllGlobals()
     expect(readReadings('dns1')).toEqual([])
   })
 
   it('a storage that cannot be read gives no history', () => {
-    vi.spyOn(localStorage, 'getItem').mockImplementation(() => {
-      throw new DOMException('SecurityError')
+    vi.stubGlobal('localStorage', {
+      getItem: () => {
+        throw new DOMException('SecurityError')
+      },
+      setItem: () => {},
+      removeItem: () => {},
     })
     expect(readReadings('dns1')).toEqual([])
+    vi.unstubAllGlobals()
   })
 
   it('what is stored and is not readings is ignored', () => {
