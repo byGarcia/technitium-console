@@ -47,3 +47,82 @@ written in several places), except that here one of the copies was missing.
 .ctlLine { composes: inline from '../../ui/PanelForm.module.css'; }
 .suffix { composes: trailer from '../../ui/text.module.css'; }
 .area { composes: area from '../../ui/PanelForm.module.css'; }
+
+/* ---- What the section holds (deviation 19, 2026-11-06) ----
+
+   The cards are `ui/StatCard`'s; these are the pieces only DHCP draws. */
+
+/* Scopes has three cards, not four, in three equal columns. The same steps as
+   the four-card row. */
+.wrap .cards3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 1180px) {
+  .wrap .cards3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 560px) {
+  .wrap .cards3 { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* A card that could not read the leases says so, quietly: no figure is drawn. */
+.unread { margin-top: var(--s-5); font-size: var(--t-3); color: var(--mute); }
+
+/* Leases per Scope: one row per scope, a button that sets the Scope filter. The
+   name and its count on a line, a bar under them, as long as its share of the
+   scope with most leases. Pressed, it takes the chips' pressed look. */
+.scopeList { display: flex; flex-direction: column; gap: var(--s-2); margin: 0 calc(var(--s-5) * -1); }
+.scopeRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--s-2) var(--s-5);
+  align-items: center;
+  padding: var(--s-3) var(--s-5);
+  border: 1px solid transparent;
+  border-radius: var(--r-2);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--t-3);
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--t-fast), border-color var(--t-fast);
+}
+.scopeRow:hover { background: var(--hover); }
+.scopeRow[aria-pressed='true'] { background: var(--seg-active); border-color: var(--acc-ink); }
+.scopeRow:focus-visible { outline: var(--focus); outline-offset: var(--focus-offset); }
+.scopeName { font-weight: 600; overflow-wrap: break-word; min-width: 0; }
+.scopeCount { font-variant-numeric: tabular-nums; color: var(--mute); }
+.scopeRow[aria-pressed='true'] .scopeCount { color: var(--acc-ink); }
+.scopeTrack { grid-column: 1 / -1; height: var(--s-2); border-radius: var(--r-1); background: var(--pan2); overflow: hidden; }
+.scopeTrack > span { display: block; height: 100%; border-radius: inherit; background: var(--ch-5); }
+
+/* Newest Lease: the address under a host name. */
+.lastAddress { margin-top: var(--s-2); font: var(--t-3)/1.4 var(--font-mono); color: var(--mute); }
+
+/* Expiring Soon: the first lease to run out, under the count. */
+.next { margin-top: var(--s-6); font-size: var(--t-3); color: var(--mute); overflow-wrap: break-word; }
+.nextLabel { color: var(--mute); }
+.nextName { font-family: var(--font-mono); color: var(--ink); }
+.nextWhen { color: var(--warn); white-space: nowrap; }
+
+/* The scope table's Leases column: the count of the range, and a short track. */
+.use { display: flex; flex-direction: column; gap: var(--s-2); min-width: 96px; }
+.useText { font-variant-numeric: tabular-nums; color: var(--ink); white-space: nowrap; }
+.useOf { color: var(--mute); }
+.useTrack { display: block; height: var(--s-2); border-radius: var(--r-1); background: var(--pan2); overflow: hidden; }
+.useTrack > span { display: block; height: 100%; border-radius: inherit; background: var(--info); }
+
+/* The lease table's toolbar: the two filters at a fixed width each. */
+.filter { width: 220px; max-width: 100%; }
+.filterShort { width: 170px; max-width: 100%; }
+
+/* A scope's name in the lease table: words, so the interface face. */
+.scopeCell { font-weight: 550; color: var(--ink); white-space: nowrap; }
+
+/* A lease type: the dot of its series colour (`lease-colours.ts`) and the word. */
+.ltype { display: inline-flex; align-items: center; gap: var(--s-4); font-size: var(--t-3); color: var(--ink); white-space: nowrap; }
+.ltype::before { content: ''; width: var(--s-4); height: var(--s-4); border-radius: var(--r-1); background: var(--lt); flex: none; }
+
+/* How far off a lease's end is, under its date. */
+.when { display: block; font-family: var(--font-ui); font-size: var(--t-2); color: var(--mute); }
+
+/* The Remove Lease dialog's two warnings, one after the other. */
+.warnings { display: flex; flex-direction: column; gap: var(--s-5); margin-bottom: var(--s-8); }

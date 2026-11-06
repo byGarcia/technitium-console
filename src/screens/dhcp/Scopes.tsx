@@ -5,8 +5,10 @@ import {
   disableScope,
   enableScope,
   getScope,
+  listLeases,
   listScopes,
   setScope,
+  type DhcpLease,
   type DhcpScopeRow,
 } from '../../api/dhcp'
 import { Confirm } from '../../ui/Confirm'
@@ -23,6 +25,9 @@ import { RowAction, Th, useSort, type Keys, Table } from '../../ui/Table'
 import { Menu } from '../../ui/Menu'
 import { noticeFromFailure } from '../../lib/notice'
 import { Notifier } from '../../ui/Notifier'
+import { DataFoot, DataTable } from '../../ui/DataTable'
+import { ScopeSummary } from './ScopeSummary'
+import { leasesPerScope, rangeSize } from './pool'
 
 /*
 DHCP › Scopes (dhcp.js:201-684).
@@ -39,6 +44,12 @@ are replicated as they are:
   4. **The permission to delete a scope is `Delete`, not `Modify`**
      (`WebServiceDhcpApi.cs:761`), while enabling and disabling are `Modify`.
      Saving is `Modify`.
+
+Deviation 19 (2026-11-06): three cards over the table (`ScopeSummary.tsx`), the
+table and its count as one card (`ui/DataTable`), and a Leases column, each scope's
+leases of the addresses in its range. They read `dhcp/leases/list` beside
+`scopes/list`, the one call the deviation adds here; a failure of it touches
+nothing else on the tab.
 */
 
 export interface ScopesProps {
@@ -58,12 +69,18 @@ export interface ScopesProps {
 type Editing = { title: 'Add Scope' | 'Edit Scope'; form: Form }
 
 /* `sortTable('tableDhcpScopesBody', 0..3)`. It sorts by the cell's text, which
-   in the two composite columns is their two label/value pairs. */
-const KEYS: Keys<DhcpScopeRow> = {
-  name: (s) => s.name,
-  range: (s) => `Range ${s.startingAddress} - ${s.endingAddress} Mask ${s.subnetMask}`,
-  network: (s) => `Network ${s.networkAddress} Broadcast ${s.broadcastAddress}`,
-  interface: (s) => s.interfaceAddress ?? '',
+   in the two composite columns is their two label/value pairs. The Leases column
+   (deviation 19) sorts by count, padded so the text sort `useSort` does reads it
+   as a number; the counts come from the leases, so the keys are built with them. */
+function sortKeys(per: Map<string, number>): Keys<DhcpScopeRow> {
+  const keys: Keys<DhcpScopeRow> = {
+    name: (s) => s.name,
+    range: (s) => `Range ${s.startingAddress} - ${s.endingAddress} Mask ${s.subnetMask}`,
+    network: (s) => `Network ${s.networkAddress} Broadcast ${s.broadcastAddress}`,
+    interface: (s) => s.interfaceAddress ?? '',
+    leases: (s) => String(per.get(s.name) ?? 0).padStart(10, '0'),
+  }
+  return keys
 }
 
 export function Scopes({
@@ -75,6 +92,9 @@ export function Scopes({
   onLockNode,
 }: ScopesProps) {
   const [scopes, setScopes] = useState<DhcpScopeRow[] | null>(null)
+  /* The leases, for the cards and the Leases column; `null` when they could not
+     be read (deviation 19). Their failure is not the list's: no notice. */
+  const [leases, setLeases] = useState<DhcpLease[] | null>(null)
   /*
   Whether the last load failed.
 
@@ -104,7 +124,8 @@ export function Scopes({
   // A failure on load is not drawn as an empty list; see `Leases`.
   const load = useCallback(async () => {
     setScopes(null)
-    const r = await listScopes(token, node)
+    const [r, l] = await Promise.all([listScopes(token, node), listLeases(token, node)])
+    setLeases(l.kind === 'ok' ? l.data : null)
     if (r.kind === 'ok') {
       setScopes(r.data)
       setFailure(false)
@@ -121,7 +142,8 @@ export function Scopes({
 
   // The hook goes BEFORE any return: otherwise it would stop being called as soon
   // as the table is loading.
-  const { rows: visibleScopes, sort, toggle } = useSort(KEYS, scopes ?? [])
+  const per = leasesPerScope(leases ?? [])
+  const { rows: visibleScopes, sort, toggle } = useSort(sortKeys(per), scopes ?? [])
 
   async function edit(name: string) {
     setBusy(true)
@@ -212,8 +234,6 @@ export function Scopes({
     )
   }
 
-  if (scopes == null) return <Loading />
-
   return (
     <div className={styles.wrap}>
       <SectionHeader
@@ -222,6 +242,7 @@ export function Scopes({
         actions={<>{canModify && (
             <Button
               variant="primary"
+              lead="add"
               onClick={() => {
                 setNotice(null)
                 setEditing({ title: 'Add Scope', form: blankForm() })
@@ -234,12 +255,20 @@ export function Scopes({
 
       <Notifier notice={notice} onClose={() => setNotice(null)} />
 
-      {failure ? (
+      {scopes == null ? (
+        <Loading />
+      ) : failure ? (
         /* Solid, not dashed, and with no count: how many there are is not known.
-           The server's message goes in the notice at the top. */
+           The server's message goes in the notice. */
         <Failure>Could not load the list.</Failure>
       ) : (
       <>
+      <ScopeSummary scopes={scopes} leases={leases} />
+
+      {/* The table and its count as one card (`ui/DataTable`). The count is the
+          foot and nothing else; with no rows the table says so itself, with
+          upstream's centred row (`dhcp.js:74`). */}
+      <DataTable foot={<DataFoot count={`Total Scopes: ${scopes.length}`} />}>
       <Table
         stack
         header={
@@ -248,15 +277,19 @@ export function Scopes({
             <Th field="range" sort={sort} onSort={toggle}>Scope Range/Subnet Mask</Th>
             <Th field="network" sort={sort} onSort={toggle}>Network/Broadcast</Th>
             <Th field="interface" sort={sort} onSort={toggle}>Interface</Th>
+            <Th field="leases" sort={sort} onSort={toggle}>Leases</Th>
             <th>Status</th>
             <th className={tbl.actionsCell} />
           </>
         }
         isEmpty={visibleScopes.length === 0}
         emptyText="No Scope Found"
-        columns={6}
+        columns={7}
       >
-        {visibleScopes.map((s) => (
+        {visibleScopes.map((s) => {
+          const held = per.get(s.name) ?? 0
+          const size = rangeSize(s.startingAddress, s.endingAddress)
+          return (
           <tr key={s.name}>
             <td className={`${styles.name} ${tbl.lead}`}>{s.name}</td>
             <td>
@@ -280,6 +313,24 @@ export function Scopes({
             {/* `interfaceAddress` is OMITTED when null; upstream draws an
                 empty cell (dhcp.js:228). */}
             <td className={styles.mono}>{s.interfaceAddress ?? ''}</td>
+            {/* Deviation 19: the leases this scope holds, of the addresses in its
+                range. Empty when the leases could not be read. */}
+            <td>
+              {leases != null && size != null && (
+                <div className={styles.use}>
+                  <span className={styles.useText}>
+                    {held} <span className={styles.useOf}>of {size}</span>
+                  </span>
+                  <span
+                    className={styles.useTrack}
+                    role="img"
+                    aria-label={`${s.name}: ${held} of ${size} addresses in range leased`}
+                  >
+                    <span style={{ width: `${Math.min(100, (held / size) * 100)}%` }} />
+                  </span>
+                </div>
+              )}
+            </td>
             <td>
               <Tag tone={s.enabled ? 'ok' : 'neutral'}>
                 {s.enabled ? 'Enabled' : 'Disabled'}
@@ -323,19 +374,12 @@ export function Scopes({
               </div>
             </td>
           </tr>
-        ))}
+          )
+        })}
       </Table>
-
-      <div className={styles.total}>
-        {/* The footer is the count and nothing else. When there are no rows,
-            the one that says so is the table itself, with its centred row, like
-            the rest of the console and like upstream (`dhcp.js:74`); here it was
-            left floating outside the panel, under a table with a blank body. */}
-        <span>{`Total Scopes: ${scopes.length}`}</span>
-      </div>
+      </DataTable>
       </>
       )}
-
       <Confirm
         open={confirm !== null}
         title={confirm?.action === 'delete' ? 'Delete Scope' : 'Disable Scope'}

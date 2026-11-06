@@ -74,8 +74,8 @@ describe('DHCP › Leases', () => {
     vi.spyOn(api, 'listLeases').mockResolvedValue({ kind: 'ok', data: [DYNAMIC, RESERVED] })
     render(<Dhcp token="t" sub="Leases" />)
 
-    expect(await screen.findByText('192.168.1.42')).toBeInTheDocument()
-    expect(screen.getByText('192.168.1.50')).toBeInTheDocument()
+    expect(await screen.findByRole('cell', { name: '192.168.1.42' })).toBeInTheDocument()
+    expect(screen.getByRole('cell', { name: '192.168.1.50' })).toBeInTheDocument()
     expect(screen.getByText('Total Leases: 2')).toBeInTheDocument()
   })
 
@@ -100,7 +100,7 @@ describe('DHCP › Leases', () => {
   it('each row offers only the conversion its type calls for', async () => {
     vi.spyOn(api, 'listLeases').mockResolvedValue({ kind: 'ok', data: [DYNAMIC, RESERVED] })
     render(<Dhcp token="t" sub="Leases" />)
-    await screen.findByText('192.168.1.42')
+    await screen.findByRole('cell', { name: '192.168.1.42' })
 
     expect(
       row('192\\.168\\.1\\.42').getByRole('button', { name: 'Convert To Reserved Lease' }),
@@ -119,7 +119,7 @@ describe('DHCP › Leases', () => {
     vi.spyOn(api, 'listLeases').mockResolvedValue({ kind: 'ok', data: [DYNAMIC] })
     const spy = vi.spyOn(api, 'convertToReservedLease').mockResolvedValue(OK)
     render(<Dhcp token="t" sub="Leases" />)
-    await screen.findByText('192.168.1.42')
+    await screen.findByRole('cell', { name: '192.168.1.42' })
 
     await user.click(screen.getByRole('button', { name: 'Convert To Reserved Lease' }))
     expect(
@@ -143,7 +143,7 @@ describe('DHCP › Leases', () => {
     vi.spyOn(api, 'listLeases').mockResolvedValue({ kind: 'ok', data: [RESERVED] })
     vi.spyOn(api, 'convertToDynamicLease').mockResolvedValue(OK)
     render(<Dhcp token="t" sub="Leases" />)
-    await screen.findByText('192.168.1.50')
+    await screen.findByRole('cell', { name: '192.168.1.50' })
 
     await user.click(screen.getByRole('button', { name: 'Convert To Dynamic Lease' }))
     expect(
@@ -162,7 +162,7 @@ describe('DHCP › Leases', () => {
     vi.spyOn(api, 'listLeases').mockResolvedValue({ kind: 'ok', data: [DYNAMIC] })
     const spy = vi.spyOn(api, 'removeLease').mockResolvedValue(OK)
     render(<Dhcp token="t" sub="Leases" />)
-    await screen.findByText('192.168.1.42')
+    await screen.findByRole('cell', { name: '192.168.1.42' })
 
     await user.click(screen.getByRole('button', { name: /^Actions for / }))
     await user.click(await screen.findByRole('menuitem', { name: 'Remove Lease' }))
@@ -184,7 +184,7 @@ describe('DHCP › Leases', () => {
     vi.spyOn(api, 'listLeases').mockResolvedValue({ kind: 'ok', data: [DYNAMIC] })
     vi.spyOn(api, 'removeLease').mockResolvedValue({ kind: 'error', message: 'DHCP scope does not exists: Default' })
     render(<Dhcp token="t" sub="Leases" />)
-    await screen.findByText('192.168.1.42')
+    await screen.findByRole('cell', { name: '192.168.1.42' })
 
     await user.click(screen.getByRole('button', { name: /^Actions for / }))
     await user.click(await screen.findByRole('menuitem', { name: 'Remove Lease' }))
@@ -192,13 +192,13 @@ describe('DHCP › Leases', () => {
 
     const modal = within(screen.getByRole('dialog'))
     expect(await modal.findByText('DHCP scope does not exists: Default')).toBeInTheDocument()
-    expect(screen.getByText('192.168.1.42')).toBeInTheDocument()
+    expect(screen.getByRole('cell', { name: '192.168.1.42', hidden: true })).toBeInTheDocument()
   })
 
   it('without delete permission removing is not offered; without modify permission, neither is converting', async () => {
     vi.spyOn(api, 'listLeases').mockResolvedValue({ kind: 'ok', data: [DYNAMIC] })
     render(<Dhcp token="t" sub="Leases" canModify={false} canDelete={false} />)
-    await screen.findByText('192.168.1.42')
+    await screen.findByRole('cell', { name: '192.168.1.42' })
 
     expect(screen.queryByRole('button', { name: /^Actions for / })).not.toBeInTheDocument()
     expect(
