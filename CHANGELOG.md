@@ -82,6 +82,20 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
   ring while it works, and a quiet backdrop on the cover. Nothing the form does has changed.
 - **Destructive buttons are outlined in red at rest** across the console, and the four that were
   plain grey (a DNSSEC key's Delete, Delete Record, and two Remove buttons) now are too.
+- **The sidebar says technitium-console**, beside Technitium's own logo, now a vector file of
+  the same mark so it stays sharp on high-density screens.
+
+**Behaves like the stock console in three more places:**
+
+- **Zones: a zone that does not exist says so.** Opening one (from an old link, for instance)
+  showed "Unable to connect to the server"; it now shows the server's own message, as the stock
+  console does, and the list comes back.
+- **Query Logs: the pages do nothing while Live Update is on**, as in the stock console. They used
+  to run a query that the next refresh then replaced.
+- **DNSSEC Properties:** the three notes under the keys are the stock console's own, the key
+  generation choice has its *Key Generation* label, the DNSKEY TTL says its default and is saved
+  with *Update TTL*, and the warning about waiting for the old TTL is back. The NSEC3 fields say
+  their valid ranges.
 
 ## v1.3.4 (2026-10-21)
 
