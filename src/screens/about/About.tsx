@@ -1,15 +1,47 @@
 import { type ReactNode } from 'react'
 import { SectionHeader } from '../../ui/SectionHeader'
-import { fromNow, dateTime } from '../../lib/dates'
-import styles from './About.module.css'
-import { Body, Panel } from '../../ui/Panel'
+import { dateTime } from '../../lib/dates'
+import { Panel } from '../../ui/Panel'
+import { Card, statStyles } from '../../ui/StatCard'
+import { DomainName } from '../../ui/DomainName'
 import { publicUrl } from '../../app/base'
-import { Icon } from '../../ui/Icon'
+import { Icon, type IconName } from '../../ui/Icon'
+import styles from './About.module.css'
 
 interface Info { version: string; uptimestamp: string; dnsServerDomain: string }
 
+/*
+ABOUT READS LIKE THE OTHER SCREENS (deviation 9 in CONVENTIONS.md, rewritten on
+2026-11-06). Upstream's About is one centred column: the logo, the name, `Version
+X`, `Server up since …`, and then its prose, heading after heading
+(`index.html:3641-3680`). Here the same words are laid out the way Zones and Cache
+are:
+
+  · The header is the object: Technitium's logo, `Technitium DNS Server` and the
+    server's domain under it, with the path `About ›` above.
+  · Three cards say what is running: the DNS Server's version, how long it has
+    been up (and since when), and this console's version and licence.
+  · Upstream's sections are blocks of their own: `Documentation` (What's New?, API
+    Documentation and Help Topics as link rows, each with its sentence),
+    `Support` (its four destinations as rows), `License` and `Donate`. Every
+    sentence and every destination is upstream's, word for word.
+  · The console's own column, under its card: `On GitHub` (its four destinations)
+    and `Support the Console`.
+
+Everything comes from the session the chrome already holds (`info`): this screen
+asks the server for nothing, so it has no loading and no failure state. Whether
+there is an update is not said here: the chrome checks once and marks the version
+it concerns (`app/Versions`), and that answer does not reach this screen.
+
+There was an update panel here once, with a `Check for Update` button and four
+sentences, none of which exists upstream (checked against the `ref` instance on
+2026-09-04). It is gone and the tests keep it gone.
+*/
+
 /* The two destinations that repeat, so text and title do not drift apart. */
+const WHATS_NEW = 'https://go.technitium.com/?id=23'
 const API_DOCS = 'https://github.com/TechnitiumSoftware/DnsServer/blob/master/APIDOCS.md'
+const HELP = 'https://go.technitium.com/?id=25'
 const DONATE = 'https://go.technitium.com/?id=35'
 /* This console's repository and where it is funded (`.github/FUNDING.yml`). */
 const CONSOLE_REPO = 'https://github.com/byGarcia/technitium-console'
@@ -27,15 +59,7 @@ const FUNDING: readonly [string, string][] = [
 ]
 
 /** External link: always in a new tab and without handing over the `opener`. */
-function Link({
-  href,
-  cls,
-  children,
-}: {
-  href: string
-  cls?: string
-  children: ReactNode
-}) {
+function Link({ href, cls, children }: { href: string; cls?: string; children: ReactNode }) {
   return (
     <a className={cls} href={href} target="_blank" rel="noreferrer">
       {children}
@@ -44,178 +68,226 @@ function Link({
 }
 
 /*
-There is no update panel here, and there was one.
-
-It had a `Check for Update` button and four sentences ("No update available. You
-are running the latest version.", "Update notifications are turned off for this
-server.", "Unable to check for updates." and the button's own label) and **none of
-the four exists upstream**: not in its `index.html`, not in its `main.js`.
-Checked against the `ref` instance on 2026-09-04.
-
-Upstream checks once, on login, and says so in the chrome (a link that is visible
-from all twelve screens) and nowhere else. This console does the same, in
-`app/Versions`, where the notice rides on the version it is about. A second,
-forced check on the one screen nobody visits was duplicating that notice with
-four literals the product does not say.
-
-What stays is the `Server` panel: version and uptime are facts upstream's own
-About shows, right under the title.
+A destination as a row: the whole row opens it, the way the console's own rows
+did. The row's link is `primary`: its box is stretched over the row, so the row is
+one target of a full row's height. A sentence under it keeps its own inline link
+(upstream writes both, `What's New?` and `change log`), raised above the stretched
+box so it stays a target of its own.
 */
+function LinkRow({ icon = 'external', children, note }: { icon?: IconName; children: ReactNode; note?: ReactNode }) {
+  return (
+    <li className={styles.row}>
+      <div className={styles.rowText}>
+        {children}
+        {note != null && <p className={styles.rowNote}>{note}</p>}
+      </div>
+      <Icon name={icon} size={14} className={styles.rowIcon} />
+    </li>
+  )
+}
+
+/** The link that stands for its row (`LinkRow`): a link inside the row's
+ *  sentence, or the row's name (`label`), bolder as a heading (`title`). */
+function Primary({ href, look = 'inline', children }: { href: string; look?: 'inline' | 'label' | 'title'; children: ReactNode }) {
+  const cls = [styles.primary, look !== 'inline' && styles.label, look === 'title' && styles.rowTitle]
+    .filter(Boolean)
+    .join(' ')
+  return (
+    <Link href={href} cls={cls}>
+      {children}
+    </Link>
+  )
+}
+
+/*
+How long the server has been up, from the start time the session carries. OURS:
+upstream writes only `moment().fromNow()` ("2 days ago"), which reads as a date,
+not a span. Two units, the largest first, as the Cache's TTLs read (`1h20m7s`).
+*/
+export function uptime(iso: string, now: number = Date.now()): string | null {
+  const start = new Date(iso).getTime()
+  if (Number.isNaN(start)) return null
+  const minutes = Math.max(0, Math.floor((now - start) / 60000))
+  const d = Math.floor(minutes / 1440)
+  const h = Math.floor((minutes % 1440) / 60)
+  const m = minutes % 60
+  if (d > 0) return h > 0 ? `${d}d ${h}h` : `${d}d`
+  if (h > 0) return m > 0 ? `${h}h ${m}m` : `${h}h`
+  return `${m}m`
+}
+
 export function About({ info }: { info?: Info }) {
+  const up = info ? uptime(info.uptimestamp) : null
   return (
     <>
-      <SectionHeader title="About" />
-    <div className={styles.grid}>
-      <Panel>
-        <Body>
-          <div className={styles.head}>
-            {/* Technitium's logo, not an initial of ours. Upstream puts it right
-                here (`index.html:3483`) and the file travels in `public/img/`
-                since the scaffolding: we had it and were not using it. */}
-            <img className={styles.mark} src={publicUrl('img/logo.svg')} alt="" width={38} height={38} />
-            <div>
-              <h2 className={styles.h1}>Technitium DNS Server</h2>
-              <div className={styles.view}>Version {info?.version ?? '—'}</div>
+      {/* Technitium's logo, not an initial of ours. Upstream puts it right
+          above the name (`index.html:3644`), and the file travels in
+          `public/img/` untouched. */}
+      <SectionHeader
+        section="About"
+        title="Technitium DNS Server"
+        mark={<img className={styles.logo} src={publicUrl('img/logo.svg')} alt="" width={52} height={52} />}
+        subtitle={
+          info?.dnsServerDomain ? (
+            <span className={styles.domain}><DomainName name={info.dnsServerDomain} /></span>
+          ) : undefined
+        }
+      />
+
+      <div className={styles.cards}>
+        <Card title="DNS Server" colour="var(--ch-1)">
+          <div className={statStyles.body}>
+            <dl className={styles.fact}>
+              <dt>Version</dt>
+              <dd className={statStyles.figure}>{info?.version ?? '—'}</dd>
+            </dl>
+          </div>
+        </Card>
+
+        <Card title="Uptime" colour="var(--ch-2)">
+          <div className={statStyles.body}>
+            <div className={statStyles.figure}>{up ?? '—'}</div>
+            <dl className={statStyles.facts}>
+              <div>
+                <dt>Up since</dt>
+                <dd>{info ? dateTime(info.uptimestamp) || '—' : '—'}</dd>
+              </div>
+            </dl>
+          </div>
+        </Card>
+
+        <Card title="Web Console" colour="var(--ch-3)">
+          <div className={statStyles.body}>
+            <dl className={styles.fact}>
+              <dt>Version</dt>
+              <dd className={statStyles.figure}>{__CONSOLE_VERSION__}</dd>
+            </dl>
+            <p className={styles.cardNote}>
+              <Link href={`${CONSOLE_REPO}/blob/main/LICENSE`}>GPL-3.0-or-later</Link>. An independent
+              project, not affiliated with or endorsed by Technitium.
+            </p>
+          </div>
+        </Card>
+      </div>
+
+      <div className={styles.blocks}>
+        {/* Technitium's, word for word: upstream's headings and sentences. */}
+        <div className={styles.column}>
+          <Panel title="Documentation">
+            <ul className={styles.rows}>
+              <LinkRow
+                note={
+                  <>
+                    Read the <Link href={WHATS_NEW} cls={styles.inline}>change log</Link> to know
+                    what&apos;s new in this release.
+                  </>
+                }
+              >
+                <Primary href={WHATS_NEW} look="title">What&apos;s New?</Primary>
+              </LinkRow>
+              <LinkRow
+                note={
+                  <>
+                    The DNS Server HTTP API allows any 3rd party app or script to configure the DNS
+                    Server. The HTTP API is used by this web console and thus all the actions that
+                    this web console does can be performed via the API. Read the{' '}
+                    <Link href={API_DOCS} cls={styles.inline}>HTTP API documentation</Link> for
+                    complete details.
+                  </>
+                }
+              >
+                <Primary href={API_DOCS} look="title">API Documentation</Primary>
+              </LinkRow>
+              <LinkRow
+                note={
+                  <>
+                    Read the latest{' '}
+                    <Link href={HELP} cls={styles.inline}>online help topics</Link> which contains
+                    the DNS Server user manual and covers frequently asked questions.
+                  </>
+                }
+              >
+                <Primary href={HELP} look="title">Help Topics</Primary>
+              </LinkRow>
+            </ul>
+          </Panel>
+
+          <Panel title="Support">
+            <ul className={styles.rows}>
+              <LinkRow icon="mail">
+                For support, send an email to{' '}
+                <Primary href="mailto:support@technitium.com">support@technitium.com</Primary>.
+              </LinkRow>
+              <LinkRow>
+                Follow <Primary href="https://mastodon.social/@technitium">@technitium@mastodon.social</Primary>{' '}
+                on Mastodon.
+              </LinkRow>
+              <LinkRow>
+                Checkout <Primary href="https://blog.technitium.com/">Technitium Blog</Primary>.
+              </LinkRow>
+              <LinkRow>
+                Join <Primary href="https://www.reddit.com/r/technitium/">/r/technitium</Primary> on Reddit.
+              </LinkRow>
+            </ul>
+          </Panel>
+        </div>
+
+        <div className={styles.column}>
+          <Panel title="License">
+            <div className={styles.prose}>
+              <p>Copyright (C) 2026 Shreyas Zare (shreyas@technitium.com)</p>
+              <p>
+                This program comes with ABSOLUTELY NO WARRANTY. This is free software, and you are
+                welcome to redistribute it under certain conditions.
+              </p>
+              <p>
+                Source code available under{' '}
+                <Link href="https://go.technitium.com/?id=24" cls={styles.inline}>GNU General Public License v3.0</Link>{' '}
+                on <Link href="https://github.com/TechnitiumSoftware/DnsServer" cls={styles.inline}>GitHub</Link>
+              </p>
             </div>
-          </div>
-          {/*
-          The text and the links are upstream's, literal.
+          </Panel>
 
-          This screen had been left with the prose and without the destinations:
-          of the original panel's nine links, one survived (GitHub). "Help
-          Topics", "Support" and "Donate" were missing entirely, and in the ones
-          that remained the text still said "read the change log" without "change
-          log" leading anywhere.
+          {/* Upstream's `Donate` heading is a link to the same place as its
+              `Donate Now!`; it stays one, as the panel's title. */}
+          <Panel title={<Link href={DONATE} cls={styles.titleLink}>Donate</Link>}>
+            <div className={styles.prose}>
+              <p>
+                Make a contribution to Technitium and help making new software, updates, and features
+                possible.
+              </p>
+              <Link href={DONATE} cls={`${styles.button} ${styles.donate}`}>Donate Now!</Link>
+            </div>
+          </Panel>
+        </div>
 
-          It is not a styling detail. A fork that deletes the author's donation
-          link, support address and documentation from their panel is removing
-          functionality from someone else's product it claims only to be
-          repainting; it is of the same family as replacing their logo with an
-          initial of its own.
-          */}
-          <div className={styles.prose}>
-            <p>Copyright (C) 2026 Shreyas Zare (shreyas@technitium.com)</p>
-            <p>
-              This program comes with ABSOLUTELY NO WARRANTY. This is free software, and you are
-              welcome to redistribute it under certain conditions.
-            </p>
-            <p>
-              Source code available under{' '}
-              <Link href="https://go.technitium.com/?id=24">GNU General Public License v3.0</Link>{' '}
-              on <Link href="https://github.com/TechnitiumSoftware/DnsServer">GitHub</Link>
-            </p>
-
-            <h4><Link href="https://go.technitium.com/?id=23">What&apos;s New?</Link></h4>
-            <p>
-              Read the <Link href="https://go.technitium.com/?id=23">change log</Link> to know
-              what&apos;s new in this release.
-            </p>
-
-            <h4><Link href={API_DOCS}>API Documentation</Link></h4>
-            <p>
-              The DNS Server HTTP API allows any 3rd party app or script to configure the DNS Server.
-              The HTTP API is used by this web console and thus all the actions that this web console
-              does can be performed via the API. Read the{' '}
-              <Link href={API_DOCS}>HTTP API documentation</Link> for complete details.
-            </p>
-
-            <h4><Link href="https://go.technitium.com/?id=25">Help Topics</Link></h4>
-            <p>
-              Read the latest{' '}
-              <Link href="https://go.technitium.com/?id=25">online help topics</Link> which
-              contains the DNS Server user manual and covers frequently asked questions.
-            </p>
-
-            <h4>Support</h4>
-            <p>
-              For support, send an email to{' '}
-              <Link href="mailto:support@technitium.com">support@technitium.com</Link>.
-            </p>
-            <p>
-              Follow{' '}
-              <Link href="https://mastodon.social/@technitium">@technitium@mastodon.social</Link>{' '}
-              on Mastodon.
-              <br />
-              Checkout <Link href="https://blog.technitium.com/">Technitium Blog</Link>.
-            </p>
-            <p>
-              Join <Link href="https://www.reddit.com/r/technitium/">/r/technitium</Link> on Reddit.
-            </p>
-
-            <h4><Link href={DONATE}>Donate</Link></h4>
-            <p>
-              Make a contribution to Technitium and help making new software, updates, and features
-              possible.
-            </p>
-            <p>
-              <Link href={DONATE} cls={styles.target}>Donate Now!</Link>
-            </p>
-          </div>
-        </Body>
-      </Panel>
-
-      <div className={styles.col}>
-        <Panel title="Server">
-          <Body>
-            <dl className={styles.kv}>
-              <dt>Version</dt><dd>{info?.version ?? '—'}</dd>
-              <dt>Domain</dt><dd>{info?.dnsServerDomain ?? '—'}</dd>
-              <dt>Up since</dt><dd>{info ? dateTime(info.uptimestamp) : '—'}</dd>
-              <dt>Uptime</dt><dd>{info ? fromNow(info.uptimestamp) : '—'}</dd>
-            </dl>
-          </Body>
-        </Panel>
-
-        {/*
-        This console's own panels (deviation 9 of CONVENTIONS.md, approved on
-        2026-10-16), under Server. Technitium's card on the left stays literal.
-        Until now nothing on this screen said that the console is a separate
-        project, which version of it is running, where a fault in it is reported
-        (not to Technitium's support) or how to support it. They are built from
-        the console's own pieces, not as a second prose card: facts in the `kv`
-        list Server uses, destinations as rows, and the four funding destinations
-        of `.github/FUNDING.yml` as buttons. The words are ours and follow the
-        README's `Support` and `Licence`.
-        */}
-        <Panel title="Web Console">
-          <Body>
-            <dl className={styles.kv}>
-              <dt>Version</dt><dd>{__CONSOLE_VERSION__}</dd>
-              <dt>License</dt>
-              <dd><Link href={`${CONSOLE_REPO}/blob/main/LICENSE`}>GPL-3.0-or-later</Link></dd>
-            </dl>
-            <p className={styles.note}>
-              An independent project, not affiliated with or endorsed by Technitium.
-            </p>
+        {/* OURS (deviation 9): this console's column, under its card. */}
+        <div className={`${styles.column} ${styles.console}`}>
+          <Panel title="On GitHub">
             <ul className={styles.rows}>
               {CONSOLE_LINKS.map(([label, path]) => (
-                <li key={label}>
-                  <Link href={`${CONSOLE_REPO}${path}`} cls={styles.row}>
-                    <span>{label}</span>
-                    <Icon name="chevronRight" size={14} />
-                  </Link>
-                </li>
+                <LinkRow key={label}>
+                  <Primary href={`${CONSOLE_REPO}${path}`} look="label">{label}</Primary>
+                </LinkRow>
               ))}
             </ul>
-          </Body>
-        </Panel>
+          </Panel>
 
-        <Panel title="Support the Console">
-          <Body>
-            <p className={styles.note}>
-              Free, and it stays free. A star or a good bug report helps as much as a
-              donation.
-            </p>
-            <Link href={CONSOLE_REPO} cls={`${styles.button} ${styles.wide}`}>Star on GitHub</Link>
-            <div className={styles.funding}>
-              {FUNDING.map(([label, href]) => (
-                <Link key={label} href={href} cls={styles.button}>{label}</Link>
-              ))}
+          <Panel title="Support the Console">
+            <div className={styles.prose}>
+              <p>
+                Free, and it stays free. A star or a good bug report helps as much as a donation.
+              </p>
+              <Link href={CONSOLE_REPO} cls={`${styles.button} ${styles.wide}`}>Star on GitHub</Link>
+              <div className={styles.funding}>
+                {FUNDING.map(([label, href]) => (
+                  <Link key={label} href={href} cls={styles.button}>{label}</Link>
+                ))}
+              </div>
             </div>
-          </Body>
-        </Panel>
+          </Panel>
+        </div>
       </div>
-    </div>
     </>
   )
 }
