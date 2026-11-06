@@ -125,6 +125,14 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
   stock row menu. Users and Sessions get a stat strip whose parts filter the table. SSO and LDAP
   show whether they are enabled and configured. The search and filters are kept in the address
   bar.
+- **Every dialog reads like Add Zone:** labels above their fields, short fields in pairs, related
+  fields in a light block, choices as tiles, tables one line per row with icon actions; a
+  `Warning!` comes before the controls it is about. Edit Permissions draws real checkboxes.
+- **Blocking reads like Cache and Administration:** Overview and Lists open with a strip of
+  figures, every list is one card with its controls in the toolbar and its count in the foot, one
+  line per row with the rest under Details, and Rules' tree is the same card with a trail to the
+  node and its view kept in the address bar. The Dashboard's Top 1000 list gets a search, and
+  editable tables (TSIG keys, group maps) take the table look.
 - **Choosing a file is a drop zone** in every dialog that takes one (an app's zip, a zone file, a
   settings backup): drop the file or click to choose it, and it shows its name and size.
 - **Dialogs are one surface**, without the lines under the title and over the buttons. A

@@ -22,7 +22,10 @@
   Forwarders" and a count. Local names that no global token uses.
   */
   --settings-menu: 220px;
-  --settings-form: 820px;
+  /* The form takes the rest of the width (2026-11-06, Adrián: a capped column left
+     the right of a wide screen empty). One column, never two: the blocks are read
+     in upstream's order. */
+  --settings-form: none;
   /* The menu already marks the block in view, so a block's title does not pin
      (`ui/PanelForm.module.css`). */
   --block-title-position: static;
@@ -216,7 +219,7 @@ beside it. Under 960 px of screen the menu folds into a bar above the form.
 
 /* Wide: the menu is a column, the toggle goes, the list is always there. */
 @container (min-width: 960px) {
-  .layout { grid-template-columns: var(--settings-menu) minmax(0, var(--settings-form)); gap: var(--s-11); }
+  .layout { grid-template-columns: var(--settings-menu) minmax(0, 1fr); gap: var(--s-11); }
 
   .menu {
     top: calc(var(--stuck-top, 0px) + var(--s-11));

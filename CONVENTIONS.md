@@ -565,9 +565,32 @@ contract and SECURITY.md.
    still the only one that *removes* something. The rules are in
    `src/theme/theme.ts`.
 2. **The Blocking section** (`src/screens/blocking/`; what it offers is listed
-   in the CHANGELOG, v1.2.0). It replaces Allowed and Blocked
-   with Overview, Rules and Lists. Its Quick Add also offers the console's own
-   catalogue (`extra-lists.json`) after Technitium's, and a search field.
+   in the CHANGELOG, v1.2.0). It replaces Allowed and Blocked with Overview, Rules
+   and Lists, laid out since 2026-11-06 the way Cache and Administration are.
+   **Overview** opens with a strip of four cells (`ui/StatCard`) read from
+   `dashboard/stats/get`: `Total Queries`, `Blocked` with its `N% of total` and a bar
+   of Blocked against what got through, `Block List Domains`, and `Your Rules` with
+   their total (the server's two counts added), `Blocked`, `Allowed` and the same kind
+   of bar. Then the status block, the check panel, the two charts, Top Blocked Domains
+   and Top Domains as cards (title and `More` in the toolbar, one line per domain), and
+   Recently Blocked as a card whose rows fold the rest of the `logs/query` entry
+   (`Response Type` with its time, `RCODE`, `Protocol`, `Class`, `Answer`) under
+   `Details`, with `N blocked queries` in its foot. **Rules** is one card in both
+   views: the filter, the search and `List`/`Tree` in the toolbar; Import, Export and
+   Flush at the end of the foot with the count and the pages; a row's Delete is a
+   trash icon named `Delete <domain>`. The tree is Allowed's and Blocked's
+   `lists/Lists.tsx`, drawn as Cache's node: a trail `<ROOT> › … › node` whose steps go
+   up with `direction=up` (upstream's `[up]`), Refresh and Delete at its end, the zones
+   under the node as chips, the records one line each with the rest under `Details`
+   (no DNSSEC column). Rules keeps its view in the address bar beside `?rule=`:
+   `?q=`, `?page=`, `?view=tree` and `?list=` (`lib/url-state.ts`). **Lists** opens
+   with a strip of three cells (the two counts, and the next update with Update Now in
+   its cell) and draws the lists in one card: `Add group` and the Settings link in the
+   toolbar, one line per list (switch, name, URL cut to the line, type, Move up, Move
+   down, Remove and `Details`, which opens the name and the whole URL), the count in
+   the foot. Every call, confirmation, alert text and validation is the one it was.
+   Its Quick Add also offers the console's own catalogue (`extra-lists.json`) after
+   Technitium's, and a search field.
    Its Overview's "Check, block or allow a domain" panel also has **Check**
    (`check-domain.ts`, `DomainCheck.tsx`): it tells whether this server blocks a
    name and why (which block lists, with the name the Lists tab gives each; which
@@ -794,6 +817,13 @@ contract and SECURITY.md.
      and Protocol Types legend entries are buttons, and the week is one keyboard
      stop whose arrows move between its cells.
 
+   - **The Top 1000 list can be searched** (2026-11-06, `TopStats.tsx`). Upstream's
+     `modalTopStats` has no search, and a thousand entries cannot be scanned by eye. The
+     list is one card: a `Search` field in its toolbar narrows the entries already
+     loaded, by name and, for a client, its domain, asking the server nothing.
+     Upstream's `Total Clients: N` / `Total Domains: N` moves to the card's foot, with
+     `, K shown` while the search narrows it; with no match the table says upstream's
+     `No Data`. A client's domain is written beside its name.
 8. **Query Logs folds its filters below 960 px** (approved on 2026-10-16; `FOLD_QUERY`
    in `screens/logs/QueryLogs.tsx`). Since 2026-11-06 (deviation 20) the filters are a
    band inside the results card under a toolbar holding `Domain` and the verbs. Below
@@ -994,7 +1024,8 @@ contract and SECURITY.md.
     - A card whose data the node lacks is not drawn.
     - In the records table, shared with Allowed and Blocked, a record type is drawn in
       its series colour, and a cache record with `ttl: "0 (0s)"` carries a `Stale` tag.
-      Allowed and Blocked keep their two-line rows.
+      Allowed and Blocked draw the same one-line rows, without the DNSSEC column
+      (deviation 2).
     - Flush Cache, Delete, Refresh, the path and the chips send exactly what they sent.
     - **The open node and the type are in the address bar** (`?domain=`, `?type=`),
       as Blocking keeps `?rule=`: written by replacing the entry, read on arrival (the
@@ -1343,6 +1374,8 @@ contract and SECURITY.md.
       permissions, confirmations and texts.
     - The block headers carry no count of their rows. Quick Add and Quick Select are rows
       like their neighbours.
+    - **The form takes the width the menu leaves** (2026-11-06, Adrián): one column,
+      never two, so the blocks are read in upstream's order.
     - **`Warning!` and `Note!` are compact lines** in every form built on the kit
       (`ui/PanelForm`'s `Warning`, `Note`), Settings, DHCP's scope, Administration and
       the dialogs that use them: the sign and the bold word in their colour, the text in
@@ -1415,6 +1448,15 @@ contract and SECURITY.md.
       `Copied`.
     - **Cluster's nodes are a data table**: the node picker in its toolbar, `Total Nodes: N`
       in its foot.
+    - **Every dialog body reads like Add Zone** (`ui/DialogForm`): labels over their
+      fields, short fields in pairs, related fields in a light block, choices as
+      tiles, tables one line per row with icon actions. A `Warning!` comes before the
+      controls it is about (Create API Token, Initialize and Join Cluster, Import
+      Zone, Edit Zone File, Zone Options), except where its words point up ("above":
+      Restore Settings, a created token, DNSSEC's TTL). User Details' sessions keep
+      Session, Last Seen and Remote Address on the line, the user agent under
+      `Details`; DNSSEC Properties' Rollover (days) goes under the key's `Details`, so
+      neither column sorts any more.
     Its words, all OURS: `V`, `M`, `D` and the legend, `None`, `Search` and its three
     placeholders, `Details`, `Clear`, `N shown`, `Users`, `Type`, `2FA`, `of`, `Recent
     Login` as a cell title, `Nobody yet`, `Sessions`, `Remote Addresses`, `N more`,

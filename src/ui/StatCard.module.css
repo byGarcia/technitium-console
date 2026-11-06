@@ -239,3 +239,6 @@ with a hairline between cells. The Dashboard keeps its own large figures
 .pairs dd { font-size: var(--t-2); }
 .list { gap: var(--s-2); margin-top: var(--s-2); }
 .actions { margin-top: var(--s-4); }
+
+/* After `.facts dd` above, so a large fact keeps the strip's figure size. */
+.factsLarge dd { font: 650 var(--t-6)/1.15 var(--font-ui); }
