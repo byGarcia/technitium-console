@@ -31,7 +31,7 @@ import {
 } from './handoff'
 import styles from './Shell.module.css'
 import { Icon, type IconName } from '../ui/Icon'
-import { Menu } from '../ui/Menu'
+import { Menu, MenuItem, Separator } from '../ui/Menu'
 import { ThisServerName } from '../ui/ClusterNodeSelect'
 import { FooterLinks } from '../ui/FooterLinks'
 import { Versions } from './Versions'
@@ -650,13 +650,19 @@ export function Shell({
               {serverMark}
             </span>
           </div>
+          {/* The account menu in four groups (2026-11-06), each entry with its
+              icon, as the long row menus have: the profile; the account's
+              credentials; how the console looks and notifies; and Logout on its
+              own, in red. Same entries, same words and same order as upstream's
+              (index.html:66-74); only the lines between them and the icons are
+              ours. */}
           <Menu label={displayName} text={displayName} anchor="left" asRow>
             {(close) => (
               <>
                 {/* A page since 2026-11-06 (deviation 21): it navigates to
                     `/profile/`, where upstream opens `modalMyProfile`. */}
-                <button
-                  type="button"
+                <MenuItem
+                  icon="user"
                   onClick={() => {
                     close()
                     setActive('profile')
@@ -665,46 +671,49 @@ export function Shell({
                   }}
                 >
                   My Profile
-                </button>
+                </MenuItem>
+                <Separator />
                 {/* main.js:71-87 (v15.5.1) switches on `sessionData.type`:
                     `RemoteSSO` hides both, `RemoteLDAP` hides only the password
                     (the directory owns it, the 2FA is still this server's) and
                     `Local` or anything else shows both. */}
                 {session.type !== 'RemoteSSO' && session.type !== 'RemoteLDAP' && (
-                  <button type="button" onClick={() => { close(); open('password') }}>
+                  <MenuItem icon="lock" onClick={() => { close(); open('password') }}>
                     Change Password
-                  </button>
+                  </MenuItem>
                 )}
                 {session.type !== 'RemoteSSO' && (
-                  <button type="button" onClick={() => { close(); open('twofa') }}>
+                  <MenuItem icon="shield" onClick={() => { close(); open('twofa') }}>
                     Configure 2FA
-                  </button>
+                  </MenuItem>
                 )}
-                <button type="button" onClick={() => { close(); open('token') }}>
+                <MenuItem icon="key" onClick={() => { close(); open('token') }}>
                   Create API Token
-                </button>
+                </MenuItem>
+                <Separator />
                 {/* index.html:71: after the account's own entries, before the
                     update notification. */}
-                <button type="button" onClick={() => { close(); open('theme') }}>
+                <MenuItem icon="theme" onClick={() => { close(); open('theme') }}>
                   Change Theme
-                </button>
+                </MenuItem>
                 {/*
                 One entry and not two: upstream declares both and hides one
                 (`index.html:72-73`, `initUpdateNotificationMenu`), which is how
                 you write a toggle in jQuery. The literal of each is upstream's.
                 */}
                 {silenced ? (
-                  <button type="button" onClick={() => { close(); unsilence() }}>
+                  <MenuItem icon="bellOff" onClick={() => { close(); unsilence() }}>
                     Enable Update Notification
-                  </button>
+                  </MenuItem>
                 ) : (
-                  <button type="button" onClick={() => { close(); setAskSilence(true) }}>
+                  <MenuItem icon="bell" onClick={() => { close(); setAskSilence(true) }}>
                     Disable Update Notification
-                  </button>
+                  </MenuItem>
                 )}
-                <button type="button" onClick={() => { close(); onLogout() }}>
+                <Separator />
+                <MenuItem icon="logout" tone="danger" onClick={() => { close(); onLogout() }}>
                   Logout
-                </button>
+                </MenuItem>
               </>
             )}
           </Menu>

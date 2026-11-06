@@ -34,6 +34,7 @@ export type IconName =
   | 'shield' | 'add' | 'trash' | 'refresh' | 'search' | 'download' | 'upload' | 'run' | 'store' | 'key' | 'save'
   | 'file' | 'eye' | 'copy'
   | 'external' | 'mail'
+  | 'user' | 'theme' | 'bell' | 'bellOff' | 'logout'
 
 const PATHS: Record<IconName, ReactElement> = {
   // ── Leading a button's label (`ui/Button`, `lead`), 2026-11-05 ──────────
@@ -389,6 +390,44 @@ Same closed body and same arc as the rest: a grid of 24 and a stroke of
       <path d="M14 4h6v6" />
       <path d="M20 4 11 13" />
       <path d="M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4" />
+    </>
+  ),
+  // ── The account menu (2026-11-06) ────────────────────────────────────
+  /* A head and shoulders: the signed-in account (My Profile). */
+  user: (
+    <>
+      <circle cx="12" cy="8.5" r="4" />
+      <path d="M4.5 20a7.5 7.5 0 0 1 15 0" />
+    </>
+  ),
+  /* A disc half filled: light and dark (Change Theme). */
+  theme: (
+    <>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 3.5a8.5 8.5 0 0 1 0 17z" fill="currentColor" />
+    </>
+  ),
+  /* A bell: the update notification is on, so the entry turns it off. */
+  bell: (
+    <>
+      <path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 1.5h-15z" />
+      <path d="M10 20.5a2 2 0 0 0 4 0" />
+    </>
+  ),
+  /* The bell struck through: the notification is off, the entry turns it on. */
+  bellOff: (
+    <>
+      <path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 1.5h-15z" />
+      <path d="M10 20.5a2 2 0 0 0 4 0" />
+      <path d="m4 4 16 16" />
+    </>
+  ),
+  /* A door with an arrow leaving it (Logout). */
+  logout: (
+    <>
+      <path d="M14 4H6.5A1.5 1.5 0 0 0 5 5.5v13A1.5 1.5 0 0 0 6.5 20H14" />
+      <path d="M10.5 12H20" />
+      <path d="m16.5 8.5 3.5 3.5-3.5 3.5" />
     </>
   ),
   /* An envelope: the destination is an email address (About's support row). */

@@ -1521,6 +1521,10 @@ contract and SECURITY.md.
       longer lists Blocking, and `/settings/blocking/` still works: its folder is
       emitted and `route.ts` rewrites it to `/blocking/settings/` (`MOVED_ROUTES`). The
       page needs `Settings.canView`, as the pane did.
+    - **The account menu in groups** (2026-11-06): the same entries, words, order and
+      rules as upstream's (`index.html:66-74`), split by lines into the profile, the
+      account's credentials, the console's look and update notice, and `Logout` on its
+      own in red, each entry with an icon (`MenuItem`, `Separator` in `ui/Menu.tsx`).
     - **The brand and the versions.** At the top, Technitium's maze redrawn in its
       blue tile (`app/BrandMark.tsx`, the same geometry as `public/img/logo.png`; since
       2026-11-06 Login, About and the browser tab use it too, the tab as

@@ -29,6 +29,8 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
 
 - **The login names the console as the sidebar does**, with its version, and its password field can
   show what was typed and says when Caps Lock is on.
+- **The account menu reads in groups**, each entry with an icon and Logout apart, in red.
+- **The theme credit's handle is in the console's amber.**
 - **One mark everywhere:** the login card, About and the browser tab show the console's mark, the
   one in the sidebar.
 - **About puts the console's support first:** `Support the Console` heads the console's column in
