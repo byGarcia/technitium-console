@@ -96,6 +96,22 @@ describe('the open zone in the address bar', () => {
     expect(push).toHaveBeenCalledTimes(1)
   })
 
+  it('deleting the open zone replaces its entry, so Back does not return to a zone that is gone', async () => {
+    server()
+    const user = userEvent.setup()
+    render(<Zones token="t" canModify canDelete />)
+    await user.click(await screen.findByRole('button', { name: 'casa.test' }))
+    await screen.findByRole('heading', { name: 'casa.test' })
+
+    const push = vi.spyOn(window.history, 'pushState')
+    await user.click(screen.getByRole('button', { name: 'Delete Zone' }))
+    const dialog = await screen.findByRole('dialog')
+    await user.click(within(dialog).getByRole('button', { name: 'Delete' }))
+    expect(await screen.findByRole('button', { name: 'casa.test' })).toBeInTheDocument()
+    await waitFor(() => expect(bar()).toBe('/zones/'))
+    expect(push).not.toHaveBeenCalled()
+  })
+
   it('the back button returns to the list, and forward opens the zone again', async () => {
     server()
     const user = userEvent.setup()

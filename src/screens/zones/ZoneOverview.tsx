@@ -2,7 +2,7 @@ import type { ResourceRecord, ZoneDetails } from '../../api/records'
 import { Button } from '../../ui/Button'
 import { Tag } from '../../ui/Tag'
 import { DomainName } from '../../ui/DomainName'
-import type { ZoneHeader } from './zone-view'
+import { isSigned, type ZoneHeader } from './zone-view'
 import { useRef, useState, type CSSProperties } from 'react'
 import { Icon } from '../../ui/Icon'
 import { useTooltip } from '../../ui/Tooltip'
@@ -92,7 +92,7 @@ export function ZoneOverview(p: ZoneOverviewProps) {
   const soa = records.find((r) => r.type === 'SOA' && apex(r, zone))
   const ns = records.filter((r) => r.type === 'NS' && apex(r, zone))
   const failed = info.notifyFailedFor ?? []
-  const signed = info.dnssecStatus === 'SignedWithNSEC' || info.dnssecStatus === 'SignedWithNSEC3'
+  const signed = isSigned(info.dnssecStatus)
 
   const d = soa?.rData ?? {}
   const soaRows: [string, string][] = soa

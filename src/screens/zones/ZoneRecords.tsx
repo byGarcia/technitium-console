@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { readPerPage, writePerPage } from '../../lib/stored-per-page'
 import {
   deletionBody,
@@ -18,6 +18,7 @@ import {
   typeLabel,
   exportZone,
   resyncZone,
+  zoneNameOf,
   type Zone,
 } from '../../api/zones'
 import { Button } from '../../ui/Button'
@@ -157,30 +158,48 @@ export function ZoneRecords(p: ZoneRecordsProps) {
     setPageDraft(null)
   }
 
-  const load = useCallback(async () => {
+  /* This view is keyed by zone: a read that comes back after the view is gone
+     (Back or Forward to another zone before it answered) says nothing. */
+  const alive = useRef(true)
+  useEffect(() => {
+    alive.current = true
+    return () => {
+      alive.current = false
+    }
+  }, [])
+
+  /** Reads the zone; true when it arrived. */
+  const load = useCallback(async (): Promise<boolean> => {
     setLoading(true)
     const r = await getRecords(token, zone, node)
+    if (!alive.current) return false
     setLoading(false)
 
     if (r.kind !== 'ok') {
       onNotice(noticeFromFailure(r))
-      return
+      return false
     }
     setZoneInfo(r.data.zone)
     setRecords(r.data.records)
+    return true
   }, [token, zone, node, onNotice])
 
   useEffect(() => {
     void load()
   }, [load, p.refresh])
 
+  /* The records after Hide DNSSEC Records (only for a signed zone). */
+  const shown = useMemo(() => {
+    const signed = isSigned(zoneInfo?.dnssecStatus)
+    return hideDnssecRecords && signed ? hideDnssec(records) : records
+  }, [records, hideDnssecRecords, zoneInfo])
+
   // The DNSSEC filtering comes before the name/type filter, just as in
   // upstream: `editZoneRecords` already arrives trimmed to `showEditZonePage`.
-  const visible = useMemo(() => {
-    const signed = isSigned(zoneInfo?.dnssecStatus)
-    const base = hideDnssecRecords && signed ? hideDnssec(records) : records
-    return filterBy(base, { name: nameFilter, type: typeFilter }, zone)
-  }, [records, hideDnssecRecords, zoneInfo, nameFilter, typeFilter, zoneInfo])
+  const visible = useMemo(
+    () => filterBy(shown, { name: nameFilter, type: typeFilter }, zone),
+    [shown, nameFilter, typeFilter, zone],
+  )
 
   const { rows: sorted, sort, toggle } = useSort(KEYS, visible)
 
@@ -191,10 +210,6 @@ export function ZoneRecords(p: ZoneRecordsProps) {
   type puts it in the Type field and runs Go, the same as typing it; pressing the
   one already applied empties the field and runs Go.
   */
-  const shown = useMemo(() => {
-    const signed = isSigned(zoneInfo?.dnssecStatus)
-    return hideDnssecRecords && signed ? hideDnssec(records) : records
-  }, [records, hideDnssecRecords, zoneInfo])
   const byType = useMemo(() => {
     const base = shown
     const counts = new Map<string, number>()
@@ -289,7 +304,9 @@ export function ZoneRecords(p: ZoneRecordsProps) {
       return
     }
     onNotice(success)
-    if (back) p.onBack()
+    /* A deleted zone is not a place to go back to: its entry is replaced, as for
+       a zone that cannot be read (`onUnavailable`), not pushed over. */
+    if (back) (p.onUnavailable ?? p.onBack)()
     else await load()
   }
 
@@ -400,7 +417,7 @@ export function ZoneRecords(p: ZoneRecordsProps) {
         ? { text: zone, tone: 'info' as TagTone }
         : null
   /* `nameIdn (zone)` when the zone has one (zone.js:3566-3569). */
-  const title = zoneInfo.nameIdn != null ? `${zoneInfo.nameIdn} (${zone})` : zone === '.' ? '<root>' : zone
+  const title = zoneNameOf({ name: zone === '.' ? '' : zone, nameIdn: zoneInfo.nameIdn })
   const text = statusText(offset + 1, onPage.length, visible.length, currentPage, totalPages, 'records')
   const pg = pageWindow(currentPage, totalPages)
 
@@ -424,7 +441,7 @@ export function ZoneRecords(p: ZoneRecordsProps) {
             icon="refresh"
             name="Refresh"
             disabled={busy || loading}
-            onClick={() => void load().then(() => showPage())}
+            onClick={() => void load().then((ok) => ok && showPage())}
           />
         }
         labels={
