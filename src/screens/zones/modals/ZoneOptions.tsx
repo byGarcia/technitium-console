@@ -78,12 +78,13 @@ export function ZoneOptions({
     setNotice(null)
     setQuickTsig('')
     setLoading(true)
-    void getZoneOptions(token, zone, node).then((r) => {
+    void getZoneOptions(token, zone, node).then((outcome) => {
       setLoading(false)
-      if (r == null) {
-        setNotice({ type: 'danger', title: 'Error!', text: 'Unable to connect to the server. Please try again.' })
+      if (outcome.kind !== 'ok') {
+        setNotice(noticeFromFailure(outcome))
         return
       }
+      const r = outcome.data
       setResponse(r)
       setF(formFromOptions(r))
       setTab(optionsState(r).initialTab)

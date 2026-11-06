@@ -68,12 +68,13 @@ export function ZonePermissions({
     if (!open) return
     setNotice(null)
     setLoading(true)
-    void getZonePermissions(token, zone, node).then((r) => {
+    void getZonePermissions(token, zone, node).then((outcome) => {
       setLoading(false)
-      if (r == null) {
-        setNotice({ type: 'danger', title: 'Error!', text: 'Unable to connect to the server. Please try again.' })
+      if (outcome.kind !== 'ok') {
+        setNotice(noticeFromFailure(outcome))
         return
       }
+      const r = outcome.data
       setTitle(`Edit Permissions - ${r.section} / ${r.subItem === '.' ? '<root>' : r.subItem}`)
       setUsers(
         r.userPermissions.map((p) => ({

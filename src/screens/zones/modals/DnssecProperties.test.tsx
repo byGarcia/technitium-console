@@ -30,7 +30,7 @@ function key(keyTag: number, keyType: string, state: string) {
 }
 
 function withKeys(keys: ReturnType<typeof key>[]) {
-  vi.spyOn(dnssec, 'getProperties').mockResolvedValue({
+  vi.spyOn(dnssec, 'getProperties').mockResolvedValue({ kind: 'ok', data: {
     name: 'casa.test',
     type: 'Primary',
     internal: false,
@@ -38,7 +38,7 @@ function withKeys(keys: ReturnType<typeof key>[]) {
     dnssecStatus: 'SignedWithNSEC',
     dnsKeyTtl: 3600,
     dnssecPrivateKeys: keys,
-  } as never)
+  } } as never)
 }
 
 async function open() {
@@ -114,8 +114,15 @@ describe('DNSSEC Properties, against upstream', () => {
     ).toBeTruthy()
   })
 
+  it('a failure says what the server said, not that it cannot be reached', async () => {
+    vi.spyOn(dnssec, 'getProperties').mockResolvedValue({ kind: 'error', message: 'No such zone was found: casa.test' })
+    render(<DnssecProperties zone="casa.test" open token="t" onClose={noop} onConfirm={noop} onChanged2={noop} />)
+    expect(await screen.findByText('No such zone was found: casa.test')).toBeTruthy()
+    expect(screen.queryByText('Unable to connect to the server. Please try again.')).toBeNull()
+  })
+
   it('NSEC3 iterations and salt length carry their ranges', async () => {
-    vi.spyOn(dnssec, 'getProperties').mockResolvedValue({
+    vi.spyOn(dnssec, 'getProperties').mockResolvedValue({ kind: 'ok', data: {
       name: 'casa.test',
       type: 'Primary',
       internal: false,
@@ -125,7 +132,7 @@ describe('DNSSEC Properties, against upstream', () => {
       nsec3Iterations: 0,
       nsec3SaltLength: 0,
       dnssecPrivateKeys: [],
-    } as never)
+    } } as never)
     const dialog = await open()
     expect(within(dialog).getByText('(valid range 0-50, recommended 0)')).toBeTruthy()
     expect(within(dialog).getByText('bytes (valid range 0-32, recommended 0)')).toBeTruthy()

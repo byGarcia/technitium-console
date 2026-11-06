@@ -189,7 +189,7 @@ describe('Proof of Non-Existence: upstream wording, not a summary', () => {
   })
 
   it('DNSSEC Properties prints both too', async () => {
-    vi.spyOn(dnssec, 'getProperties').mockResolvedValue({
+    vi.spyOn(dnssec, 'getProperties').mockResolvedValue({ kind: 'ok', data: {
       name: 'casa.test',
       type: 'Primary',
       internal: false,
@@ -197,7 +197,7 @@ describe('Proof of Non-Existence: upstream wording, not a summary', () => {
       dnssecStatus: 'SignedWithNSEC',
       dnsKeyTtl: 3600,
       dnssecPrivateKeys: [],
-    } as never)
+    } } as never)
     render(
       <DnssecProperties zone="casa.test" open token="t" onClose={noop} onConfirm={noop} onChanged2={noop} />,
     )

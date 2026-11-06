@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { viewDs, type InfoDs } from '../../../api/dnssec'
+import { noticeFromFailure } from '../../../lib/notice'
 import { Dialog } from '../../../ui/Dialog'
 import { Empty, Loading } from '../../../ui/Empty'
 import { minuteStamp as shortDate } from '../../../lib/dates'
@@ -59,12 +60,13 @@ export function ViewDs({
     if (!open) return
     setNotice(null)
     setLoading(true)
-    void viewDs(token, zone, node).then((r) => {
+    void viewDs(token, zone, node).then((outcome) => {
       setLoading(false)
-      if (r == null) {
-        setNotice({ type: 'danger', title: 'Error!', text: 'Unable to connect to the server. Please try again.' })
+      if (outcome.kind !== 'ok') {
+        setNotice(noticeFromFailure(outcome))
         return
       }
+      const r = outcome.data
       setInfo(r)
     })
   }, [open, token, zone, node])

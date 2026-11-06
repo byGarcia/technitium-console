@@ -295,7 +295,7 @@ export async function getZoneOptions(
   token: string | null,
   zone: string,
   node = '',
-): Promise<ZoneOptions | null> {
+): Promise<ApiOutcome<ZoneOptions>> {
   const outcome = await apiRequest<{ response: ZoneOptions }>('zones/options/get', {
     token,
     body: {
@@ -305,7 +305,7 @@ export async function getZoneOptions(
       node,
     },
   })
-  return outcome.kind === 'ok' ? outcome.data.response : null
+  return outcome.kind === 'ok' ? { kind: 'ok', data: outcome.data.response } : outcome
 }
 
 /** The body is built by the screen, which is the one that validates (see screens/zones/options.ts). */
@@ -352,17 +352,16 @@ export async function getZonePermissions(
   token: string | null,
   zone: string,
   node = '',
-): Promise<ZonePermissions | null> {
+): Promise<ApiOutcome<ZonePermissions>> {
   const outcome = await apiRequest<{ response: ZonePermissions }>('zones/permissions/get', {
     token,
     body: { zone, includeUsersAndGroups: 'true', node },
   })
-  if (outcome.kind !== 'ok') return null
+  if (outcome.kind !== 'ok') return outcome
   const r = outcome.data.response
   return {
-    ...r,
-    userPermissions: r.userPermissions ?? [],
-    groupPermissions: r.groupPermissions ?? [],
+    kind: 'ok',
+    data: { ...r, userPermissions: r.userPermissions ?? [], groupPermissions: r.groupPermissions ?? [] },
   }
 }
 

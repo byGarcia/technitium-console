@@ -155,14 +155,14 @@ export async function viewDs(
   token: string | null,
   zone: string,
   node = '',
-): Promise<InfoDs | null> {
+): Promise<ApiOutcome<InfoDs>> {
   const outcome = await apiRequest<{ response: InfoDs }>('zones/dnssec/viewDS', {
     token,
     body: { zone, node },
   })
-  if (outcome.kind !== 'ok') return null
+  if (outcome.kind !== 'ok') return outcome
   const r = outcome.data.response
-  return { ...r, dsRecords: r.dsRecords ?? [] }
+  return { kind: 'ok', data: { ...r, dsRecords: r.dsRecords ?? [] } }
 }
 
 /** `zones/dnssec/properties/get` (zone.js:6836). */
@@ -170,14 +170,14 @@ export async function getProperties(
   token: string | null,
   zone: string,
   node = '',
-): Promise<DnssecPropertiesData | null> {
+): Promise<ApiOutcome<DnssecPropertiesData>> {
   const outcome = await apiRequest<{ response: DnssecPropertiesData }>(
     'zones/dnssec/properties/get',
     { token, body: { zone, node } },
   )
-  if (outcome.kind !== 'ok') return null
+  if (outcome.kind !== 'ok') return outcome
   const r = outcome.data.response
-  return { ...r, dnssecPrivateKeys: r.dnssecPrivateKeys ?? [] }
+  return { kind: 'ok', data: { ...r, dnssecPrivateKeys: r.dnssecPrivateKeys ?? [] } }
 }
 
 /** Parameters of `addPrivateKey`. See `addDnssecPrivateKey` (zone.js:7191). */

@@ -109,18 +109,18 @@ describe('signing and unsigning', () => {
 describe('reads', () => {
   it('viewDS tolerates there being no DS records', async () => {
     vi.spyOn(client, 'apiRequest').mockResolvedValue(env({ name: 'home.test' }))
-    expect(await viewDs('t', 'home.test')).toMatchObject({ dsRecords: [] })
+    expect(await viewDs('t', 'home.test')).toMatchObject({ kind: 'ok', data: { dsRecords: [] } })
   })
 
   it('properties/get tolerates there being no keys', async () => {
     vi.spyOn(client, 'apiRequest').mockResolvedValue(env({ name: 'home.test', dnsKeyTtl: 3600 }))
-    expect(await getProperties('t', 'home.test')).toMatchObject({ dnssecPrivateKeys: [] })
+    expect(await getProperties('t', 'home.test')).toMatchObject({ kind: 'ok', data: { dnssecPrivateKeys: [] } })
   })
 
-  it('both return null if the call fails', async () => {
+  it('both return the failure with the message from the server', async () => {
     vi.spyOn(client, 'apiRequest').mockResolvedValue({ kind: 'error', message: 'x' })
-    expect(await viewDs('t', 'home.test')).toBeNull()
-    expect(await getProperties('t', 'home.test')).toBeNull()
+    expect(await viewDs('t', 'home.test')).toEqual({ kind: 'error', message: 'x' })
+    expect(await getProperties('t', 'home.test')).toEqual({ kind: 'error', message: 'x' })
   })
 })
 

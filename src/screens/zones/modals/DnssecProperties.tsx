@@ -110,13 +110,14 @@ export function DnssecProperties({
 
   const load = useCallback(async () => {
     setLoading(true)
-    const r = await getProperties(token, zone, node)
+    const outcome = await getProperties(token, zone, node)
     setLoading(false)
 
-    if (r == null) {
-      setNotice({ type: 'danger', title: 'Error!', text: 'Unable to connect to the server. Please try again.' })
+    if (outcome.kind !== 'ok') {
+      setNotice(noticeFromFailure(outcome))
       return
     }
+    const r = outcome.data
 
     setProps(r)
     setDnsKeyTtl(String(r.dnsKeyTtl))
