@@ -30,7 +30,7 @@ import { Field, Input, Select } from '../../ui/Field'
 import { dropParams, readParam, writeParams } from '../../lib/url-state'
 import { ScopeSummary } from './ScopeSummary'
 import { ScopePage } from './ScopePage'
-import { leasesPerScope, matchesScope, rangeSize } from './pool'
+import { matchesScope, percent, scopeUsage, type ScopeUsage } from './pool'
 import { Q, SCOPE, SCOPE_PARAMS, STATE, onDhcpTab, readTabParam, writeScope } from './dhcp-url'
 
 /*
@@ -63,6 +63,13 @@ Deviation 19 (2026-11-06), laid out as Zones is:
   · A scope opens as a page (`ScopePage.tsx`): its header, four cards, its form.
   · The address bar keeps the search (`?q=`), the state (`?state=`) and the open
     scope (`?scope=`, pushed, so Back returns to the list; `dhcp-url.ts`).
+
+Deviation 30 (2026-11-06): the Leases column is each enabled scope's usage
+(`scopeUsage` in `pool.ts`): its leases, Dynamic and Reserved together, of the
+addresses in its range, as `N of M`, the share and a bar, in the warning colour
+above 80%, with the two types under it. A disabled scope has no bar; the column
+sorts by the share. Its words, OURS: `N of M`, `X%` (`<1%`), `Dynamic N, Reserved
+N`, and the bar's name `<scope>: N of the M addresses in its range leased, X%`.
 */
 
 export interface ScopesProps {
@@ -84,16 +91,20 @@ export interface ScopesProps {
 type Page = { mode: 'add'; form: Form } | { mode: 'edit'; name: string; scope: DhcpScope; form: Form }
 
 /* `sortTable('tableDhcpScopesBody', 0..3)`. It sorts by the cell's text. The
-   Leases column (deviation 19) sorts by count, padded so the text sort `useSort`
-   does reads it as a number; the counts come from the leases, so the keys are
+   Leases column (deviation 19) sorts by the share of the range leased (deviation
+   30), padded so the text sort `useSort` does reads it as a number, a scope with
+   no bar before any with one; the shares come from the leases, so the keys are
    built with them. */
-function sortKeys(per: Map<string, number>): Keys<DhcpScopeRow> {
+function sortKeys(usage: Map<string, ScopeUsage | null>): Keys<DhcpScopeRow> {
   const keys: Keys<DhcpScopeRow> = {
     name: (s) => s.name,
     range: (s) => `${s.startingAddress} - ${s.endingAddress}`,
     mask: (s) => s.subnetMask,
     interface: (s) => s.interfaceAddress ?? '',
-    leases: (s) => String(per.get(s.name) ?? 0).padStart(10, '0'),
+    leases: (s) => {
+      const u = usage.get(s.name)
+      return u == null ? '' : String(Math.round(u.share * 1e6)).padStart(12, '0')
+    },
   }
   return keys
 }
@@ -209,8 +220,8 @@ export function Scopes({
 
   // The hook goes BEFORE any return: otherwise it would stop being called as soon
   // as the table is loading.
-  const per = leasesPerScope(leases ?? [])
-  const { rows: sortedScopes, sort, toggle } = useSort(sortKeys(per), scopes ?? [])
+  const usage = new Map((scopes ?? []).map((s) => [s.name, leases == null ? null : scopeUsage(s, leases)]))
+  const { rows: sortedScopes, sort, toggle } = useSort(sortKeys(usage), scopes ?? [])
   const visibleScopes = sortedScopes.filter(
     (s) =>
       (stateFilter === '' || (stateFilter === 'Enabled') === s.enabled) && matchesScope(s, query),
@@ -448,7 +459,7 @@ export function Scopes({
                 <ScopeRow
                   key={s.name}
                   scope={s}
-                  held={leases == null ? null : (per.get(s.name) ?? 0)}
+                  usage={usage.get(s.name) ?? null}
                   open={open.has(s.name)}
                   onToggle={() => toggleOpen(s.name)}
                   onOpen={() => void openScope(s.name, 'push')}
@@ -507,22 +518,22 @@ export function Scopes({
 /* A scope on ONE line; its network and broadcast under the row's Details. */
 function ScopeRow({
   scope: s,
-  held,
+  usage: u,
   open,
   onToggle,
   onOpen,
   actions,
 }: {
   scope: DhcpScopeRow
-  /** Its leases, `null` when they could not be read. */
-  held: number | null
+  /** Its usage (deviation 30); `null` when the scope is disabled, its range is
+   *  not IPv4, or the leases could not be read. */
+  usage: ScopeUsage | null
   open: boolean
   onToggle: () => void
   onOpen: () => void
   actions: ReactNode
 }) {
   const detail = useId()
-  const size = rangeSize(s.startingAddress, s.endingAddress)
   return (
     <>
       <tr className={open ? styles.openRow : undefined}>
@@ -538,21 +549,26 @@ function ScopeRow({
         {/* `interfaceAddress` is OMITTED when null; upstream draws an empty cell
             (dhcp.js:228). */}
         <td className={styles.mono}>{s.interfaceAddress ?? ''}</td>
-        {/* Deviation 19: the leases this scope holds, of the addresses in its
-            range. Empty when the leases could not be read. */}
+        {/* Deviations 19 and 30: the leases this scope holds, of the addresses in
+            its range, with the share and the two types. Empty for a disabled
+            scope, and when the leases could not be read. */}
         <td>
-          {held != null && size != null && (
-            <div className={styles.use}>
-              <span className={styles.useText}>
-                {held} <span className={styles.useOf}>of {size}</span>
+          {u != null && (
+            <div className={styles.use} data-high={u.high ? '' : undefined}>
+              <span className={styles.useLine}>
+                <span className={styles.useText}>
+                  {u.leased} <span className={styles.useOf}>of {u.size}</span>
+                </span>
+                <span className={styles.usePct}>{percent(u.share)}</span>
               </span>
               <span
                 className={styles.useTrack}
                 role="img"
-                aria-label={`${s.name}: ${held} of ${size} addresses in range leased`}
+                aria-label={`${s.name}: ${u.leased} of the ${u.size} addresses in its range leased, ${percent(u.share)}`}
               >
-                <span style={{ width: `${Math.min(100, (held / size) * 100)}%` }} />
+                <span style={{ width: `${Math.min(100, u.share * 100)}%` }} />
               </span>
+              <span className={styles.useSplit}>{`Dynamic ${u.dynamic}, Reserved ${u.reserved}`}</span>
             </div>
           )}
         </td>

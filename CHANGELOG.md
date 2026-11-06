@@ -27,6 +27,12 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
 
 **Flat controls and a calmer chrome.** Design only: every control, text and step is the same.
 
+- **Settings compared across cluster nodes:** Administration › Cluster shows a curated set of each
+  node's settings side by side (domain, version, end points, recursion, DNSSEC, rate limits, default
+  TTLs, blocking, forwarders, logging), the ones that differ first and marked, with "Show only
+  differences". A node that does not answer says so with the server's message. Needs Settings: View.
+- **DHCP scope usage:** each enabled scope's row in DHCP › Scopes shows how many of the addresses in
+  its range are leased, Dynamic and Reserved, as a share and a bar that turns amber above 80%.
 - **Buttons are flat**, with no shine or bevel. The neutral one is a step lighter than the panel
   it sits on, so it no longer disappears in a panel header or a dialog footer. Under the pointer the
   primary button no longer grows a grey ring and the destructive one keeps its colour.

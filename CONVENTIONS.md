@@ -1678,6 +1678,40 @@ contract and SECURITY.md.
     with a name opens Query Logs filtered by it, with no period (the sample is the
     newest queries, not the period). On a narrow card the codes move to a legend under
     the bands. Its words, OURS, are declared in its header comment.
+30. **DHCP shows each scope's usage** (Adrián's decision, 2026-11-06; `screens/dhcp/Scopes.tsx`,
+    `scopeUsage` and `percent` in `pool.ts`). The scope table's Leases column (deviation 19) becomes
+    each ENABLED scope's usage: the leases of `dhcp/leases/list` that carry its name, Dynamic and
+    Reserved together, against the addresses in its range (`endingAddress - startingAddress + 1`
+    from `scopes/list`), as `N of M`, the share in whole percents (`<1%` for a few leases in a wide
+    range, never `0%`), a bar, and `Dynamic N, Reserved N` under it. Above 80%, as the share is
+    written (`81%` is over, `80%` is not), the share and the bar take the warning colour. The
+    exclusions are not in `scopes/list` and reading them is one `scopes/get` per scope, so the size
+    is the range's and the bar's name says so. A disabled scope shows no bar; a range that is not
+    IPv4 none either. The column sorts by the share. No call is added: the two lists deviation 19
+    already reads, on the same node, under the same `DhcpServer: View`. Its words, OURS: `N of M`,
+    `X%`, `<1%`, `Dynamic N, Reserved N`, and the bar's name `<scope>: N of the M addresses in its
+    range leased, X%`.
+
+31. **Cluster compares the nodes' settings** (Adrián's decision, 2026-11-06;
+    `screens/admin/NodeSettings.tsx`, `node-settings.ts`). With the cluster initialised, a
+    `Settings Across Nodes` card under the node table reads `settings/get` once per node, with the
+    node's name in `node` as Settings sends it (the server proxies the read to that node), again
+    each time the sub-tab reads the cluster's state (arrival and Refresh). Read only: nothing is
+    written. One column per node, one row per setting of a curated set, each with its group label:
+    Identity (DNS Server Domain, Version, Up Since), Resolution (Local End Points, Recursion, DNSSEC
+    Validation, IPv6 Support, EDNS Client Subnet, EDNS UDP Payload Size), Rate Limiting (QPM Sample
+    Size, the IPv4 and IPv6 QPM limits), Zone Defaults (the three default TTLs), Blocking (Enable
+    Blocking, Blocking Type), Forwarders (Forwarders, Forwarder Protocol), Logging (Enable Logging
+    To). Labels and option labels are the Settings panes', without `(default)` and
+    `(recommended)`. The domain and the start are each node's own and are never counted; any other
+    row whose answering nodes disagree is marked `Differs`, with a warning rule down it, and listed
+    first. The line over the table says `Every setting matches`, `N settings differ`, `Only one node
+    answered` or `No node answered`; `Show only differences` hides the rest. A node that does not
+    answer keeps its column, empty, marked `Unavailable`, and a line names it with the server's
+    message (`<node> did not answer: <message>`); it takes no part in the comparison. Without
+    `Settings: View` nothing is read and the card is locked (`Requires Settings: View`); that is the
+    one permission Administration is told (`Admin`'s `canViewSettings`, from the Shell). Its words,
+    OURS, are declared in the header comments of both files.
 
 ## Four constraints the server imposes
 

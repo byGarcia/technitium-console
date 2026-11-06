@@ -225,14 +225,45 @@ describe('Scopes at a glance', () => {
     expect(leases).toHaveBeenCalledWith('t', '')
   })
 
-  it('each row says how many of its addresses are leased', async () => {
+  it('each enabled row says how many of its addresses are leased, the share and the two types', async () => {
     vi.spyOn(api, 'listScopes').mockResolvedValue({ kind: 'ok', data: [SCOPE, LAB] })
     vi.spyOn(api, 'listLeases').mockResolvedValue({ kind: 'ok', data: [DYNAMIC, RESERVED, GUEST] })
     render(<Dhcp token="t" sub="Scopes" />)
     await screen.findByText('Total Scopes: 2')
 
-    expect(screen.getByRole('img', { name: 'Default: 2 of 254 addresses in range leased' })).toBeInTheDocument()
-    expect(screen.getByRole('img', { name: 'Lab: 0 of 41 addresses in range leased' })).toBeInTheDocument()
+    const bar = screen.getByRole('img', { name: 'Default: 2 of the 254 addresses in its range leased, <1%' })
+    const cell = bar.closest('td') as HTMLElement
+    expect(within(cell).getByText('<1%')).toBeInTheDocument()
+    expect(within(cell).getByText('Dynamic 1, Reserved 1')).toBeInTheDocument()
+    expect(cell.querySelector('[data-high]')).toBeNull()
+    // Lab is disabled: no bar, no figure.
+    expect(screen.queryByRole('img', { name: /^Lab: / })).not.toBeInTheDocument()
+  })
+
+  it('a scope over 80% of its range is drawn in the warning colour, and the column sorts by the share', async () => {
+    const user = userEvent.setup()
+    const SMALL: DhcpScopeRow = { ...SCOPE, name: 'Small', startingAddress: '10.0.0.1', endingAddress: '10.0.0.2' }
+    const busy = [
+      { ...DYNAMIC, scope: 'Small', clientIdentifier: 'a' },
+      { ...RESERVED, scope: 'Small', clientIdentifier: 'b' },
+    ]
+    vi.spyOn(api, 'listScopes').mockResolvedValue({ kind: 'ok', data: [SCOPE, SMALL] })
+    vi.spyOn(api, 'listLeases').mockResolvedValue({ kind: 'ok', data: [DYNAMIC, ...busy] })
+    render(<Dhcp token="t" sub="Scopes" />)
+    await screen.findByText('Total Scopes: 2')
+
+    const full = screen.getByRole('img', { name: 'Small: 2 of the 2 addresses in its range leased, 100%' })
+    expect(full.closest('[data-high]')).not.toBeNull()
+    expect(screen.getByRole('img', { name: /^Default: 1 of the 254/ }).closest('[data-high]')).toBeNull()
+
+    const sortLeases = () => user.click(within(screen.getByRole('columnheader', { name: /Leases/ })).getByRole('button'))
+    const names = () => screen.getAllByRole('img', { name: /addresses in its range leased/ }).map((e) => e.getAttribute('aria-label')?.split(':')[0])
+    expect(names()).toEqual(['Default', 'Small'])
+    // Already ascending as drawn, so the first press turns it round (`useSort`).
+    await sortLeases()
+    expect(names()).toEqual(['Small', 'Default'])
+    await sortLeases()
+    expect(names()).toEqual(['Default', 'Small'])
   })
 
   it('the cards count scopes by state, and the pool of the enabled ones only', async () => {

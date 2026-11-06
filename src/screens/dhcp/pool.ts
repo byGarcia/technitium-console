@@ -45,6 +45,56 @@ export function leasesPerScope(leases: DhcpLease[]): Map<string, number> {
   return out
 }
 
+/*
+A SCOPE'S USAGE (deviation 30, 2026-11-06): the Leases column of the scope table.
+How many of an ENABLED scope's addresses are leased, from the same two lists and
+nothing else: the leases that carry its name, Dynamic and Reserved counted apart
+and together, against the size of its range. The exclusions are not in
+`scopes/list` (reading them is one `scopes/get` per scope), so the size is the
+range's and the column says "of the range". A disabled scope leases nothing, and
+a range that is not two IPv4 addresses in order has no size: neither has a usage.
+*/
+
+/** Above this share of its range a scope's usage is drawn in the warning colour. */
+export const HIGH_USAGE = 0.8
+
+export interface ScopeUsage {
+  /** Leases held in the scope, both types. */
+  leased: number
+  dynamic: number
+  reserved: number
+  /** Addresses in its range, ends included. */
+  size: number
+  /** `leased / size`; above 1 when the scope holds leases outside its range. */
+  share: number
+  /** Over `HIGH_USAGE` as the column writes the share (`81%` is over, `80%` is
+   *  not), so the colour never disagrees with the figure beside it. */
+  high: boolean
+}
+
+export function scopeUsage(scope: DhcpScopeRow, leases: DhcpLease[]): ScopeUsage | null {
+  if (!scope.enabled) return null
+  const size = rangeSize(scope.startingAddress, scope.endingAddress)
+  if (size == null) return null
+  let dynamic = 0
+  let reserved = 0
+  for (const l of leases) {
+    if (l.scope !== scope.name) continue
+    if (l.type === 'Reserved') reserved++
+    else dynamic++
+  }
+  const leased = dynamic + reserved
+  const share = leased / size
+  return { leased, dynamic, reserved, size, share, high: Math.round(share * 100) > HIGH_USAGE * 100 }
+}
+
+/** A share as the column writes it: whole percents, and `<1%` for a few leases
+ *  in a wide range, so a scope that holds any is never drawn as `0%`. */
+export function percent(share: number): string {
+  if (share > 0 && share < 0.01) return '<1%'
+  return `${Math.round(share * 100)}%`
+}
+
 export interface PoolTotals {
   /** Addresses in the ranges of the ENABLED scopes: the ones that can lease. */
   addresses: number

@@ -502,7 +502,8 @@ describe('Cluster: the node table', () => {
     render(<Cluster {...props} />)
     await screen.findByText('Total Nodes: 2')
 
-    const rows = screen.getAllByRole('row')
+    // The node table is the first; Settings Across Nodes (deviation 31) follows it.
+    const rows = within(screen.getAllByRole('table')[0]).getAllByRole('row')
     // The row of the node itself (the secondary) is the last one.
     const own = rows[rows.length - 1]
     expect(own).toHaveTextContent('Self')
