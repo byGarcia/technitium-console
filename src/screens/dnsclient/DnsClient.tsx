@@ -174,7 +174,11 @@ export function DnsClient({
     setBusy(null)
 
     if (outcome.kind !== 'ok') {
-      setAlert(noticeFromFailure(outcome))
+      /* dnsclient.js:215, `showInnerError: true`: the server's message, then the
+         exception under it (common.js:165). */
+      const notice = noticeFromFailure(outcome)
+      if (outcome.kind === 'error' && outcome.inner != null) notice.text = `${notice.text} ${outcome.inner}`
+      setAlert(notice)
       return
     }
 

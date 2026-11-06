@@ -20,7 +20,7 @@ Three things that are the server's contract and not our preferences:
 
 export type ApiOutcome<T = unknown> =
   | { kind: 'ok'; data: T }
-  | { kind: 'error'; message: string }
+  | { kind: 'error'; message: string; inner?: string }
   | { kind: 'invalid-token' }
   | { kind: 'two-factor-required' }
 
@@ -66,6 +66,9 @@ export interface ApiOptions {
 interface Envelope {
   status?: string
   errorMessage?: string
+  /** The exception under the error. Upstream shows it only where a screen asks
+   *  for it with `showInnerError` (common.js:165): DNS Client. */
+  innerErrorMessage?: string
 }
 
 /*
@@ -108,7 +111,9 @@ export function envelopeOutcome<T>(payload: Envelope, token?: string | null): Ap
     case '2fa-required':
       return { kind: 'two-factor-required' }
     default:
-      return { kind: 'error', message: payload.errorMessage ?? 'Unknown error.' }
+      return payload.innerErrorMessage == null
+        ? { kind: 'error', message: payload.errorMessage ?? 'Unknown error.' }
+        : { kind: 'error', message: payload.errorMessage ?? 'Unknown error.', inner: payload.innerErrorMessage }
   }
 }
 

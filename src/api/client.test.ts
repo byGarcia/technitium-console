@@ -20,6 +20,17 @@ describe('apiRequest', () => {
     expect(r).toEqual({ kind: 'ok', data: { status: 'ok', token: 'abc', displayName: 'Administrator' } })
   })
 
+  it('keeps the inner error message apart, for the screen that shows it', async () => {
+    mockFetch({ status: 'error', errorMessage: 'DNS request failed.', innerErrorMessage: 'Connection refused.' })
+    expect(await apiRequest('dnsClient/resolve')).toEqual({
+      kind: 'error',
+      message: 'DNS request failed.',
+      inner: 'Connection refused.',
+    })
+    mockFetch({ status: 'error', errorMessage: 'No such zone was found: x' })
+    expect(await apiRequest('zones/records/get')).toEqual({ kind: 'error', message: 'No such zone was found: x' })
+  })
+
   it('hands over the wrapped ones too, untouched', async () => {
     mockFetch({ status: 'ok', response: { zones: [] } })
     const r = await apiRequest('zones/list')

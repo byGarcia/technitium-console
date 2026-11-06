@@ -230,6 +230,14 @@ describe('DNS Client: what resolveQuery() does that this console had lost', () =
     expect(screen.queryByRole('tablist')).not.toBeInTheDocument()
   })
 
+  it('an error with an inner message shows both, as upstream asks with showInnerError', async () => {
+    vi.spyOn(api, 'resolve').mockResolvedValue({
+      kind: 'error', message: 'DNS request failed.', inner: 'Connection refused.',
+    } as never)
+    await query('example.com')
+    expect(await screen.findByText('DNS request failed. Connection refused.')).toBeInTheDocument()
+  })
+
   it('a DNSSEC failure answers with its warning and still draws the response', async () => {
     answers('dnssec-failed.org A dnssec')
     await query('dnssec-failed.org')
