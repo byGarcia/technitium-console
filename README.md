@@ -314,6 +314,23 @@ installer; this script does not try to handle them.
 
 </details>
 
+### Arch Linux (AUR, community maintained)
+
+The one-liner above stays the recommended path on a live server. As a
+community-maintained alternative for Arch systems,
+[9M2PJU](https://aur.archlinux.org/account/9M2PJU) publishes
+[`technitium-console-bin`](https://aur.archlinux.org/packages/technitium-console-bin)
+(the release bundle, checksum-verified) and
+[`technitium-console-git`](https://aur.archlinux.org/packages/technitium-console-git)
+(built from source), e.g. `yay -S technitium-console-bin`.
+
+They install the same bundle into `/usr/share/technitium-console`. On
+Technitium 15.5 or later, serve it with
+`DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH=/usr/share/technitium-console`
+and one restart; removing the package never touches the server's
+configuration. These packages live outside this repository, so report
+packaging issues on their AUR page.
+
 ### On Technitium v15.5 or later: give the console a folder of its own
 
 Since v15.5 the server can be told to serve its web console from another folder,
