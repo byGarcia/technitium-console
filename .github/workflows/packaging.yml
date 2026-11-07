@@ -1,0 +1,80 @@
+# Compiles everything on GitHub, so no maintainer machine has to.
+#
+# The release job publishes from its own build; this one proves the same
+# steps work from any pull request, on the commit as pushed: the full gate
+# (typecheck, lint, tests, build), the distro packages with their payloads
+# diffed against dist/, and both AUR packages built in Arch containers.
+name: Packaging
+
+on:
+  pull_request:
+  push:
+    branches: [main, develop]
+  workflow_dispatch: # the same compile, on demand, from any branch
+
+permissions: {}
+
+jobs:
+  # typecheck, lint, tests, the tarball, then the .deb, .rpm and AppImage
+  # of the same bytes. Fails the PR when any of them does.
+  distro:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      # No token in .git/config: nothing here writes to the repo.
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/console-tarball
+      - uses: ./.github/actions/distro-packages
+
+      # Every shell file this PR ships parses (PKGBUILDs are bash, the
+      # rest is POSIX sh; both are read, never run, here).
+      - name: Shell files parse
+        shell: bash
+        run: |
+          set -eu
+          for f in packaging/build-*.sh packaging/appimage/AppRun \
+                   packaging/deb/postinst \
+                   packaging/arch/*/technitium-console.install; do
+            sh -n "$f" || exit 1
+          done
+          for f in packaging/arch/*/PKGBUILD; do
+            bash -n "$f" || exit 1
+          done
+          echo "Shell files parse."
+
+  # Both AUR packages, built the way an Arch user builds them: makepkg in
+  # an Arch container, then namcap over the recipe and the package.
+  # -git skips check() here: the same commit's suite already ran above,
+  # in `distro`, and running it twice proves nothing.
+  aur:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      matrix:
+        pkg: [technitium-console-bin, technitium-console-git]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: makepkg and namcap in Arch
+        shell: bash
+        run: |
+          set -eu
+          check=""
+          if [ "${{ matrix.pkg }}" = "technitium-console-git" ]; then check="--nocheck"; fi
+          docker run --rm -v "$PWD/packaging/arch/${{ matrix.pkg }}:/pkg" \
+            archlinux:base-devel bash -c "
+            set -eu
+            pacman -Sy --noconfirm namcap git
+            useradd -m builder
+            printf 'builder ALL=(ALL) NOPASSWD: ALL\n' >> /etc/sudoers
+            chown -R builder:builder /pkg
+            su builder -c 'cd /pkg && makepkg -s --noconfirm $check'
+            namcap /pkg/PKGBUILD /pkg/*.pkg.tar.*
+            "
