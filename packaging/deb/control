@@ -1,0 +1,12 @@
+Package: technitium-console
+Version: 1.4.0
+Section: net
+Priority: optional
+Architecture: all
+Maintainer: 9M2PJU <9m2pju@gmail.com>
+Homepage: https://github.com/byGarcia/technitium-console
+Description: Modern administration console for Technitium DNS Server
+ Static web console served by Technitium DNS Server 15.5 or later.
+ This package lays the files down in /usr/share/technitium-console;
+ point the server at them with DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH.
+ The one-line installer remains the recommended path on a live server.

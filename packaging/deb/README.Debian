@@ -1,0 +1,21 @@
+technitium-console for Debian/Ubuntu
+==============================
+
+Files live in /usr/share/technitium-console, served by Technitium DNS
+Server 15.5 or later via:
+
+  DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH=/usr/share/technitium-console
+
+Restart the DNS service once after setting it. On Docker, mount this
+folder (or a copy of it) read-only at the path the variable names; see
+the upstream README "Docker" section.
+
+Uninstalling this package removes the files but never touches the DNS
+server's configuration: take the variable out (or unmount) and restart
+the server once to go back to its stock console.
+
+The one-line installer
+(https://github.com/byGarcia/technitium-console#installing) remains the
+recommended path on a live server: it finds the running service,
+verifies what it serves, and can roll back. A copy is kept at
+/usr/share/doc/technitium-console/install.sh.

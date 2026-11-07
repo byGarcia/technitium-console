@@ -26,12 +26,39 @@ jobs:
       # The same tarball the develop image is built from (develop-image.yml).
       - uses: ./.github/actions/console-tarball
 
+      # The distro packages of the same bytes: .deb, .rpm and AppImage with
+      # their checksums, each payload diffed against dist/ inside the action.
+      - uses: ./.github/actions/distro-packages
+
+      # The release job below expects exactly six files, flat: the tarball,
+      # the distro packages of the same bytes and one checksum file per
+      # group. Staged outside the checkout, like the tarball dir the release
+      # job downloads into; uploading packaging/out directly would carry
+      # its folders along.
+      - name: Stage the release files
+        shell: bash
+        run: |
+          set -eu
+          rm -rf "${{ runner.temp }}/release-files"
+          mkdir -p "${{ runner.temp }}/release-files"
+          cp technitium-console.tar.gz technitium-console.tar.gz.sha256 \
+            "${{ runner.temp }}/release-files/"
+          deb="$(find packaging/out -maxdepth 1 -type f -name 'technitium-console_*.deb')"
+          rpm="$(find packaging/out -maxdepth 1 -type f -name 'technitium-console-*.noarch.rpm')"
+          ai="$(find packaging/out -maxdepth 1 -type f -name 'technitium-console-*-x86_64.AppImage')"
+          [ "$(printf '%s\n' "$deb" | wc -l)" = "1" ] && [ -f "$deb" ] \
+            || { echo "No (or more than one) .deb was built." >&2; exit 1; }
+          [ "$(printf '%s\n' "$rpm" | wc -l)" = "1" ] && [ -f "$rpm" ] \
+            || { echo "No (or more than one) .rpm was built." >&2; exit 1; }
+          [ "$(printf '%s\n' "$ai" | wc -l)" = "1" ] && [ -f "$ai" ] \
+            || { echo "No (or more than one) AppImage was built." >&2; exit 1; }
+          cp "$deb" "$rpm" "$ai" packaging/out/distro-packages.sha256 \
+            "${{ runner.temp }}/release-files/"
+
       - uses: actions/upload-artifact@v7
         with:
           name: console-tarball
-          path: |
-            technitium-console.tar.gz
-            technitium-console.tar.gz.sha256
+          path: ${{ runner.temp }}/release-files
           if-no-files-found: error
           # A day: "Re-run failed jobs" of `release` after that fails at the
           # download; "Re-run all jobs" is the way.
@@ -60,19 +87,41 @@ jobs:
           name: console-tarball
           path: ${{ runner.temp }}/tarball
 
-      # Exactly the two files the tarball job packs, and the bytes checked
-      # against the checksum, before anything is published.
-      - name: The tarball, checked against its checksum
+      # Exactly what the tarball job packs, and the bytes checked against
+      # their checksums, before anything is published: the tarball, the
+      # distro packages of the same bytes (.deb, .rpm, AppImage) and one
+      # checksum file per group. Six files, no more.
+      - name: The tarball and distro packages, checked against their checksums
         working-directory: ${{ runner.temp }}/tarball
         run: |
           set -eu
-          found="$(find . -mindepth 1 | LC_ALL=C sort | tr '\n' ' ')"
-          expected="./technitium-console.tar.gz ./technitium-console.tar.gz.sha256 "
-          if [ "$found" != "$expected" ] || [ -n "$(find . -mindepth 1 ! -type f)" ]; then
-            echo "The artifact holds something other than the tarball and its checksum: $found" >&2
-            exit 1
-          fi
+          [ -z "$(find . -mindepth 1 ! -type f)" ] || {
+            echo "The artifact holds something other than files." >&2; exit 1; }
+          for f in technitium-console.tar.gz technitium-console.tar.gz.sha256 distro-packages.sha256; do
+            [ -f "$f" ] || { echo "The artifact is missing $f." >&2; exit 1; }
+          done
+          # Artifact names are found with find, not shell globs, and counted:
+          # exactly one of each distro package, six files in all.
+          [ "$(find . -maxdepth 1 -type f -name 'technitium-console_*.deb' | wc -l)" = "1" ] \
+            || { echo "The artifact holds no (or more than one) .deb." >&2; exit 1; }
+          [ "$(find . -maxdepth 1 -type f -name 'technitium-console-*.noarch.rpm' | wc -l)" = "1" ] \
+            || { echo "The artifact holds no (or more than one) .rpm." >&2; exit 1; }
+          [ "$(find . -maxdepth 1 -type f -name 'technitium-console-*-x86_64.AppImage' | wc -l)" = "1" ] \
+            || { echo "The artifact holds no (or more than one) AppImage." >&2; exit 1; }
+          [ "$(ls | wc -l)" = "6" ] || {
+            echo "The artifact holds something other than the tarball, the distro packages and their checksums." >&2; exit 1; }
           sha256sum -c technitium-console.tar.gz.sha256
+          sha256sum -c distro-packages.sha256
+
+      # The distro file names carry the version, so they are resolved here
+      # instead of guessed in the release step below.
+      - name: Distro package file names
+        id: packages
+        working-directory: ${{ runner.temp }}/tarball
+        run: |
+          echo "deb=$(find . -maxdepth 1 -type f -name 'technitium-console_*.deb' -printf '%f')" >> "$GITHUB_OUTPUT"
+          echo "rpm=$(find . -maxdepth 1 -type f -name 'technitium-console-*.noarch.rpm' -printf '%f')" >> "$GITHUB_OUTPUT"
+          echo "appimage=$(find . -maxdepth 1 -type f -name 'technitium-console-*-x86_64.AppImage' -printf '%f')" >> "$GITHUB_OUTPUT"
 
       # Docker's floating tags only ever move forward (latest to the highest
       # release, X.Y to the highest of its line; prereleases move neither), as
@@ -135,6 +184,10 @@ jobs:
           else
             printf '\n**On Docker:** pin `ghcr.io/bygarcia/technitium-console:%s`. See [Docker](https://github.com/byGarcia/technitium-console#docker).\n' "${tag#v}"
           fi >> notes.md
+          # The distro packages attached below hold the same bundle in
+          # /usr/share/technitium-console; Arch has them in the AUR instead.
+          # shellcheck disable=SC2016 # the backticks are Markdown, not a command
+          printf '\n**Distro packages:** the `.deb`, `.rpm` and AppImage attached below, or `technitium-console-bin` / `technitium-console-git` in the AUR. See [Distro packages](https://github.com/byGarcia/technitium-console#distro-packages).\n' >> notes.md
           # The title is the tag and the section's opening bold sentence.
           lead="$({ grep -m1 -o '^\*\*[^*]*\*\*' notes.md || true; } | sed 's/^\*\*//; s/\*\*$//; s/\.$//')"
           echo "title=${tag}${lead:+: ${lead}}" >> "$GITHUB_OUTPUT"
@@ -146,6 +199,10 @@ jobs:
           files: |
             ${{ runner.temp }}/tarball/technitium-console.tar.gz
             ${{ runner.temp }}/tarball/technitium-console.tar.gz.sha256
+            ${{ runner.temp }}/tarball/${{ steps.packages.outputs.deb }}
+            ${{ runner.temp }}/tarball/${{ steps.packages.outputs.rpm }}
+            ${{ runner.temp }}/tarball/${{ steps.packages.outputs.appimage }}
+            ${{ runner.temp }}/tarball/distro-packages.sha256
           name: ${{ steps.notes.outputs.title }}
           body_path: notes.md
           generate_release_notes: true

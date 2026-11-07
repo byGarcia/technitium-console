@@ -314,6 +314,32 @@ installer; this script does not try to handle them.
 
 </details>
 
+### Distro packages
+
+The one-liner above is the recommended path on a live server: it finds the
+running service, verifies what it serves, and can roll back. For managed
+fleets, offline installs and Arch systems there are also distro packages,
+all installing the same bundle into `/usr/share/technitium-console`.
+Serve it on Technitium 15.5 or later with
+`DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH=/usr/share/technitium-console`
+and one restart; removing the package never touches the server's
+configuration. How each one is built is written down in
+[`packaging/`](packaging/README-packaging.md).
+
+- **Arch Linux (AUR)**, maintained by
+  [9M2PJU](https://aur.archlinux.org/account/9M2PJU):
+  `technitium-console-bin` (the release tarball, checksum-verified) or
+  `technitium-console-git` (built from source), e.g. with an AUR helper:
+  `yay -S technitium-console-bin`.
+- **Debian/Ubuntu and Fedora/RHEL**: the `.deb` and `.rpm` attached to
+  each [release](https://github.com/byGarcia/technitium-console/releases).
+  They only lay the files down and print the step above; they guess no
+  service name and restart nothing.
+- **AppImage**: the `technitium-console-<version>-x86_64.AppImage` attached
+  to each release serves the bundle on `http://127.0.0.1:8080/` for local
+  inspection. It is a preview of the files, not the DNS server: to put the
+  console in front of a real server, use the one-liner.
+
 ### On Technitium v15.5 or later: give the console a folder of its own
 
 Since v15.5 the server can be told to serve its web console from another folder,

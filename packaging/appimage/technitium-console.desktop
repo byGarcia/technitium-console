@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=Technitium Console (preview)
+Exec=technitium-console
+Icon=technitium-console
+Type=Application
+Categories=Network;
+Comment=Preview the portable Technitium DNS Server admin console bundle

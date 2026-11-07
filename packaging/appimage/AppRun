@@ -1,0 +1,28 @@
+#!/bin/sh
+# Portable technitium-console bundle: serves the console for local preview.
+#
+# This is NOT the DNS server and it does not install anything. It lets you
+# open the console's pages in a browser (against a running Technitium server
+# it still needs its /api, so most screens will ask you to log in and then
+# show the server unreachable unless pointed at one). To put the console in
+# front of a real server, use the one-line installer instead:
+#   curl -sSL https://raw.githubusercontent.com/byGarcia/technitium-console/main/install.sh | sudo sh
+HERE="$(dirname "$(readlink -f "$0" 2>/dev/null || echo "$0")")"
+ROOT="$HERE/usr/share/technitium-console"
+PORT="${TECHNITIUM_CONSOLE_PORT:-8080}"
+
+if [ ! -f "$ROOT/index.html" ]; then
+  echo "technitium-console bundle is missing from $ROOT" >&2
+  exit 1
+fi
+
+cat <<EOF
+  technitium-console $PORT preview: http://127.0.0.1:$PORT/
+  (serving $ROOT; stop with Ctrl-C)
+
+  To install it in front of a real Technitium DNS Server, run on the server:
+    curl -sSL https://raw.githubusercontent.com/byGarcia/technitium-console/main/install.sh | sudo sh
+
+EOF
+
+exec python3 -m http.server "$PORT" --bind 127.0.0.1 --directory "$ROOT"

@@ -1,0 +1,71 @@
+# The distro packages, built from the dist/ the console-tarball action leaves.
+#
+# No npm here: dist/ is already built and checked. The release job uses this,
+# so a release attaches the same bytes the tarball holds; the develop image
+# does not, and stays a tarball plus its Docker image.
+#
+# Trust: dpkg-deb comes with the runner; rpm comes from apt; appimagetool is
+# a pinned release binary that only packs bytes, and every artifact's payload
+# is diffed against dist/ afterwards, so a packer that adds, drops or rewrites
+# a file fails the job instead of shipping.
+name: Distro packages
+description: Builds the .deb, .rpm and AppImage from dist/, with a .sha256 next to each and the payloads diffed against dist/.
+
+runs:
+  using: composite
+  steps:
+    - name: Build the .deb, .rpm and AppImage
+      shell: bash
+      env:
+        APPIMAGETOOL_URL: https://github.com/AppImage/appimagetool/releases/download/1.9.0/appimagetool-x86_64.AppImage
+      run: |
+        set -eu
+        [ -f dist/index.html ] || { echo "dist/ is missing: run console-tarball first." >&2; exit 1; }
+        sudo apt-get update -qq
+        # rpm packs the .rpm; desktop-file-validate is appimagetool's own
+        # gate on the .desktop file, and it is not preinstalled.
+        sudo apt-get install -y -qq rpm desktop-file-utils
+        curl -fsSL "$APPIMAGETOOL_URL" -o "$RUNNER_TEMP/appimagetool"
+        chmod +x "$RUNNER_TEMP/appimagetool"
+        sh packaging/build-deb.sh
+        sh packaging/build-rpm.sh
+        PATH="$RUNNER_TEMP:$PATH" sh packaging/build-appimage.sh
+        # What got built, and the checksums of exactly those files. Names are
+        # spelled out (the .rpm's dist tag aside) so a mistyped pattern
+        # cannot silently checksum nothing; both halves run where the bare
+        # names in distro-packages.sha256 resolve.
+        VERSION="$(node -p "require('./package.json').version")"
+        ls -la packaging/out
+        (cd packaging/out && rpm="$(ls technitium-console-*.noarch.rpm)" && \
+          sha256sum "technitium-console_${VERSION}_all.deb" "$rpm" \
+            "technitium-console-${VERSION}-x86_64.AppImage" > distro-packages.sha256 && \
+          sha256sum -c distro-packages.sha256)
+        cat packaging/out/distro-packages.sha256
+
+    # A packer is only trusted when its output is measured: every payload
+    # must hold exactly the files dist/ holds, byte for byte.
+    - name: Payloads hold exactly dist/
+      shell: bash
+      run: |
+        set -eu
+        VERSION="$(node -p "require('./package.json').version")"
+        out="packaging/out"
+        deb="$out/technitium-console_${VERSION}_all.deb"
+        ai="$out/technitium-console-${VERSION}-x86_64.AppImage"
+        rpm="$(find "$out" -maxdepth 1 -type f -name 'technitium-console-*.noarch.rpm')"
+        [ -f "$deb" ] && [ -f "$ai" ] && [ -n "$rpm" ] && [ -f "$rpm" ] \
+          || { echo "A distro artifact is missing:"; ls -la "$out"; exit 1; }
+        [ "$(printf '%s\n' "$rpm" | wc -l)" = "1" ] || { echo "More than one .rpm."; exit 1; }
+        (cd dist && find . -type f | LC_ALL=C sort) > "$RUNNER_TEMP/dist-files"
+        dpkg-deb -c "$deb" | awk '$1 ~ /^-/ { print $6 }' \
+          | sed -n 's|^\./usr/share/technitium-console/|./|p' | LC_ALL=C sort > "$RUNNER_TEMP/deb-files"
+        diff "$RUNNER_TEMP/dist-files" "$RUNNER_TEMP/deb-files"
+        rpm -qlpv "$rpm" | awk '$1 ~ /^-/ { print $NF }' \
+          | sed -n 's|^/usr/share/technitium-console|.|p' | LC_ALL=C sort > "$RUNNER_TEMP/rpm-files"
+        diff "$RUNNER_TEMP/dist-files" "$RUNNER_TEMP/rpm-files"
+        rm -rf "$RUNNER_TEMP/ai-check" && mkdir -p "$RUNNER_TEMP/ai-check"
+        (cd "$RUNNER_TEMP/ai-check" && "$GITHUB_WORKSPACE/$ai" --appimage-extract >/dev/null)
+        (cd "$RUNNER_TEMP/ai-check/squashfs-root/usr/share/technitium-console" \
+          && find . -type f | LC_ALL=C sort) > "$RUNNER_TEMP/ai-files"
+        diff "$RUNNER_TEMP/dist-files" "$RUNNER_TEMP/ai-files"
+        echo "Payloads match dist/."

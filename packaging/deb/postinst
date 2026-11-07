@@ -1,0 +1,17 @@
+#!/bin/sh
+set -eu
+cat <<'EOF'
+
+  technitium-console is installed in /usr/share/technitium-console.
+
+  To serve it from Technitium DNS Server 15.5 or later, set on the server:
+    DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH=/usr/share/technitium-console
+  and restart the DNS service once. On Docker, mount it read-only instead;
+  see /usr/share/doc/technitium-console/README.Debian.
+
+  The one-line installer remains the recommended path on a live server
+  (it verifies the running service and can roll back):
+    curl -sSL https://raw.githubusercontent.com/byGarcia/technitium-console/main/install.sh | sudo sh
+
+EOF
+exit 0
