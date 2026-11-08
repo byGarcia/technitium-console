@@ -48,6 +48,11 @@ export function kindsOf(app: InstalledApp): string[] {
   return KINDS.filter((k) => all.has(k))
 }
 
+/** Advanced Blocking by its class, not its name: a zip uploaded under another name is still the app. */
+export function isAdvancedBlocking(app: InstalledApp): boolean {
+  return app.dnsApps.some((d) => d.classPath === 'AdvancedBlocking.App')
+}
+
 /*
 WHERE AN APP STANDS AGAINST THE STORE (the Installed Apps card). The server writes
 `updateVersion`, `updateUrl` and `updateAvailable` only for an app whose NAME the

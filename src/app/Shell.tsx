@@ -1,5 +1,5 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { visibleSections, visibleSubs, type Permission } from './sections'
+import { ADVANCED_BLOCKING_DETAIL, visibleSections, visibleSubs, type Permission } from './sections'
 import { useAllNavMarks } from './nav-marks'
 import { toSlug } from './slug'
 import text from '../ui/text.module.css'
@@ -14,6 +14,7 @@ import { Clients } from '../screens/clients/Clients'
 import { DnsClient } from '../screens/dnsclient/DnsClient'
 import { About } from '../screens/about/About'
 import { Apps } from '../screens/apps/Apps'
+import { AdvancedBlocking } from '../screens/apps/advanced-blocking/AdvancedBlocking'
 import { Cache } from '../screens/lists/Lists'
 import { Blocking } from '../screens/blocking/Blocking'
 import { MENU_TABS, Settings, type RecordSettings, type ServerInfo } from '../screens/settings/Settings'
@@ -426,8 +427,11 @@ export function Shell({
   to mark) because a rule spread around is precisely the one that goes out of
   sync: the menu said "General" and the address bar said `/settings/`, which is
   half a page.
+
+  A section with a detail page (`Section.detail`) is on its list while `sub` is null.
   */
-  const currentSub = current?.subs != null ? (sub ?? current.subs[0] ?? null) : null
+  const currentSub =
+    current?.subs != null ? (sub ?? current.subs[0] ?? null) : sub != null && current?.detail?.includes(sub) ? sub : null
 
   /* The page you are on is in view in the sidebar (2026-11-06). Its list scrolls
      inside the panel, and arriving straight on a section low in it (an
@@ -821,6 +825,8 @@ export function Shell({
           />
         ) : current?.id === 'about' ? (
           <About info={info} />
+        ) : current?.id === 'apps' && currentSub === ADVANCED_BLOCKING_DETAIL ? (
+          <AdvancedBlocking token={session.token} />
         ) : current?.id === 'apps' ? (
           <Apps token={session.token} />
         ) : current?.id === 'cache' ? (

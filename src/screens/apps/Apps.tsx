@@ -12,7 +12,7 @@ import { SectionHeader } from '../../ui/SectionHeader'
 import { AppConfig } from './AppConfig'
 import { AppRow, KindChip } from './AppRow'
 import { AppsSummary } from './AppsSummary'
-import { kindsOf } from './app-kinds'
+import { isAdvancedBlocking, kindsOf } from './app-kinds'
 import { InstallApp } from './InstallApp'
 import { StoreApps } from './StoreApps'
 import { UpdateApp } from './UpdateApp'
@@ -281,6 +281,8 @@ export function Apps({ token }: { token: string | null }) {
                     key={app.name}
                     app={app}
                     busy={busy === app.name}
+                    /* Counted over every installed app, not what the filters leave. */
+                    namedEditor={(apps ?? []).filter(isAdvancedBlocking).length > 1}
                     onConfig={() => void openConfig(app.name)}
                     onUpdate={() => setModal({ kind: 'update', name: app.name })}
                     onStoreUpdate={() => void updateFromStore(app)}

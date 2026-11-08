@@ -52,7 +52,7 @@ export function SectionIndex({
   strip = false,
 }: {
   /** The sections, in the order they appear on the page. */
-  sections: { id: string; label: string }[]
+  sections: { id: string; label: string; mark?: 'unsaved' | 'problem' }[]
   /** The `id` of the section you are in. Without it, none is marked. */
   active?: string
   /** The index's name, for whoever cannot see the screen. */
@@ -91,6 +91,12 @@ export function SectionIndex({
               aria-current={s.id === active ? 'location' : undefined}
             >
               {s.label}
+              {s.mark != null && (
+                <>
+                  <span className={s.mark === 'problem' ? styles.markProblem : styles.mark} aria-hidden="true" />
+                  <span className={styles.sr}>{s.mark === 'problem' ? ', has problems' : ', unsaved changes'}</span>
+                </>
+              )}
             </a>
           </li>
         ))}

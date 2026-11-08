@@ -39,7 +39,7 @@ export const MOVED_ROUTES: Record<string, { section: string; sub: string }> = {
 }
 
 export const STATIC_ROUTES: string[] = [
-  ...SECTIONS.flatMap((s) => [s.id, ...(s.subs ?? []).map((t) => `${s.id}/${toSlug(t)}`)]),
+  ...SECTIONS.flatMap((s) => [s.id, ...[...(s.subs ?? []), ...(s.detail ?? [])].map((t) => `${s.id}/${toSlug(t)}`)]),
   ...Object.keys(LEGACY_ROUTES),
   ...Object.keys(MOVED_ROUTES),
 ]

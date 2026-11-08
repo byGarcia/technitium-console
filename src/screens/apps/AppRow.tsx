@@ -1,11 +1,13 @@
 import { useId, useState, type CSSProperties } from 'react'
 import { dnsAppLabels, type InstalledApp } from '../../api/apps'
-import { Menu, MenuItem, Separator } from '../../ui/Menu'
+import { ADVANCED_BLOCKING_DETAIL } from '../../app/sections'
+import { Menu, MenuItem, MenuRouteItem, Separator } from '../../ui/Menu'
+import { RouteButton } from '../../ui/RouteLink'
 import { RowAction } from '../../ui/Table'
 import tbl from '../../ui/Table.module.css'
 import { Tag } from '../../ui/Tag'
 import { Button } from '../../ui/Button'
-import { kindColour, kindsOf } from './app-kinds'
+import { isAdvancedBlocking, kindColour, kindsOf } from './app-kinds'
 import styles from './Apps.module.css'
 
 /*
@@ -27,6 +29,10 @@ What the redesign changes (deviation 17), and nothing here acts differently:
     Update (from a file) as icons with their names in the tooltip, and the `⋮`
     menu carrying every action by name, Uninstall only there, as on every other
     collection of this console.
+  · `Visual Editor` (OURS), on the row and in the menu of the Advanced Blocking app:
+    a link to its editor page. It sits before Config, which still opens the same
+    JSON dialog. It is not disabled while the row is busy: it only goes to a page.
+    When more than one app has that class, the address says which (`?name=`).
 
 `updateAvailable` may not come: the server only writes the three update fields if
 the app is in the store's catalog. That is why it is checked as optional.
@@ -34,6 +40,7 @@ the app is in the store's catalog. That is why it is checked as optional.
 export function AppRow({
   app,
   busy,
+  namedEditor,
   onConfig,
   onUpdate,
   onStoreUpdate,
@@ -41,6 +48,8 @@ export function AppRow({
 }: {
   app: InstalledApp
   busy: boolean
+  /** Another installed app has this app's Advanced Blocking class. */
+  namedEditor: boolean
   onConfig: () => void
   onUpdate: () => void
   onStoreUpdate: () => void
@@ -48,6 +57,12 @@ export function AppRow({
 }) {
   const hasUpdate = app.updateAvailable === true && Boolean(app.updateUrl)
   const kinds = kindsOf(app)
+  const editor = isAdvancedBlocking(app)
+    ? {
+        to: { section: 'apps', sub: ADVANCED_BLOCKING_DETAIL },
+        search: namedEditor ? `?${new URLSearchParams({ name: app.name }).toString()}` : '',
+      }
+    : null
 
   const [open, setOpen] = useState(false)
   const detail = useId()
@@ -69,18 +84,28 @@ export function AppRow({
             ))}
           </div>
         </td>
-        <td className={tbl.actionsCell}>
-          <div className={tbl.actions}>
+        <td className={`${tbl.actionsCell} ${styles.actionsCell}`}>
+          <div className={`${tbl.actions} ${styles.actions}`}>
             {hasUpdate && (
               <Button size="sm" lead="download" disabled={busy} onClick={onStoreUpdate}>
                 Store Update
               </Button>
+            )}
+            {editor != null && (
+              <RouteButton {...editor} lead="edit">
+                Visual Editor
+              </RouteButton>
             )}
             <RowAction icon="settings" name="Config" disabled={busy} onClick={onConfig} />
             <RowAction icon="upload" name="Update" disabled={busy} onClick={onUpdate} />
             <Menu label={`Actions for ${app.name}`}>
               {(close) => (
                 <>
+                  {editor != null && (
+                    <MenuRouteItem {...editor} icon="edit" onClick={close}>
+                      Visual Editor
+                    </MenuRouteItem>
+                  )}
                   <MenuItem icon="settings" disabled={busy} onClick={() => { close(); onConfig() }}>
                     Config
                   </MenuItem>

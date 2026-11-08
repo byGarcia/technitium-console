@@ -1,11 +1,16 @@
 import { describe, expect, it, vi, afterEach } from 'vitest'
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { Apps } from './Apps'
+import { Apps, type AlertState } from './Apps'
+import { AppConfig } from './AppConfig'
+import { isAdvancedBlocking } from './app-kinds'
 import type { InstalledApp, StoreApp } from '../../api/apps'
 import * as api from '../../api/apps'
 
-afterEach(() => vi.restoreAllMocks())
+afterEach(() => {
+  vi.restoreAllMocks()
+  window.history.replaceState(null, '', '/')
+})
 
 const DETAIL = {
   classPath: 'NoData.App',
@@ -596,5 +601,178 @@ describe('Apps: the redrawn table and dialogs (deviation 17)', () => {
     await userEvent.upload(input, new File(['zip'], 'my-app.zip', { type: 'application/zip' }))
     expect(screen.getByText('my-app.zip')).toBeInTheDocument()
     expect(screen.getByText('3 B')).toBeInTheDocument()
+  })
+})
+
+/*
+The way in to the Advanced Blocking editor. The app is known by its class, not its
+name: a zip uploaded under another name is still that app, and an app that only
+carries the name is not.
+*/
+describe('Apps: the way in to the Advanced Blocking editor', () => {
+  const BLOCKER: InstalledApp = {
+    ...UP_TO_DATE,
+    name: 'Advanced Blocking',
+    dnsApps: [{ ...DETAIL, classPath: 'AdvancedBlocking.App' }],
+  }
+
+  it('the class says which app it is, not the name', () => {
+    expect(isAdvancedBlocking({ ...BLOCKER, name: 'My Upload' })).toBe(true)
+    expect(isAdvancedBlocking({ ...UP_TO_DATE, name: 'Advanced Blocking' })).toBe(false)
+    expect(isAdvancedBlocking({ ...BLOCKER, dnsApps: [DETAIL, BLOCKER.dnsApps[0]] })).toBe(true)
+  })
+
+  it('only the row of the app with that class offers it, as a real link', async () => {
+    withApps([BLOCKER, UP_TO_DATE])
+    render(<Apps token="t" />)
+    await screen.findByRole('row', { name: 'Advanced Blocking' })
+
+    expect(card('Advanced Blocking').getByRole('link', { name: 'Visual Editor' })).toHaveAttribute(
+      'href',
+      '/apps/advanced-blocking/',
+    )
+    expect(card('What Is My Dns').queryByRole('link', { name: 'Visual Editor' })).toBeNull()
+  })
+
+  it('it comes before Config in the row', async () => {
+    withApps([BLOCKER])
+    render(<Apps token="t" />)
+    await screen.findByRole('row', { name: 'Advanced Blocking' })
+    const link = card('Advanced Blocking').getByRole('link', { name: 'Visual Editor' })
+    const config = card('Advanced Blocking').getByRole('button', { name: 'Config' })
+    expect(link.compareDocumentPosition(config) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('it is in the row menu too, and only for that app', async () => {
+    withApps([BLOCKER, UP_TO_DATE])
+    render(<Apps token="t" />)
+    await screen.findByRole('row', { name: 'Advanced Blocking' })
+
+    const menu = await openMenu('Advanced Blocking')
+    expect(menu.getByRole('menuitem', { name: 'Visual Editor' })).toHaveAttribute('href', '/apps/advanced-blocking/')
+    await userEvent.keyboard('{Escape}')
+
+    const other = await openMenu('What Is My Dns')
+    expect(other.queryByRole('menuitem', { name: 'Visual Editor' })).toBeNull()
+  })
+
+  it('a plain click moves the console and leaves the search of the list behind', async () => {
+    window.history.replaceState(null, '', '/apps/?q=block')
+    withApps([BLOCKER])
+    const heard = vi.fn()
+    window.addEventListener('popstate', heard)
+    render(<Apps token="t" />)
+    await screen.findByRole('row', { name: 'Advanced Blocking' })
+    await userEvent.click(card('Advanced Blocking').getByRole('link', { name: 'Visual Editor' }))
+    window.removeEventListener('popstate', heard)
+    expect(window.location.pathname + window.location.search).toBe('/apps/advanced-blocking/')
+    expect(heard).toHaveBeenCalledTimes(1)
+  })
+
+  it('with two installed, each address says which one', async () => {
+    withApps([BLOCKER, { ...BLOCKER, name: 'Second Blocker' }])
+    render(<Apps token="t" />)
+    await screen.findByRole('row', { name: 'Advanced Blocking' })
+    expect(card('Advanced Blocking').getByRole('link', { name: 'Visual Editor' })).toHaveAttribute(
+      'href',
+      '/apps/advanced-blocking/?name=Advanced+Blocking',
+    )
+    const menu = await openMenu('Second Blocker')
+    expect(menu.getByRole('menuitem', { name: 'Visual Editor' })).toHaveAttribute(
+      'href',
+      '/apps/advanced-blocking/?name=Second+Blocker',
+    )
+  })
+
+  it('the search does not hide the second one from that count', async () => {
+    window.history.replaceState(null, '', '/apps/?q=second')
+    withApps([BLOCKER, { ...BLOCKER, name: 'Second Blocker' }])
+    render(<Apps token="t" />)
+    await screen.findByRole('row', { name: 'Second Blocker' })
+    expect(rowNames()).toEqual(['Second Blocker'])
+    expect(card('Second Blocker').getByRole('link', { name: 'Visual Editor' })).toHaveAttribute(
+      'href',
+      '/apps/advanced-blocking/?name=Second+Blocker',
+    )
+  })
+
+  it('Config still opens the dialog on that row', async () => {
+    withApps([BLOCKER])
+    const read = vi.spyOn(api, 'getAppConfig').mockResolvedValue({
+      kind: 'ok',
+      data: { status: 'ok', response: { config: '{ "a": 1 }' } },
+    } as never)
+    render(<Apps token="t" />)
+    await screen.findByRole('row', { name: 'Advanced Blocking' })
+    await userEvent.click(card('Advanced Blocking').getByRole('button', { name: 'Config' }))
+    expect(await screen.findByText('App Config - Advanced Blocking')).toBeInTheDocument()
+    expect(screen.getByLabelText('Config File')).toHaveValue('{ "a": 1 }')
+    expect(read.mock.calls.find((c) => c[1] === 'Advanced Blocking')).toBeTruthy()
+  })
+})
+
+describe('AppConfig: what the editor passes it', () => {
+  function dialog(extra: Partial<React.ComponentProps<typeof AppConfig>> = {}) {
+    const onSaved = vi.fn()
+    render(
+      <AppConfig
+        open
+        onOpenChange={() => {}}
+        token="t"
+        name="Blocker"
+        initialConfig="{}"
+        onSaved={onSaved}
+        {...extra}
+      />,
+    )
+    return onSaved
+  }
+
+  const writes = () => vi.spyOn(api, 'setAppConfig').mockResolvedValue({ kind: 'ok', data: { status: 'ok' } } as never)
+
+  it('without the new props it saves and reports as before', async () => {
+    const save = writes()
+    const onSaved = dialog()
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }))
+    await waitFor(() => expect(onSaved).toHaveBeenCalledWith('Blocker'))
+    expect(save.mock.calls.find((c) => c[1] === 'Blocker')).toEqual(['t', 'Blocker', '{}'])
+  })
+
+  it('a beforeSave with an alert shows it and writes nothing', async () => {
+    const save = writes()
+    const conflict: AlertState = { type: 'danger', title: 'Error!', text: 'This config changed on the server after you opened it.' }
+    const onSaved = dialog({ beforeSave: async () => conflict })
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }))
+    expect(await screen.findByText('This config changed on the server after you opened it.')).toBeInTheDocument()
+    expect(save).not.toHaveBeenCalled()
+    expect(onSaved).not.toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled()
+  })
+
+  it('a beforeSave with no alert lets it write', async () => {
+    const save = writes()
+    const beforeSave = vi.fn(async () => null)
+    const onSaved = dialog({ beforeSave })
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }))
+    await waitFor(() => expect(onSaved).toHaveBeenCalledWith('Blocker'))
+    expect(beforeSave).toHaveBeenCalledTimes(1)
+    expect(save).toHaveBeenCalledTimes(1)
+  })
+
+  it('Save waits for the beforeSave', async () => {
+    writes()
+    let finish: (alert: AlertState | null) => void = () => {}
+    dialog({ beforeSave: () => new Promise((resolve) => { finish = resolve }) })
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }))
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled()
+    finish({ type: 'danger', title: 'Error!', text: 'No.' })
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled())
+  })
+
+  it('the note is drawn above the Config File field', () => {
+    dialog({ note: <p>Saved over the draft.</p> })
+    const note = screen.getByText('Saved over the draft.')
+    const field = screen.getByLabelText('Config File')
+    expect(note.compareDocumentPosition(field) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 })

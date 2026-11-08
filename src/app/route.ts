@@ -52,7 +52,8 @@ export function readRoute(sections: Section[]): Route | null {
   if (section == null) return null
 
   // A sub that does not exist does not invalidate the section: it falls to the first.
-  const sub = slugSub == null ? null : (section.subs?.find((t) => toSlug(t) === slugSub) ?? null)
+  const named = [...(section.subs ?? []), ...(section.detail ?? [])]
+  const sub = slugSub == null ? null : (named.find((t) => toSlug(t) === slugSub) ?? null)
   return { section: section.id, sub }
 }
 
@@ -66,12 +67,12 @@ export function toTrail({ section, sub }: Route): string {
  * does, so the back button walks the sections instead of taking them out of the
  * console.
  *
- * The `search` is kept and the `hash` is NOT: the hash is only used by the SSO
- * return (`session/boot.ts`), which has already read it and wants it gone from the
- * bar.
+ * The `search` is kept unless the caller says what it should be, and the `hash` is
+ * NOT: the hash is only used by the SSO return (`session/boot.ts`), which has already
+ * read it and wants it gone from the bar.
  */
-export function writeRoute(route: Route, replaceEntry = false): void {
-  const blank = toTrail(route) + window.location.search
+export function writeRoute(route: Route, replaceEntry = false, search = window.location.search): void {
+  const blank = toTrail(route) + search
   if (window.location.pathname + window.location.search === blank) return
   if (replaceEntry) window.history.replaceState(null, '', blank)
   else window.history.pushState(null, '', blank)
@@ -126,7 +127,7 @@ export function plainClick(e: {
  * already follows that event (it reads the bar and moves to what it says), so a
  * screen needs no handle on the Shell's state to send the user elsewhere.
  */
-export function navigateTo(route: Route): void {
-  writeRoute(route)
+export function navigateTo(route: Route, search?: string): void {
+  writeRoute(route, false, search)
   window.dispatchEvent(new PopStateEvent('popstate'))
 }

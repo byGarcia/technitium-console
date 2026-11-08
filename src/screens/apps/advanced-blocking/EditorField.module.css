@@ -1,0 +1,23 @@
+/* What the fields of the Advanced Blocking editor share (`EditorField.tsx`). */
+
+/* Under its control, and part of the same field. */
+.messages { display: flex; flex-direction: column; gap: var(--s-1); margin-top: var(--s-2); font-size: var(--t-2); overflow-wrap: break-word; }
+.error { color: var(--dan); }
+.warning { color: var(--warn); }
+
+.input[aria-invalid='true'],
+.input[aria-invalid='true']:focus,
+.shortArea:has(textarea[aria-invalid='true']),
+.mediumArea:has(textarea[aria-invalid='true']) { border-color: var(--dan); }
+
+/* `ui/CodeArea` draws its body 22rem tall, for a whole file. Here a field is a few lines. */
+.shortArea > div:first-child { height: calc(var(--s-12) * 2.5); }
+.mediumArea > div:first-child { height: calc(var(--s-12) * 4); }
+
+/*
+`--viol` and not `--ch-block`, which is what Blocking draws this word with: the
+series colour gives 3.34:1 on the dark panel, and it is tuned against the other
+chart lines, not for text. The pair is measured in `dev/theme-contrast.mjs`.
+*/
+.block { color: var(--viol); display: inline-flex; align-items: center; gap: var(--s-3); }
+.allow { color: var(--ok); display: inline-flex; align-items: center; gap: var(--s-3); }

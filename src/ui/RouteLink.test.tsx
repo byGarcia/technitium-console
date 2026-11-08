@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
-import { RouteLink } from './RouteLink'
+import { RouteButton, RouteLink } from './RouteLink'
 import { forgetRoot } from '../app/route'
 
 afterEach(() => {
@@ -52,5 +52,33 @@ describe('RouteLink', () => {
     expect(prevented).toBe(false)
     expect(window.location.pathname).toBe('/')
     expect(heard).not.toHaveBeenCalled()
+  })
+
+  it('says what comes after the path, in the address and on a plain click', () => {
+    window.history.replaceState(null, '', '/?q=block')
+    render(<RouteLink to={{ section: 'zones', sub: null }} search="?name=a%20b">Open</RouteLink>)
+    const link = screen.getByRole('link', { name: 'Open' })
+    expect(link).toHaveAttribute('href', '/zones/?name=a%20b')
+    clickAndSee(link)
+    expect(window.location.pathname + window.location.search).toBe('/zones/?name=a%20b')
+  })
+
+  it('runs its own click first, on a plain click and on a ctrl-click', () => {
+    const own = vi.fn()
+    render(<RouteLink to={{ section: 'zones', sub: null }} onClick={own}>Open</RouteLink>)
+    const link = screen.getByRole('link', { name: 'Open' })
+    clickAndSee(link, { ctrlKey: true })
+    expect(own).toHaveBeenCalledTimes(1)
+    expect(window.location.pathname).toBe('/')
+    clickAndSee(link)
+    expect(own).toHaveBeenCalledTimes(2)
+    expect(window.location.pathname).toBe('/zones/')
+  })
+})
+
+describe('RouteButton', () => {
+  it('is a real link with the name of its label', () => {
+    render(<RouteButton to={{ section: 'zones', sub: null }} lead="edit">Open</RouteButton>)
+    expect(screen.getByRole('link', { name: 'Open' })).toHaveAttribute('href', '/zones/')
   })
 })

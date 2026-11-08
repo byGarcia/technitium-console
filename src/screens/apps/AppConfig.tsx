@@ -1,5 +1,5 @@
 import { CodeArea } from '../../ui/CodeArea'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { setAppConfig } from '../../api/apps'
 import { Button } from '../../ui/Button'
 import { Dialog } from '../../ui/Dialog'
@@ -18,6 +18,10 @@ app and the console does not know what fields it has. Upstream puts a 15-row
 
 The config arrives already read from the screen, because upstream also asks for it
 BEFORE opening the modal (the "Config" button sits at "Loading...").
+
+Two optional props, for the visual editor's `Edit as JSON` and for nothing else, so
+the `Config` button behaves exactly as without them. `beforeSave` runs first, and an
+alert from it is shown here with nothing written. `note` is drawn above the field.
 */
 export function AppConfig({
   open,
@@ -26,6 +30,8 @@ export function AppConfig({
   name,
   initialConfig,
   onSaved,
+  beforeSave,
+  note,
 }: {
   open: boolean
   onOpenChange: (o: boolean) => void
@@ -33,6 +39,8 @@ export function AppConfig({
   name: string
   initialConfig: string
   onSaved: (name: string) => void
+  beforeSave?: () => Promise<AlertState | null>
+  note?: ReactNode
 }) {
   const [config, setConfig] = useState(initialConfig)
   const [alert, setAlert] = useState<AlertState | null>(null)
@@ -48,6 +56,14 @@ export function AppConfig({
 
   async function save() {
     setBusy(true)
+    if (beforeSave != null) {
+      const refused = await beforeSave()
+      if (refused != null) {
+        setBusy(false)
+        setAlert(refused)
+        return
+      }
+    }
     const outcome = await setAppConfig(token, name, config)
     setBusy(false)
 
@@ -76,6 +92,7 @@ export function AppConfig({
       <p className={styles.note}>
         Edit the <code>dnsApp.config</code> config file below as required by the DNS application.
       </p>
+      {note}
       <Field label="Config File">
         {(id) => (
           <CodeArea
