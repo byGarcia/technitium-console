@@ -1,0 +1,56 @@
+{
+  "enableBlocking": true,
+  "blockListUrlUpdateIntervalHours": 24,
+  "networkGroupMap": {
+    "192.168.10.20": "kids",
+    "0.0.0.0/0": "everyone"
+  },
+  "groups": [
+    {
+      "name": "everyone",
+      "enableBlocking": true,
+      "allowTxtBlockingReport": true,
+      "blockAsNxDomain": false,
+      "blockingAddresses": [
+        "0.0.0.0",
+        "::"
+      ],
+      "allowed": [],
+      "blocked": [
+        "example.com"
+      ],
+      "allowListUrls": [],
+      "blockListUrls": [
+        "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts"
+      ],
+      "allowedRegex": [],
+      "blockedRegex": [
+        "^ads\\."
+      ],
+      "regexAllowListUrls": [],
+      "regexBlockListUrls": [],
+      "adblockListUrls": []
+    },
+    {
+      "name": "kids",
+      "enableBlocking": true,
+      "allowTxtBlockingReport": true,
+      "blockAsNxDomain": false,
+      "blockingAddresses": [
+        "0.0.0.0",
+        "::"
+      ],
+      "allowed": [],
+      "blocked": [],
+      "allowListUrls": [],
+      "blockListUrls": [
+        "https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/social/hosts"
+      ],
+      "allowedRegex": [],
+      "blockedRegex": [],
+      "regexAllowListUrls": [],
+      "regexBlockListUrls": [],
+      "adblockListUrls": []
+    }
+  ]
+}
