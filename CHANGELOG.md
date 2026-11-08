@@ -50,8 +50,8 @@ Thanks to the people who asked for these: see each line below.
 - **A visual editor for the Advanced Blocking app**: `Visual Editor` in the app's row in Apps opens
   its clients, groups, domains, regex and list URLs on one page, checked as the server reads them.
   The JSON stays one click away. Saving changes only what you changed and keeps what the editor does
-  not know; a config it cannot keep exactly, it refuses to edit and says why. Requested in the v1.4.0
-  thread on r/technitium.
+  not know; a config it cannot keep exactly, it refuses to edit and says why. Requested by u/The4Dees
+  on r/technitium.
 
 ---
 
