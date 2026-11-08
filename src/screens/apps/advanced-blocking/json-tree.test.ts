@@ -103,9 +103,8 @@ describe('json-tree: what it refuses', () => {
     expect(failure('{\n"a":1,\n\n"b" 2}')).toMatchObject({ code: 'syntax', line: 4 })
   })
 
-  /* JsonDocument.Parse is strict about what starts a document (App.cs:355), and
-     JSON.parse is too. CHECK AGAINST A REAL SERVER: the .NET reader refusing U+FEFF
-     comes from the documentation of Utf8JsonReader, not from code read here. */
+  /* Measured on a v11.2.1 server: a BOM is refused, "'0xEF' is an invalid start of a
+     value". */
   it('parses a BOM-prefixed file as the server does', () => {
     expect(failure('﻿{"a":1}').code).toBe('syntax')
   })
