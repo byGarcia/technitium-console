@@ -43,6 +43,10 @@ chip and the config editor.
 
 /* One line a row: its name, kinds, size and actions on the same middle line. */
 .rows > tbody > tr > td { vertical-align: middle; }
+/* An app with both labelled actions, Store Update and Visual Editor, is wider than a
+   stacked row at 390 px (360 of 350): the group wraps instead of running off the edge. */
+.rows[data-stacked] > tbody > tr > .actionsCell { max-width: 100%; }
+.rows[data-stacked] .actions { flex-wrap: wrap; max-width: 100%; }
 
 /* --- The kinds --- */
 

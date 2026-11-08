@@ -16,7 +16,15 @@ Each section is hidden if its `canView` is false (main.js:119-250).
 here so it is a route like the others (its folder, `readRoute`, Back and F5), and
 it is drawn in no sidebar group (`GROUPS` in `Shell.tsx`), so the sidebar keeps its
 eleven entries. Every user has a profile, so it needs no permission.
+
+`detail` is a page that hangs from a section without being one of its sub-sections:
+it has a route and a folder of its own and appears in no sidebar or palette, so the
+section stays marked while it is open. `Advanced Blocking` (OURS as a page title; the
+words are the app's name) is the one so far: the visual editor of that app's config,
+opened from its row in Apps.
 */
+export const ADVANCED_BLOCKING_DETAIL = 'Advanced Blocking'
+
 export interface Section {
   id: string
   label: string
@@ -26,6 +34,8 @@ export interface Section {
   /** Sub-sections, with upstream's literal labels. They are only shown when their
    *  section is active, exactly as the sub-tabs are today. */
   subs?: string[]
+  /** Pages under this section that are not sub-sections: never in the sidebar. */
+  detail?: string[]
   /** A sub-section that asks for another section's permission: Blocking's
    *  `Settings` is the Settings form, so it needs `Settings` to be seen. */
   subPermissions?: Partial<Record<string, string>>
@@ -40,7 +50,7 @@ export const SECTIONS: Section[] = [
   { id: 'cache', label: 'Cache', permission: 'Cache' },
   { id: 'blocking', label: 'Blocking', permission: ['Blocked', 'Allowed'],
     subs: ['Overview', 'Rules', 'Lists', 'Settings'], subPermissions: { Settings: 'Settings' } },
-  { id: 'apps', label: 'Apps', permission: 'Apps' },
+  { id: 'apps', label: 'Apps', permission: 'Apps', detail: [ADVANCED_BLOCKING_DETAIL] },
   { id: 'dnsclient', label: 'DNS Client', permission: 'DnsClient' },
   { id: 'settings', label: 'Settings', permission: 'Settings',
     subs: ['General','Web Service','Optional Protocols','TSIG','Recursion','Cache','Proxy & Forwarders','Logging'] },

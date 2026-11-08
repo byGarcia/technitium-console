@@ -1,5 +1,5 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { visibleSections, visibleSubs, type Permission } from './sections'
+import { ADVANCED_BLOCKING_DETAIL, visibleSections, visibleSubs, type Permission } from './sections'
 import { useAllNavMarks } from './nav-marks'
 import { toSlug } from './slug'
 import text from '../ui/text.module.css'
@@ -426,8 +426,11 @@ export function Shell({
   to mark) because a rule spread around is precisely the one that goes out of
   sync: the menu said "General" and the address bar said `/settings/`, which is
   half a page.
+
+  A section with a detail page (`Section.detail`) is on its list while `sub` is null.
   */
-  const currentSub = current?.subs != null ? (sub ?? current.subs[0] ?? null) : null
+  const currentSub =
+    current?.subs != null ? (sub ?? current.subs[0] ?? null) : sub != null && current?.detail?.includes(sub) ? sub : null
 
   /* The page you are on is in view in the sidebar (2026-11-06). Its list scrolls
      inside the panel, and arriving straight on a section low in it (an
@@ -821,6 +824,9 @@ export function Shell({
           />
         ) : current?.id === 'about' ? (
           <About info={info} />
+        ) : current?.id === 'apps' && currentSub === ADVANCED_BLOCKING_DETAIL ? (
+          /* The Advanced Blocking editor page is mounted here when it lands. */
+          null
         ) : current?.id === 'apps' ? (
           <Apps token={session.token} />
         ) : current?.id === 'cache' ? (

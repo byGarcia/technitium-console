@@ -2,6 +2,8 @@ import { Button } from './Button'
 import { useEffect, useLayoutEffect, useRef, useState, type ButtonHTMLAttributes, type KeyboardEvent as ReactKeyboardEvent, type ReactNode, type RefObject } from 'react'
 import styles from './Menu.module.css'
 import { Icon, type IconName } from './Icon'
+import { RouteLink } from './RouteLink'
+import type { Route } from '../app/route'
 import { useTooltip } from './Tooltip'
 
 /*
@@ -344,5 +346,31 @@ export function MenuItem({
       <Icon name={icon} size={16} />
       {children}
     </button>
+  )
+}
+
+/*
+An item that goes to another address of the console: a `MenuItem` that is a real
+link (`ui/RouteLink`), so a modifier click opens it in another tab. The menu finds it
+as it finds a button. `onClick` is where the caller closes the menu.
+*/
+export function MenuRouteItem({
+  icon,
+  to,
+  search,
+  onClick,
+  children,
+}: {
+  icon: IconName
+  to: Route
+  search?: string
+  onClick?: () => void
+  children: ReactNode
+}) {
+  return (
+    <RouteLink to={to} search={search} className={styles.item} onClick={onClick}>
+      <Icon name={icon} size={16} />
+      {children}
+    </RouteLink>
   )
 }

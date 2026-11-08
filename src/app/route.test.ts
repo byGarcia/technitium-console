@@ -204,6 +204,72 @@ describe('navigateTo', () => {
   })
 })
 
+/*
+A detail page hangs from a section without being one of its sub-sections: it has
+its own folder and its own route, and nothing in the sidebar.
+*/
+describe('a detail page', () => {
+  const EDITOR = { section: 'apps', sub: 'Advanced Blocking' }
+
+  it('is built as a folder of its own', () => {
+    expect(STATIC_ROUTES).toContain('apps/advanced-blocking')
+  })
+
+  it('reads back from its folder, with and without a prefix', () => {
+    servedAt('/apps/advanced-blocking/', 'apps/advanced-blocking')
+    expect(appRoot()).toBe('/')
+    expect(readRoute(SECTIONS)).toEqual(EDITOR)
+    servedAt('/dns/apps/advanced-blocking/?name=Blocker', 'apps/advanced-blocking')
+    expect(appRoot()).toBe('/dns/')
+    expect(readRoute(SECTIONS)).toEqual(EDITOR)
+  })
+
+  it('writes the same address it reads', () => {
+    servedAt('/dns/apps/', 'apps')
+    expect(toTrail(EDITOR)).toBe('/dns/apps/advanced-blocking/')
+  })
+
+  it('the section alone is still the list, and is not completed to the detail', () => {
+    servedAt('/apps/', 'apps')
+    expect(readRoute(SECTIONS)).toEqual({ section: 'apps', sub: null })
+  })
+
+  it('an unknown detail falls to the list', () => {
+    servedAt('/apps/nonexistent/', 'apps/nonexistent')
+    expect(readRoute(SECTIONS)).toEqual({ section: 'apps', sub: null })
+  })
+
+  it('is not an address of any other section', () => {
+    servedAt('/zones/advanced-blocking/', 'zones/advanced-blocking')
+    expect(readRoute(SECTIONS)).toEqual({ section: 'zones', sub: null })
+  })
+})
+
+/*
+`navigateTo` keeps the search the bar holds, which is what a screen with no view
+of its own wants. A link that says where it goes also says what comes after the
+path, so a list's `?q=` does not travel to the page it opens.
+*/
+describe('navigateTo with a search of its own', () => {
+  it('replaces the search the bar holds', () => {
+    servedAt('/apps/?q=block', 'apps')
+    navigateTo({ section: 'apps', sub: 'Advanced Blocking' }, '?name=Blocker')
+    expect(window.location.pathname + window.location.search).toBe('/apps/advanced-blocking/?name=Blocker')
+  })
+
+  it('an empty one clears it', () => {
+    servedAt('/apps/?q=block', 'apps')
+    navigateTo({ section: 'apps', sub: 'Advanced Blocking' }, '')
+    expect(window.location.pathname + window.location.search).toBe('/apps/advanced-blocking/')
+  })
+
+  it('without one the search stays, as it always did', () => {
+    servedAt('/apps/?q=block', 'apps')
+    navigateTo({ section: 'zones', sub: null })
+    expect(window.location.pathname + window.location.search).toBe('/zones/?q=block')
+  })
+})
+
 describe('plainClick', () => {
   const click = { button: 0, metaKey: false, ctrlKey: false, shiftKey: false, altKey: false, defaultPrevented: false }
 
