@@ -29,9 +29,12 @@ export function Row({
   help,
   modal = false,
   dependsOn,
+  id: fixedId,
   children,
 }: {
   label: string
+  /** The control's `id`, for a screen whose ids are a contract. Generated if absent. */
+  id?: string
   help?: ReactNode
   modal?: boolean
   /*
@@ -52,7 +55,8 @@ export function Row({
   /** Receives the `id` to put on the control, so the label governs it. */
   children: (id: string) => ReactNode
 }) {
-  const id = useId()
+  const generatedId = useId()
+  const id = fixedId ?? generatedId
   return (
     <div className={`${modal ? frm.mrow : frm.row}${dependsOn != null ? ` ${frm.dependent}` : ''}`} data-unit={modal ? undefined : ''}>
       {/*

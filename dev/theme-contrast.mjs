@@ -93,7 +93,7 @@ export const PAIRS = [
   { fg: 'acc-ink', on: [...EVERYWHERE, 'acc-bg', 'pan + acc@0.14'], min: 4.5, where: 'links, current sub-tab, sorted arrow, `acc` pill, Versions mark' },
   // State tones, as pill or notice (`ui/tones`) and as loose text.
   { fg: 'ok', on: ['ok-bg', 'pan', 'pan2'], min: 4.5, where: '`ok` pill and notice; Blocking status mark' },
-  { fg: 'warn', on: ['warn-bg', 'pan', 'pan + hover'], min: 4.5, where: '`warn` pill and notice; the Dashboard\'s limited rows' },
+  { fg: 'warn', on: ['warn-bg', 'pan', 'pan2', 'pan + hover'], min: 4.5, where: '`warn` pill and notice; the Dashboard\'s limited rows' },
   { fg: 'dan', on: ['dan-bg', 'pan', 'pan2', 'pan + hover-strong'], min: 4.5, where: '`dan` pill and notice, validation text, Delete in a row or a menu' },
   { fg: 'info', on: ['info-bg', 'pan'], min: 4.5, where: '`info` pill and notice' },
   { fg: 'on-dan', on: ['dan-fill'], min: 4.5, where: 'the destructive button, filled' },
@@ -101,6 +101,8 @@ export const PAIRS = [
   // The rule kind in Blocking › Rules and Lists: `Allow` takes `--ok`, `Block` a series colour.
   { fg: 'ok', on: ['pan + hover'], min: 4.5, where: '`Allow` in Blocking › Rules and Block Lists, under the row hover' },
   { fg: 'ch-block', on: ['pan', 'pan + hover'], min: 4.5, where: '`Block` in Blocking › Rules and Block Lists' },
+  // Advanced Blocking's `Block` mark: `--viol`, because `--ch-block` is under 4.5 on the dark panel.
+  { fg: 'viol', on: ['pan'], min: 4.5, where: '`Block` in Advanced Blocking: list rows and the domain fields' },
   // Query Logs: the cell text on its row colour, 30 % over the panel.
   ...['ch-fail', 'ch-block', 'ch-nx', 'ch-refuse', 'ch-auth', 'ch-rec', 'ch-cache'].map((k) => ({
     fg: 'ink', on: [`pan + ${k}@0.3`], min: 4.5, where: `Query Logs row (${k})`,

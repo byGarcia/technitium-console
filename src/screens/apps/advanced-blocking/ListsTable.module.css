@@ -1,0 +1,28 @@
+/* The `Lists` panel of a group (`ListsTable.tsx`). */
+
+.add { display: grid; grid-template-columns: calc(var(--s-11) * 10) minmax(0, 1fr) auto; gap: var(--s-5); }
+
+.empty { padding: var(--s-10); margin: 0 var(--s-10) var(--s-10); border: 1px dashed var(--line); border-radius: var(--r-3); font-size: var(--t-3); color: var(--mute); text-align: center; }
+
+.rows { border-top: 1px solid var(--line2); }
+.row { padding: var(--s-5) var(--s-10); border-bottom: 1px solid var(--line2); min-width: 0; }
+.row:last-child { border-bottom: 0; }
+.head { display: flex; align-items: center; gap: var(--s-7); min-width: 0; }
+/* Fixed, so the URLs of all the rows start on the same edge. */
+.kind { flex: none; width: calc(var(--s-11) * 2 + var(--s-7)); font-size: var(--t-4); font-weight: 600; }
+.word { flex: none; width: calc(var(--s-11) * 2 + var(--s-7)); font-size: var(--t-3); color: var(--mute); }
+.url { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-mono); font-size: var(--t-3); color: var(--ink); }
+.actions { flex: none; display: inline-flex; gap: var(--s-2); }
+
+.details { display: flex; flex-direction: column; gap: var(--s-7); margin-top: var(--s-7); padding: var(--s-8); border-radius: var(--r-3); background: var(--pan2); }
+.radios { display: flex; flex-wrap: wrap; gap: var(--s-5) var(--s-10); }
+.help { margin: 0; font-size: var(--t-3); line-height: 1.5; color: var(--mute); }
+
+/* `--bp-stack`. */
+@media (max-width: 560px) {
+  .add { grid-template-columns: minmax(0, 1fr); }
+  .head { flex-wrap: wrap; row-gap: var(--s-3); }
+  .kind, .word { width: auto; }
+  .url { flex-basis: 100%; order: 5; white-space: normal; overflow-wrap: break-word; }
+  .actions { margin-left: auto; }
+}
