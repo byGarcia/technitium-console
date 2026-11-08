@@ -24,7 +24,14 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
 
 ---
 
-## Unreleased
+## v1.4.1 (2026-11-08)
+
+**A visual editor for Advanced Blocking, a console that runs as its own container, and a console you
+can install as an app.** Every feature of the stock console works as before, through the same API:
+checked against Technitium DNS Server 15.6.2. Each addition is written down, with its limits, in
+[CONVENTIONS.md](CONVENTIONS.md#deliberate-deviations-from-upstream-behaviour).
+
+Thanks to the people who asked for these: see each line below.
 
 ### New
 
@@ -32,16 +39,19 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
   a web container of its own: give it `TECHNITIUM_URL`, and it serves the console and forwards the
   API to your server, with nothing installed on the DNS server. Same tags and the same per-platform
   check as the existing image, which stays as it was. See
-  [Standalone container](README.md#standalone-container).
+  [Standalone container](README.md#standalone-container). Requested by @triptolemus510 in #27, and
+  by u/Nervous-Cheek-583 and u/flobernd on r/technitium.
 - **The console can be installed as an app**, on a phone or desktop home screen, with its own icon
   and a browser bar that follows the theme. It has no service worker and no offline cache, so what
   you see always comes from the server.
 - **Refresh on the Dashboard**: a button beside the period reloads the figures on demand for the
-  chosen period, node and custom range.
+  chosen period, node and custom range. The idea comes from @varunagarwal-pro's dashboard proposal
+  for the stock console.
 - **A visual editor for the Advanced Blocking app**: `Visual Editor` in the app's row in Apps opens
   its clients, groups, domains, regex and list URLs on one page, checked as the server reads them.
   The JSON stays one click away. Saving changes only what you changed and keeps what the editor does
-  not know; a config it cannot keep exactly, it refuses to edit and says why.
+  not know; a config it cannot keep exactly, it refuses to edit and says why. Requested in the v1.4.0
+  thread on r/technitium.
 
 ---
 

@@ -19,9 +19,9 @@ that works on your phone.
 |---|---|
 | ![The dashboard](docs/screenshots/dashboard.png) | ![Clients, with one client open](docs/screenshots/clients.png) |
 
-**Latest release: [v1.4.0](https://github.com/byGarcia/technitium-console/releases/latest) for
-Technitium DNS Server 15.5.x and 15.6.x**, with the Clients page, the cluster views, the command
-palette and every screen redrawn.
+**Latest release: [v1.4.1](https://github.com/byGarcia/technitium-console/releases/latest) for
+Technitium DNS Server 15.5.x and 15.6.x**, with a visual editor for Advanced Blocking, a standalone
+container and a console you can install as an app.
 [What's new](CHANGELOG.md) · [Which console for which server](CHANGELOG.md#which-version-for-which-server) · [Installing](#installing) · [Technitium in Docker](#docker)
 
 It replaces the console the server ships with. Install it and the DNS service behaves exactly as
@@ -36,6 +36,8 @@ talks to it only through the `/api` endpoints the stock console already uses.
   how each query was answered, and charts that open Query Logs on what you click or drag across.
 - **Blocking in one place**: what it is doing, your own rules, your lists and their settings, and a
   check that tells you why a domain is blocked.
+- **Advanced Blocking without the JSON**: which client goes to which group and what each group does,
+  on one page. Saving changes only what you changed, and the JSON stays one click away.
 - **Built for clusters**: zones, cache, query logs, DHCP and block lists from every node side by
   side, with what disagrees between them marked.
 - **Ctrl K to anywhere**: any page, settings pane, zone or account action, or a domain to check,
