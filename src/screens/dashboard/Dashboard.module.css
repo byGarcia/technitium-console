@@ -13,8 +13,33 @@ and its own pieces.
 .head { display:flex; flex-wrap:wrap; align-items:center; gap: var(--s-5) var(--s-10); margin-bottom: var(--s-8); }
 .head > :first-child { margin-bottom: 0; }
 /* The picker scrolls inside its own strip when narrow; it may not push the line wider. */
-.period { min-width: 0; max-width: 100%; }
+.period { display: flex; align-items: center; gap: var(--s-4); min-width: 0; max-width: 100%; }
 .period > * { max-width: 100%; }
+
+/* Above 720 px the strip does not scroll (`ui/Segmented`): rather than clip its last
+   option, Refresh drops under it. Below, the strip gives way and Refresh keeps its line. */
+@media (min-width: 721px) { .period { flex-wrap: wrap; } }
+
+/* Answering a press: drawn as the button's `:disabled`, but it keeps the focus. */
+.period .refresh[aria-disabled='true'] { opacity: 0.5; cursor: default; }
+
+/*
+A 40 px target for a finger around a button that stays as small as the strip beside
+it. It reaches past the button by less than the gap to the strip and the page's
+margin, so it covers no other control and widens nothing.
+*/
+.period .refresh { position: relative; }
+@media (max-width: 720px), (pointer: coarse) {
+  .period .refresh::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: calc(var(--s-12) + var(--s-5));
+    height: calc(var(--s-12) + var(--s-5));
+    transform: translate(-50%, -50%);
+  }
+}
 
 /*
 The eleven figures in one block: `Total Queries` spans both rows, the other ten are

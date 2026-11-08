@@ -27,6 +27,7 @@ import { Loading } from '../../ui/Empty'
 import styles from './Dashboard.module.css'
 import { Body, Panel } from '../../ui/Panel'
 import { Button } from '../../ui/Button'
+import { RowAction } from '../../ui/Table'
 import { type AlertType } from '../../ui/Alert'
 import { BlockingMenu } from './BlockingMenu'
 import { LAST_HOUR_REFRESH_MS, useLiveView } from './useLive'
@@ -168,10 +169,21 @@ export function Dashboard({
     query: PreviousQuery
     data: DashboardStats
   } | null>(null)
+  /*
+  Refresh beside the period (deviation 44). Upstream's Dashboard has no such control:
+  it reloads by itself on Last Hour only (`main.js:258-262`) and on a change of tab,
+  period or node. The button calls the load below, which holds everything it needs;
+  `refreshing` is only what the button says while its press is being answered.
+  */
+  const reloadNow = useRef<(() => void) | null>(null)
+  const [refreshing, setRefreshing] = useState(false)
 
   useEffect(() => {
     let cancelled = false
     let refreshTimer: number | undefined
+    /* One load at a time for this period and node: a press or a return to the tab
+       during one joins it, and `cancelled` drops whatever an older choice asked. */
+    let reading = false
     // With "Custom" chosen and no dates yet there is nothing to ask for.
     if (range === 'Custom' && requested == null) {
       setLoading(false)
@@ -186,6 +198,11 @@ export function Dashboard({
     upstream, it pauses while the tab is hidden (`onVisibility` below).
     */
     async function load(showLoader: boolean) {
+      if (reading) return
+      reading = true
+      /* A press restarts the minute, so two loads never run back to back. */
+      if (refreshTimer != null) window.clearTimeout(refreshTimer)
+      refreshTimer = undefined
       if (showLoader) setLoading(true)
       const r = await getDashboardStats(token, range, requested ?? undefined, node)
       if (cancelled) return
@@ -235,6 +252,8 @@ export function Dashboard({
         setNotice(noticeFromFailure(r))
       }
 
+      reading = false
+      setRefreshing(false)
       if (range === 'LastHour' && !document.hidden) {
         refreshTimer = window.setTimeout(() => void load(false), LAST_HOUR_REFRESH_MS)
       }
@@ -256,9 +275,16 @@ export function Dashboard({
     }
     document.addEventListener('visibilitychange', onVisibility)
 
+    /* The automatic reload's own path: the figures stay until the answer is in. */
+    reloadNow.current = () => {
+      setRefreshing(true)
+      void load(false)
+    }
+
     void load(true)
     return () => {
       cancelled = true
+      reloadNow.current = null
       if (refreshTimer != null) window.clearTimeout(refreshTimer)
       document.removeEventListener('visibilitychange', onVisibility)
     }
@@ -429,6 +455,19 @@ export function Dashboard({
               else if (end === '') window.setTimeout(() => endRef.current?.focus(), 0)
               else setRequested(rangeInstants(start, end))
             }}
+          />
+          {/*
+          `aria-disabled` and not `disabled` while a press is answered: a disabled
+          button drops the keyboard focus, and the one load in flight already
+          ignores a second press. With no range asked for there is nothing to read.
+          */}
+          <RowAction
+            icon="refresh"
+            name="Refresh"
+            className={styles.refresh}
+            disabled={loading || (range === 'Custom' && requested == null)}
+            aria-disabled={refreshing || undefined}
+            onClick={() => reloadNow.current?.()}
           />
         </div>
       </div>
