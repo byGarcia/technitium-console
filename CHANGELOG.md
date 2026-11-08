@@ -38,6 +38,10 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
   you see always comes from the server.
 - **Refresh on the Dashboard**: a button beside the period reloads the figures on demand for the
   chosen period, node and custom range.
+- **A visual editor for the Advanced Blocking app**: `Visual Editor` in the app's row in Apps opens
+  its clients, groups, domains, regex and list URLs on one page, checked as the server reads them.
+  The JSON stays one click away. Saving changes only what you changed and keeps what the editor does
+  not know; a config it cannot keep exactly, it refuses to edit and says why.
 
 ---
 

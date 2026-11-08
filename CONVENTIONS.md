@@ -2017,6 +2017,37 @@ contract and SECURITY.md.
       Dashboard to carry it.
     Its word, OURS: `Refresh` (Cache's word).
 
+45. **A visual editor for the Advanced Blocking app** (Adrián's decision, 2026-11-08;
+    `screens/apps/advanced-blocking/`). Upstream edits this app's config only as JSON, in the app's
+    `Config` dialog (index.html:6255-6280), and that dialog is unchanged and stays one click away
+    as `Edit as JSON`. The page is reached from `Visual Editor` in the app's row, at
+    `apps/advanced-blocking/`, a route with its folder and no sidebar entry (`detail` in
+    `app/sections.ts`). It keeps the app's settings on one page: Clients, each group, General. Its
+    limits, and crossing one is a bug:
+    - **only `apps/list`, `apps/config/get` and `apps/config/set`**, called as `Config` calls them,
+      with no `node`, and no permission check of its own: the server refuses a save without
+      `Apps: Modify` (WebServiceAppsApi.cs:482);
+    - **it never rebuilds the document.** `json-tree.ts` keeps key order and the lexeme of every
+      number and string; `serializeConfig` patches only the paths that changed. With nothing
+      changed, Save sends back the text the server gave, byte for byte;
+    - **it refuses what it cannot keep**, and says why: not JSON, comments, trailing commas,
+      repeated keys, a known property of another type, or a list value a line of text could not
+      return as it was. Then only `Edit as JSON` is offered;
+    - **versions:** the app's class identifies it, not its name. Below 10.0 it is JSON only. Above
+      11.2.1 it edits with a note, and what it does not recognise is kept;
+    - **before writing it reads the config again**, and writes nothing if it changed;
+    - **a value already there and untouched never blocks a save** if the server would load it: a
+      reference to a missing group is a warning on its row and goes back as it was. What the user
+      edits is validated as the server reads it (`dotnet-parse.ts`, `validate.ts`), measured on a
+      real v11.2.1 server, not from its documentation.
+    Upstream behaviours found on the way: the app's README calls the nine lists of a group optional
+    but `GetProperty` requires them (App.cs:930-940, JsonExtensions.cs:224); a URL twice in one
+    list makes the app refuse the config (App.cs:986), compared with the host in lower case; two
+    spellings of one network collide (`10.0.0.1` and `10.0.0.1/32`, and `10.0.0.1/24` with
+    `10.0.0.2/24`, since host bits are masked); `[::]/0` is valid and ships in the default config;
+    a client matching no row, or a row naming a missing group, is not blocked (App.cs:570). Its
+    words, OURS, are declared in the header comment of each file that writes them.
+
 ## Four constraints the server imposes
 
 These are not preferences: break them and the console works in development and

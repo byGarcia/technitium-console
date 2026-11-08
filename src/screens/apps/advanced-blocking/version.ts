@@ -3,11 +3,11 @@
   app is found by its class and not by its name: a zip uploaded under another name
   is still the app.
 */
+import { isAdvancedBlocking } from '../app-kinds'
 import type { InstalledApp } from '../../../api/apps'
 
 export const CHECKED_VERSION = '11.2.1'
 export const MIN_VERSION = '10.0'
-const APP_CLASS = 'AdvancedBlocking.App'
 
 function parts(v: string): number[] | null {
   const out = v.split('.').map((p) => (/^[0-9]+$/.test(p) ? Number(p) : NaN))
@@ -31,5 +31,5 @@ export function versionState(v: string): 'too-old' | 'ok' | 'newer' {
 }
 
 export function findBlockingApp(apps: InstalledApp[], name?: string): InstalledApp | undefined {
-  return apps.find((a) => (name === undefined || a.name === name) && a.dnsApps.some((d) => d.classPath === APP_CLASS))
+  return apps.find((a) => (name === undefined || a.name === name) && isAdvancedBlocking(a))
 }

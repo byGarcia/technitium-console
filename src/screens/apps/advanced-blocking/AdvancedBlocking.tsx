@@ -117,7 +117,7 @@ export function AdvancedBlocking({ token }: { token: string | null }) {
       setPhase({ kind: 'too-old', ...base })
       return
     }
-    const opened = openConfig(read.data.response.config)
+    const opened = openConfig(read.data.response.config ?? null)
     if (opened.kind === 'refused') {
       setModel(null)
       setPhase({ kind: 'refused', ...base, reason: opened.reason })
@@ -334,7 +334,7 @@ export function AdvancedBlocking({ token }: { token: string | null }) {
 
       <div className={styles.layout}>
         <div className={styles.index}>
-          <SectionIndex sections={sections} active={inView ?? sections[0].id} label="On this page" />
+          <SectionIndex sections={sections} active={inView ?? sections[0].id} />
           <div className={styles.indexAdd}>
             <Button
               size="sm"
