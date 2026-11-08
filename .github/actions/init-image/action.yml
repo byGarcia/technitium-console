@@ -1,13 +1,14 @@
-# The init image for Docker (README, "Docker"): busybox, the install.sh of the
-# checked-out commit and a console tarball, checked against its own .sha256
-# before building and again inside every platform after pushing (contract D4).
-# Only then do the moving tags (`floating`) point at it, so a failed check
-# leaves them where they were. For a release, which of them move is decided in
-# that same step, from the repo's tags as they are then (floating-tags.sh).
-# Shared by the release and develop workflows, so both publish the same image
-# the same way.
+# The console's images for Docker (README, "Docker"). By default the init image:
+# busybox, the install.sh of the checked-out commit and a console tarball. With
+# the inputs below, any other image built around that tarball, like the
+# standalone one. The tarball is checked against its own .sha256 before building
+# and again inside every platform after pushing (contract D4). Only then do the
+# moving tags (`floating`) point at it, so a failed check leaves them where they
+# were. For a release, which of them move is decided in that same step, from the
+# repo's tags as they are then (floating-tags.sh). Shared by the release and
+# develop workflows, so both publish the same image the same way.
 name: Init image
-description: Builds docker/Dockerfile around a console tarball, pushes it for three platforms, checks the bytes in each, then moves the floating tags.
+description: Builds a Docker image around a console tarball, pushes it for three platforms, checks the bytes in each, then moves the floating tags.
 
 inputs:
   image:
@@ -27,6 +28,22 @@ inputs:
     description: A release's git tag (vX.Y.Z). Its X.Y and latest are added to `floating` when floating-tags.sh says so, decided from origin's tags right before they move.
     required: false
     default: ''
+  context-files:
+    description: Space-separated repo paths copied flat into the build context, next to the tarball. One of them has to be a file named Dockerfile.
+    required: false
+    default: install.sh docker/Dockerfile
+  served-folder:
+    description: For an image that holds the tarball unpacked, the folder inside it to compare, file by file, against the tarball's contents. Empty means the image carries the tarball itself, at /usr/share/technitium-console/.
+    required: false
+    default: ''
+  title:
+    description: The image's org.opencontainers.image.title label.
+    required: false
+    default: technitium-console
+  summary:
+    description: The image's org.opencontainers.image.description label.
+    required: false
+    default: Copies the technitium-console web console into a volume shared with Technitium DNS Server, then exits.
   token:
     description: The token that pushes to GHCR.
     required: false
@@ -48,10 +65,12 @@ runs:
       shell: bash
       env:
         TARBALLS: ${{ inputs.tarball-dir }}
+        CONTEXT_FILES: ${{ inputs.context-files }}
       run: |
         ctx="$RUNNER_TEMP/init-image"
         rm -rf "$ctx"; mkdir -p "$ctx"
-        cp install.sh docker/Dockerfile "$ctx/"
+        # shellcheck disable=SC2086 # a list of repo paths, split on purpose
+        cp $CONTEXT_FILES "$ctx/"
         cp "$TARBALLS/technitium-console.tar.gz" "$TARBALLS/technitium-console.tar.gz.sha256" "$ctx/"
         (cd "$ctx" && sha256sum -c technitium-console.tar.gz.sha256)
         echo "dir=$ctx" >> "$GITHUB_OUTPUT"
@@ -64,8 +83,8 @@ runs:
         flavor: latest=false
         tags: ${{ inputs.tags }}
         labels: |
-          org.opencontainers.image.title=technitium-console
-          org.opencontainers.image.description=Copies the technitium-console web console into a volume shared with Technitium DNS Server, then exits.
+          org.opencontainers.image.title=${{ inputs.title }}
+          org.opencontainers.image.description=${{ inputs.summary }}
           org.opencontainers.image.licenses=GPL-3.0-or-later
 
     - uses: docker/setup-buildx-action@v4
@@ -100,9 +119,19 @@ runs:
         IMAGE: ${{ inputs.image }}
         DIGEST: ${{ steps.build.outputs.digest }}
         CONTEXT: ${{ steps.context.outputs.dir }}
+        SERVED_FOLDER: ${{ inputs.served-folder }}
       run: |
         ref="$IMAGE@$DIGEST"
-        want="$(cut -d' ' -f1 "$CONTEXT/technitium-console.tar.gz.sha256")"
+        # One sum over every file's path and contents, for an unpacked tarball.
+        tree_sum() { (cd "$1" && find . -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum | sha256sum | cut -d' ' -f1); }
+        if [ -z "$SERVED_FOLDER" ]; then
+          want="$(cut -d' ' -f1 "$CONTEXT/technitium-console.tar.gz.sha256")"
+        else
+          unpacked="$RUNNER_TEMP/image-check"
+          rm -rf "$unpacked"; mkdir -p "$unpacked/want"
+          tar -xzf "$CONTEXT/technitium-console.tar.gz" -C "$unpacked/want"
+          want="$(tree_sum "$unpacked/want")"
+        fi
         index="$(docker buildx imagetools inspect --raw "$ref")"
         jq -r '.manifests[].platform | "\(.os)/\(.architecture)\(if .variant then "/" + .variant else "" end)"' <<<"$index" \
           | tee "$RUNNER_TEMP/platforms"
@@ -118,7 +147,13 @@ runs:
           [ -n "$d" ] || { echo "::error::no manifest for $p"; exit 1; }
           docker pull -q --platform "$p" "$IMAGE@$d" >/dev/null
           cid="$(docker create --platform "$p" "$IMAGE@$d")"
-          got="$(docker cp "$cid:/usr/share/technitium-console/technitium-console.tar.gz" - | tar -xO | sha256sum | cut -d' ' -f1)"
+          if [ -z "$SERVED_FOLDER" ]; then
+            got="$(docker cp "$cid:/usr/share/technitium-console/technitium-console.tar.gz" - | tar -xO | sha256sum | cut -d' ' -f1)"
+          else
+            rm -rf "$unpacked/got"; mkdir -p "$unpacked/got"
+            docker cp "$cid:$SERVED_FOLDER/." - | tar -x -C "$unpacked/got"
+            got="$(tree_sum "$unpacked/got")"
+          fi
           docker rm "$cid" >/dev/null
           echo "$p $d $got"
           [ "$got" = "$want" ] || { echo "::error::$p does not carry the tarball"; exit 1; }
