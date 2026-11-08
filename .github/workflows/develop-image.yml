@@ -1,8 +1,8 @@
-# An init image of whatever is on develop, to pull and try before a release:
-# ghcr.io/bygarcia/technitium-console:develop and :develop-<sha7>. It is built
-# exactly as a release is (the same tarball action and the same image action)
-# and never touches latest, X.Y or X.Y.Z. No release, no notes. Not for
-# production: develop moves with every push.
+# The Docker images of whatever is on develop, to pull and try before a release:
+# ghcr.io/bygarcia/technitium-console and technitium-console-standalone, each at
+# :develop and :develop-<sha7>. They are built exactly as a release is (the same
+# tarball action and the same image action) and never touch latest, X.Y or
+# X.Y.Z. No release, no notes. Not for production: develop moves with every push.
 #
 # Two jobs, so that the one holding the package token never runs npm: the
 # dependencies' install scripts, the tests and the build run in `tarball`,
@@ -63,8 +63,8 @@ jobs:
       run:
         shell: bash
     steps:
-      # For install.sh, docker/Dockerfile and the image action; nothing here
-      # installs or runs the repo's dependencies.
+      # For install.sh, docker/ and the image action; nothing here installs
+      # or runs the repo's dependencies.
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
@@ -83,3 +83,14 @@ jobs:
           tarball-dir: ${{ runner.temp }}/tarball
           tags: type=sha,prefix=develop-,format=short
           floating: develop
+
+      - uses: ./.github/actions/init-image
+        with:
+          image: ghcr.io/bygarcia/technitium-console-standalone
+          tarball-dir: ${{ runner.temp }}/tarball
+          tags: type=sha,prefix=develop-,format=short
+          floating: develop
+          context-files: docker/standalone/Dockerfile docker/standalone/nginx.conf docker/standalone/entrypoint.sh
+          served-folder: /usr/share/technitium-console/www
+          title: technitium-console-standalone
+          summary: Serves the technitium-console web console and forwards its API to a Technitium DNS Server, with nothing installed on the server.

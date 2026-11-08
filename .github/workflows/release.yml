@@ -155,13 +155,14 @@ jobs:
           prerelease: ${{ steps.notes.outputs.prerelease }}
           make_latest: ${{ steps.notes.outputs.prerelease == 'true' && 'false' || '' }}
 
-  # The init image for Docker (README, "Docker"), from the tarball the job
-  # above has just published: X.Y.Z is pushed and checked in every platform
-  # (contract D4), and only then do X.Y and latest move, decided in that same
-  # step from the tags as they are then, so a re-run of this job alone never
-  # moves them back. The steps live in .github/actions/init-image, shared with
-  # the develop image. GITHUB_TOKEN is the only credential. A package's first
-  # publication is private: it is made public by hand, once.
+  # The two Docker images (README, "Docker"), the init one and the standalone
+  # one, from the tarball the job above has just published: X.Y.Z is pushed and
+  # checked in every platform (contract D4), and only then do X.Y and latest
+  # move, decided in that same step from the tags as they are then, so a re-run
+  # of this job alone never moves them back. The steps live in
+  # .github/actions/init-image, shared with the develop images. GITHUB_TOKEN is
+  # the only credential. A package's first publication is private: it is made
+  # public by hand, once.
   image:
     needs: release
     if: startsWith(github.ref, 'refs/tags/v')
@@ -178,7 +179,7 @@ jobs:
       run:
         shell: bash
     steps:
-      # For install.sh, docker/Dockerfile and the image action; no npm here.
+      # For install.sh, docker/ and the image action; no npm here.
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
@@ -198,3 +199,14 @@ jobs:
           tarball-dir: ${{ runner.temp }}/release
           tags: type=semver,pattern={{version}}
           release-tag: ${{ github.ref_name }}
+
+      - uses: ./.github/actions/init-image
+        with:
+          image: ghcr.io/bygarcia/technitium-console-standalone
+          tarball-dir: ${{ runner.temp }}/release
+          tags: type=semver,pattern={{version}}
+          release-tag: ${{ github.ref_name }}
+          context-files: docker/standalone/Dockerfile docker/standalone/nginx.conf docker/standalone/entrypoint.sh
+          served-folder: /usr/share/technitium-console/www
+          title: technitium-console-standalone
+          summary: Serves the technitium-console web console and forwards its API to a Technitium DNS Server, with nothing installed on the server.
