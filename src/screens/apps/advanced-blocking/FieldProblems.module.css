@@ -1,0 +1,12 @@
+/*
+The sentence under a field. Red is the error's alone (`--dan`, DESIGN.md); a warning
+about a value already in the config is `--warn`.
+*/
+.messages {
+  margin-top: var(--s-2);
+  font-size: var(--t-2);
+  overflow-wrap: break-word;
+}
+
+.error { color: var(--dan); }
+.warning { color: var(--warn); }

@@ -25,12 +25,15 @@ difference between the two variants, which is why it is a parameter and not
 another component.
 */
 export function Row({
+  id: givenId,
   label,
   help,
   modal = false,
   dependsOn,
   children,
 }: {
+  /** The control's id when a screen has to know it; generated otherwise. */
+  id?: string
   label: string
   help?: ReactNode
   modal?: boolean
@@ -52,7 +55,8 @@ export function Row({
   /** Receives the `id` to put on the control, so the label governs it. */
   children: (id: string) => ReactNode
 }) {
-  const id = useId()
+  const generatedId = useId()
+  const id = givenId ?? generatedId
   return (
     <div className={`${modal ? frm.mrow : frm.row}${dependsOn != null ? ` ${frm.dependent}` : ''}`} data-unit={modal ? undefined : ''}>
       {/*

@@ -1,0 +1,59 @@
+/*
+The clients table. The widths are the approved layout's. Below `--bp-stack` the
+summary column goes (it repeats what the group's own section says) and the `Endpoint`
+tag drops under its field, so a phone keeps the address and the group side by side.
+*/
+.actions { display: inline-flex; flex-wrap: wrap; gap: var(--s-3); }
+
+.help {
+  margin: 0 0 var(--s-8);
+  font-size: var(--t-3);
+  line-height: 1.5;
+  color: var(--mute);
+  max-width: 72ch;
+}
+
+.table input { width: 100%; }
+.table td:nth-child(1), .table th:nth-child(1) { width: 30%; }
+.table td:nth-child(2), .table th:nth-child(2) { width: 20%; }
+
+/* Red border on either control: the same rule the Blocking screens use for a field. */
+.table [aria-invalid],
+.table [aria-invalid]:focus { border-color: var(--dan); }
+
+.who { display: flex; align-items: flex-start; gap: var(--s-5); }
+.field { flex: 1; min-width: 0; }
+
+/* The height of the field beside it, so the tag stays centred on the input and not
+   on the input plus its message. */
+.endpoint {
+  display: flex;
+  flex: none;
+  align-items: center;
+  min-height: var(--field-height);
+}
+
+.what { font-size: var(--t-3); color: var(--mute); }
+
+.gets {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--t-3);
+  text-align: left;
+  text-decoration: underline;
+  text-decoration-color: var(--line);
+  text-underline-offset: var(--s-1);
+  cursor: pointer;
+}
+
+.gets:hover { text-decoration-color: var(--acc-ink); }
+
+@media (max-width: 560px) {
+  .table td:nth-child(3), .table th:nth-child(3) { display: none; }
+  .who { flex-direction: column; align-items: stretch; gap: var(--s-3); }
+  .field { flex: none; }
+  .endpoint { min-height: 0; }
+}
