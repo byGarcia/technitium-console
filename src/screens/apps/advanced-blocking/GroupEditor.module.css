@@ -1,0 +1,21 @@
+/* One group of the Advanced Blocking config (`GroupEditor.tsx`). */
+
+.stack { display: flex; flex-direction: column; gap: var(--s-10); min-width: 0; }
+
+.chips { display: flex; flex-wrap: wrap; gap: var(--s-3); }
+.chip { max-width: 100%; font-family: var(--font-mono); overflow-wrap: break-word; }
+.none { font-size: var(--t-3); color: var(--mute); }
+
+.help { margin: 0 0 var(--s-8); font-size: var(--t-3); line-height: 1.5; color: var(--mute); max-width: 72ch; }
+
+.matrix { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-10) var(--s-11); }
+.cell { min-width: 0; }
+.cellHead { display: flex; align-items: center; gap: var(--s-3); margin-bottom: var(--s-3); font-size: var(--t-4); font-weight: 600; color: var(--ink); }
+.addRegex { margin-top: var(--s-7); }
+
+.kept { margin: 0; font-size: var(--t-3); color: var(--mute); overflow-wrap: break-word; }
+
+/* `--bp-stack`. */
+@media (max-width: 560px) {
+  .matrix { grid-template-columns: minmax(0, 1fr); }
+}

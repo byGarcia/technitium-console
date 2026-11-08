@@ -5,7 +5,7 @@ import { Icon } from '../../../ui/Icon'
 import { Panel, Body } from '../../../ui/Panel'
 import { Tag } from '../../../ui/Tag'
 import type { ClientRow, GroupModel, MapName } from './config-model'
-import { FieldProblems, controlProps, problemsAt } from './FieldProblems'
+import { FieldMessages, fieldAttrs, problemsAt } from './EditorField'
 import { groupSummary } from './summary'
 import type { Problem } from './validate'
 import styles from './ClientsTable.module.css'
@@ -82,15 +82,15 @@ export function ClientsTable({
             {rows.map((row) => {
               const name = names.get(row.id) as string
               const group = groups.find((g) => g.id === row.groupId)
-              const addressShown = problemsAt(problems, showProblems, row.id, 'address')
-              const groupShown = problemsAt(problems, showProblems, row.id, 'group')
+              const addressShown = problemsAt(problems, row.id, 'address', showProblems)
+              const groupShown = problemsAt(problems, row.id, 'group', showProblems)
               return (
                 <tr key={row.id}>
                   <td>
                     <div className={styles.who}>
                       <div className={styles.field}>
                         <Input
-                          {...controlProps(row.id, 'address', addressShown)}
+                          {...fieldAttrs(row.id, 'address', addressShown)}
                           mono
                           spellCheck={false}
                           autoComplete="off"
@@ -98,14 +98,14 @@ export function ClientsTable({
                           value={row.address}
                           onChange={(e) => onChange(row.id, { address: e.target.value })}
                         />
-                        <FieldProblems target={row.id} field="address" shown={addressShown} />
+                        <FieldMessages target={row.id} field="address" shown={addressShown} />
                       </div>
                       {row.map === 'localEndPointGroupMap' && <span className={styles.endpoint}><Tag>Endpoint</Tag></span>}
                     </div>
                   </td>
                   <td>
                     <Select
-                      {...controlProps(row.id, 'group', groupShown)}
+                      {...fieldAttrs(row.id, 'group', groupShown)}
                       aria-label={`${name} group`}
                       value={group?.id ?? ''}
                       placeholder={row.missingGroup != null ? `${row.missingGroup} (missing)` : 'Choose a group'}
@@ -113,7 +113,7 @@ export function ClientsTable({
                     >
                       {groups.map((g) => <option key={g.id} value={g.id}>{g.name || 'Unnamed'}</option>)}
                     </Select>
-                    <FieldProblems target={row.id} field="group" shown={groupShown} />
+                    <FieldMessages target={row.id} field="group" shown={groupShown} />
                   </td>
                   <td className={styles.what}>
                     {group != null && (

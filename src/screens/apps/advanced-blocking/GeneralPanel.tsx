@@ -3,7 +3,7 @@ import { Input } from '../../../ui/Field'
 import { GroupRow, Row } from '../../../ui/Form'
 import { Panel } from '../../../ui/Panel'
 import { Trailer } from '../../../ui/PanelForm'
-import { FieldProblems, controlProps, problemsAt } from './FieldProblems'
+import { FieldMessages, fieldAttrs, problemsAt } from './EditorField'
 import type { Problem } from './validate'
 import styles from './GeneralPanel.module.css'
 
@@ -36,9 +36,9 @@ export function GeneralPanel({
   showProblems: boolean
   onChange: (patch: Patch) => void
 }) {
-  const ttlShown = problemsAt(problems, showProblems, 'general', 'ttl')
-  const hoursShown = problemsAt(problems, showProblems, 'general', 'hours')
-  const minutesShown = problemsAt(problems, showProblems, 'general', 'minutes')
+  const ttlShown = problemsAt(problems, 'general', 'ttl', showProblems)
+  const hoursShown = problemsAt(problems, 'general', 'hours', showProblems)
+  const minutesShown = problemsAt(problems, 'general', 'minutes', showProblems)
 
   return (
     <Panel title="General" groups2>
@@ -49,10 +49,10 @@ export function GeneralPanel({
         {() => (
           <div>
             <div className={styles.suffixed}>
-              <Input {...controlProps('general', 'ttl', ttlShown)} className={styles.num} inputMode="numeric" value={ttl} onChange={(e) => onChange({ ttl: e.target.value })} />
+              <Input {...fieldAttrs('general', 'ttl', ttlShown)} className={styles.num} inputMode="numeric" value={ttl} onChange={(e) => onChange({ ttl: e.target.value })} />
               <Trailer>seconds (default 30)</Trailer>
             </div>
-            <FieldProblems target="general" field="ttl" shown={ttlShown} />
+            <FieldMessages target="general" field="ttl" shown={ttlShown} />
           </div>
         )}
       </Row>
@@ -61,17 +61,17 @@ export function GeneralPanel({
           <div className={styles.units}>
             <div>
               <div className={styles.suffixed}>
-                <Input {...controlProps('general', 'hours', hoursShown)} aria-label="Hours" className={styles.num} inputMode="numeric" value={hours} onChange={(e) => onChange({ hours: e.target.value })} />
+                <Input {...fieldAttrs('general', 'hours', hoursShown)} aria-label="Hours" className={styles.num} inputMode="numeric" value={hours} onChange={(e) => onChange({ hours: e.target.value })} />
                 <Trailer>hours</Trailer>
               </div>
-              <FieldProblems target="general" field="hours" shown={hoursShown} />
+              <FieldMessages target="general" field="hours" shown={hoursShown} />
             </div>
             <div>
               <div className={styles.suffixed}>
-                <Input {...controlProps('general', 'minutes', minutesShown)} aria-label="Minutes" className={styles.num} inputMode="numeric" value={minutes} onChange={(e) => onChange({ minutes: e.target.value })} />
+                <Input {...fieldAttrs('general', 'minutes', minutesShown)} aria-label="Minutes" className={styles.num} inputMode="numeric" value={minutes} onChange={(e) => onChange({ minutes: e.target.value })} />
                 <Trailer>minutes (default 24 hours)</Trailer>
               </div>
-              <FieldProblems target="general" field="minutes" shown={minutesShown} />
+              <FieldMessages target="general" field="minutes" shown={minutesShown} />
             </div>
           </div>
         )}
