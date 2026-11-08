@@ -372,6 +372,8 @@ exits. Your DNS server keeps running the official image: it mounts that volume a
 serve it. **It needs Technitium DNS Server 15.5 or later**, the first version that can serve a
 folder of its own.
 
+Would you rather not touch the DNS server at all? See [Standalone container](#standalone-container).
+
 Only the `technitium-console` lines below are new. Add them to your compose file: the variable
 and the volume mount on your server, the `technitium-console` service, and the `technitium-console`
 volume at the end. The rest stands for what you already have: the `config` lines are your own
@@ -496,6 +498,60 @@ like those on many NAS boxes, do not have it; and this image carries the release
 unpacked folder.
 
 </details>
+
+### Standalone container
+
+A second image runs the console as a web container of its own: you give it your server's address,
+it serves the console and forwards the API to that server, and nothing is installed on the DNS
+server. It does not matter how that server runs.
+
+```sh
+docker run -d --name technitium-console --restart unless-stopped -p 8080:8080 \
+  -e TECHNITIUM_URL=http://192.168.1.10:5380 \
+  ghcr.io/bygarcia/technitium-console-standalone:latest
+```
+
+```yaml
+services:
+  technitium-console:
+    image: ghcr.io/bygarcia/technitium-console-standalone:latest
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - TECHNITIUM_URL=http://dns-server:5380    # your server's service name or address
+```
+
+Open port 8080 and log in with your usual Technitium account. It takes the same tags as the image
+above (`X.Y.Z`, `X.Y`, `latest`, `develop`).
+
+**`TECHNITIUM_URL`** is required: `http://` or `https://`, the host, and the port of the server's
+web service, with nothing after it. The host can be an address, a name in your DNS, a Compose
+service or an `extra_hosts` entry. If it is missing or malformed, the container stops with one line
+saying why. A self-signed certificate works: the connection is encrypted, but the certificate is
+not checked. The server can come up after this container; until it does, the console loads and says
+it cannot reach the server.
+
+**Custom lists:** mount each `json/*-custom.json` file over its place in the image. The console
+reads `quick-block-lists`, `quick-forwarders-list` and `dnsclient-server-list`:
+
+```yaml
+    volumes:
+      - ./quick-block-lists-custom.json:/usr/share/technitium-console/www/json/quick-block-lists-custom.json:ro
+```
+
+Many editors replace a file when saving it, and a container keeps seeing the old one until it is
+restarted.
+
+**What to expect:**
+
+- The server sees each browser's address only if this container's address is in *Reverse Proxy
+  Addresses* (*Settings › Web Service*). Its default list covers private networks. Outside that
+  list, logins and sessions show the container's address.
+- Changing the web service port in *Settings* disconnects the console until you update
+  `TECHNITIUM_URL` and re-create the container. If the server redirects HTTP to HTTPS, use its
+  HTTPS address here.
+- It listens on plain HTTP. To reach it over HTTPS, put your own reverse proxy in front.
 
 ## Building
 
