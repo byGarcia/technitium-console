@@ -14,6 +14,7 @@ import { Clients } from '../screens/clients/Clients'
 import { DnsClient } from '../screens/dnsclient/DnsClient'
 import { About } from '../screens/about/About'
 import { Apps } from '../screens/apps/Apps'
+import { AdvancedBlocking } from '../screens/apps/advanced-blocking/AdvancedBlocking'
 import { Cache } from '../screens/lists/Lists'
 import { Blocking } from '../screens/blocking/Blocking'
 import { MENU_TABS, Settings, type RecordSettings, type ServerInfo } from '../screens/settings/Settings'
@@ -825,8 +826,7 @@ export function Shell({
         ) : current?.id === 'about' ? (
           <About info={info} />
         ) : current?.id === 'apps' && currentSub === ADVANCED_BLOCKING_DETAIL ? (
-          /* The Advanced Blocking editor page is mounted here when it lands. */
-          null
+          <AdvancedBlocking token={session.token} />
         ) : current?.id === 'apps' ? (
           <Apps token={session.token} />
         ) : current?.id === 'cache' ? (

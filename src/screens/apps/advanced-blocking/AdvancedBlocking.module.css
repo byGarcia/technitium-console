@@ -1,0 +1,64 @@
+/*
+The page of the Advanced Blocking editor: one long form with its index beside it,
+as Settings is laid out, and Settings' save bar at the foot of the window.
+*/
+.lead { margin: 0 0 var(--s-8); font-size: var(--t-4); color: var(--ink); }
+.note { margin: 0 0 var(--s-10); }
+
+.layout {
+  display: grid;
+  grid-template-columns: var(--index-col) minmax(0, 1fr);
+  gap: var(--s-11);
+  align-items: start;
+}
+.index {
+  position: sticky;
+  top: var(--s-10);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-7);
+}
+.indexAdd { padding: 0 var(--s-7); }
+
+.content { display: flex; flex-direction: column; gap: var(--s-10); min-width: 0; }
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-10);
+  scroll-margin-top: var(--s-10);
+}
+
+.bar {
+  position: sticky;
+  bottom: var(--s-9);
+  z-index: var(--layer-sticky);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-8);
+  padding: var(--s-7) var(--s-9);
+  border: 1px solid var(--line);
+  border-radius: var(--r-4);
+  background: var(--pan);
+  box-shadow: var(--e-2), var(--edge);
+}
+.pending { min-width: 0; font-size: var(--t-4); color: var(--ink); overflow-wrap: break-word; }
+.saved { color: var(--mute); }
+.problems { font-weight: 600; color: var(--dan); }
+.dot {
+  display: inline-block;
+  width: var(--s-4);
+  height: var(--s-4);
+  margin-right: var(--s-5);
+  vertical-align: middle;
+  border-radius: var(--r-full);
+  background: var(--acc-ink);
+}
+.barActions { flex: none; display: inline-flex; gap: var(--s-3); }
+
+@media (max-width: 960px) {
+  .layout { grid-template-columns: minmax(0, 1fr); gap: var(--s-10); }
+  .index { position: static; flex-direction: row; align-items: center; min-width: 0; }
+  .index > nav { min-width: 0; flex: 1; }
+  .indexAdd { flex: none; padding: 0; }
+}

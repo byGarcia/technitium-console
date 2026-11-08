@@ -173,3 +173,24 @@ left.
     border-left-color: var(--acc-ink);
   }
 }
+
+/* A section that holds unsaved changes, or a problem to fix: the screen says which. */
+.mark,
+.markProblem {
+  display: inline-block;
+  width: var(--s-3);
+  height: var(--s-3);
+  margin-left: var(--s-4);
+  vertical-align: middle;
+  border-radius: var(--r-full);
+  background: var(--acc-ink);
+}
+.markProblem { background: var(--dan); }
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
