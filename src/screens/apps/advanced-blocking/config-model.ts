@@ -73,8 +73,8 @@ const MAP_NAMES: MapName[] = ['localEndPointGroupMap', 'networkGroupMap']
    UrlEntry, string or object (App.cs:933, :938, :940). */
 const STRING_ONLY_KINDS: ListKind[] = ['allowListUrls', 'regexAllowListUrls']
 
-export const GROUP_DEFAULTS = { enabled: true, txtReport: true, nxDomain: false } // App.cs:893-895
-export const GENERAL_DEFAULTS = { enabled: true, ttl: '30', hours: '24', minutes: '0' } // App.cs:358-361
+const GROUP_DEFAULTS = { enabled: true, txtReport: true, nxDomain: false } // App.cs:893-895
+const GENERAL_DEFAULTS = { enabled: true, ttl: '30', hours: '24', minutes: '0' } // App.cs:358-361
 
 const KNOWN_GROUP_KEYS = new Set<string>([
   'name', 'enableBlocking', 'allowTxtBlockingReport', 'blockAsNxDomain', 'blockingAddresses', ...TEXT_LISTS, ...LIST_KINDS,
@@ -96,7 +96,7 @@ export function entryOf(obj: ObjectNode, key: string): JsonNode | undefined {
   return obj.entries.find((e) => e.key === key)?.value
 }
 
-export function str(value: string): JsonNode {
+function str(value: string): JsonNode {
   return { t: 'str', value, raw: JSON.stringify(value) }
 }
 
@@ -534,8 +534,7 @@ export function removeRow(m: EditorModel, id: string): EditorModel {
   return { ...m, rows: m.rows.filter((r) => r.id !== id) }
 }
 
-/* App.cs reads a group's own answer as written; these are the values the approved
-   page starts a new group with. */
+/* The values the approved page starts a new group with. */
 export function addGroup(m: EditorModel): { model: EditorModel; id: string } {
   const id = nextId(m)
   let n = m.groups.length + 1
