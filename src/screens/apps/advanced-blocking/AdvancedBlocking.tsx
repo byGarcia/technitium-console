@@ -88,16 +88,22 @@ export function AdvancedBlocking({ token }: { token: string | null }) {
   const [pendingDelete, setPendingDelete] = useState<string | null>(null)
   const [focusId, setFocusId] = useState<string | null>(null)
   const [scrollTo, setScrollTo] = useState<string | null>(null)
-  const appName = useRef(readParam('name') ?? undefined)
+  const appName = useRef(readParam('app') ?? undefined)
+  /* Once the page has drawn, a failed reload must not take it away. */
+  const drawn = useRef(false)
 
-  useEffect(() => () => dropParams(['name']), [])
+  useEffect(() => () => dropParams(['app']), [])
 
   const load = useCallback(async () => {
     setConflict(false)
     setShowProblems(false)
+    const failed = (outcome: { kind: string; message?: string }) => {
+      if (drawn.current) setNotice(error(outcome))
+      else setPhase({ kind: 'failed', message: error(outcome).text })
+    }
     const list = await listApps(token)
     if (list.kind !== 'ok') {
-      setPhase({ kind: 'failed', message: error(list).text })
+      failed(list)
       return
     }
     const app = findBlockingApp(list.data.response.apps, appName.current)
@@ -107,9 +113,10 @@ export function AdvancedBlocking({ token }: { token: string | null }) {
     }
     const read = await getAppConfig(token, app.name)
     if (read.kind !== 'ok') {
-      setPhase({ kind: 'failed', message: error(read).text })
+      failed(read)
       return
     }
+    drawn.current = true
     const text = read.data.response.config ?? ''
     const base = { name: app.name, version: app.version, text }
     if (versionState(app.version) === 'too-old') {
@@ -173,13 +180,17 @@ export function AdvancedBlocking({ token }: { token: string | null }) {
     return null
   }, [token])
 
-  function saved(name: string) {
-    setNotice({
-      type: 'success',
-      title: 'App Config Saved!',
-      text: `The DNS application '${name}' config was saved and reloaded successfully.`,
-    })
-    void load()
+  const savedNotice = (name: string): AlertState => ({
+    type: 'success',
+    title: 'App Config Saved!',
+    text: `The DNS application '${name}' config was saved and reloaded successfully.`,
+  })
+
+  /** Reads the config again; nothing can be edited until the answer is in. */
+  async function reload() {
+    setBusy(true)
+    await load()
+    setBusy(false)
   }
 
   if (phase.kind === 'loading') return <Loading />
@@ -210,7 +221,7 @@ export function AdvancedBlocking({ token }: { token: string | null }) {
       subtitle="Different blocking for different clients. Changes wait until you save."
       labels={<Tag>Version {version}</Tag>}
       actions={
-        <Button lead="file" onClick={() => setJsonOpen(true)}>
+        <Button lead="file" disabled={busy} onClick={() => setJsonOpen(true)}>
           Edit as JSON
         </Button>
       }
@@ -233,7 +244,8 @@ export function AdvancedBlocking({ token }: { token: string | null }) {
       beforeSave={() => unchangedOnServer(name, text)}
       onSaved={(n) => {
         setJsonOpen(false)
-        saved(n)
+        setNotice(savedNotice(n))
+        void reload()
       }}
     />
   )
@@ -243,7 +255,7 @@ export function AdvancedBlocking({ token }: { token: string | null }) {
         type="danger"
         title="Error!"
         action={
-          <Button size="sm" onClick={() => void load()}>
+          <Button size="sm" disabled={busy} onClick={() => void reload()}>
             Reload
           </Button>
         }
@@ -289,20 +301,36 @@ export function AdvancedBlocking({ token }: { token: string | null }) {
       setFocusId(`ab-${errors[0].target}-${errors[0].field}`)
       return
     }
+    /* The form is disabled from here until the page holds what was written, so
+       nothing typed meanwhile can be lost. */
     setBusy(true)
-    const refused = await unchangedOnServer(name, text)
-    if (refused != null) {
+    try {
+      const refused = await unchangedOnServer(name, text)
+      if (refused != null) {
+        if (refused.text !== CONFLICT) setNotice(refused)
+        return
+      }
+      const sent = isUnchanged(model) ? text : serializeConfig(model)
+      const outcome = await setAppConfig(token, name, sent)
+      if (outcome.kind !== 'ok') {
+        setNotice(error(outcome))
+        return
+      }
+      setNotice(savedNotice(name))
+      /* The server stores the text it was given (DnsApplication.cs:235-248): the page
+         goes on from that text, with no reload that could fail after a good save. */
+      const opened = openConfig(sent)
+      if (opened.kind !== 'editable') {
+        await load()
+        return
+      }
+      setConflict(false)
+      setShowProblems(false)
+      setModel(opened.model)
+      setPhase({ kind: 'editable', name, version, text: sent })
+    } finally {
       setBusy(false)
-      if (refused.text !== CONFLICT) setNotice(refused)
-      return
     }
-    const outcome = await setAppConfig(token, name, isUnchanged(model) ? text : serializeConfig(model))
-    setBusy(false)
-    if (outcome.kind !== 'ok') {
-      setNotice(error(outcome))
-      return
-    }
-    saved(name)
   }
 
   function discard() {
@@ -339,6 +367,7 @@ export function AdvancedBlocking({ token }: { token: string | null }) {
             <Button
               size="sm"
               lead="add"
+              disabled={busy}
               onClick={() => {
                 const made = addGroup(model)
                 setModel(made.model)
@@ -350,7 +379,7 @@ export function AdvancedBlocking({ token }: { token: string | null }) {
           </div>
         </div>
 
-        <div className={styles.content}>
+        <fieldset className={styles.content} disabled={busy} aria-busy={busy}>
           <section id={sectionId('clients')} className={styles.section}>
             <ClientsTable
               rows={model.rows}
@@ -418,7 +447,7 @@ export function AdvancedBlocking({ token }: { token: string | null }) {
               </Button>
             </span>
           </div>
-        </div>
+        </fieldset>
       </div>
 
       <Confirm

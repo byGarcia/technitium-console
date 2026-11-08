@@ -143,7 +143,7 @@ interface ReadRow {
 
 /* App.cs:754-792. blockAsNxDomain decides; with it absent, blockingAddresses makes it
    an answer of its own, and an object with neither follows the group. */
-function readListEntry(item: JsonNode, kind: ListKind, path: string): ReadRow {
+function readListEntry(item: JsonNode, kind: ListKind, path: string, groupNx: boolean): ReadRow {
   if (item.t === 'str') return { url: item.value, answer: 'group', addresses: '' }
   if (item.t !== 'obj' || STRING_ONLY_KINDS.includes(kind)) {
     throw new Refusal(`${path} is not ${STRING_ONLY_KINDS.includes(kind) ? 'a URL as text' : 'a URL as text or an object with url'}.`, path)
@@ -154,7 +154,9 @@ function readListEntry(item: JsonNode, kind: ListKind, path: string): ReadRow {
   if (nx !== undefined && nx.t !== 'bool') throw new Refusal(`${path}.blockAsNxDomain is not true or false.`, `${path}.blockAsNxDomain`)
   const addresses = entryOf(item, 'blockingAddresses')
   const lines = readLines(addresses, `${path}.blockingAddresses`, false)
-  const answer = nx !== undefined && nx.t === 'bool' ? (nx.value ? 'nx' : 'addresses') : addresses !== undefined ? 'addresses' : 'group'
+  /* A list with no `blockAsNxDomain` answers as its group does (App.cs:756-759), so its own
+     addresses only count when the group answers with addresses (App.cs:785-786). */
+  const answer = nx !== undefined && nx.t === 'bool' ? (nx.value ? 'nx' : 'addresses') : addresses !== undefined && !groupNx ? 'addresses' : 'group'
   return { url: url.value, answer, addresses: lines.join('\n') }
 }
 
@@ -174,7 +176,7 @@ function readGroup(node: JsonNode, index: number, nextId: () => string): GroupMo
     if (value === undefined || value.t === 'null') continue
     if (value.t !== 'arr') throw new Refusal(`${listPath} is not a list.`, listPath)
     value.items.forEach((item, i) => {
-      lists.push({ id: nextId(), kind, node: item, ...readListEntry(item, kind, `${listPath}[${i}]`) })
+      lists.push({ id: nextId(), kind, node: item, ...readListEntry(item, kind, `${listPath}[${i}]`, inheritedNx(node)) })
     })
   }
 
@@ -319,9 +321,15 @@ function freshListNode(row: ListRow, urlNode: JsonNode): JsonNode {
   }
 }
 
-function listNode(row: ListRow): JsonNode {
+/** What a list that does not say answers: its group's value as it was loaded. */
+function inheritedNx(group: JsonNode): boolean {
+  const value = group.t === 'obj' ? entryOf(group, 'blockAsNxDomain') : undefined
+  return value !== undefined && value.t === 'bool' ? value.value : GROUP_DEFAULTS.nxDomain
+}
+
+function listNode(row: ListRow, groupNx: boolean): JsonNode {
   if (row.node === null) return freshListNode(row, str(row.url))
-  const was = readListEntry(row.node, row.kind, '')
+  const was = readListEntry(row.node, row.kind, '', groupNx)
   const addressesChanged = !sameLines(lineList(row.addresses), lineList(was.addresses))
   if (row.url === was.url && row.answer === was.answer && !(row.answer === 'addresses' && addressesChanged)) return row.node
 
@@ -335,7 +343,7 @@ function listNode(row: ListRow): JsonNode {
     return out.entries.length === 1 && out.entries[0].key === 'url' ? out.entries[0].value : out
   }
   if (row.answer === 'nx') return was.answer === 'nx' ? out : setKey(out, 'blockAsNxDomain', { t: 'bool', value: true })
-  if (was.answer !== 'addresses') out = setKey(out, 'blockAsNxDomain', { t: 'bool', value: false })
+  if (was.answer !== 'addresses' || (addressesChanged && entryOf(out, 'blockAsNxDomain') === undefined)) out = setKey(out, 'blockAsNxDomain', { t: 'bool', value: false })
   return addressesChanged ? patchLines(out, 'blockingAddresses', row.addresses) : out
 }
 
@@ -351,7 +359,7 @@ function patchGroup(node: ObjectNode, g: GroupModel): ObjectNode {
   for (const kind of LIST_KINDS) {
     const prev = entryOf(node, kind)
     const items = prev !== undefined && prev.t === 'arr' ? prev.items : []
-    const next = g.lists.filter((l) => l.kind === kind).map(listNode)
+    const next = g.lists.filter((l) => l.kind === kind).map((row) => listNode(row, inheritedNx(node)))
     if (next.length !== items.length || next.some((n, i) => n !== items[i])) out = setKey(out, kind, { t: 'arr', items: next })
   }
   return out
@@ -361,7 +369,7 @@ function patchGroup(node: ObjectNode, g: GroupModel): ObjectNode {
 function newGroupNode(g: GroupModel): ObjectNode {
   const entry = (key: string, value: JsonNode): Entry => ({ key, rawKey: JSON.stringify(key), value })
   const lines = (text: string) => lineArray(lineList(text), undefined)
-  const lists = (kind: ListKind): JsonNode => ({ t: 'arr', items: g.lists.filter((l) => l.kind === kind).map(listNode) })
+  const lists = (kind: ListKind): JsonNode => ({ t: 'arr', items: g.lists.filter((l) => l.kind === kind).map((row) => listNode(row, g.nxDomain)) })
   return {
     t: 'obj',
     entries: [

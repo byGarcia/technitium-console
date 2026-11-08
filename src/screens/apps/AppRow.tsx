@@ -32,7 +32,7 @@ What the redesign changes (deviation 17), and nothing here acts differently:
   · `Visual Editor` (OURS), on the row and in the menu of the Advanced Blocking app:
     a link to its editor page. It sits before Config, which still opens the same
     JSON dialog. It is not disabled while the row is busy: it only goes to a page.
-    When more than one app has that class, the address says which (`?name=`).
+    When more than one app has that class, the address says which (`?app=`).
 
 `updateAvailable` may not come: the server only writes the three update fields if
 the app is in the store's catalog. That is why it is checked as optional.
@@ -60,7 +60,7 @@ export function AppRow({
   const editor = isAdvancedBlocking(app)
     ? {
         to: { section: 'apps', sub: ADVANCED_BLOCKING_DETAIL },
-        search: namedEditor ? `?${new URLSearchParams({ name: app.name }).toString()}` : '',
+        search: namedEditor ? `?${new URLSearchParams({ app: app.name }).toString()}` : '',
       }
     : null
 

@@ -675,12 +675,12 @@ describe('Apps: the way in to the Advanced Blocking editor', () => {
     await screen.findByRole('row', { name: 'Advanced Blocking' })
     expect(card('Advanced Blocking').getByRole('link', { name: 'Visual Editor' })).toHaveAttribute(
       'href',
-      '/apps/advanced-blocking/?name=Advanced+Blocking',
+      '/apps/advanced-blocking/?app=Advanced+Blocking',
     )
     const menu = await openMenu('Second Blocker')
     expect(menu.getByRole('menuitem', { name: 'Visual Editor' })).toHaveAttribute(
       'href',
-      '/apps/advanced-blocking/?name=Second+Blocker',
+      '/apps/advanced-blocking/?app=Second+Blocker',
     )
   })
 
@@ -692,7 +692,7 @@ describe('Apps: the way in to the Advanced Blocking editor', () => {
     expect(rowNames()).toEqual(['Second Blocker'])
     expect(card('Second Blocker').getByRole('link', { name: 'Visual Editor' })).toHaveAttribute(
       'href',
-      '/apps/advanced-blocking/?name=Second+Blocker',
+      '/apps/advanced-blocking/?app=Second+Blocker',
     )
   })
 

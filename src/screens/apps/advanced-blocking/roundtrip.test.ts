@@ -502,3 +502,40 @@ describe('the pure edits', () => {
     expect(setRow(m, m.rows[0].id, { address: '11.0.0.0/8' }).rows[0]).toMatchObject({ missingGroup: 'gone', loaded: true })
   })
 })
+
+describe('a list that does not say how it answers', () => {
+  const config = (groupNx: boolean, entry: unknown) =>
+    JSON.stringify({
+      networkGroupMap: {},
+      groups: [{
+        name: 'g', blockAsNxDomain: groupNx, blockingAddresses: ['9.9.9.9'], allowed: [], blocked: [], allowListUrls: [],
+        blockListUrls: [entry], allowedRegex: [], blockedRegex: [], regexAllowListUrls: [], regexBlockListUrls: [], adblockListUrls: [],
+      }],
+    })
+  const url = 'https://example.invalid/a.txt'
+
+  it('follows an NXDOMAIN group even with addresses of its own', () => {
+    const m = open(config(true, { url, blockingAddresses: ['3.3.3.3'] }))
+    expect(m.groups[0].lists[0].answer).toBe('group')
+    expect(isUnchanged(m)).toBe(true)
+  })
+
+  it('uses its addresses in a group that answers with addresses', () => {
+    const m = open(config(false, { url, blockingAddresses: ['3.3.3.3'] }))
+    expect(m.groups[0].lists[0].answer).toBe('addresses')
+    expect(isUnchanged(m)).toBe(true)
+  })
+
+  it('says it explicitly once its addresses are edited', () => {
+    const m = open(config(false, { url, blockingAddresses: ['3.3.3.3'] }))
+    const g = m.groups[0]
+    const out = JSON.parse(serializeConfig(setList(m, g.id, g.lists[0].id, { addresses: '4.4.4.4' })))
+    expect(out.groups[0].blockListUrls[0]).toEqual({ url, blockingAddresses: ['4.4.4.4'], blockAsNxDomain: false })
+  })
+
+  it('keeps its object untouched when the group changes', () => {
+    const m = open(config(true, { url, blockingAddresses: ['3.3.3.3'] }))
+    const out = JSON.parse(serializeConfig(setGroup(m, m.groups[0].id, { nxDomain: false })))
+    expect(out.groups[0].blockListUrls[0]).toEqual({ url, blockingAddresses: ['3.3.3.3'] })
+  })
+})

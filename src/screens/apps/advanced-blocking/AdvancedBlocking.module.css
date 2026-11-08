@@ -20,7 +20,7 @@ as Settings is laid out, and Settings' save bar at the foot of the window.
 }
 .indexAdd { padding: 0 var(--s-7); }
 
-.content { display: flex; flex-direction: column; gap: var(--s-10); min-width: 0; }
+.content { display: flex; flex-direction: column; gap: var(--s-10); min-width: 0; margin: 0; padding: 0; border: 0; }
 .section {
   display: flex;
   flex-direction: column;

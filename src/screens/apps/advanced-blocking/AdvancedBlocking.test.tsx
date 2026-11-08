@@ -164,6 +164,60 @@ describe('saving', () => {
   })
 })
 
+describe('while saving', () => {
+  const pendingSet = (set: ReturnType<typeof server>['set']) => {
+    let finish: (v: never) => void = () => {}
+    set.mockImplementation(() => new Promise((resolve) => { finish = resolve as never }))
+    return () => finish({ kind: 'ok', data: {} } as never)
+  }
+
+  it('nothing can be edited until the save has finished', async () => {
+    const { set } = server()
+    const done = pendingSet(set)
+    open()
+    const ttl = await screen.findByLabelText('Blocked Answer TTL')
+    await userEvent.clear(ttl)
+    await userEvent.type(ttl, '60')
+    await userEvent.click(await saveButton())
+    await waitFor(() => expect(set).toHaveBeenCalled())
+    expect(screen.getByLabelText('Blocked Answer TTL')).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Edit as JSON' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Add group' })).toBeDisabled()
+    done()
+    await waitFor(() => expect(screen.getByLabelText('Blocked Answer TTL')).toBeEnabled())
+    expect(screen.getByLabelText('Blocked Answer TTL')).toHaveValue('60')
+  })
+
+  it('a second Save straight after a good one is not a conflict', async () => {
+    const { get, set } = server()
+    open()
+    const ttl = await screen.findByLabelText('Blocked Answer TTL')
+    await userEvent.clear(ttl)
+    await userEvent.type(ttl, '60')
+    get.mockImplementation(async () => ({ kind: 'ok', data: { response: { config: set.mock.calls.at(-1)?.[2] ?? CONFIG } } }))
+    await userEvent.click(await saveButton())
+    await waitFor(() => expect(set).toHaveBeenCalledTimes(1))
+    await waitFor(() => expect(screen.getByText('No unsaved changes')).toBeInTheDocument())
+    await userEvent.click(await saveButton())
+    await waitFor(() => expect(set).toHaveBeenCalledTimes(2))
+    expect(screen.queryByText(/This config changed on the server/)).toBeNull()
+    expect(set.mock.calls[1][2]).toBe(set.mock.calls[0][2])
+  })
+
+  it('a failed read after a good JSON save does not take the page away', async () => {
+    const { get } = server()
+    open()
+    await saveButton()
+    await userEvent.click(screen.getByRole('button', { name: 'Edit as JSON' }))
+    const dialog = await screen.findByRole('dialog')
+    vi.spyOn(apps, 'listApps').mockResolvedValue({ kind: 'error', message: 'Network down' } as never)
+    get.mockResolvedValueOnce({ kind: 'ok', data: { response: { config: CONFIG } } })
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Save' }))
+    expect(await screen.findByText(/Network down/)).toBeInTheDocument()
+    expect(await saveButton()).toBeInTheDocument()
+  })
+})
+
 describe('Edit as JSON', () => {
   const dialogText = async () => {
     await userEvent.click(screen.getByRole('button', { name: 'Edit as JSON' }))

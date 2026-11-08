@@ -55,10 +55,10 @@ const entries = () => sidebar().getAllByRole('link').map((a) => a.textContent)
 
 describe('a detail page in the Shell', () => {
   it('survives an F5 behind a prefix: the bar is left alone and Apps stays marked', () => {
-    servedAt('/dns/apps/advanced-blocking/?name=Blocker', 'apps/advanced-blocking')
+    servedAt('/dns/apps/advanced-blocking/?app=Blocker', 'apps/advanced-blocking')
     mockApi()
     render(<Shell session={SESSION} onLogout={() => {}} />)
-    expect(window.location.pathname + window.location.search).toBe('/dns/apps/advanced-blocking/?name=Blocker')
+    expect(window.location.pathname + window.location.search).toBe('/dns/apps/advanced-blocking/?app=Blocker')
     expect(sidebar().getByRole('link', { name: 'Apps' })).toHaveAttribute('aria-current', 'page')
     expect(sidebar().getByRole('link', { name: 'Apps' })).toHaveAttribute('href', '/dns/apps/')
     expect(screen.queryByRole('heading', { level: 1, name: 'Apps' })).toBeNull()

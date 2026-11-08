@@ -23,7 +23,7 @@ and its placeholder, `Add`; `This group has no lists. Its domains and patterns a
 still apply.`; the row's `Block`, `Allow`, `Domains`, `Regex`, `AdBlock`, `Own answer`,
 `Empty URL`; `Remove <url>`, `Details for <url>`, `URL of <url>`, `Answer for <url>`,
 `Addresses for <url>`, where a second row with the same URL adds ` (2)` and a row with
-none says `empty URL`, so a row's name is always its own; `Use the group's answer`,
+none says `empty URL`, so a row's name is always its own; `Empty: this list uses the group's addresses.`, `Use the group's answer`,
 `NXDOMAIN`, `These addresses`; `An allow list only has its URL.`; the count under the
 addresses.
 
@@ -228,6 +228,10 @@ function Row({
                 {...fieldAttrs(row.id, 'addresses', addressesShown)}
               />
               <FieldMessages target={row.id} field="addresses" shown={addressesShown} />
+              {/* App.cs:785-786: no address of its own falls back to the group's. */}
+              {isBlock && row.answer === 'addresses' && row.addresses.trim() === '' && (
+                <p className={styles.help}>Empty: this list uses the group's addresses.</p>
+              )}
             </div>
           )}
         </div>
