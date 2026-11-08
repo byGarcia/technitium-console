@@ -15,6 +15,8 @@
 .actions { flex: none; display: inline-flex; gap: var(--s-2); }
 
 .details { display: flex; flex-direction: column; gap: var(--s-7); margin-top: var(--s-7); padding: var(--s-8); border-radius: var(--r-3); background: var(--pan2); }
+/* The whole URL has to be readable while it is edited. */
+.details input:not([type='radio']) { width: 100%; }
 .radios { display: flex; flex-wrap: wrap; gap: var(--s-5) var(--s-10); }
 .help { margin: 0; font-size: var(--t-3); line-height: 1.5; color: var(--mute); }
 
