@@ -41,7 +41,8 @@ talks to it only through the `/api` endpoints the stock console already uses.
 - **Ctrl K to anywhere**: any page, settings pane, zone or account action, or a domain to check,
   resolve or look up in the logs.
 - **Light, dark or your system's theme**, measured for contrast in both, and **it works on a phone**:
-  no section scrolls sideways at 390 px.
+  no section scrolls sideways at 390 px. You can add it to a home screen as an app (browsers offer
+  that on HTTPS or localhost).
 - **Nothing extra to run**: no backend, no database, no second login. It installs into the server's
   web folder or a Docker volume, and removing it brings the stock console back.
 

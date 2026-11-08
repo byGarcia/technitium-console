@@ -24,6 +24,23 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
 
 ---
 
+## Unreleased
+
+### New
+
+- **A standalone container.** `ghcr.io/bygarcia/technitium-console-standalone` runs the console as
+  a web container of its own: give it `TECHNITIUM_URL`, and it serves the console and forwards the
+  API to your server, with nothing installed on the DNS server. Same tags and the same per-platform
+  check as the existing image, which stays as it was. See
+  [Standalone container](README.md#standalone-container).
+- **The console can be installed as an app**, on a phone or desktop home screen, with its own icon
+  and a browser bar that follows the theme. It has no service worker and no offline cache, so what
+  you see always comes from the server.
+- **Refresh on the Dashboard**: a button beside the period reloads the figures on demand for the
+  chosen period, node and custom range.
+
+---
+
 ## v1.4.0 (2026-11-06)
 
 **Know who uses your DNS, see every cluster node side by side, and jump anywhere with Ctrl K.**

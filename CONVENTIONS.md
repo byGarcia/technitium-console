@@ -1983,6 +1983,40 @@ contract and SECURITY.md.
     events, gone on leaving the field). What is sent, the steps and the texts are
     upstream's. Its words, OURS: those three.
 
+43. **The console can be installed as an app** (Adrián's decision, 2026-11-08;
+    `public/manifest.json`, `public/icons/`, `index.html`, `app/anchor-links.ts`,
+    `theme/theme.ts`). A web app manifest, icons (192 and 512, `any` and `maskable`, and a
+    180 touch icon, all drawn from `public/favicon.svg` by `dev/make-app-icons.mjs`) and the
+    iOS metas let a browser add the console to a home screen, standalone. There is no
+    service worker and no offline cache, on purpose: a stale admin interface in front of an
+    updated server is the risk that would buy. `manifest.json` has a relative `start_url`
+    and `scope`, so it follows any `X-Forwarded-Prefix`; its `id` is resolved against the
+    origin, so two consoles under different prefixes of one origin count as one app. The
+    links are relative in each route's document and anchored to the root once the console
+    starts. `theme-color` is `--pan` of the theme in force, with one static meta per system
+    preference for the time before any script runs. It adds no API call, no storage key and
+    no change on any screen. Its words, OURS: `Technitium Console` and `Technitium`.
+    `dev/check-installable.mjs` checks every route's links with and without a prefix, the
+    manifest and the icon sizes.
+44. **Refresh beside the Dashboard's period** (Adrián's decision, 2026-11-08;
+    `screens/dashboard/Dashboard.tsx`). Upstream's Dashboard has no such control: it reloads
+    by itself on Last Hour only (`main.js:258-262`) and on a change of tab, period or node. A
+    `Refresh` icon button after the period strip runs the screen's own reload for the period,
+    node and custom range on screen, the path of the minute reload: the same
+    `dashboard/stats/get` calls and what follows each answer (the previous period, the query
+    sample, the compared nodes), the figures kept until the answer is in. Its limits, and
+    crossing one is a bug:
+    - **no new endpoint, parameter or storage key**, and it changes nothing that is selected;
+      on Custom it reads the range last shown, not dates typed since, and with none asked for
+      it is disabled;
+    - **one load at a time**: a second press or a return to the tab joins the load in flight,
+      and an older choice's answer is dropped;
+    - **on Last Hour a press starts the minute over**, so two loads never run back to back; a
+      hidden tab starts no timer (deviation 5);
+    - a failure is the automatic reload's failure, and without `Dashboard: View` there is no
+      Dashboard to carry it.
+    Its word, OURS: `Refresh` (Cache's word).
+
 ## Four constraints the server imposes
 
 These are not preferences: break them and the console works in development and
@@ -2005,8 +2039,13 @@ fails in production.
   and does not load. No CDN is possible either.
 - **`public/` holds the assets the server or the console still need**:
   `favicon.ico` and `favicon.svg` (the console's mark since 2026-11-06, no longer
-  upstream's file), `robots.txt`, `img/` (including `oidc.png`, which the login uses)
-  and `json/*-builtin.json`. The build emits them again.
+  upstream's file), `robots.txt`, `img/` (including `oidc.png`, which the login uses),
+  `json/*-builtin.json`, and `manifest.json` and `icons/` (deviation 43). The build emits
+  them again.
+
+The standalone image (`docker/standalone/`) has to honour the same constraints from nginx: one
+real folder per route with no fallback, the server's static-file headers, and no
+`X-Forwarded-Prefix`. When the server's static headers change, change `nginx.conf` with them.
 
 ## Closing
 
