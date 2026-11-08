@@ -110,6 +110,30 @@ export function applyTheme(resolved: ResolvedTheme): void {
   const root = document.documentElement
   root.dataset.theme = resolved
   root.style.colorScheme = resolved
+  paintThemeColor(root)
+}
+
+/*
+The colour of the browser's own bar, and of the status bar of an installed app.
+
+`index.html` carries one `theme-color` per system preference, which is all a
+document can say before any script runs. A pick that differs from the system has to
+win over them, so both are given the colour of the theme in force and it no longer
+matters which `media` matches.
+
+The value is read from the theme's own token, `--pan`: it is the surface the bar
+sits against on a phone (the sticky top bar in `Shell.module.css`), so the two read
+as one. Reading it here keeps `tokens.css` the only place a colour is written; the
+literals in `index.html` and `manifest.json` are held to it by
+`dev/check-installable.mjs`. No token means no stylesheet yet, and the static values
+stay.
+*/
+function paintThemeColor(root: HTMLElement): void {
+  const colour = getComputedStyle(root).getPropertyValue('--pan').trim()
+  if (colour === '') return
+  for (const meta of document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')) {
+    meta.content = colour
+  }
 }
 
 /*
