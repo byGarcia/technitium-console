@@ -1,0 +1,8 @@
+/* A number and its unit on one line; the two of the interval side by side, each
+   with its message under it, and one under the other when they no longer fit. */
+.suffixed { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-5); }
+.units { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--s-5) var(--s-8); }
+.num { width: var(--ctrl-num); }
+
+.num[aria-invalid],
+.num[aria-invalid]:focus { border-color: var(--dan); }

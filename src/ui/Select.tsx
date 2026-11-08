@@ -121,6 +121,8 @@ export function Select({
   className,
   ref,
   'aria-label': ariaLabel,
+  'aria-describedby': ariaDescribedBy,
+  'aria-invalid': ariaInvalid,
   searchable = false,
   searchLabel = 'Search',
   noMatchText = 'No matches',
@@ -136,6 +138,9 @@ export function Select({
   className?: string
   ref?: Ref<HTMLButtonElement>
   'aria-label'?: string
+  /** The message under the control, for a form that validates it. */
+  'aria-describedby'?: string
+  'aria-invalid'?: boolean
   /** A search field on top of the open list (see the header). Off by default. */
   searchable?: boolean
   /** The search field's accessible name and placeholder. */
@@ -420,6 +425,8 @@ export function Select({
         aria-controls={open ? listId : undefined}
         aria-activedescendant={open && !searchable ? `${listId}-${active}` : undefined}
         aria-label={ariaLabel}
+        aria-describedby={ariaDescribedBy}
+        aria-invalid={ariaInvalid}
         disabled={disabled}
         className={[styles.trigger, className].filter(Boolean).join(' ')}
         onClick={() => (open ? close(false) : openList())}
