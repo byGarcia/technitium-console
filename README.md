@@ -88,7 +88,8 @@ trees, and the block lists sit in Settings › Blocking. This console brings the
 
 - **Overview** shows what blocking is doing: Total Queries and Blocked with their trend, the blocked
   share, allowed against blocked over time, the top blocked domains and the last ten blocked
-  queries. Disable blocking for one of the stock console's eight durations and see when it comes back.
+  queries. Count lists totals the current blocked log by list, when you ask. Disable blocking for
+  one of the stock console's eight durations and see when it comes back.
 - **Rules** puts every domain you blocked or allowed by hand in one table, filtered, searchable and
   paged however many there are. The domain tree you already know is one switch away.
 - **Lists** turns your block and allow lists into rows, each with its readable name, an Enabled
@@ -96,8 +97,8 @@ trees, and the block lists sit in Settings › Blocking. This console brings the
   Add one by URL or with Quick Add, and Save and Update Now in one step.
 - **Settings** holds the blocking settings that used to live in Settings › Blocking.
 - **Check a domain** and see whether this server blocks it and why: which block lists, which of your
-  rules, or which allow rule lets it through. As you type, it tells you whether one of your rules
-  already covers it.
+  rules, or which allow rule lets it through. A name the first answer does not attribute is checked
+  once more with a TXT query. As you type, it tells you whether one of your rules already covers it.
 - **Group your lists** under named headings, saved as plain comment lines, so the stock console still
   reads them, and **undo** a rule you deleted.
 

@@ -24,6 +24,20 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
 
 ---
 
+## Unreleased
+
+### New
+
+- **Blocked by list** on Blocking › Overview. Count lists reads the current blocked
+  log once, skips the server's own address, and totals each list. A name on two
+  built-in lists counts on both. The Advanced Blocking app names only the first
+  list. The domain check names that app's report, and asks one TXT query when the
+  first answer does not already name a list. List URLs have credential query values
+  redacted before they are shown. Written down as deviation 46 in
+  [CONVENTIONS.md](CONVENTIONS.md#deliberate-deviations-from-upstream-behaviour).
+
+---
+
 ## v1.4.1 (2026-11-08)
 
 **A visual editor for Advanced Blocking, a console that runs as its own container, and a console you

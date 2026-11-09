@@ -6,6 +6,7 @@ import * as settings from '../../api/settings'
 import * as apps from '../../api/apps'
 import * as zonelists from '../../api/zonelists'
 import * as blocking from '../../api/blocking'
+import * as dnsclient from '../../api/dnsclient'
 import { SAMPLE } from './blocked-sample'
 import { SlotProvider } from '../../app/ChromeSlot'
 import { Overview, blockingChart } from './Overview'
@@ -441,6 +442,7 @@ describe('the layout of 2026-11-06', () => {
     expect(await screen.findByText('No query logging app')).toBeInTheDocument()
     expect(screen.getAllByText(/Please install the 'Query Logs \(Sqlite\)' DNS App/)).toHaveLength(1)
     expect(screen.queryByRole('heading', { name: 'Blocked by client' })).toBeNull()
+    expect(screen.queryByRole('heading', { name: 'Blocked by list' })).toBeNull()
   })
 
   it('with a query logging app, Blocked by client sits beside the chart and counts the sample', async () => {
@@ -469,6 +471,18 @@ describe('the layout of 2026-11-06', () => {
     const panel = screen.getByRole('heading', { name: 'Blocked by client' }).parentElement!.parentElement!
     expect(within(panel).getByText('Requires Logs: View')).toBeInTheDocument()
     expect(sample).not.toHaveBeenCalled()
+    const lists = screen.getByRole('heading', { name: 'Blocked by list' }).parentElement!.parentElement!
+    expect(within(lists).getByText('Requires Logs: View')).toBeInTheDocument()
+  })
+
+  it('Blocked by list is idle until Count lists, and sends no lookup before that', async () => {
+    serve()
+    vi.mocked(apps.listApps).mockResolvedValue({ kind: 'ok', data: { response: { apps: [LOGGER] } } } as never)
+    const resolve = vi.spyOn(dnsclient, 'resolve')
+    render(<Overview token="T" permissions={undefined} />)
+    expect(await screen.findByRole('heading', { name: 'Blocked by list' })).toBeInTheDocument()
+    expect(screen.getByText(/Not counted yet/)).toBeInTheDocument()
+    expect(resolve).not.toHaveBeenCalled()
   })
 })
 

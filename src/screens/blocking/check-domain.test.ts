@@ -82,6 +82,30 @@ describe('parseReason', () => {
 
   it('anything else is drawn as the server wrote it', () => {
     expect(parseReason('source=some-app; group=kids')).toEqual({ source: 'other', text: 'source=some-app; group=kids' })
+    expect(parseReason('source=app; group=kids')).toEqual({ source: 'other', text: 'source=app; group=kids' })
+  })
+
+  it('reads an Advanced Blocking report, and redacts a credential in the list URL', () => {
+    expect(parseReason(
+      'source=advanced-blocking-app; group=ads; blockListUrl=https://h/a;b?api_token=SECRET&x=1; domain=ads.test',
+    )).toEqual({
+      source: 'list', url: 'https://h/a;b?api_token=redacted&x=1', domain: 'ads.test', group: 'ads',
+    })
+    expect(parseReason('source=advanced-blocking-app; blockListUrl=https://h/list.txt?password=SECRET; domain=x.test')).toEqual({
+      source: 'list', url: 'https://h/list.txt?password=redacted', domain: 'x.test',
+    })
+    expect(parseReason('source=advanced-blocking-app; group=kids; domain=x.test')).toEqual({
+      source: 'app', domain: 'x.test', group: 'kids',
+    })
+    expect(parseReason('source=advanced-blocking-app; domain=x.test')).toEqual({
+      source: 'app', domain: 'x.test', group: null,
+    })
+  })
+
+  it('replaces a credential query value and leaves the rest of the URL', () => {
+    expect(parseReason('source=block-list-zone; blockListUrl=https://h/a?token=SECRET&key=K&secret=S; domain=x.test')).toEqual({
+      source: 'list', url: 'https://h/a?token=redacted&key=redacted&secret=redacted', domain: 'x.test',
+    })
   })
 })
 
@@ -92,8 +116,12 @@ describe('verdictOf', () => {
       name: 'app-measurement.com',
       domain: 'app-measurement.com',
       lists: [
-        'https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts',
-        'https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/pro-onlydomains.txt',
+        { url: 'https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts', domain: 'app-measurement.com', group: null },
+        {
+          url: 'https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/pro-onlydomains.txt',
+          domain: 'app-measurement.com',
+          group: null,
+        },
       ],
     })
   })
@@ -158,6 +186,23 @@ describe('verdictOf', () => {
   it('a block reported by something else is drawn with its own text', () => {
     const answer = { name: 'x.test', ascii: 'x.test', reasons: [parseReason('source=app; group=kids')], clientIp: null }
     expect(verdictOf({ answer, settings: SETTINGS, allowed: [] })).toEqual({ kind: 'other', name: 'x.test', texts: ['source=app; group=kids'] })
+  })
+
+  it('an Advanced Blocking report with no list URL is the app, and one with a URL is a list', () => {
+    const app = { name: 'x.test', ascii: 'x.test', reasons: [parseReason('source=advanced-blocking-app; group=kids; domain=parent.test')], clientIp: null }
+    expect(verdictOf({ answer: app, settings: SETTINGS, allowed: [] })).toEqual({
+      kind: 'app', name: 'x.test', domain: 'parent.test', group: 'kids',
+    })
+    const listed = {
+      name: 'ads.example', ascii: 'ads.example', clientIp: null,
+      reasons: [parseReason('source=advanced-blocking-app; group=ads; blockListUrl=https://h/a.txt?token=SECRET; domain=ads.example')],
+    }
+    expect(verdictOf({ answer: listed, settings: SETTINGS, allowed: [] })).toEqual({
+      kind: 'lists',
+      name: 'ads.example',
+      domain: 'ads.example',
+      lists: [{ url: 'https://h/a.txt?token=redacted', domain: 'ads.example', group: 'ads' }],
+    })
   })
 })
 
@@ -224,6 +269,8 @@ describe('checkDomain', () => {
     expect(settings).toHaveBeenCalledWith('T')
     expect(exp).toHaveBeenCalledWith('allowed', 'T')
     expect(out.kind === 'ok' && verdictOf(out.data).kind).toBe('rule')
+    /* The A answer already names the rule, so no TXT follow-up is sent. */
+    expect(resolve).toHaveBeenCalledTimes(1)
   })
 
   it('skips a read whose permission is missing, and a failed read only narrows the verdict', async () => {
@@ -244,6 +291,72 @@ describe('checkDomain', () => {
     vi.spyOn(blockingApi, 'readRuleExport').mockResolvedValue({ kind: 'ok', data: [] })
     expect(await checkDomain('T', 'not a domain', {})).toEqual({
       kind: 'error', message: 'Invalid domain name [not a domain]: invalid character [32] was found.',
+    })
+    expect(dnsclient.resolve).toHaveBeenCalledTimes(1)
+  })
+
+  it('asks TXT once when the A answer names nothing, and reads a list from that answer', async () => {
+    const resolve = vi.spyOn(dnsclient, 'resolve').mockImplementation(async (_token, params) => {
+      if (params.type === 'TXT') {
+        return {
+          kind: 'ok',
+          data: {
+            response: {
+              result: {
+                Question: [{ Name: 'example.com', Type: 'TXT' }],
+                Answer: [{
+                  Type: 'TXT',
+                  RDATA: { Text: 'source=block-list-zone; blockListUrl=https://h/a.txt?api_token=SECRET; domain=example.com' },
+                }],
+              },
+            },
+          },
+        } as never
+      }
+      return { kind: 'ok', data: REAL.notBlocked as never }
+    })
+    vi.spyOn(settingsApi, 'readSettings').mockResolvedValue({ kind: 'ok', data: SETTINGS as never })
+    vi.spyOn(blockingApi, 'readRuleExport').mockResolvedValue({ kind: 'ok', data: [] })
+    const out = await checkDomain('T', 'example.com', {})
+    expect(resolve.mock.calls.map((call) => call[1].type)).toEqual(['A', 'TXT'])
+    expect(out.kind === 'ok' && verdictOf(out.data)).toEqual({
+      kind: 'lists',
+      name: 'example.com',
+      domain: 'example.com',
+      lists: [{ url: 'https://h/a.txt?api_token=redacted', domain: 'example.com', group: null }],
+    })
+  })
+
+  it('skips TXT when an allow rule already covers the name', async () => {
+    const resolve = vi.spyOn(dnsclient, 'resolve').mockResolvedValue({ kind: 'ok', data: REAL.allowedRule as never })
+    vi.spyOn(settingsApi, 'readSettings').mockResolvedValue({ kind: 'ok', data: SETTINGS as never })
+    vi.spyOn(blockingApi, 'readRuleExport').mockResolvedValue({ kind: 'ok', data: ALLOWED })
+    const out = await checkDomain('T', 's.youtube.com', {})
+    expect(resolve).toHaveBeenCalledTimes(1)
+    expect(out.kind === 'ok' && verdictOf(out.data).kind).toBe('allowed')
+  })
+
+  it('skips TXT when the report is known to be off', async () => {
+    const resolve = vi.spyOn(dnsclient, 'resolve').mockResolvedValue({ kind: 'ok', data: REAL.notBlocked as never })
+    vi.spyOn(settingsApi, 'readSettings').mockResolvedValue({
+      kind: 'ok', data: { ...SETTINGS, allowTxtBlockingReport: false } as never,
+    })
+    vi.spyOn(blockingApi, 'readRuleExport').mockResolvedValue({ kind: 'ok', data: [] })
+    const out = await checkDomain('T', 'example.com', {})
+    expect(resolve).toHaveBeenCalledTimes(1)
+    expect(out.kind === 'ok' && verdictOf(out.data).kind).toBe('unreported')
+  })
+
+  it('a failed TXT read is said on a clear verdict, and the A answer still stands', async () => {
+    vi.spyOn(dnsclient, 'resolve').mockImplementation(async (_token, params) => {
+      if (params.type === 'TXT') return { kind: 'error', message: 'timed out' }
+      return { kind: 'ok', data: REAL.notBlocked as never }
+    })
+    vi.spyOn(settingsApi, 'readSettings').mockResolvedValue({ kind: 'ok', data: SETTINGS as never })
+    vi.spyOn(blockingApi, 'readRuleExport').mockResolvedValue({ kind: 'ok', data: [] })
+    const out = await checkDomain('T', 'example.com', {})
+    expect(out.kind === 'ok' && verdictOf(out.data)).toEqual({
+      kind: 'clear', name: 'example.com', unread: {}, reportUnread: true,
     })
   })
 })

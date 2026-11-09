@@ -21,6 +21,7 @@ import { StaleData } from '../StaleData'
 import { AddDomainBar } from './AddDomainBar'
 import { BlockingStatus } from './BlockingStatus'
 import { BlockedBy } from './BlockedBy'
+import { ListHits } from './ListHits'
 import { useLoggingApp } from './logging-app'
 import { TopTable } from './TopTable'
 import { RecentBlocked } from './RecentBlocked'
@@ -42,9 +43,11 @@ The five fixed periods and not Custom: a range of your own is the Dashboard's jo
 LAID OUT ON 2026-11-06, top to bottom: the header with the blocking status and its
 menu beside the period (`BlockingStatus.tsx`); the check, block or allow command bar
 (`AddDomainBar.tsx`); the strip of four figures; Queries over time with Blocked by
-client beside it (`BlockedBy.tsx`, read from `logs/query`); the two top tables; and
-Recently Blocked. The "Blocked share" ring that sat beside the chart said the strip's
-percentage a second time and is gone.
+client beside it (`BlockedBy.tsx`, read from `logs/query`); Blocked by list under
+that row (`ListHits.tsx`, counted only when Count lists is pressed); the two top
+tables; and Recently Blocked. The "Blocked share" ring that sat beside the chart
+said the strip's percentage a second time and is gone. The sentences of Blocked by
+list are declared in `ListHits.tsx`.
 
 The words are OURS except `Total Queries` and `Blocked`, upstream's Dashboard tiles:
 the title `Overview` and its subtitle (`OVERVIEW_SUBTITLE`), `Period`, `Block List Domains`, `Your Rules` and its `Blocked` and
@@ -493,6 +496,19 @@ export function Overview({
           )}
           {side}
         </div>
+
+        {logsNeed != null ? (
+          <Locked title="Blocked by list" need={logsNeed} />
+        ) : app.kind === 'ok' ? (
+          <ListHits
+            token={token}
+            app={app.app}
+            node={node}
+            aggregate={aggregate}
+            serverDomain={serverDomain}
+            dnsNeed={missing(permissions, 'DnsClient.canView')}
+          />
+        ) : null}
 
         {statsNeed != null ? (
           <div className={shared.row2}>

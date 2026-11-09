@@ -228,6 +228,9 @@ The name never breaks: it ends in an ellipsis and is whole on hover.
 .topBar > i { position:absolute; inset:0 auto 0 0; border-radius:var(--r-full); background:var(--bar, var(--ch-total)); }
 /* Upstream draws a rate-limited client in orange. */
 .toprow.limited .topLabel { color: var(--warn); }
+/* A row that is not itself a list: Blocking's Count lists uses it for the remainder. */
+.toprow.dim .topLabel,
+.toprow.dim .c { color: var(--mute); }
 
 /*
 The three breakdowns: each a title, a stacked bar and its legend (`Breakdown.tsx`).
