@@ -5,7 +5,7 @@ import * as dnsclient from '../../api/dnsclient'
 import * as settingsApi from '../../api/settings'
 import REAL from './check-domain.real.json'
 import {
-  addressOf, allowRuleFor, checkDomain, networkContains, parseAnswer, parseReason, reportSilence, reportedListName,
+  addressOf, allowRuleFor, blockingReasons, checkDomain, networkContains, parseAnswer, parseReason, reportSilence, serverOwnAddress, reportedListName,
   verdictOf, type CheckInputs,
 } from './check-domain'
 import { moreLists } from './extra-lists'
@@ -118,6 +118,15 @@ describe('parseReason', () => {
     })
   })
 
+  it('replaces a token written as a bare userinfo, and a password holding an at sign', () => {
+    expect(parseReason('source=block-list-zone; blockListUrl=https://ghp_ABC@raw.test/l.txt; domain=x.test')).toEqual({
+      source: 'list', url: 'https://redacted@raw.test/l.txt', domain: 'x.test',
+    })
+    expect(parseReason('source=block-list-zone; blockListUrl=https://user:p@ss@raw.test/l.txt; domain=x.test')).toEqual({
+      source: 'list', url: 'https://redacted:redacted@raw.test/l.txt', domain: 'x.test',
+    })
+  })
+
   it('reads a regex report, and redacts the list URL before it is drawn', () => {
     expect(parseReason('source=advanced-blocking-app; group=kids; regex=^ads\\.')).toEqual({
       source: 'app', domain: '^ads\\.', group: 'kids', regex: '^ads\\.',
@@ -140,6 +149,43 @@ describe('parseReason', () => {
   })
 })
 
+describe('a report in an answer this server did not write', () => {
+  const forged = 'source=block-list-zone; blockListUrl=https://evil.test/l.txt; domain=victim.test'
+  const txt = (recursion: boolean) => ({
+    RecursionAvailable: recursion,
+    Question: [{ Name: 'victim.test' }],
+    Answer: [{ Type: 'TXT', RDATA: { Text: forged } }],
+  })
+  const ede = (recursion: boolean) => ({
+    RecursionAvailable: recursion,
+    Question: [{ Name: 'victim.test' }],
+    EDNS: { Options: [{ Code: 'EXTENDED_DNS_ERROR', Data: { InfoCode: 'Blocked', ExtraText: forged } }] },
+  })
+
+  it('a TXT record from a real answer is not a reason', () => {
+    expect(blockingReasons(txt(true))).toEqual([])
+    expect(blockingReasons(txt(false))).toEqual([parseReason(forged)])
+  })
+
+  it('an Extended DNS Error from a real answer names no list', () => {
+    expect(parseAnswer(ede(true)).reasons).toEqual([{ source: 'other', text: forged }])
+    expect(parseAnswer(ede(false)).reasons).toEqual([parseReason(forged)])
+  })
+})
+
+describe('serverOwnAddress', () => {
+  it('is null when the server asks itself on loopback', () => {
+    expect(serverOwnAddress({ dnsServerLocalEndPoints: ['0.0.0.0:53', '[::]:53'] })).toBeNull()
+    expect(serverOwnAddress({ dnsServerLocalEndPoints: ['10.0.0.9:53', '127.0.0.1:53'] })).toBeNull()
+    expect(serverOwnAddress({ need: 'Settings.canView' })).toBeNull()
+  })
+
+  it('is the first address when the server listens only on its own', () => {
+    expect(serverOwnAddress({ dnsServerLocalEndPoints: ['10.0.0.9:53', '10.0.0.10:53'] })).toBe('10.0.0.9')
+    expect(serverOwnAddress({ dnsServerLocalEndPoints: ['[fd00::9]:53'] })).toBe('fd00::9')
+  })
+})
+
 describe('reportSilence', () => {
   const open = { enableBlocking: true, allowTxtBlockingReport: true, blockingBypassList: [] }
 
@@ -158,6 +204,20 @@ describe('reportSilence', () => {
     expect(reportSilence({ ...open, blockingBypassList: ['127.0.0.0/8'] })).toEqual({ kind: 'bypassed', ip: '127.0.0.1' })
     expect(reportSilence({ ...open, blockingBypassList: ['::1'] })).toEqual({ kind: 'bypassed', ip: '::1' })
     expect(reportSilence({ ...open, blockingBypassList: ['10.0.0.0/8'] })).toBeNull()
+  })
+
+  it('the bypass list is matched against the address the server listens on', () => {
+    expect(reportSilence({
+      ...open, dnsServerLocalEndPoints: ['10.0.0.9:53'], blockingBypassList: ['10.0.0.0/8'],
+    })).toEqual({ kind: 'bypassed', ip: '10.0.0.9' })
+  })
+
+  it('the Advanced Blocking app answers with the built-in blocking or its report off', () => {
+    const now = Date.parse('2026-10-15T12:00:00Z')
+    expect(reportSilence({ ...open, enableBlocking: false }, now, true)).toBeNull()
+    expect(reportSilence({ ...open, allowTxtBlockingReport: false }, now, true)).toBeNull()
+    expect(reportSilence({ ...open, blockingBypassList: ['127.0.0.1'] }, now, true)).toEqual({ kind: 'bypassed', ip: '127.0.0.1' })
+    expect(reportSilence({ ...open, enableBlocking: false, blockingBypassList: ['127.0.0.1'] }, now, true)).toBeNull()
   })
 })
 

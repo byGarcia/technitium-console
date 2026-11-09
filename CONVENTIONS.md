@@ -2066,7 +2066,10 @@ contract and SECURITY.md.
     blocked, and the Advanced Blocking app's report was drawn as an unknown reason.
     The check now asks once more, type TXT, when the A answer names nothing, an allow
     rule does not already cover the name, and `Allow TXT Blocking Report` is not known
-    to be off. A reported URL has its `user:pass@` userinfo replaced, and the query
+    to be off. A report is only believed from an answer with `RecursionAvailable: false`,
+    which is how the server writes every one: after recursion a TXT record or an Extended
+    DNS Error was written by whoever runs the domain. A reported URL has its userinfo
+    (`user:pass@` or a bare `token@`) replaced, and the query
     values `api_token`, `access_token`, `api_key`, `apikey`, `password`, `secret`,
     `token`, `key` and `pass` replaced by `redacted`, before it is drawn. An unknown
     report gets the same replacement. A regex report
@@ -2083,7 +2086,9 @@ contract and SECURITY.md.
     first, and `settings/get` for that same node. Clients `127.0.0.1` and `::1` are
     skipped before any lookup. When blocking is disabled or paused, `Allow TXT
     Blocking Report` is off, or the Blocking Bypass List covers `127.0.0.1` or `::1`,
-    it looks nothing up and says why. Without `Settings: View` it says the settings
+    it looks nothing up and says why. Disabled, paused and the report being off do not
+    stop it when the Advanced Blocking app is installed, because that app blocks and
+    reports by itself. Without `Settings: View` it says the settings
     were not checked and looks nothing up. Otherwise each remaining name is one TXT
     query through `dnsClient/resolve`, four at a time, at most 100 names on one press,
     most-hit first. A later press continues with the next names and reuses a name
@@ -2094,15 +2099,17 @@ contract and SECURITY.md.
     clears the rows, and an answer still in flight is not drawn under the new node.
     The count is the log the server is keeping, often about the last hour, not the
     period chosen above it. Its limits, and crossing one is a bug:
-    - **only `dnsClient/resolve`, `logs/query` and `settings/get`.** The first two
-      are already called by the stock console. `settings/get` is the read the check
-      already used. This panel does not call `allowed/export`;
+    - **only `dnsClient/resolve`, `logs/query` and `settings/get`, plus `apps/list`
+      when a setting would stop the count.** The first two are already called by the
+      stock console. `settings/get` is the read the check already used, and `apps/list`
+      the one Recently Blocked makes. This panel does not call `allowed/export`;
     - **no timer and no read when the tab opens.** The button is the only thing that
       reads the log or resolves a name for this panel;
     - **at most 100 lookups a press**, and the panel says so before the press. Each
       lookup is logged as blocked from this server, which is what a press adds to the
       figures around it;
     - **loopback is skipped before the lookup**, so the count does not count itself.
+      So is the address the server listens on when it listens on one address only.
       Blocked by client leaves `127.0.0.1` and `::1` out of its client ranking. The
       type bar still counts those rows;
     - **a list URL's credentials never reach the page.** The Lists editor is unchanged

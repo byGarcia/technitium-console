@@ -54,6 +54,17 @@ describe('namesToCount', () => {
   })
 })
 
+describe('namesToCount with a server on one address', () => {
+  it('drops the address its own lookups come from', () => {
+    const logged = namesToCount([
+      { clientIpAddress: '10.0.0.9', qname: 'own.test' },
+      { clientIpAddress: '10.0.0.5', qname: 'ads.example' },
+    ], '10.0.0.9')
+    expect(logged.skippedLoopback).toBe(1)
+    expect(logged.names).toEqual([{ name: 'ads.example', hits: 1 }])
+  })
+})
+
 describe('countLists', () => {
   it('counts a name on two built-in lists on both, and credits an app report to the one list it named', () => {
     const result = countLists(

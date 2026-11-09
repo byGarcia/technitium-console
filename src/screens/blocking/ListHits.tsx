@@ -1,17 +1,19 @@
 import { useEffect, useRef, useState } from 'react'
+import { listApps } from '../../api/apps'
 import { resolve } from '../../api/dnsclient'
 import { readSettings } from '../../api/settings'
 import type { QuickEntry } from '../../lib/quick-lists'
 import { loadQuickList } from '../../lib/quick-lists'
 import { noticeFromFailure } from '../../lib/notice'
 import { minuteStamp } from '../../lib/dates'
+import { isAdvancedBlocking } from '../apps/app-kinds'
 import { num2 } from '../dashboard/metrics'
 import { Panel, Body } from '../../ui/Panel'
 import { PermissionButton } from '../../ui/PermissionButton'
 import { RouteLink } from '../../ui/RouteLink'
 import { Empty, Failure, Loading } from '../../ui/Empty'
 import {
-  blockingReasons, reportSilence, reportedListName,
+  blockingReasons, reportSilence, reportedListName, serverOwnAddress,
   type BlockReason, type Missing, type ReportSilence,
 } from './check-domain'
 import { moreLists } from './extra-lists'
@@ -38,17 +40,19 @@ Before any lookup it reads `settings/get` for the same node. When blocking is
 disabled or paused, `Allow TXT Blocking Report` is off, or the Blocking Bypass
 List covers 127.0.0.1 or ::1, it sends nothing and says why. Without
 `Settings: View` it says the settings were not checked and sends nothing.
+The first two do not stop it when the Advanced Blocking app is installed
+(`apps/list`, read only then): that app blocks and reports by itself.
 Changing the node, the token or the logs app clears the rows. An answer still
 in flight is not drawn under the new node.
 
 Its words, all OURS: `Blocked by list`, `on <node>`, `Count lists`,
-`Not counted yet. One click reads the current blocked log, skips 127.0.0.1 and ::1, and sends at most 100 lookups. Each lookup is logged as blocked from this server.`,
+`Not counted yet. One click reads the current blocked log, skips this server's own address, and sends at most 100 lookups. Each lookup is logged as blocked from this server.`,
 `Allow TXT Blocking Report has to be enabled, or this server does not say which list matched.`,
 `Reading the blocked log…`, `No blocked queries in the current log.`,
 `N blocked queries in the log` (and `1 blocked query in the log`), `No list reported`,
 `Lookup failed`, `N names` (and `1 name`), `<list>: N blocked`, `Block list`, and the
 note under the rows (`Counted once from the current log.`,
-`Skipped N from 127.0.0.1 or ::1.`, `This click sent N lookups.` and
+`Skipped N from this server's own address.`, `This click sent N lookups.` and
 `This click sent 1 lookup.`, `Each one is logged as blocked from this server.`,
 `and reused N cached names.` and `and reused 1 cached name.`,
 `N names were not looked up.` and `1 name was not looked up.`,
@@ -128,7 +132,7 @@ function note(counted: Counted): string {
   if (counted.truncated) parts.push('Newest blocked queries only.')
   parts.push('Counted once from the current log.')
   if (counted.logged.skippedLoopback > 0) {
-    parts.push(`Skipped ${num2(counted.logged.skippedLoopback)} from 127.0.0.1 or ::1.`)
+    parts.push(`Skipped ${num2(counted.logged.skippedLoopback)} from this server's own address.`)
   }
   const lookups = `${num2(counted.lookups)} ${counted.lookups === 1 ? 'lookup' : 'lookups'}`
   const reused = counted.cacheHits > 0
@@ -215,7 +219,14 @@ export function ListHits({
       setView({ kind: 'held', held: { kind: 'unread', missing: { failed: true } } })
       return
     }
-    const silence = reportSilence(settingsOutcome.data)
+    let silence = reportSilence(settingsOutcome.data)
+    if (silence != null && silence.kind !== 'bypassed') {
+      const apps = await listApps(token, where)
+      if (mine !== asked.current) return
+      if (apps.kind === 'ok' && (apps.data.response.apps ?? []).some(isAdvancedBlocking)) {
+        silence = reportSilence(settingsOutcome.data, Date.now(), true)
+      }
+    }
     if (silence != null) {
       setView({ kind: 'held', held: silence })
       return
@@ -224,7 +235,7 @@ export function ListHits({
       setView({ kind: 'failed', text: noticeFromFailure(page).text })
       return
     }
-    const logged = namesToCount(page.data.entries)
+    const logged = namesToCount(page.data.entries, serverOwnAddress(settingsOutcome.data))
     const plan = planLookups(logged.names, (name) => cachedReport(where, name) != null)
     const stats = { lookups: 0, cacheHits: plan.cached.length }
     const found = new Map<string, Report>()
@@ -289,7 +300,7 @@ export function ListHits({
         <div aria-live="polite">
           {view.kind === 'idle' && (
             <Empty compact>
-              {`Not counted yet. One click reads the current blocked log, skips 127.0.0.1 and ::1, and sends at most ${num2(LOOKUP_CAP)} lookups. Each lookup is logged as blocked from this server. Allow TXT Blocking Report has to be enabled, or this server does not say which list matched.`}
+              {`Not counted yet. One click reads the current blocked log, skips this server's own address, and sends at most ${num2(LOOKUP_CAP)} lookups. Each lookup is logged as blocked from this server. Allow TXT Blocking Report has to be enabled, or this server does not say which list matched.`}
             </Empty>
           )}
           {view.kind === 'busy' && <Loading compact>Reading the blocked log…</Loading>}

@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import * as appsApi from '../../api/apps'
 import * as dns from '../../api/dnsclient'
 import * as logs from '../../api/logs'
 import * as settingsApi from '../../api/settings'
@@ -31,6 +32,10 @@ const OPEN = {
   enableBlocking: true,
   allowTxtBlockingReport: true,
   blockingBypassList: [] as string[],
+}
+
+function installedApps(apps: unknown[] = []) {
+  vi.spyOn(appsApi, 'listApps').mockResolvedValue({ kind: 'ok', data: { response: { apps } } } as never)
 }
 
 function allowReports() {
@@ -66,14 +71,14 @@ describe('Blocked by list', () => {
     render(<ListHits token="T" app={APP} node="" aggregate={false} serverDomain="dns1.example" />)
     expect(screen.getByRole('heading', { name: 'Blocked by list' })).toBeInTheDocument()
     expect(screen.getByText(
-      `Not counted yet. One click reads the current blocked log, skips 127.0.0.1 and ::1, and sends at most ${LOOKUP_CAP.toLocaleString()} lookups. Each lookup is logged as blocked from this server. Allow TXT Blocking Report has to be enabled, or this server does not say which list matched.`,
+      `Not counted yet. One click reads the current blocked log, skips this server's own address, and sends at most ${LOOKUP_CAP.toLocaleString()} lookups. Each lookup is logged as blocked from this server. Allow TXT Blocking Report has to be enabled, or this server does not say which list matched.`,
     )).toBeInTheDocument()
     expect(logs.queryLogs).not.toHaveBeenCalled()
 
     await userEvent.click(screen.getByRole('button', { name: 'Count lists' }))
     expect(await screen.findByText('sb.txt')).toBeInTheDocument()
     expect(screen.getByText('1 blocked query in the log')).toBeInTheDocument()
-    expect(screen.getByText(/Skipped 1 from 127.0.0.1 or ::1/)).toBeInTheDocument()
+    expect(screen.getByText(/Skipped 1 from this server's own address/)).toBeInTheDocument()
     expect(screen.getByText(/Each one is logged as blocked from this server/)).toBeInTheDocument()
     expect(screen.getByText(/this server's own group, not the client's/)).toBeInTheDocument()
     expect(screen.getByRole('img', { name: 'sb.txt: 1 blocked' })).toBeInTheDocument()
@@ -88,6 +93,7 @@ describe('Blocked by list', () => {
   })
 
   it('does not look a name up when the server will not say which list matched', async () => {
+    installedApps()
     vi.spyOn(settingsApi, 'readSettings').mockResolvedValue({
       kind: 'ok',
       data: { ...OPEN, allowTxtBlockingReport: false } as never,
@@ -102,6 +108,34 @@ describe('Blocked by list', () => {
     expect(await screen.findByText(/Allow TXT Blocking Report is off/)).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Blocking › Settings' })).toBeInTheDocument()
     expect(resolve).not.toHaveBeenCalled()
+  })
+
+  it('with Advanced Blocking installed it still looks up, because that app reports by itself', async () => {
+    installedApps([{ name: 'Advanced Blocking', dnsApps: [{ classPath: 'AdvancedBlocking.App' }] }])
+    vi.spyOn(settingsApi, 'readSettings').mockResolvedValue({
+      kind: 'ok',
+      data: { ...OPEN, allowTxtBlockingReport: false } as never,
+    })
+    vi.spyOn(logs, 'queryLogs').mockResolvedValue({
+      kind: 'ok',
+      data: { response: { pageNumber: 1, totalPages: 1, totalEntries: 1, entries: [entry('10.0.0.5', 'ads.example')] } },
+    })
+    const resolve = vi.spyOn(dns, 'resolve').mockResolvedValue({
+      kind: 'ok',
+      data: {
+        response: {
+          result: {
+            RecursionAvailable: false,
+            Question: [{ Name: 'ads.example' }],
+            Answer: [{ Type: 'TXT', RDATA: { Text: 'source=advanced-blocking-app; group=kids; domain=ads.example' } }],
+          },
+        },
+      },
+    } as never)
+    render(<ListHits token="T" app={APP} node="" aggregate={false} serverDomain="dns1.example" />)
+    await userEvent.click(screen.getByRole('button', { name: 'Count lists' }))
+    expect(await screen.findByText('Advanced Blocking · kids')).toBeInTheDocument()
+    expect(resolve).toHaveBeenCalledTimes(1)
   })
 
   it('without Settings: View it says so and reads nothing', async () => {

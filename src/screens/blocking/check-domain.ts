@@ -35,10 +35,19 @@ pattern that itself contains `; regex=` is split at the last one.
 rule or a list blocks a whole zone (`sub.telemetry.example-iot.net` comes back
 with `domain=telemetry.example-iot.net`). The same text is written for every
 blocking type (NX Domain, Any Address, Custom Address): only the answer around
-it changes. A block-list URL is drawn with a `user:pass@` userinfo replaced, and with
+it changes. A block-list URL is drawn with its userinfo (`user:pass@`, or a bare
+`token@`) replaced, and with
 `api_token`, `access_token`, `api_key`, `apikey`, `password`, `secret`,
 `token`, `key` and `pass` query values replaced by `redacted`. The same
 replacement is applied to an unknown report before it is drawn.
+
+A report is only believed when this server wrote it. The server and the Advanced
+Blocking app write every report in an answer with `RecursionAvailable: false`
+(measured on v15.6.2). An answer that went through recursion has it true, and
+there a TXT record or an Extended DNS Error was written by whoever runs that
+domain, who can write `source=block-list-zone; ...` like anyone else. From such
+an answer a TXT record is not a reason and an Extended DNS Error stays unknown
+text, so it names no list.
 
 WHAT THE ANSWER CANNOT SAY, and how each gap is handled:
 
@@ -105,6 +114,7 @@ export interface BlockingSettings {
   temporaryDisableBlockingTill?: string | null
   allowTxtBlockingReport?: boolean
   blockingBypassList?: string[] | null
+  dnsServerLocalEndPoints?: string[] | null
 }
 
 export interface CheckInputs {
@@ -169,7 +179,10 @@ const SECRET_QUERY = 'api_token|access_token|api_key|apikey|password|secret|toke
 /** A list URL with its userinfo and credential query values replaced. */
 export function redactListUrl(url: string): string {
   return url
-    .replace(/([a-z][a-z0-9+.-]*:\/\/)([^/?#\s@]+):([^/?#\s@]*)@/gi, '$1redacted:redacted@')
+    .replace(
+      /([a-z][a-z0-9+.-]*:\/\/)([^/?#\s]+)@/gi,
+      (_match, scheme: string, userinfo: string) => `${scheme}${userinfo.includes(':') ? 'redacted:redacted' : 'redacted'}@`,
+    )
     .replace(new RegExp(`([?&](?:${SECRET_QUERY})=)[^&#\\s]*`, 'gi'), '$1redacted')
 }
 
@@ -199,6 +212,11 @@ export function parseReason(text: string): BlockReason {
   const appDomain = APP_DOMAIN.exec(text)
   if (appDomain != null) return { source: 'app', domain: appDomain[1], group: null }
   return { source: 'other', text: redactListUrl(text) }
+}
+
+/** The answer came through recursion, so the server did not write what is in it. */
+function wentThroughRecursion(result: unknown): boolean {
+  return record(result)?.RecursionAvailable === true
 }
 
 function cleanTxt(text: string): string {
@@ -244,7 +262,7 @@ function reasonKey(reason: BlockReason): string {
  * (an SPF record, for one) is not a reason.
  */
 export function blockingReasons(result: unknown): BlockReason[] {
-  const fromTxt = txtStrings(result)
+  const fromTxt = (wentThroughRecursion(result) ? [] : txtStrings(result))
     .map(parseReason)
     .filter((reason) => reason.source !== 'other')
   const seen = new Set<string>()
@@ -277,7 +295,10 @@ export function parseAnswer(result: unknown): Answer {
   const name = str(q?.NameIDN) ?? str(q?.Name) ?? ''
   const reasons = ednsData(r)
     .filter((d) => d.InfoCode === 'Blocked')
-    .map((d) => parseReason(str(d.ExtraText) ?? ''))
+    .map((d): BlockReason => {
+      const text = str(d.ExtraText) ?? ''
+      return wentThroughRecursion(r) ? { source: 'other', text: redactListUrl(text) } : parseReason(text)
+    })
   return {
     name: name === '' ? '.' : name,
     ascii,
@@ -377,24 +398,47 @@ function blockingPaused(settings: BlockingSettings, now: number): boolean {
 const SERVER_LOOPBACK = ['127.0.0.1', '::1']
 
 /**
+ * The address a lookup to `this-server` comes from when it is not loopback. The
+ * server asks itself on loopback when it listens on every address or on loopback,
+ * and otherwise on the first address it listens on (`UpdateThisServer`).
+ */
+export function serverOwnAddress(settings: BlockingSettings | Missing): string | null {
+  if (isMissing(settings)) return null
+  let own: string | null = null
+  for (const endPoint of settings.dnsServerLocalEndPoints ?? []) {
+    const host = /^\[(.*)\]:\d+$/.exec(endPoint)?.[1] ?? endPoint.replace(/:\d+$/, '')
+    if (host === '0.0.0.0' || host === '::' || SERVER_LOOPBACK.includes(host)) return null
+    own ??= host
+  }
+  return own
+}
+
+/**
  * Why a lookup from this server would not name a list. `null` when the settings
  * were not read, or when a lookup can still carry a report. Count lists reads
- * this before it sends anything.
+ * this before it sends anything. `appBlocks` is the Advanced Blocking app being
+ * installed: it blocks and reports whatever the built-in blocking and its report
+ * are set to (`ProcessBlockedQueryAsync` asks the apps after that block).
  */
 export type ReportSilence =
   | { kind: 'off'; paused: boolean }
   | { kind: 'unreported' }
   | { kind: 'bypassed'; ip: string }
 
-export function reportSilence(settings: BlockingSettings | Missing, now: number = Date.now()): ReportSilence | null {
+export function reportSilence(
+  settings: BlockingSettings | Missing,
+  now: number = Date.now(),
+  appBlocks = false,
+): ReportSilence | null {
   if (isMissing(settings)) return null
-  if (settings.enableBlocking === false) return { kind: 'off', paused: blockingPaused(settings, now) }
-  for (const ip of SERVER_LOOPBACK) {
+  if (settings.enableBlocking === false) return appBlocks ? null : { kind: 'off', paused: blockingPaused(settings, now) }
+  const own = serverOwnAddress(settings)
+  for (const ip of own == null ? SERVER_LOOPBACK : [...SERVER_LOOPBACK, own]) {
     if ((settings.blockingBypassList ?? []).some((network) => networkContains(network, ip))) {
       return { kind: 'bypassed', ip }
     }
   }
-  if (settings.allowTxtBlockingReport === false) return { kind: 'unreported' }
+  if (settings.allowTxtBlockingReport === false) return appBlocks ? null : { kind: 'unreported' }
   return null
 }
 

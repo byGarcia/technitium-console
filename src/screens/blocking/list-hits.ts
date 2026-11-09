@@ -12,6 +12,8 @@ about the last hour, and not the period chosen on Overview.
 Queries from 127.0.0.1 and ::1 are left out before any lookup. The check and
 this count ask Technitium about a name with a TXT query, and that query is
 itself logged from the server's own address. Counting it would count the count.
+A server that listens on one address only asks itself there, so that address
+is left out too.
 
 One press looks up at most `LOOKUP_CAP` names, the ones with the most hits
 first. A later press continues with the next names. The Advanced Blocking app
@@ -79,13 +81,16 @@ function questionName(qname: string | null | undefined): string {
 }
 
 /** Distinct names in the blocked log, loopback clients already removed. */
-export function namesToCount(entries: readonly Pick<QueryLogEntry, 'clientIpAddress' | 'qname'>[]): LoggedNames {
+export function namesToCount(
+  entries: readonly Pick<QueryLogEntry, 'clientIpAddress' | 'qname'>[],
+  ownAddress: string | null = null,
+): LoggedNames {
   const counts = new Map<string, number>()
   let blockedQueries = 0
   let skippedLoopback = 0
   let unnamedHits = 0
   for (const entry of entries) {
-    if (isLoopbackClient(entry.clientIpAddress)) {
+    if (isLoopbackClient(entry.clientIpAddress) || (ownAddress != null && entry.clientIpAddress === ownAddress)) {
       skippedLoopback++
       continue
     }
