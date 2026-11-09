@@ -13,15 +13,26 @@ Queries from 127.0.0.1 and ::1 are left out before any lookup. The check and
 this count ask Technitium about a name with a TXT query, and that query is
 itself logged from the server's own address. Counting it would count the count.
 
+One press looks up at most `LOOKUP_CAP` names, the ones with the most hits
+first. A later press continues with the next names. The Advanced Blocking app
+chooses its group from the client address, and these lookups come from the
+server, so the group in the answer is the server's own group.
+
 A name on two built-in lists is counted on both. The Advanced Blocking app
 names only the first matching list, so a name it blocked is credited to that
-one list.
+one list. A regex report is a list when it names `regexBlockListUrl`, and the
+app itself when it names only a pattern.
 */
 
 /** How many blocked queries one page of `logs/query` asks for. */
 export const BLOCKED_PAGE_SIZE = 1000
 /** Pages read per click. Past this, the count says it saw the newest only. */
 export const BLOCKED_MAX_PAGES = 20
+/**
+ * Names resolved per press. Each one is logged as blocked from this server, so
+ * the cap is what a press can add to the Blocked figures around the panel.
+ */
+export const LOOKUP_CAP = 100
 
 export interface NameCount {
   name: string
@@ -92,6 +103,40 @@ export function namesToCount(entries: readonly Pick<QueryLogEntry, 'clientIpAddr
     unnamedHits,
     names: [...counts.entries()].map(([name, hits]) => ({ name, hits })),
   }
+}
+
+export interface LookUpPlan {
+  /** Names to resolve on this press, most-hit first, at most `cap` that are not cached. */
+  fetch: NameCount[]
+  /** Names whose report is already cached. */
+  cached: NameCount[]
+  omittedHits: number
+  omittedDomains: number
+}
+
+/**
+ * Which names this press resolves. Cached names are kept, and the rest are taken
+ * most-hit first up to `cap`. What does not fit is left for a later press.
+ */
+export function planLookups(
+  names: readonly NameCount[],
+  cached: (name: string) => boolean,
+  cap = LOOKUP_CAP,
+): LookUpPlan {
+  const ranked = [...names].sort((a, b) => b.hits - a.hits || a.name.localeCompare(b.name))
+  const fetch: NameCount[] = []
+  const known: NameCount[] = []
+  let omittedHits = 0
+  let omittedDomains = 0
+  for (const row of ranked) {
+    if (cached(row.name)) known.push(row)
+    else if (fetch.length < cap) fetch.push(row)
+    else {
+      omittedHits += row.hits
+      omittedDomains++
+    }
+  }
+  return { fetch, cached: known, omittedHits, omittedDomains }
 }
 
 function listKey(reason: BlockReason): string | null {

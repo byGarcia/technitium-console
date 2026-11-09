@@ -23,15 +23,22 @@ v15.6.1 and measured against a live v15.6.1 on 2026-10-15
   source=block-list-zone; blockListUrl=<url>; domain=<entry>        (BlockListZoneManager.cs:893)
   source=advanced-blocking-app; group=<group>; blockListUrl=<url>; domain=<entry>
   source=advanced-blocking-app; group=<group>; domain=<entry>
+  source=advanced-blocking-app; group=<group>; regexBlockListUrl=<url>; regex=<pattern>
+  source=advanced-blocking-app; group=<group>; regex=<pattern>
 
 One option per list that carries the name, in the lists' order. The Advanced
 Blocking app writes one report and names only the first list that matched.
+A regex block names the pattern instead of a domain (`GetBlockingReport` in
+`Apps/AdvancedBlockingApp/App.cs`). The pattern is the rest of the text, so a
+pattern that itself contains `; regex=` is split at the last one.
 `domain` is the entry that matched, which is a PARENT of the name asked when a
 rule or a list blocks a whole zone (`sub.telemetry.example-iot.net` comes back
 with `domain=telemetry.example-iot.net`). The same text is written for every
 blocking type (NX Domain, Any Address, Custom Address): only the answer around
-it changes. A block-list URL is drawn with `api_token`, `token`, `key`,
-`secret` and `password` query values replaced by `redacted`.
+it changes. A block-list URL is drawn with a `user:pass@` userinfo replaced, and with
+`api_token`, `access_token`, `api_key`, `apikey`, `password`, `secret`,
+`token`, `key` and `pass` query values replaced by `redacted`. The same
+replacement is applied to an unknown report before it is drawn.
 
 WHAT THE ANSWER CANNOT SAY, and how each gap is handled:
 
@@ -67,15 +74,17 @@ cannot be reached, and a "Not blocked" says which reads were missing.
 
 export type BlockReason =
   | { source: 'rule'; domain: string }
-  | { source: 'list'; url: string; domain: string; group?: string }
-  | { source: 'app'; domain: string; group: string | null }
+  | { source: 'list'; url: string; domain: string; group?: string; regex?: string }
+  | { source: 'app'; domain: string; group: string | null; regex?: string }
   | { source: 'other'; text: string }
 
-/** One list the report named. `group` is set when the Advanced Blocking app named one. */
+/** One list the report named. `group` is set when the Advanced Blocking app named one.
+    `regex` is set when the match was a pattern rather than a domain. */
 export interface ReportedList {
   url: string
   domain: string
   group: string | null
+  regex?: string
 }
 
 export interface Answer {
@@ -110,7 +119,7 @@ export interface CheckInputs {
 export type Verdict =
   | { kind: 'lists'; name: string; domain: string; lists: ReportedList[] }
   | { kind: 'rule'; name: string; domain: string }
-  | { kind: 'app'; name: string; domain: string; group: string | null }
+  | { kind: 'app'; name: string; domain: string; group: string | null; regex?: string }
   | { kind: 'other'; name: string; texts: string[] }
   | { kind: 'allowed'; name: string; domain: string }
   | { kind: 'off'; name: string; paused: boolean }
@@ -145,12 +154,23 @@ const LIST_TEXT = /^source=block-list-zone; blockListUrl=(.*); domain=([^;]*)$/
 const RULE_TEXT = /^source=blocked-zone; domain=([^;]*)$/
 const APP_LIST = /^source=advanced-blocking-app; group=([^;]*); blockListUrl=(.*); domain=([^;]*)$/
 const APP_LIST_BARE = /^source=advanced-blocking-app; blockListUrl=(.*); domain=([^;]*)$/
+const APP_REGEX_LIST = /^source=advanced-blocking-app; group=([^;]*); regexBlockListUrl=(.*); regex=(.*)$/
+const APP_REGEX = /^source=advanced-blocking-app; group=([^;]*); regex=(.*)$/
 const APP_ONLY = /^source=advanced-blocking-app; group=([^;]*); domain=([^;]*)$/
 const APP_DOMAIN = /^source=advanced-blocking-app; domain=([^;]*)$/
 
-/** Query values that are credentials, replaced before a list URL is drawn. */
+/*
+Query names that carry a credential, longest first so `pass` does not eat
+`password` and `key` does not eat `api_key`. `password` is listed as well as
+`pass`: the engine takes the first alternative that matches.
+*/
+const SECRET_QUERY = 'api_token|access_token|api_key|apikey|password|secret|token|key|pass'
+
+/** A list URL with its userinfo and credential query values replaced. */
 export function redactListUrl(url: string): string {
-  return url.replace(/([?&](?:api_token|token|key|secret|password)=)[^&\s]+/gi, '$1redacted')
+  return url
+    .replace(/([a-z][a-z0-9+.-]*:\/\/)([^/?#\s@]+):([^/?#\s@]*)@/gi, '$1redacted:redacted@')
+    .replace(new RegExp(`([?&](?:${SECRET_QUERY})=)[^&#\\s]*`, 'gi'), '$1redacted')
 }
 
 export function parseReason(text: string): BlockReason {
@@ -162,11 +182,23 @@ export function parseReason(text: string): BlockReason {
   if (appList != null) return { source: 'list', url: redactListUrl(appList[2]), domain: appList[3], group: appList[1] }
   const appBare = APP_LIST_BARE.exec(text)
   if (appBare != null) return { source: 'list', url: redactListUrl(appBare[1]), domain: appBare[2] }
+  const appRegexList = APP_REGEX_LIST.exec(text)
+  if (appRegexList != null) {
+    return {
+      source: 'list',
+      url: redactListUrl(appRegexList[2]),
+      domain: appRegexList[3],
+      group: appRegexList[1],
+      regex: appRegexList[3],
+    }
+  }
+  const appRegex = APP_REGEX.exec(text)
+  if (appRegex != null) return { source: 'app', domain: appRegex[2], group: appRegex[1], regex: appRegex[2] }
   const appOnly = APP_ONLY.exec(text)
   if (appOnly != null) return { source: 'app', domain: appOnly[2], group: appOnly[1] }
   const appDomain = APP_DOMAIN.exec(text)
   if (appDomain != null) return { source: 'app', domain: appDomain[1], group: null }
-  return { source: 'other', text }
+  return { source: 'other', text: redactListUrl(text) }
 }
 
 function cleanTxt(text: string): string {
@@ -336,6 +368,36 @@ function reportIsOff(settings: BlockingSettings | Missing): boolean {
   return !isMissing(settings) && settings.allowTxtBlockingReport === false
 }
 
+function blockingPaused(settings: BlockingSettings, now: number): boolean {
+  const till = settings.temporaryDisableBlockingTill
+  return till != null && Date.parse(till) > now
+}
+
+/** Addresses a lookup from this console is logged from. The server is asking itself. */
+const SERVER_LOOPBACK = ['127.0.0.1', '::1']
+
+/**
+ * Why a lookup from this server would not name a list. `null` when the settings
+ * were not read, or when a lookup can still carry a report. Count lists reads
+ * this before it sends anything.
+ */
+export type ReportSilence =
+  | { kind: 'off'; paused: boolean }
+  | { kind: 'unreported' }
+  | { kind: 'bypassed'; ip: string }
+
+export function reportSilence(settings: BlockingSettings | Missing, now: number = Date.now()): ReportSilence | null {
+  if (isMissing(settings)) return null
+  if (settings.enableBlocking === false) return { kind: 'off', paused: blockingPaused(settings, now) }
+  for (const ip of SERVER_LOOPBACK) {
+    if ((settings.blockingBypassList ?? []).some((network) => networkContains(network, ip))) {
+      return { kind: 'bypassed', ip }
+    }
+  }
+  if (settings.allowTxtBlockingReport === false) return { kind: 'unreported' }
+  return null
+}
+
 export function verdictOf({ answer, settings, allowed, reportUnread }: CheckInputs, now: number = Date.now()): Verdict {
   const name = answer.name
 
@@ -347,13 +409,26 @@ export function verdictOf({ answer, settings, allowed, reportUnread }: CheckInpu
         kind: 'lists',
         name,
         domain: lists[0].domain,
-        lists: lists.map((l) => ({ url: l.url, domain: l.domain, group: l.group ?? null })),
+        lists: lists.map((l) => ({
+          url: l.url,
+          domain: l.domain,
+          group: l.group ?? null,
+          ...(l.regex != null ? { regex: l.regex } : {}),
+        })),
       }
     }
     const rule = answer.reasons.find((r) => r.source === 'rule')
     if (rule != null) return { kind: 'rule', name, domain: rule.domain }
     const app = answer.reasons.find((r) => r.source === 'app')
-    if (app != null) return { kind: 'app', name, domain: app.domain, group: app.group }
+    if (app != null) {
+      return {
+        kind: 'app',
+        name,
+        domain: app.domain,
+        group: app.group,
+        ...(app.regex != null ? { regex: app.regex } : {}),
+      }
+    }
     return {
       kind: 'other',
       name,
@@ -362,10 +437,7 @@ export function verdictOf({ answer, settings, allowed, reportUnread }: CheckInpu
   }
 
   const s = isMissing(settings) ? null : settings
-  if (s?.enableBlocking === false) {
-    const till = s.temporaryDisableBlockingTill
-    return { kind: 'off', name, paused: till != null && Date.parse(till) > now }
-  }
+  if (s?.enableBlocking === false) return { kind: 'off', name, paused: blockingPaused(s, now) }
 
   const rules = isMissing(allowed) ? null : allowed
   const rule = rules != null ? allowRuleFor(answer.ascii, rules) : null

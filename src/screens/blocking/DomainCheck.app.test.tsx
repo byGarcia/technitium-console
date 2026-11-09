@@ -34,6 +34,23 @@ describe('DomainCheck, an Advanced Blocking report', () => {
     expect(screen.getByText(wholeText('parent.test'))).toBeInTheDocument()
   })
 
+  it('a regex list shows the pattern and not the pattern as a domain', () => {
+    render(
+      <DomainCheck
+        catalog={[]}
+        verdict={{
+          kind: 'lists',
+          name: 'ads.example',
+          domain: '^ads\\.',
+          lists: [{ url: 'https://lists.test/r.txt', domain: '^ads\\.', group: 'kids', regex: '^ads\\.' }],
+        }}
+      />,
+    )
+    expect(screen.getByText('Regex')).toBeInTheDocument()
+    expect(screen.getByText('^ads\\.')).toBeInTheDocument()
+    expect(screen.queryByText('Listed as')).toBeNull()
+  })
+
   it('a clear verdict says when the TXT report could not be read', () => {
     render(
       <DomainCheck

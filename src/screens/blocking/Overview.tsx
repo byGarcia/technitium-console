@@ -507,6 +507,7 @@ export function Overview({
             aggregate={aggregate}
             serverDomain={serverDomain}
             dnsNeed={missing(permissions, 'DnsClient.canView')}
+            settingsNeed={missing(permissions, 'Settings.canView')}
           />
         ) : null}
 

@@ -14,7 +14,7 @@ says how each one is reached). Every sentence here is OURS:
 - the titles `Blocked by a block list`, `Blocked by N block lists`, `Blocked by your
   rule`, `Blocked by Advanced Blocking`, `Blocked`, `Allowed by your rule`, `Not blocked`,
   `Not blocked: blocking is disabled`, `Not blocked: blocking is paused` and `Cannot tell`;
-- `Listed as`, `Rule`, `Group`, and the links `Open Lists` and `Open Rules`;
+- `Listed as`, `Rule`, `Group`, `Regex`, and the links `Open Lists` and `Open Rules`;
 - `The Advanced Blocking app reports only the first matching list.` and
   `The block list report could not be read.`;
 - the two "cannot tell" sentences, which quote the server's labels `Blocking Bypass
@@ -109,14 +109,15 @@ function ListMatches({
               {name != null && <span className={styles.listName}>{name}</span>}
               {list.group != null && list.group !== '' && <span className={styles.label}>Group {list.group}</span>}
               <span className={styles.url}><UrlText url={list.url} /></span>
-              {ownDomain && (
+              {list.regex != null && list.regex !== '' && <Fact label="Regex">{list.regex}</Fact>}
+              {ownDomain && list.regex == null && (
                 <Fact label="Listed as"><DomainName name={list.domain} /></Fact>
               )}
             </li>
           )
         })}
       </ul>
-      {shared && verdict.domain.toLowerCase() !== verdict.name.toLowerCase() && (
+      {shared && verdict.lists.every((list) => list.regex == null) && verdict.domain.toLowerCase() !== verdict.name.toLowerCase() && (
         <Fact label="Listed as"><DomainName name={verdict.domain} /></Fact>
       )}
       {fromApp && (
@@ -148,7 +149,8 @@ export function DomainCheck({ verdict, catalog }: { verdict: Verdict; catalog: r
         {verdict.kind === 'app' && (
           <>
             {verdict.group != null && verdict.group !== '' && <Fact label="Group">{verdict.group}</Fact>}
-            {verdict.domain.toLowerCase() !== verdict.name.toLowerCase() && (
+            {verdict.regex != null && verdict.regex !== '' && <Fact label="Regex">{verdict.regex}</Fact>}
+            {verdict.regex == null && verdict.domain.toLowerCase() !== verdict.name.toLowerCase() && (
               <Fact label="Listed as"><DomainName name={verdict.domain} /></Fact>
             )}
             <div className={styles.why}>The Advanced Blocking app reports only the first matching list.</div>

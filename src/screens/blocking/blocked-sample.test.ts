@@ -46,6 +46,14 @@ describe('countByClient', () => {
     expect(countByClient([entry('', 'A')])).toEqual([])
     expect(countByClient([])).toEqual([])
   })
+
+  it('leaves out the server itself, so its own lookups do not fill the sample', () => {
+    const entries = [
+      entry('127.0.0.1', 'TXT'), entry('::1', 'TXT'), entry('::ffff:127.0.0.1', 'TXT'),
+      entry('10.0.0.5', 'A'),
+    ]
+    expect(countByClient(entries).map((c) => c.ip)).toEqual(['10.0.0.5'])
+  })
 })
 
 describe('countByType', () => {

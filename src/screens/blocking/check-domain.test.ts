@@ -5,7 +5,7 @@ import * as dnsclient from '../../api/dnsclient'
 import * as settingsApi from '../../api/settings'
 import REAL from './check-domain.real.json'
 import {
-  addressOf, allowRuleFor, checkDomain, networkContains, parseAnswer, parseReason, reportedListName,
+  addressOf, allowRuleFor, checkDomain, networkContains, parseAnswer, parseReason, reportSilence, reportedListName,
   verdictOf, type CheckInputs,
 } from './check-domain'
 import { moreLists } from './extra-lists'
@@ -106,6 +106,58 @@ describe('parseReason', () => {
     expect(parseReason('source=block-list-zone; blockListUrl=https://h/a?token=SECRET&key=K&secret=S; domain=x.test')).toEqual({
       source: 'list', url: 'https://h/a?token=redacted&key=redacted&secret=redacted', domain: 'x.test',
     })
+  })
+
+  it('replaces a userinfo and the other credential names, and does not eat password', () => {
+    expect(parseReason(
+      'source=block-list-zone; blockListUrl=https://user:pass@h/a?apikey=A&api_key=B&access_token=C&pass=D&password=E; domain=x.test',
+    )).toEqual({
+      source: 'list',
+      url: 'https://redacted:redacted@h/a?apikey=redacted&api_key=redacted&access_token=redacted&pass=redacted&password=redacted',
+      domain: 'x.test',
+    })
+  })
+
+  it('reads a regex report, and redacts the list URL before it is drawn', () => {
+    expect(parseReason('source=advanced-blocking-app; group=kids; regex=^ads\\.')).toEqual({
+      source: 'app', domain: '^ads\\.', group: 'kids', regex: '^ads\\.',
+    })
+    expect(parseReason(
+      'source=advanced-blocking-app; group=kids; regexBlockListUrl=https://user:pass@h/r.txt?token=SECRET; regex=^a;b',
+    )).toEqual({
+      source: 'list',
+      url: 'https://redacted:redacted@h/r.txt?token=redacted',
+      domain: '^a;b',
+      group: 'kids',
+      regex: '^a;b',
+    })
+  })
+
+  it('an unknown report is drawn with its credentials replaced', () => {
+    expect(parseReason('source=some-app; url=https://user:pass@h/a?token=SECRET')).toEqual({
+      source: 'other', text: 'source=some-app; url=https://redacted:redacted@h/a?token=redacted',
+    })
+  })
+})
+
+describe('reportSilence', () => {
+  const open = { enableBlocking: true, allowTxtBlockingReport: true, blockingBypassList: [] }
+
+  it('a lookup can name a list when blocking reports and the server is not bypassed', () => {
+    expect(reportSilence(open)).toBeNull()
+    expect(reportSilence({ need: 'Settings.canView' })).toBeNull()
+  })
+
+  it('blocking off, the report off, or loopback on the bypass list says why', () => {
+    const now = Date.parse('2026-10-15T12:00:00Z')
+    expect(reportSilence({ ...open, enableBlocking: false }, now)).toEqual({ kind: 'off', paused: false })
+    expect(reportSilence({
+      ...open, enableBlocking: false, temporaryDisableBlockingTill: '2026-10-15T12:05:00Z',
+    }, now)).toEqual({ kind: 'off', paused: true })
+    expect(reportSilence({ ...open, allowTxtBlockingReport: false })).toEqual({ kind: 'unreported' })
+    expect(reportSilence({ ...open, blockingBypassList: ['127.0.0.0/8'] })).toEqual({ kind: 'bypassed', ip: '127.0.0.1' })
+    expect(reportSilence({ ...open, blockingBypassList: ['::1'] })).toEqual({ kind: 'bypassed', ip: '::1' })
+    expect(reportSilence({ ...open, blockingBypassList: ['10.0.0.0/8'] })).toBeNull()
   })
 })
 

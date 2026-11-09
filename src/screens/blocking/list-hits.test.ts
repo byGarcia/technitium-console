@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as logs from '../../api/logs'
 import {
   BLOCKED_MAX_PAGES, cachedReport, clearReportCache, countLists, isLoopbackClient,
-  namesToCount, readBlockedLog, storeReport,
+  namesToCount, planLookups, readBlockedLog, storeReport,
 } from './list-hits'
 import type { BlockReason } from './check-domain'
 
@@ -79,12 +79,56 @@ describe('countLists', () => {
     expect(result.unresolved).toEqual({ hits: 4, domains: 1 })
   })
 
+  it('a regex list is counted on its URL, and a bare pattern on the app', () => {
+    const result = countLists(
+      [
+        { name: 'a.test', hits: 2 },
+        { name: 'b.test', hits: 4 },
+      ],
+      new Map([
+        ['a.test', { ok: true, reasons: [{ source: 'list', url: 'https://h/re.txt', domain: '^a', group: 'kids', regex: '^a' }] }],
+        ['b.test', { ok: true, reasons: [{ source: 'app', domain: '^b', group: 'kids', regex: '^b' }] }],
+      ]),
+    )
+    expect(result.lists).toEqual([
+      { url: '', group: 'kids', app: true, hits: 4, domains: 1 },
+      { url: 'https://h/re.txt', group: 'kids', app: false, hits: 2, domains: 1 },
+    ])
+    expect(result.unmatched).toEqual({ hits: 0, domains: 0 })
+  })
+
   it('an app report with no URL is one row, named by its group', () => {
     const result = countLists(
       [{ name: 'z.test', hits: 5 }],
       new Map([['z.test', { ok: true, reasons: [{ source: 'app', domain: 'z.test', group: 'kids' }] }]]),
     )
     expect(result.lists).toEqual([{ url: '', group: 'kids', app: true, hits: 5, domains: 1 }])
+  })
+})
+
+describe('planLookups', () => {
+  const names = [
+    { name: 'rare.test', hits: 1 },
+    { name: 'busy.test', hits: 9 },
+    { name: 'mid.test', hits: 3 },
+  ]
+
+  it('takes the most-hit names up to the cap, and leaves the rest', () => {
+    expect(planLookups(names, () => false, 2)).toEqual({
+      fetch: [{ name: 'busy.test', hits: 9 }, { name: 'mid.test', hits: 3 }],
+      cached: [],
+      omittedHits: 1,
+      omittedDomains: 1,
+    })
+  })
+
+  it('a cached name does not use a slot, so the next press continues', () => {
+    expect(planLookups(names, (name) => name === 'busy.test', 1)).toEqual({
+      fetch: [{ name: 'mid.test', hits: 3 }],
+      cached: [{ name: 'busy.test', hits: 9 }],
+      omittedHits: 1,
+      omittedDomains: 1,
+    })
   })
 })
 
