@@ -24,6 +24,26 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
 
 ---
 
+## Unreleased
+
+### New
+
+- **Blocked by list** on Blocking › Overview. Count lists reads the current blocked
+  log once, skips the server's own address, and totals each list. One press looks up
+  at most 100 names, most-hit first, and says that each lookup is logged as blocked
+  from this server. Before the press it says Allow TXT Blocking Report has to be
+  enabled. It looks nothing up when blocking is off or paused, when Allow
+  TXT Blocking Report is off, or when the bypass list covers the server's own
+  address. A name on two built-in lists counts on both. The Advanced Blocking app
+  names only the first list, and the count says that answer is for this server's own
+  group. A regex report is counted. The domain check names that app's report, and
+  asks one TXT query when the first answer does not already name a list. List URLs
+  have their userinfo and credential query values redacted before they are shown.
+  Written down as deviation 46 in
+  [CONVENTIONS.md](CONVENTIONS.md#deliberate-deviations-from-upstream-behaviour).
+
+---
+
 ## v1.4.1 (2026-11-08)
 
 **A visual editor for Advanced Blocking, a console that runs as its own container, and a console you

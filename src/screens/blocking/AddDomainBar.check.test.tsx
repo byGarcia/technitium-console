@@ -98,15 +98,20 @@ describe('Check a domain', () => {
   it('asks DNS Client, the settings and the allow rules, and changes nothing', async () => {
     await check('example.com')
     await screen.findByText('Not blocked')
-    /* The check's three, and the bar's one read of your rules while the name was typed
-       (deviation 32): once for the whole name, not once per letter. */
+    /* The check's reads, and the bar's one read of your rules while the name was typed
+       (deviation 32): once for the whole name, not once per letter. example.com is not
+       covered by an allow rule and the A answer names no list, so a TXT query follows. */
     expect(calls.filter((c) => !c.includes('json/')).sort()).toEqual([
-      'allowed/export', 'allowed/export', 'blocked/export', 'dnsClient/resolve', 'settings/get',
+      'allowed/export', 'allowed/export', 'blocked/export', 'dnsClient/resolve', 'dnsClient/resolve', 'settings/get',
     ])
-    const url = new URL(String(vi.mocked(fetch).mock.calls.find((c) => String(c[0]).includes('dnsClient/resolve'))![0]), 'http://x')
-    expect(Object.fromEntries(url.searchParams)).toEqual({
-      server: 'this-server', domain: 'example.com', type: 'A', protocol: 'UDP', dnssec: 'false', eDnsClientSubnet: '',
-    })
+    const resolves = vi.mocked(fetch).mock.calls
+      .map((call) => String(call[0]))
+      .filter((href) => href.includes('dnsClient/resolve'))
+      .map((href) => Object.fromEntries(new URL(href, 'http://x').searchParams))
+    expect(resolves).toEqual([
+      { server: 'this-server', domain: 'example.com', type: 'A', protocol: 'UDP', dnssec: 'false', eDnsClientSubnet: '' },
+      { server: 'this-server', domain: 'example.com', type: 'TXT', protocol: 'UDP', dnssec: 'false', eDnsClientSubnet: '' },
+    ])
   })
 
   it('the server refusing the name says why under the field, not on the page', async () => {
@@ -185,6 +190,7 @@ describe('Check from the address bar', () => {
     expect(field).toHaveValue('s.youtube.com')
     expect(await screen.findByText('Allowed by your rule')).toBeInTheDocument()
     expect(window.location.search).toBe('')
+    /* An allow rule covers this name, so the check does not send the TXT follow-up. */
     expect(calls.filter((c) => c === 'dnsClient/resolve')).toHaveLength(1)
   })
 })

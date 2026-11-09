@@ -589,7 +589,10 @@ contract and SECURITY.md.
    when there is one, its count and a bar) and by query type (a stacked bar with its
    legend, the Dashboard's Query Types colours). It is a sample, not the period, and
    says so: `In the last N blocked queries` beside its title, `on <node>` with the
-   cluster aggregate (logs are one node's). A row's menu has upstream's `Show Query
+   cluster aggregate (logs are one node's). Clients `127.0.0.1` and `::1` are left
+   out of the client ranking, so a lookup this console sent from the server does not
+   take a place there. The type bar and the `In the last N` line still count them.
+   A row's menu has upstream's `Show Query
    Logs`, for that client, and for its response type when all its counted queries share
    one (Query Logs filters by one). It reads again with each answer of `stats/get`,
    never with the live figures. Without a query logs app it is not drawn and the chart
@@ -625,8 +628,13 @@ contract and SECURITY.md.
    of your blocked rules; which of your allow rules lets it through; or not
    blocked). It asks what DNS Client asks, `dnsClient/resolve` against
    `this-server` (type A, UDP, no DNSSEC validation, no import), and reads the
-   server's own blocking report from the answer; beside it, `settings/get` and
-   `allowed/export`, each skipped when its permission is missing. It sends no
+   server's own blocking report from the answer. When that answer names no list,
+   an allow rule does not already cover the name, and `Allow TXT Blocking Report`
+   is not known to be off, it asks once more, type TXT (deviation 46). A reported
+   list URL has its userinfo and credential query values replaced before it is
+   drawn. Beside
+   the query, `settings/get` and `allowed/export`, each skipped when its permission
+   is missing. It sends no
    `node`, as the Block and Allow beside it. Its query is a real one, counted and
    logged by the server like any DNS Client query. When the answer cannot prove
    the verdict it says so instead of guessing: "Cannot tell" when `Allow TXT
@@ -634,9 +642,11 @@ contract and SECURITY.md.
    own address, and a "Not blocked" lists the reads it did not have. Its words,
    all OURS: `Check`, the `Check, ` of the panel title, `Please enter a domain name
    to check.`, the verdict titles (`Blocked by a block list`, `Blocked by N block
-   lists`, `Blocked by your rule`, `Blocked`, `Allowed by your rule`, `Not
-   blocked`, `Not blocked: blocking is disabled`, `Not blocked: blocking is
-   paused`, `Cannot tell`), `Listed as`, `Rule`, `Open Lists`, `Open Rules`, the
+   lists`, `Blocked by your rule`, `Blocked by Advanced Blocking`, `Blocked`,
+   `Allowed by your rule`, `Not blocked`, `Not blocked: blocking is disabled`,
+   `Not blocked: blocking is paused`, `Cannot tell`), `Listed as`, `Rule`,
+   `Group`, `Open Lists`, `Open Rules`, `The Advanced Blocking app reports only
+   the first matching list.`, `The block list report could not be read.`, the
    two "Cannot tell" sentences and the four "not checked" / "Could not read"
    lines. Its next step is the panel's own `Block` and `Allow` and the tab that
    holds the rule or the list: it adds no action.
@@ -2047,6 +2057,58 @@ contract and SECURITY.md.
     `10.0.0.2/24`, since host bits are masked); `[::]/0` is valid and ships in the default config;
     a client matching no row, or a row naming a missing group, is not blocked (App.cs:570). Its
     words, OURS, are declared in the header comment of each file that writes them.
+
+46. **Which block list matched, counted when asked** (2026-11-09;
+    `screens/blocking/check-domain.ts`, `DomainCheck.tsx`, `list-hits.ts`, `ListHits.tsx`).
+    Upstream's console does not say which list blocked a name, and the server keeps no
+    per-list counter. The check already read the blocking report on the type A answer.
+    Two gaps remained. A server that writes the report only on TXT was read as not
+    blocked, and the Advanced Blocking app's report was drawn as an unknown reason.
+    The check now asks once more, type TXT, when the A answer names nothing, an allow
+    rule does not already cover the name, and `Allow TXT Blocking Report` is not known
+    to be off. A reported URL has its `user:pass@` userinfo replaced, and the query
+    values `api_token`, `access_token`, `api_key`, `apikey`, `password`, `secret`,
+    `token`, `key` and `pass` replaced by `redacted`, before it is drawn. An unknown
+    report gets the same replacement. A regex report
+    (`regex=` and `regexBlockListUrl=`, from `GetBlockingReport` in the Advanced
+    Blocking app) is read as the app, or as the list the URL names. The same report
+    is what **Count lists** reads.
+
+    **Blocked by list** is a panel on Overview, under the chart row. It is drawn when a
+    query logs app is installed, and locked without `Logs: View`, the same way Blocked
+    by client is. It reads nothing until Count lists is pressed. Before that press
+    the panel says Allow TXT Blocking Report has to be enabled, or this server does
+    not say which list matched. One press reads
+    `logs/query` with `responseType=Blocked`, page size 1000, at most 20 pages, newest
+    first, and `settings/get` for that same node. Clients `127.0.0.1` and `::1` are
+    skipped before any lookup. When blocking is disabled or paused, `Allow TXT
+    Blocking Report` is off, or the Blocking Bypass List covers `127.0.0.1` or `::1`,
+    it looks nothing up and says why. Without `Settings: View` it says the settings
+    were not checked and looks nothing up. Otherwise each remaining name is one TXT
+    query through `dnsClient/resolve`, four at a time, at most 100 names on one press,
+    most-hit first. A later press continues with the next names and reuses a name
+    already read: 30 minutes when a list was named, 10 minutes when none was, one
+    minute when the lookup failed. A name on two built-in lists is counted on both.
+    The Advanced Blocking app names only the first list, and the answer is for this
+    server's own group, not the client's. The panel says both. Changing the node
+    clears the rows, and an answer still in flight is not drawn under the new node.
+    The count is the log the server is keeping, often about the last hour, not the
+    period chosen above it. Its limits, and crossing one is a bug:
+    - **only `dnsClient/resolve`, `logs/query` and `settings/get`.** The first two
+      are already called by the stock console. `settings/get` is the read the check
+      already used. This panel does not call `allowed/export`;
+    - **no timer and no read when the tab opens.** The button is the only thing that
+      reads the log or resolves a name for this panel;
+    - **at most 100 lookups a press**, and the panel says so before the press. Each
+      lookup is logged as blocked from this server, which is what a press adds to the
+      figures around it;
+    - **loopback is skipped before the lookup**, so the count does not count itself.
+      Blocked by client leaves `127.0.0.1` and `::1` out of its client ranking. The
+      type bar still counts those rows;
+    - **a list URL's credentials never reach the page.** The Lists editor is unchanged
+      and still shows the URL that was saved.
+    Its words, OURS, are declared in the header comments of `DomainCheck.tsx` and
+    `ListHits.tsx`.
 
 ## Four constraints the server imposes
 

@@ -1,5 +1,6 @@
 import type { TopEntry } from '../../api/dashboard'
 import type { QueryLogEntry } from '../../api/logs'
+import { isLoopbackClient } from './list-hits'
 
 /*
 What the latest blocked queries say about who asked and for what: the counts the
@@ -8,6 +9,10 @@ such count. The entries are the ones Recently Blocked reads (`logs/query` throug
 query logs app, the three blocked classes merged by `recentBlocked`), only more of
 them: a sample of the newest `SAMPLE` blocked queries, which is what the card says
 it is based on. Nothing here asks the server.
+
+Clients `127.0.0.1` and `::1` are left out of the client count. A lookup this
+console sent is logged from the server itself, and that address would otherwise
+fill the sample.
 */
 
 /** How many of the newest blocked queries the card counts. */
@@ -31,8 +36,9 @@ export interface TypeCount {
 
 /**
  * The clients of the sample, most blocked first; a tie keeps the order in which they
- * were first met, newest first. `names` is the period's Top Clients (`stats/get`),
- * whose `domain` is the name the server resolved for the address.
+ * were first met, newest first. `127.0.0.1` and `::1` are left out. `names` is the
+ * period's Top Clients (`stats/get`), whose `domain` is the name the server resolved
+ * for the address.
  */
 export function countByClient(entries: readonly QueryLogEntry[], names: readonly TopEntry[] = []): ClientCount[] {
   const known = new Map<string, string>()
@@ -41,7 +47,7 @@ export function countByClient(entries: readonly QueryLogEntry[], names: readonly
   const seen = new Map<string, { count: number; types: Set<string> }>()
   for (const e of entries) {
     const ip = e.clientIpAddress
-    if (ip == null || ip === '') continue
+    if (ip == null || ip === '' || isLoopbackClient(ip)) continue
     const row = seen.get(ip) ?? { count: 0, types: new Set<string>() }
     row.count++
     row.types.add(e.responseType)

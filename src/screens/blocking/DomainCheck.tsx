@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { Icon, type IconName } from '../../ui/Icon'
 import { RouteLink } from '../../ui/RouteLink'
 import type { QuickEntry } from '../../lib/quick-lists'
-import { reportedListName, type Missing, type Verdict } from './check-domain'
+import { reportedListName, type Missing, type ReportedList, type Verdict } from './check-domain'
 import { requiresText } from './permissions'
 import styles from './DomainCheck.module.css'
 import { DomainName } from '../../ui/DomainName'
@@ -12,9 +12,11 @@ import { UrlText } from '../../ui/UrlText'
 The verdict of "Check a domain", drawn under the field it answers (`check-domain.ts`
 says how each one is reached). Every sentence here is OURS:
 - the titles `Blocked by a block list`, `Blocked by N block lists`, `Blocked by your
-  rule`, `Blocked`, `Allowed by your rule`, `Not blocked`, `Not blocked: blocking is
-  disabled`, `Not blocked: blocking is paused` and `Cannot tell`;
-- `Listed as`, `Rule`, and the links `Open Lists` and `Open Rules`;
+  rule`, `Blocked by Advanced Blocking`, `Blocked`, `Allowed by your rule`, `Not blocked`,
+  `Not blocked: blocking is disabled`, `Not blocked: blocking is paused` and `Cannot tell`;
+- `Listed as`, `Rule`, `Group`, `Regex`, and the links `Open Lists` and `Open Rules`;
+- `The Advanced Blocking app reports only the first matching list.` and
+  `The block list report could not be read.`;
 - the two "cannot tell" sentences, which quote the server's labels `Blocking Bypass
   List` and `Allow TXT Blocking Report`, and their link `Blocking › Settings`;
 - under a "Not blocked", what was not read: `Your allow rules were not checked.`,
@@ -37,6 +39,8 @@ function look(v: Verdict): { title: string; icon: IconName; tone: Tone } {
       }
     case 'rule':
       return { title: 'Blocked by your rule', icon: 'blocked', tone: 'blocked' }
+    case 'app':
+      return { title: 'Blocked by Advanced Blocking', icon: 'blocked', tone: 'blocked' }
     case 'other':
       return { title: 'Blocked', icon: 'blocked', tone: 'blocked' }
     case 'allowed':
@@ -80,6 +84,52 @@ function Fact({ label, children }: { label: string; children: ReactNode }) {
 
 const BLOCKING_SETTINGS = <RouteLink to={{ section: 'blocking', sub: 'Settings' }}>Blocking › Settings</RouteLink>
 
+function sameListedDomain(lists: readonly ReportedList[]): boolean {
+  const first = lists[0]?.domain.toLowerCase()
+  return lists.every((list) => list.domain.toLowerCase() === first)
+}
+
+function ListMatches({
+  verdict,
+  catalog,
+}: {
+  verdict: Extract<Verdict, { kind: 'lists' }>
+  catalog: readonly QuickEntry[]
+}) {
+  const shared = sameListedDomain(verdict.lists)
+  const fromApp = verdict.lists.some((list) => list.group != null)
+  return (
+    <>
+      <ul className={styles.lists}>
+        {verdict.lists.map((list) => {
+          const name = reportedListName(list.url, catalog)
+          const ownDomain = !shared && list.domain.toLowerCase() !== verdict.name.toLowerCase()
+          return (
+            <li key={`${list.url}\n${list.domain}\n${list.group ?? ''}`}>
+              {name != null && <span className={styles.listName}>{name}</span>}
+              {list.group != null && list.group !== '' && <span className={styles.label}>Group {list.group}</span>}
+              <span className={styles.url}><UrlText url={list.url} /></span>
+              {list.regex != null && list.regex !== '' && <Fact label="Regex">{list.regex}</Fact>}
+              {ownDomain && list.regex == null && (
+                <Fact label="Listed as"><DomainName name={list.domain} /></Fact>
+              )}
+            </li>
+          )
+        })}
+      </ul>
+      {shared && verdict.lists.every((list) => list.regex == null) && verdict.domain.toLowerCase() !== verdict.name.toLowerCase() && (
+        <Fact label="Listed as"><DomainName name={verdict.domain} /></Fact>
+      )}
+      {fromApp && (
+        <div className={styles.why}>The Advanced Blocking app reports only the first matching list.</div>
+      )}
+      <div className={styles.next}>
+        <RouteLink to={{ section: 'blocking', sub: 'Lists' }}>Open Lists</RouteLink>
+      </div>
+    </>
+  )
+}
+
 export function DomainCheck({ verdict, catalog }: { verdict: Verdict; catalog: readonly QuickEntry[] }) {
   const { title, icon, tone } = look(verdict)
 
@@ -93,24 +143,17 @@ export function DomainCheck({ verdict, catalog }: { verdict: Verdict; catalog: r
         <div className={styles.name}><DomainName name={verdict.name} /></div>
 
         {verdict.kind === 'lists' && (
+          <ListMatches verdict={verdict} catalog={catalog} />
+        )}
+
+        {verdict.kind === 'app' && (
           <>
-            <ul className={styles.lists}>
-              {verdict.lists.map((url) => {
-                const name = reportedListName(url, catalog)
-                return (
-                  <li key={url}>
-                    {name != null && <span className={styles.listName}>{name}</span>}
-                    <span className={styles.url}><UrlText url={url} /></span>
-                  </li>
-                )
-              })}
-            </ul>
-            {verdict.domain.toLowerCase() !== verdict.name.toLowerCase() && (
+            {verdict.group != null && verdict.group !== '' && <Fact label="Group">{verdict.group}</Fact>}
+            {verdict.regex != null && verdict.regex !== '' && <Fact label="Regex">{verdict.regex}</Fact>}
+            {verdict.regex == null && verdict.domain.toLowerCase() !== verdict.name.toLowerCase() && (
               <Fact label="Listed as"><DomainName name={verdict.domain} /></Fact>
             )}
-            <div className={styles.next}>
-              <RouteLink to={{ section: 'blocking', sub: 'Lists' }}>Open Lists</RouteLink>
-            </div>
+            <div className={styles.why}>The Advanced Blocking app reports only the first matching list.</div>
           </>
         )}
 
@@ -149,6 +192,11 @@ export function DomainCheck({ verdict, catalog }: { verdict: Verdict; catalog: r
             what="Your allow rules were not checked."
             failed="Could not read your allow rules."
           />
+        )}
+        {verdict.kind === 'clear' && verdict.reportUnread && (
+          <div className={styles.unread}>
+            <Icon name="warning" size={13} /> The block list report could not be read.
+          </div>
         )}
         {verdict.kind === 'clear' && verdict.unread.settings != null && (
           <Unread
