@@ -2076,7 +2076,9 @@ contract and SECURITY.md.
 
     **Blocked by list** is a panel on Overview, under the chart row. It is drawn when a
     query logs app is installed, and locked without `Logs: View`, the same way Blocked
-    by client is. It reads nothing until Count lists is pressed. One press reads
+    by client is. It reads nothing until Count lists is pressed. Before that press
+    the panel says Allow TXT Blocking Report has to be enabled, or this server does
+    not say which list matched. One press reads
     `logs/query` with `responseType=Blocked`, page size 1000, at most 20 pages, newest
     first, and `settings/get` for that same node. Clients `127.0.0.1` and `::1` are
     skipped before any lookup. When blocking is disabled or paused, `Allow TXT

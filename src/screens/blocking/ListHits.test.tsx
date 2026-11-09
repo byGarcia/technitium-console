@@ -66,7 +66,7 @@ describe('Blocked by list', () => {
     render(<ListHits token="T" app={APP} node="" aggregate={false} serverDomain="dns1.example" />)
     expect(screen.getByRole('heading', { name: 'Blocked by list' })).toBeInTheDocument()
     expect(screen.getByText(
-      `Not counted yet. One click reads the current blocked log, skips 127.0.0.1 and ::1, and sends at most ${LOOKUP_CAP.toLocaleString()} lookups. Each lookup is logged as blocked from this server.`,
+      `Not counted yet. One click reads the current blocked log, skips 127.0.0.1 and ::1, and sends at most ${LOOKUP_CAP.toLocaleString()} lookups. Each lookup is logged as blocked from this server. Allow TXT Blocking Report has to be enabled, or this server does not say which list matched.`,
     )).toBeInTheDocument()
     expect(logs.queryLogs).not.toHaveBeenCalled()
 

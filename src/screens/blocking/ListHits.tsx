@@ -43,6 +43,7 @@ in flight is not drawn under the new node.
 
 Its words, all OURS: `Blocked by list`, `on <node>`, `Count lists`,
 `Not counted yet. One click reads the current blocked log, skips 127.0.0.1 and ::1, and sends at most 100 lookups. Each lookup is logged as blocked from this server.`,
+`Allow TXT Blocking Report has to be enabled, or this server does not say which list matched.`,
 `Reading the blocked log…`, `No blocked queries in the current log.`,
 `N blocked queries in the log` (and `1 blocked query in the log`), `No list reported`,
 `Lookup failed`, `N names` (and `1 name`), `<list>: N blocked`, `Block list`, and the
@@ -288,7 +289,7 @@ export function ListHits({
         <div aria-live="polite">
           {view.kind === 'idle' && (
             <Empty compact>
-              {`Not counted yet. One click reads the current blocked log, skips 127.0.0.1 and ::1, and sends at most ${num2(LOOKUP_CAP)} lookups. Each lookup is logged as blocked from this server.`}
+              {`Not counted yet. One click reads the current blocked log, skips 127.0.0.1 and ::1, and sends at most ${num2(LOOKUP_CAP)} lookups. Each lookup is logged as blocked from this server. Allow TXT Blocking Report has to be enabled, or this server does not say which list matched.`}
             </Empty>
           )}
           {view.kind === 'busy' && <Loading compact>Reading the blocked log…</Loading>}

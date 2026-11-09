@@ -88,7 +88,8 @@ trees, and the block lists sit in Settings › Blocking. This console brings the
 
 - **Overview** shows what blocking is doing: Total Queries and Blocked with their trend, the blocked
   share, allowed against blocked over time, the top blocked domains and the last ten blocked
-  queries. Count lists totals the current blocked log by list, when you ask, at most 100 names a click. Disable blocking for
+  queries. Count lists totals the current blocked log by list, when you ask, at most 100 names a click.
+  Allow TXT Blocking Report has to be enabled. Disable blocking for
   one of the stock console's eight durations and see when it comes back.
 - **Rules** puts every domain you blocked or allowed by hand in one table, filtered, searchable and
   paged however many there are. The domain tree you already know is one switch away.
