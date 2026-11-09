@@ -86,12 +86,15 @@ export function TopStats({
   type,
   range,
   token,
+  instants,
   node = '',
   onClose,
 }: {
   /** `null` with the modal closed. */
   type: TopKind | null
   range: Range
+  /** The two instants a `Custom` range is read between. */
+  instants?: { start: string; end: string }
   token: string | null
   /** The cluster node the opening screen is reading; the aggregate is `cluster`. */
   node?: string
@@ -109,11 +112,11 @@ export function TopStats({
     setRows([])
     setNotice(null)
     setSearch('')
-    void getTop(token, range, type, LIMIT, node).then((r) => {
+    void getTop(token, range, type, LIMIT, node, instants).then((r) => {
       setRows(r)
       setLoading(false)
     })
-  }, [type, range, token, node])
+  }, [type, range, instants, token, node])
 
   const isClient = type === 'TopClients'
   const shown = rows.filter((f) => matchesTop(f, search))

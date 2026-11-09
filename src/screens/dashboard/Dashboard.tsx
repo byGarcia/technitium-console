@@ -115,6 +115,7 @@ export function Dashboard({
   /** What is missing from the custom range, if anything is. One at a time. */
   const [missingRange, setMissingRange] = useState<string | null>(null)
   const [top, setTop] = useState<TopKind | null>(null)
+  const [topInstants, setTopInstants] = useState<{ start: string; end: string } | undefined>(undefined)
   const [notice, setNotice] = useState<{ type: AlertType; title: string; text: string } | null>(null)
   /* Allowing or blocking from a top list reports on the page (main.js:2825 and
      2853 pass no alert placeholder). */
@@ -339,6 +340,24 @@ export function Dashboard({
     setMissingRange(missing)
     if (missing != null) return
     setRequested(rangeInstants(start, end))
+  }
+
+  /* `showTopStats` (main.js:2879-2910): on Custom, "More" reads the two fields as
+     they are when pressed, and with one missing says which and asks nothing. */
+  function openTop(kind: TopKind) {
+    if (range !== 'Custom') {
+      setTopInstants(undefined)
+      setTop(kind)
+      return
+    }
+    const missing = whatIsMissing(start, end)
+    setMissingRange(missing)
+    if (missing != null) {
+      ;(missing === MSG_START ? startRef : endRef).current?.focus()
+      return
+    }
+    setTopInstants(rangeInstants(start, end))
+    setTop(kind)
   }
 
   const s = view?.stats
@@ -656,7 +675,7 @@ export function Dashboard({
           tone="--ch-clients"
           rows={view?.topClients ?? []}
           isClient
-          onMore={() => setTop('TopClients')}
+          onMore={() => openTop('TopClients')}
           failure={failure}
           menu={(f) => <TopRowMenu kind="TopClients" name={f.name} node={node} action={action} />}
         />
@@ -664,7 +683,7 @@ export function Dashboard({
           title="Top Domains"
           tone="--ch-ok"
           rows={view?.topDomains ?? []}
-          onMore={() => setTop('TopDomains')}
+          onMore={() => openTop('TopDomains')}
           failure={failure}
           menu={(f) => <TopRowMenu kind="TopDomains" name={f.name} node={node} action={action} />}
         />
@@ -672,7 +691,7 @@ export function Dashboard({
           title="Top Blocked Domains"
           tone="--ch-block"
           rows={view?.topBlockedDomains ?? []}
-          onMore={() => setTop('TopBlockedDomains')}
+          onMore={() => openTop('TopBlockedDomains')}
           failure={failure}
           beforeMore={<BlockingMenu token={token} onNotice={setNotice} />}
           menu={(f) => <TopRowMenu kind="TopBlockedDomains" name={f.name} node={node} action={action} />}
@@ -689,7 +708,7 @@ export function Dashboard({
         />
       </div>
 
-      <TopStats type={top} range={range} token={token} node={node} onClose={() => setTop(null)} />
+      <TopStats type={top} range={range} instants={topInstants} token={token} node={node} onClose={() => setTop(null)} />
     </>
   )
 }

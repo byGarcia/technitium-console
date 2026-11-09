@@ -121,8 +121,9 @@ export async function getTop(
   type: TopKind,
   limit = 1000,
   node?: string,
+  range?: { start: string; end: string },
 ): Promise<TopEntry[]> {
-  const outcome = await readTop(token, statsType, type, limit, node)
+  const outcome = await readTop(token, statsType, type, limit, node, range)
   return outcome.kind === 'ok' ? outcome.data : []
 }
 
@@ -137,11 +138,18 @@ export async function readTop(
   type: TopKind,
   limit = 1000,
   node?: string,
+  range?: { start: string; end: string },
 ): Promise<ApiOutcome<TopEntry[]>> {
+  const body: Record<string, string> = { type: statsType, statsType: type, limit: String(limit) }
+  /* On Custom the server rejects the call without both (WebServiceDashboardApi.cs). */
+  if (statsType === 'Custom' && range) {
+    body.start = range.start
+    body.end = range.end
+  }
   const outcome = await apiRequest<{ response: Record<string, TopEntry[]> }>('dashboard/stats/getTop', {
     token,
     node,
-    body: { type: statsType, statsType: type, limit: String(limit) },
+    body,
   })
   if (outcome.kind !== 'ok') return outcome
   const r = outcome.data.response

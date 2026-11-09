@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import * as api from '../../api/dashboard'
@@ -138,7 +138,41 @@ describe('the three \"More\" buttons of the Dashboard', () => {
 
     expect(await screen.findByText('Top 1000 Clients')).toBeTruthy()
     // With the Dashboard's node, the aggregate by default (main.js:2932).
-    await waitFor(() => expect(top).toHaveBeenCalledWith('t', 'LastHour', 'TopClients', 1000, 'cluster'))
+    await waitFor(() => expect(top).toHaveBeenCalledWith('t', 'LastHour', 'TopClients', 1000, 'cluster', undefined))
+  })
+
+  /* main.js:2879-2910: on Custom, "More" reads the two date fields when pressed. */
+  async function onCustom() {
+    const user = userEvent.setup()
+    vi.spyOn(api, 'getDashboardStats').mockResolvedValue({ kind: 'ok', data: DATA } as never)
+    const top = vi.spyOn(api, 'getTop').mockResolvedValue(CLIENTS as never)
+    render(<Dashboard token="t" />)
+    const panel = (await screen.findByText('Top Clients')).closest('div')!.parentElement!
+    await user.click(screen.getByRole('button', { name: 'Custom' }))
+    return { user, top, more: within(panel).getByRole('button', { name: 'More' }) }
+  }
+
+  it('on Custom, "More" asks for the dates in the fields (#32)', async () => {
+    const { user, top, more } = await onCustom()
+    fireEvent.change(screen.getByLabelText(/^Start/), { target: { value: '2026-08-01' } })
+    fireEvent.change(screen.getByLabelText(/^End/), { target: { value: '2026-08-20' } })
+    await user.click(more)
+    await waitFor(() =>
+      expect(top).toHaveBeenCalledWith('t', 'Custom', 'TopClients', 1000, 'cluster', {
+        start: '2026-08-01T00:00:00.000Z',
+        end: '2026-08-20T00:00:00.000Z',
+      }),
+    )
+  })
+
+  it('on Custom with a date missing, "More" says which and asks the server nothing', async () => {
+    const { user, top, more } = await onCustom()
+    fireEvent.change(screen.getByLabelText(/^Start/), { target: { value: '2026-08-01' } })
+    await user.click(more)
+    expect(await screen.findByText('Please select an end date.')).toBeTruthy()
+    expect(screen.getByLabelText(/^End/)).toHaveFocus()
+    expect(screen.queryByText('Top 1000 Clients')).toBeNull()
+    expect(top).not.toHaveBeenCalled()
   })
 
   it('the short client list already shows the domain and the rate-limited marking', async () => {

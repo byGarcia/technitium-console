@@ -63,6 +63,18 @@ describe('dashboard', () => {
     expect(r[0].name).toBe('10.0.1.42')
   })
 
+  it('getTop on Custom sends the two instants the server requires (#32)', async () => {
+    const spy = vi.spyOn(client, 'apiRequest').mockResolvedValue(response({ topDomains: [] }))
+    const instants = { start: '2026-11-01T00:00:00.000Z', end: '2026-11-02T00:00:00.000Z' }
+    await getTop('t', 'Custom', 'TopDomains', 1000, undefined, instants)
+    expect(spy.mock.calls[0][1]?.body).toEqual({
+      type: 'Custom',
+      statsType: 'TopDomains',
+      limit: '1000',
+      ...instants,
+    })
+  })
+
   it('getTop returns an empty list on failure', async () => {
     vi.spyOn(client, 'apiRequest').mockResolvedValue({ kind: 'error', message: 'x' })
     expect(await getTop('t', 'LastHour', 'TopDomains')).toEqual([])
