@@ -125,7 +125,7 @@ describe('Blocked by list', () => {
       kind: 'ok',
       data: { response: { pageNumber: 1, totalPages: 1, totalEntries: 1, entries: [entry('10.0.0.5', 'ads.example')] } },
     })
-    let finish: (value: unknown) => void = () => {}
+    let finish!: (value: Awaited<ReturnType<typeof dns.resolve>>) => void
     vi.spyOn(dns, 'resolve').mockReturnValue(new Promise((resolve) => { finish = resolve }))
     const props = { token: 'T', app: APP, aggregate: false, serverDomain: 'dns1.example' }
     const { rerender } = render(<ListHits {...props} node="a" />)
