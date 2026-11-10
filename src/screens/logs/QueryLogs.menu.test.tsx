@@ -302,6 +302,15 @@ describe('Query Logs: Allow in Advanced Blocking', () => {
     expect(within(await openRow(1)).getAllByRole('menuitem').map((i) => i.textContent)).toEqual(['Query DNS Server', 'Block Domain'])
   })
 
+  it('is not offered for a name a client sent with a line break in it', async () => {
+    withApps([APP, BLOCKING])
+    withEntries([entry(1, 'Blocked', { qname: 'evil.test\ncom' })])
+    inShell(<Logs token="t" sub="Query Logs" />)
+    await userEvent.click(await screen.findByRole('button', { name: 'Query' }))
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Actions for row 1' })).toBeInTheDocument())
+    expect(within(await openRow(1)).getAllByRole('menuitem').map((i) => i.textContent)).toEqual(['Query DNS Server', 'Allow Domain'])
+  })
+
   it("ticks the client's group, marks a group that already allows it, and writes only after reading the config again", async () => {
     withApps([APP, BLOCKING])
     withEntries()

@@ -9,7 +9,7 @@ import { Loading } from '../../../ui/Empty'
 import { Notifier } from '../../../ui/Notifier'
 import { RouteLink } from '../../../ui/RouteLink'
 import { openConfig, serializeConfig, type EditorModel } from './config-model'
-import { allowedBy, allowedName, clientGroup, hasEndpointRows, withAllowed } from './allow-in-group'
+import { allowableName, allowedBy, allowedName, clientGroup, hasEndpointRows, withAllowed } from './allow-in-group'
 import { blocking, validate } from './validate'
 import { findBlockingApp, MIN_VERSION, versionState } from './version'
 import styles from './AllowInGroup.module.css'
@@ -27,7 +27,7 @@ a config the editor would refuse is refused here too, with a way to the editor.
 
 Its words, OURS: the title, `Allow`, `Open Visual Editor`, `Already allowed by
 <line>.`, the sentences about the client's group, the endpoint note, the refusal
-and conflict sentences, `Tick at least one group.` and the result.
+and conflict sentences, `Tick at least one group.`, `This name cannot be written to an allowed list.` and the result.
 */
 
 const CONFLICT = 'The config changed on the server while this was open. Nothing was saved.'
@@ -87,6 +87,7 @@ export function AllowInGroup({
 
   async function allow() {
     if (phase.kind !== 'ready') return
+    if (allowableName(domain) == null) return setNotice({ type: 'danger', title: 'Error!', text: 'This name cannot be written to an allowed list.' })
     if (chosen.size === 0) return setNotice({ type: 'warning', title: 'Warning!', text: 'Tick at least one group.' })
     const next = withAllowed(phase.model, [...chosen], domain)
     const errors = blocking(validate(next))

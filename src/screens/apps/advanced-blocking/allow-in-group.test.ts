@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { openConfig, serializeConfig, type EditorModel } from './config-model'
-import { allowedBy, clientGroup, hasEndpointRows, withAllowed } from './allow-in-group'
+import { allowableName, allowedBy, clientGroup, hasEndpointRows, withAllowed } from './allow-in-group'
 
 const TEXT = `{
   "enableBlocking": true,
@@ -80,4 +80,21 @@ describe('withAllowed', () => {
 it('hasEndpointRows says when localEndPointGroupMap could pick another group', () => {
   expect(hasEndpointRows(model())).toBe(false)
   expect(hasEndpointRows(model(TEXT.replace('"enableBlocking": true,', '"enableBlocking": true, "localEndPointGroupMap": { "10.0.0.1:53": "home" },')))).toBe(true)
+})
+
+describe('allowableName', () => {
+  it('passes a plain host name, lower case and without the final dot', () => {
+    expect(allowableName('Ads.Tracker-1_x.test.')).toBe('ads.tracker-1_x.test')
+  })
+
+  it('refuses what would write more than one line, or a name the list cannot hold', () => {
+    for (const bad of ['', '.', 'evil.test\ncom', 'evil.test\r\ncom', 'a b.test', '*.test', 'a/b.test', 'a..test', `${'a'.repeat(64)}.test`]) {
+      expect(allowableName(bad)).toBeNull()
+    }
+  })
+
+  it('withAllowed leaves the model as it was for a name that does not pass', () => {
+    const m = model()
+    expect(withAllowed(m, [byName(m, 'kids').id], 'evil.test\ncom')).toBe(m)
+  })
 })

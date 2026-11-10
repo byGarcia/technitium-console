@@ -2140,8 +2140,12 @@ contract and SECURITY.md.
       entry does not say which endpoint the query came in on. A client that matches no group,
       or a row naming a missing group, gets nothing ticked and a sentence saying the app blocks
       nothing for it;
-    - **not for the root**, which has no name to allow, and only in Query Logs: the Dashboard's
-      and Blocking's top lists carry no client.
+    - **only a plain host name is written**: labels of 1 to 63 letters, digits, `-` or `_`, 253
+      characters in all, no wildcard and no slash (`allowableName`). A query log name is chosen by
+      whoever sent the query, and the `allowed` list is one name per line, so a name with a line
+      break in it would add lines of its own (`com` allows every .com name). Such a row, and the
+      root, are not offered the action;
+    - **only in Query Logs**: the Dashboard's and Blocking's top lists carry no client.
     Its words, OURS, are declared in the header comment of `AllowInGroup.tsx`.
 
 ## Four constraints the server imposes

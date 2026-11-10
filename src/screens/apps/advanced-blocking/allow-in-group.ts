@@ -49,6 +49,19 @@ export function allowedName(domain: string): string {
   return domain.trim().toLowerCase().replace(/\.$/, '')
 }
 
+/**
+ * The name that may be written, or null. A query log name comes from whoever sent
+ * the query, and the `allowed` list is one name per line: a name carrying a line
+ * break would add lines of its own (`com`, which allows every .com name). So only a
+ * plain host name passes: 1 to 63 letters, digits, `-` or `_` per label, 253 in all,
+ * no wildcard and no slash (isDomainNameValid takes both, DnsClient.cs:2539-2624).
+ */
+export function allowableName(domain: string): string | null {
+  const name = allowedName(domain)
+  if (name.length === 0 || name.length > 253) return null
+  return name.split('.').every((label) => /^[a-z0-9_-]{1,63}$/.test(label)) ? name : null
+}
+
 /** The line of the group's `allowed` list that already covers the name: the name
     itself or a parent, as IsZoneFound walks up (App.cs:153-169). */
 export function allowedBy(group: GroupModel, domain: string): string | null {
@@ -64,7 +77,8 @@ export function allowedBy(group: GroupModel, domain: string): string | null {
 
 /** The model with the name added at the end of each chosen group's `allowed` list. */
 export function withAllowed(model: EditorModel, groupIds: readonly string[], domain: string): EditorModel {
-  const name = allowedName(domain)
+  const name = allowableName(domain)
+  if (name == null) return model
   return {
     ...model,
     groups: model.groups.map((g) => {

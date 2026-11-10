@@ -33,6 +33,7 @@ import tbl from '../../ui/Table.module.css'
 import { useHandoff, type Handoff, type QueryLogsRequest } from '../../app/handoff'
 import { useDomainAction, verbFor } from '../../lib/allow-block'
 import { AllowInGroup } from '../apps/advanced-blocking/AllowInGroup'
+import { allowableName } from '../apps/advanced-blocking/allow-in-group'
 import { findBlockingApp } from '../apps/advanced-blocking/version'
 import { useMedia } from '../../lib/use-media'
 import { Icon } from '../../ui/Icon'
@@ -521,8 +522,9 @@ function QueryRow({
                     >
                       {verb}
                     </button>
-                    {/* OURS (deviation 47): the root has no name to allow. */}
-                    {verb === 'Allow Domain' && onAllowInGroup != null && domain !== '' && (
+                    {/* OURS (deviation 47): only a plain host name, so not the root
+                        and not a name a client sent with a line break in it. */}
+                    {verb === 'Allow Domain' && onAllowInGroup != null && allowableName(domain) != null && (
                       <button
                         type="button"
                         onClick={() => {
