@@ -13,7 +13,7 @@ also `technitiumServerMinimum` in its `package.json`, which is what the update n
 
 | Console | Technitium DNS Server | Notes |
 |---|---|---|
-| **1.4.x** | **15.5.x, 15.6.x** (1.4.0 checked against 15.6.2) | Current. A Clients page with actions, every cluster node side by side, a command palette, response times on the Dashboard, and every screen redrawn. |
+| **1.4.x** | **15.5.x, 15.6.x** (1.4.0 to 1.4.2 checked against 15.6.2) | Current. A Clients page with actions, every cluster node side by side, a command palette, response times on the Dashboard, and every screen redrawn. |
 | 1.3.x | 15.5.x, 15.6.x | Superseded by 1.4.x on the same server. Every screen redesigned for the phone, a Dashboard that compares periods, Cache in one panel. |
 | 1.2.x | 15.5.x, 15.6.x | Superseded by 1.3.x on the same server. Allowed and Blocked become one Blocking section, a light theme, and the console comes as an image for Docker. Supports a console folder of its own (`DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH`), so server updates leave it alone. |
 | 1.1.x | 15.5.x | Superseded by 1.2.x on the same server. If you stay on it, use 1.1.3: earlier ones flood the server from Cache, Allowed and Blocked. |
@@ -24,7 +24,14 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
 
 ---
 
-## Unreleased
+## v1.4.2 (2026-11-10)
+
+**Which block list matched a domain, allowing a blocked name for one Advanced Blocking group from
+Query Logs, and More on a custom range fixed.** Every feature of the stock console works as before,
+through the same API: checked against Technitium DNS Server 15.6.2. Each addition is written down,
+with its limits, in [CONVENTIONS.md](CONVENTIONS.md#deliberate-deviations-from-upstream-behaviour).
+
+Thanks to the people who sent and asked for these: see each line below.
 
 ### New
 
@@ -39,8 +46,8 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
   group. A regex report is counted. The domain check names that app's report, and
   asks one TXT query when the first answer does not already name a list. List URLs
   have their userinfo and credential query values redacted before they are shown.
-  A report is only read from an answer the server wrote itself.
-  Written down as deviation 46 in
+  A report is only read from an answer the server wrote itself. Contributed by @dpackham in
+  [#31](https://github.com/byGarcia/technitium-console/pull/31). Written down as deviation 46 in
   [CONVENTIONS.md](CONVENTIONS.md#deliberate-deviations-from-upstream-behaviour).
 - **Allow in Advanced Blocking** in a Query Logs row's menu, when the Advanced Blocking app is
   installed. It adds the blocked name to the allowed domains of the groups you tick, with the
@@ -49,6 +56,13 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
   to the server's Allowed Zone, as before. Requested by @jayscovill in
   [#33](https://github.com/byGarcia/technitium-console/issues/33). Written down as deviation 47 in
   [CONVENTIONS.md](CONVENTIONS.md#deliberate-deviations-from-upstream-behaviour).
+
+### Fixed
+
+- **More on the Dashboard's top lists with a Custom range.** The server needs the range's start and
+  end for it, and the three More buttons sent neither, so the server answered "Parameter 'start'
+  missing". They now send the dates and, with one missing, say which and ask nothing, as the stock
+  console does. Reported by @armgenio in [#32](https://github.com/byGarcia/technitium-console/issues/32).
 
 ---
 
