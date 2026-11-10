@@ -268,3 +268,95 @@ describe('Query Logs: arriving from showQueryLogs', () => {
     expect(query).not.toHaveBeenCalled()
   })
 })
+
+/* Deviation 47: `Allow in Advanced Blocking`, only with that app installed. */
+describe('Query Logs: Allow in Advanced Blocking', () => {
+  const BLOCKING = {
+    name: 'Advanced Blocking',
+    description: '',
+    version: '11.2.1',
+    dnsApps: [{ ...APP.dnsApps[0], classPath: 'AdvancedBlocking.App', isQueryLogger: false, isQueryLogs: false, isRequestBlockingHandler: true }],
+  } as InstalledApp
+  const group = (name: string, allowed: string[]) =>
+    `{ "name": "${name}", "allowed": ${JSON.stringify(allowed)}, "blocked": [], "allowListUrls": [], "blockListUrls": [], "allowedRegex": [], "blockedRegex": [], "regexAllowListUrls": [], "regexBlockListUrls": [], "adblockListUrls": [] }`
+  const CONFIG = `{\n  "networkGroupMap": { "0.0.0.0/0": "everyone", "10.0.0.7": "kids" },\n  "groups": [\n    ${group('everyone', ['r2.example'])},\n    ${group('kids', [])}\n  ]\n}`
+
+  function withConfig(configs: string[]) {
+    const get = vi.spyOn(apps, 'getAppConfig')
+    for (const config of configs) get.mockResolvedValueOnce({ kind: 'ok', data: { response: { config } } } as never)
+    const set = vi.spyOn(apps, 'setAppConfig').mockResolvedValue({ kind: 'ok', data: {} } as never)
+    return { get, set }
+  }
+
+  it('is offered after Allow Domain on a blocked row, and not without the app or on Block Domain', async () => {
+    withApps([APP, BLOCKING])
+    withEntries()
+    inShell(<Logs token="t" sub="Query Logs" />)
+    await queried()
+    expect(within(await openRow(2)).getAllByRole('menuitem').map((i) => i.textContent)).toEqual([
+      'Query DNS Server',
+      'Allow Domain',
+      'Allow in Advanced Blocking',
+    ])
+    await userEvent.keyboard('{Escape}')
+    expect(within(await openRow(1)).getAllByRole('menuitem').map((i) => i.textContent)).toEqual(['Query DNS Server', 'Block Domain'])
+  })
+
+  it("ticks the client's group, marks a group that already allows it, and writes only after reading the config again", async () => {
+    withApps([APP, BLOCKING])
+    withEntries()
+    const { get, set } = withConfig([CONFIG, CONFIG])
+    inShell(<Logs token="t" sub="Query Logs" />)
+    await queried()
+    await openRow(2)
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Allow in Advanced Blocking' }))
+
+    const dialog = await screen.findByRole('dialog', { name: 'Allow in Advanced Blocking - r2.example' })
+    expect(await within(dialog).findByText("Client 10.0.0.7 is in group 'kids'.")).toBeInTheDocument()
+    expect(within(dialog).getByRole('checkbox', { name: 'kids' })).toBeChecked()
+    expect(within(dialog).getByRole('checkbox', { name: 'everyone' })).toBeDisabled()
+    expect(within(dialog).getByText('Already allowed by r2.example.')).toBeInTheDocument()
+
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Allow' }))
+    expect(
+      await screen.findByText("Domain 'r2.example' was added to the allowed domains of Advanced Blocking group 'kids'."),
+    ).toBeInTheDocument()
+    expect(get).toHaveBeenCalledTimes(2)
+    expect(get).toHaveBeenNthCalledWith(1, 't', 'Advanced Blocking')
+    const sent = set.mock.calls[0][2]
+    expect(set.mock.calls[0].slice(0, 2)).toEqual(['t', 'Advanced Blocking'])
+    expect(JSON.parse(sent).groups.map((g: { allowed: string[] }) => g.allowed)).toEqual([['r2.example'], ['r2.example']])
+    expect(Object.keys(JSON.parse(sent))).toEqual(['networkGroupMap', 'groups'])
+    expect(JSON.parse(sent).networkGroupMap).toEqual(JSON.parse(CONFIG).networkGroupMap)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('writes nothing when the config changed on the server while the dialog was open', async () => {
+    withApps([APP, BLOCKING])
+    withEntries()
+    const { set } = withConfig([CONFIG, CONFIG.replace('"0.0.0.0/0"', '"0.0.0.0/1"')])
+    inShell(<Logs token="t" sub="Query Logs" />)
+    await queried()
+    await openRow(2)
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Allow in Advanced Blocking' }))
+    const dialog = await screen.findByRole('dialog')
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Allow' }))
+    expect(await within(dialog).findByText('The config changed on the server while this was open. Nothing was saved.')).toBeInTheDocument()
+    expect(set).not.toHaveBeenCalled()
+  })
+
+  it('a config the editor refuses is refused here, with the way to the visual editor', async () => {
+    withApps([APP, BLOCKING])
+    withEntries()
+    const { set } = withConfig(['{ // a comment\n}'])
+    inShell(<Logs token="t" sub="Query Logs" />)
+    await queried()
+    await openRow(2)
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Allow in Advanced Blocking' }))
+    const dialog = await screen.findByRole('dialog')
+    expect(await within(dialog).findByText(/This config can only be edited as JSON\. Line 1 has a comment/)).toBeInTheDocument()
+    expect(within(dialog).getByRole('link', { name: 'Open Visual Editor' })).toBeInTheDocument()
+    expect(within(dialog).queryByRole('button', { name: 'Allow' })).not.toBeInTheDocument()
+    expect(set).not.toHaveBeenCalled()
+  })
+})

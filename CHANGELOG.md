@@ -42,6 +42,13 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
   A report is only read from an answer the server wrote itself.
   Written down as deviation 46 in
   [CONVENTIONS.md](CONVENTIONS.md#deliberate-deviations-from-upstream-behaviour).
+- **Allow in Advanced Blocking** in a Query Logs row's menu, when the Advanced Blocking app is
+  installed. It adds the blocked name to the allowed domains of the groups you tick, with the
+  client's own group already ticked, and changes nothing else in the app's config. A group that
+  already allows the name, or a parent of it, is shown as such. Allow Domain still adds the name
+  to the server's Allowed Zone, as before. Requested by @jayscovill in
+  [#33](https://github.com/byGarcia/technitium-console/issues/33). Written down as deviation 47 in
+  [CONVENTIONS.md](CONVENTIONS.md#deliberate-deviations-from-upstream-behaviour).
 
 ---
 

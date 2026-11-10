@@ -32,6 +32,8 @@ import { Menu } from '../../ui/Menu'
 import tbl from '../../ui/Table.module.css'
 import { useHandoff, type Handoff, type QueryLogsRequest } from '../../app/handoff'
 import { useDomainAction, verbFor } from '../../lib/allow-block'
+import { AllowInGroup } from '../apps/advanced-blocking/AllowInGroup'
+import { findBlockingApp } from '../apps/advanced-blocking/version'
 import { useMedia } from '../../lib/use-media'
 import { Icon } from '../../ui/Icon'
 import { dropParams, writeParams } from '../../lib/url-state'
@@ -429,11 +431,14 @@ function QueryRow({
   action,
   fresh = false,
   nodeColour,
+  onAllowInGroup,
 }: {
   e: QueryLogEntry
   node: string
   handoff: Handoff | null
   action: ReturnType<typeof useDomainAction>
+  /** Set when the Advanced Blocking app is installed (deviation 47). */
+  onAllowInGroup?: (domain: string, clientIp: string) => void
   /** It came in on Live Update's last turn: it flashes once. */
   fresh?: boolean
   /** In the `All nodes` view (deviation 37): the row's node wears this colour in
@@ -516,6 +521,18 @@ function QueryRow({
                     >
                       {verb}
                     </button>
+                    {/* OURS (deviation 47): the root has no name to allow. */}
+                    {verb === 'Allow Domain' && onAllowInGroup != null && domain !== '' && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          close()
+                          onAllowInGroup(domain, e.clientIpAddress)
+                        }}
+                      >
+                        Allow in Advanced Blocking
+                      </button>
+                    )}
                   </>
                 )
               }}
@@ -609,6 +626,10 @@ export function QueryLogs({ tabs, token, node = '', request, nodes = [], cluster
   /* Allowing or blocking from a row reports on the page (logs.js:531 and 535
      pass no alert placeholder). */
   const action = useDomainAction(token, setNotice)
+  /* Whether `Allow in Advanced Blocking` is offered, from the same `apps/list`
+     (deviation 47), and the row it is open for. */
+  const [withBlockingApp, setWithBlockingApp] = useState(false)
+  const [allowIn, setAllowIn] = useState<{ domain: string; clientIp: string } | null>(null)
   /* The jump that brought us here, applied once the apps list arrives. */
   const pending = useRef(request)
   /* The query the address bar asked for on arrival (`query-url.ts`), read before
@@ -831,6 +852,7 @@ export function QueryLogs({ tabs, token, node = '', request, nodes = [], cluster
         return
       }
       const list = appsWithQueryLogs(outcome.data.response.apps ?? [])
+      setWithBlockingApp(findBlockingApp(outcome.data.response.apps ?? []) != null)
       setApps(list)
       const first = list[0]
       const base = defaultFilters(first?.name ?? '', first?.classPaths[0] ?? '')
@@ -1009,6 +1031,15 @@ export function QueryLogs({ tabs, token, node = '', request, nodes = [], cluster
       />
 
       <Notifier notice={notice} onClose={() => setNotice(null)} />
+      {allowIn != null && (
+        <AllowInGroup
+          token={token}
+          domain={allowIn.domain}
+          clientIp={allowIn.clientIp}
+          onClose={() => setAllowIn(null)}
+          onDone={setNotice}
+        />
+      )}
 
       {page != null && applied != null && (
         <QuerySummary
@@ -1384,6 +1415,7 @@ export function QueryLogs({ tabs, token, node = '', request, nodes = [], cluster
                     action={action}
                     fresh={fresh.has(rowKey(e))}
                     nodeColour={merged && on != null ? colourOf(on) : undefined}
+                    onAllowInGroup={withBlockingApp ? (domain, clientIp) => setAllowIn({ domain, clientIp }) : undefined}
                   />
                 )
               })}

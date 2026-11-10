@@ -1,0 +1,13 @@
+/*
+Allow in Advanced Blocking: a sentence about the client's group, then one
+checkbox per group.
+*/
+
+.note {
+  margin: 0 0 var(--s-6);
+  font-size: var(--t-4);
+  color: var(--mute);
+  line-height: 1.55;
+}
+
+.groups { display: flex; flex-direction: column; gap: var(--s-4); }

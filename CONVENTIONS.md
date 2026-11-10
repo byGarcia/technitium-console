@@ -2117,6 +2117,33 @@ contract and SECURITY.md.
     Its words, OURS, are declared in the header comments of `DomainCheck.tsx` and
     `ListHits.tsx`.
 
+47. **Allow a blocked name in Advanced Blocking groups, from Query Logs** (Adrián's decision,
+    2026-11-10; asked for in #33; `screens/apps/advanced-blocking/AllowInGroup.tsx` and
+    `allow-in-group.ts`). Upstream's row menu offers `Query DNS Server` and `Allow Domain`
+    (logs.js:539-552), and `Allow Domain` writes to the server's Allowed Zone, which covers every
+    client. With the Advanced Blocking app installed, a row that offers `Allow Domain` also offers
+    `Allow in Advanced Blocking`, which adds the row's name to the `allowed` list of the groups
+    ticked in its dialog. `Allow Domain` is unchanged. The menu knows the app is there from the
+    `apps/list` Query Logs already reads. Its limits, and crossing one is a bug:
+    - **the visual editor's limits (deviation 45)**: only `apps/list`, `apps/config/get` and
+      `apps/config/set`, with no `node`, so it is the config of the server the console is
+      connected to; the same model, so the config is patched and never rebuilt; the config read
+      again before the write, and nothing written if it changed; a config the editor refuses, or
+      an app below 10.0, is refused here with a link to the editor;
+    - **only the `allowed` list of the ticked groups changes.** The name goes in lower case and
+      without a final dot, at the end of the list. A group whose `allowed` list already covers
+      the name, itself or a parent (IsZoneFound, App.cs:153-169), is shown ticked and disabled
+      and is not written;
+    - **the client's group is ticked, not decided**: the most specific `networkGroupMap` row that
+      holds the row's client address (GetGroupName, App.cs:328-341). When `localEndPointGroupMap`
+      has rows the dialog says they can give the client another group, because a query log
+      entry does not say which endpoint the query came in on. A client that matches no group,
+      or a row naming a missing group, gets nothing ticked and a sentence saying the app blocks
+      nothing for it;
+    - **not for the root**, which has no name to allow, and only in Query Logs: the Dashboard's
+      and Blocking's top lists carry no client.
+    Its words, OURS, are declared in the header comment of `AllowInGroup.tsx`.
+
 ## Four constraints the server imposes
 
 These are not preferences: break them and the console works in development and
