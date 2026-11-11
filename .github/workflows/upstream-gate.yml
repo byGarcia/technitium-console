@@ -1,0 +1,25 @@
+name: Upstream gate
+
+# Runs on sync/upstream-* pull requests opened by the Sentinel-Labs fleet engine.
+# The engine never pushes to main; a human merges the PR once this gate is green.
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    if: startsWith(github.head_ref, 'sync/upstream-')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        run: npm ci --if-present
+      - name: Build
+        run: npm run build --if-present
+
