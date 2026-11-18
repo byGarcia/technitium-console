@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { fromNow, dateTime, minuteStamp } from './dates'
+import { fromNow, dateTime, minuteStamp, dateWithAge } from './dates'
+import { setTimezone } from './timezone'
 
-/* The format is moment's: `YYYY-MM-DD HH:mm:ss` in LOCAL time. The tests build
-   the date with `new Date(y, m, d, …)`, which is already local, so as not to
-   depend on the time zone of whoever runs them. */
+/* The format is moment's: `YYYY-MM-DD HH:mm:ss` in the configured timezone. The tests build
+   the date with `new Date(y, m, d, …)` or explicit ISO timestamps. */
 
 describe('dateTime / minuteStamp', () => {
   const d = new Date(2026, 7, 25, 16, 41, 12).toISOString()
@@ -22,6 +22,41 @@ describe('dateTime / minuteStamp', () => {
     expect(dateTime(undefined)).toBe('')
     expect(dateTime('not a date')).toBe('')
     expect(minuteStamp(null)).toBe('')
+  })
+
+  it('formats UTC timestamps accurately across supported timezones', () => {
+    const utcIso = '2026-08-25T16:41:12.000Z'
+    expect(dateTime(utcIso, 'Asia/Kolkata')).toBe('2026-08-25 22:11:12')
+    expect(minuteStamp(utcIso, 'Asia/Kolkata')).toBe('2026-08-25 22:11')
+
+    expect(dateTime(utcIso, 'UTC')).toBe('2026-08-25 16:41:12')
+    expect(minuteStamp(utcIso, 'UTC')).toBe('2026-08-25 16:41')
+
+    expect(dateTime(utcIso, 'America/New_York')).toBe('2026-08-25 12:41:12')
+    expect(dateTime(utcIso, 'Europe/London')).toBe('2026-08-25 17:41:12')
+    expect(dateTime(utcIso, 'Asia/Tokyo')).toBe('2026-08-26 01:41:12')
+    expect(minuteStamp(utcIso, 'Asia/Tokyo')).toBe('2026-08-26 01:41')
+  })
+
+  it('respects dynamic timezone changes from setTimezone', () => {
+    const utcIso = '2026-08-25T16:41:12.000Z'
+    setTimezone('UTC')
+    expect(dateTime(utcIso)).toBe('2026-08-25 16:41:12')
+
+    setTimezone('Asia/Kolkata')
+    expect(dateTime(utcIso)).toBe('2026-08-25 22:11:12')
+  })
+
+  it('formats dateWithAge with timezone', () => {
+    const utcIso = '2026-08-25T16:41:12.000Z'
+    const now = Date.parse('2026-08-25T16:42:12.000Z')
+    expect(dateWithAge(utcIso, now, 'UTC')).toBe('2026-08-25 16:41:12 (a minute ago)')
+    expect(dateWithAge(utcIso, now, 'Asia/Kolkata')).toBe('2026-08-25 22:11:12 (a minute ago)')
+  })
+
+  it('formats .NET default date 0001-01-01 properly without throwing', () => {
+    expect(dateTime('0001-01-01T00:00:00')).toBe('0001-01-01 00:00:00')
+    expect(minuteStamp('0001-01-01T00:00:00')).toBe('0001-01-01 00:00')
   })
 })
 

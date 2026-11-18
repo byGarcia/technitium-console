@@ -6,6 +6,7 @@ import text from '../ui/text.module.css'
 import { toTrail, writeRoute, readRoute, translateLegacyRoute, plainClick } from './route'
 import { ChangePassword } from '../screens/modals/ChangePassword'
 import { ChangeTheme } from '../screens/modals/ChangeTheme'
+import { ChangeTimezone } from '../screens/modals/ChangeTimezone'
 import { Configure2FA } from '../screens/modals/Configure2FA'
 import { CreateApiToken } from '../screens/modals/CreateApiToken'
 import { Profile } from '../screens/profile/Profile'
@@ -52,7 +53,7 @@ import {
   updateNotificationSilenced,
 } from '../api/user'
 
-type ModalId = 'password' | 'twofa' | 'token' | 'theme'
+type ModalId = 'password' | 'twofa' | 'token' | 'theme' | 'timezone'
 
 /** One glyph per section. No icon dependency: the server's CSP does not allow a
  *  CDN and an icon font would have to ship as a file in www/. */
@@ -709,6 +710,9 @@ export function Shell({
                 <MenuItem icon="theme" onClick={() => { close(); open('theme') }}>
                   Change Theme
                 </MenuItem>
+                <MenuItem icon="clock" onClick={() => { close(); open('timezone') }}>
+                  Display Timezone
+                </MenuItem>
                 {/*
                 One entry and not two: upstream declares both and hides one
                 (`index.html:72-73`, `initUpdateNotificationMenu`), which is how
@@ -976,6 +980,10 @@ export function Shell({
       <ChangeTheme
         open={modal === 'theme'}
         onOpenChange={(o) => setModal(o ? 'theme' : null)}
+      />
+      <ChangeTimezone
+        open={modal === 'timezone'}
+        onOpenChange={(o) => setModal(o ? 'timezone' : null)}
       />
 
       {/* Upstream asks with a native `confirm()`; this console asks with its own,
