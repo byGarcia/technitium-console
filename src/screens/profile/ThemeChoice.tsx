@@ -1,7 +1,7 @@
 import { Panel } from '../../ui/Panel'
 import { Icon } from '../../ui/Icon'
 import { useTheme } from '../../theme/useTheme'
-import type { OfferedTheme } from '../../theme/theme'
+import type { OfferedTheme, ResolvedTheme } from '../../theme/theme'
 import styles from './Profile.module.css'
 
 /*
@@ -25,7 +25,7 @@ const OPTIONS: { value: OfferedTheme; label: string }[] = [
   { value: 'dark', label: 'Dark Theme' },
 ]
 
-function Swatch({ theme }: { theme: 'light' | 'dark' }) {
+function Swatch({ theme }: { theme: ResolvedTheme }) {
   return (
     <span className={styles.swatchHalf} data-theme={theme}>
       <i />

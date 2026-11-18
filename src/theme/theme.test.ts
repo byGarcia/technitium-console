@@ -6,7 +6,6 @@ import {
   readChoice,
   resolveTheme,
   writeChoice,
-  type ThemeChoice,
 } from './theme'
 
 describe('theme library', () => {

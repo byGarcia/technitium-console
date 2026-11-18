@@ -46,17 +46,34 @@ It goes on its own line and not as a sixth link: the five above are PRODUCT
 destinations and this is an authorship credit. Put in the same row, with the same
 pipes, it would read as one more Technitium site.
 */
-export const THEME_CREDIT = {
-  /*
-  The handle, not the name: this is the identity the work is published under.
+export interface ThemeCredit {
+  text: string
+  href: string
+  name: string
+}
 
-  The label before it is "Theme:" and not "Theme by", which is what it said when
-  the credit carried a person's name. With the handle it would have read "Theme
-  by byGarcia", and the stutter is the handle's own "by" colliding with the
-  label's.
-  */
+export const GARCIA_THEME_CREDIT: ThemeCredit = {
   text: 'byGarcia',
   href: 'https://github.com/byGarcia',
-  /* Starts with the visible text, which is what "label in name" requires. */
   name: 'byGarcia on GitHub',
+}
+
+export const VARUN_THEME_CREDIT: ThemeCredit = {
+  text: 'byVarun',
+  href: 'https://github.com/varunagarwal-pro',
+  name: 'byVarun on GitHub',
+}
+
+export const THEME_CREDIT: ThemeCredit = GARCIA_THEME_CREDIT
+
+/**
+ * Return the appropriate theme authorship credit based on the active theme choice.
+ * Custom palettes (Dark Grey / Charcoal, Amber, Glassmorphism) are authored by Varun.
+ * Upstream themes (System, Light, Dark) are authored by Garcia.
+ */
+export function getThemeCredit(theme: string | null | undefined): ThemeCredit {
+  if (theme === 'dark-grey' || theme === 'amber' || theme === 'glassmorphism') {
+    return VARUN_THEME_CREDIT
+  }
+  return GARCIA_THEME_CREDIT
 }
