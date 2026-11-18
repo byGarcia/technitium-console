@@ -1,12 +1,14 @@
 import { Dialog } from '../../ui/Dialog'
 import { DialogGroup, Tile, dialogForm as df } from '../../ui/DialogForm'
-import { useTimezone, TIMEZONE_OPTIONS } from '../../lib/timezone'
+import { useTimezone, FEATURED_TIMEZONES, getIanaTimezones } from '../../lib/timezone'
+import { Select } from '../../ui/Select'
+import { Field } from '../../ui/Field'
 
 /*
 The display timezone dialog: allows selecting persistent display timezone across
 all timestamps in the console (Query Logs, View Logs, Dashboard, Clients, DHCP, etc.).
 Defaults to IST (Asia/Kolkata), with standard industry timezones across all regions
-and Browser Local time available.
+and the exhaustive IANA Time Zone Database (Unicode CLDR) available.
 */
 
 export function ChangeTimezone({
@@ -17,11 +19,12 @@ export function ChangeTimezone({
   onOpenChange: (o: boolean) => void
 }) {
   const { timezone, setTimezone } = useTimezone()
+  const ianaList = getIanaTimezones()
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange} title="Display Timezone">
       <DialogGroup label="Timezone" radios={df.tiles}>
-        {TIMEZONE_OPTIONS.map((o) => (
+        {FEATURED_TIMEZONES.map((o) => (
           <Tile
             key={o.value}
             name="rdChangeTimezone"
@@ -33,6 +36,26 @@ export function ChangeTimezone({
           </Tile>
         ))}
       </DialogGroup>
+
+      <div style={{ marginTop: '16px' }}>
+        <Field label="All IANA / CLDR Timezones (Searchable)">
+          {(id) => (
+            <Select
+              id={id}
+              searchable
+              searchLabel="Search city, country, or offset (e.g. Kolkata, Tokyo, GMT)..."
+              value={timezone}
+              onChange={(e) => setTimezone(e.target.value)}
+            >
+              {ianaList.map((tz) => (
+                <option key={tz.value} value={tz.value} data-search={`${tz.value} ${tz.label} ${tz.offset}`}>
+                  {tz.label}
+                </option>
+              ))}
+            </Select>
+          )}
+        </Field>
+      </div>
     </Dialog>
   )
 }

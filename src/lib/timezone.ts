@@ -2,38 +2,27 @@ import { useSyncExternalStore } from 'react'
 
 /*
 Persistent display timezone preference for timestamp rendering across the console.
-Supports standard industry timezones covering Asia/India, Americas, Europe, Middle East,
-Asia-Pacific, UTC, and Browser Local time, defaulting to IST (Asia/Kolkata, UTC+05:30).
+Supports the official IANA Time Zone Database (Unicode CLDR standard) encompassing all
+global time zones, with featured quick-access zones and defaulting to IST (Asia/Kolkata, UTC+05:30).
 */
 
-export type SupportedTimezone =
-  | 'Asia/Kolkata' // Indian Standard Time (default)
-  | 'UTC' // Coordinated Universal Time
-  | 'America/New_York' // US Eastern Time
-  | 'America/Chicago' // US Central Time
-  | 'America/Denver' // US Mountain Time
-  | 'America/Los_Angeles' // US Pacific Time
-  | 'Europe/London' // London / GMT
-  | 'Europe/Paris' // Central European Time
-  | 'Asia/Dubai' // Gulf Standard Time
-  | 'Asia/Singapore' // Singapore Standard Time
-  | 'Asia/Tokyo' // Japan Standard Time
-  | 'Australia/Sydney' // Australian Eastern Time
-  | 'local' // Browser Local Time
+export type SupportedTimezone = string
 
 export interface TimezoneOption {
-  value: SupportedTimezone
+  value: string
   label: string
   offset: string
-  region: string
+  region?: string
 }
 
 export const TIMEZONE_KEY = 'display_timezone'
-export const DEFAULT_TIMEZONE: SupportedTimezone = 'Asia/Kolkata'
+export const DEFAULT_TIMEZONE: string = 'Asia/Kolkata'
 
-export const TIMEZONE_OPTIONS: readonly TimezoneOption[] = [
-  { value: 'Asia/Kolkata', label: 'IST — India Standard Time', offset: 'UTC+05:30', region: 'Asia' },
+/** Featured standard industry timezones covering major operational hubs. */
+export const FEATURED_TIMEZONES: readonly TimezoneOption[] = [
+  { value: 'Asia/Kolkata', label: 'IST — India Standard Time (Default)', offset: 'UTC+05:30', region: 'Asia' },
   { value: 'UTC', label: 'UTC — Universal Coordinated Time', offset: 'UTC+00:00', region: 'Universal' },
+  { value: 'local', label: 'Browser Local Time', offset: 'System', region: 'Client' },
   { value: 'America/New_York', label: 'US Eastern — New York', offset: 'UTC-05:00', region: 'Americas' },
   { value: 'America/Chicago', label: 'US Central — Chicago', offset: 'UTC-06:00', region: 'Americas' },
   { value: 'America/Denver', label: 'US Mountain — Denver', offset: 'UTC-07:00', region: 'Americas' },
@@ -44,17 +33,87 @@ export const TIMEZONE_OPTIONS: readonly TimezoneOption[] = [
   { value: 'Asia/Singapore', label: 'SGT — Singapore', offset: 'UTC+08:00', region: 'Asia' },
   { value: 'Asia/Tokyo', label: 'JST — Tokyo', offset: 'UTC+09:00', region: 'Asia' },
   { value: 'Australia/Sydney', label: 'AEST / AEDT — Sydney', offset: 'UTC+10:00', region: 'Australia' },
-  { value: 'local', label: 'Browser Local Time', offset: 'System', region: 'Client' },
 ]
 
-const KNOWN_TIMEZONES = new Set<string>(TIMEZONE_OPTIONS.map((o) => o.value))
+export const TIMEZONE_OPTIONS = FEATURED_TIMEZONES
+
+/** Validate whether a string is a valid IANA timezone identifier or 'local'. */
+export function isValidTimezone(tz: string): boolean {
+  if (!tz || typeof tz !== 'string') return false
+  if (tz === 'local' || tz === 'UTC') return true
+  try {
+    Intl.DateTimeFormat(undefined, { timeZone: tz })
+    return true
+  } catch {
+    return false
+  }
+}
+
+/** Compute live UTC offset string (e.g. UTC+05:30) for a given timezone. */
+export function getTimezoneOffset(tz: string, now: Date = new Date()): string {
+  if (tz === 'local') return 'System'
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: tz,
+      timeZoneName: 'shortOffset',
+    }).formatToParts(now)
+    const tzPart = parts.find((p) => p.type === 'timeZoneName')
+    if (tzPart?.value) {
+      return tzPart.value.replace(/^GMT/, 'UTC')
+    }
+  } catch {
+    /* Fallback */
+  }
+  return 'UTC'
+}
+
+let cachedIanaTimezones: readonly TimezoneOption[] | null = null
+
+/**
+ * Return all canonical IANA timezones from the JavaScript engine (Intl / Unicode CLDR),
+ * formatted with current UTC offsets.
+ */
+export function getIanaTimezones(): readonly TimezoneOption[] {
+  if (cachedIanaTimezones) return cachedIanaTimezones
+
+  let ids: string[] = []
+  if (typeof Intl !== 'undefined' && typeof (Intl as unknown as { supportedValuesOf?: (key: string) => string[] }).supportedValuesOf === 'function') {
+    try {
+      ids = (Intl as unknown as { supportedValuesOf: (key: string) => string[] }).supportedValuesOf('timeZone')
+    } catch {
+      ids = []
+    }
+  }
+
+  // Ensure Asia/Kolkata and UTC are present in the list
+  const set = new Set(ids)
+  set.add('Asia/Kolkata')
+  set.add('UTC')
+
+  const now = new Date()
+  const sorted = Array.from(set).sort()
+  const list: TimezoneOption[] = sorted.map((id) => {
+    const offset = getTimezoneOffset(id, now)
+    const clean = id.replace(/_/g, ' ')
+    const region = id.includes('/') ? id.split('/')[0] : 'Universal'
+    return {
+      value: id,
+      label: `(${offset}) ${clean}`,
+      offset,
+      region,
+    }
+  })
+
+  cachedIanaTimezones = list
+  return list
+}
 
 /** Read stored timezone preference, defaulting to Asia/Kolkata (IST). */
-export function readTimezone(): SupportedTimezone {
+export function readTimezone(): string {
   try {
     const stored = localStorage.getItem(TIMEZONE_KEY)
-    if (stored != null && KNOWN_TIMEZONES.has(stored)) {
-      return stored as SupportedTimezone
+    if (stored != null && isValidTimezone(stored)) {
+      return stored
     }
   } catch {
     /* Restricted environment / SSR / disabled localStorage */
@@ -63,7 +122,7 @@ export function readTimezone(): SupportedTimezone {
 }
 
 /** Store timezone preference in localStorage. */
-export function writeTimezone(tz: SupportedTimezone): void {
+export function writeTimezone(tz: string): void {
   try {
     localStorage.setItem(TIMEZONE_KEY, tz)
   } catch {
@@ -71,17 +130,17 @@ export function writeTimezone(tz: SupportedTimezone): void {
   }
 }
 
-let activeTimezone: SupportedTimezone = readTimezone()
+let activeTimezone: string = readTimezone()
 const listeners = new Set<() => void>()
 
 /** Get current active timezone. */
-export function getTimezone(): SupportedTimezone {
+export function getTimezone(): string {
   return activeTimezone
 }
 
 /** Change timezone and notify subscribers. */
-export function setTimezone(tz: SupportedTimezone): void {
-  if (activeTimezone === tz) return
+export function setTimezone(tz: string): void {
+  if (activeTimezone === tz || !isValidTimezone(tz)) return
   activeTimezone = tz
   writeTimezone(tz)
   for (const listener of listeners) {
@@ -99,8 +158,8 @@ export function subscribeTimezone(callback: () => void): () => void {
 
 /** React hook for reading and updating display timezone. */
 export function useTimezone(): {
-  timezone: SupportedTimezone
-  setTimezone: (tz: SupportedTimezone) => void
+  timezone: string
+  setTimezone: (tz: string) => void
 } {
   const timezone = useSyncExternalStore(subscribeTimezone, getTimezone, () => DEFAULT_TIMEZONE)
   return { timezone, setTimezone }
