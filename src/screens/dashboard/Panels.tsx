@@ -88,12 +88,13 @@ export function Top({
              row menu's actions carry the whole name too. */
           const domain = isClient && f.domain != null && f.domain !== '' ? f.domain : null
           const label = `${f.name}${f.rateLimited ? ' (rate limited)' : ''}`
+          const rankCls = i === 0 ? styles.rank1 : i === 1 ? styles.rank2 : i === 2 ? styles.rank3 : undefined
           return (
             <div
               className={`${styles.toprow}${f.rateLimited ? ` ${styles.limited}` : ''}`}
               key={`${f.name}|${i}`}
             >
-              <span className={styles.topRank}>{i + 1}</span>
+              <span className={`${styles.topRank}${rankCls ? ` ${rankCls}` : ''}`}>{i + 1}</span>
               <span className={styles.n} title={domain != null ? `${label} ${domain}` : label}>
                 <span className={styles.topLabel}>{label}</span>
                 {domain != null && <span className={styles.topDomain}>{domain}</span>}

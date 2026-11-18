@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { ResourceRecords } from './Records'
+import { spaceDuration } from './record'
 import type { ListNode, DnsRecord } from '../../api/zonelists'
 import sample from './real-sample.json'
 
@@ -86,10 +87,10 @@ describe('the table loses nothing from the real JSON', () => {
         if (typeof r.ttl === 'string') {
           const [num2, human] = r.ttl.replace(')', '').split(' (')
           expect(text).toContain(num2)
-          expect(text).toContain(human)
+          expect(text).toContain(spaceDuration(human))
         } else {
           expect(text).toContain(String(r.ttl))
-          if (r.ttlString) expect(text).toContain(r.ttlString)
+          if (r.ttlString) expect(text).toContain(spaceDuration(r.ttlString))
         }
       }
     })
