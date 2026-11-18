@@ -20,23 +20,24 @@ function open(onOpenChange: (o: boolean) => void = () => {}) {
 
 const radio = (name: string) => screen.getByRole('radio', { name })
 
-describe('Change Theme (index.html:3818-3862)', () => {
-  it('has upstream title, group label and radio texts, without Amber', () => {
+describe('Change Theme', () => {
+  it('offers all 6 system and custom themes', () => {
     open()
     const dialog = screen.getByRole('dialog', { name: 'Change Theme' })
     const group = within(dialog).getByRole('radiogroup', { name: 'Theme' })
-    expect(within(group).getAllByRole('radio').map((r) => r.closest('label')?.textContent?.trim())).toEqual([
-      'Use System Theme (default)',
-      'Light Theme',
-      'Dark Theme',
-    ])
-    expect(within(dialog).queryByText('Amber Theme')).not.toBeInTheDocument()
+    const radios = within(group).getAllByRole('radio')
+    expect(radios).toHaveLength(6)
+    expect(within(dialog).getByText('Use System Theme (default)')).toBeInTheDocument()
+    expect(within(dialog).getByText('Dark Theme')).toBeInTheDocument()
+    expect(within(dialog).getByText('Light Theme')).toBeInTheDocument()
+    expect(within(dialog).getByText('Dark Grey Theme')).toBeInTheDocument()
+    expect(within(dialog).getByText('Amber Theme')).toBeInTheDocument()
+    expect(within(dialog).getByText('Glassmorphism Theme')).toBeInTheDocument()
   })
 
   it('has no Save: its only action is Close', () => {
     open()
     const dialog = screen.getByRole('dialog', { name: 'Change Theme' })
-    /* The corner cross and the footer button are both named Close. */
     expect(within(dialog).getAllByRole('button').map((b) => b.getAttribute('aria-label') ?? b.textContent)).toEqual([
       'Close',
       'Close',
@@ -52,7 +53,7 @@ describe('Change Theme (index.html:3818-3862)', () => {
     expect(onOpenChange).toHaveBeenCalledWith(false)
   })
 
-  describe('checks what is stored, as showChangeThemeModal does', () => {
+  describe('checks what is stored', () => {
     it.each([
       [null, 'Use System Theme (default)'],
       ['system', 'Use System Theme (default)'],
@@ -60,21 +61,18 @@ describe('Change Theme (index.html:3818-3862)', () => {
       ['garbage', 'Use System Theme (default)'],
       ['light', 'Light Theme'],
       ['dark', 'Dark Theme'],
+      ['dark-grey', 'Dark Grey Theme'],
+      ['amber', 'Amber Theme'],
+      ['glassmorphism', 'Glassmorphism Theme'],
     ])('stored %s checks %s', (stored, label) => {
       if (stored != null) localStorage.setItem('theme', stored)
       open()
       expect(radio(label)).toBeChecked()
       expect(screen.getAllByRole('radio').filter((r) => (r as HTMLInputElement).checked)).toHaveLength(1)
     })
-
-    it('a stored amber checks none, since Amber is not offered', () => {
-      localStorage.setItem('theme', 'amber')
-      open()
-      for (const r of screen.getAllByRole('radio')) expect(r).not.toBeChecked()
-    })
   })
 
-  describe('a click applies at once and stores it', () => {
+  describe('clicking a theme applies and stores it immediately', () => {
     it('Light Theme', async () => {
       mockSystemTheme(true)
       open()
@@ -82,15 +80,30 @@ describe('Change Theme (index.html:3818-3862)', () => {
       expect(localStorage.getItem('theme')).toBe('light')
       expect(document.documentElement.dataset.theme).toBe('light')
       expect(radio('Light Theme')).toBeChecked()
-      expect(screen.getByRole('dialog', { name: 'Change Theme' })).toBeInTheDocument()
     })
 
-    it('Dark Theme', async () => {
-      mockSystemTheme(false)
+    it('Dark Grey Theme', async () => {
       open()
-      await userEvent.click(radio('Dark Theme'))
-      expect(localStorage.getItem('theme')).toBe('dark')
-      expect(document.documentElement.dataset.theme).toBe('dark')
+      await userEvent.click(radio('Dark Grey Theme'))
+      expect(localStorage.getItem('theme')).toBe('dark-grey')
+      expect(document.documentElement.dataset.theme).toBe('dark-grey')
+      expect(radio('Dark Grey Theme')).toBeChecked()
+    })
+
+    it('Amber Theme', async () => {
+      open()
+      await userEvent.click(radio('Amber Theme'))
+      expect(localStorage.getItem('theme')).toBe('amber')
+      expect(document.documentElement.dataset.theme).toBe('amber')
+      expect(radio('Amber Theme')).toBeChecked()
+    })
+
+    it('Glassmorphism Theme', async () => {
+      open()
+      await userEvent.click(radio('Glassmorphism Theme'))
+      expect(localStorage.getItem('theme')).toBe('glassmorphism')
+      expect(document.documentElement.dataset.theme).toBe('glassmorphism')
+      expect(radio('Glassmorphism Theme')).toBeChecked()
     })
 
     it('Use System Theme (default) stores system and follows the system', async () => {
@@ -100,14 +113,6 @@ describe('Change Theme (index.html:3818-3862)', () => {
       await userEvent.click(radio('Use System Theme (default)'))
       expect(localStorage.getItem('theme')).toBe('system')
       expect(document.documentElement.dataset.theme).toBe('dark')
-    })
-
-    it('from a stored amber, any pick replaces it', async () => {
-      localStorage.setItem('theme', 'amber')
-      open()
-      await userEvent.click(radio('Dark Theme'))
-      expect(localStorage.getItem('theme')).toBe('dark')
-      expect(radio('Dark Theme')).toBeChecked()
     })
   })
 })

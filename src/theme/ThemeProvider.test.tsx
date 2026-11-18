@@ -57,11 +57,11 @@ describe('the stored theme (main.js:3208-3263)', () => {
     expect(theme()).toBe('dark')
   })
 
-  it('draws a stored amber as dark and leaves the value alone', () => {
+  it('draws a stored amber as amber and leaves the value alone', () => {
     mockSystemTheme(false)
     localStorage.setItem('theme', 'amber')
     mount()
-    expect(theme()).toBe('dark')
+    expect(theme()).toBe('amber')
     expect(screen.getByLabelText('choice')).toHaveTextContent('amber')
     expect(localStorage.getItem('theme')).toBe('amber')
   })
@@ -152,8 +152,14 @@ describe('the system theme, live', () => {
     expect(theme()).toBe('light')
   })
 
-  it('ignores it while light, dark or amber is stored', () => {
-    for (const [value, drawn] of [['light', 'light'], ['dark', 'dark'], ['amber', 'dark']]) {
+  it('ignores it while explicit themes are stored', () => {
+    for (const [value, drawn] of [
+      ['light', 'light'],
+      ['dark', 'dark'],
+      ['dark-grey', 'dark-grey'],
+      ['amber', 'amber'],
+      ['glassmorphism', 'glassmorphism'],
+    ]) {
       localStorage.setItem('theme', value)
       const system = mockSystemTheme(drawn === 'light')
       const { unmount } = mount()

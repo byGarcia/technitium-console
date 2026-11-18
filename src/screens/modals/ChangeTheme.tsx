@@ -23,10 +23,13 @@ already checked and stores it again; `onChange` does not. Re-storing "system" ov
 an unrecognised value would change nothing drawn, since both mean System.
 */
 
-const OPTIONS: { value: OfferedTheme; label: string }[] = [
-  { value: 'system', label: 'Use System Theme (default)' },
-  { value: 'light', label: 'Light Theme' },
-  { value: 'dark', label: 'Dark Theme' },
+const OPTIONS: { value: OfferedTheme; label: string; help?: string }[] = [
+  { value: 'system', label: 'Use System Theme (default)', help: 'Follows operating system preference' },
+  { value: 'dark', label: 'Dark Theme', help: 'Standard dark charcoal console' },
+  { value: 'light', label: 'Light Theme', help: 'High-contrast clean light palette' },
+  { value: 'dark-grey', label: 'Dark Grey Theme', help: 'Deep charcoal & obsidian palette' },
+  { value: 'amber', label: 'Amber Theme', help: 'Technitium stock amber & gold' },
+  { value: 'glassmorphism', label: 'Glassmorphism Theme', help: 'Frosted acrylic panels with glow' },
 ]
 
 export function ChangeTheme({
@@ -37,19 +40,19 @@ export function ChangeTheme({
   onOpenChange: (o: boolean) => void
 }) {
   const { choice, setChoice } = useTheme()
-  const checked = choice === 'amber' ? '' : (choice ?? 'system')
+  const checked = choice ?? 'system'
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange} title="Change Theme">
-      {/* The three choices as tiles, as Add Zone draws its types: the whole tile
-          is the radio's target and the chosen one takes the accent. */}
-      <DialogGroup label="Theme" radios={`${df.tiles} ${df.tiles1}`}>
+      {/* Choices as responsive tiles with subtitle descriptions */}
+      <DialogGroup label="Theme" radios={df.tiles}>
         {OPTIONS.map((o) => (
           <Tile
             key={o.value}
             name="rdChangeTheme"
             checked={checked === o.value}
             onChange={() => setChoice(o.value)}
+            help={o.help}
           >
             {o.label}
           </Tile>

@@ -19,7 +19,7 @@ export type Target =
   | { kind: 'dnsclient'; domain: string }
   | { kind: 'logs'; domain: string | null; clientIp: string | null }
   | { kind: 'modal'; id: 'password' | 'twofa' | 'token' | 'theme' }
-  | { kind: 'theme'; choice: 'light' | 'dark' | 'system' }
+  | { kind: 'theme'; choice: 'light' | 'dark' | 'system' | 'dark-grey' | 'amber' | 'glassmorphism' }
   | { kind: 'logout' }
 
 export type Group = 'Recent' | 'Actions' | 'Pages' | 'Zones' | 'Account'
@@ -105,6 +105,9 @@ export function accountItems(opts: { canChangePassword: boolean; canConfigure2fa
     { id: 'account:token', group: 'Account', label: 'Create API Token', icon: 'key', target: { kind: 'modal', id: 'token' } },
     { id: 'account:light', group: 'Account', label: 'Use the light theme', icon: 'eye', keywords: 'theme appearance', target: { kind: 'theme', choice: 'light' } },
     { id: 'account:dark', group: 'Account', label: 'Use the dark theme', icon: 'eye', keywords: 'theme appearance', target: { kind: 'theme', choice: 'dark' } },
+    { id: 'account:dark-grey', group: 'Account', label: 'Use the dark grey theme', icon: 'eye', keywords: 'theme appearance charcoal graphite', target: { kind: 'theme', choice: 'dark-grey' } },
+    { id: 'account:amber', group: 'Account', label: 'Use the amber theme', icon: 'eye', keywords: 'theme appearance amber gold', target: { kind: 'theme', choice: 'amber' } },
+    { id: 'account:glassmorphism', group: 'Account', label: 'Use the glassmorphism theme', icon: 'eye', keywords: 'theme appearance glass acrylic', target: { kind: 'theme', choice: 'glassmorphism' } },
     { id: 'account:system', group: 'Account', label: 'Use the system theme', icon: 'eye', keywords: 'theme appearance', target: { kind: 'theme', choice: 'system' } },
     { id: 'account:logout', group: 'Account', label: 'Logout', icon: 'power', keywords: 'sign out', target: { kind: 'logout' } },
   )
