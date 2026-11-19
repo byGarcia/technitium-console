@@ -51,7 +51,6 @@ import {
   acrossStatus, failures, mergedPage, nodeTotals, queryAcross, rowKey,
   type NodeEntry, type NodeLogs,
 } from './query-across'
-import { DATE_PRESETS, computeDatePreset } from './date-presets'
 
 /*
 Logs › Query Logs (logs.js:20-101 and 270-710).
@@ -1300,25 +1299,6 @@ export function QueryLogs({ tabs, token, node = '', request, nodes = [], cluster
           what the amber means.
           */}
           <div className={`${styles.mode}${live ? ` ${styles.byMode}` : ''}`}>
-            <div className={styles.presetToolbar} aria-label="Quick date range presets">
-              <span className={styles.presetLabel}>Presets:</span>
-              <div className={styles.presetPills} role="group" aria-label="Date range presets">
-                {DATE_PRESETS.map((p) => (
-                  <button
-                    key={p.id}
-                    type="button"
-                    disabled={live}
-                    className={styles.presetPill}
-                    onClick={() => {
-                      const range = computeDatePreset(p.id)
-                      set({ start: range.start, end: range.end })
-                    }}
-                  >
-                    {p.label}
-                  </button>
-                ))}
-              </div>
-            </div>
             <div className={styles.field} style={fieldWidth(190)}>
               <label htmlFor="ql-start">From</label>
               <Input
