@@ -24,6 +24,28 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
 
 ---
 
+## Unreleased
+
+### Fixed
+
+- **The one-line installer on Technitium's own Linux install.** That install gives the DNS server's
+  folder, web root included, to the `dns-server` account, so the console goes in a folder of its
+  own with a systemd drop-in. The installer only did that once it knew the server was 15.5 or
+  later, and it read the version from the last three days of logs, where the server writes it only
+  on the day it starts. With the server up for a few days it refused the web root instead. It now
+  asks the server's own library whether it reads `DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH`, and
+  reads the logs back to the last start when the library cannot be read. Reported by
+  @kyleinprogress in [#35](https://github.com/byGarcia/technitium-console/issues/35).
+- **`--dir /opt/technitium-console`** now points the systemd service at that folder too, as the
+  install without `--dir` does.
+- **When the installer cannot point the service at the console's folder,** it says why, and prints
+  the drop-in to add by hand.
+- **Custom lists in a web root another account can change** are still not copied by root, on the
+  way in or out, but the installer now names them, says where they go and stops before changing
+  anything. Copy them yourself and run it again: a list already in place is left as it is.
+
+---
+
 ## v1.4.2 (2026-11-10)
 
 **Which block list matched a domain, allowing a blocked name for one Advanced Blocking group from

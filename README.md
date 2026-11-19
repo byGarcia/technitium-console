@@ -268,8 +268,12 @@ Nothing is downloaded to undo either one.
 
 **It works with whichever install you have**, because it does not guess: the
 running server is found by what it executes, and a systemd unit is accepted only
-when it names that same `DnsServerApp.dll`. If it cannot identify one exact
-unit, it leaves service configuration alone and uses the web root it discovered.
+when it names that same `DnsServerApp.dll`. Whether the server is 15.5 or later
+is asked of its own `DnsServerCore.dll`, so it does not matter how long it has
+been running. If it cannot identify one exact unit, it leaves service
+configuration alone, uses the web root it discovered, and says why. When that
+web root belongs to the service's account, it stops and prints the drop-in to
+add by hand instead.
 
 **Your custom lists are kept**, on the way in and on the way out. Any
 `json/*-custom.json` you wrote by hand is left exactly where it is, including
@@ -286,10 +290,12 @@ group counts as root, so a stock web root left 0664 by Technitium's own archive
 is accepted, unless an access control list lets another account in; on BusyBox
 systems that needs the acl or coreutils package to be checked). Symbolic
 links, hard links, special files and newline-containing names are refused before
-publication. A service-owned stock console can still be used with a dedicated
-`/opt/technitium-console` folder when no custom lists need copying. If custom
-lists need migrating from an unsafe tree, copy them yourself after inspecting
-them into a fresh root-owned tree. Changing ownership on an existing tree cannot
+publication. Technitium's own Linux installer gives the web root to the
+`dns-server` account: there the console goes in `/opt/technitium-console`
+instead, and root does not copy custom lists out of that web root or back into
+it. The installer names the lists it would have copied and stops before
+changing anything: check them, copy them yourself, and run it again. A list
+already in place is left as it is. Changing ownership on an existing tree cannot
 revoke files another account already has open. For Docker, mount the console
 volume read-only in the DNS server.
 
@@ -303,7 +309,8 @@ one. Anything a killed run left behind is cleaned up by the next one.
 
 `--version <tag>` to pin a release, `--from <path>` to install
 from a tarball you already downloaded, `--dir <path>` to say where the web root
-is, `--url <base>` if your web console does not answer on
+is (`--dir /opt/technitium-console` is the managed install above, systemd
+drop-in included), `--url <base>` if your web console does not answer on
 `http://127.0.0.1:5380`, `--yes` to skip the confirmation, and
 `--no-configure-service` to leave systemd untouched and use the server's own
 web root unless you selected another folder yourself.

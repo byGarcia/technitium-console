@@ -604,9 +604,12 @@ sh /w/install.sh --from /w/console.tar.gz --yes 2>&1 | grep -q 'not verified'
 EOF
 verdict "C25" $? "a download that does not match the release's .sha256 is refused"
 
-# ---------------------- C31 · managed systemd folder, one restart and rollback
-case_run <<'EOF'
-set -e
+# ------------------------------- a systemd that only knows how to restart
+#
+# The image has no systemd. C31 and C32 get a unit naming the running
+# DnsServerApp.dll and a systemctl that restarts the server with or without the
+# drop-in's variable and counts restarts in /run/restarts. Sourced by the cases.
+cat > "$WORK/fake-systemd.sh" <<'EOF'
 mkdir -p /etc/systemd/system /usr/local/bin /run
 cat > /etc/systemd/system/dns.service <<'UNIT'
 [Service]
@@ -636,6 +639,12 @@ chmod +x /usr/local/bin/systemctl
 /usr/bin/dotnet /opt/technitium/dns/DnsServerApp.dll /etc/dns >/tmp/dns.log 2>&1 &
 printf '%s\n' "$!" > /run/dns.pid
 i=0; while [ "$i" -lt 60 ] && ! curl -sf -o /dev/null http://127.0.0.1:5380/; do i=$((i+1)); sleep 1; done
+EOF
+
+# ---------------------- C31 · managed systemd folder, one restart and rollback
+case_run <<'EOF'
+set -e
+. /w/fake-systemd.sh
 grep -q 'DNS Server (v15\.[5-9]' /var/log/technitium/dns/*.log
 printf '[{"name":"before"}]\n' > "$WWW/json/quick-block-lists-custom.json"
 
@@ -674,6 +683,85 @@ sh /w/install.sh --uninstall --yes && exit 1
 [ -f "/opt/technitium-console/$ASSET" ]
 EOF
 verdict "C31" $? "systemd gets a managed folder, one restart, clean uninstall and ownership checks"
+
+# ---------- C32 · Technitium's own Linux install, with the server up for days
+#
+# What Technitium's install.sh leaves: the application folder, www included,
+# belongs to the dns-server account. The server logs that it started only in
+# the file of the day it started, and writes one file a day, so after a few days
+# the newest files do not have that line. 1.4.2 looked for the version in the
+# newest three, found none, and refused the service-owned www instead of giving
+# the console its own folder (issue #35).
+case_run <<'EOF'
+set -e
+. /w/fake-systemd.sh
+LOGS=/var/log/technitium/dns
+grep -q 'DNS Server (v15\.[5-9]' "$LOGS"/*.log
+useradd -r -M -s /usr/sbin/nologin dns-server
+chown -R dns-server:dns-server /opt/technitium/dns
+for d in 1 2 3 4; do echo "[later] nothing about starting" > "$LOGS/later-$d.log"; touch -d "$d days" "$LOGS/later-$d.log"; done
+newest="$(ls -1t "$LOGS"/*.log | head -3)"
+# shellcheck disable=SC2086
+if grep -q 'was started successfully' $newest; then exit 1; fi
+
+echo "step: the first install gives the console its own folder"
+sh /w/install.sh --from /w/console.tar.gz --yes
+[ "$(cat /run/restarts)" = 1 ]
+[ -f /etc/systemd/system/dns.service.d/technitium-console.conf ]
+curl -sf -o /dev/null "http://127.0.0.1:5380/$ASSET"
+[ "$(stat -c %U "$WWW")" = dns-server ]
+[ -f "$WWW/js/main.js" ]
+[ ! -f "$WWW/$ASSET" ]
+
+echo "step: uninstall does not copy lists into the service's www as root"
+printf '[{"name":"mine"}]\n' > /opt/technitium-console/json/quick-block-lists-custom.json
+out="$(sh /w/install.sh --uninstall --yes 2>&1)" && exit 1
+printf '%s\n' "$out" | grep -q 'quick-block-lists-custom.json'
+[ "$(cat /run/restarts)" = 1 ]
+[ -f /etc/systemd/system/dns.service.d/technitium-console.conf ]
+
+echo "step: once copied by hand, uninstall goes ahead"
+cp /opt/technitium-console/json/quick-block-lists-custom.json "$WWW/json/"
+sh /w/install.sh --uninstall --yes
+[ "$(cat /run/restarts)" = 2 ]
+[ ! -e /etc/systemd/system/dns.service.d/technitium-console.conf ]
+[ ! -e /opt/technitium-console ]
+
+echo "step: when the folder of its own is not possible, it says why and how"
+out="$(sh /w/install.sh --from /w/console.tar.gz --yes --no-configure-service 2>&1)" && exit 1
+printf '%s\n' "$out" | grep -q 'belongs to dns-server'
+printf '%s\n' "$out" | grep -q -- '--no-configure-service was given'
+[ ! -e /opt/technitium-console ]
+[ "$(cat /run/restarts)" = 2 ]
+
+echo "step: a list in the service's www is not copied out of it as root"
+out="$(sh /w/install.sh --from /w/console.tar.gz --yes 2>&1)" && exit 1
+printf '%s\n' "$out" | grep -q 'quick-block-lists-custom.json'
+[ "$(cat /run/restarts)" = 2 ]
+[ ! -e /etc/systemd/system/dns.service.d/technitium-console.conf ]
+
+echo "step: with the list copied by hand, and no startup line in any log, the server's library answers"
+mkdir -p /opt/technitium-console/json
+cp "$WWW/json/quick-block-lists-custom.json" /opt/technitium-console/json/
+for f in "$LOGS"/*.log; do : > "$f"; done
+sh /w/install.sh --from /w/console.tar.gz --yes
+[ "$(cat /run/restarts)" = 3 ]
+curl -sf -o /dev/null "http://127.0.0.1:5380/$ASSET"
+grep -q mine /opt/technitium-console/json/quick-block-lists-custom.json
+rm "$WWW/json/quick-block-lists-custom.json" /opt/technitium-console/json/quick-block-lists-custom.json
+sh /w/install.sh --uninstall --yes
+[ "$(cat /run/restarts)" = 4 ]
+
+echo "step: --dir with the console's folder is the same managed install"
+sh /w/install.sh --from /w/console.tar.gz --yes --dir /opt/technitium-console
+[ "$(cat /run/restarts)" = 5 ]
+grep -qx 'mode=side-by-side' /var/lib/technitium-console/install.state
+curl -sf -o /dev/null "http://127.0.0.1:5380/$ASSET"
+sh /w/install.sh --uninstall --yes
+[ "$(cat /run/restarts)" = 6 ]
+[ ! -e /opt/technitium-console ]
+EOF
+verdict "C32" $? "a service-owned www and a server up for days still get the console a folder of its own"
 
 # ------------------------------------------------- Docker: the init image (D1–D4)
 #

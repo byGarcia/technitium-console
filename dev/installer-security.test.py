@@ -17,9 +17,10 @@ BASE.chmod(0o755)
 functions = SOURCE[SOURCE.index("resolve_path()") : SOURCE.index("# What a console looks like")]
 functions = functions[:functions.index("# --into-volume")] + functions[functions.index("refuse_links()") :]
 publishing = SOURCE[SOURCE.index("CUSTOM_GLOB=") : SOURCE.index("verify_checksum()")]
-preamble = "set -eu\nBACKUP_SUFFIX=.original\nINTO_VOLUME=\nMARKER=.technitium-console\nDOCKER_DOCS=fixture\ndie() { echo \"$*\" >&2; exit 1; }\n"
+preamble = "set -eu\nBACKUP_SUFFIX=.original\nINTO_VOLUME=\nMARKER=.technitium-console\nDOCKER_DOCS=fixture\ndie() { echo \"$*\" >&2; exit 1; }\nsay() { printf '  %s\\n' \"$*\"; }\n"
+quoting = SOURCE[SOURCE.index("shq()") : SOURCE.index("dk_compose()")]
 LIBRARY = BASE / "functions.sh"
-LIBRARY.write_text(preamble + functions + publishing)
+LIBRARY.write_text(preamble + quoting + functions + publishing)
 
 
 def shell(body, ok=True):
@@ -137,9 +138,25 @@ secret.write_text("private dummy")
 secret.chmod(0o644)
 (stock / "json").mkdir()
 (stock / "json/leak-custom.json").symlink_to(secret)
-shell(f'carry_custom_lists "{stock}" "{output}"', ok=False)
+said = shell(f'carry_custom_lists "{stock}" "{output}"', ok=False)
 assert not (output / "json/leak-custom.json").exists()
-print("PASS custom-list source symlink rejected")
+assert "leak-custom.json" in said and "not found" not in said, said
+print("PASS custom-list source symlink rejected, and the list is named")
+
+# A service-owned stock tree: nothing is copied out of it, and a list the
+# administrator already copied by hand settles it without reading the tree.
+service_stock, done_by_hand = tree("service-stock"), tree("done-by-hand")
+(service_stock / "json").mkdir()
+(service_stock / "json/mine-custom.json").write_text("service dummy")
+os.chown(service_stock, 65534, 65534)
+said = shell(f'carry_custom_lists "{service_stock}" "{done_by_hand}"', ok=False)
+assert "mine-custom.json" in said, said
+assert not (done_by_hand / "json").exists()
+(done_by_hand / "json").mkdir()
+(done_by_hand / "json/mine-custom.json").write_text("checked by hand")
+shell(f'carry_custom_lists "{service_stock}" "{done_by_hand}"')
+assert (done_by_hand / "json/mine-custom.json").read_text() == "checked by hand"
+print("PASS service-owned custom lists named, and a hand copy left as it is")
 
 # Hard links and devices are not accepted as ordinary console files.
 hard = tree("hard-linked")
