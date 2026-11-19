@@ -7,6 +7,7 @@ import { toTrail, writeRoute, readRoute, translateLegacyRoute, plainClick } from
 import { ChangePassword } from '../screens/modals/ChangePassword'
 import { ChangeTheme } from '../screens/modals/ChangeTheme'
 import { ChangeTimezone } from '../screens/modals/ChangeTimezone'
+import { useTimezone } from '../lib/timezone'
 import { Configure2FA } from '../screens/modals/Configure2FA'
 import { CreateApiToken } from '../screens/modals/CreateApiToken'
 import { Profile } from '../screens/profile/Profile.tsx'
@@ -134,6 +135,7 @@ export function Shell({
   /** A factory-credentials login: Change Password opens at once with `admin` filled in (auth.js:283-284). */
   forcePasswordChange?: boolean
 }) {
+  const { timezone } = useTimezone()
   const permissions = session.info?.permissions
   // Memoised: if it is recreated on every render, the `hashchange` resubscribes on each.
   const sections = useMemo(() => visibleSections(permissions), [permissions])
@@ -495,7 +497,7 @@ export function Shell({
     <ThisServerName.Provider value={info?.dnsServerDomain ?? session.info?.dnsServerDomain ?? ''}>
     <SlotProvider>
       {(slot) => (
-    <div className={styles.shell}>
+    <div className={styles.shell} data-timezone={timezone}>
       {drawer && (
         <button
           type="button"

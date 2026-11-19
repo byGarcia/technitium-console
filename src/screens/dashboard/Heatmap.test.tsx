@@ -6,15 +6,15 @@ import { Heatmap } from './Heatmap.tsx'
 import { toIso } from '../logs/dates'
 import { setTimezone } from '../../lib/timezone'
 
-beforeEach(() => setTimezone('local'))
+beforeEach(() => setTimezone('UTC'))
 afterEach(() => {
-  setTimezone('Asia/Kolkata')
+  setTimezone('local')
   vi.restoreAllMocks()
 })
 
 const HOUR = 3_600_000
-/* The hour in progress: 15 October, 14:00 in the browser zone (whole-hour zones). */
-const NOW_HOUR = Math.floor(new Date(2026, 9, 15, 14, 30).getTime() / HOUR) * HOUR
+/* The hour in progress: 15 October, 14:00 UTC. */
+const NOW_HOUR = Date.UTC(2026, 9, 15, 14, 0)
 
 /* Answers each request with its own hours, the busiest one at 13:00 today. */
 function serve() {
@@ -22,7 +22,7 @@ function serve() {
     const from = Date.parse(start)
     const n = Math.round((Date.parse(end) - from) / HOUR) + 1
     const labels = Array.from({ length: n }, (_, i) => new Date(from + (i + 1) * HOUR).toISOString())
-    const busy = new Date(2026, 9, 15, 13).getTime()
+    const busy = Date.UTC(2026, 9, 15, 13, 0)
     return {
       kind: 'ok',
       data: {
@@ -50,8 +50,8 @@ describe('the week by hour', () => {
     render(<Heatmap token="t" node="" hour={NOW_HOUR} jump={jump} />)
     await userEvent.click(await screen.findByRole('button', { name: 'Thu 10/15, 13:00 to 14:00: 40 queries' }))
     const f = jump.mock.calls[0][0]
-    expect(toIso(f.start)).toBe(new Date(2026, 9, 15, 13).toISOString())
-    expect(toIso(f.end)).toBe(new Date(new Date(2026, 9, 15, 14).getTime() - 1000).toISOString())
+    expect(toIso(f.start)).toBe(new Date(Date.UTC(2026, 9, 15, 13)).toISOString())
+    expect(toIso(f.end)).toBe(new Date(Date.UTC(2026, 9, 15, 14) - 1000).toISOString())
   })
 
   it('without a jump the cells are not buttons', async () => {
