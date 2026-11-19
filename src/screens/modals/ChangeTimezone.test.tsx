@@ -28,9 +28,9 @@ describe('ChangeTimezone modal', () => {
     expect(radios.length).toBeGreaterThanOrEqual(13)
   })
 
-  it('defaults to IST (Asia/Kolkata) checked', () => {
+  it('defaults to Browser Local Time checked', () => {
     open()
-    expect(radio('IST — India Standard Time')).toBeChecked()
+    expect(radio('Browser Local Time')).toBeChecked()
     expect(screen.getAllByRole('radio').filter((r) => (r as HTMLInputElement).checked)).toHaveLength(1)
   })
 
@@ -47,7 +47,14 @@ describe('ChangeTimezone modal', () => {
 
   it('clicking a timezone radio updates active selection and localStorage', async () => {
     open()
-    const utcRadio = radio('UTC — Universal Coordinated Time')
+    const istRadio = radio('IST - India Standard Time')
+    await userEvent.click(istRadio)
+
+    expect(istRadio).toBeChecked()
+    expect(getTimezone()).toBe('Asia/Kolkata')
+    expect(localStorage.getItem(TIMEZONE_KEY)).toBe('Asia/Kolkata')
+
+    const utcRadio = radio('UTC - Universal Coordinated Time')
     await userEvent.click(utcRadio)
 
     expect(utcRadio).toBeChecked()
@@ -60,6 +67,6 @@ describe('ChangeTimezone modal', () => {
     setTimezone('America/New_York')
     open()
 
-    expect(radio('US Eastern — New York')).toBeChecked()
+    expect(radio('US Eastern - New York')).toBeChecked()
   })
 })

@@ -9,7 +9,7 @@ import { ChangeTheme } from '../screens/modals/ChangeTheme'
 import { ChangeTimezone } from '../screens/modals/ChangeTimezone'
 import { Configure2FA } from '../screens/modals/Configure2FA'
 import { CreateApiToken } from '../screens/modals/CreateApiToken'
-import { Profile } from '../screens/profile/Profile'
+import { Profile } from '../screens/profile/Profile.tsx'
 import { Dashboard } from '../screens/dashboard/Dashboard'
 import { Clients } from '../screens/clients/Clients'
 import { DnsClient } from '../screens/dnsclient/DnsClient'
@@ -710,9 +710,6 @@ export function Shell({
                 <MenuItem icon="theme" onClick={() => { close(); open('theme') }}>
                   Change Theme
                 </MenuItem>
-                <MenuItem icon="clock" onClick={() => { close(); open('timezone') }}>
-                  Display Timezone
-                </MenuItem>
                 {/*
                 One entry and not two: upstream declares both and hides one
                 (`index.html:72-73`, `initUpdateNotificationMenu`), which is how
@@ -727,6 +724,9 @@ export function Shell({
                     Disable Update Notification
                   </MenuItem>
                 )}
+                <MenuItem icon="clock" onClick={() => { close(); open('timezone') }}>
+                  Display Timezone
+                </MenuItem>
                 <Separator />
                 <MenuItem icon="logout" tone="danger" onClick={() => { close(); onLogout() }}>
                   Logout

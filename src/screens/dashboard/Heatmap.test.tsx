@@ -1,11 +1,16 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import * as api from '../../api/dashboard'
-import { Heatmap } from './Heatmap'
+import { Heatmap } from './Heatmap.tsx'
 import { toIso } from '../logs/dates'
+import { setTimezone } from '../../lib/timezone'
 
-afterEach(() => vi.restoreAllMocks())
+beforeEach(() => setTimezone('local'))
+afterEach(() => {
+  setTimezone('Asia/Kolkata')
+  vi.restoreAllMocks()
+})
 
 const HOUR = 3_600_000
 /* The hour in progress: 15 October, 14:00 in the browser zone (whole-hour zones). */

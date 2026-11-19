@@ -6,6 +6,7 @@ import { heatRows, hourRequests, level, stitchHours, weekSpan, type HeatCell } f
 import { spanFilters } from './jump'
 import type { QueryLogsFilters } from '../../app/handoff'
 import { num2 } from './metrics'
+import { useTimezone } from '../../lib/timezone'
 import styles from './Heatmap.module.css'
 
 /*
@@ -26,7 +27,25 @@ inside it, Home and End go to the ends of a row.
 
 const HOUR = 3_600_000
 const pad = (n: number) => String(n).padStart(2, '0')
-const clock = (at: number) => `${pad(new Date(at).getHours())}:${pad(new Date(at).getMinutes())}`
+
+function formatClock(at: number, tz: string): string {
+  if (tz === 'local') {
+    const d = new Date(at)
+    return `${pad(d.getHours())}:${pad(d.getMinutes())}`
+  }
+  try {
+    const fmt = new Intl.DateTimeFormat('en-US', {
+      timeZone: tz,
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    })
+    return fmt.format(new Date(at))
+  } catch {
+    const d = new Date(at)
+    return `${pad(d.getHours())}:${pad(d.getMinutes())}`
+  }
+}
 
 type State = { kind: 'loading' } | { kind: 'failed' } | { kind: 'ok'; hours: Map<number, number>; now: number }
 
@@ -43,12 +62,13 @@ export function Heatmap({
   /** Opens Query Logs with these filters, or nothing when it cannot. */
   jump?: (filters: QueryLogsFilters) => void
 }) {
+  const { timezone } = useTimezone()
   const [state, setState] = useState<State>({ kind: 'loading' })
 
   useEffect(() => {
     let cancelled = false
     const now = hour + HOUR - 1
-    const span = weekSpan(now)
+    const span = weekSpan(now, timezone)
     const asks = hourRequests(span.from, span.to)
     setState({ kind: 'loading' })
     if (asks == null) {
@@ -64,9 +84,9 @@ export function Heatmap({
     return () => {
       cancelled = true
     }
-  }, [token, node, hour])
+  }, [token, node, hour, timezone])
 
-  const rows = useMemo(() => (state.kind === 'ok' ? heatRows(state.hours, state.now) : []), [state])
+  const rows = useMemo(() => (state.kind === 'ok' ? heatRows(state.hours, state.now, timezone) : []), [state, timezone])
   const max = Math.max(0, ...rows.flatMap((r) => r.cells.map((c) => c?.count ?? 0)))
 
   /* The roving focus: which cell holds the grid's one tab stop. */
@@ -97,7 +117,7 @@ export function Heatmap({
   const stop = valid(at[0], at[1]) ? at : last
 
   const name = (day: string, cell: HeatCell) =>
-    `${day}, ${clock(cell.from)} to ${clock(cell.to)}: ${num2(cell.count)} ${cell.count === 1 ? 'query' : 'queries'}`
+    `${day}, ${formatClock(cell.from, timezone)} to ${formatClock(cell.to, timezone)}: ${num2(cell.count)} ${cell.count === 1 ? 'query' : 'queries'}`
 
   return (
     <Panel title="Queries per Hour, Last 7 Days">

@@ -16,15 +16,18 @@ describe('timezone library', () => {
     setTimezone(DEFAULT_TIMEZONE)
   })
 
-  it('defaults to Asia/Kolkata (IST)', () => {
-    expect(DEFAULT_TIMEZONE).toBe('Asia/Kolkata')
-    expect(readTimezone()).toBe('Asia/Kolkata')
-    expect(getTimezone()).toBe('Asia/Kolkata')
+  it('defaults to local (Browser Local Time)', () => {
+    expect(DEFAULT_TIMEZONE).toBe('local')
+    expect(readTimezone()).toBe('local')
+    expect(getTimezone()).toBe('local')
   })
 
   it('reads stored valid timezone from localStorage', () => {
     localStorage.setItem(TIMEZONE_KEY, 'UTC')
     expect(readTimezone()).toBe('UTC')
+
+    localStorage.setItem(TIMEZONE_KEY, 'Asia/Kolkata')
+    expect(readTimezone()).toBe('Asia/Kolkata')
 
     localStorage.setItem(TIMEZONE_KEY, 'America/New_York')
     expect(readTimezone()).toBe('America/New_York')
@@ -35,10 +38,10 @@ describe('timezone library', () => {
 
   it('falls back to default if stored value is invalid or corrupted', () => {
     localStorage.setItem(TIMEZONE_KEY, 'Invalid/Unknown_Zone')
-    expect(readTimezone()).toBe('Asia/Kolkata')
+    expect(readTimezone()).toBe('local')
 
     localStorage.setItem(TIMEZONE_KEY, '')
-    expect(readTimezone()).toBe('Asia/Kolkata')
+    expect(readTimezone()).toBe('local')
   })
 
   it('writes timezone and notifies listeners on setTimezone', () => {

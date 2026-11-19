@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { fromNow, dateTime, minuteStamp, dateWithAge } from './dates'
 import { setTimezone } from './timezone'
 
@@ -7,6 +7,13 @@ import { setTimezone } from './timezone'
 
 describe('dateTime / minuteStamp', () => {
   const d = new Date(2026, 7, 25, 16, 41, 12).toISOString()
+
+  beforeEach(() => {
+    setTimezone('local')
+  })
+  afterEach(() => {
+    setTimezone('Asia/Kolkata')
+  })
 
   it('it zero-pads months, days, hours, minutes and seconds', () => {
     expect(dateTime(new Date(2026, 0, 2, 3, 4, 5).toISOString())).toBe('2026-01-02 03:04:05')
@@ -98,5 +105,23 @@ describe('fromNow: the moment literals', () => {
 
   it('`0001-01-01T00:00:00` is the .NET \"never\" and comes out as years, it does not blow up', () => {
     expect(fromNow('0001-01-01T00:00:00', now)).toMatch(/ years ago$/)
+  })
+})
+
+describe('toIso / toLocalInput timezone support', () => {
+  it('converts datetime-local input to UTC ISO string in Asia/Kolkata', async () => {
+    const { toIso, toLocalInput } = await import('../screens/logs/dates')
+    // 08:00 AM IST on 2026-11-15 is 02:30 AM UTC
+    expect(toIso('2026-11-15T08:00:00', 'Asia/Kolkata')).toBe('2026-11-15T02:30:00.000Z')
+    // Roundtrip back from UTC instant
+    const instant = Date.parse('2026-11-15T02:30:00.000Z')
+    expect(toLocalInput(instant, 'Asia/Kolkata')).toBe('2026-11-15T08:00:00')
+  })
+
+  it('converts datetime-local input in UTC mode', async () => {
+    const { toIso, toLocalInput } = await import('../screens/logs/dates')
+    expect(toIso('2026-11-15T08:00:00', 'UTC')).toBe('2026-11-15T08:00:00.000Z')
+    const instant = Date.parse('2026-11-15T08:00:00.000Z')
+    expect(toLocalInput(instant, 'UTC')).toBe('2026-11-15T08:00:00')
   })
 })

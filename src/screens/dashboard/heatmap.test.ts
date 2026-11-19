@@ -1,7 +1,8 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { ChartData } from '../../api/dashboard'
 import { customBuckets } from './compare'
 import { dayLabel, heatRows, hourRequests, level, stitchHours, weekSpan, MAX_HOURS } from './heatmap'
+import { setTimezone } from '../../lib/timezone'
 
 const HOUR = 3_600_000
 
@@ -12,6 +13,8 @@ function hours(first: number, n: number, value: (i: number) => number = () => 1)
 }
 
 describe('the week asked by hour', () => {
+  beforeEach(() => setTimezone('local'))
+  afterEach(() => setTimezone('Asia/Kolkata'))
   const now = new Date(2026, 9, 15, 22, 20).getTime()
 
   it('runs from the browser midnight six days ago to the start of the hour in progress, on UTC hours', () => {
@@ -68,6 +71,9 @@ describe('stitching the answers', () => {
 })
 
 describe('the grid', () => {
+  beforeEach(() => setTimezone('local'))
+  afterEach(() => setTimezone('Asia/Kolkata'))
+
   it('places each hour by the browser day and hour of its start, today last', () => {
     const now = new Date(2026, 9, 15, 22, 20).getTime()
     const span = weekSpan(now)

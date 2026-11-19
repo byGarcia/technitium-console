@@ -16,23 +16,23 @@ export interface TimezoneOption {
 }
 
 export const TIMEZONE_KEY = 'display_timezone'
-export const DEFAULT_TIMEZONE: string = 'Asia/Kolkata'
+export const DEFAULT_TIMEZONE: string = 'local'
 
 /** Featured standard industry timezones covering major operational hubs. */
 export const FEATURED_TIMEZONES: readonly TimezoneOption[] = [
-  { value: 'Asia/Kolkata', label: 'IST — India Standard Time (Default)', offset: 'UTC+05:30', region: 'Asia' },
-  { value: 'UTC', label: 'UTC — Universal Coordinated Time', offset: 'UTC+00:00', region: 'Universal' },
-  { value: 'local', label: 'Browser Local Time', offset: 'System', region: 'Client' },
-  { value: 'America/New_York', label: 'US Eastern — New York', offset: 'UTC-05:00', region: 'Americas' },
-  { value: 'America/Chicago', label: 'US Central — Chicago', offset: 'UTC-06:00', region: 'Americas' },
-  { value: 'America/Denver', label: 'US Mountain — Denver', offset: 'UTC-07:00', region: 'Americas' },
-  { value: 'America/Los_Angeles', label: 'US Pacific — Los Angeles', offset: 'UTC-08:00', region: 'Americas' },
-  { value: 'Europe/London', label: 'GMT / BST — London', offset: 'UTC+00:00', region: 'Europe' },
-  { value: 'Europe/Paris', label: 'CET / CEST — Paris / Berlin', offset: 'UTC+01:00', region: 'Europe' },
-  { value: 'Asia/Dubai', label: 'GST — Dubai', offset: 'UTC+04:00', region: 'Middle East' },
-  { value: 'Asia/Singapore', label: 'SGT — Singapore', offset: 'UTC+08:00', region: 'Asia' },
-  { value: 'Asia/Tokyo', label: 'JST — Tokyo', offset: 'UTC+09:00', region: 'Asia' },
-  { value: 'Australia/Sydney', label: 'AEST / AEDT — Sydney', offset: 'UTC+10:00', region: 'Australia' },
+  { value: 'local', label: 'Browser Local Time (Default)', offset: 'System', region: 'Client' },
+  { value: 'Asia/Kolkata', label: 'IST - India Standard Time', offset: 'UTC+05:30', region: 'Asia' },
+  { value: 'UTC', label: 'UTC - Universal Coordinated Time', offset: 'UTC+00:00', region: 'Universal' },
+  { value: 'America/New_York', label: 'US Eastern - New York', offset: 'UTC-05:00', region: 'Americas' },
+  { value: 'America/Chicago', label: 'US Central - Chicago', offset: 'UTC-06:00', region: 'Americas' },
+  { value: 'America/Denver', label: 'US Mountain - Denver', offset: 'UTC-07:00', region: 'Americas' },
+  { value: 'America/Los_Angeles', label: 'US Pacific - Los Angeles', offset: 'UTC-08:00', region: 'Americas' },
+  { value: 'Europe/London', label: 'GMT / BST - London', offset: 'UTC+00:00', region: 'Europe' },
+  { value: 'Europe/Paris', label: 'CET / CEST - Paris / Berlin', offset: 'UTC+01:00', region: 'Europe' },
+  { value: 'Asia/Dubai', label: 'GST - Dubai', offset: 'UTC+04:00', region: 'Middle East' },
+  { value: 'Asia/Singapore', label: 'SGT - Singapore', offset: 'UTC+08:00', region: 'Asia' },
+  { value: 'Asia/Tokyo', label: 'JST - Tokyo', offset: 'UTC+09:00', region: 'Asia' },
+  { value: 'Australia/Sydney', label: 'AEST / AEDT - Sydney', offset: 'UTC+10:00', region: 'Australia' },
 ]
 
 export const TIMEZONE_OPTIONS = FEATURED_TIMEZONES

@@ -1,11 +1,12 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { formatLabel, localiseLabels } from './chart-labels'
+import { setTimezone } from '../lib/timezone'
 
 /*
 What `main.js:2673-2686` does to the main chart's labels once it has asked with
 `utc=true`: the server sends instants in UTC (`2026-10-01T11:29:00.0000000Z`) and the
 label format; day, month and year buckets are written in UTC (the server groups them
-by UTC day), anything with an hour in the viewer's local time.
+by UTC day), anything with an hour in the active display timezone.
 
 Each half runs in a zone PINNED where it can fail: the UTC formats west of Greenwich
 (`America/Los_Angeles`, UTC−7 in October), where a midnight-UTC instant is still the day before
@@ -18,9 +19,11 @@ types, and a `process` here passes the suite and breaks the build).
 function inZone(zone: string) {
   beforeAll(() => {
     vi.stubEnv('TZ', zone)
+    setTimezone('local')
   })
   afterAll(() => {
     vi.unstubAllEnvs()
+    setTimezone('Asia/Kolkata')
   })
 }
 
@@ -73,37 +76,54 @@ describe('anything with an hour is written in local time (runner pinned to UTC+9
   })
 })
 
-describe('what is not an instant', () => {
-  it('a label that is not an instant is left as it came', () => {
-    expect(formatLabel('11:29', 'HH:mm')).toBe('11:29')
+describe('chart labels format with custom display timezone', () => {
+  it('formats in Asia/Kolkata (IST = UTC+05:30)', () => {
+    expect(formatLabel('2026-10-01T11:29:00.0000000Z', 'HH:mm', 'Asia/Kolkata')).toBe('16:59')
+    expect(formatLabel('2026-09-30T23:00:00.0000000Z', 'MM/DD HH:mm', 'Asia/Kolkata')).toBe('10/01 04:30')
+  })
+
+  it('formats in UTC', () => {
+    expect(formatLabel('2026-10-01T11:29:00.0000000Z', 'HH:mm', 'UTC')).toBe('11:29')
   })
 })
 
-describe('localiseLabels', () => {
-  inZone('America/Los_Angeles')
+describe('the chart with its labels formatted', () => {
+  const chart = {
+    labelFormat: 'HH:mm',
+    labels: ['2026-10-01T11:29:00.0000000Z', '2026-10-01T11:30:00.0000000Z'],
+    datasets: [{ label: 'Total', data: [1, 2] }],
+  }
+
+  it('a label that is not an instant is left as it came', () => {
+    expect(formatLabel('not a date', 'HH:mm')).toBe('not a date')
+  })
 
   it('rewrites every label with the chart format and leaves the series alone', () => {
-    const chart = {
-      labelFormat: 'MM/DD',
-      labels: ['2026-09-29T00:00:00.0000000Z', '2026-09-30T00:00:00.0000000Z'],
-      datasets: [{ label: 'Total', data: [1, 2] }],
-    }
-    expect(localiseLabels(chart)).toEqual({ ...chart, labels: ['09/29', '09/30'], instants: chart.labels })
+    const got = localiseLabels(chart, 'UTC')
+    expect(got.labels).toEqual(['11:29', '11:30'])
+    expect(got.datasets).toEqual(chart.datasets)
   })
 
   it('without a format the chart passes through untouched', () => {
-    const chart = { labels: ['A', 'AAAA'], datasets: [{ label: 'Type', data: [1, 2] }] }
-    expect(localiseLabels(chart)).toBe(chart)
+    const raw = { labels: ['a', 'b'], datasets: [] }
+    expect(localiseLabels(raw)).toBe(raw)
   })
 
   it('retains UTC instants if an already formatted chart is formatted again', () => {
-    const chart = { labelFormat: 'MM/DD', labels: ['2026-09-30T00:00:00Z'], datasets: [] }
-    const once = localiseLabels(chart)
-    expect(localiseLabels(once).instants).toEqual(chart.labels)
+    const first = localiseLabels(chart, 'UTC')
+    expect(first.instants).toEqual(chart.labels)
+    const second = localiseLabels(first, 'UTC')
+    expect(second.instants).toEqual(chart.labels)
+    expect(second.labels).toEqual(['11:29', '11:30'])
   })
 
   it('does not create instants from parseable legacy date labels', () => {
-    const chart = { labelFormat: 'MM/DD', labels: ['09/30'], datasets: [] }
-    expect(localiseLabels(chart)).toEqual(chart)
+    const legacy = {
+      labelFormat: 'MM/DD',
+      labels: ['09/30', '10/01'],
+      datasets: [],
+    }
+    const got = localiseLabels(legacy)
+    expect(got.instants).toBeUndefined()
   })
 })
