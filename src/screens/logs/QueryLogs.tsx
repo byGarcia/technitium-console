@@ -51,6 +51,8 @@ import {
   acrossStatus, failures, mergedPage, nodeTotals, queryAcross, rowKey,
   type NodeEntry, type NodeLogs,
 } from './query-across'
+import { useTimezone, FEATURED_TIMEZONES, getIanaTimezones } from '../../lib/timezone'
+import { ChangeTimezone } from '../modals/ChangeTimezone'
 
 /*
 Logs › Query Logs (logs.js:20-101 and 270-710).
@@ -582,6 +584,9 @@ function QueryRow({
 }
 
 export function QueryLogs({ tabs, token, node = '', request, nodes = [], clusterInitialised = false }: QueryLogsProps) {
+  const { timezone, setTimezone } = useTimezone()
+  const [tzDialogOpen, setTzDialogOpen] = useState(false)
+  const ianaTimezones = getIanaTimezones()
   const [apps, setApps] = useState<{ name: string; classPaths: string[] }[] | null>(null)
   const [f, setF] = useState<Filters>(() => defaultFilters('', ''))
   const [page, setPage] = useState<QueryLogPage | null>(null)
@@ -1156,6 +1161,44 @@ export function QueryLogs({ tabs, token, node = '', request, nodes = [], cluster
                   </span>
                 )}
               </span>
+              <div className={styles.tzSelector}>
+                <Field inline label="Timezone">
+                  {(id) => (
+                    <Select
+                      id={id}
+                      searchable
+                      searchLabel="Search timezone (city, country, offset)..."
+                      value={timezone}
+                      onChange={(e) => {
+                        if (e.target.value === '__open_dialog__') {
+                          setTzDialogOpen(true)
+                        } else {
+                          setTimezone(e.target.value)
+                        }
+                      }}
+                      className={styles.tzSelect}
+                    >
+                      <optgroup label="Featured Timezones">
+                        {FEATURED_TIMEZONES.map((o) => (
+                          <option key={o.value} value={o.value} data-search={`${o.value} ${o.label} ${o.offset}`}>
+                            {o.label}
+                          </option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="All IANA Timezones">
+                        {ianaTimezones.map((o) => (
+                          <option key={o.value} value={o.value} data-search={`${o.value} ${o.label} ${o.offset}`}>
+                            {o.label}
+                          </option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="More Options">
+                        <option value="__open_dialog__">⚙️ Open Timezone Dialog...</option>
+                      </optgroup>
+                    </Select>
+                  )}
+                </Field>
+              </div>
             </div>
             {page != null && (
               <End>
@@ -1425,6 +1468,7 @@ export function QueryLogs({ tabs, token, node = '', request, nodes = [], cluster
           </>
         )}
       </DataTable>
+      <ChangeTimezone open={tzDialogOpen} onOpenChange={setTzDialogOpen} />
     </div>
   )
 }

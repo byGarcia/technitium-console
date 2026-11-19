@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { Resolution } from './Resolution'
+import { Resolution } from './Resolution.tsx'
 import type { QueryLogEntry } from '../../api/logs'
 
 const e = (responseType: string, rcode: string): QueryLogEntry => ({

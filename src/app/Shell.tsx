@@ -6,9 +6,11 @@ import text from '../ui/text.module.css'
 import { toTrail, writeRoute, readRoute, translateLegacyRoute, plainClick } from './route'
 import { ChangePassword } from '../screens/modals/ChangePassword'
 import { ChangeTheme } from '../screens/modals/ChangeTheme'
+import { ChangeTimezone } from '../screens/modals/ChangeTimezone'
+import { useTimezone } from '../lib/timezone'
 import { Configure2FA } from '../screens/modals/Configure2FA'
 import { CreateApiToken } from '../screens/modals/CreateApiToken'
-import { Profile } from '../screens/profile/Profile'
+import { Profile } from '../screens/profile/Profile.tsx'
 import { Dashboard } from '../screens/dashboard/Dashboard'
 import { Clients } from '../screens/clients/Clients'
 import { DnsClient } from '../screens/dnsclient/DnsClient'
@@ -52,7 +54,7 @@ import {
   updateNotificationSilenced,
 } from '../api/user'
 
-type ModalId = 'password' | 'twofa' | 'token' | 'theme'
+type ModalId = 'password' | 'twofa' | 'token' | 'theme' | 'timezone'
 
 /** One glyph per section. No icon dependency: the server's CSP does not allow a
  *  CDN and an icon font would have to ship as a file in www/. */
@@ -133,6 +135,7 @@ export function Shell({
   /** A factory-credentials login: Change Password opens at once with `admin` filled in (auth.js:283-284). */
   forcePasswordChange?: boolean
 }) {
+  const { timezone } = useTimezone()
   const permissions = session.info?.permissions
   // Memoised: if it is recreated on every render, the `hashchange` resubscribes on each.
   const sections = useMemo(() => visibleSections(permissions), [permissions])
@@ -494,7 +497,7 @@ export function Shell({
     <ThisServerName.Provider value={info?.dnsServerDomain ?? session.info?.dnsServerDomain ?? ''}>
     <SlotProvider>
       {(slot) => (
-    <div className={styles.shell}>
+    <div className={styles.shell} data-timezone={timezone}>
       {drawer && (
         <button
           type="button"
@@ -723,6 +726,9 @@ export function Shell({
                     Disable Update Notification
                   </MenuItem>
                 )}
+                <MenuItem icon="clock" onClick={() => { close(); open('timezone') }}>
+                  Display Timezone
+                </MenuItem>
                 <Separator />
                 <MenuItem icon="logout" tone="danger" onClick={() => { close(); onLogout() }}>
                   Logout
@@ -976,6 +982,10 @@ export function Shell({
       <ChangeTheme
         open={modal === 'theme'}
         onOpenChange={(o) => setModal(o ? 'theme' : null)}
+      />
+      <ChangeTimezone
+        open={modal === 'timezone'}
+        onOpenChange={(o) => setModal(o ? 'timezone' : null)}
       />
 
       {/* Upstream asks with a native `confirm()`; this console asks with its own,

@@ -11,6 +11,7 @@ import { Empty, Failure, Loading } from '../../ui/Empty'
 import { copyText } from '../../lib/copy-text'
 import { useDomainAction } from '../../lib/allow-block'
 import { dateTime, fromNow } from '../../lib/dates'
+import { useTimezone, getTimezone } from '../../lib/timezone'
 import type { Notice } from '../../lib/notice'
 import { num2, percentage } from '../dashboard/metrics'
 import { tokenForLabel } from '../dashboard/palette'
@@ -258,29 +259,52 @@ function pad(n: number) {
   return String(n).padStart(2, '0')
 }
 
-/** A slice's start in the browser's time: `HH:mm`, with the day when the span passes one. */
-function sliceLabel(at: number, withDay: boolean): string {
+/** A slice's start in the active display timezone: `HH:mm`, with the day when the span passes one. */
+function sliceLabel(at: number, withDay: boolean, tz?: string): string {
   const d = new Date(at)
-  const time = `${pad(d.getHours())}:${pad(d.getMinutes())}`
-  return withDay ? `${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${time}` : time
+  const resolvedTz = tz ?? getTimezone()
+  if (resolvedTz === 'local') {
+    const time = `${pad(d.getHours())}:${pad(d.getMinutes())}`
+    return withDay ? `${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${time}` : time
+  }
+  try {
+    const fmt = new Intl.DateTimeFormat('en-US', {
+      timeZone: resolvedTz,
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    })
+    const p = fmt.formatToParts(d)
+    const M = p.find((x) => x.type === 'month')?.value ?? pad(d.getUTCMonth() + 1)
+    const D = p.find((x) => x.type === 'day')?.value ?? pad(d.getUTCDate())
+    const h = p.find((x) => x.type === 'hour')?.value ?? pad(d.getUTCHours())
+    const m = p.find((x) => x.type === 'minute')?.value ?? pad(d.getUTCMinutes())
+    return withDay ? `${M}-${D} ${h}:${m}` : `${h}:${m}`
+  } catch {
+    const time = `${pad(d.getHours())}:${pad(d.getMinutes())}`
+    return withDay ? `${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${time}` : time
+  }
 }
 
 /* The sample over its own span: Total and Blocked per slice, the Dashboard's line. */
 function Activity({ entries, n }: { entries: QueryLogEntry[]; n: number }) {
   const id = useId()
+  const { timezone } = useTimezone()
   const data = useMemo<ChartData | null>(() => {
     const a = activity(entries)
     if (a == null) return null
     const span = a.starts.length > 1 ? a.starts[a.starts.length - 1] - a.starts[0] : 0
     const withDay = span > 20 * 3600 * 1000
     return {
-      labels: a.starts.map((s) => sliceLabel(s, withDay)),
+      labels: a.starts.map((s) => sliceLabel(s, withDay, timezone)),
       datasets: [
         { label: 'Total', data: a.total },
         { label: 'Blocked', data: a.blocked },
       ],
     }
-  }, [entries])
+  }, [entries, timezone])
   if (data == null) return null
   return (
     <section className={styles.activity} aria-labelledby={id}>
