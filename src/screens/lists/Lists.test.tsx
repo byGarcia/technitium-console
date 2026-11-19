@@ -117,7 +117,7 @@ describe('records table', () => {
     withNode(node({ domain: 'example.com', records: [REG_CACHE] }))
     render(<Cache token="t" />)
     expect(await screen.findByText('218')).toBeInTheDocument()
-    expect(screen.getByText('(3m38s)')).toBeInTheDocument()
+    expect(screen.getByText('(3m 38s)')).toBeInTheDocument()
   })
 
   it('it keeps the response metadata on the grey line, under the record Details on Cache', async () => {

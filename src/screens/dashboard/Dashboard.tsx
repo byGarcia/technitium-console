@@ -9,9 +9,9 @@ import { Figure, StatCard } from './Figures'
 import { FIGURES, TOTAL, num2, percentage, type Metric } from './metrics'
 import { Line, Placeholder, Top, hasData } from './Panels'
 import { Breakdown } from './Breakdown'
-import { Heatmap } from './Heatmap'
+import { Heatmap } from './Heatmap.tsx'
 import { ResponseTime } from './ResponseTime'
-import { Resolution } from './Resolution'
+import { Resolution } from './Resolution.tsx'
 import { useDashboardSample } from './dashboard-sample'
 import { nodeSeries, nodesChart, readNodes, type NodeStats } from './compare-nodes'
 import {
@@ -363,6 +363,25 @@ export function Dashboard({
   const s = view?.stats
   const total = s?.totalQueries ?? 0
 
+  const [qps, setQps] = useState<number | null>(null)
+  const lastTotalRef = useRef<{ total: number; time: number } | null>(null)
+
+  useEffect(() => {
+    if (s?.totalQueries != null) {
+      const now = Date.now()
+      if (lastTotalRef.current && lastTotalRef.current.total <= s.totalQueries) {
+        const elapsedSec = (now - lastTotalRef.current.time) / 1000
+        if (elapsedSec >= 1) {
+          const delta = s.totalQueries - lastTotalRef.current.total
+          setQps(delta / elapsedSec)
+        }
+      } else if (range === 'LastHour' && s.totalQueries > 0) {
+        setQps(s.totalQueries / 3600)
+      }
+      lastTotalRef.current = { total: s.totalQueries, time: now }
+    }
+  }, [s?.totalQueries, range])
+
   /* Each figure's change, only for the response on screen (see `prev`). */
   const settled = !loading && data != null && view != null && prev != null &&
     prev.for === data && prev.range === range && prev.node === node
@@ -488,6 +507,12 @@ export function Dashboard({
             aria-disabled={refreshing || undefined}
             onClick={() => reloadNow.current?.()}
           />
+          {range === 'LastHour' && (
+            <span className={styles.liveBeacon} title="Auto-refreshing every 60 seconds">
+              <span className={styles.beaconDot} aria-hidden="true" />
+              Live
+            </span>
+          )}
         </div>
       </div>
 
@@ -566,6 +591,7 @@ export function Dashboard({
           against={against}
           chart={view?.mainChartData}
           hero
+          qps={qps}
           onOpen={cardJump(TOTAL)}
         />
         {FIGURES.map((m) => (

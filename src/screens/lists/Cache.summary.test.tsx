@@ -60,9 +60,9 @@ describe('the cache node cards', () => {
     answering(GITHUB)
     render(<Cache token="t" />)
     const left = await card('Time Left')
-    expect(within(left).getByText('2m5s')).toBeInTheDocument()
+    expect(within(left).getByText('2m 5s')).toBeInTheDocument()
     expect(within(left).getByText('AAAA')).toBeInTheDocument()
-    expect(within(left).getByText('21m24s')).toBeInTheDocument()
+    expect(within(left).getByText('21m 24s')).toBeInTheDocument()
     expect(within(left).getByText('Stale').closest('div')).toHaveTextContent('6')
   })
 

@@ -68,8 +68,8 @@ describe('Cache: All nodes', () => {
     const rows = screen.getAllByRole('row').slice(1)
     expect(rows).toHaveLength(2)
     expect(rows[0]).toHaveTextContent('93.184.216.34')
-    expect(rows[0]).toHaveTextContent('2141 (35m41s)')
-    expect(rows[0]).toHaveTextContent('1974 (32m54s)')
+    expect(rows[0]).toHaveTextContent('2141 (35m 41s)')
+    expect(rows[0]).toHaveTextContent('1974 (32m 54s)')
     expect(rows[1]).toHaveTextContent('300 (5m)')
     expect(rows[1]).toHaveTextContent('not cached here')
     expect(screen.getByText(/2 records at/)).toHaveTextContent('2 records at example.com across 3 nodes')
@@ -148,7 +148,7 @@ describe('Cache: All nodes', () => {
     // its own record (1974 s), never ns1's answer (2141 s) under ns2's name.
     await new Promise((r) => setTimeout(r, 50))
     const a = screen.getAllByRole('row').slice(1)[0]
-    expect(a).toHaveTextContent('1974 (32m54s)')
+    expect(a).toHaveTextContent('1974 (32m 54s)')
   })
 
   it('without a cluster nothing changes: no switch, and the bar does not open it', async () => {
