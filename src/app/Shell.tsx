@@ -829,6 +829,7 @@ export function Shell({
             clusterInitialised={session.info?.clusterInitialized === true}
             canViewLogs={permissions?.Logs?.canView !== false}
             serverDomain={info?.dnsServerDomain}
+            permissions={permissions}
           />
         ) : current?.id === 'clients' ? (
           <Clients

@@ -39,6 +39,8 @@ export function Top({
   beforeMore,
   menu,
   tone,
+  detail,
+  note,
 }: {
   title: string
   rows: TopEntry[]
@@ -55,6 +57,11 @@ export function Top({
   /** The panel's own action, to the left of "More". Only the blocked-domains one
    *  uses it, with the blocking menu upstream puts there. */
   beforeMore?: ReactNode
+  /** What follows a row's name in a quieter tone when it is not a client: which list
+   *  blocks it, once asked (deviation 46, `BlockedLists.tsx`). */
+  detail?: (row: TopEntry) => string | null
+  /** A line under the rows, the same deviation's. */
+  note?: ReactNode
 }) {
   /* Upstream renders these entries in the server's order (main.js:2798-2857).
      Position and a relative bar only make that same order easier to scan. The bar
@@ -86,7 +93,7 @@ export function Top({
           /* One line: the name, a client's domain after it in a quieter tone, and
              the count. A long one ends in an ellipsis and is whole on hover; the
              row menu's actions carry the whole name too. */
-          const domain = isClient && f.domain != null && f.domain !== '' ? f.domain : null
+          const domain = isClient && f.domain != null && f.domain !== '' ? f.domain : (detail?.(f) ?? null)
           const label = `${f.name}${f.rateLimited ? ' (rate limited)' : ''}`
           return (
             <div
@@ -107,6 +114,7 @@ export function Top({
           )
         })}
         </div>
+        {note}
       </Body>
     </Panel>
   )

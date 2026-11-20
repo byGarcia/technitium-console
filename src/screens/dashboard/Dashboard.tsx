@@ -20,6 +20,8 @@ import {
 import { ClusterNodeSelect, AGGREGATE, type ClusterNode } from '../../ui/ClusterNodeSelect'
 import { InChrome } from '../../app/ChromeSlot'
 import { TopStats } from './TopStats'
+import { useBlockedLists } from './BlockedLists'
+import { missing, type Permissions } from '../blocking/permissions'
 import { TopRowMenu } from './TopRowMenu'
 import { useDomainAction } from '../../lib/allow-block'
 import { SectionHeader } from '../../ui/SectionHeader'
@@ -72,6 +74,7 @@ export function Dashboard({
   clusterInitialised = false,
   canViewLogs = false,
   serverDomain,
+  permissions,
 }: {
   token: string | null
   nodes?: ClusterNode[]
@@ -80,6 +83,9 @@ export function Dashboard({
    *  session may (`Logs.canView`); otherwise the card is locked and nothing is read. */
   canViewLogs?: boolean
   serverDomain?: string
+  /** The session's permissions: Show lists in Top Blocked Domains (deviation 46)
+   *  needs `DnsClient: View`, and `Settings: View` for its gate. */
+  permissions?: Permissions
 }) {
   /*
   Which node this screen is reading. Upstream offers the aggregate here and
@@ -406,6 +412,16 @@ export function Dashboard({
   /* The newest logged queries (deviations 28 and 29): on the aggregate, the connected node's log. */
   const logNode = !clusterInitialised || node === AGGREGATE ? '' : node
   const logSample = useDashboardSample(token, logNode, canViewLogs, data)
+  /* Which list blocks each of Top Blocked Domains' names, when asked (deviation 46). */
+  const blockedLists = useBlockedLists({
+    token,
+    node: logNode,
+    names: (view?.topBlockedDomains ?? []).map((f) => f.name),
+    serverDomain,
+    aggregate: clusterInitialised && node === AGGREGATE,
+    dnsNeed: missing(permissions, 'DnsClient.canView'),
+    settingsNeed: missing(permissions, 'Settings.canView'),
+  })
   const logWhere = clusterInitialised && node === AGGREGATE && serverDomain != null && serverDomain !== '' ? ` on ${serverDomain}` : ''
   /* The count cards' jump is upstream's (v15.6.2, logs.js:21-24): no node and no
      period, only the card's response code or type, so Query Logs keeps the node it
@@ -694,6 +710,8 @@ export function Dashboard({
           onMore={() => openTop('TopBlockedDomains')}
           failure={failure}
           beforeMore={<BlockingMenu token={token} onNotice={setNotice} />}
+          detail={(f) => blockedLists.detail(f.name)}
+          note={blockedLists.foot}
           menu={(f) => <TopRowMenu kind="TopBlockedDomains" name={f.name} node={node} action={action} />}
         />
         <Breakdown

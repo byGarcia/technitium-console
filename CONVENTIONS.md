@@ -2146,6 +2146,25 @@ contract and SECURITY.md.
     Its words, OURS, are declared in the header comments of `DomainCheck.tsx` and
     `ListHits.tsx`.
 
+    **Which list blocks each of the Dashboard's Top Blocked Domains** (Adrián's decision,
+    2026-11-20; upstream issue #2293 asks for it; `screens/dashboard/BlockedLists.tsx`). The
+    panel offers `Show lists` under its rows; its header keeps upstream's Blocking menu and More.
+    It reads nothing until pressed. One press takes Count lists' two steps without its log read: `settings/get` for the
+    node the panel reads (the connected one on the cluster aggregate) and `apps/list` only when a
+    setting would stop it, then one TXT lookup per name the panel draws, at most five, through the
+    same cache. Each row then says what blocks it where a client's domain goes: the list's name,
+    `Advanced Blocking` and its group, `Your rule`, `No list reported` or `Lookup failed`, and a
+    line under the rows says it is what blocks each name now, as that server reports it. Blocking
+    disabled or paused, the report off, the server on its own Blocking Bypass List, or no
+    `Settings: View`: nothing is looked up and the line says why, in Count lists' words. Without
+    `DnsClient: View` the button is locked. Its limits, and crossing one is a bug:
+    - **no read on load, on a refresh or on a period change.** A name that comes in later says
+      nothing until the next press, and a name read before is not asked again while it is
+      remembered (here or by Count lists);
+    - **at most five lookups a press**, the rows on screen. The More dialog is unchanged;
+    - **the same calls as Count lists**: no `allowed/export`, no `logs/query`.
+    Its words, OURS, are declared in the header comment of `BlockedLists.tsx`.
+
 47. **Allow a blocked name in Advanced Blocking groups, from Query Logs** (Adrián's decision,
     2026-11-10; asked for in #33; `screens/apps/advanced-blocking/AllowInGroup.tsx` and
     `allow-in-group.ts`). Upstream's row menu offers `Query DNS Server` and `Allow Domain`

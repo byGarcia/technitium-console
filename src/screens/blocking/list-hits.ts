@@ -1,6 +1,14 @@
 import { queryLogs, type QueryLogEntry } from '../../api/logs'
 import type { ApiOutcome } from '../../api/client'
-import type { BlockReason } from './check-domain'
+import { listApps } from '../../api/apps'
+import { resolve } from '../../api/dnsclient'
+import type { QuickEntry } from '../../lib/quick-lists'
+import { isAdvancedBlocking } from '../apps/app-kinds'
+import {
+  blockingReasons, reportSilence, reportedListName,
+  type BlockReason, type BlockingSettings, type Missing, type ReportSilence,
+} from './check-domain'
+import { requiresText } from './permissions'
 
 /*
 Which block lists account for the blocked queries in the current log. OURS: the
@@ -284,4 +292,121 @@ export function storeReport(node: string, domain: string, report: { ok: boolean;
 
 export function clearReportCache(): void {
   reports.clear()
+}
+
+/*
+The two steps Count lists takes around its log read, shared with the Dashboard's
+Top Blocked Domains (deviation 46): whether a lookup from this server can name a
+list at all, and the lookups themselves.
+*/
+
+/**
+ * Why a lookup would not name a list, from the settings already read, or `null`
+ * when it can. Disabled or paused blocking and the report being off do not stop it
+ * when the Advanced Blocking app is installed, which blocks and reports by itself:
+ * `apps/list` is read only then.
+ */
+export async function silenceOf(
+  token: string | null,
+  settings: BlockingSettings,
+  node: string,
+): Promise<ReportSilence | null> {
+  const silence = reportSilence(settings)
+  if (silence == null || silence.kind === 'bypassed') return silence
+  const apps = await listApps(token, node)
+  if (apps.kind === 'ok' && (apps.data.response.apps ?? []).some(isAdvancedBlocking)) {
+    return reportSilence(settings, Date.now(), true)
+  }
+  return silence
+}
+
+/** Lookups in flight at once. */
+const LOOKUP_WIDTH = 4
+
+async function mapPool<T>(items: readonly T[], limit: number, fn: (item: T) => Promise<void>): Promise<void> {
+  const workers = Math.min(limit, items.length)
+  if (workers === 0) return
+  let cursor = 0
+  async function run(): Promise<void> {
+    while (cursor < items.length) {
+      const index = cursor++
+      await fn(items[index])
+    }
+  }
+  await Promise.all(Array.from({ length: workers }, () => run()))
+}
+
+export interface Report {
+  ok: boolean
+  reasons: BlockReason[]
+}
+
+/**
+ * One TXT query per name through DNS Client (`dnsClient/resolve` against
+ * `this-server`), four at a time, each answer read as a blocking report and
+ * remembered (`storeReport`). Returns each name's report.
+ */
+export async function lookUpNames(
+  token: string | null,
+  names: readonly string[],
+  node: string,
+): Promise<Map<string, Report>> {
+  const found = new Map<string, Report>()
+  await mapPool(names, LOOKUP_WIDTH, async (name) => {
+    const outcome = await resolve(token, {
+      server: 'this-server',
+      domain: name,
+      type: 'TXT',
+      protocol: 'UDP',
+      dnssec: false,
+      eDnsClientSubnet: '',
+      node,
+    })
+    const report: Report = outcome.kind === 'ok'
+      ? { ok: true, reasons: blockingReasons(outcome.data.response?.result) }
+      : { ok: false, reasons: [] }
+    storeReport(node, name, report)
+    found.set(name, report)
+  })
+  return found
+}
+
+/** A list URL's last path segment, or its host, for a list the catalogue does not name. */
+export function fileName(url: string): string {
+  try {
+    const parsed = new URL(url)
+    const seg = parsed.pathname.split('/').filter((part) => part !== '').pop()
+    return seg || parsed.hostname || 'Block list'
+  } catch {
+    const seg = url.split('/').filter((part) => part !== '').pop()
+    return seg || 'Block list'
+  }
+}
+
+/** The name a counted list is drawn with. */
+export function listLabel(list: Pick<CountedList, 'app' | 'url' | 'group'>, catalog: readonly QuickEntry[]): string {
+  if (list.app || list.url === '') {
+    return list.group != null && list.group !== '' ? `Advanced Blocking · ${list.group}` : 'Advanced Blocking'
+  }
+  return reportedListName(list.url, catalog) ?? fileName(list.url)
+}
+
+/** Why nothing was looked up: what the settings say, or that they were not read. */
+export type Held = ReportSilence | { kind: 'unread'; missing: Missing }
+
+export function heldText(held: Held): string {
+  switch (held.kind) {
+    case 'off':
+      return held.paused
+        ? 'Blocking is paused, so nothing was looked up.'
+        : 'Blocking is disabled, so nothing was looked up.'
+    case 'unreported':
+      return 'Allow TXT Blocking Report is off, so this server does not say which list matched. Nothing was looked up.'
+    case 'bypassed':
+      return `This server's own address, ${held.ip}, is on the Blocking Bypass List, so a lookup from here is never blocked. Nothing was looked up.`
+    case 'unread':
+      return 'need' in held.missing
+        ? `The blocking settings were not checked. ${requiresText(held.missing.need)}`
+        : 'Could not read the blocking settings. Nothing was looked up.'
+  }
 }
