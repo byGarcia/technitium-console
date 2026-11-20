@@ -26,6 +26,14 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
 
 ## Unreleased
 
+### New
+
+- **Undo after Block or Allow** in Blocking's check, block or allow bar, on Overview and Rules.
+  The `Blocked!` or `Allowed!` alert offers Undo, which deletes the rule again. It is offered only
+  when the name was not already one of your rules on that list, and with Delete on it. Enter still
+  blocks, as in the stock console. Written down in deviation 2 of
+  [CONVENTIONS.md](CONVENTIONS.md#deliberate-deviations-from-upstream-behaviour).
+
 ### Fixed
 
 - **The one-line installer on Technitium's own Linux install.** That install gives the DNS server's

@@ -652,6 +652,21 @@ contract and SECURITY.md.
    two "Cannot tell" sentences and the four "not checked" / "Could not read"
    lines. Its next step is the panel's own `Block` and `Allow` and the tab that
    holds the rule or the list: it adds no action.
+   **The bar's Block and Allow can be undone** (Adrián's decision, 2026-11-20;
+   `AddDomainBar.tsx`, `undo.ts`), on Overview and on Rules. Enter still blocks, as
+   upstream's form does. Their result alert, upstream's `Blocked!` or `Allowed!` with
+   its sentence, offers `Undo` (the word Rules' undo uses), which sends `blocked/delete`
+   or `allowed/delete` for the name as it was added and then shows upstream's own
+   `Deleted!` alert for that Delete; a refusal shows upstream's `Error!` with the
+   server's message. Its limits, and crossing one is a bug:
+   - **only what that Block or Allow created.** Undo is offered when the bar knows
+     the rules (the table's on Rules, its own copy on Overview) and the name was not
+     already a rule of that list: adding it again changed nothing, and Undo would
+     delete the older rule. While the rules are unknown, no Undo;
+   - **only with Delete on that list** (`Blocked.canDelete`, `Allowed.canDelete`),
+     the permission of the call it makes;
+   - **no new call and no confirmation removed.** Block and Allow never asked; Undo is
+     upstream's Delete, offered for as long as the alert is up.
 
    The section is the only one that *adds* a screen. It stays inside four limits, and a
    change that crosses one is a bug:

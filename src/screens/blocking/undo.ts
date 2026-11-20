@@ -12,6 +12,11 @@ Undoing a Delete of the Rules table (Rules.tsx, the header). OURS, words include
 upstream's own success sentence, the one its confirmed Delete shows
 (other-zones.js), because that is what happened.
 
+The add bar's Block and Allow (AddDomainBar.tsx) are undone from here too: their
+result notice offers `Undo`, which takes the rule out again with `blocked/delete` or
+`allowed/delete` and says so with upstream's success alert for a Delete
+(`deletedNotice`). Its limits are in deviation 2.
+
 The notice moves through three phases: `deleted` (Undo offered), `restoring`
 (Undo running: its button is off and the clock holds) and `restored` (said, and
 gone after RESTORED_MS). A failure ends it instead and the page's notifier says
@@ -41,6 +46,24 @@ export function undoNeed(perms: Permissions, rules: readonly Rule[]): Need | und
   return undefined
 }
 
+/** What taking back a rule the add bar just added asks for: `blocked/delete` and
+    `allowed/delete` need Delete (WebServiceOtherZonesApi.cs). */
+export function deleteNeed(list: DomainList): Need {
+  return list === 'allowed' ? 'Allowed.canDelete' : 'Blocked.canDelete'
+}
+
+/** Upstream's success sentences for the confirmed Delete (other-zones.js). */
+function deletedSentence(rule: Rule): string {
+  return rule.list === 'allowed'
+    ? `Domain '${rule.domain}' was deleted from Allowed Zone successfully.`
+    : `Blocked zone '${rule.domain}' was deleted successfully.`
+}
+
+/** Upstream's alert for a confirmed Delete: what the add bar's Undo says once done. */
+export function deletedNotice(rule: Rule): Notice {
+  return { type: 'success', title: 'Deleted!', text: deletedSentence(rule) }
+}
+
 /** A Delete while Undo is offered joins it; otherwise it starts a new notice. */
 export function joinDeleted(current: UndoState | null, rule: Rule): UndoState {
   if (current != null && current.phase === 'deleted') return { rules: [...current.rules, rule], phase: 'deleted' }
@@ -54,10 +77,7 @@ export function undoMessage(state: UndoState): string {
     return n === 1 ? `'${first.domain}' is back in ${LABEL[first.list]}.` : `${n} rules are back.`
   }
   if (n > 1) return `${n} rules were deleted.`
-  // Upstream's success sentences for the confirmed Delete (other-zones.js).
-  return first.list === 'allowed'
-    ? `Domain '${first.domain}' was deleted from Allowed Zone successfully.`
-    : `Blocked zone '${first.domain}' was deleted successfully.`
+  return deletedSentence(first)
 }
 
 export interface Restore {
