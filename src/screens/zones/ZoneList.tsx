@@ -213,8 +213,11 @@ export function ZoneList({
         })
       }
       /* In the view across nodes the one-node page is not drawn: it is not read either
-         (review of 2026-11-06). The across view reads again on the bump below. */
+         (review of 2026-11-06). The across view reads again on the bump below. A
+         one-node page still in flight lost its turn above and will not release
+         `busy`, so this does. */
       if (acrossRef.current) {
+        setBusy(false)
         setAppliedType(typeOverride ?? typeFilter)
         setAppliedName(nameFilter)
         setLoads((n) => n + 1)
