@@ -736,7 +736,8 @@ contract and SECURITY.md.
      renamed and removed. Only the non-zero ones are written;
    - **the Lists tab carries a dot while there are unsaved changes**, read as
      `Lists, unsaved changes` (`app/nav-marks.ts`, on Lists' entry in the sidebar since 2026-11-06). The edits still live only
-     while the tab is open, as before: leaving it leaves them, and the dot with them.
+     while the tab is open, as before: leaving it leaves them, and the dot with them,
+     after asking first since 2026-11-20 (deviation 51).
 3. **Settings jumps to the sub-tab of the invalid field.** Upstream focuses a
    hidden input and the user sees nothing; with one panel mounted at a time,
    without that jump the alert would be impossible to resolve.
@@ -2224,6 +2225,35 @@ contract and SECURITY.md.
       and every other parameter are upstream's;
     - **nothing else reads the dialog's leftovers.** The dialog keeps its own value for
       its own Save, as before.
+
+51. **Leaving unsaved changes asks first** (Adrián's decision, 2026-11-20; `app/leave-guard.ts`,
+    `app/LeaveConfirm.tsx`). Upstream's Settings, its block list URLs and its DHCP scope form
+    lose what was typed, silently, as soon as another tab is clicked, and so did these. Now
+    Settings (and Blocking's Settings page, the same form), Blocking › Lists and the DHCP scope
+    form, while they hold a change the save would send, declare it, and every way out asks:
+    the sidebar, a link inside a screen (`RouteLink`, `navigateTo`), a command palette jump,
+    the jumps between screens, My Profile, Logout, Back and Forward, and in Settings the
+    cluster node selector, which reads the form again. The question is a confirmation, `Discard
+    Changes` with `Are you sure you want to discard the unsaved changes?`, `Cancel` and
+    `Discard`; Cancel stays with the form as it was, Discard goes where the user was going.
+    Back is undone first: the address goes back to the form's while the question is up. A
+    reload or closing the tab gets the browser's own prompt (`beforeunload`), the only one a
+    page may show there. Settings' save bar also offers `Discard`, which puts the form back as
+    the server last answered it, as Lists' bar always has. One module does all of it: a guard
+    says which addresses keep its form (Settings' nine sub-sections are one form, so moving
+    between them asks nothing), Back is caught in the capture phase before any screen's own
+    `popstate`, and where the console stands is followed through `history.pushState` and
+    `replaceState`, wrapped while the Shell is mounted. Its limits, and crossing one is a bug:
+    - **only these three forms, and only with a change the save would send.** Nothing typed,
+      nothing asked; a change put back as it was counts as none (Settings' `pending.ts`, Lists'
+      `changesOf`, the scope form against what it opened with);
+    - **only leaving asks.** Cancel and the path back to the list in the scope form are its own
+      way out and do not; Save, Backup, Restore and every call are what they were;
+    - **no `window.confirm` inside the console.** The browser prompt is used only where nothing
+      else can be.
+    Its words, OURS: `Discard Changes`, `Are you sure you want to discard the unsaved
+    changes?` and `Discard` (the dialog's verb and Settings' bar). The Advanced Blocking editor
+    keeps its own `beforeunload` (deviation 45) and asks nothing inside the console.
 
 ## Four constraints the server imposes
 

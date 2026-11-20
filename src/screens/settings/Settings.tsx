@@ -1,6 +1,9 @@
 import { ClusterNodeSelect } from '../../ui/ClusterNodeSelect'
 import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { PermissionButton } from '../../ui/PermissionButton'
+import { Button } from '../../ui/Button'
+import { guardedLeave, useLeaveGuard } from '../../app/leave-guard'
+import { toTrail } from '../../app/route'
 import { SectionHeader } from '../../ui/SectionHeader'
 import { useSectionInView } from '../../ui/useSectionInView'
 import { BlockAnchors } from '../../ui/PanelForm'
@@ -340,6 +343,17 @@ export function Settings({
   }, [query, searching, active, loading, form, settings, nextList, busy])
   const here = useSectionInView(sections.map((x) => x.id))
 
+  /* What the save would change, pane by pane (`pending.ts`). */
+  const pending = loadedForm == null || form == null ? [] : pendingByPane(loadedForm, form, node, SUB_TABS)
+  /* Leaving with any of it unsaved asks first (deviation 51): anywhere but this
+     form, which is every Settings sub-section, or Blocking's Settings page alone. */
+  useLeaveGuard(pending.length > 0, (to) => {
+    const path = to.split('?')[0]
+    return only == null
+      ? path.startsWith(toTrail({ section: 'settings', sub: null }))
+      : path === toTrail({ section: 'blocking', sub: only.title })
+  })
+
   if (loading) return <Loading />
   if (form == null || settings == null) {
     return <Failure>Unable to load the DNS Server settings.</Failure>
@@ -520,8 +534,6 @@ export function Settings({
     busy,
   }
 
-  /* What the save would change, pane by pane (`pending.ts`). */
-  const pending = loadedForm == null ? [] : pendingByPane(loadedForm, form, node, SUB_TABS)
   const pendingWords = pendingText(pending)
   const nothingHere = searching && counts != null && counts[active] === 0
 
@@ -537,7 +549,7 @@ export function Settings({
               initialised={clusterInitialised}
               aggregate
               value={node}
-              onChange={setNode}
+              onChange={(v) => guardedLeave(null, () => setNode(v))}
               label="Cluster Node"
             />
             {/*
@@ -639,6 +651,12 @@ export function Settings({
                   <span className={styles.saved}>No unsaved changes</span>
                 )}
               </span>
+              {/* Back to what the server answered, as Lists' bar does (deviation 51). */}
+              {pendingWords !== '' && (
+                <Button disabled={busy} onClick={() => setForm(loadedForm)}>
+                  Discard
+                </Button>
+              )}
               <PermissionButton
                 lead="save"
                 variant="primary"

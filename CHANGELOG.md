@@ -33,6 +33,12 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
   when the name was not already one of your rules on that list, and with Delete on it. Enter still
   blocks, as in the stock console. Written down in deviation 2 of
   [CONVENTIONS.md](CONVENTIONS.md#deliberate-deviations-from-upstream-behaviour).
+- **Unsaved changes are no longer lost without a word.** With a change in Settings, Blocking ›
+  Lists or a DHCP scope's form, leaving it asks first: the sidebar, a link, a Ctrl K jump, the
+  browser's Back, Logout, and in Settings the Cluster Node selector. Reloading or closing the tab
+  gets the browser's own prompt. Settings' save bar has a Discard button that puts the form back
+  as it was saved. Written down as deviation 51 in
+  [CONVENTIONS.md](CONVENTIONS.md#deliberate-deviations-from-upstream-behaviour).
 
 ### Fixed
 
