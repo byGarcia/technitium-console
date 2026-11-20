@@ -38,4 +38,11 @@ describe('punycode', () => {
     expect(toUnicode('xn--.test')).toBe('xn--.test')
     expect(toUnicode('xn--a-!.test')).toBe('xn--a-!.test')
   })
+
+  it('keeps a label that decodes to something that would not encode back to it', () => {
+    // The server stores both as they are; drawn decoded, the first would read as google.
+    expect(toUnicode('xn--google-.review.test')).toBe('xn--google-.review.test')
+    expect(toUnicode('xn--a.review.test')).toBe('xn--a.review.test')
+    expect(toUnicode('xn--bcher-kva.review.test')).toBe('bücher.review.test')
+  })
 })
