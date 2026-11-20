@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import {
   activateKskDnsKey,
   addPrivateKey,
@@ -109,9 +109,15 @@ export function DnssecProperties({
   const [adding, setAdding] = useState(false)
   const [newKey, setNewKey] = useState(initialNewKey)
 
+  /* Only the latest read's answer is applied: the dialog stays mounted, and closed
+     and opened again for another zone with a read in flight, the older answer would
+     fill it with the other zone's keys (as `blocking/Rules.tsx`). */
+  const asked = useRef(0)
   const load = useCallback(async () => {
+    const mine = ++asked.current
     setLoading(true)
     const outcome = await getProperties(token, zone, node)
+    if (mine !== asked.current) return
     setLoading(false)
 
     if (outcome.kind !== 'ok') {

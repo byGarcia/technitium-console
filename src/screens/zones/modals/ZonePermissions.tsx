@@ -68,7 +68,12 @@ export function ZonePermissions({
     if (!open) return
     setNotice(null)
     setLoading(true)
+    /* Only this opening's answer is applied: closed and opened again for another
+       zone with this read in flight, the older answer must not fill the dialog
+       (as `EditZoneFile.tsx`). */
+    let current = true
     void getZonePermissions(token, zone, node).then((outcome) => {
+      if (!current) return
       setLoading(false)
       if (outcome.kind !== 'ok') {
         setNotice(noticeFromFailure(outcome))
@@ -95,6 +100,9 @@ export function ZonePermissions({
       setAvailableUsers(r.users ?? [])
       setAvailableGroups(r.groups ?? [])
     })
+    return () => {
+      current = false
+    }
   }, [open, token, zone, node])
 
   async function save() {

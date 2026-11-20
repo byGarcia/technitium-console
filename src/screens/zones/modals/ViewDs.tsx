@@ -60,7 +60,12 @@ export function ViewDs({
     if (!open) return
     setNotice(null)
     setLoading(true)
+    /* Only this opening's answer is applied: closed and opened again for another
+       zone with this read in flight, the older answer must not fill the dialog
+       (as `EditZoneFile.tsx`). */
+    let current = true
     void viewDs(token, zone, node).then((outcome) => {
+      if (!current) return
       setLoading(false)
       if (outcome.kind !== 'ok') {
         setNotice(noticeFromFailure(outcome))
@@ -69,6 +74,9 @@ export function ViewDs({
       const r = outcome.data
       setInfo(r)
     })
+    return () => {
+      current = false
+    }
   }, [open, token, zone, node])
 
   return (

@@ -168,9 +168,16 @@ export function ViewLogs({
   const [arrival] = useState(() => readParam(FILE_PARAM))
 
   // A failure on load is not drawn as an empty list; see `dhcp/Leases`.
+  /* Only the latest read's answer is applied, for the list and for the open file's
+     text: the node can change with the list in flight, and a file can be closed and
+     another opened with the first one's text in flight (as `blocking/Rules.tsx`). */
+  const listAsked = useRef(0)
+  const bodyAsked = useRef(0)
   const load = useCallback(async (): Promise<LogFile[] | null> => {
+    const mine = ++listAsked.current
     setLoadingList(true)
     const r = await listLogFiles(token, node)
+    if (mine !== listAsked.current) return null
     setLoadingList(false)
     if (r.kind === 'ok') {
       setFiles(r.data)
@@ -224,10 +231,12 @@ export function ViewLogs({
   useEffect(() => () => dropParams([FILE_PARAM]), [])
 
   async function view(fileName: string) {
+    const mine = ++bodyAsked.current
     setOpen(fileName)
     setBody(null)
     setLoadingBody(true)
     const text = await downloadLogText(token, fileName, node)
+    if (mine !== bodyAsked.current) return
     setLoadingBody(false)
     setBody(text)
   }
@@ -236,8 +245,10 @@ export function ViewLogs({
   })
 
   function close() {
+    bodyAsked.current++
     setOpen(null)
     setBody(null)
+    setLoadingBody(false)
   }
 
   async function download() {

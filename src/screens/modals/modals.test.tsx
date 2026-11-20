@@ -1,10 +1,11 @@
 import { describe, expect, it, vi, afterEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { ChangePassword } from './ChangePassword'
 import { CreateApiToken } from './CreateApiToken'
 import { Configure2FA } from './Configure2FA'
 import * as client from '../../api/client'
+import { deferred, type Deferred } from '../../test/deferred'
 
 afterEach(() => vi.restoreAllMocks())
 
@@ -225,5 +226,34 @@ describe('Configure 2FA', () => {
         text: 'Two-factor authentication (2FA) was disabled successfully.',
       }),
     )
+  })
+})
+
+/*
+Answers that arrive out of order. Each opening of Configure 2FA asks the server for a
+new secret, and the server keeps the last one it made. Closed and opened again with
+the first answer in flight, the dialog shows only the secret of the opening that asked
+last, the one the server will check the OTP against.
+*/
+describe('Configure 2FA: answers out of order', () => {
+  it('shows only the secret of the latest opening', async () => {
+    const asked: Deferred<unknown>[] = []
+    vi.spyOn(client, 'apiRequest').mockImplementation(() => {
+      const d = deferred<unknown>()
+      asked.push(d)
+      return d.promise as never
+    })
+    const draw = (open: boolean) => <Configure2FA open={open} onOpenChange={() => {}} token="t" />
+    const view = render(draw(true))
+    await waitFor(() => expect(asked).toHaveLength(1))
+    view.rerender(draw(false))
+    view.rerender(draw(true))
+    await waitFor(() => expect(asked).toHaveLength(2))
+
+    const answer = (secret: string) =>
+      ok({ status: 'ok', response: { totpEnabled: false, qrCodePngImage: 'iVBORw0K', secret } })
+    await act(async () => asked[1].resolve(answer('NEWSECRET')))
+    await act(async () => asked[0].resolve(answer('OLDSECRET')))
+    expect(screen.getByTestId('secret')).toHaveTextContent('NEWS ECRE T')
   })
 })

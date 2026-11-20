@@ -1,10 +1,11 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import * as api from '../../api/dashboard'
 import * as client from '../../api/client'
 import { TopStats } from './TopStats'
 import { Dashboard } from './Dashboard'
+import { deferred, type Deferred } from '../../test/deferred'
 
 afterEach(() => vi.restoreAllMocks())
 
@@ -204,5 +205,34 @@ describe('the search of the Top 1000 list (ours, deviation 7)', () => {
     expect(screen.getByText('No Data')).toBeTruthy()
     // It asks the server nothing more.
     expect(spy).toHaveBeenCalledTimes(1)
+  })
+})
+
+/*
+Answers that arrive out of order. The dialog stays mounted under the Dashboard:
+closed and opened from another More button with the first list in flight, it draws
+only the list it was opened for last.
+*/
+describe('modal Top Stats: answers out of order', () => {
+  it('draws only the list of the top opened last', async () => {
+    const asked = new Map<string, Deferred<api.TopEntry[]>>()
+    vi.spyOn(api, 'getTop').mockImplementation((_t, _range, type) => {
+      const d = deferred<api.TopEntry[]>()
+      asked.set(type, d)
+      return d.promise
+    })
+    const draw = (type: api.TopKind | null) => (
+      <TopStats type={type} range="LastHour" token="t" onClose={() => {}} />
+    )
+    const view = render(draw('TopClients'))
+    await waitFor(() => expect(asked.has('TopClients')).toBe(true))
+    view.rerender(draw(null))
+    view.rerender(draw('TopDomains'))
+    await waitFor(() => expect(asked.has('TopDomains')).toBe(true))
+
+    await act(async () => asked.get('TopDomains')!.resolve([{ name: 'example.com', hits: 7 }]))
+    await act(async () => asked.get('TopClients')!.resolve(CLIENTS))
+    expect(screen.getByText('example.com')).toBeInTheDocument()
+    expect(screen.queryByText('10.0.0.1')).not.toBeInTheDocument()
   })
 })

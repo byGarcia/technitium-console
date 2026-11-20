@@ -1,8 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Sessions } from './Sessions'
 import * as client from '../../api/client'
+import * as adminApi from '../../api/admin'
+import { deferred, type Deferred } from '../../test/deferred'
 import {
   CLUSTER_PRIMARY,
   CLUSTER_NOT_INITIALISED,
@@ -302,5 +304,34 @@ describe('Sessions: the list reads like the rest', () => {
     const search = screen.getByLabelText('Search')
     expect(create.closest('div[class*="toolbar"]')).toBe(search.closest('div[class*="toolbar"]'))
     expect(screen.getByLabelText('Cluster Node')).toBeInTheDocument()
+  })
+})
+
+/*
+Answers that arrive out of order. The node changes with a read in flight (Admin
+sets this server's name right after the first read, and the selector can change it
+again); whichever answers last, only the node asked last is drawn.
+*/
+describe('Sessions: answers out of order', () => {
+  it('draws only the sessions of the node chosen last', async () => {
+    type Read = Deferred<Awaited<ReturnType<typeof adminApi.listSessions>>>
+    const asked = new Map<string, Read>()
+    vi.spyOn(adminApi, 'listSessions').mockImplementation((_t, node = '') => {
+      const d: Read = deferred()
+      asked.set(node, d)
+      return d.promise
+    })
+    const view = render(<Sessions {...props} cluster={CLUSTER_PRIMARY} node="ns1.mycluster.test" />)
+    await waitFor(() => expect(asked.has('ns1.mycluster.test')).toBe(true))
+    view.rerender(<Sessions {...props} cluster={CLUSTER_PRIMARY} node="ns2.mycluster.test" />)
+    await waitFor(() => expect(asked.has('ns2.mycluster.test')).toBe(true))
+
+    const answer = (sessions: unknown[], server: string) =>
+      ok({ response: { sessions }, server }) as Awaited<ReturnType<typeof adminApi.listSessions>>
+    await act(async () => asked.get('ns2.mycluster.test')!.resolve(answer([TOKEN_SESSION], 'ns2.mycluster.test')))
+    await act(async () =>
+      asked.get('ns1.mycluster.test')!.resolve(answer([ADMIN_SESSION, TOKEN_SESSION], 'ns1.mycluster.test')),
+    )
+    expect(screen.getByText('Total Sessions: 1')).toBeInTheDocument()
   })
 })

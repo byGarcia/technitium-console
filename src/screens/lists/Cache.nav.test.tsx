@@ -4,11 +4,13 @@ down, and both send exactly what the tree sent. The tree stays the navigation of
 Blocked, which `Lists.tree.test.tsx` keeps covering.
 */
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, within } from '@testing-library/react'
+import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Cache } from './Lists'
 import * as api from '../../api/zonelists'
 import type { ListNode } from '../../api/zonelists'
+import { deferred, type Deferred } from '../../test/deferred'
+import { choose } from '../../test/dropdown'
 
 afterEach(() => vi.restoreAllMocks())
 
@@ -84,5 +86,56 @@ describe('Cache moves through one band', () => {
     expect(
       await screen.findByText('This node only contains sub-domains. Open one to see its records.'),
     ).toBeInTheDocument()
+  })
+})
+
+/*
+Answers that arrive out of order. Choosing a node or opening a zone with a read in
+flight launches another read; whichever answers last, only the latest one is drawn,
+so a node's cache never shows under another node or another domain.
+*/
+describe('Cache: answers out of order', () => {
+  const NODES = [
+    { name: 'ns1.test', type: 'Primary' },
+    { name: 'ns2.test', type: 'Secondary' },
+  ]
+  type Read = Deferred<{ kind: 'ok'; data: ListNode }>
+
+  function asking() {
+    const asked = new Map<string, Read>()
+    vi.spyOn(api, 'listNode').mockImplementation((_list, _token, domain, _dir, n = '') => {
+      const d = deferred<{ kind: 'ok'; data: ListNode }>()
+      asked.set(`${n}|${domain}`, d)
+      return d.promise
+    })
+    return asked
+  }
+
+  it('draws only the answer of the node chosen last', async () => {
+    const user = userEvent.setup()
+    const asked = asking()
+    render(<Cache token="t" nodes={NODES} clusterInitialised />)
+    await waitFor(() => expect(asked.has('|')).toBe(true))
+    await choose(user, screen.getByRole('combobox', { name: 'Cluster Node' }), /^ns2\.test/)
+    await waitFor(() => expect(asked.has('ns2.test|')).toBe(true))
+
+    await act(async () => asked.get('ns2.test|')!.resolve({ kind: 'ok', data: node({ zones: ['net'] }) }))
+    await act(async () => asked.get('|')!.resolve({ kind: 'ok', data: node({ zones: ['com'] }) }))
+    expect(screen.getByRole('button', { name: 'net' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'com' })).not.toBeInTheDocument()
+  })
+
+  it('draws only the domain opened last', async () => {
+    const user = userEvent.setup()
+    const asked = asking()
+    render(<Cache token="t" />)
+    await waitFor(() => expect(asked.has('|')).toBe(true))
+    await act(async () => asked.get('|')!.resolve({ kind: 'ok', data: node({ zones: ['com', 'net'] }) }))
+    await user.click(screen.getByRole('button', { name: 'com' }))
+    await user.click(screen.getByRole('button', { name: 'net' }))
+
+    await act(async () => asked.get('|net')!.resolve({ kind: 'ok', data: node({ domain: 'net' }) }))
+    await act(async () => asked.get('|com')!.resolve({ kind: 'ok', data: node({ domain: 'com' }) }))
+    expect(screen.getByRole('heading', { level: 1, name: 'net' })).toBeInTheDocument()
   })
 })

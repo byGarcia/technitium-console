@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   downloadAndUpdate,
   getAppConfig,
@@ -88,8 +88,14 @@ export function Apps({
   }, [kindFilter, search])
   useEffect(() => () => dropParams(['kind', 'q']), [])
 
+  /* Only the latest read's answer is applied: every install, update or uninstall
+     reads the list again, and an older read answering last would draw the apps as
+     they were before the newer change. */
+  const asked = useRef(0)
   const reload = useCallback(async () => {
+    const mine = ++asked.current
     const outcome = await listApps(token)
+    if (mine !== asked.current) return
     if (outcome.kind === 'ok') {
       setApps(outcome.data.response.apps)
       setFailure(false)

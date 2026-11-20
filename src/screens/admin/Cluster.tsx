@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Alert } from '../../ui/Alert'
 import { Button } from '../../ui/Button'
 import { Dialog } from '../../ui/Dialog'
@@ -142,9 +142,14 @@ export function Cluster({
   const [loading, setLoading] = useState(true)
   const [modal, setModal] = useState<Modal | null>(null)
 
+  /* Only the latest read's answer is applied: the node can change with a read in
+     flight, and a node's state must not be drawn, or handed up, as another's. */
+  const asked = useRef(0)
   const load = useCallback(async () => {
+    const mine = ++asked.current
     setLoading(true)
     const outcome = await getClusterState(token, { node: node })
+    if (mine !== asked.current) return
     setLoading(false)
 
     if (outcome.kind !== 'ok') {

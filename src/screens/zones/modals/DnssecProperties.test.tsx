@@ -1,9 +1,10 @@
-import { render, screen, within } from '@testing-library/react'
+import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import * as dnssec from '../../../api/dnssec'
 import { DnssecProperties } from './DnssecProperties'
 import { wholeText } from '../../../test/whole-text'
+import { deferred, type Deferred } from '../../../test/deferred'
 
 /*
 DNSSEC Properties against upstream's own modal (index.html, `modalDnssecProperties`):
@@ -152,5 +153,47 @@ describe('DNSSEC Properties, the keys table', () => {
     await userEvent.click(within(table).getByRole('button', { name: 'Details' }))
     expect(within(table).getByLabelText('Rollover days for 7')).toHaveValue('30')
     expect(within(table).getByRole('button', { name: 'Save' })).toBeInTheDocument()
+  })
+})
+
+/*
+Answers that arrive out of order. The dialog stays mounted in Zones: closed and
+opened again for another zone with the first read in flight, it draws only the zone
+opened last, so a TTL or a rollover saved from it is that zone's.
+*/
+describe('DNSSEC Properties: answers out of order', () => {
+  it('draws only the zone opened last', async () => {
+    type Read = Deferred<Awaited<ReturnType<typeof dnssec.getProperties>>>
+    const asked = new Map<string, Read>()
+    vi.spyOn(dnssec, 'getProperties').mockImplementation((_t, zone) => {
+      const d: Read = deferred()
+      asked.set(zone, d)
+      return d.promise
+    })
+    const draw = (zone: string, isOpen: boolean) => (
+      <DnssecProperties zone={zone} open={isOpen} token="t" onClose={noop} onConfirm={noop} onChanged2={noop} />
+    )
+    const view = render(draw('a.test', true))
+    await waitFor(() => expect(asked.has('a.test')).toBe(true))
+    view.rerender(draw('a.test', false))
+    view.rerender(draw('b.test', true))
+    await waitFor(() => expect(asked.has('b.test')).toBe(true))
+
+    const answer = (name: string, dnsKeyTtl: number) =>
+      ({
+        kind: 'ok',
+        data: {
+          name,
+          type: 'Primary',
+          internal: false,
+          disabled: false,
+          dnssecStatus: 'SignedWithNSEC',
+          dnsKeyTtl,
+          dnssecPrivateKeys: [key(1, 'KeySigningKey', 'Active')],
+        },
+      }) as never
+    await act(async () => asked.get('b.test')!.resolve(answer('b.test', 900)))
+    await act(async () => asked.get('a.test')!.resolve(answer('a.test', 3600)))
+    expect(screen.getByLabelText('DNSKEY TTL')).toHaveValue('900')
   })
 })
