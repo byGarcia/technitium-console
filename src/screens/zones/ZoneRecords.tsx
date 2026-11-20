@@ -99,7 +99,8 @@ export interface ZoneRecordsProps {
 
 /*
 `sortTable('tableEditZoneBody', 0..4)` in upstream, which sorts by the cell's
-text. "Data" is read through its already-formatted cells, which is what you see.
+text. Here TTL sorts as a number and the rest naturally (deviation 48). "Data" is
+read through its already-formatted cells, which is what you see.
 
 Upstream's `#` column is sortable too and here it is not: sorting by the row
 number the sort itself has just handed out leads nowhere.

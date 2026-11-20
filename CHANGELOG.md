@@ -44,6 +44,14 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
   way in or out, but the installer now names them, says where they go and stops before changing
   anything. Copy them yourself and run it again: a list already in place is left as it is.
 
+### Changed
+
+- **Sortable columns sort the way they read.** Numbers sort as numbers (TTL 60, 300, 3600, 86400
+  instead of 300, 3600, 60, 86400), IP and MAC addresses by their value (10.0.0.9 before
+  10.0.0.10), and names naturally (`pc2` before `pc10`). The stock console compares the text
+  letter by letter, as
+  [DnsServer#1873](https://github.com/TechnitiumSoftware/DnsServer/issues/1873) points out.
+
 ---
 
 ## v1.4.2 (2026-11-10)

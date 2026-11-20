@@ -447,6 +447,27 @@ describe('records view: the filters apply on Go', () => {
   })
 })
 
+/* Deviation 48: TTL sorts as a number, not as the text `300` < `3600` < `60`. */
+describe('records view: sorting', () => {
+  it('TTL ascending is 60, 300, 3600, 86400', async () => {
+    const records = [300, 3600, 60, 86400].map((ttl) => ({
+      ...A_RECORD,
+      name: `t${ttl}.casa.test`,
+      ttl,
+      ttlString: `${ttl}s`,
+    }))
+    server({ 'zones/records/get': { zone: ZONE, records } })
+    draw()
+    await userEvent.click(await screen.findByRole('button', { name: 'casa.test' }))
+    await screen.findByText('t300')
+
+    await userEvent.click(within(screen.getByRole('columnheader', { name: /TTL/ })).getByRole('button'))
+    const names = screen.getAllByText(/^t\d+$/).map((e) => e.textContent)
+    expect(names).toEqual(['t60', 't300', 't3600', 't86400'])
+    expect(screen.getByRole('columnheader', { name: /TTL/ })).toHaveAttribute('aria-sort', 'ascending')
+  })
+})
+
 describe('records view: Page Number', () => {
   /* showEditZonePage: past the last page, or negative, is the last page. */
   it('a negative page goes to the last one', async () => {

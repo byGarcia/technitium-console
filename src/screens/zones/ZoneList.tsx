@@ -806,9 +806,9 @@ interface RowProps {
 }
 
 /*
-What each column sorts by is THE TEXT YOU SEE, just like upstream
-(`sortTable('tableZonesBody', 1..8)`). That is why `Serial` is read as a string
-and not as a number: that way the order matches the old console's.
+What each column sorts by is what you see, as upstream
+(`sortTable('tableZonesBody', 1..8)`), compared the way `useSort` compares it
+(deviation 48): `Serial` as a number, the dates by their drawn text.
 */
 const KEYS: Keys<Zone> = {
   zone: (z) => zoneNameOf(z),

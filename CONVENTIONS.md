@@ -2148,6 +2148,24 @@ contract and SECURITY.md.
     - **only in Query Logs**: the Dashboard's and Blocking's top lists carry no client.
     Its words, OURS, are declared in the header comment of `AllowInGroup.tsx`.
 
+48. **Sortable columns sort numbers, addresses and names the way they read** (Adrián's
+    decision, 2026-11-20; upstream issue #1873 asks for it; `ui/Table.tsx`,
+    `compareSortValues`). Upstream's `sortTable` (common.js:228-280) lowercases each cell's
+    text and compares it by character code, so a TTL column sorts 300, 3600, 60, 86400 and
+    DHCP leases sort 10.0.0.10, 10.0.0.100, 10.0.0.9. Every sortable column here still sorts
+    by what the cell shows, with the same first-click rule, but compares it in this order: an
+    empty value first, as before; two numbers, or two texts that are plain numbers, by their
+    value; two IPv4 or IPv6 addresses by their bytes, IPv4 before IPv6, and two MAC addresses
+    by theirs; anything else case-insensitively and naturally (`Intl.Collator`, numeric), so
+    `pc2` comes before `pc10`. A drawn date (`2026-08-26 10:48`) still sorts as a date. The
+    zone list sorts the page the server sent, as upstream does; a zone's records, which the
+    console pages itself, sort across all their pages, where upstream sorts only the page on
+    screen (zone.js:3640). Its limits, and crossing one is a bug:
+    - **only the comparison changes.** What each column reads, the first-click rule and which
+      rows are sorted stay as they were. The Leases column of DHCP › Scopes keeps sorting by its
+      share (deviation 30), now read as a number;
+    - **no call and no stored order.** The order is still lost on reload, as upstream's is.
+
 ## Four constraints the server imposes
 
 These are not preferences: break them and the console works in development and

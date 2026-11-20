@@ -107,9 +107,9 @@ type Page =
 
 /* `sortTable('tableDhcpScopesBody', 0..3)`. It sorts by the cell's text. The
    Leases column (deviation 19) sorts by the share of the range leased (deviation
-   30), padded so the text sort `useSort` does reads it as a number, a scope with
-   no bar before any with one; the shares come from the leases, so the keys are
-   built with them. */
+   30), a number `useSort` compares as one (deviation 48), a scope with no bar
+   before any with one; the shares come from the leases, so the keys are built
+   with them. */
 function sortKeys(usage: Map<string, ScopeUsage | null>): Keys<NodeScopeRow> {
   const keys: Keys<NodeScopeRow> = {
     node: (s) => s.node ?? '',
@@ -119,7 +119,7 @@ function sortKeys(usage: Map<string, ScopeUsage | null>): Keys<NodeScopeRow> {
     interface: (s) => s.interfaceAddress ?? '',
     leases: (s) => {
       const u = usage.get(scopeKey(s))
-      return u == null ? '' : String(Math.round(u.share * 1e6)).padStart(12, '0')
+      return u == null ? '' : u.share
     },
   }
   return keys
