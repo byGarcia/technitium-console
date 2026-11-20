@@ -37,8 +37,13 @@ Overview's Count lists takes (`list-hits.ts`), without its log read.
     now, which the note under the rows says, not what blocked it in the period.
 
 Nothing is read on load, on a refresh or on a period change, and the More dialog is
-not touched. Its words, OURS: `Show lists`, its title `Asks this server which list
-blocks each name shown. Allow TXT Blocking Report has to be enabled.`, `Your rule`,
+not touched. Before a press, and while one runs, the line beside the button says
+what a press costs, as Count lists says it before its own: its lookups come from
+this server, so they are logged as blocked queries and count in this Dashboard's
+Top Blocked Domains and Top Clients. Its words, OURS: `Show lists`, its title
+`Asks this server which list blocks each name shown. Allow TXT Blocking Report has
+to be enabled.`, `One click asks this server about the names shown and sends at
+most 5 lookups.`, `Your rule`,
 `Which list blocks each name now, as <server> reports it.` (`this server` off the
 aggregate), and those it shares with Count lists (`No list reported`, `Lookup
 failed`, `Each lookup is logged as blocked from this server.`, `The Advanced Blocking
@@ -154,7 +159,11 @@ export function useBlockedLists({
   )
 
   const note =
-    view.kind === 'held' ? (
+    (view.kind === 'idle' || view.kind === 'busy') && names.length > 0 ? (
+      <p className={styles.listsNote}>
+        {`One click asks this server about the names shown and sends at most ${SHOWN} lookups. Each lookup is logged as blocked from this server.`}
+      </p>
+    ) : view.kind === 'held' ? (
       <p className={styles.listsNote}>
         {heldText(view.held)}
         {view.held.kind !== 'unread' && (

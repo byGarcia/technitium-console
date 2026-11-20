@@ -47,7 +47,10 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
 - **Which list blocks the Dashboard's top blocked domains.** Top Blocked Domains has a Show lists
   button: one press asks this server about the five names shown and writes beside each the block
   list (or your rule, or Advanced Blocking) that blocks it now. Nothing is asked until you press
-  it, and it needs Allow TXT Blocking Report, as Blocking's Count lists does. Written down in
+  it, and it needs Allow TXT Blocking Report, as Blocking's Count lists does. Each press sends up
+  to five lookups from this server, and each one is logged as blocked from this server, so it
+  counts in Top Blocked Domains and Top Clients; the line beside the button says so, as Count
+  lists does. Written down in
   deviation 46 of [CONVENTIONS.md](CONVENTIONS.md#deliberate-deviations-from-upstream-behaviour).
 - **Undo after Block or Allow** in Blocking's check, block or allow bar, on Overview and Rules.
   The `Blocked!` or `Allowed!` alert offers Undo, which deletes the rule again. It is offered only

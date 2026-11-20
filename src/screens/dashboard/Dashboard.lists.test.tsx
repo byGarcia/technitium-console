@@ -101,6 +101,18 @@ describe('Top Blocked Domains: which list, when asked', () => {
     expect(resolve).not.toHaveBeenCalled()
   })
 
+  it('says before the press, beside the button, that its lookups are logged as blocked, as Count lists does', async () => {
+    settings()
+    serveLookups()
+    await draw()
+    const button = within(panel()).getByRole('button', { name: 'Show lists' })
+    const foot = button.closest(`.${styles.listsFoot}`) as HTMLElement
+    expect(foot).not.toBeNull()
+    expect(within(foot).getByText(
+      'One click asks this server about the names shown and sends at most 5 lookups. Each lookup is logged as blocked from this server.',
+    )).toBeInTheDocument()
+  })
+
   it('one press checks the settings, looks up the five names on screen and names what blocks each', async () => {
     const read = settings()
     const resolve = serveLookups()

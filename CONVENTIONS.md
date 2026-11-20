@@ -2149,7 +2149,9 @@ contract and SECURITY.md.
     **Which list blocks each of the Dashboard's Top Blocked Domains** (Adrián's decision,
     2026-11-20; upstream issue #2293 asks for it; `screens/dashboard/BlockedLists.tsx`). The
     panel offers `Show lists` under its rows; its header keeps upstream's Blocking menu and More.
-    It reads nothing until pressed. One press takes Count lists' two steps without its log read: `settings/get` for the
+    It reads nothing until pressed, and until then a line beside the button says, as Count
+    lists says it before its own press, that each lookup is logged as blocked from this server:
+    they raise this Dashboard's Top Blocked Domains and Top Clients. One press takes Count lists' two steps without its log read: `settings/get` for the
     node the panel reads (the connected one on the cluster aggregate) and `apps/list` only when a
     setting would stop it, then one TXT lookup per name the panel draws, at most five, through the
     same cache. Each row then says what blocks it where a client's domain goes: the list's name,
