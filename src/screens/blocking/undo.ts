@@ -1,6 +1,7 @@
 import type { ApiOutcome } from '../../api/client'
 import type { DomainList } from '../../api/zonelists'
 import { noticeFromFailure, type Notice } from '../../lib/notice'
+import { toUnicode } from '../../lib/punycode'
 import { missing, type Need, type Permissions } from './permissions'
 import type { Rule } from './rules-model'
 
@@ -10,7 +11,9 @@ Undoing a Delete of the Rules table (Rules.tsx, the header). OURS, words include
 `N rules are back.`, `'<domain>' was not put back: <reason>` and
 `N of M rules were not put back: <reason>`. A single deletion is announced with
 upstream's own success sentence, the one its confirmed Delete shows
-(other-zones.js), because that is what happened.
+(other-zones.js), because that is what happened. They name a rule as its row draws
+it, an internationalized one in Unicode (`toUnicode`), as upstream's alert names the
+one its viewer draws; the add bar's notice keeps the name as it was typed.
 
 The add bar's Block and Allow (AddDomainBar.tsx) are undone from here too: their
 result notice offers `Undo`, which takes the rule out again with `blocked/delete` or
@@ -71,7 +74,8 @@ export function joinDeleted(current: UndoState | null, rule: Rule): UndoState {
 }
 
 export function undoMessage(state: UndoState): string {
-  const [first] = state.rules
+  const [rule] = state.rules
+  const first = { ...rule, domain: toUnicode(rule.domain) }
   const n = state.rules.length
   if (state.phase === 'restored') {
     return n === 1 ? `'${first.domain}' is back in ${LABEL[first.list]}.` : `${n} rules are back.`
@@ -112,7 +116,7 @@ export function notRestoredNotice(rules: readonly Rule[], result: Restore): Noti
     title: 'Error!',
     text:
       rules.length === 1
-        ? `'${rules[0].domain}' was not put back: ${reason}`
+        ? `'${toUnicode(rules[0].domain)}' was not put back: ${reason}`
         : `${left} of ${rules.length} rules were not put back: ${reason}`,
   }
 }

@@ -58,7 +58,31 @@ describe('Rules', () => {
     const table = screen.getByRole('table')
     expect(within(table).getAllByRole('row')).toHaveLength(2)
     expect(within(table).getByText(wholeText('bücher.test'))).toBeInTheDocument()
-    expect(within(table).getByRole('button', { name: 'Delete xn--bcher-kva.test' })).toBeInTheDocument()
+    /* The row's Delete is named by the name it draws. */
+    expect(within(table).getByRole('button', { name: 'Delete bücher.test' })).toBeInTheDocument()
+    expect(within(table).queryByRole('button', { name: 'Delete xn--bcher-kva.test' })).toBeNull()
+  })
+
+  /* `blocked/export` lists `xn--bcher-regress-b-zvb.test`: the row draws
+     `bücher-regress-b.test`, and the button, the question and the notice say that
+     too, as upstream's own question and alert say the name its viewer draws
+     (other-zones.js:367-383, the title is `domainIdn`). The call keeps the ASCII form. */
+  it('names an internationalised rule as drawn, without Modify too, and deletes its ASCII form', async () => {
+    exports(['xn--bcher-regress-b-zvb.test'], [])
+    const remove = vi.spyOn(zonelists, 'deleteDomain').mockResolvedValue(OK)
+    draw(NO_MODIFY)
+    await userEvent.click(await screen.findByRole('button', { name: 'Delete bücher-regress-b.test' }))
+    const dialog = await screen.findByRole('dialog')
+    expect(dialog).toHaveTextContent("Are you sure you want to delete the blocked zone 'bücher-regress-b.test'?")
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Delete' }))
+    expect(remove).toHaveBeenCalledExactlyOnceWith('blocked', 'T', 'xn--bcher-regress-b-zvb.test')
+    expect(await screen.findByText("Blocked zone 'bücher-regress-b.test' was deleted successfully.")).toBeInTheDocument()
+  })
+
+  it('names an internationalised rule as drawn on the locked Delete', async () => {
+    exports(['xn--bcher-regress-b-zvb.test'], [])
+    draw({ Blocked: P(true, true, false), Allowed: P(true, true, false) })
+    expect(await screen.findByRole('button', { name: 'Delete bücher-regress-b.test' })).toBeInTheDocument()
   })
 
   it('reads the filter from ?rule= and writes it back', async () => {

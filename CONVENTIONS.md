@@ -611,7 +611,9 @@ contract and SECURITY.md.
    Flush at the end of the foot with the count and the pages; a row's Delete is a
    trash icon named `Delete <domain>`. An internationalised rule, which the export lists
    in its ASCII form, is drawn in Unicode (as the tree draws `domainIdn`) and the filter
-   finds it by either form; its calls and its `Delete <domain>` keep the ASCII form. The tree is Allowed's and Blocked's
+   finds it by either form. Its `Delete <domain>`, the question before deleting and the
+   notices after name it as drawn, as upstream's question and alert name the `domainIdn` its
+   viewer draws (other-zones.js:367-383); its calls keep the ASCII form. The tree is Allowed's and Blocked's
    `lists/Lists.tsx`, drawn as Cache's node: a trail `<ROOT> › … › node` whose steps go
    up with `direction=up` (upstream's `[up]`), Refresh and Delete at its end, the zones
    under the node as chips, the records one line each with the rest under `Details`
