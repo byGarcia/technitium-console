@@ -45,4 +45,11 @@ describe('punycode', () => {
     expect(toUnicode('xn--a.review.test')).toBe('xn--a.review.test')
     expect(toUnicode('xn--bcher-kva.review.test')).toBe('bücher.review.test')
   })
+
+  it('keeps a label whose decoded form holds a dot or slash look-alike', () => {
+    // One label that would read as google．com or a／b: another name, drawn as one.
+    expect(toUnicode('xn--googlecom-b854c.test')).toBe('xn--googlecom-b854c.test')
+    expect(toUnicode('xn--ab-1u3n.test')).toBe('xn--ab-1u3n.test')
+    expect(toUnicode('xn--caf-dma.test')).toBe('café.test')
+  })
 })

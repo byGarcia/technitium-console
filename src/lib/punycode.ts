@@ -129,15 +129,16 @@ export function toUnicode(name: string): string {
     .split('.')
     .map((label) => {
       if (label.slice(0, PREFIX.length).toLowerCase() !== PREFIX || label.length === PREFIX.length) return label
-      /* Only a label that is the encoding of what it decodes to, and holds no
-         control, format or space character, is drawn decoded: `xn--google-`
-         decodes to `google`, another name, and `xn--a` to a control character. */
+      /* Only a label that is the encoding of what it decodes to, and holds only
+         letters, marks, digits and hyphens, is drawn decoded: `xn--google-`
+         decodes to `google`, another name, `xn--a` to a control character, and
+         a label can decode to `google．com`, one label that reads as two. */
       const encoded = label.slice(PREFIX.length).toLowerCase()
       const decoded = decodeLabel(encoded)
       if (
         decoded == null ||
         !/[^\x00-\x7f]/.test(decoded) ||
-        /[\p{C}\s]/u.test(decoded) ||
+        !/^[\p{L}\p{M}\p{N}-]+$/u.test(decoded) ||
         encodeLabel(decoded) !== encoded
       )
         return label
