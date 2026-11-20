@@ -215,6 +215,13 @@ the table.
    among themselves when the toolbar's end is narrower than they are, as on a phone. */
 .bulkActs { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--s-6); min-width: 0; }
 .bulkCount { white-space: nowrap; }
+/* On a phone the count takes a line of its own. Sharing the verbs' line, its
+   length decided where they wrapped: the first tick turned `1-10 (10) of 32
+   records (page 1 of 4)` into `1 of 9 records selected`, the bar went from three
+   lines to two and the table jumped up under the finger (390 px, 2026-11-20). */
+@media (max-width: 560px) {
+  .bulkCount { flex-basis: 100%; text-align: right; }
+}
 .pageField { width: 150px; }
 .perPage { width: 200px; }
 .pageField input { text-align: center; }

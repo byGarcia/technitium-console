@@ -751,7 +751,6 @@ export function ZoneRecords(p: ZoneRecordsProps) {
             <Button variant="primary" onClick={() => showPage()}>
               Go
             </Button>
-      
             {/* The status above the table as well as under it, as upstream draws it;
                 with records ticked, how many, and the three verbs (deviation 54). */}
             <End>
