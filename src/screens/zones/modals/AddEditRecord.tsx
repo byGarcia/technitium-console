@@ -78,8 +78,6 @@ export interface AddEditRecordProps {
   defaults?: RecordDefaults
   onClose: () => void
   onDone: (a: Notice) => void
-  /** The expiry TTL is reported because the row's "Disable" button uses it. */
-  onExpiryTtl: (v: string) => void
 }
 
 const FALLBACK_DEFAULTS: RecordDefaults = {
@@ -175,7 +173,6 @@ export function AddEditRecord(p: AddEditRecordProps) {
       return
     }
 
-    p.onExpiryTtl(f.expiryTtl)
     p.onClose()
     p.onDone(
       editing

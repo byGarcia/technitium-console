@@ -126,7 +126,6 @@ describe('a zone answered out of order', () => {
     onUnsign: noop,
     onViewDs: noop,
     onDnssecProperties: noop,
-    modalExpiryTtl: '',
   }
   const read = (address: string): ApiOutcome<ZoneRecordsData> => ({
     kind: 'ok',

@@ -84,6 +84,10 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
 - **DHCP › Leases** names its Type column.
 - **The Dashboard's week by hour** marks the hour in progress as running, and it opens Query Logs
   for that hour, instead of drawing it as an hour with no data while Last Hour shows queries.
+- **Enable and Disable on a record keep its expiry TTL.** The stock console sends the Expiry TTL
+  left in the record dialog instead, so disabling a record that expires in 3600 seconds after
+  editing one with 300 gave it 300, and a record never opened in the dialog lost its expiry. Written
+  down as deviation 50 in [CONVENTIONS.md](CONVENTIONS.md#deliberate-deviations-from-upstream-behaviour).
 
 ### Changed
 

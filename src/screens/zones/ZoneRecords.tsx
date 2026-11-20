@@ -87,14 +87,6 @@ export interface ZoneRecordsProps {
   onDnssecProperties: (zone: string) => void
   /** Changes when an external modal forces a re-read of the zone. */
   refresh: number
-  /*
-  The expiry TTL left over in the record modal. It is NOT a whim:
-  `updateRecordState` reads it from the modal's field instead of the row, so
-  disabling a record sends whatever was left there from last time, or empty if
-  the modal has not been opened. It is a bug of upstream's and it is replicated;
-  see CONVENTIONS.md.
-  */
-  modalExpiryTtl: string
 }
 
 /*
@@ -268,10 +260,10 @@ export function ZoneRecords(p: ZoneRecordsProps) {
   function setRecordState(r: ResourceRecord, disable: boolean) {
     const name = r.name === '' ? '.' : r.name
     const hints = zoneHasSvcbAutoHint(records, r.type === 'A', r.type === 'AAAA')
-    const body = {
-      ...stateChangeBody(zone, r, disable, hints),
-      expiryTtl: p.modalExpiryTtl,
-    }
+    /* The record's own expiry TTL goes with it. Upstream reads the record
+       dialog's field instead (`updateRecordState`, zone.js:6236): empty if it was
+       never opened, else whatever was left there. Not copied (deviation 50). */
+    const body = stateChangeBody(zone, r, disable, hints)
 
     const run = () =>
       mutateRecord(

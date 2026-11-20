@@ -279,8 +279,8 @@ Write down here whatever you find. What is already known:
 - **Disabling a record reads the expiry TTL FROM THE MODAL, not from the row**
   (`updateRecordState`, zone.js:6236). If the modal has never been opened, it
   sends the empty string; if it was opened, it sends whatever was left inside.
-  It is an upstream bug: it is replicated, and that is why the records screen
-  drags that value along.
+  It is an upstream bug. It was replicated until 2026-11-20 and is not any more:
+  see deviation 50.
 - **A record filter starting with `*` looks for the literal wildcard**, it does
   not list everything: after converting the glob to a regex, `showEditZonePage`
   rewrites a leading `.*\.` to `\*\.`. It serves to find the `*.zone` record,
@@ -2194,6 +2194,21 @@ contract and SECURITY.md.
     - **only these five.** A dialog with a text field keeps Enter, as upstream;
     - **only Enter changes.** Their texts, checkboxes, calls and alerts are upstream's, and
       Escape and the dismiss button still close them.
+
+50. **Enabling or disabling a record keeps its own expiry TTL** (Adrián's decision,
+    2026-11-20; `screens/zones/ZoneRecords.tsx`, `api/records.ts`'s `stateChangeBody`).
+    Upstream's row Enable and Disable resend the whole record with `disable` set, but
+    read `expiryTtl` from the record dialog's field instead of the record
+    (`updateRecordState`, zone.js:6236): the empty string if the dialog was never
+    opened, otherwise whatever was left in it. So disabling a record whose expiry is
+    3600 after editing one with 300 gives it 300, and one never opened loses its
+    expiry. This console copied that until 2026-11-20. It now sends the record's own
+    `expiryTtl`, as it sends its own TTL and comments. Its limits, and crossing one is
+    a bug:
+    - **only that field changes.** The call, the confirmation of Disable, the alerts
+      and every other parameter are upstream's;
+    - **nothing else reads the dialog's leftovers.** The dialog keeps its own value for
+      its own Save, as before.
 
 ## Four constraints the server imposes
 

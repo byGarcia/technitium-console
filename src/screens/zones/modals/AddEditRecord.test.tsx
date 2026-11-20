@@ -26,7 +26,6 @@ function props(over: Partial<AddEditRecordProps> = {}): AddEditRecordProps {
     defaults: { defaultRecordTtl: 3600, defaultNsRecordTtl: 14400, defaultSoaRecordTtl: 900, dnssecValidation: true },
     onClose: () => {},
     onDone: () => {},
-    onExpiryTtl: () => {},
     ...over,
   }
 }

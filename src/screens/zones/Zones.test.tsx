@@ -266,6 +266,44 @@ describe('records of a zone', () => {
     expect(await screen.findByText('Resource record was disabled successfully.')).toBeTruthy()
   })
 
+  it('disabling a record sends its own expiry TTL, not the one left in the record dialog', async () => {
+    const user = userEvent.setup()
+    const short = { ...A_RECORD, name: 'tmp.casa.test', rData: { ipAddress: '10.0.0.2' }, expiryTtl: 300, expiryTtlString: '5m' }
+    const long = { ...A_RECORD, expiryTtl: 3600, expiryTtlString: '1h' }
+    const spy = server({ 'zones/records/get': { zone: ZONE, records: [long, short] } })
+    draw()
+    await user.click(await screen.findByRole('button', { name: 'casa.test' }))
+    await screen.findByRole('heading', { name: 'casa.test' })
+
+    // The record with 300 is opened and saved: upstream's dialog then still holds 300.
+    await user.click(screen.getAllByRole('button', { name: 'Edit Record' })[1])
+    const dialog = await screen.findByRole('dialog')
+    expect(within(dialog).getByLabelText('Expiry TTL')).toHaveValue('300')
+    await user.click(within(dialog).getByRole('button', { name: 'Save' }))
+    expect(await screen.findByText('Resource record was updated successfully.')).toBeTruthy()
+
+    // Upstream would send 300 here (zone.js:6236); the record's own 3600 goes.
+    await user.click(screen.getAllByRole('button', { name: 'Disable Record' })[0])
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Disable' }))
+    await waitFor(() => {
+      const call = spy.mock.calls.find((c) => String(c[0]).startsWith('zones/records/update') && c[1]?.body?.disable === 'true')
+      expect(call![1]?.body).toMatchObject({ domain: 'www.casa.test', disable: 'true', expiryTtl: '3600' })
+    })
+  })
+
+  it('enabling a record never opened in the dialog sends its own expiry TTL', async () => {
+    const user = userEvent.setup()
+    const off = { ...A_RECORD, disabled: true, expiryTtl: 3600, expiryTtlString: '1h' }
+    const spy = server({ 'zones/records/get': { zone: ZONE, records: [off] } })
+    draw()
+    await user.click(await screen.findByRole('button', { name: 'casa.test' }))
+    await user.click(await screen.findByRole('button', { name: 'Enable Record' }))
+    await waitFor(() => {
+      const call = spy.mock.calls.find((c) => String(c[0]).startsWith('zones/records/update'))
+      expect(call![1]?.body).toMatchObject({ disable: 'false', expiryTtl: '3600' })
+    })
+  })
+
   it('an unsigned Primary DOES offer DNSSEC, but only \"Sign Zone\"', async () => {
     // `divZoneDnssecOptions` is shown for every Primary; what changes is what is
     // inside it (zone.js:3374). An unsigned Secondary does not show it. Since
