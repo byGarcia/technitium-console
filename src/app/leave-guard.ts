@@ -12,10 +12,14 @@ every way out asks first, through this one module:
     command palette, the jumps between screens (`app/handoff.ts`), My Profile and
     Logout. They call `guardedLeave` with where they go before going;
   · Back and Forward: the browser has already moved the address bar when it says
-    so, with `popstate`. A listener in the CAPTURE phase on `window` runs before
-    every screen's own `popstate` listener (the Shell's, Zones', DHCP's), stops the
+    so, with `popstate`. The guard's listener on `window` runs before every
+    screen's own `popstate` listener (the Shell's, Zones', DHCP's), stops the
     event there, puts the bar back where the screen still is and asks. Discarding
-    walks to where the browser was going;
+    walks to where the browser was going. It is added when this module loads,
+    before React mounts anything, and not by the Shell: on `window` itself
+    Chromium runs the listeners in the order they were added, capture or not, and
+    a screen mounted first (a direct load of `/dhcp/scopes/`) adds its own in an
+    effect that runs before the Shell's;
   · a reload or closing the tab: the browser's own `beforeunload` prompt, the only
     one a page may show there;
   · a screen's own step that would throw the form away (Settings' node selector)
@@ -41,6 +45,27 @@ let passing = false
 let here = ''
 
 const address = () => window.location.pathname + window.location.search
+
+/*
+The one `popstate` listener, added once per page however many times this module
+is evaluated (a hot reload evaluates it again): it hands the event to whatever
+`installLeaveGuard` put in `pop`, and does nothing while no Shell is mounted.
+*/
+type PopHold = { pop: ((e: PopStateEvent) => void) | null }
+const POP_HOLD = Symbol.for('technitium-console.leave-guard.popstate')
+
+function popHold(): PopHold {
+  const w = window as Window & { [POP_HOLD]?: PopHold }
+  let hold = w[POP_HOLD]
+  if (hold == null) {
+    const created: PopHold = { pop: null }
+    window.addEventListener('popstate', (e) => created.pop?.(e), true)
+    w[POP_HOLD] = hold = created
+  }
+  return hold
+}
+
+const hold = popHold()
 
 /** Whether going to `to` (`null`: the screen goes whatever the address) would
  *  throw away an unsaved form. */
@@ -130,9 +155,9 @@ export function installLeaveGuard(ask: (go: () => void) => void): () => void {
       }),
     )
   }
-  window.addEventListener('popstate', onPop, true)
+  hold.pop = onPop
   return () => {
-    window.removeEventListener('popstate', onPop, true)
+    if (hold.pop === onPop) hold.pop = null
     history.pushState = push
     history.replaceState = replace
     if (asker === ask) asker = null
