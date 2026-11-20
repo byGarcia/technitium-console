@@ -830,8 +830,9 @@ contract and SECURITY.md.
      twice or not at all leaves the panel saying it could not load, never a double
      count or a quiet hole. Checked on 2026-10-15 against v15.6.1: the stitched
      hours equal Last Day's 24 and a single 157-hour request, hour by hour. The hour
-     in progress is left out, as Last Day leaves it. It is asked once per node and
-     per hour, not on each minute reload.
+     in progress is not asked, as Last Day leaves it out; its cell is outlined as
+     running, with no figure, and opens Query Logs for that hour like the others
+     (2026-11-20). It is asked once per node and per hour, not on each minute reload.
 
    Its limits, and crossing one is a bug:
    - **only `dashboard/stats/get`**, which the stock Dashboard already calls, and
@@ -851,7 +852,8 @@ contract and SECURITY.md.
      months", "previous N minutes/hours/days" (`compare.ts`, `Figures.tsx`,
      `Dashboard.tsx`), the Queries hint "Click a point to open Query Logs for that
      minute/hour/day/month" (`Dashboard.tsx`), the week's title "Queries per Hour,
-     Last 7 Days", its weekday names, each cell's "HH:00 to HH:00: N queries", its
+     Last 7 Days", its weekday names, each cell's "HH:00 to HH:00: N queries", the
+     hour in progress's "HH:00 to HH:00: in progress, counted when the hour ends", its
      hint "Click a cell for that hour's Query Logs" and its scale's "Quiet" and
      "Busy" (`Heatmap.tsx`, `heatmap.ts`), and the legend entries' "Show Query Logs"
      title, which is upstream's own menu text. The two hints show only when the
@@ -1284,7 +1286,8 @@ contract and SECURITY.md.
     scopes`, `in the enabled scopes`, `The leases could not be read.`, `within the
     next hour`, `next:`, `obtained`, `None`, `Open in Leases`, `N of M leased`,
     `Leased`, `Not leased`, `N more`, `This DNS Server`, the `1d 4h 30m` lease time
-    and the reservation tooltip; the headers `Leases`, `Scope Range`, `Subnet Mask`;
+    and the reservation tooltip; the headers `Leases`, `Scope Range`, `Subnet Mask`,
+    and the leases' `Type`, which upstream leaves blank (2026-11-20);
     `Search` and its placeholders `IP address, MAC address or host name` and `Scope
     name or IP address`; `State`, `All`, `N of M shown`, `Details`, `Client
     Identifier`, `Network`, `Broadcast`, `Interface`, `Disable Scope`, `Enable

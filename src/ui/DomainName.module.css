@@ -1,2 +1,5 @@
 /* One label and its closing dot: a line never ends inside it (see `DomainName.tsx`). */
 .label { white-space: nowrap; }
+/* A label longer than a line (`LONG_LABEL`): it wraps at its hyphens, and only
+   where it has none, at the edge. */
+.long { overflow-wrap: break-word; }

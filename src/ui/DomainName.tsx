@@ -25,10 +25,23 @@ plain text, so a record's relative name broke after its hyphen: at 1440 the
 records' Name column was 125 px beside a Data column of 700, and
 `living-room-tv` read `living-room-` over `tv`. As one piece it sets the column's
 minimum instead.
+
+Except a label longer than LONG_LABEL characters (a DNS label can have 63). Kept
+whole, it set a records Name column of 500 px at 1440 and ran out of its card at
+390, cut at the edge (2026-11-20). Such a label is the one piece that may wrap
+inside itself: at its hyphens, which a name that long is made of, and at the edge
+of the line only when it has none (`overflow-wrap: break-word`, which does not
+shrink a column). 32 is the cap of a zone's records Name column (`.ownerName` in
+Zones.module.css), so a label kept whole always fits that column.
 */
+export const LONG_LABEL = 32
+
+const piece = (text: string, label: string) =>
+  <span className={label.length > LONG_LABEL ? styles.long : styles.label}>{text}</span>
+
 export function DomainName({ name }: { name: string }) {
   if (name === '' || name === '.') return <>{name}</>
-  if (!name.includes('.')) return <span className={styles.label}>{name}</span>
+  if (!name.includes('.')) return piece(name, name)
 
   const labels = name.split('.')
   const last = labels.length - 1
@@ -36,7 +49,7 @@ export function DomainName({ name }: { name: string }) {
     <>
       {labels.map((label, i) => (
         <Fragment key={i}>
-          <span className={styles.label}>{i < last ? `${label}.` : label}</span>
+          {piece(i < last ? `${label}.` : label, label)}
           {i < last && <wbr />}
         </Fragment>
       ))}

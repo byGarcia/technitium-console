@@ -20,8 +20,11 @@ whole hours, each one by hour, and stitched together:
     START of its hour in the browser's zone, which is where the rows and columns
     are read. In a zone a half hour off UTC, a cell is the hour starting at :30.
 
-The hour in progress is not asked: the server counts an hour as it closes (Last
-Day leaves it out for the same reason), so it would be a part shown as a whole.
+The hour in progress is not asked. Last Day leaves it out, and Custom gives it only
+as far as it has gone (checked against v15.6.2 on 2026-11-20); the week is asked once
+an hour, so that figure would be a part shown as a whole and fall behind within
+minutes. Its cell is marked as running instead (`HeatRow.live`), with no figure, so a
+busy Last Hour does not sit beside an hour that looks empty.
 */
 
 const HOUR = 3_600_000
@@ -90,6 +93,9 @@ export interface HeatRow {
   /** 24 cells, by the browser's hour; `null` where there is no hour to show (later
    *  today, or an hour a clock change skipped). */
   cells: (HeatCell | null)[]
+  /** The browser's hour of the hour in progress, on today's row; `null` elsewhere,
+   *  and where a clock change folds it into an hour already counted. */
+  live: number | null
 }
 
 const WEEKDAY = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -114,7 +120,7 @@ export function heatRows(hours: Map<number, number>, now: number): HeatRow[] {
   const rows: HeatRow[] = []
   for (let back = DAYS - 1; back >= 0; back--) {
     const day = new Date(today.getFullYear(), today.getMonth(), today.getDate() - back).getTime()
-    rows.push({ day, label: dayLabel(day), short: dayShort(day), cells: Array.from({ length: 24 }, () => null) })
+    rows.push({ day, label: dayLabel(day), short: dayShort(day), cells: Array.from({ length: 24 }, () => null), live: null })
   }
   const byDay = new Map(rows.map((r) => [r.day, r]))
   for (const [from, count] of [...hours.entries()].sort((a, b) => a[0] - b[0])) {
@@ -126,6 +132,9 @@ export function heatRows(hours: Map<number, number>, now: number): HeatRow[] {
       ? { from, to: from + HOUR, count }
       : { from: cell.from, to: from + HOUR, count: cell.count + count }
   }
+  const running = new Date(weekSpan(now).to)
+  const todayRow = byDay.get(new Date(running.getFullYear(), running.getMonth(), running.getDate()).getTime())
+  if (todayRow != null && todayRow.cells[running.getHours()] == null) todayRow.live = running.getHours()
   return rows
 }
 

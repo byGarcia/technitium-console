@@ -92,6 +92,14 @@ describe('DHCP › Leases', () => {
     expect(screen.getByText('Total Leases: 2')).toBeInTheDocument()
   })
 
+  it('every column says what it holds, Type included', async () => {
+    vi.spyOn(api, 'listLeases').mockResolvedValue({ kind: 'ok', data: [DYNAMIC, RESERVED] })
+    render(<Dhcp token="t" sub="Leases" />)
+    await screen.findByRole('cell', { name: '192.168.1.42' })
+    const type = screen.getByRole('columnheader', { name: 'Type' })
+    expect(within(type).getByText('Type')).toBeVisible()
+  })
+
   /*
   The message goes INSIDE the table and the footer stays the count.
 

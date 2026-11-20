@@ -69,6 +69,19 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
 - **Clients › Actions keeps changes made elsewhere.** Adding a client to, or removing it from, the
   Blocking or QPM Limit Bypass List reads the list again right before saving, so an entry added in
   Settings or another console after the page opened is no longer lost.
+- **The menu drawer on a phone** takes the focus when it opens, keeps Tab and Shift+Tab inside it,
+  closes on Escape and gives the focus back to the Menu button. While closed, its links are no
+  longer reached with Tab behind the page.
+- **Long record names.** A record name longer than a line no longer widens the Name column until
+  Data has no room, or runs out of its card on a phone: it wraps at its dots, and a label longer
+  than the column at its hyphens. The dot between Last Used and Last Modified no longer starts a
+  line when they wrap.
+- **The zone's SOA** shows its Primary Name Server and Responsible Person on a line each, broken at
+  their dots, instead of a few letters at a time; on a phone the Records and SOA cells take the
+  whole row.
+- **DHCP › Leases** names its Type column.
+- **The Dashboard's week by hour** marks the hour in progress as running, and it opens Query Logs
+  for that hour, instead of drawing it as an hour with no data while Last Hour shows queries.
 
 ### Changed
 

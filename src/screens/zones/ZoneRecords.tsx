@@ -714,7 +714,7 @@ export function ZoneRecords(p: ZoneRecordsProps) {
               return (
                 <tr key={`${r.name}|${r.type}|${offset + i}`} className={repeat ? styles.repeat : undefined}>
                   <td className={styles.num2}>{offset + i + 1}</td>
-                  <td className={`${styles.mono} ${tbl.lead} ${styles.owner}`}><DomainName name={relativeName(r.name, zone)} /></td>
+                  <td className={`${styles.mono} ${tbl.lead} ${styles.owner}`}><span className={styles.ownerName}><DomainName name={relativeName(r.name, zone)} /></span></td>
                   <td className={tbl.lead}>
                     <span className={styles.typeCell}>
                       <span className={styles.rtype} style={{ '--rt': recordColour(r.type) } as CSSProperties}>

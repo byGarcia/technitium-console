@@ -8,6 +8,10 @@ import { Icon } from '../../ui/Icon'
 import { useTooltip } from '../../ui/Tooltip'
 import { Card, Count, StackBar, hotEvents, statStyles as styles } from '../../ui/StatCard'
 import { recordColour } from './zone-colours'
+import zoneStyles from './Zones.module.css'
+
+/* The SOA's two names go through `DomainName`, so they break at their dots. */
+const NAMES = new Set(['Primary Name Server', 'Responsible Person'])
 
 /*
 Not used since restart, and why it is not "never".
@@ -108,7 +112,7 @@ export function ZoneOverview(p: ZoneOverviewProps) {
 
   return (
     <div className={styles.grid}>
-      <Card title="Records" colour="var(--ch-total)">
+      <Card title="Records" colour="var(--ch-total)" className={zoneStyles.overviewWide}>
         <div className={styles.body}>
           <div className={styles.figure}><Count value={records.length} /></div>
           <StackBar
@@ -147,12 +151,12 @@ export function ZoneOverview(p: ZoneOverviewProps) {
       </Card>
 
       {soa && (
-        <Card title="SOA" colour={recordColour('SOA')}>
+        <Card title="SOA" colour={recordColour('SOA')} className={zoneStyles.overviewWide}>
           <dl className={`${styles.body} ${styles.pairs}`}>
             {soaRows.map(([k, v]) => (
-              <div key={k}>
+              <div key={k} className={NAMES.has(k) ? zoneStyles.soaName : undefined}>
                 <dt>{k}</dt>
-                <dd>{v}</dd>
+                <dd>{NAMES.has(k) ? <DomainName name={v} /> : v}</dd>
               </div>
             ))}
           </dl>

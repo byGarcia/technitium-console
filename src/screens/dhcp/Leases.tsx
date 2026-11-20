@@ -57,7 +57,9 @@ shows, only sends) and both dates with their distance are under the row's
 `Details`. Lease Obtained left the line, so the table no longer sorts by it; the
 Newest Lease card says which came last. The search, the scope and the type are
 in the address bar (`dhcp-url.ts`). Words of ours: `Search`, the search field's
-placeholder, `All`, `N of M shown`, `Details` and `Client Identifier`.
+placeholder, `All`, `N of M shown`, `Details`, `Client Identifier`, and `Type` as
+the type column's header, which upstream leaves blank (index.html:2516; named here
+since 2026-11-20, so every column says what it holds).
 
 Rows are found by their scope and client identifier (`leaseKey`), not by their
 position: the position in the sorted, filtered table is not the position in the
@@ -372,7 +374,7 @@ export function Leases({
                   <Th field="address" sort={sort} onSort={toggle}>IP Address</Th>
                   <Th field="host" sort={sort} onSort={toggle}>Host Name</Th>
                   <Th field="mac" sort={sort} onSort={toggle}>MAC Address</Th>
-                  <Th field="type" sort={sort} onSort={toggle} name="Type" />
+                  <Th field="type" sort={sort} onSort={toggle}>Type</Th>
                   <Th field="scope" sort={sort} onSort={toggle}>Scope</Th>
                   <Th field="expires" sort={sort} onSort={toggle}>Lease Expires</Th>
                   <th className={tbl.actionsCell} />

@@ -36,6 +36,8 @@ import { Menu, MenuItem, Separator } from '../ui/Menu'
 import { ThisServerName } from '../ui/ClusterNodeSelect'
 import { FooterLinks } from '../ui/FooterLinks'
 import { Versions } from './Versions'
+import { useDrawerFocus } from './drawer-focus'
+import { useMedia } from '../lib/use-media'
 import { CommandPalette, PALETTE_KEYS } from './palette/CommandPalette'
 import { accountItems, actionItems, pageItems, zoneItem, type PaletteItem, type Target } from './palette/items'
 import { listAllZones } from '../api/zones'
@@ -148,6 +150,19 @@ export function Shell({
   })
   const [active, setActive] = useState(() => initialRoute?.section ?? sections[0]?.id ?? 'about')
   const [drawer, setDrawer] = useState(false)
+  /* Below 900 px the side panel is a drawer (Shell.module.css). Closed, it is off
+     screen and `inert`, so Tab does not walk links nobody can see; going wide
+     closes it, so a drawer left open does not keep the focus in the side panel. */
+  const narrow = useMedia('(max-width: 900px)')
+  const drawerRef = useRef<HTMLElement>(null)
+  const menuButtonRef = useRef<HTMLButtonElement>(null)
+  const closeDrawer = useCallback(() => setDrawer(false), [])
+  useDrawerFocus(drawer, closeDrawer, drawerRef, menuButtonRef)
+  const [wasNarrow, setWasNarrow] = useState(narrow)
+  if (narrow !== wasNarrow) {
+    setWasNarrow(narrow)
+    if (!narrow) setDrawer(false)
+  }
   const [modal, setModal] = useState<ModalId | null>(forcePasswordChange ? 'password' : null)
   /* The factory password travels only with the opening the login caused; from the
      user menu `showChangePasswordModal()` is called with nothing (main.js). */
@@ -504,7 +519,7 @@ export function Shell({
         />
       )}
 
-      <aside className={styles.side} data-open={drawer}>
+      <aside ref={drawerRef} className={styles.side} data-open={drawer} inert={narrow && !drawer}>
         {/*
         What is running sits where each thing is named (2026-11-06): this console's
         version beside its name, the DNS server's under the account that is signed in
@@ -749,6 +764,7 @@ export function Shell({
         */}
         <header className={styles.rtop}>
           <button
+            ref={menuButtonRef}
             type="button"
             className={styles.hamburger}
             aria-label="Menu"
