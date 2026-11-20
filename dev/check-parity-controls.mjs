@@ -422,6 +422,7 @@ const DEVIATION_OWN_LABELS = new Map([
   ['Blocked Answer TTL', { file: 'screens/apps/advanced-blocking/GeneralPanel.tsx', why: 'the Advanced Blocking editor (deviation 45)' }],
   ['Update Lists Every', { file: 'screens/apps/advanced-blocking/GeneralPanel.tsx', why: 'the Advanced Blocking editor (deviation 45)' }],
   ['Answer With', { file: 'screens/apps/advanced-blocking/GroupEditor.tsx', why: 'the Advanced Blocking editor (deviation 45)' }],
+  ['Quick range', { file: 'screens/logs/QueryLogs.tsx', why: "Query Logs' quick ranges (deviation 52)" }],
 ])
 const onlyInOwnFile = (label) =>
   (LABEL_FILES.get(label) ?? []).every((f) => f === join(SOURCE, DEVIATION_OWN_LABELS.get(label).file))

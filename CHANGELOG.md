@@ -28,6 +28,11 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
 
 ### New
 
+- **Quick ranges in Query Logs.** Beside From and To, `15 min`, `1 h`, `24 h` and `7 d` fill
+  both fields, from that long ago to now, and run the query from page 1 with the other filters as
+  they are. The address bar keeps the two instants, so a copied link asks for the same span. Live
+  Update turns them off with the fields. Written down as deviation 52 in
+  [CONVENTIONS.md](CONVENTIONS.md#deliberate-deviations-from-upstream-behaviour).
 - **Undo after Block or Allow** in Blocking's check, block or allow bar, on Overview and Rules.
   The `Blocked!` or `Allowed!` alert offers Undo, which deletes the rule again. It is offered only
   when the name was not already one of your rules on that list, and with Delete on it. Enter still

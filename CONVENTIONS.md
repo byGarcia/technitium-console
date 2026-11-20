@@ -2255,6 +2255,24 @@ contract and SECURITY.md.
     changes?` and `Discard` (the dialog's verb and Settings' bar). The Advanced Blocking editor
     keeps its own `beforeunload` (deviation 45) and asks nothing inside the console.
 
+52. **Quick ranges beside Query Logs' From and To** (Adrián's decision, 2026-11-20;
+    `screens/logs/QueryLogs.tsx`, `QUICK_RANGES`). Upstream's From and To are two
+    `datetime-local` fields typed by hand (index.html:3318-3327). Beside them a strip of four,
+    `15 min`, `1 h`, `24 h` and `7 d`, drawn as the Dashboard's period strip (`ui/Segmented`),
+    fills both: From that long ago and To now, to the second, in the browser's zone, as the
+    Dashboard's jumps write them (`localInput`). Then it runs Query from page 1. Its limits,
+    and crossing one is a bug:
+    - **only the two fields and Query.** The call is the `logs/query` Query sends, with every
+      other filter as it stands, through the same validations and alerts; the address bar keeps
+      the two instants as it keeps any query's, not the range's name, so a link asks for the same
+      span; the All nodes view (deviation 37) sends them to every node as it sends a typed range;
+    - **it is never a mode.** A range is drawn pressed only while both fields hold what it wrote.
+      A field changed by hand, Reset, and Live Update leave none pressed, and nothing is asked
+      again until Query or a range is pressed; pressed again, a range asks up to the new now;
+    - **Live Update disables them**, as it disables From and To, and empties both as before.
+    Its words, OURS: `Quick range` (the group's name and its title), `15 min`, `1 h`, `24 h` and
+    `7 d`, declared in the header comment of `QueryLogs.tsx`.
+
 ## Four constraints the server imposes
 
 These are not preferences: break them and the console works in development and

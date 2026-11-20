@@ -141,6 +141,11 @@ wrapping as the width runs out. The three Live Update turns off sit together in
   .mode, .field { width: 100%; }
 }
 .field label { font-size: var(--t-2); color: var(--mute); font-weight: 550; }
+/* The quick ranges (deviation 52): a field's title over the period strip the
+   Dashboard uses, as tall as the fields beside it. */
+.rangesTitle { font-size: var(--t-2); color: var(--mute); font-weight: 550; }
+.ranges { width: auto; }
+.ranges > :last-child { min-height: var(--field-height); align-self: flex-start; }
 .field input, .field select { width: 100%; }
 
 /* The toggle below 960 (FOLD_QUERY), and the list of what the closed band holds. */
