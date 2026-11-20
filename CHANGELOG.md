@@ -47,6 +47,10 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
   `münchen.test`, typed in either form. Blocking › Rules shows `bücher.de` instead of
   `xn--bcher-kva.de` and the filter finds it by either form. The command palette offers its name
   steps for `bücher.de` too.
+- **App configs in a cluster are read from the primary node,** as the stock console reads them: the
+  app's Config dialog, the Advanced Blocking visual editor and `Allow in Advanced Blocking` in
+  Query Logs. Read from a secondary, a config the cluster had not passed on yet could be shown, or
+  taken as the base of a save.
 
 ### Changed
 

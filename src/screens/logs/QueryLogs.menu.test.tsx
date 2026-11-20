@@ -331,13 +331,32 @@ describe('Query Logs: Allow in Advanced Blocking', () => {
       await screen.findByText("Domain 'r2.example' was added to the allowed domains of Advanced Blocking group 'kids'."),
     ).toBeInTheDocument()
     expect(get).toHaveBeenCalledTimes(2)
-    expect(get).toHaveBeenNthCalledWith(1, 't', 'Advanced Blocking')
+    expect(get).toHaveBeenNthCalledWith(1, 't', 'Advanced Blocking', '')
     const sent = set.mock.calls[0][2]
     expect(set.mock.calls[0].slice(0, 2)).toEqual(['t', 'Advanced Blocking'])
     expect(JSON.parse(sent).groups.map((g: { allowed: string[] }) => g.allowed)).toEqual([['r2.example'], ['r2.example']])
     expect(Object.keys(JSON.parse(sent))).toEqual(['networkGroupMap', 'groups'])
     expect(JSON.parse(sent).networkGroupMap).toEqual(JSON.parse(CONFIG).networkGroupMap)
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  /* Both reads go to the cluster's primary, as the app's Config dialog reads (apps.js:460). */
+  it('reads the config from the primary node when the session has a cluster', async () => {
+    withApps([APP, BLOCKING])
+    withEntries()
+    const { get, set } = withConfig([CONFIG, CONFIG])
+    const nodes = [
+      { name: 'ns2.test', type: 'Secondary' },
+      { name: 'ns1.test', type: 'Primary' },
+    ]
+    inShell(<Logs token="t" sub="Query Logs" nodes={nodes} clusterInitialised />)
+    await queried()
+    await openRow(2)
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Allow in Advanced Blocking' }))
+    const dialog = await screen.findByRole('dialog')
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Allow' }))
+    await waitFor(() => expect(set).toHaveBeenCalled())
+    expect(get.mock.calls.map((c) => c[2])).toEqual(['ns1.test', 'ns1.test'])
   })
 
   it('writes nothing when the config changed on the server while the dialog was open', async () => {

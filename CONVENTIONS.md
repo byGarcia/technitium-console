@@ -2039,9 +2039,11 @@ contract and SECURITY.md.
     `apps/advanced-blocking/`, a route with its folder and no sidebar entry (`detail` in
     `app/sections.ts`). It keeps the app's settings on one page: Clients, each group, General. Its
     limits, and crossing one is a bug:
-    - **only `apps/list`, `apps/config/get` and `apps/config/set`**, called as `Config` calls them,
-      with no `node`, and no permission check of its own: the server refuses a save without
-      `Apps: Modify` (WebServiceAppsApi.cs:482);
+    - **only `apps/list`, `apps/config/get` and `apps/config/set`**, called as `Config` calls them:
+      each read names the cluster's primary (apps.js:460, empty without a cluster), the write
+      carries no `node` and the server runs it on the primary (DnsWebService.cs:2298). No
+      permission check of its own: the server refuses a save without `Apps: Modify`
+      (WebServiceAppsApi.cs:482);
     - **it never rebuilds the document.** `json-tree.ts` keeps key order and the lexeme of every
       number and string; `serializeConfig` patches only the paths that changed. With nothing
       changed, Save sends back the text the server gave, byte for byte;
@@ -2131,8 +2133,8 @@ contract and SECURITY.md.
     ticked in its dialog. `Allow Domain` is unchanged. The menu knows the app is there from the
     `apps/list` Query Logs already reads. Its limits, and crossing one is a bug:
     - **the visual editor's limits (deviation 45)**: only `apps/list`, `apps/config/get` and
-      `apps/config/set`, with no `node`, so it is the config of the server the console is
-      connected to; the same model, so the config is patched and never rebuilt; the config read
+      `apps/config/set`, called as `Config` calls them, so in a cluster it is the primary's config;
+      the same model, so the config is patched and never rebuilt; the config read
       again before the write, and nothing written if it changed; a config the editor refuses, or
       an app below 10.0, is refused here with a link to the editor;
     - **only the `allowed` list of the ticked groups changes.** The name goes in lower case and

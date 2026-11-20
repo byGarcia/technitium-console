@@ -273,6 +273,32 @@ describe('Apps: config of the app', () => {
     expect(screen.getByLabelText('Config File')).toHaveValue('{ "a": 1 }')
   })
 
+  /* apps.js:460: `getPrimaryClusterNodeName()`, the name of the node whose type is
+     Primary, and the empty string while the cluster is not initialised. */
+  it('sends the primary node with the config read when the session has a cluster, and no node without one', async () => {
+    withApps([UP_TO_DATE])
+    const spy = vi.spyOn(api, 'getAppConfig').mockResolvedValue({
+      kind: 'ok',
+      data: { status: 'ok', response: { config: '' } },
+    } as never)
+    const nodes = [
+      { name: 'ns2.test', type: 'Secondary' },
+      { name: 'ns1.test', type: 'Primary' },
+    ]
+    const { unmount } = render(<Apps token="t" nodes={nodes} clusterInitialised />)
+    await screen.findByRole('row', { name: 'What Is My Dns' })
+    await userEvent.click(card('What Is My Dns').getByRole('button', { name: 'Config' }))
+    await screen.findByLabelText('Config File')
+    expect(spy.mock.calls[0][2]).toBe('ns1.test')
+    unmount()
+
+    render(<Apps token="t" nodes={nodes} clusterInitialised={false} />)
+    await screen.findByRole('row', { name: 'What Is My Dns' })
+    await userEvent.click(card('What Is My Dns').getByRole('button', { name: 'Config' }))
+    await screen.findByLabelText('Config File')
+    expect(spy.mock.calls[1][2] ?? '').toBe('')
+  })
+
   /* The server returns `config: null` as soon as someone saves an empty one. */
   it('a null config opens the editor empty, not with \"null\"', async () => {
     withApps([UP_TO_DATE])

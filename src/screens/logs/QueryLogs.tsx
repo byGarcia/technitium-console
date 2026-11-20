@@ -1038,6 +1038,8 @@ export function QueryLogs({ tabs, token, node = '', request, nodes = [], cluster
           token={token}
           domain={allowIn.domain}
           clientIp={allowIn.clientIp}
+          nodes={nodes}
+          clusterInitialised={clusterInitialised}
           onClose={() => setAllowIn(null)}
           onDone={setNotice}
         />

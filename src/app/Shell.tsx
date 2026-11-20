@@ -826,9 +826,17 @@ export function Shell({
         ) : current?.id === 'about' ? (
           <About info={info} />
         ) : current?.id === 'apps' && currentSub === ADVANCED_BLOCKING_DETAIL ? (
-          <AdvancedBlocking token={session.token} />
+          <AdvancedBlocking
+            token={session.token}
+            nodes={session.info?.clusterNodes ?? []}
+            clusterInitialised={session.info?.clusterInitialized === true}
+          />
         ) : current?.id === 'apps' ? (
-          <Apps token={session.token} />
+          <Apps
+            token={session.token}
+            nodes={session.info?.clusterNodes ?? []}
+            clusterInitialised={session.info?.clusterInitialized === true}
+          />
         ) : current?.id === 'cache' ? (
           <Cache token={session.token} nodes={session.info?.clusterNodes ?? []} clusterInitialised={session.info?.clusterInitialized === true} />
         ) : current?.id === 'blocking' && currentSub === 'Settings' && permissions?.Settings?.canView !== false ? (
