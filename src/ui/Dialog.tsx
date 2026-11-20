@@ -29,8 +29,9 @@ Enter for a new line, and a disabled primary (busy, or nothing to send) means En
 does nothing. A destructive confirmation has no submit, so an Enter meant for
 something else never deletes: `ui/Confirm`, and the dialogs whose only action
 removes something (the cluster's Remove, Promote, Leave and Delete, Unsign Zone,
-Remove Lease). Upstream marks some of those `submit` too, but they have no text
-field, only checkboxes, so there is no Enter in a field to keep.
+Remove Lease). Upstream marks five of those `submit` (all but Remove Lease, which
+is a plain button there too); they have no text field, only checkboxes, so there
+is no Enter in a field to keep. That is deviation 49 in CONVENTIONS.md.
 
 The form only lends its Enter: its own submission is always cancelled, and stopped
 there, because React carries a portal's events to the components it was drawn from,

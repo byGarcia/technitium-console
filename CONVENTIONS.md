@@ -2178,6 +2178,22 @@ contract and SECURITY.md.
       share (deviation 30), now read as a number;
     - **no call and no stored order.** The order is still lost on reload, as upstream's is.
 
+49. **Enter does not run the destructive cluster dialogs or Unsign Zone** (Adrián's decision,
+    2026-11-20; `ui/Dialog.tsx`, `screens/admin/Cluster.tsx`,
+    `screens/zones/modals/UnsignZone.tsx`). Every other dialog with a main action runs it on
+    Enter, as upstream's forms do (`Dialog.tsx`).
+    Upstream also marks the main button of these five `type="submit"`, so Enter in their form
+    runs them: the cluster's Remove (`Remove Node`, index.html:7284), Promote (`Promote To
+    Primary Node`, 7331), Leave (`Leave Cluster`, 7374) and Delete (`Delete Cluster`, 7417), and
+    Unsign Zone (5785). Here their main button is a plain button, which Enter runs only when it
+    has the focus itself. Each of them is irreversible, and they hold no text field, only a
+    checkbox or nothing, so an Enter there is never one that finishes typing: it is meant for
+    something else, and must not remove a node, leave or delete a cluster, or unsign a zone.
+    Its limits, and crossing one is a bug:
+    - **only these five.** A dialog with a text field keeps Enter, as upstream;
+    - **only Enter changes.** Their texts, checkboxes, calls and alerts are upstream's, and
+      Escape and the dismiss button still close them.
+
 ## Four constraints the server imposes
 
 These are not preferences: break them and the console works in development and
