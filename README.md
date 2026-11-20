@@ -612,8 +612,7 @@ route, and it also says which parts belong upstream instead. Everybody taking pa
 This console is free and stays free, and it will never ask your DNS server for anything it does not
 already answer. If it made the machine your whole network resolves through easier to run, there
 is [GitHub Sponsors](https://github.com/sponsors/byGarcia),
-[Ko-fi](https://ko-fi.com/bygarcia),
-[Liberapay](https://liberapay.com/bygarcia) and
+[Ko-fi](https://ko-fi.com/bygarcia) and
 [PayPal](https://www.paypal.com/paypalme/adriangmolina). A star or a good bug report is worth just
 as much.
 
