@@ -399,6 +399,26 @@ export function recordCells(r: ResourceRecord): Cell[] {
   return output
 }
 
+/** A cell as one line of text: what it shows, in reading order. */
+export function cellText(c: Cell): string {
+  switch (c.cls) {
+    case 'value':
+      return c.text
+    case 'pairs':
+      return c.pairs.map((p) => `${p.label} ${p.value}`).join(' ')
+    case 'lines':
+      return c.lines.join(' ')
+    case 'table':
+      return [c.headers, ...c.rows].map((f) => f.join(' ')).join(' ')
+  }
+}
+
+/** The record's Data column as one line of text: what the Data sort compares
+ *  (deviation 48) and what `Data contains` searches (deviation 53). */
+export function recordText(r: ResourceRecord): string {
+  return recordCells(r).map(cellText).join(' ')
+}
+
 /**
  * The cell's footer: expiry, last used, last modified and comments.
  * `0001-01-01T00:00:00` is "never" and a last modification with that date is

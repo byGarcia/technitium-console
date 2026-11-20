@@ -2273,6 +2273,25 @@ contract and SECURITY.md.
     Its words, OURS: `Quick range` (the group's name and its title), `15 min`, `1 h`, `24 h` and
     `7 d`, declared in the header comment of `QueryLogs.tsx`.
 
+53. **A zone's records filtered by their data, and names in either form** (Adrián's decision,
+    2026-11-20; `screens/zones/filter.ts`, `ZoneRecords.tsx`). Upstream filters a zone's records
+    by name and type only (`showEditZonePage`, zone.js:3524-3570), so finding the record that
+    points at `10.0.0.5` meant paging through the zone. Beside Name and Type, `Data contains`
+    keeps the records whose Data column, as drawn (`recordText`, the text the column already sorts
+    by), contains what was typed, ignoring case. And the name filter, which compares the ASCII name
+    the server stores, is also tried against the Unicode form it sends beside it (`nameIdn`, decoded
+    here when absent) under the zone's Unicode name, so `bücher`, `bü*` and `xn--bcher-kva` all find
+    `xn--bcher-kva.xn--mnchen-3ya.test`. Its limits, and crossing one is a bug:
+    - **upstream's name and type rules are unchanged.** Without a wildcard the name is still exact,
+      `@` is still the apex and a leading `*` still the literal wildcard record; a name that matched
+      before still matches;
+    - **the data text is taken literally**, with no wildcard and without the spaces at its ends;
+    - **it behaves as the other two.** Typed is not applied until Go or Enter, a type pressed in the
+      zone's summary applies it too, it is kept in the address bar as `?rdata=` beside `?rname=` and
+      `?rtype=`, and it leaves with the zone. It reads only the records already loaded: no call.
+    Its words, OURS: `Data contains` and its placeholder `10.0.0.5 or example.net`, declared in the
+    header comment of `filter.ts`.
+
 ## Four constraints the server imposes
 
 These are not preferences: break them and the console works in development and

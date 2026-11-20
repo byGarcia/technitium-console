@@ -117,3 +117,67 @@ describe('the name filter takes only * and ? as wildcards', () => {
   })
 })
 
+
+/* Deviation 53: the Data contains filter and names in either form. */
+describe('the data filter', () => {
+  const withData = (name: string, type: string, rData: Record<string, unknown>): ResourceRecord => ({ ...rec(name, type), rData })
+  const ZONE = [
+    withData('www.casa.test', 'A', { ipAddress: '10.0.0.5' }),
+    withData('nas.casa.test', 'A', { ipAddress: '10.0.0.50' }),
+    withData('mail.casa.test', 'MX', { preference: 10, exchange: 'Mx1.Example.net' }),
+    withData('casa.test', 'TXT', { text: 'v=spf1 include:example.net -all', splitText: false }),
+  ]
+
+  it('keeps the records whose drawn data contains the text, ignoring case', () => {
+    expect(filterBy(ZONE, { name: '', type: '', data: '10.0.0.5' }, 'casa.test').map((r) => r.name)).toEqual([
+      'www.casa.test',
+      'nas.casa.test',
+    ])
+    expect(filterBy(ZONE, { name: '', type: '', data: 'mx1.EXAMPLE' }, 'casa.test').map((r) => r.type)).toEqual(['MX'])
+    expect(filterBy(ZONE, { name: '', type: '', data: 'spf1' }, 'casa.test').map((r) => r.type)).toEqual(['TXT'])
+  })
+
+  it('takes the text literally, wildcards and spaces at its ends aside', () => {
+    expect(filterBy(ZONE, { name: '', type: '', data: '10.0.0.*' }, 'casa.test')).toEqual([])
+    expect(filterBy(ZONE, { name: '', type: '', data: '  spf1 ' }, 'casa.test')).toHaveLength(1)
+  })
+
+  it('is combined with the name and type filters', () => {
+    expect(filterBy(ZONE, { name: 'n*', type: 'A', data: '10.0.0.5' }, 'casa.test').map((r) => r.name)).toEqual([
+      'nas.casa.test',
+    ])
+    expect(filterBy(ZONE, { name: '', type: 'MX', data: '10.0.0' }, 'casa.test')).toEqual([])
+  })
+
+  it('empty, filters nothing, and with no filters the list is the same one', () => {
+    expect(filterBy(ZONE, { name: '', type: '', data: '' }, 'casa.test')).toBe(ZONE)
+    expect(filterBy(ZONE, { name: '', type: '', data: '   ' }, 'casa.test')).toBe(ZONE)
+  })
+})
+
+describe('the name filter reads internationalized names in either form', () => {
+  const ZONE = 'xn--mnchen-3ya.test'
+  const IDN = [
+    { ...rec('xn--mnchen-3ya.test', 'SOA'), nameIdn: 'münchen.test' },
+    { ...rec('xn--bcher-kva.xn--mnchen-3ya.test', 'A'), nameIdn: 'bücher.münchen.test' },
+    rec('www.xn--mnchen-3ya.test', 'A'),
+  ]
+  const names = (name: string) => filterBy(IDN, { name, type: '' }, ZONE).map((r) => r.name)
+
+  it('finds a record by its Unicode name, exact or with wildcards, in any case', () => {
+    expect(names('bücher')).toEqual(['xn--bcher-kva.xn--mnchen-3ya.test'])
+    expect(names('BÜCHER')).toEqual(['xn--bcher-kva.xn--mnchen-3ya.test'])
+    expect(names('bü*')).toEqual(['xn--bcher-kva.xn--mnchen-3ya.test'])
+  })
+
+  it('still finds it by its ASCII name, and @ is the apex', () => {
+    expect(names('xn--bcher-kva')).toEqual(['xn--bcher-kva.xn--mnchen-3ya.test'])
+    expect(names('@')).toEqual(['xn--mnchen-3ya.test'])
+    expect(names('www')).toEqual(['www.xn--mnchen-3ya.test'])
+  })
+
+  it('decodes the name itself when the server sends no nameIdn', () => {
+    const plain = [rec('xn--bcher-kva.xn--mnchen-3ya.test', 'A')]
+    expect(filterBy(plain, { name: 'bücher', type: '' }, ZONE)).toEqual(plain)
+  })
+})

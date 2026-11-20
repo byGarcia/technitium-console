@@ -209,6 +209,8 @@ the table.
 
 /* The fields in a DataTable's toolbar and foot (ui/DataTable), each its width. */
 .typeField { width: 170px; }
+/* `Data contains` (deviation 53): it grows with Name, the other field a value is typed into. */
+.dataField { flex: 1 1 220px; min-width: 0; }
 .pageField { width: 150px; }
 .perPage { width: 200px; }
 .pageField input { text-align: center; }

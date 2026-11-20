@@ -33,6 +33,11 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
   they are. The address bar keeps the two instants, so a copied link asks for the same span. Live
   Update turns them off with the fields. Written down as deviation 52 in
   [CONVENTIONS.md](CONVENTIONS.md#deliberate-deviations-from-upstream-behaviour).
+- **Find a zone's records by their data.** Beside Name and Type, `Data contains` keeps the records
+  whose Data column contains what you type (an address, a target, a piece of a TXT record), applied
+  with Go and kept in the address bar like the other two. The Name filter also finds an
+  internationalized name by its Unicode form: `bücher` finds `xn--bcher-kva`. Written down as
+  deviation 53 in [CONVENTIONS.md](CONVENTIONS.md#deliberate-deviations-from-upstream-behaviour).
 - **Undo after Block or Allow** in Blocking's check, block or allow bar, on Overview and Rules.
   The `Blocked!` or `Allowed!` alert offers Undo, which deletes the rule again. It is offered only
   when the name was not already one of your rules on that list, and with Delete on it. Enter still

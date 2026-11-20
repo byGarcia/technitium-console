@@ -1,5 +1,5 @@
 import { readParam, writeParams } from '../../lib/url-state'
-import { RECORDS_NAME, RECORDS_PAGE, RECORDS_TYPE } from './zone-url'
+import { RECORDS_DATA, RECORDS_NAME, RECORDS_PAGE, RECORDS_TYPE } from './zone-url'
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { readPerPage, writePerPage } from '../../lib/stored-per-page'
 import {
@@ -33,7 +33,7 @@ import { dateTime, dateWithAge } from '../../lib/dates'
 import { Menu, MenuItem, Separator } from '../../ui/Menu'
 import { filterBy } from './filter'
 import { statusText, pageWindow } from '../../lib/pagination'
-import { rowActions, recordCells, relativeName, hideDnssec, type Cell } from './record-view'
+import { rowActions, recordText, relativeName, hideDnssec } from './record-view'
 import { zoneHeader, isSigned, writeHideDnssec, readHideDnssec } from './zone-view'
 import { SectionHeader } from '../../ui/SectionHeader'
 import { Empty, Loading } from '../../ui/Empty'
@@ -97,24 +97,11 @@ read through its already-formatted cells, which is what you see.
 Upstream's `#` column is sortable too and here it is not: sorting by the row
 number the sort itself has just handed out leads nowhere.
 */
-function cellText(c: Cell): string {
-  switch (c.cls) {
-    case 'value':
-      return c.text
-    case 'pairs':
-      return c.pairs.map((p) => `${p.label} ${p.value}`).join(' ')
-    case 'lines':
-      return c.lines.join(' ')
-    case 'table':
-      return [c.headers, ...c.rows].map((f) => f.join(' ')).join(' ')
-  }
-}
-
 const KEYS: Keys<ResourceRecord> = {
   name: (r) => r.name,
   type: (r) => r.type,
   ttl: (r) => r.ttl,
-  data: (r) => recordCells(r).map(cellText).join(' '),
+  data: recordText,
 }
 
 export function ZoneRecords(p: ZoneRecordsProps) {
@@ -135,11 +122,14 @@ export function ZoneRecords(p: ZoneRecordsProps) {
      reload or a copied link lands on: typed and applied, as Go would apply them. */
   const [nameField, setNameField] = useState(() => readParam(RECORDS_NAME) ?? '')
   const [typeField, setTypeField] = useState(() => readParam(RECORDS_TYPE) ?? '')
+  /* `Data contains` (deviation 53): typed and applied apart, as Name and Type. */
+  const [dataField, setDataField] = useState(() => readParam(RECORDS_DATA) ?? '')
   /* What is typed in Page Number; `null` shows the page on screen (zone.js:3733). */
   const [pageDraft, setPageDraft] = useState<string | null>(null)
   const [perPageField, setPerPageField] = useState(() => readPerPage(RECORDS_PER_PAGE_KEY, RECORDS_PER_PAGE, 10))
   const [nameFilter, setNameFilter] = useState(() => readParam(RECORDS_NAME) ?? '')
   const [typeFilter, setTypeFilter] = useState(() => readParam(RECORDS_TYPE) ?? '')
+  const [dataFilter, setDataFilter] = useState(() => readParam(RECORDS_DATA) ?? '')
   const [perPage, setPerPage] = useState(perPageField)
   const [page, setPage] = useState(() => {
     const n = Number(readParam(RECORDS_PAGE) ?? 1)
@@ -153,13 +143,15 @@ export function ZoneRecords(p: ZoneRecordsProps) {
       [RECORDS_PAGE]: page > 1 ? String(page) : null,
       [RECORDS_NAME]: nameFilter,
       [RECORDS_TYPE]: typeFilter,
+      [RECORDS_DATA]: dataFilter,
     })
-  }, [page, nameFilter, typeFilter])
+  }, [page, nameFilter, typeFilter, dataFilter])
 
   /** `showEditZonePage(pageNumber)`: the fields applied, on that page or the
    *  one in Page Number (0 or empty is 1). */
   function showPage(pageNumber?: number, typeOverride?: string) {
     setNameFilter(nameField)
+    setDataFilter(dataField)
     setTypeFilter(typeOverride ?? typeField)
     if (typeOverride != null) setTypeField(typeOverride)
     setPerPage(perPageField)
@@ -212,8 +204,8 @@ export function ZoneRecords(p: ZoneRecordsProps) {
   // The DNSSEC filtering comes before the name/type filter, just as in
   // upstream: `editZoneRecords` already arrives trimmed to `showEditZonePage`.
   const visible = useMemo(
-    () => filterBy(shown, { name: nameFilter, type: typeFilter }, zone),
-    [shown, nameFilter, typeFilter, zone],
+    () => filterBy(shown, { name: nameFilter, type: typeFilter, data: dataFilter }, zone),
+    [shown, nameFilter, typeFilter, dataFilter, zone],
   )
 
   const { rows: sorted, sort, toggle } = useSort(KEYS, visible)
@@ -618,6 +610,21 @@ export function ZoneRecords(p: ZoneRecordsProps) {
                     id={id}
                     value={typeField}
                     onChange={(e) => setTypeField(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && showPage()}
+                  />
+                )}
+              </Field>
+            </div>
+            {/* OURS (deviation 53): what the Data column says, applied with the two above. */}
+            <div className={styles.dataField}>
+              <Field inline label="Data contains">
+                {(id) => (
+                  <Input
+                    id={id}
+                    search
+                    placeholder="10.0.0.5 or example.net"
+                    value={dataField}
+                    onChange={(e) => setDataField(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && showPage()}
                   />
                 )}
