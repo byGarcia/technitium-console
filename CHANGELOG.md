@@ -92,6 +92,7 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
   10.0.0.10), and names naturally (`pc2` before `pc10`). The stock console compares the text
   letter by letter, as
   [DnsServer#1873](https://github.com/TechnitiumSoftware/DnsServer/issues/1873) points out.
+- **About** no longer offers Liberapay. GitHub Sponsors, Ko-fi and PayPal stay.
 
 ---
 

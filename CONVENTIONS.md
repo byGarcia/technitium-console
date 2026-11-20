@@ -913,8 +913,9 @@ contract and SECURITY.md.
    - **This console's column**: `On GitHub`, with the console's licence and the
      sentence saying it is not Technitium's, then four destinations as rows, `Source code`, `Release notes`, `Report a problem` (so a
      console fault does not go to Technitium's support) and `Ideas and questions`;
-     and `Support the Console`, one sentence, `Star on GitHub` and the four
-     destinations of `.github/FUNDING.yml` as buttons.
+     and `Support the Console`, one sentence, `Star on GitHub` and three places to
+     donate as buttons, `GitHub Sponsors`, `Ko-fi` and `PayPal` (Liberapay is no
+     longer offered, Adrián's decision, 2026-11-20).
    - **`Support the Console` comes first in that column, and is marked** (Adrián's
      decision, 2026-11-06): upstream's `Donate` sits beside it and a visitor who
      wants to give to the console would otherwise land on Technitium's. It is the

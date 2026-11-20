@@ -187,14 +187,15 @@ describe('About', () => {
     const support = block('Support the Console')
     for (const [name, href] of [
       ['Star on GitHub', repo],
-      // .github/FUNDING.yml
       ['GitHub Sponsors', 'https://github.com/sponsors/byGarcia'],
       ['Ko-fi', 'https://ko-fi.com/bygarcia'],
-      ['Liberapay', 'https://liberapay.com/bygarcia'],
       ['PayPal', 'https://www.paypal.com/paypalme/adriangmolina'],
     ]) {
       expect(within(support).getByRole('link', { name })).toHaveAttribute('href', href)
     }
+    // Liberapay is no longer offered (Adrián's decision, 2026-11-20).
+    expect(within(support).queryByRole('link', { name: 'Liberapay' })).toBeNull()
+    expect(within(support).getAllByRole('link')).toHaveLength(4)
     expect(said(block('On GitHub'))).toContain('An independent project, not affiliated with or endorsed by Technitium.')
   })
 
