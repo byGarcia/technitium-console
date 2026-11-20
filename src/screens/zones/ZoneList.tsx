@@ -195,9 +195,14 @@ export function ZoneList({
   */
   const summaryWanted = useRef(true)
   const summarySeq = useRef(0)
+  /* The paged read follows the same rule: only the newest load's answer lands. A
+     refresh for a new node, Go, the pager or a summary chip can each start one with
+     another in flight, and an older page must not paint over the one asked last. */
+  const pageSeq = useRef(0)
 
   const load = useCallback(
     async (page: number, typeOverride?: string) => {
+      const mine = ++pageSeq.current
       if (summaryWanted.current) {
         summaryWanted.current = false
         const seq = ++summarySeq.current
@@ -224,6 +229,7 @@ export function ZoneList({
         zonesPerPage: perPage,
         node,
       })
+      if (mine !== pageSeq.current) return
       setBusy(false)
 
       if (r.kind !== 'ok') {

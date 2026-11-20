@@ -186,11 +186,16 @@ export function ZoneRecords(p: ZoneRecordsProps) {
     }
   }, [])
 
-  /** Reads the zone; true when it arrived. */
+  /* Only the newest read's answer lands: a refresh can start one while another is
+     in flight, and the older answer must not paint over it. */
+  const readSeq = useRef(0)
+
+  /** Reads the zone; true when it arrived (and is still the read asked last). */
   const load = useCallback(async (): Promise<boolean> => {
+    const mine = ++readSeq.current
     setLoading(true)
     const r = await getRecords(token, zone, node)
-    if (!alive.current) return false
+    if (!alive.current || mine !== readSeq.current) return false
     setLoading(false)
 
     if (r.kind !== 'ok') {

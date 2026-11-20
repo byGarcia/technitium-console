@@ -242,9 +242,15 @@ export function Settings({
   const [modalNotice, setModalNotice] = useState<{ title: string; text: string } | null>(null)
   const [nextList, setNextList] = useState<string | null | undefined>(undefined)
 
+  /* Each load is numbered and only the latest one's answer is applied: a node's
+     answer that arrives after another node was asked would draw its form under the
+     other node, and Save would send it there (as `blocking/Rules.tsx` does). */
+  const asked = useRef(0)
   const load = useCallback(async () => {
+    const mine = ++asked.current
     setLoading(true)
     const s = await getSettings(token, node)
+    if (mine !== asked.current) return
     if (s != null) {
       // main.js:914-918
       if (node === '' || node === 'cluster' || node === sessionDomain.current) {

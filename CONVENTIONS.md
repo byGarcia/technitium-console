@@ -1612,7 +1612,9 @@ contract and SECURITY.md.
         `blockListUrls`. Both are cluster-wide parameters (`nodeScope`), so both calls go
         where Lists sends its own: `cluster` on a cluster, the empty node on a standalone
         server. A save needs `Settings: Modify` (the padlock otherwise), asks first, naming
-        the list and the address, and redraws from the server's answer with Settings'
+        the list and the address, reads the list again on that node and starts from it (a
+        change made elsewhere since the page opened is kept, and nothing is written when the
+        list already holds what was asked), and redraws from the server's answer with Settings'
         `Settings Saved!`. The QPM line is drawn only when the server sends
         `qpmLimitBypassList`;
       - `DHCP Lease`, when a lease hands out the address: its type and DHCP › Leases'

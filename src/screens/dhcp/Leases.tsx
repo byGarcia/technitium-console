@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useState, type CSSProperties, type ReactNode } from 'react'
+import { useCallback, useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import {
   convertToDynamicLease,
   convertToReservedLease,
@@ -154,10 +154,15 @@ export function Leases({
   /* The node the single view reads. The All nodes view reads every node whichever
      is chosen, so the selector (which there only aims Add Scope) reads nothing again. */
   const readNode = nodeKey !== '' ? '' : node
+  /* Only the latest read's answer is applied: a node's leases arriving after
+     another node was chosen are not drawn under it (as `blocking/Rules.tsx`). */
+  const asked = useRef(0)
   const load = useCallback(async () => {
+    const mine = ++asked.current
     setLeases(null)
     if (nodeKey !== '') {
       const all = await leasesAcross(token, nodeKey.split('\n').map((name) => ({ name, type: '' })))
+      if (mine !== asked.current) return
       setNow(Date.now())
       setFailed({ nodes: all.failed, answered: all.answered })
       setLeases(all.leases)
@@ -166,6 +171,7 @@ export function Leases({
     }
     setFailed(null)
     const r = await listLeases(token, readNode)
+    if (mine !== asked.current) return
     if (r.kind === 'ok') {
       setNow(Date.now())
       setLeases(r.data)

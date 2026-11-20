@@ -51,6 +51,15 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
   app's Config dialog, the Advanced Blocking visual editor and `Allow in Advanced Blocking` in
   Query Logs. Read from a secondary, a config the cluster had not passed on yet could be shown, or
   taken as the base of a save.
+- **Answers that arrive out of order.** Settings, DHCP Scopes and Leases, Query Logs, the zone list
+  and a zone's records now draw only the answer to the last thing asked. Before, changing the node
+  with a read in flight could leave the previous node's answer on screen, and Save in Settings
+  would then send that node's form to the new one. In Query Logs, a Live Update turn still in
+  flight when Reset is pressed, or Live Update is turned off, no longer writes the old filters back
+  into the address bar.
+- **Clients › Actions keeps changes made elsewhere.** Adding a client to, or removing it from, the
+  Blocking or QPM Limit Bypass List reads the list again right before saving, so an entry added in
+  Settings or another console after the page opened is no longer lost.
 
 ### Changed
 

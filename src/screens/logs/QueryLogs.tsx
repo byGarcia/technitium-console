@@ -653,6 +653,13 @@ export function QueryLogs({ tabs, token, node = '', request, nodes = [], cluster
   }, [f])
   /* What Reset gives, for the address bar and the folded summary. */
   const resetRef = useRef<Filters>(defaultFilters('', ''))
+  /* Every query is numbered, and only the latest one's answer is drawn and written
+     to the address bar (as `blocking/Rules.tsx` does): the pager, the cards and a
+     node change can each launch one with another in flight, and Live Update's turns
+     run beside them. Reset makes whatever is in flight stale too. `busyFor` is the
+     query the busy state belongs to: an older query's answer does not clear it. */
+  const lastQuery = useRef(0)
+  const busyFor = useRef(0)
 
   /* Upstream focuses the field that failed. A folded band opens first, and in the
      same task, so the field is on screen when it takes the focus; above 960 the
@@ -742,11 +749,19 @@ export function QueryLogs({ tabs, token, node = '', request, nodes = [], cluster
       let landed: QueryLogPage
       let totals: Map<string, number>
       const merging = acrossRef.current
-      if (!live) setBusy(true)
+      const mine = ++lastQuery.current
+      if (!live) {
+        busyFor.current = mine
+        setBusy(true)
+      }
+      const done = () => {
+        if (!live && busyFor.current === mine) setBusy(false)
+      }
       if (merging) {
         /* Deviation 37: every node, page 1 newest first (`query-across.ts`). */
         const answers = await queryAcross(token, params(filters, '1'), nodesRef.current)
-        if (!live) setBusy(false)
+        done()
+        if (mine !== lastQuery.current) return
         /* A turn that started in the other view lands nothing. */
         if (!acrossRef.current) return
         setReads(answers)
@@ -754,7 +769,8 @@ export function QueryLogs({ tabs, token, node = '', request, nodes = [], cluster
         totals = new Map(nodeTotals(answers).map((t) => [t.node, t.total]))
       } else {
         const outcome = await queryLogs(token, params(filters, pageNumber))
-        if (!live) setBusy(false)
+        done()
+        if (mine !== lastQuery.current) return
 
         if (outcome.kind !== 'ok') {
           if (!live) {
@@ -923,6 +939,8 @@ export function QueryLogs({ tabs, token, node = '', request, nodes = [], cluster
   }
 
   function restart() {
+    /* An answer still in flight would write the old filters back into the bar. */
+    lastQuery.current += 1
     const first = apps?.[0]
     setF(defaultFilters(first?.name ?? '', first?.classPaths[0] ?? ''))
   }
