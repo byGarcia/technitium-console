@@ -286,7 +286,10 @@ floating a step above the window's bottom edge, as the other forms' save bars do
 
 
 
+/* The words take the slack, so Discard (deviation 51) sits beside Save Settings
+   at the bar's end, as Lists' bar groups its verbs, and not halfway along it. */
 .pending {
+  margin-right: auto;
   min-width: 0;
   font-size: var(--t-4);
   color: var(--ink);
