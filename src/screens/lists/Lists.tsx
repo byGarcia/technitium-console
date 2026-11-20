@@ -164,7 +164,7 @@ export function ImportDomains({
       title={title}
       actions={
         <>
-          <Button variant="primary" disabled={busy} onClick={() => void runImport()}>
+          <Button type="submit" variant="primary" disabled={busy} onClick={() => void runImport()}>
             Import
           </Button>
         </>

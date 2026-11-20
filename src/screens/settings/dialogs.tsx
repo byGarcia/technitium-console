@@ -84,7 +84,7 @@ export function BackupDialog({
       title="Backup Settings"
       actions={
         <>
-          <Button variant="primary" disabled={busy} onClick={onBackup}>
+          <Button type="submit" variant="primary" disabled={busy} onClick={onBackup}>
             Backup
           </Button>
         </>
@@ -134,7 +134,7 @@ export function RestoreDialog({
       title="Restore Settings"
       actions={
         <>
-          <Button variant="primary" disabled={busy} onClick={() => onRestore(file, remove)}>
+          <Button type="submit" variant="primary" disabled={busy} onClick={() => onRestore(file, remove)}>
             Restore
           </Button>
         </>

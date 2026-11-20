@@ -62,6 +62,10 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
   could fill in the previous one's values, and Save in Zone Options or Zone Permissions would send
   them to the new one. The More dialog of the Top lists and Configure 2FA had the same gap, and 2FA
   could show a secret the server no longer checks.
+- **Enter submits a dialog,** as in the stock console. Enter in a text field of Add Zone, Add
+  Record and every other dialog with a main action runs that action, once, and does nothing while
+  it is disabled or already running. Enter in a multi-line field is still a new line. Dialogs that
+  only delete or remove something are not run by Enter.
 - **Clients › Actions keeps changes made elsewhere.** Adding a client to, or removing it from, the
   Blocking or QPM Limit Bypass List reads the list again right before saving, so an entry added in
   Settings or another console after the page opened is no longer lost.

@@ -174,7 +174,7 @@ export function AddZone({
       title="Add Zone"
       actions={
         <>
-          <Button variant="primary" disabled={busy} onClick={() => void create()}>
+          <Button type="submit" variant="primary" disabled={busy} onClick={() => void create()}>
             Add
           </Button>
         </>

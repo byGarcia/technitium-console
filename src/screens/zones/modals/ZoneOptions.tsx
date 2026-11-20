@@ -139,7 +139,7 @@ export function ZoneOptions({
       title={`Zone Options - ${zone === '.' ? '<root>' : zone}`}
       actions={
         <>
-          <Button variant="primary" disabled={busy || f == null} onClick={() => void save()}>
+          <Button type="submit" variant="primary" disabled={busy || f == null} onClick={() => void save()}>
             Save
           </Button>
         </>

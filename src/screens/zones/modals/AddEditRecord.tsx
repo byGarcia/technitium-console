@@ -192,7 +192,7 @@ export function AddEditRecord(p: AddEditRecordProps) {
       title={editing ? 'Edit Record' : 'Add Record'}
       actions={
         <>
-          <Button variant="primary" disabled={busy} onClick={() => void save()}>
+          <Button type="submit" variant="primary" disabled={busy} onClick={() => void save()}>
             Save
           </Button>
         </>

@@ -725,7 +725,7 @@ function NewCluster({
       size="medium"
       actions={
         <>
-          <Button variant="primary" disabled={busy || loading || alreadyThere} onClick={() => void initialize()}>
+          <Button type="submit" variant="primary" disabled={busy || loading || alreadyThere} onClick={() => void initialize()}>
             Initialize
           </Button>
         </>
@@ -925,7 +925,7 @@ function JoinCluster({
       size="medium"
       actions={
         <>
-          <Button variant="primary" disabled={busy || loading || alreadyThere} onClick={() => void join()}>
+          <Button type="submit" variant="primary" disabled={busy || loading || alreadyThere} onClick={() => void join()}>
             Join
           </Button>
         </>
@@ -1215,7 +1215,7 @@ function ClusterOptions({
       actions={
         <>
           {isPrimary && (
-            <Button variant="primary" disabled={busy || loading} onClick={() => void save()}>
+            <Button type="submit" variant="primary" disabled={busy || loading} onClick={() => void save()}>
               Save
             </Button>
           )}
@@ -1316,7 +1316,7 @@ function EditOwnNode({
       size="medium"
       actions={
         <>
-          <Button variant="primary" disabled={busy || loading} onClick={() => void save()}>
+          <Button type="submit" variant="primary" disabled={busy || loading} onClick={() => void save()}>
             Save
           </Button>
         </>
@@ -1387,7 +1387,7 @@ function EditPrimaryNode({
       size="medium"
       actions={
         <>
-          <Button variant="primary" disabled={busy} onClick={() => void save()}>
+          <Button type="submit" variant="primary" disabled={busy} onClick={() => void save()}>
             Save
           </Button>
         </>

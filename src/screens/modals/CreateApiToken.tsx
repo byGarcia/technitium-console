@@ -98,7 +98,7 @@ export function CreateApiToken({
       title="Create API Token"
       actions={
         created == null ? (
-          <Button variant="primary" disabled={busy} onClick={() => void create()}>
+          <Button type="submit" variant="primary" disabled={busy} onClick={() => void create()}>
             Create
           </Button>
         ) : null

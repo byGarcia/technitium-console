@@ -152,7 +152,7 @@ export function Configure2FA({
             Disable
           </Button>
         ) : (
-          <Button variant="primary" disabled={busy} onClick={() => void enable()}>
+          <Button type="submit" variant="primary" disabled={busy} onClick={() => void enable()}>
             Enable
           </Button>
         )

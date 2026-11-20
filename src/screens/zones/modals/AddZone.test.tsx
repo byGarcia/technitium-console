@@ -134,3 +134,33 @@ describe('Add Zone: answers out of order', () => {
     expect(screen.queryByRole('option', { name: 'key-a' })).not.toBeInTheDocument()
   })
 })
+
+/*
+Enter adds the zone, as the stock console's Add Zone does: its modal is a form whose
+Add button is the submit (index.html:3929 and 4232).
+*/
+describe('Add Zone: Enter', () => {
+  it('Enter in the zone name adds the zone', async () => {
+    const user = userEvent.setup()
+    vi.spyOn(zones, 'listCatalogs').mockResolvedValue([])
+    vi.spyOn(settings, 'getTsigKeyNames').mockResolvedValue([])
+    const create = vi.spyOn(zones, 'createZone').mockResolvedValue({ kind: 'ok', data: { response: { domain: 'enter.test' } } } as never)
+    draw()
+    await user.type(screen.getByLabelText('Zone'), 'enter.test{Enter}')
+    expect(create).toHaveBeenCalledTimes(1)
+    expect(create.mock.calls[0][1]).toMatchObject({ zone: 'enter.test' })
+  })
+
+  it('Enter in a textarea is a new line and adds nothing', async () => {
+    const user = userEvent.setup()
+    vi.spyOn(zones, 'listCatalogs').mockResolvedValue([])
+    vi.spyOn(settings, 'getTsigKeyNames').mockResolvedValue([])
+    const create = vi.spyOn(zones, 'createZone')
+    draw()
+    await user.click(screen.getByRole('radio', { name: 'Secondary Zone' }))
+    const area = screen.getByLabelText(/Primary Name Server Addresses/)
+    await user.type(area, '10.0.0.1{Enter}10.0.0.2')
+    expect(area).toHaveValue('10.0.0.1\n10.0.0.2')
+    expect(create).not.toHaveBeenCalled()
+  })
+})

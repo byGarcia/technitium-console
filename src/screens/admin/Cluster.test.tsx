@@ -596,8 +596,9 @@ describe('Cluster: the consequence block', () => {
     expect(before).toHaveTextContent('Delete')
     /* And the dismiss stays `Close`, which is what upstream writes on this modal;
        it is a `Dialog` and not a `Confirm` precisely because of that. The
-       header's ✕ is also named `Close`, so it is the FOOTER one that is read. */
-    const footer = dialog.lastElementChild!
+       header's ✕ is also named `Close`, so it is the FOOTER one that is read (the
+       last part of the dialog's form, `ui/Dialog`). */
+    const footer = dialog.querySelector('form')!.lastElementChild!
     expect([...footer.querySelectorAll('button')].map((b) => b.textContent)).toEqual([
       'Delete',
       'Close',

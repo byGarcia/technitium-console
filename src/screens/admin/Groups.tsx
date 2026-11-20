@@ -323,7 +323,7 @@ function AddGroup({
       title="Add Group"
       actions={
         <>
-          <Button variant="primary" disabled={busy} onClick={() => void add()}>
+          <Button type="submit" variant="primary" disabled={busy} onClick={() => void add()}>
             Add
           </Button>
         </>
@@ -431,7 +431,7 @@ function GroupDetail({
       size="medium"
       actions={
         <>
-          <Button variant="primary" disabled={busy || loading} onClick={() => void save()}>
+          <Button type="submit" variant="primary" disabled={busy || loading} onClick={() => void save()}>
             Save
           </Button>
         </>

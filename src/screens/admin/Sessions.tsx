@@ -435,7 +435,7 @@ function CreateApiToken({
       actions={
         <>
           {created == null && (
-            <Button variant="primary" disabled={busy || loading} onClick={() => void create()}>
+            <Button type="submit" variant="primary" disabled={busy || loading} onClick={() => void create()}>
               Create
             </Button>
           )}
