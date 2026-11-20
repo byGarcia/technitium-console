@@ -13,7 +13,7 @@ also `technitiumServerMinimum` in its `package.json`, which is what the update n
 
 | Console | Technitium DNS Server | Notes |
 |---|---|---|
-| **1.4.x** | **15.5.x, 15.6.x** (1.4.0 to 1.4.2 checked against 15.6.2) | Current. A Clients page with actions, every cluster node side by side, a command palette, response times on the Dashboard, and every screen redrawn. |
+| **1.4.x** | **15.5.x, 15.6.x** (1.4.0 to 1.4.3 checked against 15.6.2) | Current. A Clients page with actions, every cluster node side by side, a command palette, response times on the Dashboard, and every screen redrawn. |
 | 1.3.x | 15.5.x, 15.6.x | Superseded by 1.4.x on the same server. Every screen redesigned for the phone, a Dashboard that compares periods, Cache in one panel. |
 | 1.2.x | 15.5.x, 15.6.x | Superseded by 1.3.x on the same server. Allowed and Blocked become one Blocking section, a light theme, and the console comes as an image for Docker. Supports a console folder of its own (`DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH`), so server updates leave it alone. |
 | 1.1.x | 15.5.x | Superseded by 1.2.x on the same server. If you stay on it, use 1.1.3: earlier ones flood the server from Cache, Allowed and Blocked. |
@@ -24,7 +24,17 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
 
 ---
 
-## Unreleased
+## v1.4.3 (2026-11-20)
+
+**The one-line installer works again on Technitium's own Linux install, however long the server
+has been running, and a round of fixes and small additions.** Quick ranges in Query Logs, records
+found by their data and changed several at a time, which list blocks each top blocked domain, Undo
+after Block or Allow, and a question before unsaved changes are lost. Every feature of the stock
+console works as before, through the same API: checked against Technitium DNS Server 15.6.2. Each
+addition is written down, with its limits, in
+[CONVENTIONS.md](CONVENTIONS.md#deliberate-deviations-from-upstream-behaviour).
+
+Thanks to @kyleinprogress, who reported the installer problem with everything needed to find it.
 
 ### New
 

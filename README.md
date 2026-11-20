@@ -19,9 +19,10 @@ that works on your phone.
 |---|---|
 | ![The dashboard](docs/screenshots/dashboard.png) | ![Clients, with one client open](docs/screenshots/clients.png) |
 
-**Latest release: [v1.4.2](https://github.com/byGarcia/technitium-console/releases/latest) for
-Technitium DNS Server 15.5.x and 15.6.x**, with which block list matched a domain, and allowing a
-blocked name for one Advanced Blocking group from Query Logs.
+**Latest release: [v1.4.3](https://github.com/byGarcia/technitium-console/releases/latest) for
+Technitium DNS Server 15.5.x and 15.6.x**, with the one-line installer working again on
+Technitium's own Linux install, quick ranges in Query Logs, and a zone's records found by their
+data and changed several at a time.
 [What's new](CHANGELOG.md) · [Which console for which server](CHANGELOG.md#which-version-for-which-server) · [Installing](#installing) · [Technitium in Docker](#docker)
 
 It replaces the console the server ships with. Install it and the DNS service behaves exactly as
