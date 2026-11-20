@@ -43,6 +43,10 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
 - **Custom lists in a web root another account can change** are still not copied by root, on the
   way in or out, but the installer now names them, says where they go and stops before changing
   anything. Copy them yourself and run it again: a list already in place is left as it is.
+- **Internationalized names.** Quick Add finds the zone of `www.münchen.test` when the zone is
+  `münchen.test`, typed in either form. Blocking › Rules shows `bücher.de` instead of
+  `xn--bcher-kva.de` and the filter finds it by either form. The command palette offers its name
+  steps for `bücher.de` too.
 
 ### Changed
 

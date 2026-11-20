@@ -1,4 +1,5 @@
 import type { DomainList } from '../../api/zonelists'
+import { toUnicode } from '../../lib/punycode'
 
 /*
 The flat table of the Rules tab: the administrator's own blocked and allowed domains
@@ -32,9 +33,11 @@ export function mergeRules(
 
 export function filterRules(rules: readonly Rule[], filter: RuleFilter, query: string): Rule[] {
   const q = query.trim().toLowerCase()
-  return rules.filter(
-    (r) => (filter === 'all' || r.list === filter) && (q === '' || r.domain.toLowerCase().includes(q)),
-  )
+  const matches = (domain: string) => {
+    const name = domain.toLowerCase()
+    return name.includes(q) || (name.includes('xn--') && toUnicode(name).includes(q))
+  }
+  return rules.filter((r) => (filter === 'all' || r.list === filter) && (q === '' || matches(r.domain)))
 }
 
 export function countRules(rules: readonly Rule[]): { all: number; blocked: number; allowed: number } {

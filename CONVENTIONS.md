@@ -609,7 +609,9 @@ contract and SECURITY.md.
    and `Could not read the blocking state.` (the status block's). **Rules** is one card in both
    views: the filter, the search and `List`/`Tree` in the toolbar; Import, Export and
    Flush at the end of the foot with the count and the pages; a row's Delete is a
-   trash icon named `Delete <domain>`. The tree is Allowed's and Blocked's
+   trash icon named `Delete <domain>`. An internationalised rule, which the export lists
+   in its ASCII form, is drawn in Unicode (as the tree draws `domainIdn`) and the filter
+   finds it by either form; its calls and its `Delete <domain>` keep the ASCII form. The tree is Allowed's and Blocked's
    `lists/Lists.tsx`, drawn as Cache's node: a trail `<ROOT> › … › node` whose steps go
    up with `direction=up` (upstream's `[up]`), Refresh and Delete at its end, the zones
    under the node as chips, the records one line each with the rest under `Details`
@@ -1658,7 +1660,9 @@ contract and SECURITY.md.
     once and drops), `Resolve <name> in DNS Client` and `Search Query Logs for
     <name>` (the row menus' own hand-offs), `Find <name> in Cache` (`?domain=`),
     `Search your rules for <name>` (`?q=`); an address adds `Search Query Logs for
-    client <address>`; any text adds `Search settings for <text>`. A zone or page
+    client <address>`; any text adds `Search settings for <text>`. A name may be
+    internationalised (`bücher.de`): Query Logs gets its ASCII form, since the server
+    matches `qname` only in that form, and the other steps get it as typed. A zone or page
     that answers comes before those steps. It calls nothing itself and changes
     nothing: every entry lands on a screen that does what it always did. A jump
     with parameters remounts the screen so it reads them even when it was already
@@ -1813,7 +1817,8 @@ contract and SECURITY.md.
     `Add Zone` on the notice), and a zone that takes no records from here (only `Primary` and
     `Forwarder`, the types whose row offers Edit Zone, and never an internal zone). The zone is the
     longest of the zones the list knows (the summary's unpaged read of this node) that the name
-    ends in, whole labels only; the type is `A` or `AAAA` by the address's family. It sends what
+    ends in, whole labels only, compared in the ASCII form `zones/list` names a zone by, so an
+    internationalised name may be typed in either form and is sent in that one; the type is `A` or `AAAA` by the address's family. It sends what
     the dialog sends for that record (`buildRecordBody`): `zones/records/add` with `node` in the
     query, `ttl` the server's default record TTL (the dialog's placeholder), `overwrite=false`,
     `ptr` and `createPtrZone` as ticked, and `updateSvcbHints=true`, upstream's answer when the

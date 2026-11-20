@@ -50,6 +50,17 @@ describe('Rules', () => {
     expect(screen.getByRole('button', { name: 'All 2' })).toHaveAttribute('aria-pressed', 'true')
   })
 
+  it('shows an internationalised rule in Unicode and finds it by that form', async () => {
+    exports(['xn--bcher-kva.test', 'ads.example.com'], [])
+    draw()
+    await screen.findByRole('table')
+    await userEvent.type(screen.getByLabelText('Filter domains'), 'bücher')
+    const table = screen.getByRole('table')
+    expect(within(table).getAllByRole('row')).toHaveLength(2)
+    expect(within(table).getByText(wholeText('bücher.test'))).toBeInTheDocument()
+    expect(within(table).getByRole('button', { name: 'Delete xn--bcher-kva.test' })).toBeInTheDocument()
+  })
+
   it('reads the filter from ?rule= and writes it back', async () => {
     window.history.replaceState(null, '', '/blocking/rules/?rule=allowed')
     exports(['ads.example.com'], ['s.youtube.com'])

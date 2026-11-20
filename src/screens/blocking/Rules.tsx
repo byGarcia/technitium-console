@@ -35,6 +35,7 @@ import {
   countRules, filterRules, mergeRules, pageOf, readRuleParam, ruleSearch,
   type Rule, type RuleFilter,
 } from './rules-model'
+import { toUnicode } from '../../lib/punycode'
 import shared from './Blocking.module.css'
 import styles from './Rules.module.css'
 
@@ -646,7 +647,7 @@ export function Rules({
               >
                 {current.rows.map((r) => (
                   <tr key={`${r.list}:${r.domain}`}>
-                    <td className={`${styles.domain} ${tbl.lead}`}><DomainName name={r.domain} /></td>
+                    <td className={`${styles.domain} ${tbl.lead}`}><DomainName name={toUnicode(r.domain)} /></td>
                     <td className={tbl.lead}>
                       <span className={`${styles.kind} ${styles[r.list]}`}>
                         <Icon name={r.list} size={14} />
