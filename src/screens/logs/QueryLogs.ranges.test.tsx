@@ -54,7 +54,7 @@ const shown = (label: string) => (screen.getByLabelText(label) as HTMLInputEleme
 const sent = (spy: ReturnType<typeof setUp>): QueryLogsParams[] => spy.mock.calls.map((c) => c[1])
 
 beforeEach(() => {
-  vi.useFakeTimers({ shouldAdvanceTime: true, toFake: ['Date'] })
+  vi.useFakeTimers({ toFake: ['Date'] })
   vi.setSystemTime(NOW)
   servedAt('/logs/query-logs/', 'logs/query-logs')
 })
