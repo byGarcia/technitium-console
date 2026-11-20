@@ -2292,6 +2292,29 @@ contract and SECURITY.md.
     Its words, OURS: `Data contains` and its placeholder `10.0.0.5 or example.net`, declared in the
     header comment of `filter.ts`.
 
+54. **Acting on several of a zone's records at once** (Adrián's decision, 2026-11-20;
+    `screens/zones/ZoneRecords.tsx`). Upstream acts on one record at a time: its row's Delete,
+    Disable and Enable (zone.js:6225 and 6400). Every record whose row offers both Delete Record and
+    Disable Record (`rowActions`: not the SOA, not the DNSSEC records, none in a zone whose rows
+    offer nothing) now has a checkbox, with `Select all records` in the header for the page, and
+    the toolbar's end carries `Enable Records`, `Disable Records` and `Delete Records` beside the
+    count, the way the zone list carries `Delete Zones`. Its limits, and crossing one is a bug:
+    - **each record is the row's own call.** One `zones/records/delete` or `zones/records/update`
+      per record, one after another, never two at once, with the body its row sends
+      (`deletionBody`, `stateChangeBody` with the record's own expiry of deviation 50, the SVCB
+      hints included). Disable sends only the ticked records that are enabled, Enable only those
+      that are disabled, and each verb is disabled while it would send nothing;
+    - **it asks as the row asks.** Delete and Disable confirm first, naming every record; Enable
+      does not;
+    - **one read and one notice at the end.** After the last call the zone is read once, and the
+      notice says all went, or how many failed with the first reason the server gave, the way
+      Delete Zones counts its failures. An expired session stops it where it is;
+    - **the selection is the page on screen.** Another page, an applied filter, a sort, Hide
+      DNSSEC Records and every read of the zone clear it;
+    - **without Modify and Delete, or with nothing selectable, nothing is drawn**: no column and no
+      verbs, and the screen is the one it was. Each verb follows its row's permission.
+    Its words, OURS, are declared in the header comment of `ZoneRecords.tsx`.
+
 ## Four constraints the server imposes
 
 These are not preferences: break them and the console works in development and

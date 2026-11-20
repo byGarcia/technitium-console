@@ -38,6 +38,12 @@ service. On Docker, pull the image again: see [Docker](README.md#docker).
   with Go and kept in the address bar like the other two. The Name filter also finds an
   internationalized name by its Unicode form: `bücher` finds `xn--bcher-kva`. Written down as
   deviation 53 in [CONVENTIONS.md](CONVENTIONS.md#deliberate-deviations-from-upstream-behaviour).
+- **Delete, disable or enable several records at once.** A zone's records have checkboxes, and
+  `Delete Records`, `Disable Records` and `Enable Records` act on the ticked ones, each sent as its
+  row would send it, one after another, with one summary at the end saying how many failed and why.
+  Delete and Disable ask first, as the row does. The SOA and the DNSSEC records cannot be ticked.
+  Written down as deviation 54 in
+  [CONVENTIONS.md](CONVENTIONS.md#deliberate-deviations-from-upstream-behaviour).
 - **Undo after Block or Allow** in Blocking's check, block or allow bar, on Overview and Rules.
   The `Blocked!` or `Allowed!` alert offers Undo, which deletes the rule again. It is offered only
   when the name was not already one of your rules on that list, and with Delete on it. Enter still

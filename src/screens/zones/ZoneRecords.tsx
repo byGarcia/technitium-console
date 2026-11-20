@@ -51,6 +51,27 @@ import { noticeFromFailure } from '../../lib/notice'
 A zone's records. A replica of `showEditZone` (zone.js:3079) and
 `showEditZonePage` (3500).
 
+ACTING ON SEVERAL RECORDS AT ONCE (deviation 54, 2026-11-20; OURS). A checkbox on
+every record whose row offers both Delete Record and Disable Record (`rowActions`:
+not the SOA, not the DNSSEC records, none in a zone whose rows offer nothing), and
+`Delete Records`, `Disable Records` and `Enable Records` at the toolbar's end with
+the count, the way the zone list carries `Delete Zones`. Each record is sent on its
+own, one after another, with the body its row sends (`deletionBody`,
+`stateChangeBody`, the SVCB hints included); Delete and Disable ask first, as the
+row does, Enable does not; Disable sends only the enabled ones and Enable only the
+disabled ones. Then the zone is read once, and one notice says all went or how many
+failed, with the first reason. The selection is the page on screen: another page,
+an applied filter, a sort, Hide DNSSEC Records or a new read clears it. Without
+Modify and Delete on the zone, or with nothing selectable in it, none of this is
+drawn. Its words, OURS: `Select all records`, `Select <name> <type> <data>`, `N of M
+records selected`, the three verbs, the titles `Delete Records` and `Disable
+Records`, `Are you sure you want to permanently delete the following N records?`,
+`Are you sure you want to disable the following N records?` (`record` for one),
+`Records Deleted!`, `Records Disabled!`, `Records Enabled!`, `All selected records
+were deleted successfully.` (and `disabled`, `enabled`), `Failed To Delete!`
+(`Disable`, `Enable`) and `A total of N record(s) of the selected M record(s)
+failed to delete: <the first reason>` (`disable`, `enable`).
+
 **Here the pagination is the client's**, the opposite of the zone list:
 `zones/records/get` does not paginate, it brings the whole zone and upstream cuts
 it in the browser. If this were done with a table library's default pagination,
@@ -97,6 +118,20 @@ read through its already-formatted cells, which is what you see.
 Upstream's `#` column is sortable too and here it is not: sorting by the row
 number the sort itself has just handed out leads nowhere.
 */
+const NOTHING_PICKED: ReadonlySet<ResourceRecord> = new Set()
+
+/** A record as one line of a bulk confirmation: its name, type and data. */
+function recordLine(r: ResourceRecord): string {
+  const data = recordText(r)
+  return `${r.name === '' ? '.' : r.name} ${r.type} ${data.length > 80 ? `${data.slice(0, 79)}…` : data}`
+}
+
+const BULK = {
+  delete: { done: 'deleted', title: 'Records Deleted!', failed: 'Failed To Delete!' },
+  disable: { done: 'disabled', title: 'Records Disabled!', failed: 'Failed To Disable!' },
+  enable: { done: 'enabled', title: 'Records Enabled!', failed: 'Failed To Enable!' },
+} as const
+
 const KEYS: Keys<ResourceRecord> = {
   name: (r) => r.name,
   type: (r) => r.type,
@@ -112,6 +147,9 @@ export function ZoneRecords(p: ZoneRecordsProps) {
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
   const [hideDnssecRecords, setHideDnssecRecords] = useState(readHideDnssec)
+  /* The ticked records (deviation 54). Whatever changes the rows on screen clears
+     them: `showPage` (a page, a filter, Go), a sort, Hide DNSSEC Records and a read. */
+  const [picked, setPicked] = useState<ReadonlySet<ResourceRecord>>(NOTHING_PICKED)
 
   /*
   What is typed and what is applied are kept apart: upstream reads the four
@@ -150,6 +188,7 @@ export function ZoneRecords(p: ZoneRecordsProps) {
   /** `showEditZonePage(pageNumber)`: the fields applied, on that page or the
    *  one in Page Number (0 or empty is 1). */
   function showPage(pageNumber?: number, typeOverride?: string) {
+    setPicked(NOTHING_PICKED)
     setNameFilter(nameField)
     setDataFilter(dataField)
     setTypeFilter(typeOverride ?? typeField)
@@ -188,6 +227,7 @@ export function ZoneRecords(p: ZoneRecordsProps) {
     }
     setZoneInfo(r.data.zone)
     setRecords(r.data.records)
+    setPicked(NOTHING_PICKED)
     return true
   }, [token, zone, node, onNotice])
 
@@ -208,7 +248,11 @@ export function ZoneRecords(p: ZoneRecordsProps) {
     [shown, nameFilter, typeFilter, dataFilter, zone],
   )
 
-  const { rows: sorted, sort, toggle } = useSort(KEYS, visible)
+  const { rows: sorted, sort, toggle: sortBy } = useSort(KEYS, visible)
+  const toggle = (field: string) => {
+    setPicked(NOTHING_PICKED)
+    sortBy(field)
+  }
 
   /*
   WHAT THE ZONE HOLDS, by type (an exception, 2026-11-05): `A 14 · NS 1 · SOA 1`,
@@ -299,6 +343,69 @@ export function ZoneRecords(p: ZoneRecordsProps) {
     })
   }
 
+  /* ── Several records at once (deviation 54) ───────────────────────── */
+
+  /** Sends each record on its own, in order, then reads the zone once. */
+  async function runBulk(verb: keyof typeof BULK, targets: ResourceRecord[]) {
+    setBusy(true)
+    const failed: string[] = []
+    for (const r of targets) {
+      const hints = zoneHasSvcbAutoHint(records, r.type === 'A', r.type === 'AAAA')
+      let outcome: { kind: string; message?: string }
+      if (verb === 'delete') {
+        const body = deletionBody(zone, r)
+        if (r.type === 'A' || r.type === 'AAAA') body.updateSvcbHints = String(hints)
+        outcome = await deleteRecord(token, body, node)
+      } else {
+        outcome = await updateRecord(token, stateChangeBody(zone, r, verb === 'disable', hints), node)
+      }
+      if (!alive.current) return
+      if (outcome.kind === 'ok') continue
+      /* The session is gone: nothing more can go, and the Shell takes over. */
+      if (outcome.kind !== 'error') {
+        setBusy(false)
+        onNotice(noticeFromFailure(outcome))
+        return
+      }
+      failed.push(outcome.message ?? '')
+    }
+    setBusy(false)
+    await load()
+    showPage()
+    const words = BULK[verb]
+    onNotice(
+      failed.length === 0
+        ? { type: 'success', title: words.title, text: `All selected records were ${words.done} successfully.` }
+        : {
+            type: 'warning',
+            title: words.failed,
+            text: `A total of ${failed.length} record(s) of the selected ${targets.length} record(s) failed to ${verb}: ${failed[0]}`,
+          },
+    )
+  }
+
+  function bulkDelete(chosen: ResourceRecord[]) {
+    const n = chosen.length
+    p.onConfirm({
+      title: 'Delete Records',
+      text: `Are you sure you want to permanently delete the following ${n === 1 ? 'record' : `${n} records`}?\n\n${chosen.map(recordLine).join('\n')}`,
+      label: 'Delete',
+      danger: true,
+      action: () => runBulk('delete', chosen),
+    })
+  }
+
+  function bulkDisable(chosen: ResourceRecord[]) {
+    const targets = chosen.filter((r) => !r.disabled)
+    const n = targets.length
+    p.onConfirm({
+      title: 'Disable Records',
+      text: `Are you sure you want to disable the following ${n === 1 ? 'record' : `${n} records`}?\n\n${targets.map(recordLine).join('\n')}`,
+      label: 'Disable',
+      action: () => runBulk('disable', targets),
+    })
+  }
+
   /* ── Actions on the whole zone ─────────────────────────────────────── */
 
   async function mutateZone(fn: () => Promise<{ kind: string; message?: string }>, success: Notice, back = false) {
@@ -382,6 +489,7 @@ export function ZoneRecords(p: ZoneRecordsProps) {
 
   function toggleDnssec() {
     const blank = !hideDnssecRecords
+    setPicked(NOTHING_PICKED)
     setHideDnssecRecords(blank)
     writeHideDnssec(blank)
   }
@@ -433,6 +541,16 @@ export function ZoneRecords(p: ZoneRecordsProps) {
   const pagination = (
     <Pagination window={pg} current={currentPage} last={totalPages} onGoTo={(n) => showPage(n)} />
   )
+
+  /* Deviation 54: what a row may act on, and the selection of the view on screen. */
+  const selectable = (r: ResourceRecord) => {
+    const a = rowActions(zoneInfo.type, r.type)
+    return !a.hidden && !a.editingOnly
+  }
+  const bulk = (p.canModify || p.canDelete) && shown.some(selectable)
+  const pickable = bulk ? onPage.filter(selectable) : []
+  const chosen = pickable.filter((r) => picked.has(r))
+  const pick = (next: ResourceRecord[]) => setPicked(new Set(next))
 
   return (
     <>
@@ -634,9 +752,39 @@ export function ZoneRecords(p: ZoneRecordsProps) {
               Go
             </Button>
       
-            {/* The status above the table as well as under it, as upstream draws it. */}
+            {/* The status above the table as well as under it, as upstream draws it;
+                with records ticked, how many, and the three verbs (deviation 54). */}
             <End>
-              <span>{text}</span>
+              {!bulk && <span>{text}</span>}
+              {bulk && (
+                <span className={styles.bulkActs}>
+                  <span className={styles.bulkCount}>
+                    {chosen.length > 0 ? `${chosen.length} of ${pickable.length} records selected` : text}
+                  </span>
+                  <Button
+                    lead="power"
+                    disabled={!p.canModify || busy || !chosen.some((r) => r.disabled)}
+                    onClick={() => void runBulk('enable', chosen.filter((r) => r.disabled))}
+                  >
+                    Enable Records
+                  </Button>
+                  <Button
+                    lead="power"
+                    disabled={!p.canModify || busy || !chosen.some((r) => !r.disabled)}
+                    onClick={() => bulkDisable(chosen)}
+                  >
+                    Disable Records
+                  </Button>
+                  <Button
+                    lead="trash"
+                    variant="danger"
+                    disabled={!p.canDelete || busy || chosen.length === 0}
+                    onClick={() => bulkDelete(chosen)}
+                  >
+                    Delete Records
+                  </Button>
+                </span>
+              )}
             </End>
           </>
         }
@@ -685,6 +833,19 @@ export function ZoneRecords(p: ZoneRecordsProps) {
           stack
           header={
             <>
+              {bulk && (
+                <th style={{ width: 38 }} className={tbl.checkCell}>
+                  <label>
+                    <input
+                      type="checkbox"
+                      aria-label="Select all records"
+                      disabled={pickable.length === 0 || busy}
+                      checked={pickable.length > 0 && chosen.length === pickable.length}
+                      onChange={(e) => pick(e.target.checked ? pickable : [])}
+                    />
+                  </label>
+                </th>
+              )}
               <th style={{ width: 34 }}>#</th>
               <Th field="name" sort={sort} onSort={toggle} style={{ width: 110 }}>Name</Th>
               <Th field="type" sort={sort} onSort={toggle} style={{ width: 80 }}>Type</Th>
@@ -699,7 +860,7 @@ export function ZoneRecords(p: ZoneRecordsProps) {
         >
           {onPage.length === 0 ? (
             <tr>
-              <td colSpan={6} className={tbl.noRows}>
+              <td colSpan={bulk ? 7 : 6} className={tbl.noRows}>
                 No Record Found
               </td>
             </tr>
@@ -712,6 +873,21 @@ export function ZoneRecords(p: ZoneRecordsProps) {
               const repeat = i > 0 && onPage[i - 1].name === r.name
               return (
                 <tr key={`${r.name}|${r.type}|${offset + i}`} className={repeat ? styles.repeat : undefined}>
+                  {bulk && (
+                    <td className={tbl.checkCell}>
+                      {selectable(r) && (
+                        <label>
+                          <input
+                            type="checkbox"
+                            aria-label={`Select ${relativeName(r.name, zone)} ${r.type} ${recordText(r)}`}
+                            disabled={busy}
+                            checked={chosen.includes(r)}
+                            onChange={(e) => pick(e.target.checked ? [...chosen, r] : chosen.filter((x) => x !== r))}
+                          />
+                        </label>
+                      )}
+                    </td>
+                  )}
                   <td className={styles.num2}>{offset + i + 1}</td>
                   <td className={`${styles.mono} ${tbl.lead} ${styles.owner}`}><span className={styles.ownerName}><DomainName name={relativeName(r.name, zone)} /></span></td>
                   <td className={tbl.lead}>

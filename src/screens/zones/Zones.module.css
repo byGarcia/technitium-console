@@ -211,6 +211,10 @@ the table.
 .typeField { width: 170px; }
 /* `Data contains` (deviation 53): it grows with Name, the other field a value is typed into. */
 .dataField { flex: 1 1 220px; min-width: 0; }
+/* The count and the three verbs on the ticked records (deviation 54): they wrap
+   among themselves when the toolbar's end is narrower than they are, as on a phone. */
+.bulkActs { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--s-6); min-width: 0; }
+.bulkCount { white-space: nowrap; }
 .pageField { width: 150px; }
 .perPage { width: 200px; }
 .pageField input { text-align: center; }

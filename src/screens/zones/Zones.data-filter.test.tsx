@@ -62,12 +62,15 @@ function servedAt(trail: string, route: string | null = 'zones') {
 }
 
 const bar = () => window.location.pathname + window.location.search
-/* The records table's names, in order: the second cell of each body row. */
+/* The records table's names, in order: each body row's Name, the fifth cell from its end. */
 const names = () =>
   within(screen.getAllByRole('table')[0])
     .getAllByRole('row')
     .slice(1)
-    .map((r) => within(r).getAllByRole('cell')[1]?.textContent ?? '')
+    .map((r) => {
+      const cells = within(r).getAllByRole('cell')
+      return cells[cells.length - 5]?.textContent ?? ''
+    })
 
 beforeEach(() => servedAt('/zones/?zone=casa.test'))
 afterEach(() => {
