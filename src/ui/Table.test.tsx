@@ -2,7 +2,7 @@ import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it } from 'vitest'
 import { useState } from 'react'
-import { Table as DataTable, Th, useSort, type Keys } from './Table'
+import { Table as DataTable, Th, compareSortValues, useSort, type Keys } from './Table'
 
 /*
 Upstream's rule (`sortTable`, common.js:228-280) is not a toggle: a click sorts
@@ -71,6 +71,60 @@ describe('table sorting', () => {
     render(<Table data={[{ name: 'Zeta' }, { name: 'alpha' }]} />)
     await userEvent.click(screen.getByRole('button', { name: /Name/ }))
     expect(texts()).toEqual(['alpha', 'Zeta'])
+  })
+
+  it('text sorts naturally: pc2 before pc10 (deviation 48)', async () => {
+    render(<Table data={[{ name: 'pc10' }, { name: 'pc2' }, { name: 'PC1' }]} />)
+    await userEvent.click(screen.getByRole('button', { name: /Name/ }))
+    expect(texts()).toEqual(['PC1', 'pc2', 'pc10'])
+  })
+
+  it('a column already in natural order is turned around by the first click', async () => {
+    render(<Table data={[{ name: 'pc2' }, { name: 'pc10' }]} />)
+    await userEvent.click(screen.getByRole('button', { name: /Name/ }))
+    expect(texts()).toEqual(['pc10', 'pc2'])
+  })
+})
+
+/* Deviation 48: numbers as numbers, addresses by their bytes, text naturally. */
+describe('the order of sort values', () => {
+  const order = (values: (string | number | null)[]) => [...values].sort(compareSortValues)
+
+  it('numbers compare as numbers', () => {
+    expect(order([300, 3600, 60, 86400])).toEqual([60, 300, 3600, 86400])
+    expect(order(['300', '3600', '60', '1.5', '86400'])).toEqual(['1.5', '60', '300', '3600', '86400'])
+  })
+
+  it('IPv4 addresses compare by their bytes', () => {
+    expect(order(['10.0.0.10', '10.0.0.9', '10.0.0.100', '9.255.0.1'])).toEqual([
+      '9.255.0.1',
+      '10.0.0.9',
+      '10.0.0.10',
+      '10.0.0.100',
+    ])
+  })
+
+  it('IPv6 addresses compare by their bytes, compressed or not, and after IPv4', () => {
+    expect(order(['fe80::10', 'fe80::a', '::1', '2001:db8::1', '10.0.0.1', 'FE80:0:0:0:0:0:0:9'])).toEqual([
+      '10.0.0.1',
+      '::1',
+      '2001:db8::1',
+      'FE80:0:0:0:0:0:0:9',
+      'fe80::a',
+      'fe80::10',
+    ])
+  })
+
+  it('MAC addresses compare by their bytes: 9C after 10', () => {
+    expect(order(['9C-00-00-00-00-01', '10-00-00-00-00-01', 'A4-83-E7-2B-19-0C'])).toEqual([
+      '10-00-00-00-00-01',
+      '9C-00-00-00-00-01',
+      'A4-83-E7-2B-19-0C',
+    ])
+  })
+
+  it('an empty value comes first, as the text sort put it', () => {
+    expect(order([5, null, '', 1])).toEqual([null, '', 1, 5])
   })
 })
 

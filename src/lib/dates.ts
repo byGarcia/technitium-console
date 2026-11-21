@@ -67,9 +67,6 @@ function getFormatter(tz: string, withSeconds: boolean): Intl.DateTimeFormat {
 }
 
 export function formatDate(d: Date, withSeconds: boolean, tz?: SupportedTimezone): string {
-  if (d.getFullYear() <= 1) {
-    return withSeconds ? '0001-01-01 00:00:00' : '0001-01-01 00:00'
-  }
   const resolvedTz = tz ?? getTimezone()
   if (resolvedTz === 'local') {
     const base = `${pad4(d.getFullYear())}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`

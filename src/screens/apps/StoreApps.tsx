@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useState } from 'react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { downloadAndInstall, downloadAndUpdate, listStoreApps, uninstallApp, type StoreApp } from '../../api/apps'
 import { Button } from '../../ui/Button'
 import { RowAction, Table, Th, useSort } from '../../ui/Table'
@@ -56,8 +56,14 @@ export function StoreApps({
   even though what it orders here is a list and not a table.
   */
 
+  /* Only the latest read's answer is applied: a second install can start while the
+     first one's read is in flight, and the older list would draw the app just
+     installed as not installed (as `blocking/Rules.tsx`). */
+  const asked = useRef(0)
   const load = useCallback(async () => {
+    const mine = ++asked.current
     const outcome = await listStoreApps(token)
+    if (mine !== asked.current) return
     if (outcome.kind === 'ok') {
       setStoreApps(outcome.data.response.storeApps)
       return

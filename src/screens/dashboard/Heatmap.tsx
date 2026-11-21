@@ -12,7 +12,8 @@ import styles from './Heatmap.module.css'
 /*
 The week by hour (deviation 7 in CONVENTIONS.md; the arithmetic and why it takes
 more than one request are in `heatmap.ts`). The words are OURS: the title, the
-weekday names, each cell's "HH:00 to HH:00: N queries", the hint "Click a cell for
+weekday names, each cell's "HH:00 to HH:00: N queries", the hour in progress's
+"HH:00 to HH:00: in progress, counted when the hour ends", the hint "Click a cell for
 that hour's Query Logs" and the scale's "Quiet" and "Busy".
 
 It reads on its own clock, not the period's: the same week whatever period the
@@ -88,6 +89,8 @@ export function Heatmap({
 
   const rows = useMemo(() => (state.kind === 'ok' ? heatRows(state.hours, state.now, timezone) : []), [state, timezone])
   const max = Math.max(0, ...rows.flatMap((r) => r.cells.map((c) => c?.count ?? 0)))
+  /* The start of the hour in progress, on the UTC hour as the week is asked. */
+  const running = state.kind === 'ok' ? weekSpan(state.now, timezone).to : 0
 
   /* The roving focus: which cell holds the grid's one tab stop. */
   const [at, setAt] = useState<[number, number]>([-1, -1])
@@ -108,10 +111,12 @@ export function Heatmap({
     grid.current?.querySelector<HTMLElement>(`[data-cell="${to[0]}-${to[1]}"]`)?.focus()
   }
 
-  /* The tab stop is the chosen cell, or the latest hour when that one has none. */
-  const valid = (r: number, c: number) => rows[r]?.cells[c] != null
+  /* The tab stop is the chosen cell, or the latest hour counted when that one has
+     none. The hour in progress can be reached with the arrows. */
+  const counted = (r: number, c: number) => rows[r]?.cells[c] != null
+  const valid = (r: number, c: number) => counted(r, c) || (rows[r] != null && rows[r].live === c)
   const last = (() => {
-    for (let r = rows.length - 1; r >= 0; r--) for (let c = 23; c >= 0; c--) if (valid(r, c)) return [r, c] as const
+    for (let r = rows.length - 1; r >= 0; r--) for (let c = 23; c >= 0; c--) if (counted(r, c)) return [r, c] as const
     return [0, 0] as const
   })()
   const stop = valid(at[0], at[1]) ? at : last
@@ -139,6 +144,30 @@ export function Heatmap({
                 <div className={styles.row} role="row" key={row.day}>
                   <span className={styles.day} role="rowheader" aria-label={row.label}>{row.short}</span>
                   {row.cells.map((cell, c) => {
+                    if (cell == null && row.live === c) {
+                      /* The hour in progress: running, not empty. The server counts it
+                         when it closes (`heatmap.ts`), so it has no figure yet. */
+                      const from = running
+                      const label = `${row.label}, ${formatClock(from, timezone)} to ${formatClock(from + HOUR, timezone)}: in progress, counted when the hour ends`
+                      const focus = stop[0] === r && stop[1] === c ? 0 : -1
+                      return jump != null ? (
+                        <span key={c} role="gridcell">
+                          <button
+                            type="button"
+                            data-cell={`${r}-${c}`}
+                            className={`${styles.cell} ${styles.live}`}
+                            aria-label={label}
+                            title={label}
+                            tabIndex={focus}
+                            onFocus={() => setAt([r, c])}
+                            onKeyDown={(e) => move(e, r, c)}
+                            onClick={() => jump(spanFilters(from, from + HOUR))}
+                          />
+                        </span>
+                      ) : (
+                        <span key={c} role="gridcell" className={`${styles.cell} ${styles.live}`} aria-label={label} title={label} />
+                      )
+                    }
                     if (cell == null) return <span key={c} className={styles.none} role="gridcell" aria-label={`${row.label}, ${pad(c)}:00: no data`} />
                     const shade = styles[`h${level(cell.count, max)}`]
                     const label = name(row.label, cell)

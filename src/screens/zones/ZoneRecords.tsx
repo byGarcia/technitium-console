@@ -1,5 +1,5 @@
 import { readParam, writeParams } from '../../lib/url-state'
-import { RECORDS_NAME, RECORDS_PAGE, RECORDS_TYPE } from './zone-url'
+import { RECORDS_DATA, RECORDS_NAME, RECORDS_PAGE, RECORDS_TYPE } from './zone-url'
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { readPerPage, writePerPage } from '../../lib/stored-per-page'
 import {
@@ -33,7 +33,7 @@ import { dateTime, dateWithAge } from '../../lib/dates'
 import { Menu, MenuItem, Separator } from '../../ui/Menu'
 import { filterBy } from './filter'
 import { statusText, pageWindow } from '../../lib/pagination'
-import { rowActions, recordCells, relativeName, hideDnssec, type Cell } from './record-view'
+import { rowActions, recordText, relativeName, hideDnssec } from './record-view'
 import { zoneHeader, isSigned, writeHideDnssec, readHideDnssec } from './zone-view'
 import { SectionHeader } from '../../ui/SectionHeader'
 import { Empty, Loading } from '../../ui/Empty'
@@ -50,6 +50,27 @@ import { noticeFromFailure } from '../../lib/notice'
 /*
 A zone's records. A replica of `showEditZone` (zone.js:3079) and
 `showEditZonePage` (3500).
+
+ACTING ON SEVERAL RECORDS AT ONCE (deviation 54, 2026-11-20; OURS). A checkbox on
+every record whose row offers both Delete Record and Disable Record (`rowActions`:
+not the SOA, not the DNSSEC records, none in a zone whose rows offer nothing), and
+`Delete Records`, `Disable Records` and `Enable Records` at the toolbar's end with
+the count, the way the zone list carries `Delete Zones`. Each record is sent on its
+own, one after another, with the body its row sends (`deletionBody`,
+`stateChangeBody`, the SVCB hints included); Delete and Disable ask first, as the
+row does, Enable does not; Disable sends only the enabled ones and Enable only the
+disabled ones. Then the zone is read once, and one notice says all went or how many
+failed, with the first reason. The selection is the page on screen: another page,
+an applied filter, a sort, Hide DNSSEC Records or a new read clears it. Without
+Modify and Delete on the zone, or with nothing selectable in it, none of this is
+drawn. Its words, OURS: `Select all records`, `Select <name> <type> <data>`, `N of M
+records selected`, the three verbs, the titles `Delete Records` and `Disable
+Records`, `Are you sure you want to permanently delete the following N records?`,
+`Are you sure you want to disable the following N records?` (`record` for one),
+`Records Deleted!`, `Records Disabled!`, `Records Enabled!`, `All selected records
+were deleted successfully.` (and `disabled`, `enabled`), `Failed To Delete!`
+(`Disable`, `Enable`) and `A total of N record(s) of the selected M record(s)
+failed to delete: <the first reason>` (`disable`, `enable`).
 
 **Here the pagination is the client's**, the opposite of the zone list:
 `zones/records/get` does not paginate, it brings the whole zone and upstream cuts
@@ -87,41 +108,35 @@ export interface ZoneRecordsProps {
   onDnssecProperties: (zone: string) => void
   /** Changes when an external modal forces a re-read of the zone. */
   refresh: number
-  /*
-  The expiry TTL left over in the record modal. It is NOT a whim:
-  `updateRecordState` reads it from the modal's field instead of the row, so
-  disabling a record sends whatever was left there from last time, or empty if
-  the modal has not been opened. It is a bug of upstream's and it is replicated;
-  see CONVENTIONS.md.
-  */
-  modalExpiryTtl: string
 }
 
 /*
 `sortTable('tableEditZoneBody', 0..4)` in upstream, which sorts by the cell's
-text. "Data" is read through its already-formatted cells, which is what you see.
+text. Here TTL sorts as a number and the rest naturally (deviation 48). "Data" is
+read through its already-formatted cells, which is what you see.
 
 Upstream's `#` column is sortable too and here it is not: sorting by the row
 number the sort itself has just handed out leads nowhere.
 */
-function cellText(c: Cell): string {
-  switch (c.cls) {
-    case 'value':
-      return c.text
-    case 'pairs':
-      return c.pairs.map((p) => `${p.label} ${p.value}`).join(' ')
-    case 'lines':
-      return c.lines.join(' ')
-    case 'table':
-      return [c.headers, ...c.rows].map((f) => f.join(' ')).join(' ')
-  }
+const NOTHING_PICKED: ReadonlySet<ResourceRecord> = new Set()
+
+/** A record as one line of a bulk confirmation: its name, type and data. */
+function recordLine(r: ResourceRecord): string {
+  const data = recordText(r)
+  return `${r.name === '' ? '.' : r.name} ${r.type} ${data.length > 80 ? `${data.slice(0, 79)}…` : data}`
 }
+
+const BULK = {
+  delete: { done: 'deleted', title: 'Records Deleted!', failed: 'Failed To Delete!' },
+  disable: { done: 'disabled', title: 'Records Disabled!', failed: 'Failed To Disable!' },
+  enable: { done: 'enabled', title: 'Records Enabled!', failed: 'Failed To Enable!' },
+} as const
 
 const KEYS: Keys<ResourceRecord> = {
   name: (r) => r.name,
   type: (r) => r.type,
   ttl: (r) => r.ttl,
-  data: (r) => recordCells(r).map(cellText).join(' '),
+  data: recordText,
 }
 
 export function ZoneRecords(p: ZoneRecordsProps) {
@@ -132,6 +147,9 @@ export function ZoneRecords(p: ZoneRecordsProps) {
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
   const [hideDnssecRecords, setHideDnssecRecords] = useState(readHideDnssec)
+  /* The ticked records (deviation 54). Whatever changes the rows on screen clears
+     them: `showPage` (a page, a filter, Go), a sort, Hide DNSSEC Records and a read. */
+  const [picked, setPicked] = useState<ReadonlySet<ResourceRecord>>(NOTHING_PICKED)
 
   /*
   What is typed and what is applied are kept apart: upstream reads the four
@@ -142,11 +160,14 @@ export function ZoneRecords(p: ZoneRecordsProps) {
      reload or a copied link lands on: typed and applied, as Go would apply them. */
   const [nameField, setNameField] = useState(() => readParam(RECORDS_NAME) ?? '')
   const [typeField, setTypeField] = useState(() => readParam(RECORDS_TYPE) ?? '')
+  /* `Data contains` (deviation 53): typed and applied apart, as Name and Type. */
+  const [dataField, setDataField] = useState(() => readParam(RECORDS_DATA) ?? '')
   /* What is typed in Page Number; `null` shows the page on screen (zone.js:3733). */
   const [pageDraft, setPageDraft] = useState<string | null>(null)
   const [perPageField, setPerPageField] = useState(() => readPerPage(RECORDS_PER_PAGE_KEY, RECORDS_PER_PAGE, 10))
   const [nameFilter, setNameFilter] = useState(() => readParam(RECORDS_NAME) ?? '')
   const [typeFilter, setTypeFilter] = useState(() => readParam(RECORDS_TYPE) ?? '')
+  const [dataFilter, setDataFilter] = useState(() => readParam(RECORDS_DATA) ?? '')
   const [perPage, setPerPage] = useState(perPageField)
   const [page, setPage] = useState(() => {
     const n = Number(readParam(RECORDS_PAGE) ?? 1)
@@ -160,13 +181,16 @@ export function ZoneRecords(p: ZoneRecordsProps) {
       [RECORDS_PAGE]: page > 1 ? String(page) : null,
       [RECORDS_NAME]: nameFilter,
       [RECORDS_TYPE]: typeFilter,
+      [RECORDS_DATA]: dataFilter,
     })
-  }, [page, nameFilter, typeFilter])
+  }, [page, nameFilter, typeFilter, dataFilter])
 
   /** `showEditZonePage(pageNumber)`: the fields applied, on that page or the
    *  one in Page Number (0 or empty is 1). */
   function showPage(pageNumber?: number, typeOverride?: string) {
+    setPicked(NOTHING_PICKED)
     setNameFilter(nameField)
+    setDataFilter(dataField)
     setTypeFilter(typeOverride ?? typeField)
     if (typeOverride != null) setTypeField(typeOverride)
     setPerPage(perPageField)
@@ -185,11 +209,16 @@ export function ZoneRecords(p: ZoneRecordsProps) {
     }
   }, [])
 
-  /** Reads the zone; true when it arrived. */
+  /* Only the newest read's answer lands: a refresh can start one while another is
+     in flight, and the older answer must not paint over it. */
+  const readSeq = useRef(0)
+
+  /** Reads the zone; true when it arrived (and is still the read asked last). */
   const load = useCallback(async (): Promise<boolean> => {
+    const mine = ++readSeq.current
     setLoading(true)
     const r = await getRecords(token, zone, node)
-    if (!alive.current) return false
+    if (!alive.current || mine !== readSeq.current) return false
     setLoading(false)
 
     if (r.kind !== 'ok') {
@@ -198,6 +227,7 @@ export function ZoneRecords(p: ZoneRecordsProps) {
     }
     setZoneInfo(r.data.zone)
     setRecords(r.data.records)
+    setPicked(NOTHING_PICKED)
     return true
   }, [token, zone, node, onNotice])
 
@@ -214,11 +244,15 @@ export function ZoneRecords(p: ZoneRecordsProps) {
   // The DNSSEC filtering comes before the name/type filter, just as in
   // upstream: `editZoneRecords` already arrives trimmed to `showEditZonePage`.
   const visible = useMemo(
-    () => filterBy(shown, { name: nameFilter, type: typeFilter }, zone),
-    [shown, nameFilter, typeFilter, zone],
+    () => filterBy(shown, { name: nameFilter, type: typeFilter, data: dataFilter }, zone),
+    [shown, nameFilter, typeFilter, dataFilter, zone],
   )
 
-  const { rows: sorted, sort, toggle } = useSort(KEYS, visible)
+  const { rows: sorted, sort, toggle: sortBy } = useSort(KEYS, visible)
+  const toggle = (field: string) => {
+    setPicked(NOTHING_PICKED)
+    sortBy(field)
+  }
 
   /*
   WHAT THE ZONE HOLDS, by type (an exception, 2026-11-05): `A 14 · NS 1 · SOA 1`,
@@ -262,10 +296,10 @@ export function ZoneRecords(p: ZoneRecordsProps) {
   function setRecordState(r: ResourceRecord, disable: boolean) {
     const name = r.name === '' ? '.' : r.name
     const hints = zoneHasSvcbAutoHint(records, r.type === 'A', r.type === 'AAAA')
-    const body = {
-      ...stateChangeBody(zone, r, disable, hints),
-      expiryTtl: p.modalExpiryTtl,
-    }
+    /* The record's own expiry TTL goes with it. Upstream reads the record
+       dialog's field instead (`updateRecordState`, zone.js:6236): empty if it was
+       never opened, else whatever was left there. Not copied (deviation 50). */
+    const body = stateChangeBody(zone, r, disable, hints)
 
     const run = () =>
       mutateRecord(
@@ -306,6 +340,69 @@ export function ZoneRecords(p: ZoneRecordsProps) {
           title: 'Record Deleted!',
           text: 'Resource record was deleted successfully.',
         }),
+    })
+  }
+
+  /* ── Several records at once (deviation 54) ───────────────────────── */
+
+  /** Sends each record on its own, in order, then reads the zone once. */
+  async function runBulk(verb: keyof typeof BULK, targets: ResourceRecord[]) {
+    setBusy(true)
+    const failed: string[] = []
+    for (const r of targets) {
+      const hints = zoneHasSvcbAutoHint(records, r.type === 'A', r.type === 'AAAA')
+      let outcome: { kind: string; message?: string }
+      if (verb === 'delete') {
+        const body = deletionBody(zone, r)
+        if (r.type === 'A' || r.type === 'AAAA') body.updateSvcbHints = String(hints)
+        outcome = await deleteRecord(token, body, node)
+      } else {
+        outcome = await updateRecord(token, stateChangeBody(zone, r, verb === 'disable', hints), node)
+      }
+      if (!alive.current) return
+      if (outcome.kind === 'ok') continue
+      /* The session is gone: nothing more can go, and the Shell takes over. */
+      if (outcome.kind !== 'error') {
+        setBusy(false)
+        onNotice(noticeFromFailure(outcome))
+        return
+      }
+      failed.push(outcome.message ?? '')
+    }
+    setBusy(false)
+    await load()
+    showPage()
+    const words = BULK[verb]
+    onNotice(
+      failed.length === 0
+        ? { type: 'success', title: words.title, text: `All selected records were ${words.done} successfully.` }
+        : {
+            type: 'warning',
+            title: words.failed,
+            text: `A total of ${failed.length} record(s) of the selected ${targets.length} record(s) failed to ${verb}: ${failed[0]}`,
+          },
+    )
+  }
+
+  function bulkDelete(chosen: ResourceRecord[]) {
+    const n = chosen.length
+    p.onConfirm({
+      title: 'Delete Records',
+      text: `Are you sure you want to permanently delete the following ${n === 1 ? 'record' : `${n} records`}?\n\n${chosen.map(recordLine).join('\n')}`,
+      label: 'Delete',
+      danger: true,
+      action: () => runBulk('delete', chosen),
+    })
+  }
+
+  function bulkDisable(chosen: ResourceRecord[]) {
+    const targets = chosen.filter((r) => !r.disabled)
+    const n = targets.length
+    p.onConfirm({
+      title: 'Disable Records',
+      text: `Are you sure you want to disable the following ${n === 1 ? 'record' : `${n} records`}?\n\n${targets.map(recordLine).join('\n')}`,
+      label: 'Disable',
+      action: () => runBulk('disable', targets),
     })
   }
 
@@ -392,6 +489,7 @@ export function ZoneRecords(p: ZoneRecordsProps) {
 
   function toggleDnssec() {
     const blank = !hideDnssecRecords
+    setPicked(NOTHING_PICKED)
     setHideDnssecRecords(blank)
     writeHideDnssec(blank)
   }
@@ -443,6 +541,16 @@ export function ZoneRecords(p: ZoneRecordsProps) {
   const pagination = (
     <Pagination window={pg} current={currentPage} last={totalPages} onGoTo={(n) => showPage(n)} />
   )
+
+  /* Deviation 54: what a row may act on, and the selection of the view on screen. */
+  const selectable = (r: ResourceRecord) => {
+    const a = rowActions(zoneInfo.type, r.type)
+    return !a.hidden && !a.editingOnly
+  }
+  const bulk = (p.canModify || p.canDelete) && shown.some(selectable)
+  const pickable = bulk ? onPage.filter(selectable) : []
+  const chosen = pickable.filter((r) => picked.has(r))
+  const pick = (next: ResourceRecord[]) => setPicked(new Set(next))
 
   return (
     <>
@@ -625,13 +733,57 @@ export function ZoneRecords(p: ZoneRecordsProps) {
                 )}
               </Field>
             </div>
+            {/* OURS (deviation 53): what the Data column says, applied with the two above. */}
+            <div className={styles.dataField}>
+              <Field inline label="Data contains">
+                {(id) => (
+                  <Input
+                    id={id}
+                    search
+                    placeholder="10.0.0.5 or example.net"
+                    value={dataField}
+                    onChange={(e) => setDataField(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && showPage()}
+                  />
+                )}
+              </Field>
+            </div>
             <Button variant="primary" onClick={() => showPage()}>
               Go
             </Button>
-      
-            {/* The status above the table as well as under it, as upstream draws it. */}
+            {/* The status above the table as well as under it, as upstream draws it;
+                with records ticked, how many, and the three verbs (deviation 54). */}
             <End>
-              <span>{text}</span>
+              {!bulk && <span>{text}</span>}
+              {bulk && (
+                <span className={styles.bulkActs}>
+                  <span className={styles.bulkCount}>
+                    {chosen.length > 0 ? `${chosen.length} of ${pickable.length} records selected` : text}
+                  </span>
+                  <Button
+                    lead="power"
+                    disabled={!p.canModify || busy || !chosen.some((r) => r.disabled)}
+                    onClick={() => void runBulk('enable', chosen.filter((r) => r.disabled))}
+                  >
+                    Enable Records
+                  </Button>
+                  <Button
+                    lead="power"
+                    disabled={!p.canModify || busy || !chosen.some((r) => !r.disabled)}
+                    onClick={() => bulkDisable(chosen)}
+                  >
+                    Disable Records
+                  </Button>
+                  <Button
+                    lead="trash"
+                    variant="danger"
+                    disabled={!p.canDelete || busy || chosen.length === 0}
+                    onClick={() => bulkDelete(chosen)}
+                  >
+                    Delete Records
+                  </Button>
+                </span>
+              )}
             </End>
           </>
         }
@@ -680,6 +832,19 @@ export function ZoneRecords(p: ZoneRecordsProps) {
           stack
           header={
             <>
+              {bulk && (
+                <th style={{ width: 38 }} className={tbl.checkCell}>
+                  <label>
+                    <input
+                      type="checkbox"
+                      aria-label="Select all records"
+                      disabled={pickable.length === 0 || busy}
+                      checked={pickable.length > 0 && chosen.length === pickable.length}
+                      onChange={(e) => pick(e.target.checked ? pickable : [])}
+                    />
+                  </label>
+                </th>
+              )}
               <th style={{ width: 34 }}>#</th>
               <Th field="name" sort={sort} onSort={toggle} style={{ width: 110 }}>Name</Th>
               <Th field="type" sort={sort} onSort={toggle} style={{ width: 80 }}>Type</Th>
@@ -694,7 +859,7 @@ export function ZoneRecords(p: ZoneRecordsProps) {
         >
           {onPage.length === 0 ? (
             <tr>
-              <td colSpan={6} className={tbl.noRows}>
+              <td colSpan={bulk ? 7 : 6} className={tbl.noRows}>
                 No Record Found
               </td>
             </tr>
@@ -707,8 +872,23 @@ export function ZoneRecords(p: ZoneRecordsProps) {
               const repeat = i > 0 && onPage[i - 1].name === r.name
               return (
                 <tr key={`${r.name}|${r.type}|${offset + i}`} className={repeat ? styles.repeat : undefined}>
+                  {bulk && (
+                    <td className={tbl.checkCell}>
+                      {selectable(r) && (
+                        <label>
+                          <input
+                            type="checkbox"
+                            aria-label={`Select ${relativeName(r.name, zone)} ${r.type} ${recordText(r)}`}
+                            disabled={busy}
+                            checked={chosen.includes(r)}
+                            onChange={(e) => pick(e.target.checked ? [...chosen, r] : chosen.filter((x) => x !== r))}
+                          />
+                        </label>
+                      )}
+                    </td>
+                  )}
                   <td className={styles.num2}>{offset + i + 1}</td>
-                  <td className={`${styles.mono} ${tbl.lead} ${styles.owner}`}><DomainName name={relativeName(r.name, zone)} /></td>
+                  <td className={`${styles.mono} ${tbl.lead} ${styles.owner}`}><span className={styles.ownerName}><DomainName name={relativeName(r.name, zone)} /></span></td>
                   <td className={tbl.lead}>
                     <span className={styles.typeCell}>
                       <span className={styles.rtype} style={{ '--rt': recordColour(r.type) } as CSSProperties}>

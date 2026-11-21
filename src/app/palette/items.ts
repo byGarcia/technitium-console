@@ -1,5 +1,6 @@
 import type { IconName } from '../../ui/Icon'
 import type { Section } from '../sections'
+import { toAscii } from '../../lib/punycode'
 
 /*
 What the command palette offers (`CommandPalette.tsx`, CONVENTIONS.md deviation 26).
@@ -76,15 +77,18 @@ export function actionItems(query: string, can: (section: string) => boolean): P
   const out: PaletteItem[] = []
   const single = !/\s/.test(q)
   const ip = single && (/^[0-9]+(\.[0-9]+){3}$/.test(q) || (q.includes(':') && /^[0-9a-f:]+$/i.test(q)))
-  /* A name only when it reads as one: a dot, no spaces. "recur" is a page, not a domain. */
-  const name = single && !ip && /^[a-z0-9_*-]+(\.[a-z0-9_-]+)+\.?$/i.test(q)
+  /* A name only when it reads as one: a dot, no spaces. "recur" is a page, not a domain.
+     Letters of any script count, so `bücher.de` is a name too. */
+  const name = single && !ip && /^[\p{L}\p{M}\p{N}_*-]+(\.[\p{L}\p{M}\p{N}_-]+)+\.?$/u.test(q)
   const add = (id: string, label: string, icon: IconName, target: Target, section: string) => {
     if (can(section)) out.push({ id: `action:${id}`, group: 'Actions', label, icon, target })
   }
   if (name) {
     add('check', `Check ${q} in Blocking`, 'shield', { kind: 'route', section: 'blocking', sub: 'Overview', params: { check: q } }, 'blocking')
     add('dnsclient', `Resolve ${q} in DNS Client`, 'dnsclient', { kind: 'dnsclient', domain: q }, 'dnsclient')
-    add('logs', `Search Query Logs for ${q}`, 'search', { kind: 'logs', domain: q, clientIp: null }, 'logs')
+    /* Query Logs' `qname` matches only the ASCII form of a name (lib/punycode.ts); the
+       other screens take either. */
+    add('logs', `Search Query Logs for ${q}`, 'search', { kind: 'logs', domain: toAscii(q), clientIp: null }, 'logs')
     add('cache', `Find ${q} in Cache`, 'cache', { kind: 'route', section: 'cache', sub: null, params: { domain: q } }, 'cache')
     add('rules', `Search your rules for ${q}`, 'blocked', { kind: 'route', section: 'blocking', sub: 'Rules', params: { q } }, 'blocking')
   } else if (ip) {

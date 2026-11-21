@@ -3,7 +3,7 @@ import { useSyncExternalStore } from 'react'
 /*
 Persistent display timezone preference for timestamp rendering across the console.
 Supports the official IANA Time Zone Database (Unicode CLDR standard) encompassing all
-global time zones, with featured quick-access zones and defaulting to IST (Asia/Kolkata, UTC+05:30).
+global time zones, with featured quick-access zones and defaulting to browser local time ('local').
 */
 
 export type SupportedTimezone = string
@@ -17,25 +17,6 @@ export interface TimezoneOption {
 
 export const TIMEZONE_KEY = 'display_timezone'
 export const DEFAULT_TIMEZONE: string = 'local'
-
-/** Featured standard industry timezones covering major operational hubs. */
-export const FEATURED_TIMEZONES: readonly TimezoneOption[] = [
-  { value: 'local', label: 'Browser Local Time (Default)', offset: 'System', region: 'Client' },
-  { value: 'Asia/Kolkata', label: 'IST - India Standard Time', offset: 'UTC+05:30', region: 'Asia' },
-  { value: 'UTC', label: 'UTC - Universal Coordinated Time', offset: 'UTC+00:00', region: 'Universal' },
-  { value: 'America/New_York', label: 'US Eastern - New York', offset: 'UTC-05:00', region: 'Americas' },
-  { value: 'America/Chicago', label: 'US Central - Chicago', offset: 'UTC-06:00', region: 'Americas' },
-  { value: 'America/Denver', label: 'US Mountain - Denver', offset: 'UTC-07:00', region: 'Americas' },
-  { value: 'America/Los_Angeles', label: 'US Pacific - Los Angeles', offset: 'UTC-08:00', region: 'Americas' },
-  { value: 'Europe/London', label: 'GMT / BST - London', offset: 'UTC+00:00', region: 'Europe' },
-  { value: 'Europe/Paris', label: 'CET / CEST - Paris / Berlin', offset: 'UTC+01:00', region: 'Europe' },
-  { value: 'Asia/Dubai', label: 'GST - Dubai', offset: 'UTC+04:00', region: 'Middle East' },
-  { value: 'Asia/Singapore', label: 'SGT - Singapore', offset: 'UTC+08:00', region: 'Asia' },
-  { value: 'Asia/Tokyo', label: 'JST - Tokyo', offset: 'UTC+09:00', region: 'Asia' },
-  { value: 'Australia/Sydney', label: 'AEST / AEDT - Sydney', offset: 'UTC+10:00', region: 'Australia' },
-]
-
-export const TIMEZONE_OPTIONS = FEATURED_TIMEZONES
 
 /** Validate whether a string is a valid IANA timezone identifier or 'local'. */
 export function isValidTimezone(tz: string): boolean {
@@ -66,6 +47,33 @@ export function getTimezoneOffset(tz: string, now: Date = new Date()): string {
   }
   return 'UTC'
 }
+
+const FEATURED_BASE = [
+  { value: 'local', label: 'Browser Local Time (Default)', region: 'Client' },
+  { value: 'Asia/Kolkata', label: 'IST - India Standard Time', region: 'Asia' },
+  { value: 'UTC', label: 'UTC - Universal Coordinated Time', region: 'Universal' },
+  { value: 'America/New_York', label: 'US Eastern - New York', region: 'Americas' },
+  { value: 'America/Chicago', label: 'US Central - Chicago', region: 'Americas' },
+  { value: 'America/Denver', label: 'US Mountain - Denver', region: 'Americas' },
+  { value: 'America/Los_Angeles', label: 'US Pacific - Los Angeles', region: 'Americas' },
+  { value: 'Europe/London', label: 'GMT / BST - London', region: 'Europe' },
+  { value: 'Europe/Paris', label: 'CET / CEST - Paris / Berlin', region: 'Europe' },
+  { value: 'Asia/Dubai', label: 'GST - Dubai', region: 'Middle East' },
+  { value: 'Asia/Singapore', label: 'SGT - Singapore', region: 'Asia' },
+  { value: 'Asia/Tokyo', label: 'JST - Tokyo', region: 'Asia' },
+  { value: 'Australia/Sydney', label: 'AEST / AEDT - Sydney', region: 'Australia' },
+] as const
+
+/** Featured standard industry timezones covering major operational hubs with dynamic DST offsets. */
+export function getFeaturedTimezones(now: Date = new Date()): readonly TimezoneOption[] {
+  return FEATURED_BASE.map((b) => ({
+    ...b,
+    offset: getTimezoneOffset(b.value, now),
+  }))
+}
+
+export const FEATURED_TIMEZONES: readonly TimezoneOption[] = getFeaturedTimezones()
+export const TIMEZONE_OPTIONS = FEATURED_TIMEZONES
 
 let cachedIanaTimezones: readonly TimezoneOption[] | null = null
 
@@ -108,7 +116,7 @@ export function getIanaTimezones(): readonly TimezoneOption[] {
   return list
 }
 
-/** Read stored timezone preference, defaulting to Asia/Kolkata (IST). */
+/** Read stored timezone preference, defaulting to browser local time ('local'). */
 export function readTimezone(): string {
   try {
     const stored = localStorage.getItem(TIMEZONE_KEY)

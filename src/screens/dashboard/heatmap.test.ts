@@ -88,6 +88,17 @@ describe('the grid', () => {
     expect(rows[0].cells[0]?.count).toBe(1)
   })
 
+  it('marks the hour in progress on today, apart from the hours still to come', () => {
+    const now = new Date(2026, 9, 15, 22, 20).getTime()
+    const span = weekSpan(now)
+    const map = new Map<number, number>()
+    for (let at = span.from; at < span.to; at += HOUR) map.set(at, 1)
+    const rows = heatRows(map, now)
+    expect(rows[6].live).toBe(22)
+    expect(rows[6].cells[22]).toBeNull()
+    expect(rows[5].live).toBeNull()
+  })
+
   it('shades by the share of the busiest hour, zero apart', () => {
     expect(level(0, 10)).toBe(0)
     expect(level(1, 10)).toBe(1)

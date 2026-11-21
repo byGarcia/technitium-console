@@ -219,7 +219,7 @@ function EditPermissions({
       size="wide"
       actions={
         <>
-          <Button variant="primary" disabled={busy || loading} onClick={() => void save()}>
+          <Button type="submit" variant="primary" disabled={busy || loading} onClick={() => void save()}>
             Save
           </Button>
         </>

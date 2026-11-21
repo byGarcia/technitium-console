@@ -146,7 +146,7 @@ export function SignZone({
       title={`Sign Zone - ${zone === '.' ? '<root>' : zone}`}
       actions={
         <>
-          <Button variant="primary" disabled={busy} onClick={() => void sign()}>
+          <Button type="submit" variant="primary" disabled={busy} onClick={() => void sign()}>
             Sign Zone
           </Button>
         </>

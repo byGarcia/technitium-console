@@ -97,7 +97,7 @@ export function ImportZone({
       title={`Import Zone - ${zone}`}
       actions={
         <>
-          <Button variant="primary" disabled={busy} onClick={() => void runImport()}>
+          <Button type="submit" variant="primary" disabled={busy} onClick={() => void runImport()}>
             Import
           </Button>
         </>

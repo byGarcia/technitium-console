@@ -26,7 +26,6 @@ function props(over: Partial<AddEditRecordProps> = {}): AddEditRecordProps {
     defaults: { defaultRecordTtl: 3600, defaultNsRecordTtl: 14400, defaultSoaRecordTtl: 900, dnssecValidation: true },
     onClose: () => {},
     onDone: () => {},
-    onExpiryTtl: () => {},
     ...over,
   }
 }
@@ -175,5 +174,31 @@ describe('record form: SVCB params', () => {
     await chooseIn(user, 'Param key 1', 'Unknown')
     expect(screen.getByLabelText('Param key 1')).toHaveAttribute('placeholder', 'key number')
     expect(screen.getByLabelText('Param value 1')).toHaveAttribute('placeholder', 'hex string')
+  })
+})
+
+/*
+Enter saves the record, as the stock console's Add Record does: its modal is a form
+whose Save button is the submit (index.html:4928). Comments is a textarea and keeps
+Enter for a new line.
+*/
+describe('record form: Enter', () => {
+  it('Enter in a field saves the record', async () => {
+    const user = userEvent.setup()
+    const spy = added()
+    render(<AddEditRecord {...props()} />)
+    await user.type(screen.getByLabelText('Name'), 'www')
+    await user.type(screen.getByLabelText('IPv4 Address'), '10.0.0.1{Enter}')
+    expect(spy).toHaveBeenCalledTimes(1)
+    expect(spy.mock.calls[0][1]).toMatchObject({ domain: 'www.casa.test', ipAddress: '10.0.0.1' })
+  })
+
+  it('Enter in Comments is a new line and saves nothing', async () => {
+    const user = userEvent.setup()
+    const spy = added()
+    render(<AddEditRecord {...props()} />)
+    await user.type(screen.getByLabelText('Comments'), 'one{Enter}two')
+    expect(screen.getByLabelText('Comments')).toHaveValue('one\ntwo')
+    expect(spy).not.toHaveBeenCalled()
   })
 })

@@ -13,7 +13,7 @@ also `technitiumServerMinimum` in its `package.json`, which is what the update n
 
 | Console | Technitium DNS Server | Notes |
 |---|---|---|
-| **1.4.x** | **15.5.x, 15.6.x** (1.4.0 to 1.4.2 checked against 15.6.2) | Current. A Clients page with actions, every cluster node side by side, a command palette, response times on the Dashboard, and every screen redrawn. |
+| **1.4.x** | **15.5.x, 15.6.x** (1.4.0 to 1.4.3 checked against 15.6.2) | Current. A Clients page with actions, every cluster node side by side, a command palette, response times on the Dashboard, and every screen redrawn. |
 | 1.3.x | 15.5.x, 15.6.x | Superseded by 1.4.x on the same server. Every screen redesigned for the phone, a Dashboard that compares periods, Cache in one panel. |
 | 1.2.x | 15.5.x, 15.6.x | Superseded by 1.3.x on the same server. Allowed and Blocked become one Blocking section, a light theme, and the console comes as an image for Docker. Supports a console folder of its own (`DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH`), so server updates leave it alone. |
 | 1.1.x | 15.5.x | Superseded by 1.2.x on the same server. If you stay on it, use 1.1.3: earlier ones flood the server from Cache, Allowed and Blocked. |
@@ -21,6 +21,131 @@ also `technitiumServerMinimum` in its `package.json`, which is what the update n
 
 To update, run the installer again (the same one-line command). It needs no restart of the DNS
 service. On Docker, pull the image again: see [Docker](README.md#docker).
+
+---
+
+## v1.4.3 (2026-11-20)
+
+**The one-line installer works again on Technitium's own Linux install, however long the server
+has been running, and a round of fixes and small additions.** Quick ranges in Query Logs, records
+found by their data and changed several at a time, which list blocks each top blocked domain, Undo
+after Block or Allow, and a question before unsaved changes are lost. Every feature of the stock
+console works as before, through the same API: checked against Technitium DNS Server 15.6.2. Each
+addition is written down, with its limits, in
+[CONVENTIONS.md](CONVENTIONS.md#deliberate-deviations-from-upstream-behaviour).
+
+Thanks to @kyleinprogress, who reported the installer problem with everything needed to find it.
+
+### New
+
+- **Quick ranges in Query Logs.** Beside From and To, `15 min`, `1 h`, `24 h` and `7 d` fill
+  both fields, from that long ago to now, and run the query from page 1 with the other filters as
+  they are. The address bar keeps the two instants, so a copied link asks for the same span. Live
+  Update turns them off with the fields. Written down as deviation 52 in
+  [CONVENTIONS.md](CONVENTIONS.md#deliberate-deviations-from-upstream-behaviour).
+- **Find a zone's records by their data.** Beside Name and Type, `Data contains` keeps the records
+  whose Data column contains what you type (an address, a target, a piece of a TXT record), applied
+  with Go and kept in the address bar like the other two. The Name filter also finds an
+  internationalized name by its Unicode form: `bücher` finds `xn--bcher-kva`. Written down as
+  deviation 53 in [CONVENTIONS.md](CONVENTIONS.md#deliberate-deviations-from-upstream-behaviour).
+- **Delete, disable or enable several records at once.** A zone's records have checkboxes, and
+  `Delete Records`, `Disable Records` and `Enable Records` act on the ticked ones, each sent as its
+  row would send it, one after another, with one summary at the end saying how many failed and why.
+  Delete and Disable ask first, as the row does. The SOA and the DNSSEC records cannot be ticked.
+  Written down as deviation 54 in
+  [CONVENTIONS.md](CONVENTIONS.md#deliberate-deviations-from-upstream-behaviour).
+- **Which list blocks the Dashboard's top blocked domains.** Top Blocked Domains has a Show lists
+  button: one press asks this server about the five names shown and writes beside each the block
+  list (or your rule, or Advanced Blocking) that blocks it now. Nothing is asked until you press
+  it, and it needs Allow TXT Blocking Report, as Blocking's Count lists does. Each press sends up
+  to five lookups from this server, and each one is logged as blocked from this server, so it
+  counts in Top Blocked Domains and Top Clients; the line beside the button says so, as Count
+  lists does. Written down in
+  deviation 46 of [CONVENTIONS.md](CONVENTIONS.md#deliberate-deviations-from-upstream-behaviour).
+- **Undo after Block or Allow** in Blocking's check, block or allow bar, on Overview and Rules.
+  The `Blocked!` or `Allowed!` alert offers Undo, which deletes the rule again. It is offered only
+  when the name was not already one of your rules on that list, and with Delete on it. Enter still
+  blocks, as in the stock console. Written down in deviation 2 of
+  [CONVENTIONS.md](CONVENTIONS.md#deliberate-deviations-from-upstream-behaviour).
+- **Unsaved changes are no longer lost without a word.** With a change in Settings, Blocking ›
+  Lists or a DHCP scope's form, leaving it asks first: the sidebar, a link, a Ctrl K jump, the
+  browser's Back, Logout, and in Settings the Cluster Node selector. Reloading or closing the tab
+  gets the browser's own prompt. Settings' save bar has a Discard button that puts the form back
+  as it was saved. Written down as deviation 51 in
+  [CONVENTIONS.md](CONVENTIONS.md#deliberate-deviations-from-upstream-behaviour).
+
+### Fixed
+
+- **The one-line installer on Technitium's own Linux install.** That install gives the DNS server's
+  folder, web root included, to the `dns-server` account, so the console goes in a folder of its
+  own with a systemd drop-in. The installer only did that once it knew the server was 15.5 or
+  later, and it read the version from the last three days of logs, where the server writes it only
+  on the day it starts. With the server up for a few days it refused the web root instead. It now
+  asks the server's own library whether it reads `DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH`, and
+  reads the logs back to the last start when the library cannot be read. Reported by
+  @kyleinprogress in [#35](https://github.com/byGarcia/technitium-console/issues/35).
+- **`--dir /opt/technitium-console`** now points the systemd service at that folder too, as the
+  install without `--dir` does.
+- **When the installer cannot point the service at the console's folder,** it says why, and prints
+  the drop-in to add by hand.
+- **Custom lists in a web root another account can change** are still not copied by root, on the
+  way in or out, but the installer now names them, says where they go and stops before changing
+  anything. Copy them yourself and run it again: a list already in place is left as it is.
+- **Internationalized names.** Quick Add finds the zone of `www.münchen.test` when the zone is
+  `münchen.test`, typed in either form. Blocking › Rules shows `bücher.de` instead of
+  `xn--bcher-kva.de`, and says it that way in the row's Delete as a screen reader names it, in the
+  question before deleting and in the notices after; the filter finds it by either form. The
+  command palette offers its name steps for `bücher.de` too.
+- **App configs in a cluster are read from the primary node,** as the stock console reads them: the
+  app's Config dialog, the Advanced Blocking visual editor and `Allow in Advanced Blocking` in
+  Query Logs. Read from a secondary, a config the cluster had not passed on yet could be shown, or
+  taken as the base of a save.
+- **Answers that arrive out of order.** Settings, DHCP Scopes and Leases, Query Logs, View Logs,
+  the zone list, a zone's records, Cache, Allowed, Blocked, Administration's Sessions and Cluster,
+  and Apps with its App Store now draw only the answer to the last thing asked. Before, changing
+  the node with a read in flight could leave the previous node's answer on screen, and Save in
+  Settings would then send that node's form to the new one. In Query Logs, a Live Update turn still
+  in flight when Reset is pressed, or Live Update is turned off, no longer writes the old filters
+  back into the address bar. Zone Options, Zone Permissions, DNSSEC Properties, View DS Info and
+  Add Zone, closed and opened again for another zone or node before their first read answered,
+  could fill in the previous one's values, and Save in Zone Options or Zone Permissions would send
+  them to the new one. The More dialog of the Top lists and Configure 2FA had the same gap, and 2FA
+  could show a secret the server no longer checks.
+- **Enter submits a dialog,** as in the stock console. Enter in a text field of Add Zone, Add
+  Record and every other dialog with a main action runs that action, once, and does nothing while
+  it is disabled or already running. Enter in a multi-line field is still a new line. Dialogs that
+  only delete or remove something are not run by Enter, though the stock console runs the cluster's
+  Remove, Promote, Leave and Delete and Unsign Zone that way: written down as deviation 49 in
+  [CONVENTIONS.md](CONVENTIONS.md#deliberate-deviations-from-upstream-behaviour).
+- **Clients › Actions keeps changes made elsewhere.** Adding a client to, or removing it from, the
+  Blocking or QPM Limit Bypass List reads the list again right before saving, so an entry added in
+  Settings or another console after the page opened is no longer lost.
+- **The menu drawer on a phone** takes the focus when it opens, keeps Tab and Shift+Tab inside it,
+  closes on Escape and gives the focus back to the Menu button. While closed, its links are no
+  longer reached with Tab behind the page.
+- **Long record names.** A record name longer than a line no longer widens the Name column until
+  Data has no room, or runs out of its card on a phone: it wraps at its dots, and a label longer
+  than the column at its hyphens. The dot between Last Used and Last Modified no longer starts a
+  line when they wrap.
+- **The zone's SOA** shows its Primary Name Server and Responsible Person on a line each, broken at
+  their dots, instead of a few letters at a time; on a phone the Records and SOA cells take the
+  whole row.
+- **DHCP › Leases** names its Type column.
+- **The Dashboard's week by hour** marks the hour in progress as running, and it opens Query Logs
+  for that hour, instead of drawing it as an hour with no data while Last Hour shows queries.
+- **Enable and Disable on a record keep its expiry TTL.** The stock console sends the Expiry TTL
+  left in the record dialog instead, so disabling a record that expires in 3600 seconds after
+  editing one with 300 gave it 300, and a record never opened in the dialog lost its expiry. Written
+  down as deviation 50 in [CONVENTIONS.md](CONVENTIONS.md#deliberate-deviations-from-upstream-behaviour).
+
+### Changed
+
+- **Sortable columns sort the way they read.** Numbers sort as numbers (TTL 60, 300, 3600, 86400
+  instead of 300, 3600, 60, 86400), IP and MAC addresses by their value (10.0.0.9 before
+  10.0.0.10), and names naturally (`pc2` before `pc10`). The stock console compares the text
+  letter by letter, as
+  [DnsServer#1873](https://github.com/TechnitiumSoftware/DnsServer/issues/1873) points out.
+- **About** no longer offers Liberapay. GitHub Sponsors, Ko-fi and PayPal stay.
 
 ---
 

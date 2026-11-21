@@ -4,6 +4,7 @@ import { ADVANCED_BLOCKING_DETAIL } from '../../../app/sections'
 import { noticeFromFailure, type Notice } from '../../../lib/notice'
 import { Button } from '../../../ui/Button'
 import { Check } from '../../../ui/Check'
+import { primaryNodeName, type ClusterNode } from '../../../ui/ClusterNodeSelect'
 import { Dialog } from '../../../ui/Dialog'
 import { Loading } from '../../../ui/Empty'
 import { Notifier } from '../../../ui/Notifier'
@@ -20,8 +21,8 @@ row menu has only `Query DNS Server` and `Allow Domain`, logs.js:539-552). It ad
 the row's name to the `allowed` list of the groups ticked here, and nothing else.
 
 Its limits are the visual editor's (deviation 45): only `apps/list`,
-`apps/config/get` and `apps/config/set`, with no `node`, so it edits the config of
-the server the console is connected to, as Config does; the config is patched, not
+`apps/config/get` and `apps/config/set`, called as Config calls them, so in a
+cluster it reads and writes the primary's config; the config is patched, not
 rebuilt; before writing it reads the config again and writes nothing if it changed;
 a config the editor would refuse is refused here too, with a way to the editor.
 
@@ -43,12 +44,17 @@ export function AllowInGroup({
   token,
   domain,
   clientIp,
+  nodes = [],
+  clusterInitialised = false,
   onClose,
   onDone,
 }: {
   token: string | null
   domain: string
   clientIp: string
+  /** The session's cluster nodes: both reads of the config go to the primary. */
+  nodes?: ClusterNode[]
+  clusterInitialised?: boolean
   onClose: () => void
   onDone: (n: Notice) => void
 }) {
@@ -56,6 +62,8 @@ export function AllowInGroup({
   const [chosen, setChosen] = useState<ReadonlySet<string>>(new Set())
   const [notice, setNotice] = useState<Notice | null>(null)
   const [busy, setBusy] = useState(false)
+  /* From the primary, as the app's Config dialog reads (apps.js:460). */
+  const primary = primaryNodeName(nodes, clusterInitialised)
 
   useEffect(() => {
     let live = true
@@ -68,7 +76,7 @@ export function AllowInGroup({
       if (versionState(app.version) === 'too-old') {
         return setPhase({ kind: 'unusable', text: `This needs Advanced Blocking ${MIN_VERSION} or later. This server has ${app.version}.` })
       }
-      const read = await getAppConfig(token, app.name)
+      const read = await getAppConfig(token, app.name, primary)
       if (!live) return
       if (read.kind !== 'ok') return setPhase({ kind: 'failed', text: noticeFromFailure(read).text })
       const text = read.data.response.config ?? ''
@@ -83,7 +91,7 @@ export function AllowInGroup({
     return () => {
       live = false
     }
-  }, [token, clientIp, domain])
+  }, [token, clientIp, domain, primary])
 
   async function allow() {
     if (phase.kind !== 'ready') return
@@ -95,7 +103,7 @@ export function AllowInGroup({
       return setNotice({ type: 'danger', title: 'Error!', text: `Nothing was saved: ${errors[0].message} Open the visual editor to fix it.` })
     }
     setBusy(true)
-    const read = await getAppConfig(token, phase.name)
+    const read = await getAppConfig(token, phase.name, primary)
     if (read.kind !== 'ok') {
       setBusy(false)
       return setNotice(noticeFromFailure(read))
@@ -130,7 +138,7 @@ export function AllowInGroup({
       close="Cancel"
       actions={
         phase.kind === 'ready' ? (
-          <Button variant="primary" disabled={busy} onClick={() => void allow()}>
+          <Button type="submit" variant="primary" disabled={busy} onClick={() => void allow()}>
             Allow
           </Button>
         ) : undefined

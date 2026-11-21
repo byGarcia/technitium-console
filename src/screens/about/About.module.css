@@ -71,6 +71,8 @@ so the whole row is the target; a link inside the sentence sits above that box.
 .button { composes: btn from '../../ui/Button.module.css'; text-decoration: none; }
 .wide { display: flex; width: 100%; margin-bottom: var(--s-4); }
 .funding { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-4); }
+/* An odd count leaves Star on GitHub, the one that is not a donation, across the row. */
+.funding > :first-child:nth-last-child(odd) { grid-column: 1 / -1; }
 
 /* Narrower: two columns of Technitium's blocks, the console's two side by side
    under them; then one column. */

@@ -568,26 +568,59 @@ server_env() {
   tr '\0' '\n' < "/proc/$1/environ" 2>/dev/null | sed -n "s/^$2=//p" | head -1 || true
 }
 LOG_GLOBS="/var/log/technitium/dns /etc/dns/logs /opt/technitium/dns/logs"
-server_logs() {
+STARTED_LINE='DNS Server (v[0-9.]*) was started successfully'
+server_logs() { # every log file, newest first
   for d in $LOG_GLOBS; do
     [ -d "$d" ] || continue
-    ls -1t "$d"/*.log 2>/dev/null | head -3
+    ls -1t "$d"/*.log 2>/dev/null || true
+  done
+}
+# The server writes one log file a day (LogManager.cs, yyyy-MM-dd.log) and says
+# it started only in the file of the day it started, so a server that has been
+# up for a week has that line a week back. The newest file that has it is the
+# one that describes the server running now, however far back it is.
+last_start_log() {
+  server_logs | while IFS= read -r ls_file; do
+    if grep -q "$STARTED_LINE" "$ls_file" 2>/dev/null; then
+      printf '%s\n' "$ls_file"
+      break
+    fi
   done
 }
 server_version() {
   # The version is printed at startup and nowhere an unauthenticated caller can
   # reach: api/user/checkForUpdate needs a session, and the console carries no
   # version string.
-  logs="$(server_logs)"
-  [ -n "$logs" ] || return 0
-  # shellcheck disable=SC2086
-  grep -ho 'DNS Server (v[0-9.]*)' $logs 2>/dev/null | tail -1 | tr -d '()' | sed 's/DNS Server //' || true
+  sv_log="$(last_start_log)"
+  [ -n "$sv_log" ] || return 0
+  grep -o "$STARTED_LINE" "$sv_log" 2>/dev/null | tail -1 \
+    | sed 's/^DNS Server (\(v[0-9.]*\)).*/\1/' || true
 }
 logged_variable_fallback() {
-  logs="$(server_logs)"
-  [ -n "$logs" ] || return 1
-  # shellcheck disable=SC2086
-  grep -q "$VAR_NAME environment variable does not exist" $logs 2>/dev/null
+  # Only the last start counts: the web service logs the fallback while it
+  # starts, before the server says it started (DnsWebService.cs, StartAsync),
+  # and an older start may have had a folder that is there now.
+  lv_log="$(last_start_log)"
+  [ -n "$lv_log" ] || return 1
+  awk -v fallback="$VAR_NAME environment variable does not exist" '
+    index($0, fallback) { seen = 1 }
+    index($0, "DNS Server (v") && index($0, ") was started successfully") { last = seen; seen = 0 }
+    END { exit last ? 0 : 1 }
+  ' "$lv_log" 2>/dev/null
+}
+# Whether the running server reads DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH, which
+# it does since 15.5 (upstream b5ab84fa, PR #2138). Its own DnsServerCore.dll is
+# asked first: .NET keeps string literals as UTF-16, so with the NUL bytes taken
+# out the name reads as plain text, and it is in every build that reads the
+# variable and in none before. The logs answer only when the library cannot be
+# read, because logging can be off and old files are deleted.
+honours_www_variable() {
+  hw_core="${SERVER_APP:+$SERVER_APP/DnsServerCore.dll}"
+  if [ -n "$hw_core" ] && [ -f "$hw_core" ] && [ -r "$hw_core" ]; then
+    tr -d '\000' < "$hw_core" | grep -qF "$VAR_NAME"
+    return
+  fi
+  at_least_15_5 "$SERVER_VERSION"
 }
 
 web_base() { [ -n "$WEB_URL" ] && printf '%s' "${WEB_URL%/}" || printf 'http://127.0.0.1:5380'; }
@@ -980,6 +1013,74 @@ SERVER_VERSION=""
 MANAGE_SYSTEMD="no"
 MANAGED_UNIT=""
 MANAGED_DROPIN=""
+MANAGED_SKIPPED=""
+
+# On 15.5+ systemd installs the console gets a folder of its own, outside the
+# DNS server's application folder, and the service is pointed at it. The unit
+# is matched to the running process, never selected merely by its name. Sets
+# MANAGED_UNIT and MANAGED_DROPIN, or says in MANAGED_SKIPPED why it cannot.
+managed_systemd_possible() {
+  MANAGED_SKIPPED=""
+  if [ "$CONFIGURE_SERVICE" != "yes" ]; then
+    MANAGED_SKIPPED="--no-configure-service was given"
+  elif ! command -v systemctl >/dev/null 2>&1; then
+    MANAGED_SKIPPED="systemctl is not available, so this is not a systemd install"
+  elif ! honours_www_variable; then
+    if [ -n "$SERVER_VERSION" ] || [ -r "$SERVER_APP/DnsServerCore.dll" ]; then
+      MANAGED_SKIPPED="this server does not read $VAR_NAME, which needs Technitium 15.5 or later"
+    else
+      MANAGED_SKIPPED="neither $SERVER_APP/DnsServerCore.dll nor the server's logs say whether it reads $VAR_NAME (Technitium 15.5 or later)"
+    fi
+  elif ! ms_unit_file="$(find_systemd_unit_for_app)"; then
+    MANAGED_SKIPPED="no single systemd unit runs $SERVER_APP/DnsServerApp.dll"
+  else
+    MANAGED_UNIT="$(basename "$ms_unit_file")"
+    MANAGED_DROPIN="/etc/systemd/system/$MANAGED_UNIT.d/technitium-console.conf"
+    if [ -e "$MANAGED_DROPIN" ] && [ "$(state_get managed_dropin)" != "$MANAGED_DROPIN" ]; then
+      MANAGED_SKIPPED="$MANAGED_DROPIN already exists and this installer did not write it"
+    fi
+  fi
+  [ -z "$MANAGED_SKIPPED" ]
+}
+
+# The lines that point a systemd unit at a console folder, for the administrator
+# to run when the installer could not.
+dropin_steps() { # unit or nothing, folder
+  ds_unit="${1:-<unit>}"
+  say "  sudo mkdir -p /etc/systemd/system/$ds_unit.d"
+  say "  printf '[Service]\\nEnvironment=$VAR_NAME=%s\\n' $(shq "$2") \\"
+  say "    | sudo tee /etc/systemd/system/$ds_unit.d/technitium-console.conf"
+  say "  sudo systemctl daemon-reload && sudo systemctl restart $ds_unit"
+}
+
+managed_systemd_refused() {
+  mr_owner="$(stat -c %U "$WWW_DIR" 2>/dev/null || stat -c %u "$WWW_DIR")"
+  printf '\n  \033[31m✗\033[0m %s belongs to %s, not root, so the console does not replace it.\n\n' "$WWW_DIR" "$mr_owner" >&2
+  {
+    say "    On Technitium 15.5 or later with systemd, the console goes in a folder"
+    say "    of its own instead, $CONSOLE_DIR, and the service is pointed at it."
+    say "    That was not possible here: $MANAGED_SKIPPED."
+    say ""
+    if [ "$CONFIGURE_SERVICE" != "yes" ]; then
+      say "    Run it again without --no-configure-service, or publish the console"
+      say "    there yourself with --dir $CONSOLE_DIR and point the service at it."
+    else
+      say "    To do it by hand, publish the console there:"
+      say ""
+      say "  $ONE_LINER --dir $CONSOLE_DIR"
+      say ""
+      say "    and then point the service at that folder:"
+      say ""
+      ms_unit=""
+      if command -v systemctl >/dev/null 2>&1 && ms_unit_file="$(find_systemd_unit_for_app)"; then
+        ms_unit="$(basename "$ms_unit_file")"
+      fi
+      dropin_steps "$ms_unit" "$CONSOLE_DIR"
+    fi
+    printf '\n'
+  } >&2
+  exit 1
+}
 
 resolve_target() {
   if [ -n "$INTO_VOLUME" ]; then
@@ -1010,6 +1111,25 @@ resolve_target() {
     MODE="${1:-replacement}"
     secure_tree "$WWW_DIR"
     refuse_links "$WWW_DIR"
+    if [ -n "$SERVER_PID" ] && [ "$WWW_DIR" != "$SERVER_APP/www" ]; then
+      # A folder the server already serves from its own variable has no stock
+      # console in it to back up: it is this console's, as without --dir.
+      if [ "$WWW_DIR" = "$(server_env "$SERVER_PID" "$VAR_NAME")" ]; then
+        MODE="side-by-side"
+      # --dir with the folder the README gives this console is the managed
+      # install, said out loud: the service is pointed at it the same way. It is
+      # a folder of its own either way, with the stock console left in www.
+      elif [ "$ACTION" = "install" ] && [ "$WWW_DIR" = "$CONSOLE_DIR" ] \
+        && [ -z "$(server_env "$SERVER_PID" "$VAR_NAME")" ]; then
+        MODE="side-by-side"
+        if managed_systemd_possible; then
+          MANAGE_SYSTEMD="yes"
+          say "The installer will add a systemd drop-in for $MANAGED_UNIT and restart it once."
+        elif [ "$CONFIGURE_SERVICE" = "yes" ]; then
+          warn "Not pointing the service at $WWW_DIR: $MANAGED_SKIPPED."
+        fi
+      fi
+    fi
     return 0
   fi
 
@@ -1057,30 +1177,29 @@ resolve_target() {
       fi
     fi
 
-    # On 15.5+ systemd installs, keep the alternative console outside the DNS
-    # server's application folder. The unit is matched to the process above,
-    # never selected merely by its name. Publishing happens before the drop-in
-    # is written, so the single restart can only point at a complete console.
-    if [ "$CONFIGURE_SERVICE" = "yes" ] && at_least_15_5 "$SERVER_VERSION" \
-      && command -v systemctl >/dev/null 2>&1 \
-      && managed_unit_file="$(find_systemd_unit_for_app)"; then
-      MANAGED_UNIT="$(basename "$managed_unit_file")"
-      MANAGED_DROPIN="/etc/systemd/system/$MANAGED_UNIT.d/technitium-console.conf"
-      if [ -e "$MANAGED_DROPIN" ] && [ "$(state_get managed_dropin)" != "$MANAGED_DROPIN" ]; then
-        warn "$MANAGED_DROPIN already exists and is not managed by this installer."
-        warn "Leaving it alone and using the server's own web root."
-      else
-        WWW_DIR="$CONSOLE_DIR"; MODE="side-by-side"; MANAGE_SYSTEMD="yes"
-        secure_tree "$WWW_DIR"
-        refuse_links "$WWW_DIR"
-        ok "Dedicated console folder" "$WWW_DIR"
-        say "The installer will add a systemd drop-in for $MANAGED_UNIT and restart it once."
-        return 0
-      fi
+    # Publishing happens before the drop-in is written, so the single restart
+    # can only point at a complete console.
+    if managed_systemd_possible; then
+      WWW_DIR="$CONSOLE_DIR"; MODE="side-by-side"; MANAGE_SYSTEMD="yes"
+      secure_tree "$WWW_DIR"
+      refuse_links "$WWW_DIR"
+      ok "Dedicated console folder" "$WWW_DIR"
+      say "The installer will add a systemd drop-in for $MANAGED_UNIT and restart it once."
+      return 0
     fi
 
     if [ -n "$app" ] && [ -d "$app" ]; then
       WWW_DIR="$app/www"; MODE="replacement"
+      # Technitium's own installer hands www to the service's account, which
+      # root does not publish into. That is the case the dedicated folder is
+      # for, so when it could not be set up the reason is what gets said.
+      if [ "$ACTION" = "install" ] && [ -d "$WWW_DIR" ] && [ "$(stat -c %u "$WWW_DIR")" != 0 ]; then
+        managed_systemd_refused
+      fi
+      if [ "$ACTION" = "install" ] && [ "$CONFIGURE_SERVICE" = "yes" ]; then
+        warn "Not giving the console a folder of its own: $MANAGED_SKIPPED."
+        warn "Replacing the server's own console instead."
+      fi
       secure_tree "$WWW_DIR"
       refuse_links "$WWW_DIR"
       ok "Technitium DNS Server found" "$WWW_DIR"
@@ -1173,11 +1292,37 @@ publish() { # src, dst, the folder snapshot wrote its lists in
 
 carry_custom_lists() { # from, to (used when the served folder changes)
   [ -d "$1/json" ] || return 0
-  cc_any="no"
+  # Only lists the destination does not have yet: those are never overwritten,
+  # so a list already copied by hand settles the question for that list.
+  cc_missing=""
   for cc_file in "$1"/json/*-custom.json; do
-    if [ -e "$cc_file" ] || [ -L "$cc_file" ]; then cc_any="yes"; break; fi
+    if [ -e "$cc_file" ] || [ -L "$cc_file" ]; then
+      [ -e "$2/json/$(basename "$cc_file")" ] || cc_missing="$cc_missing  $1/json/$(basename "$cc_file")
+"
+    fi
   done
-  [ "$cc_any" = "yes" ] || return 0
+  [ -n "$cc_missing" ] || return 0
+  # A tree another account can change could swap a list, or the place it goes,
+  # for a link to any file root can read or write, between the check and the
+  # copy. Root does not copy out of one or into one: the uninstall copies the
+  # lists back into a stock www that Technitium's installer gives the service.
+  for cc_tree in "$1" "$2"; do
+    ( secure_tree "$cc_tree" ) >/dev/null 2>&1 && continue
+    printf '\n  \033[31m✗\033[0m %s can be changed by an account other than root,\n' "$cc_tree" >&2
+    {
+      say "    so root does not copy your custom lists from $1 to $2."
+      say "    Nothing was changed. Check them, copy them yourself, and run this again:"
+      say ""
+      printf '%s' "$cc_missing" | sed 's/^/  /'
+      say ""
+      say "  sudo mkdir -p $(shq "$2/json")"
+      say "  sudo cp <each list above> $(shq "$2/json/")"
+      say ""
+      say "    Lists already there are left as they are."
+      printf '\n'
+    } >&2
+    exit 1
+  done
   secure_tree "$1"
   secure_tree "$2"
   for f in "$1"/json/*-custom.json; do
@@ -1578,7 +1723,22 @@ else
       ok "Serving the new console" "$(web_base)"
     else
       warn "The console is in place but $(web_base) is not serving it."
-      warn "If your web console answers somewhere else, pass --url and run this again."
+      if [ -n "$SERVER_PID" ] && [ "$WWW_DIR" != "$SERVER_APP/www" ] \
+        && [ "$WWW_DIR" != "$(server_env "$SERVER_PID" "$VAR_NAME")" ]; then
+        # A folder of its own, which the server does not know about yet: it
+        # reads the variable once, when it starts.
+        say ""
+        say "The server reads its web root from $VAR_NAME when it starts."
+        if command -v systemctl >/dev/null 2>&1 && ns_unit="$(find_systemd_unit_for_app)"; then
+          say "To point $(basename "$ns_unit") at $WWW_DIR:"
+          say ""
+          dropin_steps "$(basename "$ns_unit")" "$WWW_DIR"
+        else
+          say "Set it to $WWW_DIR in the environment the server starts with, and restart it."
+        fi
+      else
+        warn "If your web console answers somewhere else, pass --url and run this again."
+      fi
     fi
   fi
 fi

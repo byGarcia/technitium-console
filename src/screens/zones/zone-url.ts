@@ -28,7 +28,9 @@ const PARAM = 'zone'
 export const RECORDS_PAGE = 'rpage'
 export const RECORDS_NAME = 'rname'
 export const RECORDS_TYPE = 'rtype'
-const RECORDS = [RECORDS_PAGE, RECORDS_NAME, RECORDS_TYPE]
+/* `Data contains` (deviation 53), kept and dropped with the other two. */
+export const RECORDS_DATA = 'rdata'
+const RECORDS = [RECORDS_PAGE, RECORDS_NAME, RECORDS_TYPE, RECORDS_DATA]
 
 /** The zone the bar asks for, or `null` for the list. The root zone is `.`. */
 export function readZoneParam(search = window.location.search): string | null {

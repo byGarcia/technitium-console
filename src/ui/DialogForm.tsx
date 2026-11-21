@@ -13,7 +13,8 @@ modal row (`Row modal`, Administration's `MRow`) gets the same label, the same
 control and the same help, placed on top of each other instead of side by side.
 */
 
-/** The dialog's column. */
+/** The dialog's column. A `div`, not a `<form>`: the dialog around it is the form
+ *  (`ui/Dialog`), and a form cannot hold another. */
 export function DialogForm({ children }: { children: ReactNode }) {
   return <div className={styles.form}>{children}</div>
 }

@@ -1,4 +1,5 @@
 import { useId, useState, type ReactNode } from 'react'
+import { useLeaveGuard } from '../../app/leave-guard'
 import { flushSync } from 'react-dom'
 import { Button } from '../../ui/Button'
 import { Icon } from '../../ui/Icon'
@@ -138,6 +139,18 @@ export function ScopeForm({
   onNotice: (e: ScopeError) => void
 }) {
   const [f, setF] = useState<Form>(initial)
+  /*
+  Leaving the form with something changed asks first (deviation 51): another tab or
+  section, Back to the list or to another scope, a reload. Its address is the one it
+  opened on, the Scopes folder with this scope's `?scope=` or none for Add Scope.
+  Cancel and the path back to the list are the form's own way out and do not ask.
+  */
+  const [home] = useState(() => ({ path: window.location.pathname, scope: new URLSearchParams(window.location.search).get('scope') }))
+  const dirty = JSON.stringify(f) !== JSON.stringify(initial)
+  useLeaveGuard(dirty, (to) => {
+    const [path, search = ''] = to.split('?')
+    return path === home.path && new URLSearchParams(search).get('scope') === home.scope
+  })
   const [open, setOpen] = useState<Set<FoldTitle>>(() => new Set())
   const size = rangeSize(f.startingAddress, f.endingAddress)
   const sum = summarise(f)

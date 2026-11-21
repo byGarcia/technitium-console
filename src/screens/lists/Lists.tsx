@@ -164,7 +164,7 @@ export function ImportDomains({
       title={title}
       actions={
         <>
-          <Button variant="primary" disabled={busy} onClick={() => void runImport()}>
+          <Button type="submit" variant="primary" disabled={busy} onClick={() => void runImport()}>
             Import
           </Button>
         </>
@@ -316,12 +316,18 @@ export function Lists({
     primary.current = primaryNodeName(nodes, clusterInitialised)
   }, [nodes, clusterInitialised])
 
+  /* Each read is numbered and only the latest one's answer is applied: choosing a
+     node or opening a domain with a read in flight starts another one, and the older
+     answer must not draw its node under the one asked last (as `blocking/Rules.tsx`). */
+  const asked = useRef(0)
   const load = useCallback(
     async (domain: string, up?: boolean, fromPrimary = false) => {
+      const mine = ++asked.current
       /* other-zones.js:269 and 434: after a change, Allowed and Blocked are read
          back from the PRIMARY node, where the change was made. Cache never is. */
       const node = list === 'cache' ? cacheNode.current : fromPrimary ? primary.current : ''
       const outcome = await listNode(list, token, domain, up ? 'up' : undefined, node)
+      if (mine !== asked.current) return
       if (outcome.kind === 'ok') {
         nodeFrom.current = node
         setNode(outcome.data)

@@ -69,6 +69,18 @@ verdict() { # id, exit code of the case, text
   esac
 }
 
+# Makes a folder of $WORK that a case mounts into a container, and fills it, as
+# root. The installer publishes as root only into a folder that no other account
+# can change, and none above it either (secure_path), so a folder made here by
+# the user running this is refused before anything else is measured. Made in a
+# container, it is root's, as an administrator's folder for the console would
+# be. The host side only reads it afterwards; cleanup() removes it the same way.
+root_folder() { # folder under $WORK, [shell run in it as root: /dist is dist/]
+  docker run --rm -v "$WORK":/w -v "$ROOT/dist":/dist:ro busybox:stable sh -c \
+    'set -e; mkdir -p "/w/$1"; cd "/w/$1"; eval "$2"; chown -R 0:0 "/w/$1"; chmod -R go-w "/w/$1"' \
+    sh "$1" "${2:-:}"
+}
+
 # Runs a case body as root inside a fresh container. The body gets $ASSET and
 # the web root, and says "met" or "not met" with its exit code.
 case_run() {
@@ -173,7 +185,7 @@ EOF
 verdict "C8" $? "the web root holds the console and nothing else"
 
 # ------------------------------------------------------ C9 · bind-mounted root
-mkdir -p "$WORK/mnt"; cp -a "$ROOT/dist/." "$WORK/mnt/"
+root_folder mnt 'cp -R /dist/. .'
 cat > "$WORK/case9.sh" <<'EOF'
 sh /w/install.sh --from /w/console.tar.gz --yes >/dev/null 2>&1
 EOF
@@ -224,8 +236,7 @@ stop_server
 # folder that already holds a file of ours, and ask the web service for it. The
 # folder has to exist *before* the server starts, or a server that does honour
 # the variable falls back to the default and says so in its log.
-mkdir -p "$WORK/side"
-printf 'capability probe\n' > "$WORK/side/capability-probe.txt"
+root_folder side 'printf "capability probe\n" > capability-probe.txt'
 
 start_server -e DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH=/side -v "$WORK/side":/side
 CAPABLE=no
@@ -239,7 +250,7 @@ if [ "$CAPABLE" = "yes" ]; then
   # The capability file goes first: a folder holding a file that is not a
   # console is exactly what the installer must refuse to sweep (W6), and an
   # administrator's empty folder is what this case is about.
-  rm -f "$WORK/side/capability-probe.txt"
+  in_server "rm -f /side/capability-probe.txt"
   #
   # The list has to exist in the stock web root BEFORE the install, because half
   # of F3 is that the install carries it across. The other half is the way back.
@@ -604,9 +615,12 @@ sh /w/install.sh --from /w/console.tar.gz --yes 2>&1 | grep -q 'not verified'
 EOF
 verdict "C25" $? "a download that does not match the release's .sha256 is refused"
 
-# ---------------------- C31 · managed systemd folder, one restart and rollback
-case_run <<'EOF'
-set -e
+# ------------------------------- a systemd that only knows how to restart
+#
+# The image has no systemd. C31 and C32 get a unit naming the running
+# DnsServerApp.dll and a systemctl that restarts the server with or without the
+# drop-in's variable and counts restarts in /run/restarts. Sourced by the cases.
+cat > "$WORK/fake-systemd.sh" <<'EOF'
 mkdir -p /etc/systemd/system /usr/local/bin /run
 cat > /etc/systemd/system/dns.service <<'UNIT'
 [Service]
@@ -636,6 +650,12 @@ chmod +x /usr/local/bin/systemctl
 /usr/bin/dotnet /opt/technitium/dns/DnsServerApp.dll /etc/dns >/tmp/dns.log 2>&1 &
 printf '%s\n' "$!" > /run/dns.pid
 i=0; while [ "$i" -lt 60 ] && ! curl -sf -o /dev/null http://127.0.0.1:5380/; do i=$((i+1)); sleep 1; done
+EOF
+
+# ---------------------- C31 · managed systemd folder, one restart and rollback
+case_run <<'EOF'
+set -e
+. /w/fake-systemd.sh
 grep -q 'DNS Server (v15\.[5-9]' /var/log/technitium/dns/*.log
 printf '[{"name":"before"}]\n' > "$WWW/json/quick-block-lists-custom.json"
 
@@ -674,6 +694,85 @@ sh /w/install.sh --uninstall --yes && exit 1
 [ -f "/opt/technitium-console/$ASSET" ]
 EOF
 verdict "C31" $? "systemd gets a managed folder, one restart, clean uninstall and ownership checks"
+
+# ---------- C32 · Technitium's own Linux install, with the server up for days
+#
+# What Technitium's install.sh leaves: the application folder, www included,
+# belongs to the dns-server account. The server logs that it started only in
+# the file of the day it started, and writes one file a day, so after a few days
+# the newest files do not have that line. 1.4.2 looked for the version in the
+# newest three, found none, and refused the service-owned www instead of giving
+# the console its own folder (issue #35).
+case_run <<'EOF'
+set -e
+. /w/fake-systemd.sh
+LOGS=/var/log/technitium/dns
+grep -q 'DNS Server (v15\.[5-9]' "$LOGS"/*.log
+useradd -r -M -s /usr/sbin/nologin dns-server
+chown -R dns-server:dns-server /opt/technitium/dns
+for d in 1 2 3 4; do echo "[later] nothing about starting" > "$LOGS/later-$d.log"; touch -d "$d days" "$LOGS/later-$d.log"; done
+newest="$(ls -1t "$LOGS"/*.log | head -3)"
+# shellcheck disable=SC2086
+if grep -q 'was started successfully' $newest; then exit 1; fi
+
+echo "step: the first install gives the console its own folder"
+sh /w/install.sh --from /w/console.tar.gz --yes
+[ "$(cat /run/restarts)" = 1 ]
+[ -f /etc/systemd/system/dns.service.d/technitium-console.conf ]
+curl -sf -o /dev/null "http://127.0.0.1:5380/$ASSET"
+[ "$(stat -c %U "$WWW")" = dns-server ]
+[ -f "$WWW/js/main.js" ]
+[ ! -f "$WWW/$ASSET" ]
+
+echo "step: uninstall does not copy lists into the service's www as root"
+printf '[{"name":"mine"}]\n' > /opt/technitium-console/json/quick-block-lists-custom.json
+out="$(sh /w/install.sh --uninstall --yes 2>&1)" && exit 1
+printf '%s\n' "$out" | grep -q 'quick-block-lists-custom.json'
+[ "$(cat /run/restarts)" = 1 ]
+[ -f /etc/systemd/system/dns.service.d/technitium-console.conf ]
+
+echo "step: once copied by hand, uninstall goes ahead"
+cp /opt/technitium-console/json/quick-block-lists-custom.json "$WWW/json/"
+sh /w/install.sh --uninstall --yes
+[ "$(cat /run/restarts)" = 2 ]
+[ ! -e /etc/systemd/system/dns.service.d/technitium-console.conf ]
+[ ! -e /opt/technitium-console ]
+
+echo "step: when the folder of its own is not possible, it says why and how"
+out="$(sh /w/install.sh --from /w/console.tar.gz --yes --no-configure-service 2>&1)" && exit 1
+printf '%s\n' "$out" | grep -q 'belongs to dns-server'
+printf '%s\n' "$out" | grep -q -- '--no-configure-service was given'
+[ ! -e /opt/technitium-console ]
+[ "$(cat /run/restarts)" = 2 ]
+
+echo "step: a list in the service's www is not copied out of it as root"
+out="$(sh /w/install.sh --from /w/console.tar.gz --yes 2>&1)" && exit 1
+printf '%s\n' "$out" | grep -q 'quick-block-lists-custom.json'
+[ "$(cat /run/restarts)" = 2 ]
+[ ! -e /etc/systemd/system/dns.service.d/technitium-console.conf ]
+
+echo "step: with the list copied by hand, and no startup line in any log, the server's library answers"
+mkdir -p /opt/technitium-console/json
+cp "$WWW/json/quick-block-lists-custom.json" /opt/technitium-console/json/
+for f in "$LOGS"/*.log; do : > "$f"; done
+sh /w/install.sh --from /w/console.tar.gz --yes
+[ "$(cat /run/restarts)" = 3 ]
+curl -sf -o /dev/null "http://127.0.0.1:5380/$ASSET"
+grep -q mine /opt/technitium-console/json/quick-block-lists-custom.json
+rm "$WWW/json/quick-block-lists-custom.json" /opt/technitium-console/json/quick-block-lists-custom.json
+sh /w/install.sh --uninstall --yes
+[ "$(cat /run/restarts)" = 4 ]
+
+echo "step: --dir with the console's folder is the same managed install"
+sh /w/install.sh --from /w/console.tar.gz --yes --dir /opt/technitium-console
+[ "$(cat /run/restarts)" = 5 ]
+grep -qx 'mode=side-by-side' /var/lib/technitium-console/install.state
+curl -sf -o /dev/null "http://127.0.0.1:5380/$ASSET"
+sh /w/install.sh --uninstall --yes
+[ "$(cat /run/restarts)" = 6 ]
+[ ! -e /opt/technitium-console ]
+EOF
+verdict "C32" $? "a service-owned www and a server up for days still get the console a folder of its own"
 
 # ------------------------------------------------- Docker: the init image (D1–D4)
 #
@@ -804,8 +903,7 @@ served "$ASSET" || c28=1
 [ "$(curl -s "$(base)/json/quick-block-lists-custom.json")" = '[{"name":"mine"}]' ] || c28=1
 dc down -v >/dev/null 2>&1
 # A folder on the host, holding only a list written by hand before the first run.
-mkdir -p "$WORK/bind/json"
-printf '[{"name":"by hand"}]\n' > "$WORK/bind/json/quick-forwarders-list-custom.json"
+root_folder bind 'mkdir json; printf "[{\"name\":\"by hand\"}]\n" > json/quick-forwarders-list-custom.json'
 compose_file "$WORK/bind"
 dc up -d >>"$WORK/out" 2>&1 || c28=1
 [ "$(init_exit)" = "0" ] || c28=1
@@ -865,8 +963,11 @@ dc down -v >/dev/null 2>&1
 echo "step: an interrupted first copy, then the next run: c29=$c29" >> "$WORK/log29"
 dc create >>"$WORK/out" 2>&1 || c29=1
 # What a first copy stopped halfway leaves: the marker, some assets, no page.
+# Unpacked the way the installer unpacks, as root's files: the tarball's own
+# owner is whoever built it, and a volume holding that account's files is one
+# the installer rightly refuses to finish as root.
 docker run --rm --entrypoint sh -v "${PROJECT}_technitium-console:/target" "$INIT_IMAGE" -c \
-  'mkdir /tmp/x && tar -xzf /usr/share/technitium-console/technitium-console.tar.gz -C /tmp/x &&
+  'mkdir /tmp/x && tar --no-same-owner --no-same-permissions -xzf /usr/share/technitium-console/technitium-console.tar.gz -C /tmp/x &&
    cp -a /tmp/x/assets /target/ && printf "technitium-console\n" > /target/.technitium-console' >>"$WORK/out" 2>&1 || c29=1
 in_volume "[ -f /v/$ASSET ] && [ ! -e /v/index.html ]" || c29=1
 dc up -d >>"$WORK/out" 2>&1 || c29=1                   # the next up finishes it
@@ -877,9 +978,7 @@ in_volume '[ -f /v/.technitium-console ]' || c29=1
 dc down -v >/dev/null 2>&1
 
 echo "step: a host folder with custom lists and another file: c29=$c29" >> "$WORK/log29"
-mkdir -p "$WORK/mixed/json"
-printf '[{"name":"mine"}]\n' > "$WORK/mixed/json/quick-block-lists-custom.json"
-printf 'keep\n' > "$WORK/mixed/notes.txt"
+root_folder mixed 'mkdir json; printf "[{\"name\":\"mine\"}]\n" > json/quick-block-lists-custom.json; printf "keep\n" > notes.txt'
 compose_file "$WORK/mixed"
 dc up -d >>"$WORK/out" 2>&1 || c29=1
 [ "$(init_exit)" = "1" ] || c29=1
@@ -925,9 +1024,7 @@ while [ "$n" -lt 3 ]; do
 done
 
 echo "step: a folder holding the marker and a dns.config: c29=$c29" >> "$WORK/log29"
-mkdir -p "$WORK/confmark"
-printf 'technitium-console\n' > "$WORK/confmark/.technitium-console"
-printf '{}\n' > "$WORK/confmark/dns.config"
+root_folder confmark 'printf "technitium-console\n" > .technitium-console; printf "{}\n" > dns.config'
 compose_file "$WORK/confmark"
 dc up -d >>"$WORK/out" 2>&1 || c29=1
 [ "$(init_exit)" = "1" ] || c29=1
@@ -970,12 +1067,17 @@ section "$dns" | grep -qF "$dcp up -d --remove-orphans" || c30=1
 section "$dns" | grep -q "docker volume rm ${PROJECT}_technitium-console" || c30=1
 dc down -v >/dev/null 2>&1
 echo "step: a host folder over www, installed with --dir (the README before this): c30=$c30" >> "$WORK/log30"
-mkdir -p "$WORK/legacy"
+root_folder legacy
 start_server -v "$WORK/legacy:$WWW:ro"
 # A second server on the same folder, read-write: its own line, and one removal.
 docker rm -f "$NAME-rw" >/dev/null 2>&1
 docker run -d --name "$NAME-rw" -v "$WORK/legacy:$WWW" "$IMAGE" >/dev/null 2>&1 || c30=1
-docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$WORK/legacy:$WORK/legacy" \
+# The folder keeps its host path in there, the one docker inspect reports. Every
+# folder above it is then the container's, and /tmp among them is open to every
+# account, which secure_path rightly refuses to publish under as root. A /tmp
+# of root's own stands in for a host where the way to the folder is root's.
+docker run --rm --tmpfs /tmp:mode=0755 \
+  -v /var/run/docker.sock:/var/run/docker.sock -v "$WORK/legacy:$WORK/legacy" \
   -v "$WORK/console.tar.gz:/console.tar.gz:ro" -v "$INSTALLER:/install.sh:ro" docker:cli \
   sh -c "sh /install.sh --dir $WORK/legacy --from /console.tar.gz --yes && sh /install.sh --uninstall --dir $WORK/legacy" \
   > "$WORK/out" 2>&1 || c30=1

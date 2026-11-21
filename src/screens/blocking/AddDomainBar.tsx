@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { dropParams, readParam } from '../../lib/url-state'
-import { addDomain, type DomainList } from '../../api/zonelists'
+import { addDomain, deleteDomain, type DomainList } from '../../api/zonelists'
 import { readRuleExport } from '../../api/blocking'
 import { Icon } from '../../ui/Icon'
 import { Panel, Body } from '../../ui/Panel'
@@ -15,6 +15,7 @@ import { moreLists } from './extra-lists'
 import { missing, type Permissions } from './permissions'
 import { asciiName, ruleHint } from './rule-match'
 import { mergeRules, type Rule } from './rules-model'
+import { deleteNeed, deletedNotice } from './undo'
 import styles from './Blocking.module.css'
 
 /*
@@ -65,6 +66,15 @@ them; a Block or an Allow made here drops them, so the next name reads them agai
 Never a read per keystroke, and never the DNS query Check makes: the block lists
 are Check's to answer. It is tied to the field with `aria-describedby`, not a live
 region, so a screen reader is not read a sentence per letter.
+
+UNDO ON THE RESULT (Adrián's decision, 2026-11-20, deviation 2). Enter still blocks,
+as upstream. The `Blocked!` or `Allowed!` alert, upstream's, offers `Undo`, OURS, the
+word Rules' undo uses (`undo.ts`): it sends `blocked/delete` or `allowed/delete` for
+the name as it was added, and says so with upstream's `Deleted!` alert. Only when it
+can take back exactly what was done: the bar knows the rules (the table's on Rules,
+its own copy on Overview) and the name was not already a rule of that list, since
+adding it again changed nothing and Undo would delete the older rule; and the
+session has Delete on that list.
 */
 const HINT_CLASS = { blocked: styles.hintBlocked, allowed: styles.hintAllowed, none: styles.hintNone } as const
 
@@ -212,6 +222,14 @@ export function AddDomainBar({
       return
     }
 
+    /* Undo takes back only a rule this Block or Allow created (see the header). */
+    const name = asciiName(domain)
+    const undoable =
+      known != null &&
+      name != null &&
+      !known.some((r) => r.list === list && r.domain === name) &&
+      missing(permissions, deleteNeed(list)) == null
+
     setBusy(true)
     const outcome = await addDomain(list, token, domain)
     setBusy(false)
@@ -222,17 +240,34 @@ export function AddDomainBar({
 
     setField('')
     forget()
-    /* The rules changed: the bar's own copy is read again with the next name. */
+    rulesChanged()
+    const undo = undoable ? { action: { label: 'Undo', run: () => void undoAdd(list, domain) } } : {}
+    onNotice(
+      list === 'allowed'
+        ? { type: 'success', title: 'Allowed!', text: `Domain '${domain}' was added to Allowed Zone successfully.`, ...undo }
+        : { type: 'success', title: 'Blocked!', text: `Domain '${domain}' was added to Blocked Zone successfully.`, ...undo },
+    )
+    onChanged(list, domain)
+  }
+
+  /** The rules changed: the bar's own copy is read again with the next name. */
+  function rulesChanged() {
     if (rules === undefined) {
       ownAsked.current++
       setOwn(undefined)
     }
-    onNotice(
-      list === 'allowed'
-        ? { type: 'success', title: 'Allowed!', text: `Domain '${domain}' was added to Allowed Zone successfully.` }
-        : { type: 'success', title: 'Blocked!', text: `Domain '${domain}' was added to Blocked Zone successfully.` },
-    )
-    onChanged(list, domain)
+  }
+
+  async function undoAdd(list: DomainList, domain: string) {
+    const outcome = await deleteDomain(list, token, domain)
+    if (outcome.kind !== 'ok') {
+      onNotice(noticeFromFailure(outcome))
+      return
+    }
+    rulesChanged()
+    onNotice(deletedNotice({ domain, list }))
+    /* No domain to open: the tree goes back to the list's root, as after a Delete. */
+    onChanged(list, '')
   }
 
   return (

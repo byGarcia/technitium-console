@@ -195,9 +195,14 @@ export function ZoneList({
   */
   const summaryWanted = useRef(true)
   const summarySeq = useRef(0)
+  /* The paged read follows the same rule: only the newest load's answer lands. A
+     refresh for a new node, Go, the pager or a summary chip can each start one with
+     another in flight, and an older page must not paint over the one asked last. */
+  const pageSeq = useRef(0)
 
   const load = useCallback(
     async (page: number, typeOverride?: string) => {
+      const mine = ++pageSeq.current
       if (summaryWanted.current) {
         summaryWanted.current = false
         const seq = ++summarySeq.current
@@ -208,8 +213,11 @@ export function ZoneList({
         })
       }
       /* In the view across nodes the one-node page is not drawn: it is not read either
-         (review of 2026-11-06). The across view reads again on the bump below. */
+         (review of 2026-11-06). The across view reads again on the bump below. A
+         one-node page still in flight lost its turn above and will not release
+         `busy`, so this does. */
       if (acrossRef.current) {
+        setBusy(false)
         setAppliedType(typeOverride ?? typeFilter)
         setAppliedName(nameFilter)
         setLoads((n) => n + 1)
@@ -224,6 +232,7 @@ export function ZoneList({
         zonesPerPage: perPage,
         node,
       })
+      if (mine !== pageSeq.current) return
       setBusy(false)
 
       if (r.kind !== 'ok') {
@@ -806,9 +815,9 @@ interface RowProps {
 }
 
 /*
-What each column sorts by is THE TEXT YOU SEE, just like upstream
-(`sortTable('tableZonesBody', 1..8)`). That is why `Serial` is read as a string
-and not as a number: that way the order matches the old console's.
+What each column sorts by is what you see, as upstream
+(`sortTable('tableZonesBody', 1..8)`), compared the way `useSort` compares it
+(deviation 48): `Serial` as a number, the dates by their drawn text.
 */
 const KEYS: Keys<Zone> = {
   zone: (z) => zoneNameOf(z),

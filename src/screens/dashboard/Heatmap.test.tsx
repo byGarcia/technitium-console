@@ -40,8 +40,20 @@ describe('the week by hour', () => {
     expect(await screen.findByLabelText('Thu 10/15, 13:00 to 14:00: 40 queries')).toBeInTheDocument()
     expect(spy.mock.calls.length).toBeGreaterThanOrEqual(1)
     for (const c of spy.mock.calls) expect(c[3]).toBe('ns2.test')
-    /* The hour in progress is not drawn as a figure. */
-    expect(screen.getByLabelText('Thu 10/15, 14:00: no data')).toBeInTheDocument()
+    /* The hour in progress is not drawn as a figure, nor as an empty hour: it is
+       marked as running. The hours after it have no data yet. */
+    expect(screen.getByLabelText('Thu 10/15, 14:00 to 15:00: in progress, counted when the hour ends')).toBeInTheDocument()
+    expect(screen.getByLabelText('Thu 10/15, 15:00: no data')).toBeInTheDocument()
+  })
+
+  it('the hour in progress opens Query Logs for that hour too', async () => {
+    serve()
+    const jump = vi.fn()
+    render(<Heatmap token="t" node="" hour={NOW_HOUR} jump={jump} />)
+    await userEvent.click(await screen.findByRole('button', { name: 'Thu 10/15, 14:00 to 15:00: in progress, counted when the hour ends' }))
+    const f = jump.mock.calls[0][0]
+    expect(toIso(f.start)).toBe(new Date(2026, 9, 15, 14).toISOString())
+    expect(toIso(f.end)).toBe(new Date(new Date(2026, 9, 15, 15).getTime() - 1000).toISOString())
   })
 
   it('a cell opens Query Logs for its hour, From its start To its last second', async () => {

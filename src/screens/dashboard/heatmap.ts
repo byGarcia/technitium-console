@@ -21,8 +21,11 @@ whole hours, each one by hour, and stitched together:
     START of its hour in the active display timezone, which is where the rows and columns
     are read. In a zone a half hour off UTC, a cell is the hour starting at :30.
 
-The hour in progress is not asked: the server counts an hour as it closes (Last
-Day leaves it out for the same reason), so it would be a part shown as a whole.
+The hour in progress is not asked. Last Day leaves it out, and Custom gives it only
+as far as it has gone (checked against v15.6.2 on 2026-11-20); the week is asked once
+an hour, so that figure would be a part shown as a whole and fall behind within
+minutes. Its cell is marked as running instead (`HeatRow.live`), with no figure, so a
+busy Last Hour does not sit beside an hour that looks empty.
 */
 
 const HOUR = 3_600_000
@@ -32,7 +35,15 @@ export const DAYS = 7
 
 const pad = (n: number) => String(n).padStart(2, '0')
 
-function getDatePartsInTz(epochMs: number, tz: SupportedTimezone): { dateKey: string; year: number; month: number; day: number; hour: number; weekday: number } {
+function getDatePartsInTz(epochMs: number, tz: SupportedTimezone): {
+  dateKey: string
+  year: number
+  month: number
+  day: number
+  hour: number
+  minute: number
+  weekday: number
+} {
   const d = new Date(epochMs)
   if (tz === 'local') {
     return {
@@ -41,6 +52,7 @@ function getDatePartsInTz(epochMs: number, tz: SupportedTimezone): { dateKey: st
       month: d.getMonth() + 1,
       day: d.getDate(),
       hour: d.getHours(),
+      minute: d.getMinutes(),
       weekday: d.getDay(),
     }
   }
@@ -59,6 +71,7 @@ function getDatePartsInTz(epochMs: number, tz: SupportedTimezone): { dateKey: st
     const m = Number(parts.find((p) => p.type === 'month')?.value ?? d.getUTCMonth() + 1)
     const day = Number(parts.find((p) => p.type === 'day')?.value ?? d.getUTCDate())
     const hr = Number(parts.find((p) => p.type === 'hour')?.value ?? d.getUTCHours())
+    const min = Number(parts.find((p) => p.type === 'minute')?.value ?? d.getUTCMinutes())
     const wFmt = new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday: 'short' })
     const wStr = wFmt.format(d)
     const wIdx = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(wStr)
@@ -68,6 +81,7 @@ function getDatePartsInTz(epochMs: number, tz: SupportedTimezone): { dateKey: st
       month: m,
       day,
       hour: hr,
+      minute: min,
       weekday: wIdx >= 0 ? wIdx : d.getUTCDay(),
     }
   } catch {
@@ -77,6 +91,7 @@ function getDatePartsInTz(epochMs: number, tz: SupportedTimezone): { dateKey: st
       month: d.getMonth() + 1,
       day: d.getDate(),
       hour: d.getHours(),
+      minute: d.getMinutes(),
       weekday: d.getDay(),
     }
   }
@@ -87,13 +102,15 @@ function getDatePartsInTz(epochMs: number, tz: SupportedTimezone): { dateKey: st
 export function weekSpan(now: number, tz?: SupportedTimezone): { from: number; to: number } {
   const resolvedTz = tz ?? getTimezone()
   if (resolvedTz === 'local') {
-    const d = new Date(now)
-    const midnight = new Date(d.getFullYear(), d.getMonth(), d.getDate() - (DAYS - 1)).getTime()
+    const today = new Date(now)
+    const midnight = new Date(today.getFullYear(), today.getMonth(), today.getDate() - (DAYS - 1)).getTime()
     return { from: Math.floor(midnight / HOUR) * HOUR, to: Math.floor(now / HOUR) * HOUR }
   }
-  // Approximate 7 days back in UTC, then floor to hour
-  const fromEst = now - (DAYS - 1) * DAY - 24 * HOUR
-  return { from: Math.floor(fromEst / HOUR) * HOUR, to: Math.floor(now / HOUR) * HOUR }
+  const p = getDatePartsInTz(now, resolvedTz)
+  const elapsedToday = (p.hour * 3600 + p.minute * 60) * 1000 + (now % 60000)
+  const todayMidnightInTz = now - elapsedToday
+  const sixDaysAgoMidnight = todayMidnightInTz - (DAYS - 1) * DAY
+  return { from: Math.floor(sixDaysAgoMidnight / HOUR) * HOUR, to: Math.floor(now / HOUR) * HOUR }
 }
 
 /** The requests that cover `[from, to)` by hour, in as few even pieces as fit.
@@ -151,6 +168,9 @@ export interface HeatRow {
   /** 24 cells, by the active timezone's hour; `null` where there is no hour to show (later
    *  today, or an hour a clock change skipped). */
   cells: (HeatCell | null)[]
+  /** The browser's hour of the hour in progress, on today's row; `null` elsewhere,
+   *  and where a clock change folds it into an hour already counted. */
+  live: number | null
 }
 
 const WEEKDAY = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -177,7 +197,7 @@ export function heatRows(hours: Map<number, number>, now: number, tz?: Supported
     const today = new Date(now)
     for (let back = DAYS - 1; back >= 0; back--) {
       const day = new Date(today.getFullYear(), today.getMonth(), today.getDate() - back).getTime()
-      rows.push({ day, label: dayLabel(day), short: dayShort(day), cells: Array.from({ length: 24 }, () => null) })
+      rows.push({ day, label: dayLabel(day), short: dayShort(day), cells: Array.from({ length: 24 }, () => null), live: null })
     }
     const byDay = new Map(rows.map((r) => [r.day, r]))
     for (const [from, count] of [...hours.entries()].sort((a, b) => a[0] - b[0])) {
@@ -189,6 +209,9 @@ export function heatRows(hours: Map<number, number>, now: number, tz?: Supported
         ? { from, to: from + HOUR, count }
         : { from: cell.from, to: from + HOUR, count: cell.count + count }
     }
+    const running = new Date(weekSpan(now, 'local').to)
+    const todayRow = byDay.get(new Date(running.getFullYear(), running.getMonth(), running.getDate()).getTime())
+    if (todayRow != null && todayRow.cells[running.getHours()] == null) todayRow.live = running.getHours()
     return rows
   }
 
@@ -204,6 +227,7 @@ export function heatRows(hours: Map<number, number>, now: number, tz?: Supported
       short,
       dateKey: p.dateKey,
       cells: Array.from({ length: 24 }, () => null),
+      live: null,
     })
   }
 
@@ -221,6 +245,12 @@ export function heatRows(hours: Map<number, number>, now: number, tz?: Supported
       : { from: cell.from, to: from + HOUR, count: cell.count + count }
   }
 
+  const runningTime = weekSpan(now, resolvedTz).to
+  const runningParts = getDatePartsInTz(runningTime, resolvedTz)
+  const todayRow = byDateKey.get(runningParts.dateKey)
+  if (todayRow != null && todayRow.cells[runningParts.hour] == null) {
+    todayRow.live = runningParts.hour
+  }
   return rows
 }
 

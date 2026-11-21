@@ -1,26 +1,19 @@
 import { useEffect, useRef, useState } from 'react'
-import { listApps } from '../../api/apps'
-import { resolve } from '../../api/dnsclient'
 import { readSettings } from '../../api/settings'
 import type { QuickEntry } from '../../lib/quick-lists'
 import { loadQuickList } from '../../lib/quick-lists'
 import { noticeFromFailure } from '../../lib/notice'
 import { minuteStamp } from '../../lib/dates'
-import { isAdvancedBlocking } from '../apps/app-kinds'
 import { num2 } from '../dashboard/metrics'
 import { Panel, Body } from '../../ui/Panel'
 import { PermissionButton } from '../../ui/PermissionButton'
 import { RouteLink } from '../../ui/RouteLink'
 import { Empty, Failure, Loading } from '../../ui/Empty'
-import {
-  blockingReasons, reportSilence, reportedListName, serverOwnAddress,
-  type BlockReason, type Missing, type ReportSilence,
-} from './check-domain'
+import { serverOwnAddress } from './check-domain'
 import { moreLists } from './extra-lists'
-import { requiresText } from './permissions'
 import {
-  cachedReport, countLists, LOOKUP_CAP, namesToCount, planLookups, readBlockedLog, storeReport,
-  type CountedList, type CountResult, type LoggedNames,
+  cachedReport, countLists, heldText, listLabel, lookUpNames, LOOKUP_CAP, namesToCount, planLookups, readBlockedLog,
+  silenceOf, type CountResult, type Held, type LoggedNames, type Report,
 } from './list-hits'
 import type { LoggingApp } from './logging-app'
 import dash from '../dashboard/Dashboard.module.css'
@@ -69,13 +62,6 @@ and the link `Blocking › Settings`.
 is the name drawn when a URL has no catalogue name and no file name.
 */
 
-const LOOKUP_WIDTH = 4
-
-interface Report {
-  ok: boolean
-  reasons: BlockReason[]
-}
-
 interface Counted {
   at: string
   logged: LoggedNames
@@ -87,45 +73,12 @@ interface Counted {
   catalog: readonly QuickEntry[]
 }
 
-type Held = ReportSilence | { kind: 'unread'; missing: Missing }
-
 type View =
   | { kind: 'idle' }
   | { kind: 'busy' }
   | { kind: 'failed'; text: string }
   | { kind: 'held'; held: Held }
   | { kind: 'ok'; counted: Counted }
-
-async function mapPool<T>(items: readonly T[], limit: number, fn: (item: T) => Promise<void>): Promise<void> {
-  const workers = Math.min(limit, items.length)
-  if (workers === 0) return
-  let cursor = 0
-  async function run(): Promise<void> {
-    while (cursor < items.length) {
-      const index = cursor++
-      await fn(items[index])
-    }
-  }
-  await Promise.all(Array.from({ length: workers }, () => run()))
-}
-
-function listLabel(list: CountedList, catalog: readonly QuickEntry[]): string {
-  if (list.app || list.url === '') {
-    return list.group != null && list.group !== '' ? `Advanced Blocking · ${list.group}` : 'Advanced Blocking'
-  }
-  return reportedListName(list.url, catalog) ?? fileName(list.url)
-}
-
-function fileName(url: string): string {
-  try {
-    const parsed = new URL(url)
-    const seg = parsed.pathname.split('/').filter((part) => part !== '').pop()
-    return seg || parsed.hostname || 'Block list'
-  } catch {
-    const seg = url.split('/').filter((part) => part !== '').pop()
-    return seg || 'Block list'
-  }
-}
 
 function note(counted: Counted): string {
   const parts: string[] = []
@@ -147,22 +100,6 @@ function note(counted: Counted): string {
   return parts.join(' ')
 }
 
-function heldText(held: Held): string {
-  switch (held.kind) {
-    case 'off':
-      return held.paused
-        ? 'Blocking is paused, so nothing was looked up.'
-        : 'Blocking is disabled, so nothing was looked up.'
-    case 'unreported':
-      return 'Allow TXT Blocking Report is off, so this server does not say which list matched. Nothing was looked up.'
-    case 'bypassed':
-      return `This server's own address, ${held.ip}, is on the Blocking Bypass List, so a lookup from here is never blocked. Nothing was looked up.`
-    case 'unread':
-      return 'need' in held.missing
-        ? `The blocking settings were not checked. ${requiresText(held.missing.need)}`
-        : 'Could not read the blocking settings. Nothing was looked up.'
-  }
-}
 
 const SETTINGS_LINK = <RouteLink to={{ section: 'blocking', sub: 'Settings' }}>Blocking › Settings</RouteLink>
 
@@ -219,14 +156,8 @@ export function ListHits({
       setView({ kind: 'held', held: { kind: 'unread', missing: { failed: true } } })
       return
     }
-    let silence = reportSilence(settingsOutcome.data)
-    if (silence != null && silence.kind !== 'bypassed') {
-      const apps = await listApps(token, where)
-      if (mine !== asked.current) return
-      if (apps.kind === 'ok' && (apps.data.response.apps ?? []).some(isAdvancedBlocking)) {
-        silence = reportSilence(settingsOutcome.data, Date.now(), true)
-      }
-    }
+    const silence = await silenceOf(token, settingsOutcome.data, where)
+    if (mine !== asked.current) return
     if (silence != null) {
       setView({ kind: 'held', held: silence })
       return
@@ -245,23 +176,9 @@ export function ListHits({
       found.set(row.name, { ok: cached.ok, reasons: cached.reasons })
     }
 
-    await mapPool(plan.fetch, LOOKUP_WIDTH, async (row) => {
-      stats.lookups++
-      const outcome = await resolve(token, {
-        server: 'this-server',
-        domain: row.name,
-        type: 'TXT',
-        protocol: 'UDP',
-        dnssec: false,
-        eDnsClientSubnet: '',
-        node: where,
-      })
-      const report: Report = outcome.kind === 'ok'
-        ? { ok: true, reasons: blockingReasons(outcome.data.response?.result) }
-        : { ok: false, reasons: [] }
-      storeReport(where, row.name, report)
-      found.set(row.name, report)
-    })
+    const looked = await lookUpNames(token, plan.fetch.map((row) => row.name), where)
+    stats.lookups = plan.fetch.length
+    for (const [name, report] of looked) found.set(name, report)
     if (mine !== asked.current) return
 
     const result = countLists([...plan.cached, ...plan.fetch], found)

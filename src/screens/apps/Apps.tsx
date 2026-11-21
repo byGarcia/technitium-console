@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   downloadAndUpdate,
   getAppConfig,
@@ -26,6 +26,7 @@ import styles from './Apps.module.css'
 import { noticeFromFailure } from '../../lib/notice'
 import { Notifier } from '../../ui/Notifier'
 import { Confirm } from '../../ui/Confirm'
+import { primaryNodeName, type ClusterNode } from '../../ui/ClusterNodeSelect'
 
 /*
 A replica of the Apps tab (apps.js + index.html:807-835), redrawn on 2026-11-06 in
@@ -61,7 +62,16 @@ export function error(outcome: { kind: string; message?: string }): AlertState {
   return noticeFromFailure(outcome)
 }
 
-export function Apps({ token }: { token: string | null }) {
+export function Apps({
+  token,
+  nodes = [],
+  clusterInitialised = false,
+}: {
+  token: string | null
+  /** The session's cluster nodes: the config is read from the primary. */
+  nodes?: ClusterNode[]
+  clusterInitialised?: boolean
+}) {
   const [apps, setApps] = useState<InstalledApp[] | null>(null)
   const [alert, setAlert] = useState<AlertState | null>(null)
   const [modal, setModal] = useState<Modal | null>(null)
@@ -78,8 +88,14 @@ export function Apps({ token }: { token: string | null }) {
   }, [kindFilter, search])
   useEffect(() => () => dropParams(['kind', 'q']), [])
 
+  /* Only the latest read's answer is applied: every install, update or uninstall
+     reads the list again, and an older read answering last would draw the apps as
+     they were before the newer change. */
+  const asked = useRef(0)
   const reload = useCallback(async () => {
+    const mine = ++asked.current
     const outcome = await listApps(token)
+    if (mine !== asked.current) return
     if (outcome.kind === 'ok') {
       setApps(outcome.data.response.apps)
       setFailure(false)
@@ -154,7 +170,7 @@ export function Apps({ token }: { token: string | null }) {
   // cluster's primary node. `config` can come null; the editor is left empty.
   async function openConfig(name: string) {
     setBusy(name)
-    const outcome = await getAppConfig(token, name)
+    const outcome = await getAppConfig(token, name, primaryNodeName(nodes, clusterInitialised))
     setBusy(null)
 
     if (outcome.kind !== 'ok') {

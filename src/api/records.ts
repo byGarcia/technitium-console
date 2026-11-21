@@ -44,6 +44,8 @@ export interface ResourceRecord {
   expiryTtl: number
   expiryTtlString: string
   comments?: string
+  /** The name's Unicode form, sent beside an internationalized name (15.6.2). */
+  nameIdn?: string
   /** Only on NS records with glue. */
   glueRecords?: string[]
 }

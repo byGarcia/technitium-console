@@ -7,7 +7,7 @@ import { Field } from '../../ui/Field'
 /*
 The display timezone dialog: allows selecting persistent display timezone across
 all timestamps in the console (Query Logs, View Logs, Dashboard, Clients, DHCP, etc.).
-Defaults to IST (Asia/Kolkata), with standard industry timezones across all regions
+Defaults to browser local time ('local'), with standard industry timezones across all regions
 and the exhaustive IANA Time Zone Database (Unicode CLDR) available.
 */
 

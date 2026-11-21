@@ -43,9 +43,19 @@
 .key { composes: key from '../../ui/record.module.css'; }
 .showIt { composes: showIt from '../../ui/record.module.css'; }
 .meta { composes: meta from '../../ui/record.module.css'; }
-/* A record's dates on one line, each pair kept whole, separated by a dot. */
-.footLine { display: flex; flex-wrap: wrap; column-gap: var(--s-8); row-gap: var(--s-1); }
-.footLine > span + span::before { content: '·'; margin-right: var(--s-8); margin-left: calc(-1 * var(--s-4)); color: var(--line); }
+/* A record's dates on one line, each pair kept whole, separated by a dot. The dot
+   sits in the space before each pair, and the line is clipped by that space on the
+   left, so a pair that wraps to the start of a line takes no dot with it: the dot
+   never starts a line (2026-11-20). */
+.footLine {
+  display: flex;
+  flex-wrap: wrap;
+  row-gap: var(--s-1);
+  margin-left: calc(-1 * var(--s-8));
+  clip-path: inset(0 0 0 var(--s-8));
+}
+.footLine > span { padding-left: var(--s-8); }
+.footLine > span::before { content: '·'; display: inline-block; width: var(--s-8); margin-left: calc(-1 * var(--s-8)); text-align: center; color: var(--line); }
 
 /* A zone's facts in its header, beside the state tags: quiet text, the value in ink. */
 .fact { font-size: var(--t-3); color: var(--mute); align-self: center; }
@@ -53,6 +63,21 @@
 
 /* The type and, when it applies, the Disabled pill on one line. */
 .typeCell { display: inline-flex; align-items: center; gap: var(--s-3); flex-wrap: wrap; }
+
+/* A record's owner name, capped: a long one wraps at its dots (and a label longer
+   than the cap at its hyphens, `ui/DomainName`) instead of widening the column
+   until Data has no room. On the stacked card it has the whole line. */
+.ownerName { display: block; max-width: 32ch; }
+[data-stacked] .ownerName { max-width: none; }
+
+/* The zone's SOA (`ZoneOverview`). Its two names take a line each across the
+   cell, so they break at their dots: in half the cell they had about 140 px at
+   1440 and 70 at 390, and broke every few letters. On a phone the Records and
+   SOA cells also take the whole row. */
+.soaName { grid-column: 1 / -1; }
+@media (max-width: 560px) {
+  .overviewWide { grid-column: 1 / -1; }
+}
 
 /* A run of records with one owner: the name is drawn once (see ZoneRecords). The
    faded name stays in the DOM, and the stacked card shows it again. */
@@ -184,6 +209,19 @@ the table.
 
 /* The fields in a DataTable's toolbar and foot (ui/DataTable), each its width. */
 .typeField { width: 170px; }
+/* `Data contains` (deviation 53): it grows with Name, the other field a value is typed into. */
+.dataField { flex: 1 1 220px; min-width: 0; }
+/* The count and the three verbs on the ticked records (deviation 54): they wrap
+   among themselves when the toolbar's end is narrower than they are, as on a phone. */
+.bulkActs { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--s-6); min-width: 0; }
+.bulkCount { white-space: nowrap; }
+/* On a phone the count takes a line of its own. Sharing the verbs' line, its
+   length decided where they wrapped: the first tick turned `1-10 (10) of 32
+   records (page 1 of 4)` into `1 of 9 records selected`, the bar went from three
+   lines to two and the table jumped up under the finger (390 px, 2026-11-20). */
+@media (max-width: 560px) {
+  .bulkCount { flex-basis: 100%; text-align: right; }
+}
 .pageField { width: 150px; }
 .perPage { width: 200px; }
 .pageField input { text-align: center; }

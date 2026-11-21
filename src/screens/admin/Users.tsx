@@ -529,7 +529,7 @@ function AddUser({
       title="Add User"
       actions={
         <>
-          <Button variant="primary" disabled={busy} onClick={() => void add()}>
+          <Button type="submit" variant="primary" disabled={busy} onClick={() => void add()}>
             Add
           </Button>
         </>
@@ -651,7 +651,7 @@ function ResetPassword({
       title="Reset Password"
       actions={
         <>
-          <Button variant="primary" disabled={busy} onClick={() => void save()}>
+          <Button type="submit" variant="primary" disabled={busy} onClick={() => void save()}>
             Reset
           </Button>
         </>

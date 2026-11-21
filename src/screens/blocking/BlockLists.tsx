@@ -1,6 +1,8 @@
 import { useCallback, useContext, useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { readSettings, setSettings, forceUpdateBlockLists } from '../../api/settings'
 import { getDashboardStats } from '../../api/dashboard'
+import { useLeaveGuard } from '../../app/leave-guard'
+import { toTrail } from '../../app/route'
 import { loadQuickList, type QuickEntry } from '../../lib/quick-lists'
 import { nextUpdateText } from '../settings/panes/Blocking'
 import { SectionHeader } from '../../ui/SectionHeader'
@@ -479,6 +481,8 @@ export function BlockLists({
     onDirty?.(dirty)
   }, [dirty, onDirty])
   useEffect(() => () => onDirty?.(false), [onDirty])
+  /* Leaving the tab with them asks first (deviation 51). */
+  useLeaveGuard(dirty, (to) => to.split('?')[0] === toTrail({ section: 'blocking', sub: 'Lists' }))
 
   /** The server is reloading the lists: the counts on screen are not current yet. */
   const [reloading, setReloading] = useState<Reload | null>(null)

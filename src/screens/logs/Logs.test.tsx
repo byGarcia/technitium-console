@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, afterEach } from 'vitest'
-import { render, screen, within } from '@testing-library/react'
+import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Logs } from './Logs'
 import * as api from '../../api/logs'
@@ -7,8 +7,9 @@ import * as dashboard from '../../api/dashboard'
 import * as apps from '../../api/apps'
 import type { InstalledApp } from '../../api/apps'
 import type { QueryLogEntry, QueryLogPage } from '../../api/logs'
-import { rowClass, pageRange, statusText, LEGEND_ROWS } from './QueryLogs'
+import { QueryLogs, rowClass, pageRange, statusText, LEGEND_ROWS } from './QueryLogs'
 import { choose, optionsOf, valueShown } from '../../test/dropdown'
+import { deferred, type Deferred } from '../../test/deferred'
 
 afterEach(() => vi.restoreAllMocks())
 
@@ -792,5 +793,66 @@ describe('Logs: changing the cluster node', () => {
     await pickB(user)
     await new Promise((r) => setTimeout(r, 50))
     expect(spy).not.toHaveBeenCalled()
+  })
+})
+
+/*
+Queries answered out of order. The pager, the cards and a node change can each
+launch a query while another is in flight, and Live Update's loop runs beside
+them: only the latest query's answer is drawn and goes to the address bar.
+Reset, or turning Live Update off (which resets the form), makes anything still
+in flight stale too, so it cannot write the old filters back into the bar.
+*/
+describe('Logs › Query Logs: answers out of order', () => {
+  type Answer = { kind: 'ok'; data: { response: QueryLogPage } }
+  const answer = (qname: string): Answer => ({ kind: 'ok', data: { response: page({ entries: [{ ...ENTRY, qname }] }) } })
+  const bar = () => new URLSearchParams(window.location.search)
+
+  it('draws only the latest query when the node changes with another in flight', async () => {
+    const user = userEvent.setup()
+    withApps([APP])
+    const asked = new Map<string, Deferred<Answer>>()
+    vi.spyOn(api, 'queryLogs').mockImplementation(async (_t, p) => {
+      if (p.node === '') return answer('first.example') as never
+      const d = deferred<Answer>()
+      asked.set(p.node ?? '', d)
+      return d.promise as never
+    })
+    const { rerender } = render(<QueryLogs token="t" node="" />)
+    await screen.findByLabelText('App Name')
+    await user.click(screen.getByRole('button', { name: 'Query' }))
+    await screen.findByTitle('first.example')
+
+    rerender(<QueryLogs token="t" node="a.example" />)
+    await waitFor(() => expect(asked.has('a.example')).toBe(true))
+    rerender(<QueryLogs token="t" node="b.example" />)
+    await waitFor(() => expect(asked.has('b.example')).toBe(true))
+
+    await act(async () => asked.get('b.example')!.resolve(answer('b-answer.example')))
+    await act(async () => asked.get('a.example')!.resolve(answer('a-answer.example')))
+    expect(screen.getByTitle('b-answer.example')).toBeInTheDocument()
+    expect(screen.queryByTitle('a-answer.example')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Query' })).toBeEnabled()
+  })
+
+  it.each([
+    ['Reset is pressed', async (user: ReturnType<typeof userEvent.setup>) => user.click(screen.getByRole('button', { name: 'Reset' }))],
+    ['Live Update is turned off', async (user: ReturnType<typeof userEvent.setup>) => user.click(screen.getByLabelText('Live Update'))],
+  ])('a Live Update turn in flight when %s does not write its filters to the bar', async (_what, after) => {
+    const user = userEvent.setup()
+    withApps([APP])
+    const turn = deferred<Answer>()
+    const spy = vi.spyOn(api, 'queryLogs').mockReturnValueOnce(turn.promise as never).mockResolvedValue(answer('next.example') as never)
+    render(<Logs token="t" sub="Query Logs" />)
+    await screen.findByLabelText('App Name')
+    await user.type(screen.getByLabelText('Domain'), 'old.example')
+    await user.click(screen.getByLabelText('Live Update'))
+    await waitFor(() => expect(spy).toHaveBeenCalledTimes(1))
+    expect(spy.mock.calls[0][1].qname).toBe('old.example')
+
+    await after(user)
+    expect(screen.getByLabelText('Domain')).toHaveValue('')
+    await act(async () => turn.resolve(answer('old.example')))
+    expect(bar().get('qname')).toBeNull()
   })
 })

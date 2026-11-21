@@ -79,7 +79,12 @@ export function AddZone({
     setF(initialAddZoneForm(useSoaSerialDateScheme, dnssecValidation))
     setZoneFile(null)
     setNotice(null)
+    /* Only this opening's answers are applied: the dialog stays mounted, and closed
+       and opened again on another node with these reads in flight, the older answers
+       would offer the other node's catalogs and keys. */
+    let current = true
     void listCatalogs(token, node).then((c) => {
+      if (!current) return
       const list = c ?? []
       setCatalogs(list)
       /* zone.js:2871-2876 and `loadCatalogZoneNamesFrom`: the cluster's catalog
@@ -89,8 +94,13 @@ export function AddZone({
         setF((prev) => ({ ...prev, catalog: clusterCatalog }))
       }
     })
-    void getTsigKeyNames(token, node).then(setTsigKeys)
+    void getTsigKeyNames(token, node).then((k) => {
+      if (current) setTsigKeys(k)
+    })
     zoneRef.current?.focus()
+    return () => {
+      current = false
+    }
   }, [open, token, node, useSoaSerialDateScheme, dnssecValidation, clusterDomain])
 
   const v = visibleSections(f.type, f.initializeForwarder)
@@ -164,7 +174,7 @@ export function AddZone({
       title="Add Zone"
       actions={
         <>
-          <Button variant="primary" disabled={busy} onClick={() => void create()}>
+          <Button type="submit" variant="primary" disabled={busy} onClick={() => void create()}>
             Add
           </Button>
         </>

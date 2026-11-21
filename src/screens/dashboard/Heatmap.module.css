@@ -32,9 +32,11 @@ end is which.
 button.cell { cursor: pointer; }
 button.cell:hover { box-shadow: inset 0 0 0 1px var(--ink); }
 button.cell:focus-visible { outline: var(--focus); outline-offset: 1px; }
-/* The hour still in progress, and the rest of today: dashed, because it is empty
-   and not a zero. */
+/* The rest of today: dashed, because it is empty and not a zero. */
 .none { display: block; height: var(--s-8); border: 1px dashed var(--line); border-radius: var(--r-1); }
+/* The hour in progress: outlined in the scale's colour, running and not yet counted. */
+.cell.live { background: var(--pan); box-shadow: inset 0 0 0 1px var(--ch-1); }
+button.cell.live:hover { box-shadow: inset 0 0 0 2px var(--ch-1); }
 .h0 { background: var(--pan2); }
 .h1 { background: color-mix(in srgb, var(--ch-1) 20%, var(--pan)); }
 .h2 { background: color-mix(in srgb, var(--ch-1) 40%, var(--pan)); }

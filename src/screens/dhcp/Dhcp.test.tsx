@@ -1,9 +1,11 @@
 import { describe, expect, it, vi, afterEach } from 'vitest'
-import { render, screen, within } from '@testing-library/react'
+import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Dhcp } from './Dhcp'
 import * as api from '../../api/dhcp'
 import type { DhcpLease, DhcpScope, DhcpScopeRow } from '../../api/dhcp'
+import { deferred, type Deferred } from '../../test/deferred'
+import { choose } from '../../test/dropdown'
 
 afterEach(() => vi.restoreAllMocks())
 
@@ -88,6 +90,14 @@ describe('DHCP › Leases', () => {
     expect(await screen.findByRole('cell', { name: '192.168.1.42' })).toBeInTheDocument()
     expect(screen.getByRole('cell', { name: '192.168.1.50' })).toBeInTheDocument()
     expect(screen.getByText('Total Leases: 2')).toBeInTheDocument()
+  })
+
+  it('every column says what it holds, Type included', async () => {
+    vi.spyOn(api, 'listLeases').mockResolvedValue({ kind: 'ok', data: [DYNAMIC, RESERVED] })
+    render(<Dhcp token="t" sub="Leases" />)
+    await screen.findByRole('cell', { name: '192.168.1.42' })
+    const type = screen.getByRole('columnheader', { name: 'Type' })
+    expect(within(type).getByText('Type')).toBeVisible()
   })
 
   /*
@@ -494,5 +504,78 @@ describe('DHCP: the cluster node while a scope is being edited', () => {
     await user.click(screen.getByRole('button', { name: 'Add Scope' }))
     await screen.findByRole('heading', { name: 'Add Scope' })
     expect(screen.getByRole('combobox', { name: 'Cluster Node' })).toBeEnabled()
+  })
+})
+
+/*
+Answers that arrive out of order. Changing the node while a read is in flight
+launches another one; whichever answers last, only the latest read is drawn, so a
+node's scopes or leases never show under another node, and a scope opened on one
+node is never edited, or saved, under the next.
+*/
+describe('DHCP: answers out of order', () => {
+  const NODES = [
+    { name: 'a.example', type: 'Primary' },
+    { name: 'b.example', type: 'Secondary' },
+  ]
+  type Read<T> = Deferred<{ kind: 'ok'; data: T }>
+
+  it('Scopes draws only the list of the node chosen last', async () => {
+    const user = userEvent.setup()
+    const asked = new Map<string, Read<DhcpScopeRow[]>>()
+    vi.spyOn(api, 'listScopes').mockImplementation((_t, node = '') => {
+      const d = deferred<{ kind: 'ok'; data: DhcpScopeRow[] }>()
+      asked.set(node, d)
+      return d.promise
+    })
+    vi.spyOn(api, 'listLeases').mockResolvedValue({ kind: 'ok', data: [] })
+    render(<Dhcp token="t" sub="Scopes" nodes={NODES} clusterInitialised />)
+    await waitFor(() => expect(asked.has('')).toBe(true))
+    await choose(user, screen.getByRole('combobox', { name: 'Cluster Node' }), /^b\.example/)
+    await waitFor(() => expect(asked.has('b.example')).toBe(true))
+
+    await act(async () => asked.get('b.example')!.resolve({ kind: 'ok', data: [{ ...SCOPE, name: 'Lab' }] }))
+    await act(async () => asked.get('')!.resolve({ kind: 'ok', data: [SCOPE] }))
+    expect(screen.getByText('Lab')).toBeInTheDocument()
+    expect(screen.queryByText('Default')).not.toBeInTheDocument()
+  })
+
+  it('a scope still being read when the node changes is not opened', async () => {
+    const user = userEvent.setup()
+    vi.spyOn(api, 'listScopes').mockResolvedValue({ kind: 'ok', data: [SCOPE] })
+    vi.spyOn(api, 'listLeases').mockResolvedValue({ kind: 'ok', data: [] })
+    const read = deferred<DhcpScope | null>()
+    const get = vi.spyOn(api, 'getScope').mockReturnValue(read.promise)
+    const set = vi.spyOn(api, 'setScope').mockResolvedValue(OK)
+    render(<Dhcp token="t" sub="Scopes" nodes={NODES} clusterInitialised />)
+    await screen.findByText('Default')
+    await editScope(user)
+    expect(get).toHaveBeenCalledWith('t', 'Default', '')
+    await choose(user, screen.getByRole('combobox', { name: 'Cluster Node' }), /^b\.example/)
+    await screen.findByText('Default')
+
+    await act(async () => read.resolve(DETAIL))
+    expect(screen.queryByRole('heading', { name: 'Edit Scope' })).not.toBeInTheDocument()
+    expect(screen.getByRole('combobox', { name: 'Cluster Node' })).toBeEnabled()
+    expect(set).not.toHaveBeenCalled()
+  })
+
+  it('Leases draws only the leases of the node chosen last', async () => {
+    const user = userEvent.setup()
+    const asked = new Map<string, Read<DhcpLease[]>>()
+    vi.spyOn(api, 'listLeases').mockImplementation((_t, node = '') => {
+      const d = deferred<{ kind: 'ok'; data: DhcpLease[] }>()
+      asked.set(node, d)
+      return d.promise
+    })
+    render(<Dhcp token="t" sub="Leases" nodes={NODES} clusterInitialised />)
+    await waitFor(() => expect(asked.has('')).toBe(true))
+    await choose(user, screen.getByRole('combobox', { name: 'Cluster Node' }), /^b\.example/)
+    await waitFor(() => expect(asked.has('b.example')).toBe(true))
+
+    await act(async () => asked.get('b.example')!.resolve({ kind: 'ok', data: [RESERVED] }))
+    await act(async () => asked.get('')!.resolve({ kind: 'ok', data: [DYNAMIC] }))
+    expect(screen.getByRole('cell', { name: 'orbiter' })).toBeInTheDocument()
+    expect(screen.queryByRole('cell', { name: 'blackview-tab' })).not.toBeInTheDocument()
   })
 })

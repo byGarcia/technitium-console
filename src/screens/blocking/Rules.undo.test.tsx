@@ -63,6 +63,17 @@ describe('Rules: Delete with Undo', () => {
     expect(screen.queryByRole('button', { name: 'Undo' })).toBeNull()
   })
 
+  it('an internationalised rule is named as drawn, and deleted and put back in its ASCII form', async () => {
+    const { remove, add } = server(['xn--bcher-regress-b-zvb.test'], [])
+    render(<Rules token="T" permissions={undefined} />)
+    await deleteRule('bücher-regress-b.test')
+    expect(remove).toHaveBeenCalledExactlyOnceWith('blocked', 'T', 'xn--bcher-regress-b-zvb.test')
+    expect(status()).toHaveTextContent("Blocked zone 'bücher-regress-b.test' was deleted successfully.")
+    await userEvent.click(within(status().parentElement!).getByRole('button', { name: 'Undo' }))
+    expect(add).toHaveBeenCalledExactlyOnceWith('blocked', 'T', 'xn--bcher-regress-b-zvb.test')
+    expect(await screen.findByText("'bücher-regress-b.test' is back in Blocked.")).toBeInTheDocument()
+  })
+
   it('a second Delete joins the open notice, and one Undo puts both back, each in its list', async () => {
     const { add, lists } = server(['ads.example.com'], ['s.youtube.com'])
     render(<Rules token="T" permissions={undefined} />)

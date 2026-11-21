@@ -141,6 +141,11 @@ wrapping as the width runs out. The three Live Update turns off sit together in
   .mode, .field { width: 100%; }
 }
 .field label { font-size: var(--t-2); color: var(--mute); font-weight: 550; }
+/* The quick ranges (deviation 52): a field's title over the period strip the
+   Dashboard uses, as tall as the fields beside it. */
+.rangesTitle { font-size: var(--t-2); color: var(--mute); font-weight: 550; }
+.ranges { width: auto; }
+.ranges > :last-child { min-height: var(--field-height); align-self: flex-start; }
 .field input, .field select { width: 100%; }
 
 /* The toggle below 960 (FOLD_QUERY), and the list of what the closed band holds. */
@@ -401,13 +406,4 @@ own column, and each node's total for the filters on a line over the legend.
 .nodeTotal { display: inline-flex; align-items: center; gap: var(--s-5); }
 .nodeTotalCount { font-variant-numeric: tabular-nums; color: var(--ink); font-weight: 600; }
 
-/* Display timezone dropdown in Query Logs toolbar */
-.tzSelector {
-  display: inline-flex;
-  align-items: center;
-  min-width: 220px;
-}
-.tzSelect {
-  min-width: 200px;
-}
 

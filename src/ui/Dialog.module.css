@@ -93,6 +93,9 @@ confirmations are the browser's `confirm()`.
 .form { width: min(560px, calc(100vw - 32px)); }
 .medium { width: min(720px, calc(100vw - 32px)); }
 .wide { width: min(880px, calc(100vw - 32px)); }
+/* The form Enter submits (`Dialog.tsx`): it holds the head, the body and the foot,
+   and takes no box of its own, so they stay the content's flex items. */
+.shell { display: contents; }
 .head {
   flex: none;
   display: flex; align-items: center; justify-content: space-between; gap: var(--s-8);

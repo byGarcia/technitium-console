@@ -120,3 +120,33 @@ describe('quick add: never the root zone', () => {
     expect(zoneForName('nas.home.lan', zones)).toMatchObject({ name: 'home.lan' })
   })
 })
+
+/* `zones/list` names an internationalised zone by its ASCII form and adds `nameIdn`
+   (15.6.2 harness, 2026-11-20: `xn--mnchen-3ya.test`, `münchen.test`). */
+describe('quick add: internationalised names', () => {
+  const munich = z('xn--mnchen-3ya.test', 'Primary', { nameIdn: 'münchen.test' })
+  const zones = [...ZONES, munich]
+
+  it('finds the zone whether the name is typed in Unicode or in its ASCII form', () => {
+    expect(zoneForName('www.münchen.test', zones)).toBe(munich)
+    expect(zoneForName('bär.MÜNCHEN.test.', zones)).toBe(munich)
+    expect(zoneForName('www.xn--mnchen-3ya.test', zones)).toBe(munich)
+    expect(zoneForName('münchen.test', zones)).toBe(munich)
+    expect(zoneForName('www.mnchen.test', zones)).toBeNull()
+  })
+
+  it('sends the name in the ASCII form the server stores', () => {
+    const plan = planQuickAdd(input('www.münchen.test', '10.0.0.1'), zones, 3600)
+    expect(plan.ok && plan.zone).toBe('xn--mnchen-3ya.test')
+    expect(plan.ok && plan.body).toMatchObject({ zone: 'xn--mnchen-3ya.test', domain: 'www.xn--mnchen-3ya.test' })
+    const apex = planQuickAdd(input('münchen.test', '10.0.0.1'), zones, 3600)
+    expect(apex.ok && apex.body.domain).toBe('xn--mnchen-3ya.test')
+  })
+
+  it('names the zone the way the list draws it when it takes no records', () => {
+    const plan = planQuickAdd(input('www.münchen.test', '10.0.0.1'), [{ ...munich, type: 'Secondary' }], 3600)
+    expect(!plan.ok && plan.notice.text).toBe(
+      "'www.münchen.test' belongs to the zone 'münchen.test (xn--mnchen-3ya.test)' (Secondary), which takes no records from here.",
+    )
+  })
+})

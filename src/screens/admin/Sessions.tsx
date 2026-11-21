@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { useCallback, useEffect, useId, useState, type CSSProperties } from 'react'
+import { useCallback, useEffect, useId, useRef, useState, type CSSProperties } from 'react'
 import { Button } from '../../ui/Button'
 import { Dialog } from '../../ui/Dialog'
 import { Field, Input, Select } from '../../ui/Field'
@@ -106,9 +106,14 @@ export function Sessions({ tabs, token, cluster, node: controlledNode, onNodeCha
   const [search, setSearch] = useBarParam('q')
   const [kind, setKind] = useBarParam('type')
 
+  /* Only the latest read's answer is applied: the node can change with a read in
+     flight, and a node's sessions must not land under another (as `blocking/Rules.tsx`). */
+  const asked = useRef(0)
   const load = useCallback(async () => {
+    const mine = ++asked.current
     setLoading(true)
     const outcome = await listSessions(token, node)
+    if (mine !== asked.current) return
     setLoading(false)
 
     if (outcome.kind !== 'ok') {
@@ -430,7 +435,7 @@ function CreateApiToken({
       actions={
         <>
           {created == null && (
-            <Button variant="primary" disabled={busy || loading} onClick={() => void create()}>
+            <Button type="submit" variant="primary" disabled={busy || loading} onClick={() => void create()}>
               Create
             </Button>
           )}

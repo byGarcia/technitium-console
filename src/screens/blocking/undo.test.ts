@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { joinDeleted, notRestoredNotice, restoreRules, undoMessage, undoNeed } from './undo'
+import { deletedNotice, deleteNeed, joinDeleted, notRestoredNotice, restoreRules, undoMessage, undoNeed } from './undo'
 
 const A = { domain: 'a.test', list: 'blocked' as const }
 const B = { domain: 'b.test', list: 'allowed' as const }
@@ -19,6 +19,13 @@ describe('undo', () => {
     expect(undoMessage({ rules: [A, B], phase: 'deleted' })).toBe('2 rules were deleted.')
     expect(undoMessage({ rules: [B], phase: 'restored' })).toBe("'b.test' is back in Allowed.")
     expect(undoMessage({ rules: [A, B], phase: 'restored' })).toBe('2 rules are back.')
+  })
+
+  it('taking back an added rule needs Delete, and says it with upstream Delete alert', () => {
+    expect(deleteNeed('blocked')).toBe('Blocked.canDelete')
+    expect(deleteNeed('allowed')).toBe('Allowed.canDelete')
+    expect(deletedNotice(A)).toEqual({ type: 'success', title: 'Deleted!', text: "Blocked zone 'a.test' was deleted successfully." })
+    expect(deletedNotice(B).text).toBe("Domain 'b.test' was deleted from Allowed Zone successfully.")
   })
 
   it('Undo needs Modify on every list it puts a rule back in', () => {

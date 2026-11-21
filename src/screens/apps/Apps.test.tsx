@@ -1,11 +1,12 @@
 import { describe, expect, it, vi, afterEach } from 'vitest'
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Apps, type AlertState } from './Apps'
 import { AppConfig } from './AppConfig'
 import { isAdvancedBlocking } from './app-kinds'
 import type { InstalledApp, StoreApp } from '../../api/apps'
 import * as api from '../../api/apps'
+import { deferred, type Deferred } from '../../test/deferred'
 
 afterEach(() => {
   vi.restoreAllMocks()
@@ -271,6 +272,32 @@ describe('Apps: config of the app', () => {
     expect(spy.mock.calls[0][1]).toBe('What Is My Dns')
     expect(await screen.findByText('App Config - What Is My Dns')).toBeInTheDocument()
     expect(screen.getByLabelText('Config File')).toHaveValue('{ "a": 1 }')
+  })
+
+  /* apps.js:460: `getPrimaryClusterNodeName()`, the name of the node whose type is
+     Primary, and the empty string while the cluster is not initialised. */
+  it('sends the primary node with the config read when the session has a cluster, and no node without one', async () => {
+    withApps([UP_TO_DATE])
+    const spy = vi.spyOn(api, 'getAppConfig').mockResolvedValue({
+      kind: 'ok',
+      data: { status: 'ok', response: { config: '' } },
+    } as never)
+    const nodes = [
+      { name: 'ns2.test', type: 'Secondary' },
+      { name: 'ns1.test', type: 'Primary' },
+    ]
+    const { unmount } = render(<Apps token="t" nodes={nodes} clusterInitialised />)
+    await screen.findByRole('row', { name: 'What Is My Dns' })
+    await userEvent.click(card('What Is My Dns').getByRole('button', { name: 'Config' }))
+    await screen.findByLabelText('Config File')
+    expect(spy.mock.calls[0][2]).toBe('ns1.test')
+    unmount()
+
+    render(<Apps token="t" nodes={nodes} clusterInitialised={false} />)
+    await screen.findByRole('row', { name: 'What Is My Dns' })
+    await userEvent.click(card('What Is My Dns').getByRole('button', { name: 'Config' }))
+    await screen.findByLabelText('Config File')
+    expect(spy.mock.calls[1][2] ?? '').toBe('')
   })
 
   /* The server returns `config: null` as soon as someone saves an empty one. */
@@ -774,5 +801,72 @@ describe('AppConfig: what the editor passes it', () => {
     const note = screen.getByText('Saved over the draft.')
     const field = screen.getByLabelText('Config File')
     expect(note.compareDocumentPosition(field) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+})
+
+/*
+Answers that arrive out of order. Each install from the store reads the store and
+the installed apps again, and a second install can start while the first one's reads
+are in flight. Whichever answers last, the list drawn is the one read last, so an
+app just installed is not shown as missing.
+*/
+describe('Apps: answers out of order', () => {
+  const ALIAS: StoreApp = { ...STORE[0], name: 'Zone Alias', url: 'https://x/ZoneAliasApp.zip' }
+  const installed = (name: string): InstalledApp => ({ ...UP_TO_DATE, name })
+  type Outcome = Awaited<ReturnType<typeof api.listApps>>
+  type StoreOutcome = Awaited<ReturnType<typeof api.listStoreApps>>
+
+  async function installTwo() {
+    const user = userEvent.setup()
+    const appsReads: Deferred<Outcome>[] = []
+    const storeReads: Deferred<StoreOutcome>[] = []
+    vi.spyOn(api, 'listApps').mockImplementation(() => {
+      if (appsReads.length === 0) {
+        appsReads.push(deferred())
+        return Promise.resolve({ kind: 'ok', data: { status: 'ok', response: { apps: [] } } } as never)
+      }
+      const d = deferred<Outcome>()
+      appsReads.push(d)
+      return d.promise
+    })
+    vi.spyOn(api, 'listStoreApps').mockImplementation(() => {
+      if (storeReads.length === 0) {
+        storeReads.push(deferred())
+        return Promise.resolve({ kind: 'ok', data: { status: 'ok', response: { storeApps: [STORE[0], ALIAS] } } } as never)
+      }
+      const d = deferred<StoreOutcome>()
+      storeReads.push(d)
+      return d.promise
+    })
+    vi.spyOn(api, 'downloadAndInstall').mockResolvedValue({ kind: 'ok', data: { status: 'ok' } } as never)
+    render(<Apps token="t" />)
+    await screen.findByText('No apps installed')
+    await openStore()
+    const dialog = within(screen.getByRole('dialog'))
+    await user.click(within(await dialog.findByRole('row', { name: 'Advanced Blocking' })).getByRole('button', { name: 'Install' }))
+    await waitFor(() => expect(storeReads).toHaveLength(2))
+    await user.click(within(dialog.getByRole('row', { name: 'Zone Alias' })).getByRole('button', { name: 'Install' }))
+    await waitFor(() => expect(storeReads).toHaveLength(3))
+    await waitFor(() => expect(appsReads).toHaveLength(3))
+    return { appsReads, storeReads, dialog }
+  }
+
+  it('the store draws the list read after the last install', async () => {
+    const { storeReads, dialog } = await installTwo()
+    const both = [{ ...STORE[0], installed: true }, { ...ALIAS, installed: true }]
+    await act(async () => storeReads[2].resolve({ kind: 'ok', data: { status: 'ok', response: { storeApps: both } } } as never))
+    await act(async () =>
+      storeReads[1].resolve({ kind: 'ok', data: { status: 'ok', response: { storeApps: [both[0], ALIAS] } } } as never),
+    )
+    expect(within(dialog.getByRole('row', { name: 'Zone Alias' })).getByText('Installed')).toBeInTheDocument()
+  })
+
+  it('the installed apps are the ones read after the last install', async () => {
+    const { appsReads } = await installTwo()
+    const both = [installed('Advanced Blocking'), installed('Zone Alias')]
+    await act(async () => appsReads[2].resolve({ kind: 'ok', data: { status: 'ok', response: { apps: both } } } as never))
+    await act(async () => appsReads[1].resolve({ kind: 'ok', data: { status: 'ok', response: { apps: [both[0]] } } } as never))
+    await userEvent.keyboard('{Escape}')
+    expect(await screen.findByRole('row', { name: 'Zone Alias' })).toBeInTheDocument()
   })
 })

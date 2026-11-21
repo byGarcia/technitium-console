@@ -78,7 +78,12 @@ export function ZoneOptions({
     setNotice(null)
     setQuickTsig('')
     setLoading(true)
+    /* Only this opening's answer is applied: closed and opened again for another
+       zone with this read in flight, the older answer must not fill the dialog
+       (as `EditZoneFile.tsx`). */
+    let current = true
     void getZoneOptions(token, zone, node).then((outcome) => {
+      if (!current) return
       setLoading(false)
       if (outcome.kind !== 'ok') {
         setNotice(noticeFromFailure(outcome))
@@ -89,6 +94,9 @@ export function ZoneOptions({
       setF(formFromOptions(r))
       setTab(optionsState(r).initialTab)
     })
+    return () => {
+      current = false
+    }
   }, [open, token, zone, node])
 
   /* The tabs and the overrides follow the form's catalog (zone.js:199-286). */
@@ -131,7 +139,7 @@ export function ZoneOptions({
       title={`Zone Options - ${zone === '.' ? '<root>' : zone}`}
       actions={
         <>
-          <Button variant="primary" disabled={busy || f == null} onClick={() => void save()}>
+          <Button type="submit" variant="primary" disabled={busy || f == null} onClick={() => void save()}>
             Save
           </Button>
         </>

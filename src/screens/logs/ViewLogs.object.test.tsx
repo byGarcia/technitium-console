@@ -1,8 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, within } from '@testing-library/react'
+import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Logs } from './Logs'
 import * as api from '../../api/logs'
+import { ViewLogs } from './ViewLogs'
+import { deferred, type Deferred } from '../../test/deferred'
 
 /*
 View Logs laid out as the folder and the open file (deviation 20): the cards over
@@ -175,5 +177,50 @@ describe('View Logs: the open file in the address bar', () => {
     expect(window.location.search).toBe('?file=2026-11-05')
     unmount()
     expect(window.location.search).toBe('')
+  })
+})
+
+/*
+Answers that arrive out of order. The node can change with the list in flight, and
+a file can be closed and another opened with the first one's text in flight; only
+what was asked last is drawn.
+*/
+describe('View Logs: answers out of order', () => {
+  it('draws only the list of the node chosen last', async () => {
+    const asked = new Map<string, Deferred<Awaited<ReturnType<typeof api.listLogFiles>>>>()
+    vi.spyOn(api, 'listLogFiles').mockImplementation((_t, node = '') => {
+      const d = deferred<Awaited<ReturnType<typeof api.listLogFiles>>>()
+      asked.set(node, d)
+      return d.promise
+    })
+    const view = render(<ViewLogs token="t" node="a.example" />)
+    await waitFor(() => expect(asked.has('a.example')).toBe(true))
+    view.rerender(<ViewLogs token="t" node="b.example" />)
+    await waitFor(() => expect(asked.has('b.example')).toBe(true))
+
+    await act(async () => asked.get('b.example')!.resolve({ kind: 'ok', data: [FILES[1]] }))
+    await act(async () => asked.get('a.example')!.resolve({ kind: 'ok', data: FILES }))
+    expect(table().getByRole('button', { name: '2026-11-05' })).toBeInTheDocument()
+    expect(table().queryByRole('button', { name: '2026-11-06' })).not.toBeInTheDocument()
+  })
+
+  it('draws only the text of the file opened last', async () => {
+    const user = userEvent.setup()
+    vi.spyOn(api, 'listLogFiles').mockResolvedValue({ kind: 'ok', data: FILES })
+    const asked = new Map<string, Deferred<string>>()
+    vi.spyOn(api, 'downloadLogText').mockImplementation((_t, fileName) => {
+      const d = deferred<string>()
+      asked.set(fileName, d)
+      return d.promise as never
+    })
+    render(<ViewLogs token="t" />)
+    await user.click(within(await screen.findByRole('table')).getByRole('button', { name: '2026-11-06' }))
+    await user.click(within(screen.getByRole('navigation', { name: 'Breadcrumb' })).getByRole('button', { name: 'View Logs' }))
+    await user.click(within(await screen.findByRole('table')).getByRole('button', { name: '2026-11-05' }))
+
+    await act(async () => asked.get('2026-11-05')!.resolve('[2026-11-05 10:00:00 UTC] The fifth.\n'))
+    await act(async () => asked.get('2026-11-06')!.resolve('[2026-11-06 10:00:00 UTC] The sixth.\n'))
+    expect(screen.getByText(/The fifth\./)).toBeInTheDocument()
+    expect(screen.queryByText(/The sixth\./)).not.toBeInTheDocument()
   })
 })

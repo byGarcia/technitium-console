@@ -223,6 +223,11 @@ The name never breaks: it ends in an ellipsis and is whole on hover.
 .toprow .n { min-width:0; font: 400 var(--t-4)/1.5 var(--font-ui); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .toprow .topLabel { color:var(--ink); }
 .toprow .topDomain { margin-left: var(--s-3); font: 400 var(--t-2)/1 var(--font-ui); color:var(--faint); }
+/* Under Top Blocked Domains' rows: Show lists, and once pressed what it found or why it
+   looked nothing up (deviation 46, `BlockedLists.tsx`). */
+.listsFoot { display: flex; align-items: flex-start; justify-content: flex-end; gap: var(--s-7); margin-top: var(--s-5); }
+.listsNote { flex: 1; min-width: 0; margin: 0; font-size: var(--t-2); line-height: 1.45; color: var(--mute); }
+.listsFoot > :last-child { flex: none; }
 .toprow .c { color:var(--ink); font: 400 var(--t-3)/1.5 var(--font-mono); font-variant-numeric: tabular-nums; text-align:right; }
 .topBar { grid-column: 2 / 4; display:block; position:relative; height:var(--s-2); margin-top:var(--s-1); border-radius:var(--r-full); background:var(--line2); overflow:hidden; }
 .topBar > i { position:absolute; inset:0 auto 0 0; border-radius:var(--r-full); background:var(--bar, var(--ch-total)); }

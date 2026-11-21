@@ -344,8 +344,15 @@ matches the row height. Applied to the header too, Zones' measured 57 px while
 the other six tables in the console measured 33: the same header, nearly twice as
 tall, and without any label taking two lines. Here the target is still the whole
 cell, only the cell is as tall as the header is.
+
+Only its height: the sides stay the header's (`.table thead th` and its
+`:first-child`), the same as a data cell's. With `padding: 0` the header box
+kept the first column's left inset and lost its right one, so the select-all box
+was centred in a cell 12 px wider than the rows' and stood 6 px to the right of
+the column of boxes under it (measured at 1440 in Zones and in a zone's records,
+2026-11-20).
 */
-thead th.checkCell { padding: 0; }
+thead th.checkCell { padding-top: 0; padding-bottom: 0; }
 thead .checkCell label { min-height: 0; }
 
 /*
@@ -437,6 +444,9 @@ line and count twice.
 .stack[data-stacked] > tbody > tr > td.actionsCell { order: 1; margin-top: 0; align-self: center; }
 .stack[data-stacked] > tbody > tr > td.actionsCell { flex: none; margin-left: auto; }
 .stack[data-stacked] > tbody > tr > td.checkCell label { min-height: 0; padding: 0; }
+/* A row that cannot be selected keeps the box's place (a zone's SOA among its
+   records), so its name starts where the names of the rows with a box do. */
+.stack[data-stacked] > tbody > tr > td.checkCell:empty { flex: none; width: var(--ctrl); }
 
 /*
 A fact whose cell is blank (`data-empty`, set by `labelCells`): its label with

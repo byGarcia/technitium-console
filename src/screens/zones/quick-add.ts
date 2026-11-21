@@ -1,5 +1,6 @@
 import { zoneHasSvcbAutoHint } from '../../api/records'
-import { typeLabel, type Zone } from '../../api/zones'
+import { typeLabel, zoneNameOf, type Zone } from '../../api/zones'
+import { toAscii } from '../../lib/punycode'
 import { buildRecordBody, emptyForm } from './record-form'
 import type { Notice } from './types'
 
@@ -15,7 +16,9 @@ What it decides by itself, and nothing more:
   · **the zone**: the longest of the zones the list knows that the name ends in,
     whole labels only (`a.example.lan` is in `example.lan`, `myexample.lan` is
     not). The root zone holds every name. A name no zone holds is refused before
-    anything is sent;
+    anything is sent. An internationalised name is compared in its ASCII form, the
+    one `zones/list` names the zone by (`xn--mnchen-3ya.test`, with `nameIdn`
+    `münchen.test`), so it may be typed in either form, and it is sent in that form;
   · **the type**, by the address's family: `A` for IPv4, `AAAA` for IPv6. An
     address of neither is refused before anything is sent;
   · **the TTL**: the server's default record TTL, the value the dialog shows
@@ -51,9 +54,9 @@ export function addressFamily(address: string): 'A' | 'AAAA' | null {
   }
 }
 
-/** The name as it is compared: trimmed, lowercase, without the closing dot. */
+/** The name as it is compared: trimmed, lowercase, without the closing dot, in its ASCII form. */
 export function normaliseName(name: string): string {
-  return name.trim().replace(/\.$/, '').toLowerCase()
+  return toAscii(name.trim().replace(/\.$/, '').toLowerCase())
 }
 
 /** The zone that holds this name: the longest match among `zones`, or `null`. */
@@ -107,6 +110,8 @@ const missing = (text: string, field: 'name' | 'address'): QuickAddResult => ({
  */
 export function planQuickAdd(input: QuickAddInput, zones: Zone[], defaultRecordTtl: number): QuickAddResult {
   const host = normaliseName(input.name)
+  /* What the refusals quote: the name as it was typed, lowercase. */
+  const typed = input.name.trim().replace(/\.$/, '').toLowerCase()
   const address = input.address.trim()
   if (host === '') return missing('Please enter a domain name to add the record.', 'name')
   if (address === '') return missing('Please enter an IP address to add the record.', 'address')
@@ -127,7 +132,7 @@ export function planQuickAdd(input: QuickAddInput, zones: Zone[], defaultRecordT
       notice: {
         type: 'warning',
         title: 'Missing!',
-        text: `No zone on this node holds '${host}'. Add the zone first, then the record.`,
+        text: `No zone on this node holds '${typed}'. Add the zone first, then the record.`,
       },
       field: 'name',
       noZone: true,
@@ -141,7 +146,7 @@ export function planQuickAdd(input: QuickAddInput, zones: Zone[], defaultRecordT
       notice: {
         type: 'warning',
         title: 'Invalid!',
-        text: `'${host}' belongs to the zone '${zoneName}' (${typeLabel(zone.type)}), which takes no records from here.`,
+        text: `'${typed}' belongs to the zone '${zone.nameIdn == null ? zoneName : zoneNameOf(zone)}' (${typeLabel(zone.type)}), which takes no records from here.`,
       },
       field: 'name',
     }

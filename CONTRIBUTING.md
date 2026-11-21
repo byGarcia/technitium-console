@@ -14,6 +14,9 @@ from a keyboard, correct at 390 px), it belongs here and it is welcome.
 
 Bug fixes, documentation and accessibility fixes need no permission. Open the pull request.
 
+**Open it against `develop`.** New work lands there and is tested before a release moves `main`,
+which is what people install.
+
 ---
 
 ## Running it

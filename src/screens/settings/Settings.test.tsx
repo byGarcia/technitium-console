@@ -5,6 +5,7 @@ import { Settings, SUB_TABS, MENU_TABS } from './Settings'
 import { SETTINGS } from './settings.fixture'
 import * as client from '../../api/client'
 import { valueShown } from '../../test/dropdown'
+import { deferred, type Deferred } from '../../test/deferred'
 
 afterEach(() => vi.restoreAllMocks())
 
@@ -538,6 +539,51 @@ describe('Settings: node scope', () => {
     )
     const restore = String(spy.mock.calls.find((c) => String(c[0]).startsWith('settings/restore'))![0])
     expect(new URLSearchParams(restore.split('?')[1]).get('node')).toBe('node2.cluster.test')
+  })
+})
+
+/*
+Two loads in flight, for two nodes, answered out of order: only the answer of the
+latest one is drawn, and Save sends that node with that node's form.
+*/
+describe('Settings: answers out of order', () => {
+  afterEach(() => localStorage.clear())
+
+  it('draws only the latest load, and Save goes with the form of the node it was loaded for', async () => {
+    const NODES = [
+      { name: 'node1.cluster.test', type: 'Primary' },
+      { name: 'node2.cluster.test', type: 'Secondary' },
+    ]
+    localStorage.setItem('settingsClusterNode', 'node2.cluster.test')
+    const asked = new Map<string, Deferred<unknown>>()
+    const spy = vi.spyOn(client, 'apiRequest').mockImplementation(async (path: string, opts) => {
+      if (path === 'settings/get') {
+        const d = deferred<unknown>()
+        asked.set(String((opts?.body as { node?: string } | undefined)?.node), d)
+        return d.promise as never
+      }
+      if (path === 'settings/set') return ok({ response: { ...SETTINGS, dnsServerDomain: 'node1.cluster.test' } })
+      return ok({ response: {} })
+    })
+    const { rerender } = render(<Settings token="tok" clusterInitialised nodes={NODES} />)
+    await waitFor(() => expect(asked.has('node2.cluster.test')).toBe(true))
+    /* node2 leaves the cluster while its load is in flight: the screen reads node1. */
+    rerender(<Settings token="tok" clusterInitialised nodes={[NODES[0]]} />)
+    await waitFor(() => expect(asked.has('node1.cluster.test')).toBe(true))
+
+    await act(async () => asked.get('node1.cluster.test')!.resolve(ok({ response: { ...SETTINGS, dnsServerDomain: 'node1.cluster.test' } })))
+    await act(async () => asked.get('node2.cluster.test')!.resolve(ok({ response: { ...SETTINGS, dnsServerDomain: 'node2.cluster.test' } })))
+    expect(screen.getByLabelText('DNS Server Domain')).toHaveValue('node1.cluster.test')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Save Settings' }))
+    const set = await waitFor(() => {
+      const c = spy.mock.calls.find((c) => c[0] === 'settings/set')
+      expect(c).toBeDefined()
+      return c!
+    })
+    const body = set[1]!.body as Record<string, string>
+    expect(body.node).toBe('node1.cluster.test')
+    expect(body.dnsServerDomain).toBe('node1.cluster.test')
   })
 })
 
