@@ -83,9 +83,8 @@ function Stack({ entries, total, hidden, jump }: {
 const CIRCUMFERENCE = 2 * Math.PI * 40
 
 /* Modern Donut Analytics with Center Total Count */
-function Donut({ entries, total, hidden, jump }: {
+function Donut({ entries, hidden, jump }: {
   entries: Entry[]
-  total: number
   hidden?: ReadonlySet<string>
   jump?: Jump
 }) {
@@ -119,12 +118,12 @@ function Donut({ entries, total, hidden, jump }: {
                 onClick={go}
                 transform="rotate(-90 50 50)"
               >
-                <title>{`${e.label}: ${num2(e.value)} (${percentage(e.value, total)})`}</title>
+                <title>{`${e.label}: ${num2(e.value)} (${percentage(e.value, activeTotal)})`}</title>
               </circle>
             )
           })}
         <text x="50" y="47" textAnchor="middle" dominantBaseline="central" className={styles.donutTotal}>
-          {total > 99999 ? `${(total / 1000).toFixed(1)}k` : num2(total)}
+          {activeTotal > 99999 ? `${(activeTotal / 1000).toFixed(1)}k` : num2(activeTotal)}
         </text>
         <text x="50" y="59" textAnchor="middle" dominantBaseline="central" className={styles.donutSub}>
           TOTAL
@@ -166,7 +165,7 @@ function Responses({ data, resetOn, failure, jump, mode }: {
         return (
           <>
             {mode === 'donut' ? (
-              <Donut entries={entries} total={total} hidden={hidden} jump={jump} />
+              <Donut entries={entries} hidden={hidden} jump={jump} />
             ) : (
               <Stack entries={entries} total={total} hidden={hidden} jump={jump} />
             )}
@@ -200,7 +199,7 @@ function Types({ title, data, failure, jump, mode }: {
         return (
           <>
             {mode === 'donut' ? (
-              <Donut entries={entries} total={total} jump={jump} />
+              <Donut entries={entries} jump={jump} />
             ) : (
               <Stack entries={entries} total={total} jump={jump} />
             )}

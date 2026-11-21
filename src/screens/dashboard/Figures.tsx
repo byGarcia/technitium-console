@@ -74,7 +74,6 @@ export function StatCard({
   against,
   chart,
   hero = false,
-  qps,
   onOpen,
 }: {
   m: Metric
@@ -87,8 +86,6 @@ export function StatCard({
   chart?: ChartData
   /** `Total Queries`: the larger card, which also says what the change is against. */
   hero?: boolean
-  /** Live queries per second throughput. */
-  qps?: number | null
   /** The card's jump to Query Logs (`Metric.open`), when it has one and Query Logs
    *  is there to land on. */
   onOpen?: () => void
@@ -106,12 +103,6 @@ export function StatCard({
           <div className={styles.line}>
             <Figure className={`${styles.v}${s ? '' : ` ${styles.noData}`}`} text={s ? num2(s[m.k]) : '\u2014'} />
             {share != null && <span className={styles.p}>{share}</span>}
-            {hero && qps != null && qps > 0 && (
-              <span className={styles.qpsBadge} title={`${qps.toFixed(1)} Queries Per Second`}>
-                <span className={styles.qpsDot} aria-hidden="true" />
-                {qps.toFixed(1)} QPS
-              </span>
-            )}
           </div>
           {/* The gap is a HARD space so a card with nothing to add keeps the line's
               height and its neighbours' figures stay level. */}

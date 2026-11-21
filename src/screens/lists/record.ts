@@ -93,10 +93,7 @@ function rows(obj: Record<string, unknown>): Entry[] {
       value = `${text(idn)} (${value})`
     } else {
       const composed = obj[`${key}String`] ?? obj[`${key}Number`]
-      if (composed != null) {
-        const str = typeof composed === 'string' ? spaceDuration(composed) : text(composed)
-        value = `${value} (${str})`
-      }
+      if (composed != null) value = `${value} (${text(composed)})`
     }
 
     output.push(entry(humanise(key), value))
@@ -109,15 +106,6 @@ export function rdataEntries(rData: Record<string, unknown>): Entry[] {
   return rows(rData ?? {})
 }
 
-/**
- * Insert readable spaces between duration components:
- * e.g. "1d8h41m35s" -> "1d 8h 41m 35s", "5d23h59m59s" -> "5d 23h 59m 59s", "33m20s" -> "33m 20s"
- */
-export function spaceDuration(s: string): string {
-  if (!s || typeof s !== 'string') return s
-  return s.replace(/([0-9]+[a-zA-Z]+)(?=[0-9])/g, '$1 ')
-}
-
 /*
 The TTL arrives in two different shapes depending on the list (see
 `zonelists.ts`). It is normalised to the pair the design asks for: the number,
@@ -126,9 +114,9 @@ and its human form beside it.
 export function splitTtl(r: DnsRecord): { value: string; human: string } {
   if (typeof r.ttl === 'string') {
     const m = /^(\S+)\s+\((.*)\)$/.exec(r.ttl)
-    return m ? { value: m[1], human: spaceDuration(m[2]) } : { value: r.ttl, human: '' }
+    return m ? { value: m[1], human: m[2] } : { value: r.ttl, human: '' }
   }
-  return { value: String(r.ttl), human: spaceDuration(r.ttlString ?? '') }
+  return { value: String(r.ttl), human: r.ttlString ?? '' }
 }
 
 /*
@@ -171,7 +159,7 @@ export function meta(r: DnsRecord): string[] {
   parts.push(used ? `used ${used}` : 'never used')
 
   if (r.expiryTtl != null) {
-    parts.push(r.expiryTtl > 0 ? `expires in ${r.expiryTtlString ? spaceDuration(r.expiryTtlString) : r.expiryTtl}` : 'no expiry')
+    parts.push(r.expiryTtl > 0 ? `expires in ${r.expiryTtlString ?? r.expiryTtl}` : 'no expiry')
   }
 
   return parts

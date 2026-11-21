@@ -57,4 +57,27 @@ describe('Breakdown', () => {
     await userEvent.click(aBtn)
     expect(jumpFn).toHaveBeenCalledTimes(1)
   })
+
+  it('updates center total count to sum only active slices when a category is hidden', async () => {
+    render(
+      <Breakdown
+        responses={mockChart}
+        queryTypes={mockChart}
+        protocols={mockChart}
+        failure={false}
+      />,
+    )
+    const donutBtn = screen.getByRole('button', { name: 'Donut' })
+    await userEvent.click(donutBtn)
+    // Initially total is 175 (100 + 50 + 25)
+    expect(screen.getAllByText('175')).toHaveLength(3)
+
+    // In Query Response Types, toggle off 'A' (100) via its legend button
+    const responsesSection = screen.getByRole('region', { name: 'Query Response Types' })
+    const aLegendBtn = within(responsesSection).getByRole('button', { name: /^A / })
+    await userEvent.click(aLegendBtn)
+
+    // The center total for responses donut should now sum visible slices (50 + 25 = 75)
+    expect(within(responsesSection).getByText('75')).toBeInTheDocument()
+  })
 })

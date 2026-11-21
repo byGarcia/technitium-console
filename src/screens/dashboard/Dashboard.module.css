@@ -47,60 +47,7 @@ compact cards in two rows of five (`Figures.tsx` says which and why).
 */
 .tiles { display:grid; grid-template-columns: minmax(0, 1.15fr) repeat(5, minmax(0, 1fr)); gap: var(--s-5); }
 
-/* Live QPS Telemetry Badge */
-.qpsBadge {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--s-3);
-  padding: 2px 7px;
-  border-radius: var(--r-full);
-  background: var(--acc-bg);
-  border: 1px solid var(--acc-line);
-  color: var(--acc-ink);
-  font: 600 var(--t-2)/1.2 var(--font-mono);
-  margin-left: var(--s-3);
-  vertical-align: middle;
-}
-.qpsDot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--acc-ink);
-  box-shadow: 0 0 6px var(--acc-ink);
-  animation: pulseDot 2s infinite ease-in-out;
-}
-@keyframes pulseDot {
-  0%, 100% { opacity: 0.8; transform: scale(0.9); }
-  50% { opacity: 1; transform: scale(1.15); }
-}
 
-/* Live Pulse Beacon Indicator */
-.liveBeacon {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--s-3);
-  padding: 3px 8px;
-  border-radius: var(--r-full);
-  background: color-mix(in srgb, var(--ok) 12%, transparent);
-  border: 1px solid color-mix(in srgb, var(--ok) 30%, transparent);
-  color: var(--ok);
-  font: 600 var(--t-2)/1 var(--font-mono);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  margin-left: var(--s-3);
-}
-.beaconDot {
-  width: 6px;
-  height: 6px;
-  border-radius: var(--r-full);
-  background: var(--ok);
-  box-shadow: 0 0 6px var(--ok);
-  animation: beaconPulse 2s infinite ease-in-out;
-}
-@keyframes beaconPulse {
-  0%, 100% { opacity: 0.7; transform: scale(0.9); }
-  50% { opacity: 1; transform: scale(1.2); box-shadow: 0 0 8px var(--ok); }
-}
 
 /*
 A figure's colour is the colour of ITS SERIES in the chart, said with an edge and
@@ -339,6 +286,12 @@ The name never breaks: it ends in an ellipsis and is whole on hover.
 .donutSliceClickable:hover {
   stroke-width: 14;
   opacity: 0.9;
+}
+@media (prefers-reduced-motion: reduce) {
+  .donutSlice,
+  .donutSliceClickable {
+    transition: none;
+  }
 }
 .donutTotal {
   font: 700 var(--t-4) var(--font-mono);

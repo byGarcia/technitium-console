@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { DnsRecord } from '../../api/zonelists'
-import { rdataEntries, extras, shortDate, meta, splitTtl, spaceDuration } from './record'
+import { rdataEntries, extras, shortDate, meta, splitTtl } from './record'
 
 const CACHE_DNSKEY: DnsRecord = {
   name: '',
@@ -39,21 +39,11 @@ const ALLOWED_NS: DnsRecord = {
   expiryTtlString: '0s',
 }
 
-describe('spaceDuration', () => {
-  it('inserts space between duration units', () => {
-    expect(spaceDuration('1d8h41m35s')).toBe('1d 8h 41m 35s')
-    expect(spaceDuration('5d23h59m59s')).toBe('5d 23h 59m 59s')
-    expect(spaceDuration('33m20s')).toBe('33m 20s')
-    expect(spaceDuration('4h')).toBe('4h')
-    expect(spaceDuration('0s')).toBe('0s')
-  })
-})
-
 describe('splitTtl', () => {
   /* In cache the server sends the TTL already composed as a STRING ("218
      (3m38s)"); in allowed and blocked it sends the number and `ttlString` apart. */
-  it('it splits the cache string into a number and a human form with spaced duration', () => {
-    expect(splitTtl(CACHE_DNSKEY)).toEqual({ value: '2000', human: '33m 20s' })
+  it('it splits the cache string into a number and a human form', () => {
+    expect(splitTtl(CACHE_DNSKEY)).toEqual({ value: '2000', human: '33m20s' })
   })
 
   it('it composes the allowed and blocked pair out of ttl and ttlString', () => {
