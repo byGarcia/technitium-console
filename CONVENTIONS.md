@@ -279,8 +279,8 @@ Write down here whatever you find. What is already known:
 - **Disabling a record reads the expiry TTL FROM THE MODAL, not from the row**
   (`updateRecordState`, zone.js:6236). If the modal has never been opened, it
   sends the empty string; if it was opened, it sends whatever was left inside.
-  It is an upstream bug: it is replicated, and that is why the records screen
-  drags that value along.
+  It is an upstream bug. It was replicated until 2026-11-20 and is not any more:
+  see deviation 50.
 - **A record filter starting with `*` looks for the literal wildcard**, it does
   not list everything: after converting the glob to a regex, `showEditZonePage`
   rewrites a leading `.*\.` to `\*\.`. It serves to find the `*.zone` record,
@@ -609,7 +609,11 @@ contract and SECURITY.md.
    and `Could not read the blocking state.` (the status block's). **Rules** is one card in both
    views: the filter, the search and `List`/`Tree` in the toolbar; Import, Export and
    Flush at the end of the foot with the count and the pages; a row's Delete is a
-   trash icon named `Delete <domain>`. The tree is Allowed's and Blocked's
+   trash icon named `Delete <domain>`. An internationalised rule, which the export lists
+   in its ASCII form, is drawn in Unicode (as the tree draws `domainIdn`) and the filter
+   finds it by either form. Its `Delete <domain>`, the question before deleting and the
+   notices after name it as drawn, as upstream's question and alert name the `domainIdn` its
+   viewer draws (other-zones.js:367-383); its calls keep the ASCII form. The tree is Allowed's and Blocked's
    `lists/Lists.tsx`, drawn as Cache's node: a trail `<ROOT> › … › node` whose steps go
    up with `direction=up` (upstream's `[up]`), Refresh and Delete at its end, the zones
    under the node as chips, the records one line each with the rest under `Details`
@@ -650,6 +654,21 @@ contract and SECURITY.md.
    two "Cannot tell" sentences and the four "not checked" / "Could not read"
    lines. Its next step is the panel's own `Block` and `Allow` and the tab that
    holds the rule or the list: it adds no action.
+   **The bar's Block and Allow can be undone** (Adrián's decision, 2026-11-20;
+   `AddDomainBar.tsx`, `undo.ts`), on Overview and on Rules. Enter still blocks, as
+   upstream's form does. Their result alert, upstream's `Blocked!` or `Allowed!` with
+   its sentence, offers `Undo` (the word Rules' undo uses), which sends `blocked/delete`
+   or `allowed/delete` for the name as it was added and then shows upstream's own
+   `Deleted!` alert for that Delete; a refusal shows upstream's `Error!` with the
+   server's message. Its limits, and crossing one is a bug:
+   - **only what that Block or Allow created.** Undo is offered when the bar knows
+     the rules (the table's on Rules, its own copy on Overview) and the name was not
+     already a rule of that list: adding it again changed nothing, and Undo would
+     delete the older rule. While the rules are unknown, no Undo;
+   - **only with Delete on that list** (`Blocked.canDelete`, `Allowed.canDelete`),
+     the permission of the call it makes;
+   - **no new call and no confirmation removed.** Block and Allow never asked; Undo is
+     upstream's Delete, offered for as long as the alert is up.
 
    The section is the only one that *adds* a screen. It stays inside four limits, and a
    change that crosses one is a bug:
@@ -719,7 +738,8 @@ contract and SECURITY.md.
      renamed and removed. Only the non-zero ones are written;
    - **the Lists tab carries a dot while there are unsaved changes**, read as
      `Lists, unsaved changes` (`app/nav-marks.ts`, on Lists' entry in the sidebar since 2026-11-06). The edits still live only
-     while the tab is open, as before: leaving it leaves them, and the dot with them.
+     while the tab is open, as before: leaving it leaves them, and the dot with them,
+     after asking first since 2026-11-20 (deviation 51).
 3. **Settings jumps to the sub-tab of the invalid field.** Upstream focuses a
    hidden input and the user sees nothing; with one panel mounted at a time,
    without that jump the alert would be impossible to resolve.
@@ -828,8 +848,9 @@ contract and SECURITY.md.
      twice or not at all leaves the panel saying it could not load, never a double
      count or a quiet hole. Checked on 2026-10-15 against v15.6.1: the stitched
      hours equal Last Day's 24 and a single 157-hour request, hour by hour. The hour
-     in progress is left out, as Last Day leaves it. It is asked once per node and
-     per hour, not on each minute reload.
+     in progress is not asked, as Last Day leaves it out; its cell is outlined as
+     running, with no figure, and opens Query Logs for that hour like the others
+     (2026-11-20). It is asked once per node and per hour, not on each minute reload.
 
    Its limits, and crossing one is a bug:
    - **only `dashboard/stats/get`**, which the stock Dashboard already calls, and
@@ -849,7 +870,8 @@ contract and SECURITY.md.
      months", "previous N minutes/hours/days" (`compare.ts`, `Figures.tsx`,
      `Dashboard.tsx`), the Queries hint "Click a point to open Query Logs for that
      minute/hour/day/month" (`Dashboard.tsx`), the week's title "Queries per Hour,
-     Last 7 Days", its weekday names, each cell's "HH:00 to HH:00: N queries", its
+     Last 7 Days", its weekday names, each cell's "HH:00 to HH:00: N queries", the
+     hour in progress's "HH:00 to HH:00: in progress, counted when the hour ends", its
      hint "Click a cell for that hour's Query Logs" and its scale's "Quiet" and
      "Busy" (`Heatmap.tsx`, `heatmap.ts`), and the legend entries' "Show Query Logs"
      title, which is upstream's own menu text. The two hints show only when the
@@ -909,8 +931,9 @@ contract and SECURITY.md.
    - **This console's column**: `On GitHub`, with the console's licence and the
      sentence saying it is not Technitium's, then four destinations as rows, `Source code`, `Release notes`, `Report a problem` (so a
      console fault does not go to Technitium's support) and `Ideas and questions`;
-     and `Support the Console`, one sentence, `Star on GitHub` and the four
-     destinations of `.github/FUNDING.yml` as buttons.
+     and `Support the Console`, one sentence, `Star on GitHub` and three places to
+     donate as buttons, `GitHub Sponsors`, `Ko-fi` and `PayPal` (Liberapay is no
+     longer offered, Adrián's decision, 2026-11-20).
    - **`Support the Console` comes first in that column, and is marked** (Adrián's
      decision, 2026-11-06): upstream's `Donate` sits beside it and a visitor who
      wants to give to the console would otherwise land on Technitium's. It is the
@@ -1282,7 +1305,8 @@ contract and SECURITY.md.
     scopes`, `in the enabled scopes`, `The leases could not be read.`, `within the
     next hour`, `next:`, `obtained`, `None`, `Open in Leases`, `N of M leased`,
     `Leased`, `Not leased`, `N more`, `This DNS Server`, the `1d 4h 30m` lease time
-    and the reservation tooltip; the headers `Leases`, `Scope Range`, `Subnet Mask`;
+    and the reservation tooltip; the headers `Leases`, `Scope Range`, `Subnet Mask`,
+    and the leases' `Type`, which upstream leaves blank (2026-11-20);
     `Search` and its placeholders `IP address, MAC address or host name` and `Scope
     name or IP address`; `State`, `All`, `N of M shown`, `Details`, `Client
     Identifier`, `Network`, `Broadcast`, `Interface`, `Disable Scope`, `Enable
@@ -1610,7 +1634,9 @@ contract and SECURITY.md.
         `blockListUrls`. Both are cluster-wide parameters (`nodeScope`), so both calls go
         where Lists sends its own: `cluster` on a cluster, the empty node on a standalone
         server. A save needs `Settings: Modify` (the padlock otherwise), asks first, naming
-        the list and the address, and redraws from the server's answer with Settings'
+        the list and the address, reads the list again on that node and starts from it (a
+        change made elsewhere since the page opened is kept, and nothing is written when the
+        list already holds what was asked), and redraws from the server's answer with Settings'
         `Settings Saved!`. The QPM line is drawn only when the server sends
         `qpmLimitBypassList`;
       - `DHCP Lease`, when a lease hands out the address: its type and DHCP › Leases'
@@ -1658,7 +1684,9 @@ contract and SECURITY.md.
     once and drops), `Resolve <name> in DNS Client` and `Search Query Logs for
     <name>` (the row menus' own hand-offs), `Find <name> in Cache` (`?domain=`),
     `Search your rules for <name>` (`?q=`); an address adds `Search Query Logs for
-    client <address>`; any text adds `Search settings for <text>`. A zone or page
+    client <address>`; any text adds `Search settings for <text>`. A name may be
+    internationalised (`bücher.de`): Query Logs gets its ASCII form, since the server
+    matches `qname` only in that form, and the other steps get it as typed. A zone or page
     that answers comes before those steps. It calls nothing itself and changes
     nothing: every entry lands on a screen that does what it always did. A jump
     with parameters remounts the screen so it reads them even when it was already
@@ -1813,7 +1841,8 @@ contract and SECURITY.md.
     `Add Zone` on the notice), and a zone that takes no records from here (only `Primary` and
     `Forwarder`, the types whose row offers Edit Zone, and never an internal zone). The zone is the
     longest of the zones the list knows (the summary's unpaged read of this node) that the name
-    ends in, whole labels only; the type is `A` or `AAAA` by the address's family. It sends what
+    ends in, whole labels only, compared in the ASCII form `zones/list` names a zone by, so an
+    internationalised name may be typed in either form and is sent in that one; the type is `A` or `AAAA` by the address's family. It sends what
     the dialog sends for that record (`buildRecordBody`): `zones/records/add` with `node` in the
     query, `ttl` the server's default record TTL (the dialog's placeholder), `overwrite=false`,
     `ptr` and `createPtrZone` as ticked, and `updateSvcbHints=true`, upstream's answer when the
@@ -2034,9 +2063,11 @@ contract and SECURITY.md.
     `apps/advanced-blocking/`, a route with its folder and no sidebar entry (`detail` in
     `app/sections.ts`). It keeps the app's settings on one page: Clients, each group, General. Its
     limits, and crossing one is a bug:
-    - **only `apps/list`, `apps/config/get` and `apps/config/set`**, called as `Config` calls them,
-      with no `node`, and no permission check of its own: the server refuses a save without
-      `Apps: Modify` (WebServiceAppsApi.cs:482);
+    - **only `apps/list`, `apps/config/get` and `apps/config/set`**, called as `Config` calls them:
+      each read names the cluster's primary (apps.js:460, empty without a cluster), the write
+      carries no `node` and the server runs it on the primary (DnsWebService.cs:2298). No
+      permission check of its own: the server refuses a save without `Apps: Modify`
+      (WebServiceAppsApi.cs:482);
     - **it never rebuilds the document.** `json-tree.ts` keeps key order and the lexeme of every
       number and string; `serializeConfig` patches only the paths that changed. With nothing
       changed, Save sends back the text the server gave, byte for byte;
@@ -2117,6 +2148,27 @@ contract and SECURITY.md.
     Its words, OURS, are declared in the header comments of `DomainCheck.tsx` and
     `ListHits.tsx`.
 
+    **Which list blocks each of the Dashboard's Top Blocked Domains** (Adrián's decision,
+    2026-11-20; upstream issue #2293 asks for it; `screens/dashboard/BlockedLists.tsx`). The
+    panel offers `Show lists` under its rows; its header keeps upstream's Blocking menu and More.
+    It reads nothing until pressed, and until then a line beside the button says, as Count
+    lists says it before its own press, that each lookup is logged as blocked from this server:
+    they raise this Dashboard's Top Blocked Domains and Top Clients. One press takes Count lists' two steps without its log read: `settings/get` for the
+    node the panel reads (the connected one on the cluster aggregate) and `apps/list` only when a
+    setting would stop it, then one TXT lookup per name the panel draws, at most five, through the
+    same cache. Each row then says what blocks it where a client's domain goes: the list's name,
+    `Advanced Blocking` and its group, `Your rule`, `No list reported` or `Lookup failed`, and a
+    line under the rows says it is what blocks each name now, as that server reports it. Blocking
+    disabled or paused, the report off, the server on its own Blocking Bypass List, or no
+    `Settings: View`: nothing is looked up and the line says why, in Count lists' words. Without
+    `DnsClient: View` the button is locked. Its limits, and crossing one is a bug:
+    - **no read on load, on a refresh or on a period change.** A name that comes in later says
+      nothing until the next press, and a name read before is not asked again while it is
+      remembered (here or by Count lists);
+    - **at most five lookups a press**, the rows on screen. The More dialog is unchanged;
+    - **the same calls as Count lists**: no `allowed/export`, no `logs/query`.
+    Its words, OURS, are declared in the header comment of `BlockedLists.tsx`.
+
 47. **Allow a blocked name in Advanced Blocking groups, from Query Logs** (Adrián's decision,
     2026-11-10; asked for in #33; `screens/apps/advanced-blocking/AllowInGroup.tsx` and
     `allow-in-group.ts`). Upstream's row menu offers `Query DNS Server` and `Allow Domain`
@@ -2126,8 +2178,8 @@ contract and SECURITY.md.
     ticked in its dialog. `Allow Domain` is unchanged. The menu knows the app is there from the
     `apps/list` Query Logs already reads. Its limits, and crossing one is a bug:
     - **the visual editor's limits (deviation 45)**: only `apps/list`, `apps/config/get` and
-      `apps/config/set`, with no `node`, so it is the config of the server the console is
-      connected to; the same model, so the config is patched and never rebuilt; the config read
+      `apps/config/set`, called as `Config` calls them, so in a cluster it is the primary's config;
+      the same model, so the config is patched and never rebuilt; the config read
       again before the write, and nothing written if it changed; a config the editor refuses, or
       an app below 10.0, is refused here with a link to the editor;
     - **only the `allowed` list of the ticked groups changes.** The name goes in lower case and
@@ -2147,6 +2199,144 @@ contract and SECURITY.md.
       root, are not offered the action;
     - **only in Query Logs**: the Dashboard's and Blocking's top lists carry no client.
     Its words, OURS, are declared in the header comment of `AllowInGroup.tsx`.
+
+48. **Sortable columns sort numbers, addresses and names the way they read** (Adrián's
+    decision, 2026-11-20; upstream issue #1873 asks for it; `ui/Table.tsx`,
+    `compareSortValues`). Upstream's `sortTable` (common.js:228-280) lowercases each cell's
+    text and compares it by character code, so a TTL column sorts 300, 3600, 60, 86400 and
+    DHCP leases sort 10.0.0.10, 10.0.0.100, 10.0.0.9. Every sortable column here still sorts
+    by what the cell shows, with the same first-click rule, but compares it in this order: an
+    empty value first, as before; two numbers, or two texts that are plain numbers, by their
+    value; two IPv4 or IPv6 addresses by their bytes, IPv4 before IPv6, and two MAC addresses
+    by theirs; anything else case-insensitively and naturally (`Intl.Collator`, numeric), so
+    `pc2` comes before `pc10`. A drawn date (`2026-08-26 10:48`) still sorts as a date. The
+    zone list sorts the page the server sent, as upstream does; a zone's records, which the
+    console pages itself, sort across all their pages, where upstream sorts only the page on
+    screen (zone.js:3640). Its limits, and crossing one is a bug:
+    - **only the comparison changes.** What each column reads, the first-click rule and which
+      rows are sorted stay as they were. The Leases column of DHCP › Scopes keeps sorting by its
+      share (deviation 30), now read as a number;
+    - **no call and no stored order.** The order is still lost on reload, as upstream's is.
+
+49. **Enter does not run the destructive cluster dialogs or Unsign Zone** (Adrián's decision,
+    2026-11-20; `ui/Dialog.tsx`, `screens/admin/Cluster.tsx`,
+    `screens/zones/modals/UnsignZone.tsx`). Every other dialog with a main action runs it on
+    Enter, as upstream's forms do (`Dialog.tsx`).
+    Upstream also marks the main button of these five `type="submit"`, so Enter in their form
+    runs them: the cluster's Remove (`Remove Node`, index.html:7284), Promote (`Promote To
+    Primary Node`, 7331), Leave (`Leave Cluster`, 7374) and Delete (`Delete Cluster`, 7417), and
+    Unsign Zone (5785). Here their main button is a plain button, which Enter runs only when it
+    has the focus itself. Each of them is irreversible, and they hold no text field, only a
+    checkbox or nothing, so an Enter there is never one that finishes typing: it is meant for
+    something else, and must not remove a node, leave or delete a cluster, or unsign a zone.
+    Its limits, and crossing one is a bug:
+    - **only these five.** A dialog with a text field keeps Enter, as upstream;
+    - **only Enter changes.** Their texts, checkboxes, calls and alerts are upstream's, and
+      Escape and the dismiss button still close them.
+
+50. **Enabling or disabling a record keeps its own expiry TTL** (Adrián's decision,
+    2026-11-20; `screens/zones/ZoneRecords.tsx`, `api/records.ts`'s `stateChangeBody`).
+    Upstream's row Enable and Disable resend the whole record with `disable` set, but
+    read `expiryTtl` from the record dialog's field instead of the record
+    (`updateRecordState`, zone.js:6236): the empty string if the dialog was never
+    opened, otherwise whatever was left in it. So disabling a record whose expiry is
+    3600 after editing one with 300 gives it 300, and one never opened loses its
+    expiry. This console copied that until 2026-11-20. It now sends the record's own
+    `expiryTtl`, as it sends its own TTL and comments. Its limits, and crossing one is
+    a bug:
+    - **only that field changes.** The call, the confirmation of Disable, the alerts
+      and every other parameter are upstream's;
+    - **nothing else reads the dialog's leftovers.** The dialog keeps its own value for
+      its own Save, as before.
+
+51. **Leaving unsaved changes asks first** (Adrián's decision, 2026-11-20; `app/leave-guard.ts`,
+    `app/LeaveConfirm.tsx`). Upstream's Settings, its block list URLs and its DHCP scope form
+    lose what was typed, silently, as soon as another tab is clicked, and so did these. Now
+    Settings (and Blocking's Settings page, the same form), Blocking › Lists and the DHCP scope
+    form, while they hold a change the save would send, declare it, and every way out asks:
+    the sidebar, a link inside a screen (`RouteLink`, `navigateTo`), a command palette jump,
+    the jumps between screens, My Profile, Logout, Back and Forward, and in Settings the
+    cluster node selector, which reads the form again. The question is a confirmation, `Discard
+    Changes` with `Are you sure you want to discard the unsaved changes?`, `Cancel` and
+    `Discard`; Cancel stays with the form as it was, Discard goes where the user was going.
+    Back is undone first: the address goes back to the form's while the question is up. A
+    reload or closing the tab gets the browser's own prompt (`beforeunload`), the only one a
+    page may show there. Settings' save bar also offers `Discard`, which puts the form back as
+    the server last answered it, as Lists' bar always has. One module does all of it: a guard
+    says which addresses keep its form (Settings' nine sub-sections are one form, so moving
+    between them asks nothing), Back is caught in the capture phase before any screen's own
+    `popstate`, and where the console stands is followed through `history.pushState` and
+    `replaceState`, wrapped while the Shell is mounted. Its limits, and crossing one is a bug:
+    - **only these three forms, and only with a change the save would send.** Nothing typed,
+      nothing asked; a change put back as it was counts as none (Settings' `pending.ts`, Lists'
+      `changesOf`, the scope form against what it opened with);
+    - **only leaving asks.** Cancel and the path back to the list in the scope form are its own
+      way out and do not; Save, Backup, Restore and every call are what they were;
+    - **no `window.confirm` inside the console.** The browser prompt is used only where nothing
+      else can be.
+    Its words, OURS: `Discard Changes`, `Are you sure you want to discard the unsaved
+    changes?` and `Discard` (the dialog's verb and Settings' bar). The Advanced Blocking editor
+    keeps its own `beforeunload` (deviation 45) and asks nothing inside the console.
+
+52. **Quick ranges beside Query Logs' From and To** (Adrián's decision, 2026-11-20;
+    `screens/logs/QueryLogs.tsx`, `QUICK_RANGES`). Upstream's From and To are two
+    `datetime-local` fields typed by hand (index.html:3318-3327). Beside them a strip of four,
+    `15 min`, `1 h`, `24 h` and `7 d`, drawn as the Dashboard's period strip (`ui/Segmented`),
+    fills both: From that long ago and To now, to the second, in the browser's zone, as the
+    Dashboard's jumps write them (`localInput`). Then it runs Query from page 1. Its limits,
+    and crossing one is a bug:
+    - **only the two fields and Query.** The call is the `logs/query` Query sends, with every
+      other filter as it stands, through the same validations and alerts; the address bar keeps
+      the two instants as it keeps any query's, not the range's name, so a link asks for the same
+      span; the All nodes view (deviation 37) sends them to every node as it sends a typed range;
+    - **it is never a mode.** A range is drawn pressed only while both fields hold what it wrote.
+      A field changed by hand, Reset, and Live Update leave none pressed, and nothing is asked
+      again until Query or a range is pressed; pressed again, a range asks up to the new now;
+    - **Live Update disables them**, as it disables From and To, and empties both as before.
+    Its words, OURS: `Quick range` (the group's name and its title), `15 min`, `1 h`, `24 h` and
+    `7 d`, declared in the header comment of `QueryLogs.tsx`.
+
+53. **A zone's records filtered by their data, and names in either form** (Adrián's decision,
+    2026-11-20; `screens/zones/filter.ts`, `ZoneRecords.tsx`). Upstream filters a zone's records
+    by name and type only (`showEditZonePage`, zone.js:3524-3570), so finding the record that
+    points at `10.0.0.5` meant paging through the zone. Beside Name and Type, `Data contains`
+    keeps the records whose Data column, as drawn (`recordText`, the text the column already sorts
+    by), contains what was typed, ignoring case. And the name filter, which compares the ASCII name
+    the server stores, is also tried against the Unicode form it sends beside it (`nameIdn`, decoded
+    here when absent) under the zone's Unicode name, so `bücher`, `bü*` and `xn--bcher-kva` all find
+    `xn--bcher-kva.xn--mnchen-3ya.test`. Its limits, and crossing one is a bug:
+    - **upstream's name and type rules are unchanged.** Without a wildcard the name is still exact,
+      `@` is still the apex and a leading `*` still the literal wildcard record; a name that matched
+      before still matches;
+    - **the data text is taken literally**, with no wildcard and without the spaces at its ends;
+    - **it behaves as the other two.** Typed is not applied until Go or Enter, a type pressed in the
+      zone's summary applies it too, it is kept in the address bar as `?rdata=` beside `?rname=` and
+      `?rtype=`, and it leaves with the zone. It reads only the records already loaded: no call.
+    Its words, OURS: `Data contains` and its placeholder `10.0.0.5 or example.net`, declared in the
+    header comment of `filter.ts`.
+
+54. **Acting on several of a zone's records at once** (Adrián's decision, 2026-11-20;
+    `screens/zones/ZoneRecords.tsx`). Upstream acts on one record at a time: its row's Delete,
+    Disable and Enable (zone.js:6225 and 6400). Every record whose row offers both Delete Record and
+    Disable Record (`rowActions`: not the SOA, not the DNSSEC records, none in a zone whose rows
+    offer nothing) now has a checkbox, with `Select all records` in the header for the page, and
+    the toolbar's end carries `Enable Records`, `Disable Records` and `Delete Records` beside the
+    count, the way the zone list carries `Delete Zones`. Its limits, and crossing one is a bug:
+    - **each record is the row's own call.** One `zones/records/delete` or `zones/records/update`
+      per record, one after another, never two at once, with the body its row sends
+      (`deletionBody`, `stateChangeBody` with the record's own expiry of deviation 50, the SVCB
+      hints included). Disable sends only the ticked records that are enabled, Enable only those
+      that are disabled, and each verb is disabled while it would send nothing;
+    - **it asks as the row asks.** Delete and Disable confirm first, naming every record; Enable
+      does not;
+    - **one read and one notice at the end.** After the last call the zone is read once, and the
+      notice says all went, or how many failed with the first reason the server gave, the way
+      Delete Zones counts its failures. An expired session stops it where it is;
+    - **the selection is the page on screen.** Another page, an applied filter, a sort, Hide
+      DNSSEC Records and every read of the zone clear it;
+    - **without Modify and Delete, or with nothing selectable, nothing is drawn**: no column and no
+      verbs, and the screen is the one it was. Each verb follows its row's permission.
+    Its words, OURS, are declared in the header comment of `ZoneRecords.tsx`.
 
 ## Four constraints the server imposes
 

@@ -107,6 +107,40 @@ describe('saving', () => {
     expect(JSON.parse(sent).networkGroupMap['10.9.9.0/24']).toBe('ghost')
   })
 
+  /* As the app's Config dialog reads it (apps.js:460): from the primary, so a copy the
+     cluster has not propagated yet is neither drawn nor taken as the base of a save. */
+  it('reads the config from the primary node, both to draw it and before writing', async () => {
+    const { get, set } = server()
+    render(
+      <AdvancedBlocking
+        token="t"
+        nodes={[
+          { name: 'ns2.test', type: 'Secondary' },
+          { name: 'ns1.test', type: 'Primary' },
+        ]}
+        clusterInitialised
+      />,
+    )
+    const ttl = await screen.findByLabelText('Blocked Answer TTL')
+    await userEvent.clear(ttl)
+    await userEvent.type(ttl, '60')
+    await userEvent.click(await saveButton())
+    await waitFor(() => expect(set).toHaveBeenCalled())
+    expect(get.mock.calls.length).toBeGreaterThanOrEqual(2)
+    expect(get.mock.calls.map((c) => c[2])).toEqual(get.mock.calls.map(() => 'ns1.test'))
+  })
+
+  it('without a cluster the config is read with no node, as before', async () => {
+    const { get, set } = server()
+    open()
+    const ttl = await screen.findByLabelText('Blocked Answer TTL')
+    await userEvent.clear(ttl)
+    await userEvent.type(ttl, '60')
+    await userEvent.click(await saveButton())
+    await waitFor(() => expect(set).toHaveBeenCalled())
+    expect(get.mock.calls.map((c) => c[2] ?? '')).toEqual(get.mock.calls.map(() => ''))
+  })
+
   it('does not write when the server config changed meanwhile', async () => {
     const { get, set } = server()
     open()

@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react'
-import { setSettings, type DnsSettings } from '../../api/settings'
+import { readSettings, setSettings, type DnsSettings } from '../../api/settings'
 import { convertToDynamicLease, convertToReservedLease, type DhcpLease } from '../../api/dhcp'
 import { PermissionButton } from '../../ui/PermissionButton'
 import { Confirm } from '../../ui/Confirm'
@@ -18,7 +18,9 @@ upstream's texts wherever upstream has them.
     address is in Settings' list (`settings/get`, read by the page with `Settings:
     View`), and a button that adds it or takes it out. The save is `settings/set`
     with the list alone and its node, as Blocking › Lists saves `blockListUrls`
-    (`client-actions.ts`); it needs `Settings: Modify`. The answer carries the
+    (`client-actions.ts`); it needs `Settings: Modify`. The list the page read can be
+    old by then, so the save reads it again on the same node and starts from that one,
+    and writes nothing when it already holds what was asked. The answer carries the
     settings as the server keeps them, and the state is redrawn from it. Upstream
     asks nothing before saving its settings, but these buttons change a server
     setting from a page that reads like a report, so each asks first, naming the
@@ -126,9 +128,23 @@ export function ClientActions({
 
   async function saveList(name: BypassList, add: boolean) {
     if (settings.kind !== 'ok') return
-    const list = settings.data[name]
-    const body = add ? addBody(name, list, ip, settingsNode) : removeBody(name, list, ip, settingsNode)
     setBusy(true)
+    /* The list as the server keeps it now: another console, or Settings, may have
+       changed it since the page read it, and the save sends the whole list. */
+    const fresh = await readSettings(token, settingsNode)
+    if (fresh.kind !== 'ok') {
+      setBusy(false)
+      onNotice(noticeFromFailure(fresh))
+      return
+    }
+    const list = fresh.data[name]
+    const m = membership(list, ip)
+    if (add ? m.entry != null : !m.exact) {
+      setBusy(false)
+      onSettings(fresh.data)
+      return
+    }
+    const body = add ? addBody(name, list, ip, settingsNode) : removeBody(name, list, ip, settingsNode)
     const r = await setSettings(token, body)
     setBusy(false)
     if (r.kind !== 'ok') {

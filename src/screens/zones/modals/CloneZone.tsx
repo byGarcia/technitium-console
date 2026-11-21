@@ -65,7 +65,7 @@ export function CloneZone({
       title={`Clone Zone - ${zone === '.' ? '<root>' : zone}`}
       actions={
         <>
-          <Button variant="primary" disabled={busy} onClick={() => void clone()}>
+          <Button type="submit" variant="primary" disabled={busy} onClick={() => void clone()}>
             Clone Zone
           </Button>
         </>

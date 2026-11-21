@@ -132,17 +132,18 @@ export function BlockingMenu({
         {(close) => (
           <>
             {active === false && (
-              <button role="menuitem" onClick={() => { close(); setPending(flip(true)) }}>
+              <button type="button" role="menuitem" onClick={() => { close(); setPending(flip(true)) }}>
                 Enable Blocking
               </button>
             )}
             {active === true && (
-              <button role="menuitem" onClick={() => { close(); setPending(flip(false)) }}>
+              <button type="button" role="menuitem" onClick={() => { close(); setPending(flip(false)) }}>
                 Disable Blocking
               </button>
             )}
             {DURATIONS.map((p) => (
               <button
+                type="button"
                 key={p.minutes}
                 role="menuitem"
                 onClick={() => { close(); setPending(forAWhile(p.minutes)) }}

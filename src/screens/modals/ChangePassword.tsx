@@ -110,7 +110,7 @@ export function ChangePassword({
       title="Change Password"
       actions={
         <>
-          <Button variant="primary" disabled={busy} onClick={() => void save()}>
+          <Button type="submit" variant="primary" disabled={busy} onClick={() => void save()}>
             Change
           </Button>
         </>

@@ -16,9 +16,9 @@ It was written six times: once as a component inside Administration (from where
 the Dashboard, Zones and the lists screens imported it, none of which have
 anything to do with Administration), another as a component inside Settings, and
 four times bare with `Dialog` + one button + `close="Cancel"` +
-`size="compact"` in Logs, DHCP and again Zones and the lists. Outside one table
-(the rules of Blocking › Rules, which offers Undo through `ui/Toast`) this console
-has no undo, so the place where six versions are least welcome is precisely this
+`size="compact"` in Logs, DHCP and again Zones and the lists. Outside Blocking
+(the rules of Blocking › Rules, which offers Undo through `ui/Toast`, and its add
+bar's result) this console has no undo, so the place where six versions are least welcome is precisely this
 one.
 
 Of the six, two (Zones and the lists) kept the "busy" flag and the closing INSIDE

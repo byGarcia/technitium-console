@@ -23,6 +23,16 @@ describe('filterRules and countRules', () => {
     expect(filterRules(rules, 'allowed', 'ads')).toEqual([])
   })
 
+  /* `blocked/export` and `allowed/export` list a name in its ASCII form
+     (`xn--bcher-kva.test` for `bücher.test`, 15.6.2 harness, 2026-11-20). */
+  it('finds an internationalised name by either of its forms', () => {
+    const idn = mergeRules(['xn--bcher-kva.test', 'ads.example.com'], ['xn--mnchen-3ya.test'])
+    expect(filterRules(idn, 'all', 'bücher').map((r) => r.domain)).toEqual(['xn--bcher-kva.test'])
+    expect(filterRules(idn, 'all', 'BÜCH').map((r) => r.domain)).toEqual(['xn--bcher-kva.test'])
+    expect(filterRules(idn, 'all', 'xn--bcher').map((r) => r.domain)).toEqual(['xn--bcher-kva.test'])
+    expect(filterRules(idn, 'all', 'münchen.test').map((r) => r.domain)).toEqual(['xn--mnchen-3ya.test'])
+  })
+
   it('counts each list', () => {
     expect(countRules(rules)).toEqual({ all: 3, blocked: 2, allowed: 1 })
   })

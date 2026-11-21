@@ -1,6 +1,7 @@
 import type { ApiOutcome } from '../../api/client'
 import type { DomainList } from '../../api/zonelists'
 import { noticeFromFailure, type Notice } from '../../lib/notice'
+import { toUnicode } from '../../lib/punycode'
 import { missing, type Need, type Permissions } from './permissions'
 import type { Rule } from './rules-model'
 
@@ -10,7 +11,14 @@ Undoing a Delete of the Rules table (Rules.tsx, the header). OURS, words include
 `N rules are back.`, `'<domain>' was not put back: <reason>` and
 `N of M rules were not put back: <reason>`. A single deletion is announced with
 upstream's own success sentence, the one its confirmed Delete shows
-(other-zones.js), because that is what happened.
+(other-zones.js), because that is what happened. They name a rule as its row draws
+it, an internationalized one in Unicode (`toUnicode`), as upstream's alert names the
+one its viewer draws; the add bar's notice keeps the name as it was typed.
+
+The add bar's Block and Allow (AddDomainBar.tsx) are undone from here too: their
+result notice offers `Undo`, which takes the rule out again with `blocked/delete` or
+`allowed/delete` and says so with upstream's success alert for a Delete
+(`deletedNotice`). Its limits are in deviation 2.
 
 The notice moves through three phases: `deleted` (Undo offered), `restoring`
 (Undo running: its button is off and the clock holds) and `restored` (said, and
@@ -41,6 +49,24 @@ export function undoNeed(perms: Permissions, rules: readonly Rule[]): Need | und
   return undefined
 }
 
+/** What taking back a rule the add bar just added asks for: `blocked/delete` and
+    `allowed/delete` need Delete (WebServiceOtherZonesApi.cs). */
+export function deleteNeed(list: DomainList): Need {
+  return list === 'allowed' ? 'Allowed.canDelete' : 'Blocked.canDelete'
+}
+
+/** Upstream's success sentences for the confirmed Delete (other-zones.js). */
+function deletedSentence(rule: Rule): string {
+  return rule.list === 'allowed'
+    ? `Domain '${rule.domain}' was deleted from Allowed Zone successfully.`
+    : `Blocked zone '${rule.domain}' was deleted successfully.`
+}
+
+/** Upstream's alert for a confirmed Delete: what the add bar's Undo says once done. */
+export function deletedNotice(rule: Rule): Notice {
+  return { type: 'success', title: 'Deleted!', text: deletedSentence(rule) }
+}
+
 /** A Delete while Undo is offered joins it; otherwise it starts a new notice. */
 export function joinDeleted(current: UndoState | null, rule: Rule): UndoState {
   if (current != null && current.phase === 'deleted') return { rules: [...current.rules, rule], phase: 'deleted' }
@@ -48,16 +74,14 @@ export function joinDeleted(current: UndoState | null, rule: Rule): UndoState {
 }
 
 export function undoMessage(state: UndoState): string {
-  const [first] = state.rules
+  const [rule] = state.rules
+  const first = { ...rule, domain: toUnicode(rule.domain) }
   const n = state.rules.length
   if (state.phase === 'restored') {
     return n === 1 ? `'${first.domain}' is back in ${LABEL[first.list]}.` : `${n} rules are back.`
   }
   if (n > 1) return `${n} rules were deleted.`
-  // Upstream's success sentences for the confirmed Delete (other-zones.js).
-  return first.list === 'allowed'
-    ? `Domain '${first.domain}' was deleted from Allowed Zone successfully.`
-    : `Blocked zone '${first.domain}' was deleted successfully.`
+  return deletedSentence(first)
 }
 
 export interface Restore {
@@ -92,7 +116,7 @@ export function notRestoredNotice(rules: readonly Rule[], result: Restore): Noti
     title: 'Error!',
     text:
       rules.length === 1
-        ? `'${rules[0].domain}' was not put back: ${reason}`
+        ? `'${toUnicode(rules[0].domain)}' was not put back: ${reason}`
         : `${left} of ${rules.length} rules were not put back: ${reason}`,
   }
 }

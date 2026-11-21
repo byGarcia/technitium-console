@@ -98,14 +98,6 @@ export function Zones({
   const [records, setRecords] = useState<ResourceRecord[]>([])
   const [originalRecord, setOriginalRecord] = useState<ResourceRecord | null>(null)
 
-  /*
-  The expiry TTL left over in the record modal. Upstream reads it from that
-  field when DISABLING a record from the row (`updateRecordState`,
-  zone.js:6236), so the value survives the modal's closing. It is a bug of
-  theirs; it is replicated because the rule is zero behaviour changes.
-  */
-  const [modalExpiryTtl, setModalExpiryTtl] = useState('')
-
   const [listRefresh, setListRefresh] = useState(0)
   const [zoneRefresh, setZoneRefresh] = useState(0)
 
@@ -289,7 +281,6 @@ export function Zones({
           onViewDs={(z) => openModal('viewds', z)}
           onDnssecProperties={(z) => openModal('dnssec', z)}
           refresh={zoneRefresh}
-          modalExpiryTtl={modalExpiryTtl}
         />
       )}
 
@@ -424,7 +415,6 @@ export function Zones({
         defaults={{ ...recordTtls, dnssecValidation }}
         onClose={() => setModal(null)}
         onDone={done}
-        onExpiryTtl={setModalExpiryTtl}
       />
     </>
   )

@@ -13,7 +13,8 @@ Overview, Rules and Lists. It is the second deliberate exception to
 The section and tab names (`Blocking`, `Overview`, `Rules`, `Lists`) and the tab
 list's label `Blocking sections` are OURS, and so is the Lists tab's mark while
 Lists has unsaved changes, read as `unsaved changes` (2026-10-15). The mark lives
-as long as the tab's edits do: leaving the tab leaves them, and the mark goes too.
+as long as the tab's edits do: leaving the tab leaves them, after asking first
+(`app/leave-guard.ts`, deviation 51), and the mark goes too.
 */
 
 export const BLOCKING_TABS = ['Overview', 'Rules', 'Lists'] as const

@@ -26,6 +26,7 @@ import { toSlug } from './slug'
 export { forgetRoot, appRoot } from './base'
 import { appRoot } from './base'
 import { LEGACY_ROUTES, MOVED_ROUTES } from './static-routes'
+import { guardedLeave } from './leave-guard'
 
 export interface Route {
   section: string
@@ -128,6 +129,9 @@ export function plainClick(e: {
  * screen needs no handle on the Shell's state to send the user elsewhere.
  */
 export function navigateTo(route: Route, search?: string): void {
-  writeRoute(route, false, search)
-  window.dispatchEvent(new PopStateEvent('popstate'))
+  /* An unsaved form asks first (`leave-guard.ts`, deviation 51). */
+  guardedLeave(toTrail(route) + (search ?? window.location.search), () => {
+    writeRoute(route, false, search)
+    window.dispatchEvent(new PopStateEvent('popstate'))
+  })
 }

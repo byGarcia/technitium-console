@@ -18,6 +18,29 @@ Here the order belongs to the component, not to whoever uses it:
 modals. That way no new modal can pick its own order again.
 */
 
+/*
+Enter submits, as it does in the stock console, where every modal is a `<form>` and
+its primary button is `type="submit"` (index.html, e.g. Add Zone at 3929 and 4232).
+Here too the dialog is one form, and the button that upstream submits with says
+`type="submit"`; every other `Button` is `type="button"` by default. So Enter in a
+text field presses that button, and only it: its own `onClick` runs, with its
+validation and its busy state, and the browser does the rest. A textarea keeps
+Enter for a new line, and a disabled primary (busy, or nothing to send) means Enter
+does nothing. A destructive confirmation has no submit, so an Enter meant for
+something else never deletes: `ui/Confirm`, and the dialogs whose only action
+removes something (the cluster's Remove, Promote, Leave and Delete, Unsign Zone,
+Remove Lease). Upstream marks five of those `submit` (all but Remove Lease, which
+is a plain button there too); they have no text field, only checkboxes, so there
+is no Enter in a field to keep. That is deviation 49 in CONVENTIONS.md.
+
+The form only lends its Enter: its own submission is always cancelled, and stopped
+there, because React carries a portal's events to the components it was drawn from,
+and a dialog opened from a form would otherwise submit that one too. It does not
+validate either (`noValidate`): the checks and their texts are upstream's, in the
+screens. `display: contents` keeps it out of the layout. A dialog's body therefore
+holds no `<form>` of its own.
+*/
+
 /** True inside a dialog: a `Notifier` there stays in the dialog, beside what it is about. */
 export const InDialog = createContext(false)
 
@@ -71,6 +94,14 @@ export function Dialog({
           className={`${styles.content} ${styles[size]}${plain ? ` ${styles.plain}` : ''}`}
           data-size={size}
         >
+          <form
+            className={styles.shell}
+            noValidate
+            onSubmit={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+            }}
+          >
           <div className={styles.head}>
             {lead ? (
               <div className={styles.heading}>
@@ -89,6 +120,7 @@ export function Dialog({
             {actions}
             <Button onClick={() => onOpenChange(false)}>{close}</Button>
           </div>
+          </form>
         </RadixDialog.Content>
       </RadixDialog.Portal>
     </RadixDialog.Root>

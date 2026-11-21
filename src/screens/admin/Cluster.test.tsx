@@ -1,8 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, within } from '@testing-library/react'
+import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Cluster } from './Cluster'
 import * as client from '../../api/client'
+import * as clusterApi from '../../api/admin-cluster'
+import { deferred, type Deferred } from '../../test/deferred'
 import { CLUSTER_PRIMARY, CLUSTER_SECONDARY, CLUSTER_NOT_INITIALISED } from './admin.fixture'
 import type { ClusterState } from '../../api/admin-cluster'
 import { choose, optionsOf } from '../../test/dropdown'
@@ -594,8 +596,9 @@ describe('Cluster: the consequence block', () => {
     expect(before).toHaveTextContent('Delete')
     /* And the dismiss stays `Close`, which is what upstream writes on this modal;
        it is a `Dialog` and not a `Confirm` precisely because of that. The
-       header's ✕ is also named `Close`, so it is the FOOTER one that is read. */
-    const footer = dialog.lastElementChild!
+       header's ✕ is also named `Close`, so it is the FOOTER one that is read (the
+       last part of the dialog's form, `ui/Dialog`). */
+    const footer = dialog.querySelector('form')!.lastElementChild!
     expect([...footer.querySelectorAll('button')].map((b) => b.textContent)).toEqual([
       'Delete',
       'Close',
@@ -616,5 +619,33 @@ describe('Cluster: the consequence block', () => {
     expect(question).toBeGreaterThanOrEqual(0)
     expect(block).toBeGreaterThan(question)
     expect(note).toBeGreaterThan(block)
+  })
+})
+
+/*
+Answers that arrive out of order. The node changes with a read in flight; only the
+state of the node asked last is drawn and handed up to Admin.
+*/
+describe('Cluster: answers out of order', () => {
+  it('keeps only the state of the node chosen last', async () => {
+    type Read = Deferred<Awaited<ReturnType<typeof clusterApi.getClusterState>>>
+    const asked = new Map<string, Read>()
+    vi.spyOn(clusterApi, 'getClusterState').mockImplementation((_t, opts = {}) => {
+      const d: Read = deferred()
+      asked.set(opts.node ?? '', d)
+      return d.promise
+    })
+    const onCluster = vi.fn()
+    const view = render(<Cluster {...props} onCluster={onCluster} node="ns1.mycluster.test" />)
+    await waitFor(() => expect(asked.has('ns1.mycluster.test')).toBe(true))
+    view.rerender(<Cluster {...props} onCluster={onCluster} node="ns2.mycluster.test" />)
+    await waitFor(() => expect(asked.has('ns2.mycluster.test')).toBe(true))
+
+    const answer = (state: ClusterState) =>
+      ok({ response: state, server: state.dnsServerDomain }) as Awaited<ReturnType<typeof clusterApi.getClusterState>>
+    await act(async () => asked.get('ns2.mycluster.test')!.resolve(answer(CLUSTER_SECONDARY)))
+    await act(async () => asked.get('ns1.mycluster.test')!.resolve(answer(CLUSTER_PRIMARY)))
+    expect(onCluster).toHaveBeenCalledTimes(1)
+    expect(onCluster).toHaveBeenCalledWith(CLUSTER_SECONDARY)
   })
 })

@@ -42,6 +42,9 @@ Dashboard, louder than any action on it.
 
 .option:hover { color: var(--ink); background: var(--nav-hover); }
 
+/* Off with the mode that rules it (`disabled`): the buttons' own opacity, and no hover. */
+.option:disabled { opacity: 0.5; cursor: default; pointer-events: none; }
+
 /* Inside, because the group's `overflow: hidden` would clip an outside ring. */
 .option:focus-visible { outline: var(--focus); outline-offset: -2px; }
 

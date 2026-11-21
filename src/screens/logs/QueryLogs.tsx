@@ -46,6 +46,7 @@ import type { ClusterNode } from '../../ui/ClusterNodeSelect'
 import { NodeName, NodesFailed } from '../../ui/AcrossNodes'
 import { nodeColour } from '../dashboard/palette'
 import { readParam } from '../../lib/url-state'
+import { localInput } from '../dashboard/jump'
 import { toTrail } from '../../app/route'
 import {
   acrossStatus, failures, mergedPage, nodeTotals, queryAcross, rowKey,
@@ -109,7 +110,26 @@ Export stays the chosen node's, and a row's Query DNS Server asks the row's node
 The view is `?nodes=all` in the address bar. Its words, OURS: `Query Logs view`
 (the toggle's accessible name), `This node`, `All nodes`, `Newest N across the
 nodes`, `Matching logs on each node` and `Node`, and those of `ui/AcrossNodes`.
+
+QUICK RANGES (deviation 52, 2026-11-20): beside From and To, `15 min`, `1 h`, `24 h`
+and `7 d` fill both fields, from that long ago to now, to the second, and run the
+query Query runs, from page 1 and with every other filter as it stands. Nothing else
+is new: the fields are the same `datetime-local` ones, so the validations, the call,
+the address bar (which keeps the two instants, not the range's name) and the All
+nodes view treat them as typed. A range stays pressed while both fields hold what it
+wrote; a field changed by hand, Reset and Live Update leave none pressed, and Live
+Update disables them with the fields. Pressed again, a range asks up to the new now.
+Its words, OURS: `Quick range` (the group's name), `15 min`, `1 h`, `24 h` and `7 d`.
 */
+
+/** The quick ranges (deviation 52), each how far back from now it starts. */
+export const QUICK_RANGES = [
+  { id: '15m', label: '15 min', span: 15 * 60_000 },
+  { id: '1h', label: '1 h', span: 3_600_000 },
+  { id: '24h', label: '24 h', span: 86_400_000 },
+  { id: '7d', label: '7 d', span: 7 * 86_400_000 },
+] as const
+type QuickRange = (typeof QUICK_RANGES)[number]['id']
 
 /* The `All nodes` view in the address bar (deviation 37), as Cache keeps its own. */
 export const QUERY_NODES = 'nodes'
@@ -620,6 +640,9 @@ export function QueryLogs({ tabs, token, node = '', request, nodes = [], cluster
   }, [across, nodes])
   /* Every node's answer to the merged query on screen: the totals and the failures. */
   const [reads, setReads] = useState<NodeLogs[] | null>(null)
+  /* The quick range last pressed and what it wrote (deviation 52): it is drawn
+     pressed only while From and To still hold exactly that. */
+  const [quick, setQuick] = useState<{ id: QuickRange; start: string; end: string } | null>(null)
   /* Below 960 the band folds (see FOLD_QUERY); it starts closed. */
   const fold = useMedia(FOLD_QUERY)
   const [filtersOpen, setFiltersOpen] = useState(false)
@@ -653,6 +676,13 @@ export function QueryLogs({ tabs, token, node = '', request, nodes = [], cluster
   }, [f])
   /* What Reset gives, for the address bar and the folded summary. */
   const resetRef = useRef<Filters>(defaultFilters('', ''))
+  /* Every query is numbered, and only the latest one's answer is drawn and written
+     to the address bar (as `blocking/Rules.tsx` does): the pager, the cards and a
+     node change can each launch one with another in flight, and Live Update's turns
+     run beside them. Reset makes whatever is in flight stale too. `busyFor` is the
+     query the busy state belongs to: an older query's answer does not clear it. */
+  const lastQuery = useRef(0)
+  const busyFor = useRef(0)
 
   /* Upstream focuses the field that failed. A folded band opens first, and in the
      same task, so the field is on screen when it takes the focus; above 960 the
@@ -742,11 +772,19 @@ export function QueryLogs({ tabs, token, node = '', request, nodes = [], cluster
       let landed: QueryLogPage
       let totals: Map<string, number>
       const merging = acrossRef.current
-      if (!live) setBusy(true)
+      const mine = ++lastQuery.current
+      if (!live) {
+        busyFor.current = mine
+        setBusy(true)
+      }
+      const done = () => {
+        if (!live && busyFor.current === mine) setBusy(false)
+      }
       if (merging) {
         /* Deviation 37: every node, page 1 newest first (`query-across.ts`). */
         const answers = await queryAcross(token, params(filters, '1'), nodesRef.current)
-        if (!live) setBusy(false)
+        done()
+        if (mine !== lastQuery.current) return
         /* A turn that started in the other view lands nothing. */
         if (!acrossRef.current) return
         setReads(answers)
@@ -754,7 +792,8 @@ export function QueryLogs({ tabs, token, node = '', request, nodes = [], cluster
         totals = new Map(nodeTotals(answers).map((t) => [t.node, t.total]))
       } else {
         const outcome = await queryLogs(token, params(filters, pageNumber))
-        if (!live) setBusy(false)
+        done()
+        if (mine !== lastQuery.current) return
 
         if (outcome.kind !== 'ok') {
           if (!live) {
@@ -923,6 +962,8 @@ export function QueryLogs({ tabs, token, node = '', request, nodes = [], cluster
   }
 
   function restart() {
+    /* An answer still in flight would write the old filters back into the bar. */
+    lastQuery.current += 1
     const first = apps?.[0]
     setF(defaultFilters(first?.name ?? '', first?.classPaths[0] ?? ''))
   }
@@ -960,6 +1001,26 @@ export function QueryLogs({ tabs, token, node = '', request, nodes = [], cluster
     setFresh(new Set())
     setArrived(0)
     restart()
+  }
+
+  /*
+  A quick range pressed (deviation 52): From and To from that long ago to now, and
+  Query from page 1, as `pick` runs it. Folded, it closes the band as Query does.
+  Live Update disables the strip, and the guard is here too, as in `query`.
+  */
+  function chooseRange(id: QuickRange) {
+    if (liveRef.current) return
+    const range = QUICK_RANGES.find((r) => r.id === id)
+    if (range == null) return
+    const now = Date.now()
+    const start = localInput(now - range.span)
+    const end = localInput(now)
+    const next = { ...filtersRef.current, start, end, pageNumber: '1' }
+    setF(next)
+    filtersRef.current = next
+    setQuick({ id, start, end })
+    if (fold) setFiltersOpen(false)
+    void query('1', false)
   }
 
   /*
@@ -1022,6 +1083,9 @@ export function QueryLogs({ tabs, token, node = '', request, nodes = [], cluster
   const active = activeFilters(f, defaultFilters(apps[0]?.name ?? '', apps[0]?.classPaths[0] ?? '')).filter(
     (a) => !ALWAYS_SHOWN.includes(a.label),
   )
+  /* The range drawn pressed: none once a field no longer holds what it wrote. */
+  const quickOn: QuickRange | 'custom' =
+    quick != null && !live && f.start === quick.start && f.end === quick.end ? quick.id : 'custom'
 
   return (
     <div className={styles.wrap}>
@@ -1038,6 +1102,8 @@ export function QueryLogs({ tabs, token, node = '', request, nodes = [], cluster
           token={token}
           domain={allowIn.domain}
           clientIp={allowIn.clientIp}
+          nodes={nodes}
+          clusterInitialised={clusterInitialised}
           onClose={() => setAllowIn(null)}
           onDone={setNotice}
         />
@@ -1319,6 +1385,17 @@ export function QueryLogs({ tabs, token, node = '', request, nodes = [], cluster
                 disabled={live}
                 value={f.end}
                 onChange={(e) => set({ end: e.target.value })}
+              />
+            </div>
+            {/* OURS (deviation 52): fill From and To, and query. */}
+            <div className={`${styles.field} ${styles.ranges}`}>
+              <span className={styles.rangesTitle} aria-hidden="true">Quick range</span>
+              <Segmented
+                label="Quick range"
+                options={QUICK_RANGES.map((r) => ({ id: r.id, label: r.label }))}
+                active={quickOn}
+                disabled={live || busy}
+                onChoose={(id) => chooseRange(id as QuickRange)}
               />
             </div>
             <div className={styles.field} style={fieldWidth(130)}>

@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import { useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Button } from './Button'
 import { Icon, type IconName } from './Icon'
 import { Tooltip } from './Tooltip'
@@ -20,9 +20,14 @@ swaps nothing, it turns around. For a user clicking twice in a row the effect is
 the same as a switch; the difference is in the FIRST click on a column that was
 already sorted, and there we match too.
 
-And it sorts by the TEXT YOU SEE, lowercased and compared by character code, just
-like upstream: that way a column of `2026-08-26 10:48` dates comes out right
-without treating it as a date, and the order is the same the old console gave.
+It sorts by WHAT YOU SEE in the cell, but not the way upstream compares it.
+Upstream lowercases the text and compares it by character code, so a TTL column
+comes out 300, 3600, 60, 86400 (upstream issue #1873 asks for better). Here
+numbers compare as numbers, addresses by their bytes and text naturally
+(`compareSortValues`, deviation 48). A column of `2026-08-26 10:48` dates still
+comes out right without being read as dates. It sorts the rows it is given:
+a zone's records across all their pages, where upstream sorts the page on
+screen (zone.js:3640), and the zone list one page, as the server hands it.
 */
 
 /*
@@ -320,32 +325,107 @@ export interface Sort {
   desc: boolean
 }
 
-/** How each sortable column is read: the text the user sees in the cell. */
+/** How each sortable column is read: what the user sees in the cell. */
 export type Keys<T> = Record<string, (row: T) => string | number | null | undefined>
 
-function text(v: string | number | null | undefined): string {
-  return String(v ?? '').toLowerCase()
+type SortValue = string | number | null | undefined
+
+const NUMBER = /^-?\d+(\.\d+)?$/
+const IPV4 = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/
+const HEX_GROUP = /^[0-9a-f]{1,4}$/i
+const MAC = /^[0-9a-f]{2}([-:])[0-9a-f]{2}(\1[0-9a-f]{2}){4}$/i
+const COLLATOR = new Intl.Collator('en', { numeric: true, sensitivity: 'accent' })
+
+function ipv4Bytes(s: string): number[] | null {
+  const m = IPV4.exec(s)
+  if (m == null) return null
+  const bytes = m.slice(1).map(Number)
+  return bytes.every((b) => b <= 255) ? bytes : null
+}
+
+/** The sixteen bytes of an IPv6 address, `::` and an IPv4 tail included. */
+function ipv6Bytes(s: string): number[] | null {
+  if (!s.includes(':')) return null
+  const halves = s.split('::')
+  if (halves.length > 2) return null
+  const groups = (part: string): number[] | null => {
+    if (part === '') return []
+    const out: number[] = []
+    const pieces = part.split(':')
+    for (let i = 0; i < pieces.length; i++) {
+      const p = pieces[i]
+      const v4 = i === pieces.length - 1 ? ipv4Bytes(p) : null
+      if (v4 != null) out.push((v4[0] << 8) | v4[1], (v4[2] << 8) | v4[3])
+      else if (HEX_GROUP.test(p)) out.push(parseInt(p, 16))
+      else return null
+    }
+    return out
+  }
+  const head = groups(halves[0])
+  const tail = halves.length === 2 ? groups(halves[1]) : []
+  if (head == null || tail == null) return null
+  const missing = 8 - head.length - tail.length
+  if (halves.length === 2 ? missing < 1 : missing !== 0) return null
+  const all = [...head, ...Array<number>(missing).fill(0), ...tail]
+  return all.flatMap((g) => [g >> 8, g & 0xff])
+}
+
+/*
+An address as its family (4 before 6) followed by its bytes, or null. A MAC
+address is one too: fixed-width hex, which the natural text order would get
+wrong (`9C` before `10`, since 9 < 10).
+*/
+function addressBytes(s: string): number[] | null {
+  if (MAC.test(s)) return [0, ...s.split(/[-:]/).map((h) => parseInt(h, 16))]
+  const v4 = ipv4Bytes(s)
+  if (v4 != null) return [4, ...v4]
+  const v6 = ipv6Bytes(s)
+  return v6 != null ? [6, ...v6] : null
+}
+
+/*
+How two cells compare (deviation 48). Upstream compares the lowercased text by
+character code, so TTLs come out 300, 3600, 60, 86400 and leases .10, .100, .9.
+Here, in this order:
+  · an empty value first, as the text sort put it;
+  · two numbers, or two texts that are plain numbers, by their value;
+  · two IP addresses (or two MAC addresses) by their bytes, IPv4 before IPv6;
+  · anything else as text, case-insensitively and naturally, so `pc2` comes
+    before `pc10`. A date drawn as `2026-08-26 10:48` still sorts as a date.
+*/
+export function compareSortValues(a: SortValue, b: SortValue): number {
+  if (typeof a === 'number' && typeof b === 'number') return Math.sign(a - b)
+  const x = a == null ? '' : String(a).trim()
+  const y = b == null ? '' : String(b).trim()
+  if (x === '' || y === '') return x === y ? 0 : x === '' ? -1 : 1
+  if (NUMBER.test(x) && NUMBER.test(y)) return Math.sign(Number(x) - Number(y))
+  const ax = addressBytes(x)
+  const ay = ax == null ? null : addressBytes(y)
+  if (ax != null && ay != null) {
+    for (let i = 0; i < ax.length; i++) if (ax[i] !== ay[i]) return ax[i] - ay[i]
+    return 0
+  }
+  return COLLATOR.compare(x, y)
 }
 
 export function useSort<T>(keys: Keys<T>, rows: T[]) {
   const [sort, setSort] = useState<Sort | null>(null)
 
-  const sorted = (() => {
-    if (sort == null || keys[sort.field] == null) return rows
-    const read = keys[sort.field]
-    const sign = sort.desc ? -1 : 1
-    return [...rows].sort((a, b) => {
-      const x = text(read(a))
-      const y = text(read(b))
-      return x === y ? 0 : (x > y ? 1 : -1) * sign
-    })
-  })()
+  const read = sort == null ? undefined : keys[sort.field]
+  const desc = sort?.desc ?? false
+  const sorted = useMemo(() => {
+    if (read == null) return rows
+    const sign = desc ? -1 : 1
+    return [...rows].sort((a, b) => compareSortValues(read(a), read(b)) * sign)
+  }, [read, desc, rows])
 
   function toggle(field: string) {
-    const read = keys[field]
-    if (read == null) return
+    const readField = keys[field]
+    if (readField == null) return
     // The list is looked at AS IT IS DRAWN, which is what upstream looks at.
-    const alreadyAsc = sorted.every((f, i) => i === 0 || text(read(sorted[i - 1])) <= text(read(f)))
+    const alreadyAsc = sorted.every(
+      (f, i) => i === 0 || compareSortValues(readField(sorted[i - 1]), readField(f)) <= 0,
+    )
     setSort({ field, desc: alreadyAsc })
   }
 

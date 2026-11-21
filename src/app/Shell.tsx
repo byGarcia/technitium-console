@@ -36,6 +36,8 @@ import { Menu, MenuItem, Separator } from '../ui/Menu'
 import { ThisServerName } from '../ui/ClusterNodeSelect'
 import { FooterLinks } from '../ui/FooterLinks'
 import { Versions } from './Versions'
+import { useDrawerFocus } from './drawer-focus'
+import { useMedia } from '../lib/use-media'
 import { CommandPalette, PALETTE_KEYS } from './palette/CommandPalette'
 import { accountItems, actionItems, pageItems, zoneItem, type PaletteItem, type Target } from './palette/items'
 import { listAllZones } from '../api/zones'
@@ -44,6 +46,8 @@ import { BrandMark } from './BrandMark'
 import { BlockingMark } from './BlockingMark'
 import { useBlockingMark } from '../screens/blocking/blocking-state'
 import { Confirm } from '../ui/Confirm'
+import { guardedLeave } from './leave-guard'
+import { LeaveConfirm } from './LeaveConfirm'
 import { Notifier } from '../ui/Notifier'
 import type { Notice } from '../lib/notice'
 import {
@@ -148,6 +152,19 @@ export function Shell({
   })
   const [active, setActive] = useState(() => initialRoute?.section ?? sections[0]?.id ?? 'about')
   const [drawer, setDrawer] = useState(false)
+  /* Below 900 px the side panel is a drawer (Shell.module.css). Closed, it is off
+     screen and `inert`, so Tab does not walk links nobody can see; going wide
+     closes it, so a drawer left open does not keep the focus in the side panel. */
+  const narrow = useMedia('(max-width: 900px)')
+  const drawerRef = useRef<HTMLElement>(null)
+  const menuButtonRef = useRef<HTMLButtonElement>(null)
+  const closeDrawer = useCallback(() => setDrawer(false), [])
+  useDrawerFocus(drawer, closeDrawer, drawerRef, menuButtonRef)
+  const [wasNarrow, setWasNarrow] = useState(narrow)
+  if (narrow !== wasNarrow) {
+    setWasNarrow(narrow)
+    if (!narrow) setDrawer(false)
+  }
   const [modal, setModal] = useState<ModalId | null>(forcePasswordChange ? 'password' : null)
   /* The factory password travels only with the opening the login caused; from the
      user menu `showChangePasswordModal()` is called with nothing (main.js). */
@@ -368,16 +385,10 @@ export function Shell({
     switch (t.kind) {
       case 'route': {
         const search = t.params != null ? `?${new URLSearchParams(t.params).toString()}` : ''
-        window.history.pushState(null, '', toTrail({ section: t.section, sub: t.sub }) + search)
-        window.dispatchEvent(new PopStateEvent('popstate'))
-        if (search !== '') {
-          /* `?check=` is spent by the screen that reads it (Blocking's check runs
-             once and drops it), so it is not written back. */
-          const kept = Object.fromEntries(Object.entries(t.params ?? {}).filter(([k]) => k !== 'check'))
-          const keptSearch = Object.keys(kept).length > 0 ? `?${new URLSearchParams(kept).toString()}` : ''
-          jumpUrl.current = keptSearch !== '' ? toTrail({ section: t.section, sub: t.sub }) + keptSearch : null
-          setPaletteJump((n) => n + 1)
-        }
+        /* A jump with parameters remounts the screen (`paletteJump`), so it is a way
+           out wherever it goes (deviation 51). */
+        const to = toTrail({ section: t.section, sub: t.sub }) + search
+        guardedLeave(search !== '' ? null : to, () => jump(to, search, t))
         return
       }
       case 'dnsclient':
@@ -393,8 +404,21 @@ export function Shell({
         theme.setChoice(t.choice)
         return
       case 'logout':
-        onLogout()
+        guardedLeave(null, onLogout)
     }
+  }
+
+  /** A palette jump to a route, once nothing unsaved stands in the way. */
+  function jump(to: string, search: string, t: Extract<Target, { kind: 'route' }>) {
+    window.history.pushState(null, '', to)
+    window.dispatchEvent(new PopStateEvent('popstate'))
+    if (search === '') return
+    /* `?check=` is spent by the screen that reads it (Blocking's check runs
+       once and drops it), so it is not written back. */
+    const kept = Object.fromEntries(Object.entries(t.params ?? {}).filter(([k]) => k !== 'check'))
+    const keptSearch = Object.keys(kept).length > 0 ? `?${new URLSearchParams(kept).toString()}` : ''
+    jumpUrl.current = keptSearch !== '' ? toTrail({ section: t.section, sub: t.sub }) + keptSearch : null
+    setPaletteJump((n) => n + 1)
   }
 
   const handoff = useMemo<Handoff>(() => {
@@ -402,17 +426,21 @@ export function Shell({
     return {
       queryDnsServer(domain, type, node) {
         if (!visible('dnsclient')) return
-        setPending({ dnsclient: { domain, type: type ?? 'A', node: targetNode(node) } })
-        setActive('dnsclient')
-        setSub(null)
-        setDrawer(false)
+        guardedLeave(toTrail({ section: 'dnsclient', sub: null }), () => {
+          setPending({ dnsclient: { domain, type: type ?? 'A', node: targetNode(node) } })
+          setActive('dnsclient')
+          setSub(null)
+          setDrawer(false)
+        })
       },
       showQueryLogs(domain, clientIp, node, filters) {
         if (!visible('logs')) return
-        setPending({ logs: { domain, clientIp, node: targetNode(node), ...(filters != null ? { filters } : {}) } })
-        setActive('logs')
-        setSub('Query Logs')
-        setDrawer(false)
+        guardedLeave(toTrail({ section: 'logs', sub: 'Query Logs' }), () => {
+          setPending({ logs: { domain, clientIp, node: targetNode(node), ...(filters != null ? { filters } : {}) } })
+          setActive('logs')
+          setSub('Query Logs')
+          setDrawer(false)
+        })
       },
       canShowQueryLogs: visible('logs'),
     }
@@ -504,7 +532,7 @@ export function Shell({
         />
       )}
 
-      <aside className={styles.side} data-open={drawer}>
+      <aside ref={drawerRef} className={styles.side} data-open={drawer} inert={narrow && !drawer}>
         {/*
         What is running sits where each thing is named (2026-11-06): this console's
         version beside its name, the DNS server's under the account that is signed in
@@ -589,9 +617,12 @@ export function Shell({
                         onClick={(e) => {
                           if (!plainClick(e)) return
                           e.preventDefault()
-                          setActive(sec.id)
-                          setSub(target)
+                          /* Closed first, so Cancel on an unsaved form shows that form. */
                           setDrawer(false)
+                          guardedLeave(toTrail({ section: sec.id, sub: target }), () => {
+                            setActive(sec.id)
+                            setSub(target)
+                          })
                         }}
                       >
                         <span className={styles.ico}>
@@ -611,8 +642,8 @@ export function Shell({
                               onClick={(e) => {
                                 if (!plainClick(e)) return
                                 e.preventDefault()
-                                setSub(t)
                                 setDrawer(false)
+                                guardedLeave(toTrail({ section: sec.id, sub: t }), () => setSub(t))
                               }}
                             >
                               {t}
@@ -678,9 +709,11 @@ export function Shell({
                   icon="user"
                   onClick={() => {
                     close()
-                    setActive('profile')
-                    setSub(null)
                     setDrawer(false)
+                    guardedLeave(toTrail({ section: 'profile', sub: null }), () => {
+                      setActive('profile')
+                      setSub(null)
+                    })
                   }}
                 >
                   My Profile
@@ -724,7 +757,7 @@ export function Shell({
                   </MenuItem>
                 )}
                 <Separator />
-                <MenuItem icon="logout" tone="danger" onClick={() => { close(); onLogout() }}>
+                <MenuItem icon="logout" tone="danger" onClick={() => { close(); guardedLeave(null, onLogout) }}>
                   Logout
                 </MenuItem>
               </>
@@ -749,6 +782,7 @@ export function Shell({
         */}
         <header className={styles.rtop}>
           <button
+            ref={menuButtonRef}
             type="button"
             className={styles.hamburger}
             aria-label="Menu"
@@ -795,6 +829,7 @@ export function Shell({
             clusterInitialised={session.info?.clusterInitialized === true}
             canViewLogs={permissions?.Logs?.canView !== false}
             serverDomain={info?.dnsServerDomain}
+            permissions={permissions}
           />
         ) : current?.id === 'clients' ? (
           <Clients
@@ -826,9 +861,17 @@ export function Shell({
         ) : current?.id === 'about' ? (
           <About info={info} />
         ) : current?.id === 'apps' && currentSub === ADVANCED_BLOCKING_DETAIL ? (
-          <AdvancedBlocking token={session.token} />
+          <AdvancedBlocking
+            token={session.token}
+            nodes={session.info?.clusterNodes ?? []}
+            clusterInitialised={session.info?.clusterInitialized === true}
+          />
         ) : current?.id === 'apps' ? (
-          <Apps token={session.token} />
+          <Apps
+            token={session.token}
+            nodes={session.info?.clusterNodes ?? []}
+            clusterInitialised={session.info?.clusterInitialized === true}
+          />
         ) : current?.id === 'cache' ? (
           <Cache token={session.token} nodes={session.info?.clusterNodes ?? []} clusterInitialised={session.info?.clusterInitialized === true} />
         ) : current?.id === 'blocking' && currentSub === 'Settings' && permissions?.Settings?.canView !== false ? (
@@ -972,6 +1015,7 @@ export function Shell({
         token={session.token}
         onCreated={() => setAccountRevision((n) => n + 1)}
       />
+      <LeaveConfirm />
       <CommandPalette open={palette} onOpenChange={setPalette} items={paletteItems} allowed={paletteAllows} onRun={(item) => runTarget(item.target)} />
       <ChangeTheme
         open={modal === 'theme'}

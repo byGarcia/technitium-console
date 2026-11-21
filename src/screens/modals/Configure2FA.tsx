@@ -69,11 +69,19 @@ export function Configure2FA({
     setAlert(null)
     setInit(null)
     setTotp('')
+    /* Only this opening's answer is applied: every opening asks for a new secret and
+       the server keeps the last one it made (User.cs:289), so closed and opened again
+       with this read in flight, the older secret must not be the one shown. */
+    let current = true
     void (async () => {
       const outcome = await apiRequest<InitResponse>('user/2fa/init', { token })
+      if (!current) return
       if (outcome.kind === 'ok') setInit(outcome.data.response)
       else if (outcome.kind !== 'invalid-token') setAlert(noticeFromFailure(outcome))
     })()
+    return () => {
+      current = false
+    }
   }, [open, token])
 
   // auth.js:567-569 focuses the OTP once the dialog is drawn.
@@ -144,7 +152,7 @@ export function Configure2FA({
             Disable
           </Button>
         ) : (
-          <Button variant="primary" disabled={busy} onClick={() => void enable()}>
+          <Button type="submit" variant="primary" disabled={busy} onClick={() => void enable()}>
             Enable
           </Button>
         )

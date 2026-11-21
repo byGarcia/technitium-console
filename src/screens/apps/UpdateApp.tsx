@@ -68,7 +68,7 @@ export function UpdateApp({
       title="Update App"
       actions={
         <>
-          <Button variant="primary" disabled={busy} onClick={() => void update()}>
+          <Button type="submit" variant="primary" disabled={busy} onClick={() => void update()}>
             Update
           </Button>
         </>

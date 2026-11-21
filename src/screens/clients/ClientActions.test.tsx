@@ -59,6 +59,11 @@ function Harness({
   )
 }
 
+/** What `settings/get` answers when a save reads the lists again. */
+function serverHolds(data: DnsSettings) {
+  return vi.spyOn(settings, 'readSettings').mockResolvedValue({ kind: 'ok', data })
+}
+
 /** A line of the Actions: its list or lease name, its state and its button. */
 function line(name: string) {
   const dt = within(screen.getByRole('region', { name: 'Actions' })).getByText(name)
@@ -104,6 +109,7 @@ describe('ClientActions', () => {
     const set = vi.spyOn(settings, 'setSettings').mockResolvedValue({
       kind: 'ok', data: { response: asSettings({ blockingBypassList: [IP] }), server: 'dns1' },
     })
+    serverHolds(asSettings({}))
     const onNotice = vi.fn()
     render(<Harness start={{ kind: 'ok', data: asSettings({}) }} node="cluster" onNotice={onNotice} />)
     await userEvent.click(screen.getByRole('button', { name: 'Bypass Blocking' }))
@@ -121,6 +127,7 @@ describe('ClientActions', () => {
     const set = vi.spyOn(settings, 'setSettings').mockResolvedValue({
       kind: 'ok', data: { response: asSettings({ qpmLimitBypassList: ['10.0.0.9'] }), server: 'dns1' },
     })
+    serverHolds(asSettings({ qpmLimitBypassList: ['10.0.0.9', IP] }))
     render(<Harness start={{ kind: 'ok', data: asSettings({ qpmLimitBypassList: ['10.0.0.9', IP] }) }} onNotice={() => {}} />)
     expect(line('QPM Limit Bypass List').state).toHaveTextContent('Exempt')
     await userEvent.click(screen.getByRole('button', { name: 'Apply Rate Limiting' }))
@@ -133,12 +140,61 @@ describe('ClientActions', () => {
 
   it('a failed save says the server message and changes nothing', async () => {
     vi.spyOn(settings, 'setSettings').mockResolvedValue({ kind: 'error', message: 'Access was denied.' })
+    serverHolds(asSettings({}))
     const onNotice = vi.fn()
     render(<Harness start={{ kind: 'ok', data: asSettings({}) }} onNotice={onNotice} />)
     await userEvent.click(screen.getByRole('button', { name: 'Bypass Blocking' }))
     await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Add' }))
     expect(onNotice).toHaveBeenCalledWith(expect.objectContaining({ type: 'danger', text: 'Access was denied.' }))
     expect(screen.getByRole('button', { name: 'Bypass Blocking' })).toBeInTheDocument()
+  })
+
+  /* AC-7. The lists were read when the page opened; another console, or Settings, may
+     have changed them since. The save starts from the list as the server keeps it now,
+     re-read on the same node right before `settings/set`, as Allow in Advanced Blocking
+     reads its config again before writing. */
+  it('reads the list again right before saving, so a change made elsewhere is kept', async () => {
+    const read = serverHolds(asSettings({ blockingBypassList: ['10.0.0.9'] }))
+    const set = vi.spyOn(settings, 'setSettings').mockResolvedValue({
+      kind: 'ok', data: { response: asSettings({ blockingBypassList: ['10.0.0.9', IP] }), server: 'dns1' },
+    })
+    render(<Harness start={{ kind: 'ok', data: asSettings({}) }} node="cluster" onNotice={() => {}} />)
+    await userEvent.click(screen.getByRole('button', { name: 'Bypass Blocking' }))
+    await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Add' }))
+    expect(read).toHaveBeenCalledWith('T', 'cluster')
+    expect(set).toHaveBeenCalledWith('T', { node: 'cluster', blockingBypassList: `10.0.0.9,${IP}` })
+  })
+
+  it('a removal also starts from the list as the server keeps it now', async () => {
+    serverHolds(asSettings({ blockingBypassList: [IP, '10.0.0.9'] }))
+    const set = vi.spyOn(settings, 'setSettings').mockResolvedValue({
+      kind: 'ok', data: { response: asSettings({ blockingBypassList: ['10.0.0.9'] }), server: 'dns1' },
+    })
+    render(<Harness start={{ kind: 'ok', data: asSettings({ blockingBypassList: [IP] }) }} onNotice={() => {}} />)
+    await userEvent.click(screen.getByRole('button', { name: 'Apply Blocking' }))
+    await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Remove' }))
+    expect(set).toHaveBeenCalledWith('T', { node: '', blockingBypassList: '10.0.0.9' })
+  })
+
+  it('a failed read before the save says why and writes nothing', async () => {
+    vi.spyOn(settings, 'readSettings').mockResolvedValue({ kind: 'error', message: 'Network down' })
+    const set = vi.spyOn(settings, 'setSettings')
+    const onNotice = vi.fn()
+    render(<Harness start={{ kind: 'ok', data: asSettings({}) }} onNotice={onNotice} />)
+    await userEvent.click(screen.getByRole('button', { name: 'Bypass Blocking' }))
+    await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Add' }))
+    expect(onNotice).toHaveBeenCalledWith(expect.objectContaining({ type: 'danger', text: 'Network down' }))
+    expect(set).not.toHaveBeenCalled()
+  })
+
+  it('when the server list already holds what was asked, it is redrawn and nothing is written', async () => {
+    serverHolds(asSettings({ blockingBypassList: [IP] }))
+    const set = vi.spyOn(settings, 'setSettings')
+    render(<Harness start={{ kind: 'ok', data: asSettings({}) }} onNotice={() => {}} />)
+    await userEvent.click(screen.getByRole('button', { name: 'Bypass Blocking' }))
+    await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Add' }))
+    expect(await screen.findByRole('button', { name: 'Apply Blocking' })).toBeInTheDocument()
+    expect(set).not.toHaveBeenCalled()
   })
 
   it('without Settings: Modify the buttons stay, disabled; without Settings: View the state is locked', () => {

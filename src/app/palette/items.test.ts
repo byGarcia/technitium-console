@@ -27,6 +27,15 @@ describe('the palette entries', () => {
     expect(actionItems('', all)).toEqual([])
   })
 
+  it('takes an internationalised name, and searches Query Logs by its ASCII form', () => {
+    const named = actionItems('bücher.de', all)
+    expect(named.map((a) => a.id)).toContain('action:check')
+    expect(named.find((a) => a.id === 'action:logs')).toMatchObject({
+      label: 'Search Query Logs for bücher.de',
+      target: { kind: 'logs', domain: 'xn--bcher-kva.de', clientIp: null },
+    })
+  })
+
   it('leaves out a step whose section the user cannot see', () => {
     const ids = actionItems('doubleclick.net', (s) => s !== 'logs' && s !== 'cache').map((a) => a.id)
     expect(ids).not.toContain('action:logs')

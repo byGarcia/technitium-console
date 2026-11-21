@@ -42,7 +42,8 @@ const WHATS_NEW = 'https://go.technitium.com/?id=23'
 const API_DOCS = 'https://github.com/TechnitiumSoftware/DnsServer/blob/master/APIDOCS.md'
 const HELP = 'https://go.technitium.com/?id=25'
 const DONATE = 'https://go.technitium.com/?id=35'
-/* This console's repository and where it is funded (`.github/FUNDING.yml`). */
+/* This console's repository and where it is funded. Liberapay is no longer
+   offered (Adrián's decision, 2026-11-20). */
 const CONSOLE_REPO = 'https://github.com/byGarcia/technitium-console'
 const CONSOLE_LINKS: readonly [string, string][] = [
   ['Source code', ''],
@@ -53,7 +54,6 @@ const CONSOLE_LINKS: readonly [string, string][] = [
 const FUNDING: readonly [string, string][] = [
   ['GitHub Sponsors', 'https://github.com/sponsors/byGarcia'],
   ['Ko-fi', 'https://ko-fi.com/bygarcia'],
-  ['Liberapay', 'https://liberapay.com/bygarcia'],
   ['PayPal', 'https://www.paypal.com/paypalme/adriangmolina'],
 ]
 

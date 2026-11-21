@@ -405,6 +405,7 @@ const BLOCKING_OWN_LABELS = new Map([
   ['More lists', "Quick Add's group of the console's own catalogue, blocking/BlockLists.tsx:508; declared ours at BlockLists.tsx:48-49"],
   ['Listed as', 'Check a domain, the list entry that matched, blocking/DomainCheck.tsx:107; declared ours at DomainCheck.tsx:15'],
   ['Rule', 'Check a domain, the rule that matched, blocking/DomainCheck.tsx:117; declared ours at DomainCheck.tsx:15'],
+  ['Regex', 'Check a domain, the pattern that matched, blocking/DomainCheck.tsx:112 and :152; declared ours at DomainCheck.tsx:15'],
   ['Add to group', 'the group a new list goes into, blocking/BlockLists.tsx:666; declared ours at BlockLists.tsx:48'],
 ])
 const onlyInBlocking = (label) => (LABEL_FILES.get(label) ?? []).every((f) => f.startsWith(BLOCKING))
@@ -422,6 +423,9 @@ const DEVIATION_OWN_LABELS = new Map([
   ['Blocked Answer TTL', { file: 'screens/apps/advanced-blocking/GeneralPanel.tsx', why: 'the Advanced Blocking editor (deviation 45)' }],
   ['Update Lists Every', { file: 'screens/apps/advanced-blocking/GeneralPanel.tsx', why: 'the Advanced Blocking editor (deviation 45)' }],
   ['Answer With', { file: 'screens/apps/advanced-blocking/GroupEditor.tsx', why: 'the Advanced Blocking editor (deviation 45)' }],
+  ['Quick range', { file: 'screens/logs/QueryLogs.tsx', why: "Query Logs' quick ranges (deviation 52)" }],
+  ['Data contains', { file: 'screens/zones/ZoneRecords.tsx', why: "a zone's records filtered by their data (deviation 53)" }],
+  ['Discard', { file: 'app/LeaveConfirm.tsx', why: 'leaving unsaved changes asks first (deviation 51)' }],
 ])
 const onlyInOwnFile = (label) =>
   (LABEL_FILES.get(label) ?? []).every((f) => f === join(SOURCE, DEVIATION_OWN_LABELS.get(label).file))

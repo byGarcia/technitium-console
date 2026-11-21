@@ -102,7 +102,7 @@ export function ConvertZone({
       title={`Convert Zone - ${zone === '.' ? '<root>' : zone}`}
       actions={
         <>
-          <Button variant="primary" disabled={busy || target == null} onClick={() => void convert()}>
+          <Button type="submit" variant="primary" disabled={busy || target == null} onClick={() => void convert()}>
             Convert Zone
           </Button>
         </>

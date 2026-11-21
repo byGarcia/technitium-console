@@ -117,8 +117,8 @@ export function uninstallApp(token: string | null, name: string): Promise<ApiOut
 `node` is the name of the cluster's PRIMARY node: upstream always reads from it
 so as not to show a config that has not propagated yet (apps.js:460). Without a
 cluster it sends the empty string and the server ignores it
-(DnsWebService.cs:2367-2370). The primary's name comes from
-`sessionData.info.clusterNodes`, which this console does not expose yet.
+(DnsWebService.cs:2367-2370). The screens take the primary's name from the
+session's `clusterNodes` with `primaryNodeName` (ui/ClusterNodeSelect.tsx).
 */
 export function getAppConfig(
   token: string | null,

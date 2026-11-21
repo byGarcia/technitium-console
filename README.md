@@ -19,9 +19,10 @@ that works on your phone.
 |---|---|
 | ![The dashboard](docs/screenshots/dashboard.png) | ![Clients, with one client open](docs/screenshots/clients.png) |
 
-**Latest release: [v1.4.2](https://github.com/byGarcia/technitium-console/releases/latest) for
-Technitium DNS Server 15.5.x and 15.6.x**, with which block list matched a domain, and allowing a
-blocked name for one Advanced Blocking group from Query Logs.
+**Latest release: [v1.4.3](https://github.com/byGarcia/technitium-console/releases/latest) for
+Technitium DNS Server 15.5.x and 15.6.x**, with the one-line installer working again on
+Technitium's own Linux install, quick ranges in Query Logs, and a zone's records found by their
+data and changed several at a time.
 [What's new](CHANGELOG.md) · [Which console for which server](CHANGELOG.md#which-version-for-which-server) · [Installing](#installing) · [Technitium in Docker](#docker)
 
 It replaces the console the server ships with. Install it and the DNS service behaves exactly as
@@ -268,8 +269,12 @@ Nothing is downloaded to undo either one.
 
 **It works with whichever install you have**, because it does not guess: the
 running server is found by what it executes, and a systemd unit is accepted only
-when it names that same `DnsServerApp.dll`. If it cannot identify one exact
-unit, it leaves service configuration alone and uses the web root it discovered.
+when it names that same `DnsServerApp.dll`. Whether the server is 15.5 or later
+is asked of its own `DnsServerCore.dll`, so it does not matter how long it has
+been running. If it cannot identify one exact unit, it leaves service
+configuration alone, uses the web root it discovered, and says why. When that
+web root belongs to the service's account, it stops and prints the drop-in to
+add by hand instead.
 
 **Your custom lists are kept**, on the way in and on the way out. Any
 `json/*-custom.json` you wrote by hand is left exactly where it is, including
@@ -286,10 +291,12 @@ group counts as root, so a stock web root left 0664 by Technitium's own archive
 is accepted, unless an access control list lets another account in; on BusyBox
 systems that needs the acl or coreutils package to be checked). Symbolic
 links, hard links, special files and newline-containing names are refused before
-publication. A service-owned stock console can still be used with a dedicated
-`/opt/technitium-console` folder when no custom lists need copying. If custom
-lists need migrating from an unsafe tree, copy them yourself after inspecting
-them into a fresh root-owned tree. Changing ownership on an existing tree cannot
+publication. Technitium's own Linux installer gives the web root to the
+`dns-server` account: there the console goes in `/opt/technitium-console`
+instead, and root does not copy custom lists out of that web root or back into
+it. The installer names the lists it would have copied and stops before
+changing anything: check them, copy them yourself, and run it again. A list
+already in place is left as it is. Changing ownership on an existing tree cannot
 revoke files another account already has open. For Docker, mount the console
 volume read-only in the DNS server.
 
@@ -303,7 +310,8 @@ one. Anything a killed run left behind is cleaned up by the next one.
 
 `--version <tag>` to pin a release, `--from <path>` to install
 from a tarball you already downloaded, `--dir <path>` to say where the web root
-is, `--url <base>` if your web console does not answer on
+is (`--dir /opt/technitium-console` is the managed install above, systemd
+drop-in included), `--url <base>` if your web console does not answer on
 `http://127.0.0.1:5380`, `--yes` to skip the confirmation, and
 `--no-configure-service` to leave systemd untouched and use the server's own
 web root unless you selected another folder yourself.
@@ -605,8 +613,7 @@ route, and it also says which parts belong upstream instead. Everybody taking pa
 This console is free and stays free, and it will never ask your DNS server for anything it does not
 already answer. If it made the machine your whole network resolves through easier to run, there
 is [GitHub Sponsors](https://github.com/sponsors/byGarcia),
-[Ko-fi](https://ko-fi.com/bygarcia),
-[Liberapay](https://liberapay.com/bygarcia) and
+[Ko-fi](https://ko-fi.com/bygarcia) and
 [PayPal](https://www.paypal.com/paypalme/adriangmolina). A star or a good bug report is worth just
 as much.
 

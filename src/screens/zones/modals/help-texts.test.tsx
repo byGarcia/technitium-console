@@ -234,7 +234,6 @@ describe('Add/Edit Record, TLSA', () => {
         token="t"
         onClose={noop}
         onDone={noop}
-        onExpiryTtl={noop}
       />,
     )
     const dialog = await screen.findByRole('dialog')

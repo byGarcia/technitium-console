@@ -35,6 +35,7 @@ import {
   countRules, filterRules, mergeRules, pageOf, readRuleParam, ruleSearch,
   type Rule, type RuleFilter,
 } from './rules-model'
+import { toUnicode } from '../../lib/punycode'
 import shared from './Blocking.module.css'
 import styles from './Rules.module.css'
 
@@ -286,20 +287,25 @@ export function Rules({
     setNotice(success)
   }
 
+  /* The question and the alert name the rule as its row draws it, an
+     internationalized one in Unicode, as upstream's name the one its viewer draws
+     (other-zones.js:367-383, whose title is `domainIdn`); the call sends the ASCII
+     form the export listed. */
   function askDelete(rule: Rule) {
     const isAllowed = rule.list === 'allowed'
+    const drawn = toUnicode(rule.domain)
     setConfirmation({
       title: isAllowed ? 'Delete Allowed Zone' : 'Delete Blocked Zone',
       text: isAllowed
-        ? `Are you sure you want to delete the allowed zone '${rule.domain}'?`
-        : `Are you sure you want to delete the blocked zone '${rule.domain}'?`,
+        ? `Are you sure you want to delete the allowed zone '${drawn}'?`
+        : `Are you sure you want to delete the blocked zone '${drawn}'?`,
       label: 'Delete',
       action: () =>
         mutate(
           () => deleteDomain(rule.list, token, rule.domain),
           isAllowed
-            ? { type: 'success', title: 'Deleted!', text: `Domain '${rule.domain}' was deleted from Allowed Zone successfully.` }
-            : { type: 'success', title: 'Deleted!', text: `Blocked zone '${rule.domain}' was deleted successfully.` },
+            ? { type: 'success', title: 'Deleted!', text: `Domain '${drawn}' was deleted from Allowed Zone successfully.` }
+            : { type: 'success', title: 'Deleted!', text: `Blocked zone '${drawn}' was deleted successfully.` },
         ),
     })
   }
@@ -644,45 +650,50 @@ export function Rules({
                 emptyText={query === '' ? 'No rules' : 'No rules match this filter'}
                 columns={3}
               >
-                {current.rows.map((r) => (
-                  <tr key={`${r.list}:${r.domain}`}>
-                    <td className={`${styles.domain} ${tbl.lead}`}><DomainName name={r.domain} /></td>
-                    <td className={tbl.lead}>
-                      <span className={`${styles.kind} ${styles[r.list]}`}>
-                        <Icon name={r.list} size={14} />
-                        {LABEL[r.list]}
-                      </span>
-                    </td>
-                    <td className={tbl.actionsCell}>
-                      {/* An icon in the row's action group, as every list's row
-                          actions are; its name stays `Delete <domain>`, and the
-                          tooltip says `Delete`. Without the permission it keeps its
-                          place, padlocked, and names what is missing. */}
-                      <div className={tbl.actions}>
-                        {missing(permissions, r.list === 'allowed' ? 'Allowed.canDelete' : 'Blocked.canDelete') == null ? (
-                          <RowAction
-                            icon="trash"
-                            name="Delete"
-                            variant="danger"
-                            aria-label={`Delete ${r.domain}`}
-                            disabled={busy}
-                            onClick={() => void deleteRule(r)}
-                          />
-                        ) : (
-                          <PermissionButton
-                            size="sm"
-                            icon
-                            variant="danger"
-                            aria-label={`Delete ${r.domain}`}
-                            permission={missing(permissions, r.list === 'allowed' ? 'Allowed.canDelete' : 'Blocked.canDelete')}
-                          >
-                            <Icon name="trash" size={15} />
-                          </PermissionButton>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {current.rows.map((r) => {
+                  /* The name as the row draws it, which names its Delete too. */
+                  const drawn = toUnicode(r.domain)
+                  return (
+                    <tr key={`${r.list}:${r.domain}`}>
+                      <td className={`${styles.domain} ${tbl.lead}`}><DomainName name={drawn} /></td>
+                      <td className={tbl.lead}>
+                        <span className={`${styles.kind} ${styles[r.list]}`}>
+                          <Icon name={r.list} size={14} />
+                          {LABEL[r.list]}
+                        </span>
+                      </td>
+                      <td className={tbl.actionsCell}>
+                        {/* An icon in the row's action group, as every list's row
+                            actions are; its name stays `Delete <domain>`, the domain
+                            as the row draws it, and the tooltip says `Delete`.
+                            Without the permission it keeps its place, padlocked,
+                            and names what is missing. */}
+                        <div className={tbl.actions}>
+                          {missing(permissions, r.list === 'allowed' ? 'Allowed.canDelete' : 'Blocked.canDelete') == null ? (
+                            <RowAction
+                              icon="trash"
+                              name="Delete"
+                              variant="danger"
+                              aria-label={`Delete ${drawn}`}
+                              disabled={busy}
+                              onClick={() => void deleteRule(r)}
+                            />
+                          ) : (
+                            <PermissionButton
+                              size="sm"
+                              icon
+                              variant="danger"
+                              aria-label={`Delete ${drawn}`}
+                              permission={missing(permissions, r.list === 'allowed' ? 'Allowed.canDelete' : 'Blocked.canDelete')}
+                            >
+                              <Icon name="trash" size={15} />
+                            </PermissionButton>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
               </Table>
             )}
           </DataTable>

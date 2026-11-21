@@ -201,6 +201,22 @@ describe('Leases at a glance', () => {
     expect(spy).toHaveBeenCalledWith('t', 'Default', '1-A4-83-E7-2B-19-0C', '')
   })
 
+  it('IP Address sorts by the address, not its text: .9, .10, .100 (deviation 48)', async () => {
+    const user = userEvent.setup()
+    const at = (address: string, id: string) => ({ ...DYNAMIC, address, clientIdentifier: id, hostName: `h${id}` })
+    vi.spyOn(api, 'listLeases').mockResolvedValue({
+      kind: 'ok',
+      data: [at('10.0.0.10', '10'), at('10.0.0.9', '9'), at('10.0.0.100', '100')],
+    })
+    render(<Dhcp token="t" sub="Leases" />)
+    await screen.findByRole('cell', { name: '10.0.0.9' })
+
+    await user.click(screen.getByRole('button', { name: /IP Address/ }))
+    const shown = rowsShown().map((t) => /10\.0\.0\.\d+/.exec(t)?.[0])
+    expect(shown).toEqual(['10.0.0.9', '10.0.0.10', '10.0.0.100'])
+    expect(screen.getByRole('columnheader', { name: /IP Address/ })).toHaveAttribute('aria-sort', 'ascending')
+  })
+
   it('the Remove Lease dialog keeps both warnings with their words', async () => {
     const user = userEvent.setup()
     vi.spyOn(api, 'listLeases').mockResolvedValue({ kind: 'ok', data: [DYNAMIC] })

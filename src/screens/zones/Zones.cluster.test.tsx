@@ -11,6 +11,7 @@ import * as client from '../../api/client'
 import { ZoneList } from './ZoneList'
 import { Zones } from './Zones'
 import type { Notice } from './types'
+import { deferred } from '../../test/deferred'
 
 const z = (name: string, type: string, soaSerial: number | null, extra: Record<string, unknown> = {}) => ({
   name, type, soaSerial, lastModified: '2026-11-06T09:00:00Z', disabled: false,
@@ -113,6 +114,30 @@ describe('the zone list across nodes', () => {
     await user.click(screen.getByRole('button', { name: 'This node' }))
     await screen.findByRole('columnheader', { name: /Type/ })
     expect(listCalls(spy).filter((b) => b.pageNumber != null)).toHaveLength(1)
+  })
+
+  it('a one-node page still in flight when the view goes across nodes leaves nothing busy', async () => {
+    const spy = server()
+    const user = userEvent.setup()
+    render(<ZoneList {...props} {...cluster} />)
+    await screen.findByRole('button', { name: 'casa.test' })
+
+    const held = deferred<unknown>()
+    const answer = spy.getMockImplementation()!
+    spy.mockImplementation(async (route, init) => {
+      const body = init?.body as Body
+      if (route.split('?')[0] === 'zones/list' && body?.pageNumber != null) return held.promise as never
+      return answer(route, init)
+    })
+    await user.click(screen.getByRole('button', { name: 'Go' }))
+    expect(screen.getByRole('button', { name: 'Go' })).toBeDisabled()
+
+    await user.click(screen.getByRole('button', { name: 'All nodes' }))
+    await screen.findByText(/3 zones across 2 nodes/)
+    await user.type(screen.getByLabelText('Name'), '{Enter}')
+    held.resolve({ kind: 'ok', data: { response: { zones: [], pageNumber: 1, totalPages: 1, totalZones: 0 } } })
+
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Go' })).toBeEnabled())
   })
 
   it('says which node did not answer, with the server message, and leaves it out of the comparison', async () => {

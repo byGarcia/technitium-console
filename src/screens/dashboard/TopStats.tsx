@@ -112,10 +112,17 @@ export function TopStats({
     setRows([])
     setNotice(null)
     setSearch('')
+    /* Only this opening's answer is applied: closed and opened from another More
+       button with this read in flight, the older list must not fill the dialog. */
+    let current = true
     void getTop(token, range, type, LIMIT, node, instants).then((r) => {
+      if (!current) return
       setRows(r)
       setLoading(false)
     })
+    return () => {
+      current = false
+    }
   }, [type, range, instants, token, node])
 
   const isClient = type === 'TopClients'

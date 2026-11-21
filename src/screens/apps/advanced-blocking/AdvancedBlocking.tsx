@@ -12,6 +12,7 @@ import { SectionHeader } from '../../../ui/SectionHeader'
 import { SectionIndex } from '../../../ui/SectionIndex'
 import { Tag } from '../../../ui/Tag'
 import { useSectionInView } from '../../../ui/useSectionInView'
+import { primaryNodeName, type ClusterNode } from '../../../ui/ClusterNodeSelect'
 import { AppConfig } from '../AppConfig'
 import { error, type AlertState } from '../Apps'
 import { ClientsTable } from './ClientsTable'
@@ -48,8 +49,10 @@ editor model built from it (`config-model.ts`): with nothing changed, Save sends
 text back byte for byte; with changes, only the changed paths of the original
 document are rewritten. Before writing, it reads the config again and refuses if
 someone else changed it (only `config/get` and `config/set`: there is no version to
-compare). The calls are the Config button's, with no `node`
-(apps.js:503, `Apps.tsx`), so the check and the write hit the same server.
+compare). The calls are the Config button's (`Apps.tsx`): the reads name the
+cluster's primary (apps.js:460), and the server runs `apps/config/set` on the
+primary whatever node it reaches (DnsWebService.cs:2298), so the check and the
+write hit the same server. Without a cluster both go to the server it reaches.
 
 Validation is `validate.ts`, measured against a real server. A problem that blocks
 is drawn at its control after the first Save; Save then moves the focus to the
@@ -77,7 +80,16 @@ type Phase =
 
 const sectionId = (section: string) => `ab-sec-${section}`
 
-export function AdvancedBlocking({ token }: { token: string | null }) {
+export function AdvancedBlocking({
+  token,
+  nodes = [],
+  clusterInitialised = false,
+}: {
+  token: string | null
+  /** The session's cluster nodes: every read of the config goes to the primary. */
+  nodes?: ClusterNode[]
+  clusterInitialised?: boolean
+}) {
   const [phase, setPhase] = useState<Phase>({ kind: 'loading' })
   const [model, setModel] = useState<EditorModel | null>(null)
   const [notice, setNotice] = useState<AlertState | null>(null)
@@ -93,6 +105,15 @@ export function AdvancedBlocking({ token }: { token: string | null }) {
   const drawn = useRef(false)
 
   useEffect(() => () => dropParams(['app']), [])
+
+  /* Read from the primary, as the app's Config dialog reads (apps.js:460), so a copy
+     the cluster has not propagated yet is neither drawn nor compared before a write.
+     Kept in a ref so a new nodes array does not reload the page; declared before the
+     effect that loads, so the first load already has it. */
+  const primary = useRef('')
+  useEffect(() => {
+    primary.current = primaryNodeName(nodes, clusterInitialised)
+  }, [nodes, clusterInitialised])
 
   const load = useCallback(async () => {
     setConflict(false)
@@ -111,7 +132,7 @@ export function AdvancedBlocking({ token }: { token: string | null }) {
       setPhase({ kind: 'missing' })
       return
     }
-    const read = await getAppConfig(token, app.name)
+    const read = await getAppConfig(token, app.name, primary.current)
     if (read.kind !== 'ok') {
       failed(read)
       return
@@ -171,7 +192,7 @@ export function AdvancedBlocking({ token }: { token: string | null }) {
 
   /** The re-read before any write: same text, or nothing is written. */
   const unchangedOnServer = useCallback(async (name: string, text: string): Promise<AlertState | null> => {
-    const read = await getAppConfig(token, name)
+    const read = await getAppConfig(token, name, primary.current)
     if (read.kind !== 'ok') return error(read)
     if ((read.data.response.config ?? '') !== text) {
       setConflict(true)

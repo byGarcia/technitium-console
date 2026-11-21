@@ -216,6 +216,17 @@ startup into `/var/log/technitium/dns/<date>.log`:
 That is the credential-free source for the version, and it is what the backup
 needs in order to know whether it has gone stale.
 
+*2026-11-19:* the line is written once, in the file of the day the server
+started, and the server writes one file a day. The installer read only the
+newest three, so a server up for more than a few days had no version, and on
+Technitium's own Linux install (web root owned by `dns-server`) the managed
+systemd folder was skipped and the web root refused (#35). The installer now
+reads the files back to the last start. Whether the server reads
+`DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH` is asked first of its
+`DnsServerCore.dll`, whose UTF-16 string literals hold the variable's name in
+every build that reads it and in none before (upstream `b5ab84fa`); the version
+answers only when that file cannot be read. C32 measures it.
+
 ---
 
 ## 2 · Two installation modes
