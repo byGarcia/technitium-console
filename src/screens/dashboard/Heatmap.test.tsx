@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import * as api from '../../api/dashboard'
-import { Heatmap } from './Heatmap.tsx'
+import { Heatmap } from './Heatmap'
 import { toIso } from '../logs/dates'
 
 afterEach(() => vi.restoreAllMocks())

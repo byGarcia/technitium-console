@@ -47,8 +47,6 @@ compact cards in two rows of five (`Figures.tsx` says which and why).
 */
 .tiles { display:grid; grid-template-columns: minmax(0, 1.15fr) repeat(5, minmax(0, 1fr)); gap: var(--s-5); }
 
-
-
 /*
 A figure's colour is the colour of ITS SERIES in the chart, said with an edge and
 not with the square swatch a legend uses: the swatch already means "a series" in the

@@ -80,4 +80,29 @@ describe('Breakdown', () => {
     // The center total for responses donut should now sum visible slices (50 + 25 = 75)
     expect(within(responsesSection).getByText('75')).toBeInTheDocument()
   })
+
+  it('updates legend percentages to match visible slice ratios in Donut mode when slices are hidden', async () => {
+    render(
+      <Breakdown
+        responses={mockChart}
+        queryTypes={mockChart}
+        protocols={mockChart}
+        failure={false}
+      />,
+    )
+    const donutBtn = screen.getByRole('button', { name: 'Donut' })
+    await userEvent.click(donutBtn)
+
+    const responsesSection = screen.getByRole('region', { name: 'Query Response Types' })
+    // Before hiding 'A', AAAA is 50 / 175 = 28.57%
+    expect(within(responsesSection).getByRole('button', { name: /AAAA 28\.57%/ })).toBeInTheDocument()
+
+    // Hide 'A' (100)
+    const aLegendBtn = within(responsesSection).getByRole('button', { name: /^A / })
+    await userEvent.click(aLegendBtn)
+
+    // With 'A' hidden, active total is 75 (50 + 25): AAAA becomes 66.67% and CNAME becomes 33.33%
+    expect(within(responsesSection).getByRole('button', { name: /AAAA 66\.67%/ })).toBeInTheDocument()
+    expect(within(responsesSection).getByRole('button', { name: /CNAME 33\.33%/ })).toBeInTheDocument()
+  })
 })

@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { Profile } from './Profile.tsx'
+import { Profile } from './Profile'
 import { ThemeContext } from '../../theme/useTheme'
 import * as client from '../../api/client'
 

@@ -190,18 +190,18 @@ export function checkDist(dist, tokens) {
   if (!existsSync(dist)) return [`${dist}: no pages found. Build first: npm run build`]
   const colours = readThemeColours(tokens)
   const files = walk(dist)
-  const pages = files.filter((f) => f.replace(/\\/g, '/').endsWith('/index.html'))
+  const pages = files.filter((f) => f.endsWith('/index.html'))
   if (pages.length === 0) return [`${dist}: no pages found. Build first: npm run build`]
 
   const findings = pages.flatMap((p) => {
     const html = readFileSync(p, 'utf8')
-    return checkPage(html, relative(dist, p).replace(/\\/g, '/'), dist, colours)
+    return checkPage(html, relative(dist, p), dist, colours)
   })
   findings.push(...touchIconFinding(dist, readFileSync(join(dist, 'index.html'), 'utf8')))
   findings.push(...checkManifest(dist, colours))
   for (const file of files.filter((f) => f.endsWith('.js'))) {
     if (/navigator\.serviceWorker|serviceWorker\.register/.test(readFileSync(file, 'utf8'))) {
-      findings.push(`${relative(dist, file).replace(/\\/g, '/')}: registers a service worker, which this console refuses on purpose`)
+      findings.push(`${relative(dist, file)}: registers a service worker, which this console refuses on purpose`)
     }
   }
   return findings
@@ -213,7 +213,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const findings = checkDist(dist, tokens)
   for (const f of findings) console.log(`  ${f}`)
   if (findings.length === 0) {
-    const pages = walk(dist).filter((f) => f.replace(/\\/g, '/').endsWith('/index.html')).length
+    const pages = walk(dist).filter((f) => f.endsWith('/index.html')).length
     console.log(`\n  Installable: ${pages} pages, each with its manifest and icons on real files, with no prefix and under /dns/.\n`)
   } else {
     console.log(`\n  ${findings.length} findings.\n`)

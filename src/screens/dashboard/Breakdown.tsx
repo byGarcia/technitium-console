@@ -162,6 +162,8 @@ function Responses({ data, resetOn, failure, jump, mode }: {
       {(d) => {
         const entries = entriesOf(d, false)
         const total = entries.reduce((a, e) => a + e.value, 0)
+        const activeTotal = entries.filter((e) => !hidden?.has(e.label)).reduce((a, e) => a + e.value, 0)
+        const legendTotal = mode === 'donut' ? activeTotal : total
         return (
           <>
             {mode === 'donut' ? (
@@ -171,7 +173,7 @@ function Responses({ data, resetOn, failure, jump, mode }: {
             )}
             <div className={styles.stackLegend}>
               <Legend
-                entries={entries.map((e) => ({ label: e.label, datum: percentage(e.value, total) }))}
+                entries={entries.map((e) => ({ label: e.label, datum: percentage(e.value, legendTotal) }))}
                 hidden={hidden}
                 onToggle={toggle}
               />
