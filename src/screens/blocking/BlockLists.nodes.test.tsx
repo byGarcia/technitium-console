@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import * as settings from '../../api/settings'
@@ -6,13 +6,10 @@ import * as dashboard from '../../api/dashboard'
 import * as quick from '../../lib/quick-lists'
 import { BlockLists } from './BlockLists'
 import { nodeFailure } from './lists-on-nodes'
-import { setTimezone } from '../../lib/timezone'
 
 /* Deviation 39: the Lists tab's `Block Lists Across Nodes` card on a cluster. */
 
-beforeEach(() => setTimezone('UTC'))
 afterEach(() => {
-  setTimezone('local')
   vi.restoreAllMocks()
 })
 

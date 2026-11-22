@@ -97,6 +97,22 @@ function getDatePartsInTz(epochMs: number, tz: SupportedTimezone): {
   }
 }
 
+/** Resolves the UTC timestamp of midnight (00:00:00) for a calendar day in a timezone. */
+export function tzMidnight(year: number, month: number, day: number, tz: SupportedTimezone): number {
+  if (tz === 'local') {
+    return new Date(year, month - 1, day, 0, 0, 0, 0).getTime()
+  }
+  let t = Date.UTC(year, month - 1, day, 0, 0, 0)
+  for (let iter = 0; iter < 3; iter++) {
+    const p = getDatePartsInTz(t, tz)
+    const dayDiff = (Date.UTC(p.year, p.month - 1, p.day) - Date.UTC(year, month - 1, day)) / DAY
+    const minuteDiff = dayDiff * 24 * 60 + p.hour * 60 + p.minute
+    if (minuteDiff === 0) break
+    t -= minuteDiff * 60_000
+  }
+  return Math.floor(t / HOUR) * HOUR
+}
+
 /** The span the week covers: from midnight six days ago in the active timezone to the start
  *  of the hour in progress, both on UTC hour boundaries. */
 export function weekSpan(now: number, tz?: SupportedTimezone): { from: number; to: number } {
@@ -107,10 +123,9 @@ export function weekSpan(now: number, tz?: SupportedTimezone): { from: number; t
     return { from: Math.floor(midnight / HOUR) * HOUR, to: Math.floor(now / HOUR) * HOUR }
   }
   const p = getDatePartsInTz(now, resolvedTz)
-  const elapsedToday = (p.hour * 3600 + p.minute * 60) * 1000 + (now % 60000)
-  const todayMidnightInTz = now - elapsedToday
-  const sixDaysAgoMidnight = todayMidnightInTz - (DAYS - 1) * DAY
-  return { from: Math.floor(sixDaysAgoMidnight / HOUR) * HOUR, to: Math.floor(now / HOUR) * HOUR }
+  const sixDaysAgo = new Date(Date.UTC(p.year, p.month - 1, p.day - (DAYS - 1)))
+  const from = tzMidnight(sixDaysAgo.getUTCFullYear(), sixDaysAgo.getUTCMonth() + 1, sixDaysAgo.getUTCDate(), resolvedTz)
+  return { from, to: Math.floor(now / HOUR) * HOUR }
 }
 
 /** The requests that cover `[from, to)` by hour, in as few even pieces as fit.
@@ -215,17 +230,23 @@ export function heatRows(hours: Map<number, number>, now: number, tz?: Supported
     return rows
   }
 
-  // Timezone-aware 7-day row generation
+  // Timezone-aware 7-day row generation walking calendar days
+  const todayParts = getDatePartsInTz(now, resolvedTz)
   for (let back = DAYS - 1; back >= 0; back--) {
-    const instant = now - back * DAY
-    const p = getDatePartsInTz(instant, resolvedTz)
-    const label = `${WEEKDAY[p.weekday]} ${pad(p.month)}/${pad(p.day)}`
-    const short = `${WEEKDAY[p.weekday]} ${pad(p.day)}`
+    const targetDate = new Date(Date.UTC(todayParts.year, todayParts.month - 1, todayParts.day - back))
+    const y = targetDate.getUTCFullYear()
+    const m = targetDate.getUTCMonth() + 1
+    const d = targetDate.getUTCDate()
+    const dayMidnight = tzMidnight(y, m, d, resolvedTz)
+    const dateKey = `${pad(y)}-${pad(m)}-${pad(d)}`
+    const weekday = targetDate.getUTCDay()
+    const label = `${WEEKDAY[weekday]} ${pad(m)}/${pad(d)}`
+    const short = `${WEEKDAY[weekday]} ${pad(d)}`
     rows.push({
-      day: instant,
+      day: dayMidnight,
       label,
       short,
-      dateKey: p.dateKey,
+      dateKey,
       cells: Array.from({ length: 24 }, () => null),
       live: null,
     })

@@ -12,7 +12,7 @@ describe('dateTime / minuteStamp', () => {
     setTimezone('local')
   })
   afterEach(() => {
-    setTimezone('Asia/Kolkata')
+    setTimezone('local')
   })
 
   it('it zero-pads months, days, hours, minutes and seconds', () => {
@@ -64,6 +64,10 @@ describe('dateTime / minuteStamp', () => {
   it('formats .NET default date 0001-01-01 properly without throwing', () => {
     expect(dateTime('0001-01-01T00:00:00')).toBe('0001-01-01 00:00:00')
     expect(minuteStamp('0001-01-01T00:00:00')).toBe('0001-01-01 00:00')
+    expect(dateTime('0001-01-01T00:00:00Z', 'UTC')).toBe('0001-01-01 00:00:00')
+    expect(dateTime('0001-01-01T00:00:00Z', 'America/New_York')).toBe('0001-12-31 19:03:58')
+    expect(minuteStamp('0001-01-01T00:00:00Z', 'UTC')).toBe('0001-01-01 00:00')
+    expect(minuteStamp('0001-01-01T00:00:00Z', 'America/New_York')).toBe('0001-12-31 19:03')
   })
 })
 

@@ -14,7 +14,7 @@ function hours(first: number, n: number, value: (i: number) => number = () => 1)
 
 describe('the week asked by hour', () => {
   beforeEach(() => setTimezone('local'))
-  afterEach(() => setTimezone('Asia/Kolkata'))
+  afterEach(() => setTimezone('local'))
   const now = new Date(2026, 9, 15, 22, 20).getTime()
 
   it('runs from the browser midnight six days ago to the start of the hour in progress, on UTC hours', () => {
@@ -72,7 +72,7 @@ describe('stitching the answers', () => {
 
 describe('the grid', () => {
   beforeEach(() => setTimezone('local'))
-  afterEach(() => setTimezone('Asia/Kolkata'))
+  afterEach(() => setTimezone('local'))
 
   it('places each hour by the browser day and hour of its start, today last', () => {
     const now = new Date(2026, 9, 15, 22, 20).getTime()
@@ -104,5 +104,42 @@ describe('the grid', () => {
     expect(level(1, 10)).toBe(1)
     expect(level(10, 10)).toBe(5)
     expect(level(6, 10)).toBe(3)
+  })
+})
+
+describe('clock changes and custom display timezones in heatmap', () => {
+  afterEach(() => setTimezone('local'))
+
+  it('weekSpan anchors to midnight in target timezone across fall back (25-hour day)', () => {
+    // 2026-11-02 17:00Z in America/New_York (Fall Back occurred on 2026-11-01)
+    const now = Date.parse('2026-11-02T17:00:00Z')
+    const span = weekSpan(now, 'America/New_York')
+    // 6 calendar days back from 2026-11-02 is 2026-10-27
+    // Midnight on 2026-10-27 in New York (EDT, UTC-4) is exactly 04:00Z
+    expect(span.from).toBe(Date.parse('2026-10-27T04:00:00Z'))
+    expect(span.to).toBe(Date.parse('2026-11-02T17:00:00Z'))
+  })
+
+  it('heatRows generates 7 calendar days including the 23-hour spring-forward day', () => {
+    // 2026-03-09 00:30 local time in America/New_York (EDT, UTC-4 = 04:30Z)
+    // Spring Forward occurred on 2026-03-08 (23-hour day)
+    const now = Date.parse('2026-03-09T04:30:00Z')
+    const hoursMap = new Map<number, number>()
+    const rows = heatRows(hoursMap, now, 'America/New_York')
+
+    expect(rows).toHaveLength(7)
+    const labels = rows.map((r) => r.label)
+    // Must include Sunday 03/08
+    expect(labels).toEqual([
+      'Tue 03/03',
+      'Wed 03/04',
+      'Thu 03/05',
+      'Fri 03/06',
+      'Sat 03/07',
+      'Sun 03/08',
+      'Mon 03/09',
+    ])
+    expect(rows[5].dateKey).toBe('2026-03-08')
+    expect(rows[6].dateKey).toBe('2026-03-09')
   })
 })

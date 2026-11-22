@@ -50,7 +50,6 @@ export function getTimezoneOffset(tz: string, now: Date = new Date()): string {
 
 const FEATURED_BASE = [
   { value: 'local', label: 'Browser Local Time (Default)', region: 'Client' },
-  { value: 'Asia/Kolkata', label: 'IST - India Standard Time', region: 'Asia' },
   { value: 'UTC', label: 'UTC - Universal Coordinated Time', region: 'Universal' },
   { value: 'America/New_York', label: 'US Eastern - New York', region: 'Americas' },
   { value: 'America/Chicago', label: 'US Central - Chicago', region: 'Americas' },
@@ -59,6 +58,7 @@ const FEATURED_BASE = [
   { value: 'Europe/London', label: 'GMT / BST - London', region: 'Europe' },
   { value: 'Europe/Paris', label: 'CET / CEST - Paris / Berlin', region: 'Europe' },
   { value: 'Asia/Dubai', label: 'GST - Dubai', region: 'Middle East' },
+  { value: 'Asia/Kolkata', label: 'IST - India Standard Time', region: 'Asia' },
   { value: 'Asia/Singapore', label: 'SGT - Singapore', region: 'Asia' },
   { value: 'Asia/Tokyo', label: 'JST - Tokyo', region: 'Asia' },
   { value: 'Australia/Sydney', label: 'AEST / AEDT - Sydney', region: 'Australia' },
@@ -93,9 +93,8 @@ export function getIanaTimezones(): readonly TimezoneOption[] {
     }
   }
 
-  // Ensure Asia/Kolkata and UTC are present in the list
+  // Ensure UTC is present in the list
   const set = new Set(ids)
-  set.add('Asia/Kolkata')
   set.add('UTC')
 
   const now = new Date()

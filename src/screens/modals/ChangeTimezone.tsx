@@ -43,7 +43,7 @@ export function ChangeTimezone({
             <Select
               id={id}
               searchable
-              searchLabel="Search city, country, or offset (e.g. Kolkata, Tokyo, GMT)..."
+              searchLabel="Search city, country, or offset (e.g. London, Tokyo, UTC)..."
               value={timezone}
               onChange={(e) => setTimezone(e.target.value)}
             >

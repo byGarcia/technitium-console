@@ -74,7 +74,8 @@ export function formatDate(d: Date, withSeconds: boolean, tz?: SupportedTimezone
   }
   try {
     const fmt = getFormatter(resolvedTz, withSeconds)
-    return fmt.format(d).replace(/,/g, '').replace(/\s+/g, ' ').trim()
+    const formatted = fmt.format(d).replace(/,/g, '').replace(/\s+/g, ' ').trim()
+    return formatted.replace(/^(\d{1,3})-/, (_, y) => y.padStart(4, '0') + '-')
   } catch {
     const base = `${pad4(d.getFullYear())}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`
     return withSeconds ? `${base}:${pad2(d.getSeconds())}` : base

@@ -23,7 +23,7 @@ function inZone(zone: string) {
   })
   afterAll(() => {
     vi.unstubAllEnvs()
-    setTimezone('Asia/Kolkata')
+    setTimezone('local')
   })
 }
 
@@ -76,54 +76,59 @@ describe('anything with an hour is written in local time (runner pinned to UTC+9
   })
 })
 
-describe('chart labels format with custom display timezone', () => {
-  it('formats in Asia/Kolkata (IST = UTC+05:30)', () => {
-    expect(formatLabel('2026-10-01T11:29:00.0000000Z', 'HH:mm', 'Asia/Kolkata')).toBe('16:59')
-    expect(formatLabel('2026-09-30T23:00:00.0000000Z', 'MM/DD HH:mm', 'Asia/Kolkata')).toBe('10/01 04:30')
-  })
-
-  it('formats in UTC', () => {
-    expect(formatLabel('2026-10-01T11:29:00.0000000Z', 'HH:mm', 'UTC')).toBe('11:29')
+describe('what is not an instant', () => {
+  it('a label that is not an instant is left as it came', () => {
+    expect(formatLabel('11:29', 'HH:mm')).toBe('11:29')
   })
 })
 
-describe('the chart with its labels formatted', () => {
-  const chart = {
-    labelFormat: 'HH:mm',
-    labels: ['2026-10-01T11:29:00.0000000Z', '2026-10-01T11:30:00.0000000Z'],
-    datasets: [{ label: 'Total', data: [1, 2] }],
-  }
-
-  it('a label that is not an instant is left as it came', () => {
-    expect(formatLabel('not a date', 'HH:mm')).toBe('not a date')
-  })
+describe('localiseLabels', () => {
+  inZone('America/Los_Angeles')
 
   it('rewrites every label with the chart format and leaves the series alone', () => {
-    const got = localiseLabels(chart, 'UTC')
-    expect(got.labels).toEqual(['11:29', '11:30'])
-    expect(got.datasets).toEqual(chart.datasets)
+    const chart = {
+      labelFormat: 'MM/DD',
+      labels: ['2026-09-29T00:00:00.0000000Z', '2026-09-30T00:00:00.0000000Z'],
+      datasets: [{ label: 'Total', data: [1, 2] }],
+    }
+    expect(localiseLabels(chart)).toEqual({ ...chart, labels: ['09/29', '09/30'], instants: chart.labels })
   })
 
   it('without a format the chart passes through untouched', () => {
-    const raw = { labels: ['a', 'b'], datasets: [] }
-    expect(localiseLabels(raw)).toBe(raw)
+    const chart = { labels: ['A', 'AAAA'], datasets: [{ label: 'Type', data: [1, 2] }] }
+    expect(localiseLabels(chart)).toBe(chart)
   })
 
   it('retains UTC instants if an already formatted chart is formatted again', () => {
-    const first = localiseLabels(chart, 'UTC')
-    expect(first.instants).toEqual(chart.labels)
-    const second = localiseLabels(first, 'UTC')
-    expect(second.instants).toEqual(chart.labels)
-    expect(second.labels).toEqual(['11:29', '11:30'])
+    const chart = { labelFormat: 'MM/DD', labels: ['2026-09-30T00:00:00Z'], datasets: [] }
+    const once = localiseLabels(chart)
+    expect(localiseLabels(once).instants).toEqual(chart.labels)
   })
 
   it('does not create instants from parseable legacy date labels', () => {
-    const legacy = {
-      labelFormat: 'MM/DD',
-      labels: ['09/30', '10/01'],
-      datasets: [],
+    const chart = { labelFormat: 'MM/DD', labels: ['09/30'], datasets: [] }
+    expect(localiseLabels(chart)).toEqual(chart)
+  })
+})
+
+describe('chart labels format with custom display timezone', () => {
+  it('formats with explicit timezone parameter in UTC', () => {
+    expect(formatLabel('2026-10-01T11:29:00.0000000Z', 'HH:mm', 'UTC')).toBe('11:29')
+  })
+
+  it('formats with explicit timezone across daylight saving time in America/New_York', () => {
+    expect(formatLabel('2026-10-01T11:29:00.0000000Z', 'HH:mm', 'America/New_York')).toBe('07:29')
+    expect(formatLabel('2026-12-01T11:29:00.0000000Z', 'HH:mm', 'America/New_York')).toBe('06:29')
+  })
+
+  it('localiseLabels rewrites labels using custom display timezone', () => {
+    const chart = {
+      labelFormat: 'HH:mm',
+      labels: ['2026-10-01T11:29:00.0000000Z', '2026-10-01T11:30:00.0000000Z'],
+      datasets: [{ label: 'Total', data: [1, 2] }],
     }
-    const got = localiseLabels(legacy)
-    expect(got.instants).toBeUndefined()
+    const got = localiseLabels(chart, 'UTC')
+    expect(got.labels).toEqual(['11:29', '11:30'])
+    expect(got.instants).toEqual(chart.labels)
   })
 })

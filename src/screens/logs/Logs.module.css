@@ -405,5 +405,3 @@ own column, and each node's total for the filters on a line over the legend.
 .nodeTotalsTitle { font-size: var(--t-2); font-weight: 600; color: var(--mute); }
 .nodeTotal { display: inline-flex; align-items: center; gap: var(--s-5); }
 .nodeTotalCount { font-variant-numeric: tabular-nums; color: var(--ink); font-weight: 600; }
-
-
