@@ -65,9 +65,9 @@ describe('dateTime / minuteStamp', () => {
     expect(dateTime('0001-01-01T00:00:00')).toBe('0001-01-01 00:00:00')
     expect(minuteStamp('0001-01-01T00:00:00')).toBe('0001-01-01 00:00')
     expect(dateTime('0001-01-01T00:00:00Z', 'UTC')).toBe('0001-01-01 00:00:00')
-    expect(dateTime('0001-01-01T00:00:00Z', 'America/New_York')).toBe('0001-12-31 19:03:58')
+    expect(dateTime('0001-01-01T00:00:00Z', 'America/New_York')).toBe('0000-12-31 19:03:58')
     expect(minuteStamp('0001-01-01T00:00:00Z', 'UTC')).toBe('0001-01-01 00:00')
-    expect(minuteStamp('0001-01-01T00:00:00Z', 'America/New_York')).toBe('0001-12-31 19:03')
+    expect(minuteStamp('0001-01-01T00:00:00Z', 'America/New_York')).toBe('0000-12-31 19:03')
   })
 })
 
@@ -127,5 +127,17 @@ describe('toIso / toLocalInput timezone support', () => {
     expect(toIso('2026-11-15T08:00:00', 'UTC')).toBe('2026-11-15T08:00:00.000Z')
     const instant = Date.parse('2026-11-15T08:00:00.000Z')
     expect(toLocalInput(instant, 'UTC')).toBe('2026-11-15T08:00:00')
+  })
+
+  it('disambiguates wall-clock times on clock-change transitions matching browser native semantics', async () => {
+    const { toIso } = await import('../screens/logs/dates')
+    // Skipped time (Spring Forward): In America/New_York on 2026-03-08, 02:30 is skipped -> advances forward to 03:30 EDT = 07:30Z
+    expect(toIso('2026-03-08T02:30:00', 'America/New_York')).toBe('2026-03-08T07:30:00.000Z')
+
+    // Repeated time (Fall Back): In Europe/Madrid on 2026-10-25, 02:30 occurs twice -> selects earlier UTC instant = 00:30Z
+    expect(toIso('2026-10-25T02:30:00', 'Europe/Madrid')).toBe('2026-10-25T00:30:00.000Z')
+
+    // Skipped midnight: In Asia/Beirut on 2026-03-29, midnight is skipped -> starts at 01:00 local = 22:00Z on March 28
+    expect(toIso('2026-03-29T00:00:00', 'Asia/Beirut')).toBe('2026-03-28T22:00:00.000Z')
   })
 })

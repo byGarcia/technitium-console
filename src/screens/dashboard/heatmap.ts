@@ -1,6 +1,7 @@
 import type { ChartData } from '../../api/dashboard'
 import { bucketsOf, customBuckets } from './compare'
 import { getTimezone, type SupportedTimezone } from '../../lib/timezone'
+import { toIso } from '../logs/dates'
 
 /*
 The week by hour: deviation 7 in CONVENTIONS.md, this console's own panel. Seven
@@ -97,20 +98,15 @@ function getDatePartsInTz(epochMs: number, tz: SupportedTimezone): {
   }
 }
 
+const pad4 = (n: number) => String(n).padStart(4, '0')
+
 /** Resolves the UTC timestamp of midnight (00:00:00) for a calendar day in a timezone. */
 export function tzMidnight(year: number, month: number, day: number, tz: SupportedTimezone): number {
   if (tz === 'local') {
     return new Date(year, month - 1, day, 0, 0, 0, 0).getTime()
   }
-  let t = Date.UTC(year, month - 1, day, 0, 0, 0)
-  for (let iter = 0; iter < 3; iter++) {
-    const p = getDatePartsInTz(t, tz)
-    const dayDiff = (Date.UTC(p.year, p.month - 1, p.day) - Date.UTC(year, month - 1, day)) / DAY
-    const minuteDiff = dayDiff * 24 * 60 + p.hour * 60 + p.minute
-    if (minuteDiff === 0) break
-    t -= minuteDiff * 60_000
-  }
-  return Math.floor(t / HOUR) * HOUR
+  const iso = toIso(`${pad4(year)}-${pad(month)}-${pad(day)}T00:00:00`, tz)
+  return new Date(iso).getTime()
 }
 
 /** The span the week covers: from midnight six days ago in the active timezone to the start
@@ -125,7 +121,7 @@ export function weekSpan(now: number, tz?: SupportedTimezone): { from: number; t
   const p = getDatePartsInTz(now, resolvedTz)
   const sixDaysAgo = new Date(Date.UTC(p.year, p.month - 1, p.day - (DAYS - 1)))
   const from = tzMidnight(sixDaysAgo.getUTCFullYear(), sixDaysAgo.getUTCMonth() + 1, sixDaysAgo.getUTCDate(), resolvedTz)
-  return { from, to: Math.floor(now / HOUR) * HOUR }
+  return { from: Math.floor(from / HOUR) * HOUR, to: Math.floor(now / HOUR) * HOUR }
 }
 
 /** The requests that cover `[from, to)` by hour, in as few even pieces as fit.
@@ -224,9 +220,9 @@ export function heatRows(hours: Map<number, number>, now: number, tz?: Supported
         ? { from, to: from + HOUR, count }
         : { from: cell.from, to: from + HOUR, count: cell.count + count }
     }
-    const running = new Date(weekSpan(now, 'local').to)
-    const todayRow = byDay.get(new Date(running.getFullYear(), running.getMonth(), running.getDate()).getTime())
-    if (todayRow != null && todayRow.cells[running.getHours()] == null) todayRow.live = running.getHours()
+    const todayRow = byDay.get(new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime())
+    const liveHour = today.getHours()
+    if (todayRow != null && todayRow.cells[liveHour] == null) todayRow.live = liveHour
     return rows
   }
 

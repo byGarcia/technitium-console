@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { ChartData } from '../../api/dashboard'
 import { customBuckets } from './compare'
-import { dayLabel, heatRows, hourRequests, level, stitchHours, weekSpan, MAX_HOURS } from './heatmap'
+import { dayLabel, heatRows, hourRequests, level, stitchHours, tzMidnight, weekSpan, MAX_HOURS } from './heatmap'
 import { setTimezone } from '../../lib/timezone'
 
 const HOUR = 3_600_000
@@ -141,5 +141,29 @@ describe('clock changes and custom display timezones in heatmap', () => {
     ])
     expect(rows[5].dateKey).toBe('2026-03-08')
     expect(rows[6].dateKey).toBe('2026-03-09')
+  })
+
+  it('tzMidnight returns exact sub-hour midnight without whole-hour flooring', () => {
+    // Asia/Kolkata (+5:30): midnight on 2026-03-29 is 2026-03-28T18:30:00.000Z
+    const kolkata = tzMidnight(2026, 3, 29, 'Asia/Kolkata')
+    expect(new Date(kolkata).toISOString()).toBe('2026-03-28T18:30:00.000Z')
+
+    // Asia/Kathmandu (+5:45): midnight on 2026-03-29 is 2026-03-28T18:15:00.000Z
+    const kathmandu = tzMidnight(2026, 3, 29, 'Asia/Kathmandu')
+    expect(new Date(kathmandu).toISOString()).toBe('2026-03-28T18:15:00.000Z')
+
+    // Australia/Lord_Howe (+10:30 standard time on 2026-07-15): midnight is 2026-07-14T13:30:00.000Z
+    const lordHowe = tzMidnight(2026, 7, 15, 'Australia/Lord_Howe')
+    expect(new Date(lordHowe).toISOString()).toBe('2026-07-14T13:30:00.000Z')
+  })
+
+  it('handles skipped midnight in Beirut by starting on the first valid time of the day', () => {
+    // In Beirut on 2026-03-29, midnight is skipped; earliest valid time is 01:00 local = 22:00Z on March 28
+    const beirutMid = tzMidnight(2026, 3, 29, 'Asia/Beirut')
+    expect(new Date(beirutMid).toISOString()).toBe('2026-03-28T22:00:00.000Z')
+
+    // weekSpan covering Sunday 2026-03-29 begins at 22:00Z (not 21:00Z)
+    const span = weekSpan(Date.parse('2026-04-04T12:00:00Z'), 'Asia/Beirut')
+    expect(new Date(span.from).toISOString()).toBe('2026-03-28T22:00:00.000Z')
   })
 })

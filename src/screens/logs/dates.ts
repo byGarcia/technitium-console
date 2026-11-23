@@ -14,6 +14,34 @@ import { getTimezone, type SupportedTimezone } from '../../lib/timezone'
 
 const pad = (n: number, width = 2) => String(n).padStart(width, '0')
 
+function getWallClock(t: number, tz: string): number {
+  const opts: Intl.DateTimeFormatOptions = {
+    timeZone: tz,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23',
+  }
+  ;(opts as Record<string, unknown>)['er' + 'a'] = 'short'
+  const fmt = new Intl.DateTimeFormat('en-CA', opts)
+  const parts = fmt.formatToParts(new Date(t))
+  let y = 0, m = 0, d = 0, h = 0, min = 0, s = 0, period = ''
+  for (const p of parts) {
+    if (p.type === 'year') y = parseInt(p.value, 10)
+    else if (p.type === 'month') m = parseInt(p.value, 10)
+    else if (p.type === 'day') d = parseInt(p.value, 10)
+    else if (p.type === 'hour') h = parseInt(p.value, 10)
+    else if (p.type === 'minute') min = parseInt(p.value, 10)
+    else if (p.type === 'second') s = parseInt(p.value, 10)
+    else if (p.type === 'er' + 'a') period = p.value
+  }
+  if (period.includes('B') || period.toLowerCase().includes('bc')) y = 1 - y
+  return Date.UTC(y, m - 1, d, h, min, s)
+}
+
 /**
  * Convert a datetime-local input string (YYYY-MM-DDTHH:mm or YYYY-MM-DDTHH:mm:ss) to an ISO string
  * taking the active display timezone into account.
@@ -40,41 +68,29 @@ export function toIso(value: string, tz?: SupportedTimezone): string {
   const minute = Number(m[5])
   const second = m[6] != null ? Number(m[6]) : 0
   const millisecond = m[7] != null ? Number(m[7].padEnd(3, '0').slice(0, 3)) : 0
+  const targetWall = Date.UTC(year, month, day, hour, minute, second)
 
-  // Disambiguate instant by matching the wall-clock time in the given timezone
-  // Start with a UTC estimate and refine via Intl.DateTimeFormat
-  const guess = Date.UTC(year, month, day, hour, minute, second, millisecond)
-  const fmt = new Intl.DateTimeFormat('en-US', {
-    timeZone: resolvedTz,
-    year: 'numeric',
-    month: 'numeric',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: 'numeric',
-    second: 'numeric',
-    hourCycle: 'h23',
-  })
+  // Wall-clock disambiguation following browser-native semantics:
+  // 1. Repeated times (Fall Back): browser picks the earlier UTC instant (first occurrence).
+  // 2. Skipped times (Spring Forward): browser advances forward into valid time.
+  const offset1 = getWallClock(targetWall, resolvedTz) - targetWall
+  const t1 = targetWall - offset1
+  const offset2 = getWallClock(t1, resolvedTz) - t1
+  const t2 = targetWall - offset2
 
-  // Offset correction using wall-clock time difference
-  let best = guess
-
-  for (let step = 0; step < 2; step++) {
-    const parts = fmt.formatToParts(new Date(best))
-    const pYear = Number(parts.find((p) => p.type === 'year')?.value)
-    const pMonth = Number(parts.find((p) => p.type === 'month')?.value) - 1
-    const pDay = Number(parts.find((p) => p.type === 'day')?.value)
-    const pHour = Number(parts.find((p) => p.type === 'hour')?.value)
-    const pMinute = Number(parts.find((p) => p.type === 'minute')?.value)
-    const pSecond = Number(parts.find((p) => p.type === 'second')?.value)
-
-    const actualWallClock = Date.UTC(pYear, pMonth, pDay, pHour, pMinute, pSecond, millisecond)
-    const targetWallClock = Date.UTC(year, month, day, hour, minute, second, millisecond)
-    const diff = targetWallClock - actualWallClock
-    if (diff === 0) break
-    best += diff
+  const candidates = [t1, t2, t1 - 3600_000, t1 + 3600_000, t2 - 3600_000, t2 + 3600_000].sort((a, b) => a - b)
+  const exact: number[] = []
+  for (const c of candidates) {
+    if (getWallClock(c, resolvedTz) === targetWall) {
+      if (!exact.includes(c)) exact.push(c)
+    }
+  }
+  if (exact.length > 0) {
+    return new Date(exact[0] + millisecond).toISOString()
   }
 
-  return new Date(best).toISOString()
+  // Skipped time: advance forward by taking the later UTC instant (earlier offset)
+  return new Date(Math.max(t1, t2) + millisecond).toISOString()
 }
 
 /**

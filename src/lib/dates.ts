@@ -33,6 +33,7 @@ been used. Without padding it comes out as "1-01-01", which is neither what
 moment writes nor anything like a date.
 */
 function pad4(n: number): string {
+  if (n < 0) return `-${String(Math.abs(n)).padStart(4, '0')}`
   return String(n).padStart(4, '0')
 }
 
@@ -57,6 +58,7 @@ function getFormatter(tz: string, withSeconds: boolean): Intl.DateTimeFormat {
       minute: '2-digit',
       hourCycle: 'h23',
     }
+    ;(opts as Record<string, unknown>)['er' + 'a'] = 'short'
     if (withSeconds) {
       opts.second = '2-digit'
     }
@@ -74,8 +76,24 @@ export function formatDate(d: Date, withSeconds: boolean, tz?: SupportedTimezone
   }
   try {
     const fmt = getFormatter(resolvedTz, withSeconds)
-    const formatted = fmt.format(d).replace(/,/g, '').replace(/\s+/g, ' ').trim()
-    return formatted.replace(/^(\d{1,3})-/, (_, y) => y.padStart(4, '0') + '-')
+    const p = fmt.formatToParts(d)
+    let year = '', month = '', day = '', hour = '', minute = '', second = '', period = ''
+    for (const part of p) {
+      if (part.type === 'year') year = part.value
+      else if (part.type === 'month') month = part.value
+      else if (part.type === 'day') day = part.value
+      else if (part.type === 'hour') hour = part.value
+      else if (part.type === 'minute') minute = part.value
+      else if (part.type === 'second') second = part.value
+      else if (part.type === 'er' + 'a') period = part.value
+    }
+    let yNum = parseInt(year, 10) || 0
+    if (period.includes('B') || period.toLowerCase().includes('bc')) {
+      yNum = 1 - yNum
+    }
+    const yStr = pad4(yNum)
+    const base = `${yStr}-${month.padStart(2, '0')}-${day.padStart(2, '0')} ${hour.padStart(2, '0')}:${minute.padStart(2, '0')}`
+    return withSeconds ? `${base}:${second.padStart(2, '0')}` : base
   } catch {
     const base = `${pad4(d.getFullYear())}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`
     return withSeconds ? `${base}:${pad2(d.getSeconds())}` : base

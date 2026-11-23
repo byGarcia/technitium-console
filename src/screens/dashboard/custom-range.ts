@@ -1,3 +1,6 @@
+import { toIso as parseToIso } from '../logs/dates'
+import { getTimezone, type SupportedTimezone } from '../../lib/timezone'
+
 /*
 The Dashboard's custom range.
 
@@ -18,10 +21,11 @@ views.
 */
 
 /** The two ISO instants the API expects, with the seven-day rule. */
-export function rangeInstants(start: string, end: string): { start: string; end: string } {
+export function rangeInstants(start: string, end: string, tz?: SupportedTimezone): { start: string; end: string } {
+  const resolvedTz = tz ?? getTimezone()
   const days = (Date.parse(`${end}T00:00:00Z`) - Date.parse(`${start}T00:00:00Z`)) / 86_400_000 + 1
-  const toIso = (d: string) => new Date(days > 7 ? `${d}T00:00:00Z` : `${d}T00:00:00`).toISOString()
-  return { start: toIso(start), end: toIso(end) }
+  const toIsoStr = (d: string) => (days > 7 ? new Date(`${d}T00:00:00Z`).toISOString() : parseToIso(`${d}T00:00:00`, resolvedTz))
+  return { start: toIsoStr(start), end: toIsoStr(end) }
 }
 
 /**

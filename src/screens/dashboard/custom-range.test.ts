@@ -27,6 +27,18 @@ describe('rangeInstants', () => {
     expect(seven.start).toBe(new Date('2026-08-01T00:00:00').toISOString())
     expect(eight.start).toBe('2026-08-01T00:00:00.000Z')
   })
+
+  it('reads dates in the active display timezone when given for seven days or fewer', () => {
+    // 5-day span in America/New_York (EDT, UTC-4) starts at midnight local = 04:00Z
+    const ny = rangeInstants('2026-08-01', '2026-08-05', 'America/New_York')
+    expect(ny.start).toBe('2026-08-01T04:00:00.000Z')
+    expect(ny.end).toBe('2026-08-05T04:00:00.000Z')
+
+    // 5-day span in Asia/Kolkata (IST, UTC+5:30) starts at midnight local = 18:30Z previous day
+    const kolkata = rangeInstants('2026-08-01', '2026-08-05', 'Asia/Kolkata')
+    expect(kolkata.start).toBe('2026-07-31T18:30:00.000Z')
+    expect(kolkata.end).toBe('2026-08-04T18:30:00.000Z')
+  })
 })
 
 describe('whatIsMissing', () => {

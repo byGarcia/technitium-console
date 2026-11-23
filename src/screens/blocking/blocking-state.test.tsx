@@ -4,13 +4,8 @@ import * as settings from '../../api/settings'
 import * as client from '../../api/client'
 import type { DnsSettings } from '../../api/settings'
 import { settingsChanged } from '../../lib/settings-signal'
-import { blockingMark, stateOf, useBlockingState } from './blocking-state'
+import { blockingMark, stateOf, untilText, useBlockingState } from './blocking-state'
 import type { Permissions } from './permissions'
-
-afterEach(() => {
-  vi.useRealTimers()
-  vi.restoreAllMocks()
-})
 
 const S = (canView: boolean, canModify: boolean) => ({ Settings: { canView, canModify, canDelete: false } })
 
@@ -20,6 +15,10 @@ function Probe({ permissions, enabled }: { permissions?: Permissions; enabled?: 
 }
 
 describe('blocking state', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.restoreAllMocks()
+  })
   it('reads on, paused and off as the Overview does', () => {
     expect(stateOf(true, null)).toEqual({ kind: 'on' })
     expect(stateOf(false, '2099-01-01T00:00:00Z')).toEqual({ kind: 'paused', till: '2099-01-01T00:00:00Z' })
@@ -102,5 +101,17 @@ describe('blocking state', () => {
     act(() => settingsChanged())
     expect(screen.getAllByText('none')).toHaveLength(2)
     expect(read).not.toHaveBeenCalled()
+  })
+
+  it('untilText formats Until HH:mm when now and till are on the same calendar day in display zone', () => {
+    const now = new Date('2026-11-23T01:00:00Z')
+    const till = '2026-11-23T03:00:00Z'
+    expect(untilText(till, now, 'Europe/Madrid')).toBe('Until 04:00')
+  })
+
+  it('untilText formats full date Until YYYY-MM-DD HH:mm when till is on the next calendar day in display zone', () => {
+    const now = new Date('2026-11-22T22:00:00Z')
+    const till = '2026-11-23T01:00:00Z'
+    expect(untilText(till, now, 'Europe/Madrid')).toBe('Until 2026-11-23 02:00')
   })
 })
