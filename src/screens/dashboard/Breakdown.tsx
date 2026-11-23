@@ -9,10 +9,11 @@ import styles from './Dashboard.module.css'
 
 /*
 The three breakdowns in one card, as the cockpit draws them: Query Response Types,
-Query Types and Protocol Types, each a stacked bar with its legend under it. The
-data, the labels and the percentages are the ones the doughnuts carried, written
-with the same `percentage()` as the cards; a stacked bar says the same shares in a
-third of the room, which is what lets the four lists sit in one row.
+Query Types and Protocol Types, rendered as either a stacked bar or a donut chart
+view with its legend under it. The data, the labels and the percentages are the ones
+the doughnuts carried, written with the same `percentage()` as the cards; a stacked
+bar says the same shares in a third of the room, while the donut view provides an
+interactive ring breakdown with central totals.
 
 What each part answers to, and why it is not the same in the three:
 
@@ -173,7 +174,10 @@ function Responses({ data, resetOn, failure, jump, mode }: {
             )}
             <div className={styles.stackLegend}>
               <Legend
-                entries={entries.map((e) => ({ label: e.label, datum: percentage(e.value, legendTotal) }))}
+                entries={entries.map((e) => ({
+                  label: e.label,
+                  datum: mode === 'donut' && hidden?.has(e.label) ? '' : percentage(e.value, legendTotal),
+                }))}
                 hidden={hidden}
                 onToggle={toggle}
               />

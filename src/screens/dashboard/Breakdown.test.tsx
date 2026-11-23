@@ -104,5 +104,8 @@ describe('Breakdown', () => {
     // With 'A' hidden, active total is 75 (50 + 25): AAAA becomes 66.67% and CNAME becomes 33.33%
     expect(within(responsesSection).getByRole('button', { name: /AAAA 66\.67%/ })).toBeInTheDocument()
     expect(within(responsesSection).getByRole('button', { name: /CNAME 33\.33%/ })).toBeInTheDocument()
+    // Hidden entry 'A' has no slice and is left without a percentage share
+    expect(within(responsesSection).getByRole('button', { name: 'A' })).toBeInTheDocument()
+    expect(within(responsesSection).queryByRole('button', { name: /^A \d/ })).not.toBeInTheDocument()
   })
 })
