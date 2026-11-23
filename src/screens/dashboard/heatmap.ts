@@ -30,7 +30,6 @@ busy Last Hour does not sit beside an hour that looks empty.
 */
 
 const HOUR = 3_600_000
-const DAY = 86_400_000
 export const MAX_HOURS = 157
 export const DAYS = 7
 
