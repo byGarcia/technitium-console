@@ -26,10 +26,31 @@ write "Invalid date".
 const UTC_FORMATS = new Set(['MM/DD', 'DD/MM', 'MM/YYYY'])
 
 const pad = (n: number, width = 2) => String(n).padStart(width, '0')
+const pad4 = (n: number) => (n < 0 ? `-${String(Math.abs(n)).padStart(4, '0')}` : String(n).padStart(4, '0'))
+
+const LABEL_FORMATTERS = new Map<string, Intl.DateTimeFormat>()
+
+function getLabelFormatter(tz: string): Intl.DateTimeFormat {
+  let fmt = LABEL_FORMATTERS.get(tz)
+  if (!fmt) {
+    fmt = new Intl.DateTimeFormat('en-CA', {
+      timeZone: tz,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+      era: 'short',
+    })
+    LABEL_FORMATTERS.set(tz, fmt)
+  }
+  return fmt
+}
 
 export function formatLabel(label: string, format: string, tz?: SupportedTimezone): string {
   const at = Date.parse(label)
-  if (Number.isNaN(at) || !/^\d{4}-\d{2}-\d{2}T/.test(label)) return label
+  if (Number.isNaN(at) || !/^[+-]?\d{4,6}-\d{2}-\d{2}T/.test(label)) return label
   const d = new Date(at)
   const utc = UTC_FORMATS.has(format)
   const resolvedTz = tz ?? getTimezone()
@@ -38,7 +59,7 @@ export function formatLabel(label: string, format: string, tz?: SupportedTimezon
 
   if (utc || resolvedTz === 'UTC') {
     parts = {
-      YYYY: pad(d.getUTCFullYear(), 4),
+      YYYY: pad4(d.getUTCFullYear()),
       MM: pad(d.getUTCMonth() + 1),
       DD: pad(d.getUTCDate()),
       HH: pad(d.getUTCHours()),
@@ -46,7 +67,7 @@ export function formatLabel(label: string, format: string, tz?: SupportedTimezon
     }
   } else if (resolvedTz === 'local') {
     parts = {
-      YYYY: pad(d.getFullYear(), 4),
+      YYYY: pad4(d.getFullYear()),
       MM: pad(d.getMonth() + 1),
       DD: pad(d.getDate()),
       HH: pad(d.getHours()),
@@ -54,26 +75,27 @@ export function formatLabel(label: string, format: string, tz?: SupportedTimezon
     }
   } else {
     try {
-      const fmt = new Intl.DateTimeFormat('en-US', {
-        timeZone: resolvedTz,
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        hourCycle: 'h23',
-      })
-      const p = fmt.formatToParts(d)
+      const p = getLabelFormatter(resolvedTz).formatToParts(d)
+      let y = 0, month = '', day = '', hour = '', minute = '', period = ''
+      for (const x of p) {
+        if (x.type === 'year') y = parseInt(x.value, 10)
+        else if (x.type === 'month') month = x.value
+        else if (x.type === 'day') day = x.value
+        else if (x.type === 'hour') hour = x.value
+        else if (x.type === 'minute') minute = x.value
+        else if (x.type === 'era') period = x.value
+      }
+      if (period.includes('B') || period.toLowerCase().includes('bc')) y = 1 - y
       parts = {
-        YYYY: p.find((x) => x.type === 'year')?.value ?? pad(d.getUTCFullYear(), 4),
-        MM: p.find((x) => x.type === 'month')?.value ?? pad(d.getUTCMonth() + 1),
-        DD: p.find((x) => x.type === 'day')?.value ?? pad(d.getUTCDate()),
-        HH: p.find((x) => x.type === 'hour')?.value ?? pad(d.getUTCHours()),
-        mm: p.find((x) => x.type === 'minute')?.value ?? pad(d.getUTCMinutes()),
+        YYYY: pad4(y),
+        MM: month.padStart(2, '0'),
+        DD: day.padStart(2, '0'),
+        HH: hour.padStart(2, '0'),
+        mm: minute.padStart(2, '0'),
       }
     } catch {
       parts = {
-        YYYY: pad(d.getFullYear(), 4),
+        YYYY: pad4(d.getFullYear()),
         MM: pad(d.getMonth() + 1),
         DD: pad(d.getDate()),
         HH: pad(d.getHours()),

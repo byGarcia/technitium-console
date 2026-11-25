@@ -34,6 +34,27 @@ export const MAX_HOURS = 157
 export const DAYS = 7
 
 const pad = (n: number) => String(n).padStart(2, '0')
+const pad4 = (n: number) => (n < 0 ? `-${String(Math.abs(n)).padStart(4, '0')}` : String(n).padStart(4, '0'))
+
+const PART_FORMATTERS = new Map<string, Intl.DateTimeFormat>()
+
+function getPartFormatter(tz: string): Intl.DateTimeFormat {
+  let fmt = PART_FORMATTERS.get(tz)
+  if (!fmt) {
+    fmt = new Intl.DateTimeFormat('en-CA', {
+      timeZone: tz,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+      era: 'short',
+    })
+    PART_FORMATTERS.set(tz, fmt)
+  }
+  return fmt
+}
 
 function getDatePartsInTz(epochMs: number, tz: SupportedTimezone): {
   dateKey: string
@@ -42,67 +63,57 @@ function getDatePartsInTz(epochMs: number, tz: SupportedTimezone): {
   day: number
   hour: number
   minute: number
-  weekday: number
 } {
   const d = new Date(epochMs)
   if (tz === 'local') {
     return {
-      dateKey: `${pad(d.getFullYear())}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
+      dateKey: `${pad4(d.getFullYear())}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
       year: d.getFullYear(),
       month: d.getMonth() + 1,
       day: d.getDate(),
       hour: d.getHours(),
       minute: d.getMinutes(),
-      weekday: d.getDay(),
     }
   }
   try {
-    const fmt = new Intl.DateTimeFormat('en-CA', {
-      timeZone: tz,
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      hourCycle: 'h23',
-    })
-    const parts = fmt.formatToParts(d)
-    const y = Number(parts.find((p) => p.type === 'year')?.value ?? d.getUTCFullYear())
-    const m = Number(parts.find((p) => p.type === 'month')?.value ?? d.getUTCMonth() + 1)
-    const day = Number(parts.find((p) => p.type === 'day')?.value ?? d.getUTCDate())
-    const hr = Number(parts.find((p) => p.type === 'hour')?.value ?? d.getUTCHours())
-    const min = Number(parts.find((p) => p.type === 'minute')?.value ?? d.getUTCMinutes())
-    const wFmt = new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday: 'short' })
-    const wStr = wFmt.format(d)
-    const wIdx = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(wStr)
+    const parts = getPartFormatter(tz).formatToParts(d)
+    let y = d.getUTCFullYear(), m = d.getUTCMonth() + 1, day = d.getUTCDate(), hr = d.getUTCHours(), min = d.getUTCMinutes(), period = ''
+    for (const p of parts) {
+      if (p.type === 'year') y = Number(p.value)
+      else if (p.type === 'month') m = Number(p.value)
+      else if (p.type === 'day') day = Number(p.value)
+      else if (p.type === 'hour') hr = Number(p.value)
+      else if (p.type === 'minute') min = Number(p.value)
+      else if (p.type === 'era') period = p.value
+    }
+    if (period.includes('B') || period.toLowerCase().includes('bc')) y = 1 - y
     return {
-      dateKey: `${pad(y)}-${pad(m)}-${pad(day)}`,
+      dateKey: `${pad4(y)}-${pad(m)}-${pad(day)}`,
       year: y,
       month: m,
       day,
       hour: hr,
       minute: min,
-      weekday: wIdx >= 0 ? wIdx : d.getUTCDay(),
     }
   } catch {
     return {
-      dateKey: `${pad(d.getFullYear())}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
+      dateKey: `${pad4(d.getFullYear())}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
       year: d.getFullYear(),
       month: d.getMonth() + 1,
       day: d.getDate(),
       hour: d.getHours(),
       minute: d.getMinutes(),
-      weekday: d.getDay(),
     }
   }
 }
 
-const pad4 = (n: number) => String(n).padStart(4, '0')
-
 /** Resolves the UTC timestamp of midnight (00:00:00) for a calendar day in a timezone. */
 export function tzMidnight(year: number, month: number, day: number, tz: SupportedTimezone): number {
   if (tz === 'local') {
-    return new Date(year, month - 1, day, 0, 0, 0, 0).getTime()
+    const d = new Date(0)
+    d.setFullYear(year, month - 1, day)
+    d.setHours(0, 0, 0, 0)
+    return d.getTime()
   }
   const iso = toIso(`${pad4(year)}-${pad(month)}-${pad(day)}T00:00:00`, tz)
   return new Date(iso).getTime()
@@ -118,7 +129,8 @@ export function weekSpan(now: number, tz?: SupportedTimezone): { from: number; t
     return { from: Math.floor(midnight / HOUR) * HOUR, to: Math.floor(now / HOUR) * HOUR }
   }
   const p = getDatePartsInTz(now, resolvedTz)
-  const sixDaysAgo = new Date(Date.UTC(p.year, p.month - 1, p.day - (DAYS - 1)))
+  const sixDaysAgo = new Date(0)
+  sixDaysAgo.setUTCFullYear(p.year, p.month - 1, p.day - (DAYS - 1))
   const from = tzMidnight(sixDaysAgo.getUTCFullYear(), sixDaysAgo.getUTCMonth() + 1, sixDaysAgo.getUTCDate(), resolvedTz)
   return { from: Math.floor(from / HOUR) * HOUR, to: Math.floor(now / HOUR) * HOUR }
 }
@@ -219,21 +231,22 @@ export function heatRows(hours: Map<number, number>, now: number, tz?: Supported
         ? { from, to: from + HOUR, count }
         : { from: cell.from, to: from + HOUR, count: cell.count + count }
     }
-    const todayRow = byDay.get(new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime())
-    const liveHour = today.getHours()
-    if (todayRow != null && todayRow.cells[liveHour] == null) todayRow.live = liveHour
+    const live = new Date(weekSpan(now, 'local').to)
+    const liveRow = byDay.get(new Date(live.getFullYear(), live.getMonth(), live.getDate()).getTime())
+    if (liveRow != null && liveRow.cells[live.getHours()] == null) liveRow.live = live.getHours()
     return rows
   }
 
   // Timezone-aware 7-day row generation walking calendar days
   const todayParts = getDatePartsInTz(now, resolvedTz)
   for (let back = DAYS - 1; back >= 0; back--) {
-    const targetDate = new Date(Date.UTC(todayParts.year, todayParts.month - 1, todayParts.day - back))
+    const targetDate = new Date(0)
+    targetDate.setUTCFullYear(todayParts.year, todayParts.month - 1, todayParts.day - back)
     const y = targetDate.getUTCFullYear()
     const m = targetDate.getUTCMonth() + 1
     const d = targetDate.getUTCDate()
     const dayMidnight = tzMidnight(y, m, d, resolvedTz)
-    const dateKey = `${pad(y)}-${pad(m)}-${pad(d)}`
+    const dateKey = `${pad4(y)}-${pad(m)}-${pad(d)}`
     const weekday = targetDate.getUTCDay()
     const label = `${WEEKDAY[weekday]} ${pad(m)}/${pad(d)}`
     const short = `${WEEKDAY[weekday]} ${pad(d)}`

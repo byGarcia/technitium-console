@@ -13,21 +13,39 @@ export { dateTime } from '../../lib/dates'
 import { getTimezone, type SupportedTimezone } from '../../lib/timezone'
 
 const pad = (n: number, width = 2) => String(n).padStart(width, '0')
+const pad4 = (n: number) => (n < 0 ? `-${String(Math.abs(n)).padStart(4, '0')}` : String(n).padStart(4, '0'))
 
-function getWallClock(t: number, tz: string): number {
-  const opts: Intl.DateTimeFormatOptions = {
-    timeZone: tz,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hourCycle: 'h23',
+/** Exact UTC epoch ms for any astronomical year (including 0..99 and negative BC years). */
+function utcMs(y: number, m: number, d: number, h = 0, min = 0, s = 0): number {
+  const dt = new Date(0)
+  dt.setUTCFullYear(y, m, d)
+  dt.setUTCHours(h, min, s, 0)
+  return dt.getTime()
+}
+
+const WALL_FORMATTERS = new Map<string, Intl.DateTimeFormat>()
+
+function getWallFormatter(tz: string): Intl.DateTimeFormat {
+  let fmt = WALL_FORMATTERS.get(tz)
+  if (!fmt) {
+    fmt = new Intl.DateTimeFormat('en-CA', {
+      timeZone: tz,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hourCycle: 'h23',
+      era: 'short',
+    })
+    WALL_FORMATTERS.set(tz, fmt)
   }
-  ;(opts as Record<string, unknown>)['er' + 'a'] = 'short'
-  const fmt = new Intl.DateTimeFormat('en-CA', opts)
-  const parts = fmt.formatToParts(new Date(t))
+  return fmt
+}
+
+function getWallParts(t: number, tz: string): { y: number; m: number; d: number; h: number; min: number; s: number } {
+  const parts = getWallFormatter(tz).formatToParts(new Date(t))
   let y = 0, m = 0, d = 0, h = 0, min = 0, s = 0, period = ''
   for (const p of parts) {
     if (p.type === 'year') y = parseInt(p.value, 10)
@@ -36,10 +54,15 @@ function getWallClock(t: number, tz: string): number {
     else if (p.type === 'hour') h = parseInt(p.value, 10)
     else if (p.type === 'minute') min = parseInt(p.value, 10)
     else if (p.type === 'second') s = parseInt(p.value, 10)
-    else if (p.type === 'er' + 'a') period = p.value
+    else if (p.type === 'era') period = p.value
   }
   if (period.includes('B') || period.toLowerCase().includes('bc')) y = 1 - y
-  return Date.UTC(y, m - 1, d, h, min, s)
+  return { y, m, d, h, min, s }
+}
+
+function getWallClock(t: number, tz: string): number {
+  const { y, m, d, h, min, s } = getWallParts(t, tz)
+  return utcMs(y, m - 1, d, h, min, s)
 }
 
 /**
@@ -54,8 +77,8 @@ export function toIso(value: string, tz?: SupportedTimezone): string {
     return Number.isNaN(d.getTime()) ? '' : d.toISOString()
   }
 
-  // Parse YYYY-MM-DDTHH:mm(:ss)(.sss) components
-  const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?(?:\.(\d+))?$/.exec(value)
+  // Parse YYYY-MM-DDTHH:mm(:ss)(.sss) components (including signed 6-digit ISO years)
+  const m = /^([+-]?\d{4,6})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?(?:\.(\d+))?$/.exec(value)
   if (!m) {
     const d = new Date(value)
     return Number.isNaN(d.getTime()) ? '' : d.toISOString()
@@ -68,29 +91,29 @@ export function toIso(value: string, tz?: SupportedTimezone): string {
   const minute = Number(m[5])
   const second = m[6] != null ? Number(m[6]) : 0
   const millisecond = m[7] != null ? Number(m[7].padEnd(3, '0').slice(0, 3)) : 0
-  const targetWall = Date.UTC(year, month, day, hour, minute, second)
+  const targetWall = utcMs(year, month, day, hour, minute, second)
 
   // Wall-clock disambiguation following browser-native semantics:
-  // 1. Repeated times (Fall Back): browser picks the earlier UTC instant (first occurrence).
-  // 2. Skipped times (Spring Forward): browser advances forward into valid time.
-  const offset1 = getWallClock(targetWall, resolvedTz) - targetWall
-  const t1 = targetWall - offset1
-  const offset2 = getWallClock(t1, resolvedTz) - t1
-  const t2 = targetWall - offset2
+  // Probe the zone's offset 24 hours before and after the approximate UTC instant so any
+  // transition shift (e.g. 30 min in Australia/Lord_Howe, 60 min standard DST) is covered.
+  // 1. Repeated times (Fall Back): cBefore is the earlier UTC instant and matches first.
+  // 2. Skipped times (Spring Forward): neither matches; advance forward via the pre-transition offset.
+  const DAY_MS = 86_400_000
+  const approx = targetWall - (getWallClock(targetWall, resolvedTz) - targetWall)
+  const offsetBefore = getWallClock(approx - DAY_MS, resolvedTz) - (approx - DAY_MS)
+  const offsetAfter = getWallClock(approx + DAY_MS, resolvedTz) - (approx + DAY_MS)
 
-  const candidates = [t1, t2, t1 - 3600_000, t1 + 3600_000, t2 - 3600_000, t2 + 3600_000].sort((a, b) => a - b)
-  const exact: number[] = []
-  for (const c of candidates) {
-    if (getWallClock(c, resolvedTz) === targetWall) {
-      if (!exact.includes(c)) exact.push(c)
-    }
+  const cBefore = targetWall - offsetBefore
+  const cAfter = targetWall - offsetAfter
+
+  if (getWallClock(cBefore, resolvedTz) === targetWall) {
+    return new Date(cBefore + millisecond).toISOString()
   }
-  if (exact.length > 0) {
-    return new Date(exact[0] + millisecond).toISOString()
+  if (cAfter !== cBefore && getWallClock(cAfter, resolvedTz) === targetWall) {
+    return new Date(cAfter + millisecond).toISOString()
   }
 
-  // Skipped time: advance forward by taking the later UTC instant (earlier offset)
-  return new Date(Math.max(t1, t2) + millisecond).toISOString()
+  return new Date(Math.max(cBefore, cAfter) + millisecond).toISOString()
 }
 
 /**
@@ -102,28 +125,10 @@ export function toLocalInput(at: number | Date, tz?: SupportedTimezone): string 
   const d = typeof at === 'number' ? new Date(at) : at
 
   if (resolvedTz === 'local') {
-    return `${pad(d.getFullYear(), 4)}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` +
+    return `${pad4(d.getFullYear())}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` +
       `T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
   }
 
-  const fmt = new Intl.DateTimeFormat('en-US', {
-    timeZone: resolvedTz,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hourCycle: 'h23',
-  })
-
-  const parts = fmt.formatToParts(d)
-  const year = parts.find((p) => p.type === 'year')?.value ?? pad(d.getUTCFullYear(), 4)
-  const month = parts.find((p) => p.type === 'month')?.value ?? pad(d.getUTCMonth() + 1)
-  const day = parts.find((p) => p.type === 'day')?.value ?? pad(d.getUTCDate())
-  const hour = parts.find((p) => p.type === 'hour')?.value ?? pad(d.getUTCHours())
-  const minute = parts.find((p) => p.type === 'minute')?.value ?? pad(d.getUTCMinutes())
-  const second = parts.find((p) => p.type === 'second')?.value ?? pad(d.getUTCSeconds())
-
-  return `${year}-${month}-${day}T${hour}:${minute}:${second}`
+  const { y, m, d: day, h, min, s } = getWallParts(d.getTime(), resolvedTz)
+  return `${pad4(y)}-${pad(m)}-${pad(day)}T${pad(h)}:${pad(min)}:${pad(s)}`
 }

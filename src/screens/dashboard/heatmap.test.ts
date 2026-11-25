@@ -166,4 +166,20 @@ describe('clock changes and custom display timezones in heatmap', () => {
     const span = weekSpan(Date.parse('2026-04-04T12:00:00Z'), 'Asia/Beirut')
     expect(new Date(span.from).toISOString()).toBe('2026-03-28T22:00:00.000Z')
   })
+
+  it('marks the live cell from weekSpan(now).to in half-hour offset zones', () => {
+    // At 2026-11-23T04:50:00Z (10:20 IST), the server bucket in progress started at 04:00Z (09:30 IST) -> hour 9 of Mon 11/23
+    const morning = Date.parse('2026-11-23T04:50:00Z')
+    const morningRows = heatRows(new Map(), morning, 'Asia/Kolkata')
+    expect(morningRows[6].label).toBe('Mon 11/23')
+    expect(morningRows[6].live).toBe(9)
+
+    // At 2026-11-22T18:50:00Z (Mon 00:20 IST), the server bucket in progress started at 18:00Z (Sun 23:30 IST) -> hour 23 of Sun 11/22
+    const midnight = Date.parse('2026-11-22T18:50:00Z')
+    const midnightRows = heatRows(new Map(), midnight, 'Asia/Kolkata')
+    expect(midnightRows[5].label).toBe('Sun 11/22')
+    expect(midnightRows[5].live).toBe(23)
+    expect(midnightRows[6].label).toBe('Mon 11/23')
+    expect(midnightRows[6].live).toBeNull()
+  })
 })

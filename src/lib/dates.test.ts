@@ -139,5 +139,25 @@ describe('toIso / toLocalInput timezone support', () => {
 
     // Skipped midnight: In Asia/Beirut on 2026-03-29, midnight is skipped -> starts at 01:00 local = 22:00Z on March 28
     expect(toIso('2026-03-29T00:00:00', 'Asia/Beirut')).toBe('2026-03-28T22:00:00.000Z')
+
+    // 30-minute Fall Back: In Australia/Lord_Howe on 2026-04-05, 01:30..01:59 occurs twice (+11:00 then +10:30) -> earlier instant
+    expect(toIso('2026-04-05T01:30:00', 'Australia/Lord_Howe')).toBe('2026-04-04T14:30:00.000Z')
+    expect(toIso('2026-04-05T01:45:00', 'Australia/Lord_Howe')).toBe('2026-04-04T14:45:00.000Z')
+
+    // 30-minute Spring Forward: In Australia/Lord_Howe on 2026-10-04, 02:00..02:29 is skipped -> advances 30 min to 02:45 (+11:00 = 15:45Z)
+    expect(toIso('2026-10-04T02:15:00', 'Australia/Lord_Howe')).toBe('2026-10-03T15:45:00.000Z')
+  })
+
+  it('handles extreme years (9999 BC, year 0, year 1, 9999 AD) without 1900-century drift', async () => {
+    const { toIso, toLocalInput } = await import('../screens/logs/dates')
+    expect(toIso('0000-01-01T00:00:00', 'UTC')).toBe('0000-01-01T00:00:00.000Z')
+    expect(toIso('0001-01-01T00:00:00', 'UTC')).toBe('0001-01-01T00:00:00.000Z')
+    expect(toIso('0000-12-31T19:03:58', 'America/New_York')).toBe('0001-01-01T00:00:00.000Z')
+    expect(toIso('-009998-01-01T00:00:00', 'UTC')).toBe('-009998-01-01T00:00:00.000Z')
+    expect(toIso('9999-12-31T23:59:59', 'UTC')).toBe('9999-12-31T23:59:59.000Z')
+
+    expect(toLocalInput(Date.parse('0001-01-01T00:00:00Z'), 'America/New_York')).toBe('0000-12-31T19:03:58')
+    expect(toLocalInput(Date.parse('-009998-01-01T00:00:00Z'), 'UTC')).toBe('-9998-01-01T00:00:00')
+    expect(toLocalInput(Date.parse('9999-12-31T23:59:59Z'), 'UTC')).toBe('9999-12-31T23:59:59')
   })
 })

@@ -57,8 +57,8 @@ function getFormatter(tz: string, withSeconds: boolean): Intl.DateTimeFormat {
       hour: '2-digit',
       minute: '2-digit',
       hourCycle: 'h23',
+      era: 'short',
     }
-    ;(opts as Record<string, unknown>)['er' + 'a'] = 'short'
     if (withSeconds) {
       opts.second = '2-digit'
     }
@@ -85,7 +85,7 @@ export function formatDate(d: Date, withSeconds: boolean, tz?: SupportedTimezone
       else if (part.type === 'hour') hour = part.value
       else if (part.type === 'minute') minute = part.value
       else if (part.type === 'second') second = part.value
-      else if (part.type === 'er' + 'a') period = part.value
+      else if (part.type === 'era') period = part.value
     }
     let yNum = parseInt(year, 10) || 0
     if (period.includes('B') || period.toLowerCase().includes('bc')) {
