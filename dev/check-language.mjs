@@ -53,10 +53,10 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 /* language-data:start */
 const ACCENTS = /[áéíóúüñ¿¡]/i
 /* Every one of these is a word Spanish prose can hardly avoid and English never
-   uses. Short ones that ARE English (`no`, `es`, `la`, `se`) are left out on
-   purpose: they would flag English paragraphs and a guard that cries wolf gets
-   switched off. */
-const WORDS = /\b(porque|cuando|pero|sino|para|hay|una|unos|unas|los|las|del|que|con|por|sin|entre|desde|cada|donde|como|aunque|mientras|siempre|nunca|tambien|entonces|segun|asi|solo|mas|esta|estan|habia|era|fue|tiene|hace|puede|debe|esto|este|eso|esa|ese|sus|nada|todo|toda|algo|otra|otro|misma|mismo|aqui|alli|ademas|ahora|antes|despues|dentro|fuera|arriba|abajo|encima|debajo)\b/i
+   uses. Short ones that ARE English (`no`, `es`, `la`, `se`, `era`) are left out
+   on purpose: they would flag English paragraphs and a guard that cries wolf gets
+   switched off. `era` is also the `Intl.DateTimeFormat` option. */
+const WORDS = /\b(porque|cuando|pero|sino|para|hay|una|unos|unas|los|las|del|que|con|por|sin|entre|desde|cada|donde|como|aunque|mientras|siempre|nunca|tambien|entonces|segun|asi|solo|mas|esta|estan|habia|fue|tiene|hace|puede|debe|esto|este|eso|esa|ese|sus|nada|todo|toda|algo|otra|otro|misma|mismo|aqui|alli|ademas|ahora|antes|despues|dentro|fuera|arriba|abajo|encima|debajo)\b/i
 const NAMES = /(ranura|caducado|crudo|senal|avisador|aviso|externo|boton|maestro|bloque|fallo|leyenda|interaccion|rotulo|pantalla|tarjeta|hueco|prueba|nodo|vacio|columna|fila|ayuda|derecha|izquierda)/i
 
 /* Spanish that hides inside an identifier rather than in prose: `setTexto`,
@@ -93,7 +93,7 @@ const PIECES = new Set(
   (
     'porque cuando pero sino para hay una unos unas los las del que con por sin entre desde cada ' +
     'donde como aunque mientras siempre nunca tambien entonces segun asi solo mas esta estan habia ' +
-    'era fue tiene hace puede debe esto este eso esa ese sus nada todo toda algo otra otro misma ' +
+    'fue tiene hace puede debe esto este eso esa ese sus nada todo toda algo otra otro misma ' +
     'mismo aqui alli ademas ahora antes despues dentro fuera arriba abajo encima debajo ' +
     'es firma firmas firmar pedir pide piden confirmar desinstalar instalar texto nodo nodos arbol ' +
     'caja cajas vacio vacia senal senial aviso avisos rotulo rotulos pantalla pantallas prueba ' +
