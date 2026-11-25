@@ -54,7 +54,7 @@ describe('ChangeTimezone modal', () => {
     expect(getTimezone()).toBe('Asia/Kolkata')
     expect(localStorage.getItem(TIMEZONE_KEY)).toBe('Asia/Kolkata')
 
-    const utcRadio = radio('UTC - Universal Coordinated Time')
+    const utcRadio = radio('UTC - Coordinated Universal Time')
     await userEvent.click(utcRadio)
 
     expect(utcRadio).toBeChecked()

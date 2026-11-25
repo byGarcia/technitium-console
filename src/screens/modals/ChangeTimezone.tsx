@@ -38,12 +38,12 @@ export function ChangeTimezone({
       </DialogGroup>
 
       <div style={{ marginTop: '16px' }}>
-        <Field label="All IANA / CLDR Timezones (Searchable)">
+        <Field label="All time zones">
           {(id) => (
             <Select
               id={id}
               searchable
-              searchLabel="Search city, country, or offset (e.g. London, Tokyo, UTC)..."
+              searchLabel="Search time zones"
               value={timezone}
               onChange={(e) => setTimezone(e.target.value)}
             >

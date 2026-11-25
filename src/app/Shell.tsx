@@ -139,7 +139,9 @@ export function Shell({
   /** A factory-credentials login: Change Password opens at once with `admin` filled in (auth.js:283-284). */
   forcePasswordChange?: boolean
 }) {
-  const { timezone } = useTimezone()
+  /* Subscribed so that a new display time zone renders the shell again, and with
+     it the dates of screens that read the zone without subscribing themselves. */
+  useTimezone()
   const permissions = session.info?.permissions
   // Memoised: if it is recreated on every render, the `hashchange` resubscribes on each.
   const sections = useMemo(() => visibleSections(permissions), [permissions])
@@ -525,7 +527,7 @@ export function Shell({
     <ThisServerName.Provider value={info?.dnsServerDomain ?? session.info?.dnsServerDomain ?? ''}>
     <SlotProvider>
       {(slot) => (
-    <div className={styles.shell} data-timezone={timezone}>
+    <div className={styles.shell}>
       {drawer && (
         <button
           type="button"

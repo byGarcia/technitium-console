@@ -50,7 +50,7 @@ export function getTimezoneOffset(tz: string, now: Date = new Date()): string {
 
 const FEATURED_BASE = [
   { value: 'local', label: 'Browser Local Time (Default)', region: 'Client' },
-  { value: 'UTC', label: 'UTC - Universal Coordinated Time', region: 'Universal' },
+  { value: 'UTC', label: 'UTC - Coordinated Universal Time', region: 'Universal' },
   { value: 'America/New_York', label: 'US Eastern - New York', region: 'Americas' },
   { value: 'America/Chicago', label: 'US Central - Chicago', region: 'Americas' },
   { value: 'America/Denver', label: 'US Mountain - Denver', region: 'Americas' },
