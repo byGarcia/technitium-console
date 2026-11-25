@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { getSettings } from '../../api/settings'
 import { minuteStamp } from '../../lib/dates'
+import { getTimezone, type SupportedTimezone } from '../../lib/timezone'
 import { onSettingsChanged } from '../../lib/settings-signal'
 import { missing, type Permissions } from './permissions'
 
@@ -41,15 +42,15 @@ export function stateOf(enable: boolean, till: string | null | undefined, now = 
 }
 
 /*
-When a pause ends, as the pill says it: the hour alone when that is today, the date as
-well when it is not (a three-hour pause at 23:00 ends tomorrow, and "Until 01:30"
-alone would read as earlier today).
+When a pause ends, as the pill says it: the hour alone when that is today in the
+active display timezone, the date as well when it is not (a three-hour pause at 23:00
+ends tomorrow, and "Until 01:30" alone would read as earlier today).
 */
-export function untilText(till: string, now: Date = new Date()): string {
-  const stamp = minuteStamp(till)
-  const end = new Date(till)
-  const today =
-    end.getFullYear() === now.getFullYear() && end.getMonth() === now.getMonth() && end.getDate() === now.getDate()
+export function untilText(till: string, now: Date = new Date(), tz?: SupportedTimezone): string {
+  const resolvedTz = tz ?? getTimezone()
+  const stamp = minuteStamp(till, resolvedTz)
+  const nowStamp = minuteStamp(now.toISOString(), resolvedTz)
+  const today = stamp.slice(0, 10) === nowStamp.slice(0, 10)
   return `Until ${today ? stamp.slice(11) : stamp}`
 }
 

@@ -1,11 +1,12 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { formatLabel, localiseLabels } from './chart-labels'
+import { setTimezone } from '../lib/timezone'
 
 /*
 What `main.js:2673-2686` does to the main chart's labels once it has asked with
 `utc=true`: the server sends instants in UTC (`2026-10-01T11:29:00.0000000Z`) and the
 label format; day, month and year buckets are written in UTC (the server groups them
-by UTC day), anything with an hour in the viewer's local time.
+by UTC day), anything with an hour in the active display timezone.
 
 Each half runs in a zone PINNED where it can fail: the UTC formats west of Greenwich
 (`America/Los_Angeles`, UTC−7 in October), where a midnight-UTC instant is still the day before
@@ -18,9 +19,11 @@ types, and a `process` here passes the suite and breaks the build).
 function inZone(zone: string) {
   beforeAll(() => {
     vi.stubEnv('TZ', zone)
+    setTimezone('local')
   })
   afterAll(() => {
     vi.unstubAllEnvs()
+    setTimezone('local')
   })
 }
 
@@ -105,5 +108,27 @@ describe('localiseLabels', () => {
   it('does not create instants from parseable legacy date labels', () => {
     const chart = { labelFormat: 'MM/DD', labels: ['09/30'], datasets: [] }
     expect(localiseLabels(chart)).toEqual(chart)
+  })
+})
+
+describe('chart labels format with custom display timezone', () => {
+  it('formats with explicit timezone parameter in UTC', () => {
+    expect(formatLabel('2026-10-01T11:29:00.0000000Z', 'HH:mm', 'UTC')).toBe('11:29')
+  })
+
+  it('formats with explicit timezone across daylight saving time in America/New_York', () => {
+    expect(formatLabel('2026-10-01T11:29:00.0000000Z', 'HH:mm', 'America/New_York')).toBe('07:29')
+    expect(formatLabel('2026-12-01T11:29:00.0000000Z', 'HH:mm', 'America/New_York')).toBe('06:29')
+  })
+
+  it('localiseLabels rewrites labels using custom display timezone', () => {
+    const chart = {
+      labelFormat: 'HH:mm',
+      labels: ['2026-10-01T11:29:00.0000000Z', '2026-10-01T11:30:00.0000000Z'],
+      datasets: [{ label: 'Total', data: [1, 2] }],
+    }
+    const got = localiseLabels(chart, 'UTC')
+    expect(got.labels).toEqual(['11:29', '11:30'])
+    expect(got.instants).toEqual(chart.labels)
   })
 })

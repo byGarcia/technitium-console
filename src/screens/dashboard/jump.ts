@@ -2,6 +2,7 @@ import type { ChartData } from '../../api/dashboard'
 import { PROTOCOLS, RESPONSE_TYPES } from '../../api/logs'
 import type { QueryLogsFilters } from '../../app/handoff'
 import { bucketsOf, type Window } from './compare'
+import { toLocalInput } from '../logs/dates'
 
 /*
 From a Dashboard chart to Query Logs: deviation 7 in CONVENTIONS.md, this console's
@@ -16,19 +17,15 @@ does from a row menu. What a chart adds is only which fields are filled:
   · a slice or a bar: the value, where Query Logs has a field for it, and the
     period the chart counts, so the list answers for the same span.
 
-`From` and `To` are `datetime-local` fields, read in the browser's zone (`toIso`,
+`From` and `To` are `datetime-local` fields, read in the active display timezone (`toIso`,
 logs/dates.ts), so the instants are written in that zone. Query Logs keeps both
 ends (`timestamp >= start` and `<= end`, QueryLogsSqliteApp/App.cs:588-591), so
 `To` is the last second of the span, not the first of the next one.
 */
 
-const pad = (n: number, width = 2) => String(n).padStart(width, '0')
-
-/** An instant as a `datetime-local` value in the browser's zone, to the second. */
+/** An instant as a `datetime-local` value in the active display timezone, to the second. */
 export function localInput(at: number): string {
-  const d = new Date(at)
-  return `${pad(d.getFullYear(), 4)}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` +
-    `T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+  return toLocalInput(at)
 }
 
 /** `From` and `To` for a span `[from, to)`. */

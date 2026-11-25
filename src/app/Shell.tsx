@@ -6,6 +6,8 @@ import text from '../ui/text.module.css'
 import { toTrail, writeRoute, readRoute, translateLegacyRoute, plainClick } from './route'
 import { ChangePassword } from '../screens/modals/ChangePassword'
 import { ChangeTheme } from '../screens/modals/ChangeTheme'
+import { ChangeTimezone } from '../screens/modals/ChangeTimezone'
+import { useTimezone } from '../lib/timezone'
 import { Configure2FA } from '../screens/modals/Configure2FA'
 import { CreateApiToken } from '../screens/modals/CreateApiToken'
 import { Profile } from '../screens/profile/Profile'
@@ -56,7 +58,7 @@ import {
   updateNotificationSilenced,
 } from '../api/user'
 
-type ModalId = 'password' | 'twofa' | 'token' | 'theme'
+type ModalId = 'password' | 'twofa' | 'token' | 'theme' | 'timezone'
 
 /** One glyph per section. No icon dependency: the server's CSP does not allow a
  *  CDN and an icon font would have to ship as a file in www/. */
@@ -137,6 +139,9 @@ export function Shell({
   /** A factory-credentials login: Change Password opens at once with `admin` filled in (auth.js:283-284). */
   forcePasswordChange?: boolean
 }) {
+  /* Subscribed so that a new display time zone renders the shell again, and with
+     it the dates of screens that read the zone without subscribing themselves. */
+  useTimezone()
   const permissions = session.info?.permissions
   // Memoised: if it is recreated on every render, the `hashchange` resubscribes on each.
   const sections = useMemo(() => visibleSections(permissions), [permissions])
@@ -756,6 +761,9 @@ export function Shell({
                     Disable Update Notification
                   </MenuItem>
                 )}
+                <MenuItem icon="clock" onClick={() => { close(); open('timezone') }}>
+                  Display Timezone
+                </MenuItem>
                 <Separator />
                 <MenuItem icon="logout" tone="danger" onClick={() => { close(); guardedLeave(null, onLogout) }}>
                   Logout
@@ -1020,6 +1028,10 @@ export function Shell({
       <ChangeTheme
         open={modal === 'theme'}
         onOpenChange={(o) => setModal(o ? 'theme' : null)}
+      />
+      <ChangeTimezone
+        open={modal === 'timezone'}
+        onOpenChange={(o) => setModal(o ? 'timezone' : null)}
       />
 
       {/* Upstream asks with a native `confirm()`; this console asks with its own,

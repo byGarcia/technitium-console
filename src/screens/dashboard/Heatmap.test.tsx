@@ -4,8 +4,12 @@ import userEvent from '@testing-library/user-event'
 import * as api from '../../api/dashboard'
 import { Heatmap } from './Heatmap'
 import { toIso } from '../logs/dates'
+import { setTimezone } from '../../lib/timezone'
 
-afterEach(() => vi.restoreAllMocks())
+afterEach(() => {
+  setTimezone('local')
+  vi.restoreAllMocks()
+})
 
 const HOUR = 3_600_000
 /* The hour in progress: 15 October, 14:00 in the browser zone (whole-hour zones). */
@@ -97,5 +101,42 @@ describe('the week by hour', () => {
     serve().mockResolvedValueOnce({ kind: 'error', message: 'boom' })
     render(<Heatmap token="t" node="" hour={NOW_HOUR} />)
     expect(await screen.findByText('Could not load this data.')).toBeInTheDocument()
+  })
+})
+
+describe('the week by hour with custom display timezone', () => {
+  const UTC_HOUR = Date.UTC(2026, 9, 15, 14, 0)
+  afterEach(() => {
+    setTimezone('local')
+    vi.restoreAllMocks()
+  })
+
+  it('names cells with UTC day, hour and count, and opens Query Logs in UTC', async () => {
+    setTimezone('UTC')
+    vi.spyOn(api, 'getHours').mockImplementation(async (_t, start, end) => {
+      const from = Date.parse(start)
+      const n = Math.round((Date.parse(end) - from) / HOUR) + 1
+      const labels = Array.from({ length: n }, (_, i) => new Date(from + (i + 1) * HOUR).toISOString())
+      const busy = Date.UTC(2026, 9, 15, 13, 0)
+      return {
+        kind: 'ok',
+        data: {
+          labelFormat: 'MM/DD HH:00',
+          labels,
+          instants: labels,
+          datasets: [{ label: 'Total', data: labels.map((_, i) => (from + i * HOUR === busy ? 40 : 2)) }],
+        },
+      }
+    })
+    const jump = vi.fn()
+    render(<Heatmap token="t" node="" hour={UTC_HOUR} jump={jump} />)
+
+    expect(await screen.findByLabelText('Thu 10/15, 13:00 to 14:00: 40 queries')).toBeInTheDocument()
+
+    // Clicking hour in progress in UTC asserts against Date.UTC, passing in any test runner timezone
+    await userEvent.click(screen.getByRole('button', { name: 'Thu 10/15, 14:00 to 15:00: in progress, counted when the hour ends' }))
+    const f = jump.mock.calls[0][0]
+    expect(toIso(f.start)).toBe(new Date(Date.UTC(2026, 9, 15, 14)).toISOString())
+    expect(toIso(f.end)).toBe(new Date(Date.UTC(2026, 9, 15, 15) - 1000).toISOString())
   })
 })

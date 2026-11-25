@@ -20,6 +20,8 @@ threshold is 44 and the `s` one is 45, so everything under 45 s falls into "a fe
 seconds".
 */
 
+import { getTimezone, type SupportedTimezone } from './timezone'
+
 function pad2(n: number): string {
   return n < 10 ? `0${n}` : String(n)
 }
@@ -31,6 +33,7 @@ been used. Without padding it comes out as "1-01-01", which is neither what
 moment writes nor anything like a date.
 */
 function pad4(n: number): string {
+  if (n < 0) return `-${String(Math.abs(n)).padStart(4, '0')}`
   return String(n).padStart(4, '0')
 }
 
@@ -39,26 +42,78 @@ function parts(iso: string): Date | null {
   return Number.isNaN(d.getTime()) ? null : d
 }
 
-/** `format("YYYY-MM-DD HH:mm:ss")` in local time. */
-export function dateTime(iso: string | null | undefined): string {
-  if (iso == null) return ''
-  const d = parts(iso)
-  if (d == null) return ''
-  return (
-    `${pad4(d.getFullYear())}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ` +
-    `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`
-  )
+const FORMATTERS_LONG = new Map<string, Intl.DateTimeFormat>()
+const FORMATTERS_SHORT = new Map<string, Intl.DateTimeFormat>()
+
+function getFormatter(tz: string, withSeconds: boolean): Intl.DateTimeFormat {
+  const cache = withSeconds ? FORMATTERS_LONG : FORMATTERS_SHORT
+  let fmt = cache.get(tz)
+  if (!fmt) {
+    const opts: Intl.DateTimeFormatOptions = {
+      timeZone: tz,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+      era: 'short',
+    }
+    if (withSeconds) {
+      opts.second = '2-digit'
+    }
+    fmt = new Intl.DateTimeFormat('en-CA', opts)
+    cache.set(tz, fmt)
+  }
+  return fmt
 }
 
-/** `format("YYYY-MM-DD HH:mm")` in local time. The Cluster table uses it. */
-export function minuteStamp(iso: string | null | undefined): string {
+export function formatDate(d: Date, withSeconds: boolean, tz?: SupportedTimezone): string {
+  const resolvedTz = tz ?? getTimezone()
+  if (resolvedTz === 'local') {
+    const base = `${pad4(d.getFullYear())}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`
+    return withSeconds ? `${base}:${pad2(d.getSeconds())}` : base
+  }
+  try {
+    const fmt = getFormatter(resolvedTz, withSeconds)
+    const p = fmt.formatToParts(d)
+    let year = '', month = '', day = '', hour = '', minute = '', second = '', period = ''
+    for (const part of p) {
+      if (part.type === 'year') year = part.value
+      else if (part.type === 'month') month = part.value
+      else if (part.type === 'day') day = part.value
+      else if (part.type === 'hour') hour = part.value
+      else if (part.type === 'minute') minute = part.value
+      else if (part.type === 'second') second = part.value
+      else if (part.type === 'era') period = part.value
+    }
+    let yNum = parseInt(year, 10) || 0
+    if (period.includes('B') || period.toLowerCase().includes('bc')) {
+      yNum = 1 - yNum
+    }
+    const yStr = pad4(yNum)
+    const base = `${yStr}-${month.padStart(2, '0')}-${day.padStart(2, '0')} ${hour.padStart(2, '0')}:${minute.padStart(2, '0')}`
+    return withSeconds ? `${base}:${second.padStart(2, '0')}` : base
+  } catch {
+    const base = `${pad4(d.getFullYear())}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`
+    return withSeconds ? `${base}:${pad2(d.getSeconds())}` : base
+  }
+}
+
+/** `format("YYYY-MM-DD HH:mm:ss")` in the active or specified timezone. */
+export function dateTime(iso: string | null | undefined, tz?: SupportedTimezone): string {
   if (iso == null) return ''
   const d = parts(iso)
   if (d == null) return ''
-  return (
-    `${pad4(d.getFullYear())}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ` +
-    `${pad2(d.getHours())}:${pad2(d.getMinutes())}`
-  )
+  return formatDate(d, true, tz)
+}
+
+/** `format("YYYY-MM-DD HH:mm")` in the active or specified timezone. The Cluster table uses it. */
+export function minuteStamp(iso: string | null | undefined, tz?: SupportedTimezone): string {
+  if (iso == null) return ''
+  const d = parts(iso)
+  if (d == null) return ''
+  return formatDate(d, false, tz)
 }
 
 const THRESHOLD = { ss: 44, s: 45, m: 45, h: 22, d: 26, M: 11 }
@@ -108,6 +163,6 @@ export function fromNow(iso: string | null | undefined, now: number = Date.now()
 }
 
 /** `date (time ago)`, which is how upstream composes the ones carrying both. */
-export function dateWithAge(iso: string, now?: number): string {
-  return `${dateTime(iso)} (${fromNow(iso, now)})`
+export function dateWithAge(iso: string, now?: number, tz?: SupportedTimezone): string {
+  return `${dateTime(iso, tz)} (${fromNow(iso, now)})`
 }

@@ -34,7 +34,7 @@ export type IconName =
   | 'shield' | 'add' | 'trash' | 'refresh' | 'search' | 'download' | 'upload' | 'run' | 'store' | 'key' | 'save'
   | 'file' | 'eye' | 'copy'
   | 'external' | 'mail'
-  | 'user' | 'theme' | 'bell' | 'bellOff' | 'logout'
+  | 'user' | 'theme' | 'clock' | 'bell' | 'bellOff' | 'logout'
 
 const PATHS: Record<IconName, ReactElement> = {
   // ── Leading a button's label (`ui/Button`, `lead`), 2026-11-05 ──────────
@@ -405,6 +405,13 @@ Same closed body and same arc as the rest: a grid of 24 and a stroke of
     <>
       <circle cx="12" cy="12" r="8.5" />
       <path d="M12 3.5a8.5 8.5 0 0 1 0 17z" fill="currentColor" />
+    </>
+  ),
+  /* A clock face: hours and minutes (Display Timezone). */
+  clock: (
+    <>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 7.5v4.5l3 3" />
     </>
   ),
   /* A bell: the update notification is on, so the entry turns it off. */

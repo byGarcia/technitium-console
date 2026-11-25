@@ -1,7 +1,8 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { ChartData } from '../../api/dashboard'
 import { customBuckets } from './compare'
-import { dayLabel, heatRows, hourRequests, level, stitchHours, weekSpan, MAX_HOURS } from './heatmap'
+import { dayLabel, heatRows, hourRequests, level, stitchHours, tzMidnight, weekSpan, MAX_HOURS } from './heatmap'
+import { setTimezone } from '../../lib/timezone'
 
 const HOUR = 3_600_000
 
@@ -12,6 +13,8 @@ function hours(first: number, n: number, value: (i: number) => number = () => 1)
 }
 
 describe('the week asked by hour', () => {
+  beforeEach(() => setTimezone('local'))
+  afterEach(() => setTimezone('local'))
   const now = new Date(2026, 9, 15, 22, 20).getTime()
 
   it('runs from the browser midnight six days ago to the start of the hour in progress, on UTC hours', () => {
@@ -68,6 +71,9 @@ describe('stitching the answers', () => {
 })
 
 describe('the grid', () => {
+  beforeEach(() => setTimezone('local'))
+  afterEach(() => setTimezone('local'))
+
   it('places each hour by the browser day and hour of its start, today last', () => {
     const now = new Date(2026, 9, 15, 22, 20).getTime()
     const span = weekSpan(now)
@@ -98,5 +104,82 @@ describe('the grid', () => {
     expect(level(1, 10)).toBe(1)
     expect(level(10, 10)).toBe(5)
     expect(level(6, 10)).toBe(3)
+  })
+})
+
+describe('clock changes and custom display timezones in heatmap', () => {
+  afterEach(() => setTimezone('local'))
+
+  it('weekSpan anchors to midnight in target timezone across fall back (25-hour day)', () => {
+    // 2026-11-02 17:00Z in America/New_York (Fall Back occurred on 2026-11-01)
+    const now = Date.parse('2026-11-02T17:00:00Z')
+    const span = weekSpan(now, 'America/New_York')
+    // 6 calendar days back from 2026-11-02 is 2026-10-27
+    // Midnight on 2026-10-27 in New York (EDT, UTC-4) is exactly 04:00Z
+    expect(span.from).toBe(Date.parse('2026-10-27T04:00:00Z'))
+    expect(span.to).toBe(Date.parse('2026-11-02T17:00:00Z'))
+  })
+
+  it('heatRows generates 7 calendar days including the 23-hour spring-forward day', () => {
+    // 2026-03-09 00:30 local time in America/New_York (EDT, UTC-4 = 04:30Z)
+    // Spring Forward occurred on 2026-03-08 (23-hour day)
+    const now = Date.parse('2026-03-09T04:30:00Z')
+    const hoursMap = new Map<number, number>()
+    const rows = heatRows(hoursMap, now, 'America/New_York')
+
+    expect(rows).toHaveLength(7)
+    const labels = rows.map((r) => r.label)
+    // Must include Sunday 03/08
+    expect(labels).toEqual([
+      'Tue 03/03',
+      'Wed 03/04',
+      'Thu 03/05',
+      'Fri 03/06',
+      'Sat 03/07',
+      'Sun 03/08',
+      'Mon 03/09',
+    ])
+    expect(rows[5].dateKey).toBe('2026-03-08')
+    expect(rows[6].dateKey).toBe('2026-03-09')
+  })
+
+  it('tzMidnight returns exact sub-hour midnight without whole-hour flooring', () => {
+    // Asia/Kolkata (+5:30): midnight on 2026-03-29 is 2026-03-28T18:30:00.000Z
+    const kolkata = tzMidnight(2026, 3, 29, 'Asia/Kolkata')
+    expect(new Date(kolkata).toISOString()).toBe('2026-03-28T18:30:00.000Z')
+
+    // Asia/Kathmandu (+5:45): midnight on 2026-03-29 is 2026-03-28T18:15:00.000Z
+    const kathmandu = tzMidnight(2026, 3, 29, 'Asia/Kathmandu')
+    expect(new Date(kathmandu).toISOString()).toBe('2026-03-28T18:15:00.000Z')
+
+    // Australia/Lord_Howe (+10:30 standard time on 2026-07-15): midnight is 2026-07-14T13:30:00.000Z
+    const lordHowe = tzMidnight(2026, 7, 15, 'Australia/Lord_Howe')
+    expect(new Date(lordHowe).toISOString()).toBe('2026-07-14T13:30:00.000Z')
+  })
+
+  it('handles skipped midnight in Beirut by starting on the first valid time of the day', () => {
+    // In Beirut on 2026-03-29, midnight is skipped; earliest valid time is 01:00 local = 22:00Z on March 28
+    const beirutMid = tzMidnight(2026, 3, 29, 'Asia/Beirut')
+    expect(new Date(beirutMid).toISOString()).toBe('2026-03-28T22:00:00.000Z')
+
+    // weekSpan covering Sunday 2026-03-29 begins at 22:00Z (not 21:00Z)
+    const span = weekSpan(Date.parse('2026-04-04T12:00:00Z'), 'Asia/Beirut')
+    expect(new Date(span.from).toISOString()).toBe('2026-03-28T22:00:00.000Z')
+  })
+
+  it('marks the live cell from weekSpan(now).to in half-hour offset zones', () => {
+    // At 2026-11-23T04:50:00Z (10:20 IST), the server bucket in progress started at 04:00Z (09:30 IST) -> hour 9 of Mon 11/23
+    const morning = Date.parse('2026-11-23T04:50:00Z')
+    const morningRows = heatRows(new Map(), morning, 'Asia/Kolkata')
+    expect(morningRows[6].label).toBe('Mon 11/23')
+    expect(morningRows[6].live).toBe(9)
+
+    // At 2026-11-22T18:50:00Z (Mon 00:20 IST), the server bucket in progress started at 18:00Z (Sun 23:30 IST) -> hour 23 of Sun 11/22
+    const midnight = Date.parse('2026-11-22T18:50:00Z')
+    const midnightRows = heatRows(new Map(), midnight, 'Asia/Kolkata')
+    expect(midnightRows[5].label).toBe('Sun 11/22')
+    expect(midnightRows[5].live).toBe(23)
+    expect(midnightRows[6].label).toBe('Mon 11/23')
+    expect(midnightRows[6].live).toBeNull()
   })
 })

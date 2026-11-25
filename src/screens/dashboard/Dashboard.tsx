@@ -3,6 +3,8 @@ import {
   RANGE_LABEL, RANGES, getDashboardStats,
   type DashboardStats, type Range, type Stats, type TopKind,
 } from '../../api/dashboard'
+import { localiseLabels } from '../../api/chart-labels'
+import { useTimezone } from '../../lib/timezone'
 import { useHandoff, type QueryLogsFilters } from '../../app/handoff'
 import { bucketsOf, changes, previousLabel, previousQuery, windowOf, type PreviousQuery } from './compare'
 import { Figure, StatCard } from './Figures'
@@ -87,6 +89,7 @@ export function Dashboard({
    *  needs `DnsClient: View`, and `Settings: View` for its gate. */
   permissions?: Permissions
 }) {
+  const { timezone } = useTimezone()
   /*
   Which node this screen is reading. Upstream offers the aggregate here and
   remembers the choice per screen (`cluster.js`, key `dashboardClusterNode`).
@@ -442,6 +445,17 @@ export function Dashboard({
     ? nodesChart(data.mainChartData, byNode.reads)
     : null
   const series = useMemo(() => nodeSeries(nodes), [nodeNames]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const mainChartData = useMemo(() => {
+    if (!view?.mainChartData) return view?.mainChartData
+    return localiseLabels(view.mainChartData, timezone)
+  }, [view?.mainChartData, timezone])
+
+  const comparedChart = useMemo(() => {
+    if (!compared?.chart) return null
+    return localiseLabels(compared.chart, timezone)
+  }, [compared?.chart, timezone])
+
   /* A point of a compared line opens its bucket from the answer the lines are laid on. */
   const pickCompared = pickPoint != null && data != null
     ? (i: number) => {
@@ -623,7 +637,7 @@ export function Dashboard({
                 {compared != null && hasData(compared.chart) && (
                   <Line
                     key="nodes"
-                    data={compared.chart}
+                    data={comparedChart ?? compared.chart}
                     resetOn={byNode}
                     onPick={pickCompared}
                     onPickRange={pickComparedWindow}
@@ -647,7 +661,7 @@ export function Dashboard({
               <>
                 {loading && <Loading compact />}
                 {!loading && view && hasData(view.mainChartData) && (
-                  <Line key="total" data={view.mainChartData} resetOn={data?.mainChartData} onPick={pickPoint} onPickRange={pickWindow} height={300} />
+                  <Line key="total" data={mainChartData ?? view.mainChartData} resetOn={data?.mainChartData} onPick={pickPoint} onPickRange={pickWindow} height={300} />
                 )}
                 {!loading && (!view || !hasData(view.mainChartData)) && (
                   <Placeholder failure={failure} empty="No queries for this period." />
