@@ -542,8 +542,10 @@ above (`X.Y.Z`, `X.Y`, `latest`, `develop`).
 web service, with nothing after it. The host can be an address, a name in your DNS, a Compose
 service or an `extra_hosts` entry. If it is missing or malformed, the container stops with one line
 saying why. A self-signed certificate works: the connection is encrypted, but the certificate is
-not checked. The server can come up after this container; until it does, the console loads and says
-it cannot reach the server.
+not checked. If the server redirects HTTP to HTTPS (*Settings › Web Service*), use its HTTPS
+address, `https://host:53443` by default: the console says so if `TECHNITIUM_URL` names the HTTP
+port. The server can come up after this container; until it does, the console loads and says it
+cannot reach the server.
 
 **Custom lists:** mount each `json/*-custom.json` file over its place in the image. The console
 reads `quick-block-lists`, `quick-forwarders-list` and `dnsclient-server-list`:
