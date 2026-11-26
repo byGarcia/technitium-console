@@ -567,6 +567,10 @@ restarted.
   `TECHNITIUM_URL` and re-create the container. If the server redirects HTTP to HTTPS, use its
   HTTPS address here.
 - It listens on plain HTTP. To reach it over HTTPS, put your own reverse proxy in front.
+- A server with single sign-on and the HTTP to HTTPS redirect both on turns this container away
+  while it is served over HTTP, even with an `https://` `TECHNITIUM_URL`: for single sign-on it
+  reads the browser's scheme from the container, sees HTTP and redirects. Serve the console over
+  HTTPS, or turn the redirect off. The console says which case it is.
 
 ## Building
 

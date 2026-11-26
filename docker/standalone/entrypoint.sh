@@ -71,6 +71,7 @@ generated=/tmp/technitium-console/upstream.conf
     if [ -e /proc/net/if_inet6 ]; then echo 'listen [::]:8080;'; fi
     if [ -n "$resolver" ]; then printf '%s\n' "$resolver"; fi
     echo "set \$technitium_url \"$scheme://$target\";"
+    echo "set \$technitium_scheme \"$scheme\";"
     echo "set \$technitium_host \"$authority\";"
     echo "set \$technitium_sni \"$host\";"
   } > "$generated"
