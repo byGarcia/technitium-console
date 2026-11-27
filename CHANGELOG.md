@@ -13,7 +13,7 @@ also `technitiumServerMinimum` in its `package.json`, which is what the update n
 
 | Console | Technitium DNS Server | Notes |
 |---|---|---|
-| **1.4.x** | **15.5.x, 15.6.x** (1.4.0 to 1.4.3 checked against 15.6.2) | Current. A Clients page with actions, every cluster node side by side, a command palette, response times on the Dashboard, and every screen redrawn. |
+| **1.4.x** | **15.5.x, 15.6.x** (1.4.0 to 1.4.4 checked against 15.6.2) | Current. A Clients page with actions, every cluster node side by side, a command palette, response times on the Dashboard, and every screen redrawn. |
 | 1.3.x | 15.5.x, 15.6.x | Superseded by 1.4.x on the same server. Every screen redesigned for the phone, a Dashboard that compares periods, Cache in one panel. |
 | 1.2.x | 15.5.x, 15.6.x | Superseded by 1.3.x on the same server. Allowed and Blocked become one Blocking section, a light theme, and the console comes as an image for Docker. Supports a console folder of its own (`DNS_SERVER_WEB_SERVICE_WWW_FOLDER_PATH`), so server updates leave it alone. |
 | 1.1.x | 15.5.x | Superseded by 1.2.x on the same server. If you stay on it, use 1.1.3: earlier ones flood the server from Cache, Allowed and Blocked. |
@@ -23,6 +23,36 @@ To update, run the installer again (the same one-line command). It needs no rest
 service. On Docker, pull the image again: see [Docker](README.md#docker).
 
 ---
+
+## v1.4.4 (2026-11-27)
+
+**The Docker image says why the server turned it away when HTTPS is involved, and the Dashboard
+and the dates get two options of their own.** Every feature of the stock console works as before,
+through the same API.
+
+Thanks to @c-le, who reported the HTTPS case with the logs that found it, and to
+@varunagarwal-pro for the time zone and the breakdown switch.
+
+### New
+
+- **A display time zone.** `Display Timezone`, in the account menu and in Ctrl K, draws dates in
+  UTC or any IANA zone instead of the browser's: lists, chart labels, the heatmap, Query Logs'
+  From and To, the custom range and the blocking pill. It is kept in this browser only, and until
+  one is picked nothing changes. Written down as deviation 55 in
+  [CONVENTIONS.md](CONVENTIONS.md#deliberate-deviations-from-upstream-behaviour). By
+  @varunagarwal-pro in [#38](https://github.com/byGarcia/technitium-console/pull/38).
+- **Bar or donut for the Dashboard's breakdowns,** and the top three of each Top list drawn as
+  such. By @varunagarwal-pro in [#37](https://github.com/byGarcia/technitium-console/pull/37).
+
+### Fixed
+
+- **The Docker image and a server that redirects HTTP to HTTPS.** The console only said it could
+  not connect. With `TECHNITIUM_URL` on the HTTP port it now names the HTTPS address to use. With
+  single sign-on on, the server reads the browser's scheme from the container and redirects even
+  an `https://` `TECHNITIUM_URL` while the console is served over HTTP: the console says so, and
+  the README says what fixes it (a reverse proxy in front that sends `X-Forwarded-Proto: https`,
+  or the redirect turned off). Reported by @c-le in
+  [#40](https://github.com/byGarcia/technitium-console/issues/40).
 
 ## v1.4.3 (2026-11-20)
 
