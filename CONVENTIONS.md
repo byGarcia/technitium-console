@@ -2338,6 +2338,18 @@ contract and SECURITY.md.
       verbs, and the screen is the one it was. Each verb follows its row's permission.
     Its words, OURS, are declared in the header comment of `ZoneRecords.tsx`.
 
+55. **A display time zone of the browser's choosing** (Adrián's decision, 2026-11-19, PR #38;
+    `lib/timezone.ts`, `screens/modals/ChangeTimezone.tsx`). Upstream draws every date in the
+    browser's own zone. `Display Timezone`, in the account menu and in Ctrl K, picks another: UTC
+    or any IANA zone. Dates, chart labels, the heatmap, Query Logs' From and To, the Dashboard's
+    custom range and the blocking pill follow it. Its limits, and crossing one is a bug:
+    - **the default is upstream.** Until a zone is picked, `Browser Local Time` is in force and
+      every screen is the one it was;
+    - **it is this browser's, never the server's.** It is kept in `localStorage`
+      (`display_timezone`), sends no call and changes no setting;
+    - **the instants sent are the same.** A From or To typed in the chosen zone is sent as the
+      instant it names in that zone, so the server is asked for the span that was read on screen.
+
 ## Four constraints the server imposes
 
 These are not preferences: break them and the console works in development and
