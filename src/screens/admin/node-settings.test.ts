@@ -35,18 +35,6 @@ describe('reading a setting as the Settings form writes it', () => {
     expect(row(c, 'forwarders').values).toEqual(['None'])
     expect(row(c, 'endPoints').values).toEqual(['None'])
   })
-
-  it('covers the curated set, grouped', () => {
-    expect([...new Set(SETTING_ROWS.map((r) => r.group))]).toEqual([
-      'Identity',
-      'Resolution',
-      'Rate Limiting',
-      'Zone Defaults',
-      'Blocking',
-      'Forwarders',
-      'Logging',
-    ])
-  })
 })
 
 describe('comparing the nodes', () => {

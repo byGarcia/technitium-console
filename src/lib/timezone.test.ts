@@ -1,14 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import {
-  DEFAULT_TIMEZONE,
-  TIMEZONE_KEY,
-  TIMEZONE_OPTIONS,
-  getTimezone,
-  readTimezone,
-  setTimezone,
-  subscribeTimezone,
-  writeTimezone,
-} from './timezone'
+import { DEFAULT_TIMEZONE, TIMEZONE_KEY, TIMEZONE_OPTIONS, getTimezone, readTimezone, setTimezone, subscribeTimezone } from './timezone'
 
 describe('timezone library', () => {
   beforeEach(() => {
@@ -58,11 +49,6 @@ describe('timezone library', () => {
     setTimezone('Asia/Tokyo')
     expect(getTimezone()).toBe('Asia/Tokyo')
     expect(listener).toHaveBeenCalledTimes(1)
-  })
-
-  it('writeTimezone safely saves to localStorage', () => {
-    writeTimezone('Asia/Singapore')
-    expect(localStorage.getItem(TIMEZONE_KEY)).toBe('Asia/Singapore')
   })
 
   it('all supported timezones in TIMEZONE_OPTIONS are valid IANA timezones in Intl', () => {

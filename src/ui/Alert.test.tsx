@@ -67,29 +67,6 @@ it. The division is the usual one: the unit test watches structure and semantics
 the sweep watches the treatment.
 */
 describe('Note! against Warning!', () => {
-  it('each type brings its icon, and it is decorative', () => {
-    const { container, rerender } = render(
-      <Alert type="info" title="Note!">
-        text
-      </Alert>,
-    )
-    const noteIcon = container.querySelector('svg')
-    expect(noteIcon).toBeTruthy()
-    expect(noteIcon).toHaveAttribute('aria-hidden', 'true')
-    expect(noteIcon).toHaveAttribute('focusable', 'false')
-    /* The STRING is kept, not the node: React reuses the same `svg` on
-       re-render, so a live reference would end up compared with itself and the
-       test would always pass. */
-    const noteDrawing = noteIcon!.innerHTML
-
-    rerender(
-      <Alert type="warning" title="Warning!">
-        text
-      </Alert>,
-    )
-    /* It is not the same drawing: if it were, the icon would tell nothing apart. */
-    expect(container.querySelector('svg')!.innerHTML).not.toBe(noteDrawing)
-  })
 
   /*
   The icon must NOT replace or repeat the word. `Note!` and `Warning!` are

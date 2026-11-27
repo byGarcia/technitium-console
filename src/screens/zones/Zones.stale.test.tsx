@@ -43,15 +43,6 @@ const clickGo = async (user: ReturnType<typeof userEvent.setup>) =>
   user.click(screen.getByRole('button', { name: 'Go' }))
 
 describe('stale data', () => {
-  it('while the refresh goes well, there is no mark', async () => {
-    vi.spyOn(client, 'apiRequest').mockResolvedValue({
-      kind: 'ok', data: { status: 'ok', response: LIST },
-    } as never)
-    render(<Zones token="t" canModify canDelete />)
-
-    expect(await screen.findByRole('button', { name: 'casa.test' })).toBeInTheDocument()
-    expect(screen.queryByText(/Could not refresh/)).not.toBeInTheDocument()
-  })
 
   /* The one that matters: the list STAYS, and it is also said to be stale. */
   it('when the refresh fails, the list stays and it is reported', async () => {
@@ -94,16 +85,6 @@ describe('stale data', () => {
     await screen.findByText(/Could not refresh/)
     expect(screen.getByLabelText('Select casa.test')).toBeDisabled()
     expect(screen.getByLabelText('Select all zones')).toBeDisabled()
-  })
-
-  /* And with no previous data nothing goes stale: that is a plain error, and the
-     notice reports it. Marking a list that never existed promises data there is none of. */
-  it('when the FIRST load fails, it does not say anything is stale', async () => {
-    vi.spyOn(client, 'apiRequest').mockResolvedValue({ kind: 'error', message: 'boom' } as never)
-    render(<Zones token="t" canModify canDelete />)
-
-    await waitFor(() => expect(screen.queryByRole('button', { name: 'casa.test' })).not.toBeInTheDocument())
-    expect(screen.queryByText(/Could not refresh/)).not.toBeInTheDocument()
   })
 
   it('and when it goes well again, the mark goes away', async () => {

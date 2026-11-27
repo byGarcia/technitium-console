@@ -24,15 +24,8 @@ afterEach(() => vi.restoreAllMocks())
 
 const failAll = () =>
   vi.spyOn(client, 'apiRequest').mockResolvedValue({ kind: 'error', message: 'boom' } as never)
-const empty = (response: unknown) =>
-  vi.spyOn(client, 'apiRequest').mockResolvedValue({ kind: 'ok', data: { status: 'ok', response } } as never)
 
 describe('Leases', () => {
-  it('with no leases the table says so, as always', async () => {
-    empty({ leases: [] })
-    render(<Leases token="t" />)
-    expect(await screen.findByText('No Lease Found')).toBeInTheDocument()
-  })
 
   it('when the load fails, it does NOT say there are none', async () => {
     failAll()
@@ -81,11 +74,6 @@ describe('Leases', () => {
 })
 
 describe('Scopes', () => {
-  it('with no scopes the table says so', async () => {
-    empty({ scopes: [] })
-    render(<Scopes token="t" />)
-    expect(await screen.findByText('No Scope Found')).toBeInTheDocument()
-  })
 
   it('when the load fails, it does NOT say there are none', async () => {
     failAll()

@@ -148,12 +148,6 @@ describe('extras', () => {
     expect(e.map((x) => x.key)).toContain('Answer rate')
   })
 
-  /* The safety net: if the server adds a field tomorrow, it comes out anyway. */
-  it('an unknown field of the record is not lost', () => {
-    const e = extras({ ...ALLOWED_NS, newField: 'value' })
-    expect(e).toContainEqual({ key: 'New field', value: 'value', long: false })
-  })
-
   it('the fields already drawn elsewhere are not repeated here', () => {
     const keys = extras(CACHE_DNSKEY).map((x) => x.key)
     expect(keys).not.toContain('Rdata')

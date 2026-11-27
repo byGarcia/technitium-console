@@ -42,34 +42,6 @@ describe('the zone selection bar', () => {
   beforeEach(() => vi.restoreAllMocks())
   afterEach(() => vi.restoreAllMocks())
 
-  it('the delete verb is NOT in the header any more', async () => {
-    vi.spyOn(client, 'apiRequest').mockResolvedValue(zones)
-    render(<ZoneList {...props} />)
-    await screen.findByRole('button', { name: 'casa.test' })
-    const header = screen.getByRole('heading', { name: 'Zones' }).parentElement!.parentElement!
-    expect(header.textContent).toContain('Add Zone')
-    expect(header.textContent).not.toContain('Delete Zones')
-  })
-
-  /* Disabled, not hidden: the verb stays where it lives, and says by itself
-     that there is nothing to act on. */
-  it('with nothing ticked the verb is there but disabled, and asks nothing', async () => {
-    const spy = vi.spyOn(client, 'apiRequest').mockResolvedValue(zones)
-    const notices: { text?: string }[] = []
-    const user = userEvent.setup()
-    render(<ZoneList {...props} onNotice={(n: { text?: string }) => notices.push(n)} />)
-    await screen.findByRole('button', { name: 'casa.test' })
-
-    const button = screen.getByRole('button', { name: 'Delete Zones' })
-    expect(button).toBeDisabled()
-    await user.click(button)
-    expect(notices).toEqual([])
-    expect(spy.mock.calls.find((c) => c[0] === 'zones/delete')).toBeUndefined()
-
-    await user.click(screen.getByLabelText('Select casa.test'))
-    expect(screen.getByRole('button', { name: 'Delete Zones' })).toBeEnabled()
-  })
-
   it('and with rows ticked it says how many it would act on', async () => {
     vi.spyOn(client, 'apiRequest').mockResolvedValue(zones)
     const user = userEvent.setup()

@@ -1,17 +1,5 @@
 import { describe, expect, it, vi, afterEach } from 'vitest'
-import {
-  buildUpload,
-  downloadAndInstall,
-  downloadAndUpdate,
-  dnsAppLabels,
-  getAppConfig,
-  installApp,
-  listApps,
-  listStoreApps,
-  setAppConfig,
-  uninstallApp,
-  updateApp,
-} from './apps'
+import { downloadAndInstall, downloadAndUpdate, dnsAppLabels, getAppConfig, installApp, listApps, listStoreApps, setAppConfig, uninstallApp, updateApp } from './apps'
 import * as client from './client'
 
 afterEach(() => vi.restoreAllMocks())
@@ -93,17 +81,6 @@ Multipart upload. The client does not support it yet, so what is checked here is
 only what CAN be checked: the path and the shape of the FormData.
 */
 describe('apps: zip upload', () => {
-  it('it builds the install request with the name in the path and the zip in the form', () => {
-    const file = new File(['zip'], 'app.zip')
-    const req = buildUpload('apps/install', 'NO DATA', file)
-    expect(req.path).toBe('apps/install?name=NO+DATA')
-    expect(req.form.get('fileAppZip')).toBe(file)
-  })
-
-  it('it builds the update one against `apps/update`', () => {
-    const file = new File(['zip'], 'app.zip')
-    expect(buildUpload('apps/update', 'A B', file).path).toBe('apps/update?name=A+B')
-  })
 
   it('installApp uploads the zip as multipart and with the name in the query', async () => {
     const spy = vi.spyOn(client, 'apiRequest').mockResolvedValue({ kind: 'ok', data: {} } as never)

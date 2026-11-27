@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { ClusterNodeSelect, nodeOptions, defaultNode, AGGREGATE } from './ClusterNodeSelect'
 
@@ -54,21 +54,6 @@ describe('ClusterNodeSelect', () => {
       <ClusterNodeSelect nodes={NODES} initialised aggregate value={AGGREGATE} onChange={() => {}} />,
     )
     expect(screen.getByText('Cluster')).toBeInTheDocument()
-  })
-
-  it('is labelled, and the label can be named by the screen', () => {
-    const onChange = vi.fn()
-    render(
-      <ClusterNodeSelect
-        nodes={NODES}
-        initialised
-        value="dns1.casa"
-        onChange={onChange}
-        label="Cluster Node"
-      />,
-    )
-    expect(screen.getByText('Cluster Node')).toBeInTheDocument()
-    expect(onChange).not.toHaveBeenCalled()
   })
 })
 

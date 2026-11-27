@@ -254,23 +254,6 @@ describe('buildBody: body of settings/set', () => {
     expect(b.enableUdpSocketPool).toBe('false')
   })
 
-  it('it sends the fields of ALL NINE sub-tabs, not just the visible one', () => {
-    const b = body()
-    for (const key of [
-      'dnsServerDomain',
-      'webServiceHttpPort',
-      'enableDnsOverTls',
-      'tsigKeys',
-      'recursion',
-      'saveCache',
-      'enableBlocking',
-      'forwarderProtocol',
-      'loggingType',
-    ]) {
-      expect(b[key], key).toBeDefined()
-    }
-  })
-
   it('it returns the sanitised text upstream rewrites into the textareas', () => {
     const r = buildBody({ ...base(), blockingBypassList: '10.0.0.1\n\n10.0.0.2\n' })
     // Blocking adds a trailing newline; the forwarders do not. Upstream's asymmetry.

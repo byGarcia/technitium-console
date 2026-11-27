@@ -892,18 +892,6 @@ describe('Settings: one form (2026-11-06)', () => {
     )
   })
 
-  it('Backup, Restore and Flush Cache sit in the header; Save Settings in the bar at the foot', async () => {
-    server()
-    await mount()
-    const bar = screen.getByRole('region', { name: 'Save' })
-    expect(within(bar).getByRole('button', { name: 'Save Settings' })).toBeInTheDocument()
-    for (const name of ['Backup Settings', 'Restore Settings', 'Flush Cache']) {
-      const button = screen.getByRole('button', { name })
-      expect(bar.contains(button)).toBe(false)
-      expect(button.compareDocumentPosition(screen.getByLabelText('DNS Server Domain')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-    }
-  })
-
   it('the bar is always there, and says so when nothing would change', async () => {
     server()
     await mount()

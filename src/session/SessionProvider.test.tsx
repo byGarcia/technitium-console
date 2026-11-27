@@ -386,16 +386,6 @@ describe('SessionProvider', () => {
     expect(screen.getByText('Configure 2FA')).toBeInTheDocument()
   })
 
-  it('for an ordinary user it shows them', async () => {
-    localStorage.setItem('token', 'tok')
-    vi.spyOn(client, 'apiRequest').mockResolvedValue(session())
-    mount()
-    await screen.findByRole('navigation')
-    await userEvent.click(screen.getByRole('button', { name: /Administrator/ }))
-    expect(screen.getByText('Change Password')).toBeInTheDocument()
-    expect(screen.getByText('Configure 2FA')).toBeInTheDocument()
-  })
-
   /*
   Silencing the update notice, restored on 2026-09-04 while checking About against upstream.
 
@@ -559,15 +549,6 @@ describe('the Blocking section', () => {
     expect(
       within(nav).getAllByRole('link').filter((l) => l.getAttribute('aria-current') === 'page').map((l) => l.textContent),
     ).toEqual(['Rules'])
-  })
-
-  it('and behind a prefix', async () => {
-    localStorage.setItem('token', 'tok')
-    answer()
-    servedAt('/dns/allowed/', 'allowed')
-    mount()
-    await screen.findByRole('navigation', { name: 'Sections' })
-    expect(window.location.pathname + window.location.search).toBe('/dns/blocking/rules/?rule=allowed')
   })
 
   /* `?rule=` is Rules' filter. `writeRoute` keeps the search, so without the

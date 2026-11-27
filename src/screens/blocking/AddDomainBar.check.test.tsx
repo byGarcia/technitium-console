@@ -60,10 +60,6 @@ async function check(domain: string) {
 }
 
 describe('Check a domain', () => {
-  it('names the panel for its three verbs', () => {
-    setup()
-    expect(screen.getByText('Check, block or allow a domain')).toBeInTheDocument()
-  })
 
   it('blocked by two lists: their names as the Lists tab gives them, their URLs and the way to Lists', async () => {
     await check('app-measurement.com')

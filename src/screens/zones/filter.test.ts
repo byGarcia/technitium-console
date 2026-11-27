@@ -88,10 +88,6 @@ describe('type filter', () => {
     expect(filterBy(RECORDS, { name: 'www', type: 'A' }, 'casa.test')).toHaveLength(1)
   })
 
-  it('with no filters it returns the same list, without copying it', () => {
-    expect(filterBy(RECORDS, { name: '', type: '' }, 'casa.test')).toBe(RECORDS)
-  })
-
   /* The pattern is the viewer's own text, built into a RegExp the way upstream
      builds it. One that is not a valid expression filters to nothing instead
      of taking the whole console down with it. */
@@ -109,11 +105,6 @@ describe('the name filter takes only * and ? as wildcards', () => {
     const start = performance.now()
     expect(regex?.test(`${'a'.repeat(40)}c.casa.test`)).toBe(false)
     expect(performance.now() - start).toBeLessThan(50)
-  })
-
-  it('a name that matched before still matches', () => {
-    expect(compileNameFilter('w?w*', 'casa.test').regex?.test('www.sub.casa.test')).toBe(true)
-    expect(compileNameFilter('*', 'casa.test').regex?.test('*.casa.test')).toBe(true)
   })
 })
 

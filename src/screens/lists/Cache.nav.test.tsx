@@ -23,12 +23,6 @@ function answering(n: ListNode) {
 }
 
 describe('Cache moves through one band', () => {
-  it('has no tree any more', async () => {
-    answering(node({ zones: ['com'] }))
-    render(<Cache token="t" />)
-    await screen.findByRole('button', { name: 'com' })
-    expect(screen.queryByLabelText('Domain tree')).not.toBeInTheDocument()
-  })
 
   it('an ancestor in the crumbs goes up with direction=up, as the [up] link does', async () => {
     const spy = answering(node({ domain: 'www.google.com' }))

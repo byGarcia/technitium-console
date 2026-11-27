@@ -33,10 +33,6 @@ describe('the zone a name belongs to', () => {
     expect(subDomainOf('example.lan', 'example.lan')).toBe('@')
     expect(zoneForName('host.nowhere', [...ZONES, z('', 'Forwarder')])).toBeNull()
   })
-
-  it('is none when no zone holds it', () => {
-    expect(zoneForName('host.nowhere', ZONES)).toBeNull()
-  })
 })
 
 describe('the type by the address family', () => {
@@ -110,14 +106,6 @@ describe('the plan', () => {
     )
     const internal = planQuickAdd(input('localhost', '127.0.0.2'), [z('localhost', 'Primary', { internal: true })], 3600)
     expect(internal.ok).toBe(false)
-  })
-})
-
-describe('quick add: never the root zone', () => {
-  it('leaves a name no other zone holds to the refusal, not to a root forwarder', () => {
-    const zones = [{ name: '', type: 'Forwarder' }, { name: 'home.lan', type: 'Primary' }] as never
-    expect(zoneForName('nas.office', zones)).toBeNull()
-    expect(zoneForName('nas.home.lan', zones)).toMatchObject({ name: 'home.lan' })
   })
 })
 

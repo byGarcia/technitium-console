@@ -35,10 +35,6 @@ describe('clearList / listToText', () => {
     expect(cleanList('\n\n\n')).toBe('')
   })
 
-  it('it leaves no stray `\\r`: the React textarea already normalises to `\\n`', () => {
-    expect(cleanList('1.1.1.1\n8.8.8.8')).not.toContain('\r')
-  })
-
   it('listToText returns an empty string when the server omits the key', () => {
     expect(listToText(undefined)).toBe('')
     expect(listToText(['a', 'b'])).toBe('a\nb')

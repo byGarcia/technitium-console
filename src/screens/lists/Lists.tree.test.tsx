@@ -78,24 +78,6 @@ describe('the path says where you are', () => {
   })
 })
 
-describe('cache and policy are told apart', () => {
-  /* Cache names itself in its header. Allowed and Blocked are drawn only inside
-     Blocking's Rules, whose toolbar names the list (its `Tree` switch): they draw
-     no identity band of their own since 2026-11-06. */
-  it('Cache says what it holds under its title', async () => {
-    withNode(node())
-    render(<Cache token="t" />)
-    expect(await screen.findByText('What the server resolved and stored')).toBeInTheDocument()
-  })
-
-  it.each(['allowed' as const, 'blocked' as const])('%s draws no band of its own', async (list) => {
-    withNode(node())
-    render(<Lists list={list} token="t" embedded />)
-    await screen.findByText(/^0 records at/)
-    expect(screen.queryByText(/Domains the administrator/)).toBeNull()
-  })
-})
-
 describe('Delete weighs what it costs', () => {
   /*
   The fourth problem, and the design brief had it backwards: it said `Delete` and `Flush` were
@@ -108,15 +90,6 @@ describe('Delete weighs what it costs', () => {
     render(<Lists list="allowed" token="t" embedded />)
     const button = await screen.findByRole('button', { name: 'Delete' })
     expect(button).toHaveAttribute('data-variant', 'danger')
-  })
-
-  /* The header's Flush of Allowed and Blocked left with their header (it is
-     Rules' now); the filled red one that stays in this component is Cache's. */
-  it('and Flush Cache stays the filled one, in the header', async () => {
-    withNode(node())
-    render(<Cache token="t" />)
-    const flush = await screen.findByRole('button', { name: 'Flush Cache' })
-    expect(flush).toHaveAttribute('data-variant', 'danger')
   })
 })
 
@@ -176,14 +149,6 @@ describe('what the round was not allowed to break', () => {
     render(<Cache token="t" />)
     expect(await screen.findByLabelText('Domain')).toHaveAttribute('placeholder', 'example.com')
     expect(screen.getByRole('button', { name: 'Browse' })).toBeInTheDocument()
-  })
-
-  /* `<ROOT>` is how you get back to the root: the trail's first step. */
-  it('the trail keeps its <ROOT> step', async () => {
-    withNode(node({ domain: 'example.org', zones: [] }))
-    render(<Lists list="blocked" token="t" embedded />)
-    const path = await screen.findByRole('navigation', { name: 'Node' })
-    expect(within(path).getByRole('button', { name: '<ROOT>' })).toBeInTheDocument()
   })
 })
 

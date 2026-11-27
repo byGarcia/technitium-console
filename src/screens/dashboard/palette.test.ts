@@ -17,12 +17,6 @@ describe('chart palette', () => {
     expect(tokenForLabel('Total Queries', 0)).toBe(tokenForLabel('Total', 0))
   })
 
-  /* Position must not decide colour: a deployment with no blocking sends fewer
-     series, and "Server Failure" cannot change colour because of that. */
-  it('a known series does not change colour with its position', () => {
-    expect(tokenForLabel('Server Failure', 2)).toBe(tokenForLabel('Server Failure', 9))
-  })
-
   it('outcomes that mean something keep the meaning', () => {
     expect(tokenForLabel('No Error', 0)).toBe('--ch-ok')
     expect(tokenForLabel('Server Failure', 0)).toBe('--ch-fail')

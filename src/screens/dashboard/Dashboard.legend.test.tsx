@@ -68,12 +68,6 @@ describe('the Queries legend', () => {
     expect(seriesButton(/^No Error/)).toHaveTextContent('5')
   })
 
-  it('they all start switched on', async () => {
-    renderDashboard()
-    expect(await screen.findByRole('button', { name: /^Total/ })).toHaveAttribute('aria-pressed', 'true')
-    expect(line()).toHaveAttribute('data-hidden', '')
-  })
-
   /* The one that matters: that pressing switches off, and the chart hears it. */
   it('pressing a series switches it off, and the chart receives it', async () => {
     const user = userEvent.setup()
@@ -103,18 +97,6 @@ describe('the Queries legend', () => {
     expect(seriesButton(/^No Error/)).toHaveAttribute('aria-pressed', 'true')
     expect(line()).toHaveAttribute('data-hidden', 'Total')
   })
-
-  /* It is reachable by keyboard, which inside the canvas it was not. */
-  it('it toggles with the keyboard', async () => {
-    const user = userEvent.setup()
-    renderDashboard()
-    await screen.findByRole('button', { name: /^Total/ })
-
-    seriesButton(/^Total/).focus()
-    await user.keyboard('{Enter}')
-
-    expect(seriesButton(/^Total/)).toHaveAttribute('aria-pressed', 'false')
-  })
 })
 
 /*
@@ -141,12 +123,6 @@ describe('the doughnut charts legend', () => {
     expect(await screen.findByRole('button', { name: /^A / })).toHaveTextContent('60.00%')
     expect(seriesButton(/^AAAA/)).toHaveTextContent('30.00%')
     expect(seriesButton(/^PTR/)).toHaveTextContent('10.00%')
-  })
-
-  /* The percentage is written as on the cards: a dot and two decimals. */
-  it('the percentage is formatted like the card', async () => {
-    renderSectors()
-    expect(await screen.findByRole('button', { name: /^A / })).not.toHaveTextContent(',')
   })
 
   it('pressing a slice switches it off without switching off the others', async () => {

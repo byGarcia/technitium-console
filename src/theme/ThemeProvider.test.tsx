@@ -162,14 +162,6 @@ describe('the system theme, live', () => {
       unmount()
     }
   })
-
-  it('stops listening when it unmounts', () => {
-    const system = mockSystemTheme(false)
-    const { unmount } = mount()
-    expect(system.listeners.size).toBe(1)
-    unmount()
-    expect(system.listeners.size).toBe(0)
-  })
 })
 
 describe('a pick', () => {

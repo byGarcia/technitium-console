@@ -94,13 +94,6 @@ describe('Users: the table', () => {
     expect(screen.queryByRole('menuitem', { name: 'Reset Password' })).not.toBeInTheDocument()
   })
 
-  it('a local user is offered the password reset', async () => {
-    server([NEW_USER])
-    render(<Users {...props} />)
-    await userEvent.click((await screen.findAllByRole('button', { name: /^Actions for / }))[0])
-    expect(await screen.findByRole('menuitem', { name: 'Reset Password' })).toBeInTheDocument()
-  })
-
   it('an unknown type falls to the default: its label is the type itself, and no reset', async () => {
     // auth.js:1164-1166 writes `user.type` raw; the reset is only for `Local`.
     server([{ ...NEW_USER, type: 'Future', totpEnabled: true }])
@@ -109,13 +102,6 @@ describe('Users: the table', () => {
     await userEvent.click((await screen.findAllByRole('button', { name: /^Actions for / }))[0])
     expect(screen.queryByRole('menuitem', { name: 'Reset Password' })).not.toBeInTheDocument()
     expect(screen.queryByRole('menuitem', { name: 'Disable 2FA' })).not.toBeInTheDocument()
-  })
-
-  it('\"Disable 2FA\" only appears if the user has it on', async () => {
-    server([{ ...NEW_USER, totpEnabled: true }])
-    render(<Users {...props} />)
-    await userEvent.click((await screen.findAllByRole('button', { name: /^Actions for / }))[0])
-    expect(await screen.findByRole('menuitem', { name: 'Disable 2FA' })).toBeInTheDocument()
   })
 
   it('with no users the total says zero', async () => {

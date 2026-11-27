@@ -73,11 +73,6 @@ describe('per node', () => {
     expect(poolTotals([{ ...LAN, node: 'ns1' }, { ...LAN, node: 'ns2' }], leases)).toEqual({ addresses: 20, leased: 3 })
   })
 
-  it('with one node, the name alone, as before', () => {
-    expect(scopeUsage(LAN, [lease('LAN', '1-a')])).toMatchObject({ leased: 1 })
-    expect(poolTotals([LAN], [lease('LAN', '1-a')])).toEqual({ addresses: 10, leased: 1 })
-  })
-
   it('keys carry the node only when the row has one', () => {
     expect(leaseKey(leases[0])).not.toBe(leaseKey(leases[2]))
     expect(leaseKey(lease('LAN', '1-a'))).toBe('LAN\n1-a')

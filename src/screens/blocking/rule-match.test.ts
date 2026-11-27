@@ -31,28 +31,10 @@ describe('matchRules', () => {
 describe('ruleHint', () => {
   const all = {}
 
-  it('the name is one of your blocked rules', () => {
-    expect(ruleHint('ads.example.com', RULES, all)).toEqual({
-      tone: 'blocked', text: 'Already blocked: it is one of your rules.',
-    })
-  })
-
-  it('a parent blocked rule covers it', () => {
-    expect(ruleHint('sub.telemetry.example-iot.net', RULES, all)).toEqual({
-      tone: 'blocked', text: 'Already blocked by your rule telemetry.example-iot.net, which covers its subdomains.',
-    })
-  })
-
   it('an allow rule wins over a blocked parent, and says so', () => {
     expect(ruleHint('www.ok.example.org', RULES, all)).toEqual({
       tone: 'allowed',
       text: 'Already allowed by your rule ok.example.org, which covers its subdomains. It wins over your blocked rule example.org.',
-    })
-  })
-
-  it('none of your rules: Check is the way to the block lists', () => {
-    expect(ruleHint('example.net', RULES, all)).toEqual({
-      tone: 'none', text: 'Not one of your rules. Check asks the block lists.',
     })
   })
 

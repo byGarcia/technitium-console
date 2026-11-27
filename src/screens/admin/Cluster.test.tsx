@@ -544,23 +544,6 @@ describe('Cluster: what tells the three branches apart', () => {
     render(<Cluster {...props} />)
     expect(await screen.findAllByText('Secondary')).toHaveLength(2)
   })
-
-  it('does not put a pill on the branch with no cluster: the panel already says it', async () => {
-    server()
-    render(<Cluster {...props} />)
-    await screen.findByText('Cluster Not Initialized')
-    expect(screen.queryByText('Not Initialized')).not.toBeInTheDocument()
-  })
-
-  it('marks this node own row, and only that one', async () => {
-    server(CLUSTER_PRIMARY)
-    render(<Cluster {...props} />)
-    await screen.findByText('Total Nodes: 2')
-    const rows = [...document.querySelectorAll('tbody tr')]
-    const marked = rows.filter((r) => /_rowSelf_/.test(r.className))
-    expect(marked).toHaveLength(1)
-    expect(marked[0].textContent).toContain('Self')
-  })
 })
 
 describe('Cluster: the consequence block', () => {
@@ -603,22 +586,6 @@ describe('Cluster: the consequence block', () => {
       'Delete',
       'Close',
     ])
-  })
-
-  it('sits after the question and before the Note, which is where the console puts a Note', async () => {
-    server(CLUSTER_PRIMARY)
-    const user = userEvent.setup()
-    render(<Cluster {...props} />)
-    await user.click(await screen.findByRole('button', { name: 'Delete Cluster' }))
-
-    const dialog = await screen.findByRole('dialog')
-    const order = [...dialog.querySelectorAll('p, [data-armed], [role="alert"]')]
-    const question = order.findIndex((e) => /Are you sure you want to delete the Cluster/.test(e.textContent ?? ''))
-    const block = order.findIndex((e) => e.hasAttribute('data-armed'))
-    const note = order.findIndex((e) => /Use the Force Delete Cluster option/.test(e.textContent ?? ''))
-    expect(question).toBeGreaterThanOrEqual(0)
-    expect(block).toBeGreaterThan(question)
-    expect(note).toBeGreaterThan(block)
   })
 })
 

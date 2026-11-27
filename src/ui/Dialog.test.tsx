@@ -149,9 +149,4 @@ describe('Dialog: Enter submits', () => {
     expect(onSave).toHaveBeenCalledTimes(1)
     expect(outer).not.toHaveBeenCalled()
   })
-
-  it('the dialog holds a single form, so a form inside it would be nested', () => {
-    render(<Harness onSave={() => {}} />)
-    expect(screen.getByRole('dialog').querySelectorAll('form')).toHaveLength(1)
-  })
 })

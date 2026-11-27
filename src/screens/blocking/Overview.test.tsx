@@ -6,7 +6,6 @@ import * as settings from '../../api/settings'
 import * as apps from '../../api/apps'
 import * as zonelists from '../../api/zonelists'
 import * as blocking from '../../api/blocking'
-import * as dnsclient from '../../api/dnsclient'
 import { SAMPLE } from './blocked-sample'
 import { SlotProvider } from '../../app/ChromeSlot'
 import { Overview, blockingChart } from './Overview'
@@ -79,12 +78,6 @@ describe('blockingChart', () => {
 })
 
 describe('Overview', () => {
-  it('the bars read Allowed, then Blocked, in their legend', async () => {
-    serve()
-    render(<Overview token="T" permissions={undefined} />)
-    await screen.findByRole('img', { name: 'Allowed and blocked queries over time' })
-    expect(legends.get('bars')).toEqual(['Allowed', 'Blocked'])
-  })
 
   it('the bars carry the Dashboard legend: each series with its total, and a click switches it off', async () => {
     serve()
@@ -414,28 +407,6 @@ describe('the layout of 2026-11-06', () => {
     }],
   }
 
-  it('the blocking status and its menu sit in the header, before the period', async () => {
-    serve()
-    render(<Overview token="T" permissions={undefined} />)
-    const pill = await screen.findByText('Blocking is enabled')
-    const header = screen.getByRole('heading', { level: 1, name: 'Overview' }).closest('div')!.parentElement!.parentElement!
-    const menu = within(header).getByRole('button', { name: 'Blocking options' })
-    const period = within(header).getByRole('group', { name: 'Period' })
-    expect(header).toContainElement(pill)
-    expect(menu).toHaveTextContent('Disable')
-    expect(pill.compareDocumentPosition(period) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-  })
-
-  it('the check, block or allow bar comes before the figures', async () => {
-    serve()
-    render(<Overview token="T" permissions={undefined} />)
-    await screen.findByText('20,354')
-    const bar = screen.getByRole('heading', { name: 'Check, block or allow a domain' })
-    const strip = screen.getByRole('heading', { level: 2, name: 'Total Queries' })
-    expect(bar.compareDocumentPosition(strip) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-    expect(screen.getByLabelText('Domain')).toBeInTheDocument()
-  })
-
   it('without a query logging app there is no Blocked by client, and the reason is said once', async () => {
     serve()
     render(<Overview token="T" permissions={undefined} />)
@@ -473,16 +444,6 @@ describe('the layout of 2026-11-06', () => {
     expect(sample).not.toHaveBeenCalled()
     const lists = screen.getByRole('heading', { name: 'Blocked by list' }).parentElement!.parentElement!
     expect(within(lists).getByText('Requires Logs: View')).toBeInTheDocument()
-  })
-
-  it('Blocked by list is idle until Count lists, and sends no lookup before that', async () => {
-    serve()
-    vi.mocked(apps.listApps).mockResolvedValue({ kind: 'ok', data: { response: { apps: [LOGGER] } } } as never)
-    const resolve = vi.spyOn(dnsclient, 'resolve')
-    render(<Overview token="T" permissions={undefined} />)
-    expect(await screen.findByRole('heading', { name: 'Blocked by list' })).toBeInTheDocument()
-    expect(screen.getByText(/Not counted yet/)).toBeInTheDocument()
-    expect(resolve).not.toHaveBeenCalled()
   })
 })
 

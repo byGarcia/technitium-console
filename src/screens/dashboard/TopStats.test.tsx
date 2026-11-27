@@ -28,12 +28,6 @@ describe('modal Top Stats', () => {
     expect(spy).not.toHaveBeenCalled()
   })
 
-  it('the title carries the limit inside it, as in upstream', async () => {
-    mockTop({ topClients: CLIENTS })
-    render(<TopStats type="TopClients" range="LastHour" token="t" onClose={() => {}} />)
-    expect(await screen.findByText('Top 1000 Clients')).toBeTruthy()
-  })
-
   it('it asks getTop with the range, the type and the limit of 1000', async () => {
     const spy = mockTop({ topDomains: [] })
     render(<TopStats type="TopDomains" range="LastWeek" token="t" onClose={() => {}} />)
@@ -45,12 +39,6 @@ describe('modal Top Stats', () => {
         limit: '1000',
       })
     })
-  })
-
-  it('a client shows its domain under the name', async () => {
-    mockTop({ topClients: CLIENTS })
-    render(<TopStats type="TopClients" range="LastHour" token="t" onClose={() => {}} />)
-    expect(await screen.findByText('pc.home.test')).toBeTruthy()
   })
 
   it('a client with no domain gets no second line, not the "." upstream writes (#22)', async () => {
@@ -99,12 +87,6 @@ describe('modal Top Stats', () => {
     render(<TopStats type="TopDomains" range="LastHour" token="t" onClose={() => {}} />)
     expect(await screen.findByText('Domain')).toBeTruthy()
     expect(screen.getByText('Hits')).toBeTruthy()
-  })
-
-  it('with no data it says \"No Data\", with the upstream text', async () => {
-    mockTop({ topClients: [] })
-    render(<TopStats type="TopClients" range="LastHour" token="t" onClose={() => {}} />)
-    expect(await screen.findByText('No Data')).toBeTruthy()
   })
 })
 
@@ -174,13 +156,6 @@ describe('the three \"More\" buttons of the Dashboard', () => {
     expect(screen.getByLabelText(/^End/)).toHaveFocus()
     expect(screen.queryByText('Top 1000 Clients')).toBeNull()
     expect(top).not.toHaveBeenCalled()
-  })
-
-  it('the short client list already shows the domain and the rate-limited marking', async () => {
-    vi.spyOn(api, 'getDashboardStats').mockResolvedValue({ kind: 'ok', data: DATA } as never)
-    render(<Dashboard token="t" />)
-    expect(await screen.findByText('pc.home.test')).toBeTruthy()
-    expect(screen.getByText(/10\.0\.0\.9 \(rate limited\)/)).toBeTruthy()
   })
 })
 

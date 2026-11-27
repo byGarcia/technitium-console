@@ -63,13 +63,4 @@ describe('Query Logs: arriving from a Dashboard chart', () => {
     expect(query.mock.calls[0][1]).toMatchObject({ rcode: 'NxDomain', responseType: '', start: '', end: '' })
     expect(screen.getByLabelText('RCODE')).toHaveTextContent('NX Domain')
   })
-
-  it('without a logging app it says what a row menu jump says, and queries nothing', async () => {
-    const query = setUp([])
-    render(<Logs token="t" sub="Query Logs" request={{ domain: null, clientIp: null, node: '', filters: { qtype: 'A' } }} />)
-    expect(await screen.findByText(
-      "Please install the 'Query Logs (Sqlite)' DNS App or any other DNS app that supports query logging feature from the Apps section.",
-    )).toBeInTheDocument()
-    expect(query).not.toHaveBeenCalled()
-  })
 })

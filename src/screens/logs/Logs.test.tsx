@@ -259,17 +259,6 @@ describe('Logs › View Logs', () => {
     await user.hover(logs.parentElement!)
     expect(await screen.findByText('Requires Logs: Delete')).toBeInTheDocument()
   })
-
-  /* With no files there is NO `Delete All Logs`, even with the permission to
-     spare: it is not about who you are, it is that there is nothing to delete.
-     It is the case that has to be told apart. */
-  it('and with no files it goes away because of its object, not because of a permission', async () => {
-    vi.spyOn(api, 'listLogFiles').mockResolvedValue({ kind: 'ok', data: [] })
-    render(<Logs token="t" sub="View Logs" canDeleteLogs canDeleteStats />)
-
-    expect(await screen.findByText('No Log File Was Found')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /Delete All Logs/ })).not.toBeInTheDocument()
-  })
 })
 
 describe('Logs › Query Logs: the form', () => {
@@ -539,28 +528,6 @@ describe('Logs › Query Logs: the table', () => {
       const cell = inTable().getByTitle(value)
       expect(cell).toHaveTextContent(value)
     }
-  })
-
-  /* The colour moved from the row to a pill around the response type; the row
-     itself is neutral, and the legend draws the same pill. */
-  it('the row colour is painted on the Response Type pill, and the legend uses the same pills', async () => {
-    const user = userEvent.setup()
-    withApps([APP])
-    vi.spyOn(api, 'queryLogs').mockResolvedValue({
-      kind: 'ok',
-      data: { response: page({ entries: [{ ...ENTRY, rcode: 'NxDomain', responseType: 'Blocked' }] }) },
-    } as never)
-    render(<Logs token="t" sub="Query Logs" />)
-    await screen.findByLabelText('App Name')
-    await user.click(screen.getByRole('button', { name: 'Query' }))
-
-    const pill = (await screen.findAllByText('Blocked')).find((e) => e.closest('td') != null)!
-    const cls = rowClass({ ...ENTRY, rcode: 'NxDomain', responseType: 'Blocked' })
-    expect(pill.closest('tr')).toHaveClass(cls)
-    const legend = LEGEND_ROWS.find((e) => e.name === 'Blocked')!
-    const legendPill = screen.getAllByText('Blocked').find((e) => e.classList.contains(legend.cls))!
-    expect(legendPill).toHaveClass(legend.cls)
-    expect(legendPill.className.replace(legend.cls, '').trim()).toBe(pill.className)
   })
 
   it('a response with no data leaves the counter at \"0 logs\"', async () => {

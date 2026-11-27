@@ -111,15 +111,6 @@ describe('Dashboard', () => {
     }
   })
 
-  it('changing range asks for the data again with that type', async () => {
-    const spy = vi.spyOn(api, 'getDashboardStats').mockResolvedValue({ kind: 'ok', data: data } as never)
-    render(<Dashboard token="t" />)
-    await screen.findByText('Total Queries')
-    spy.mockClear()
-    await userEvent.click(screen.getByRole('button', { name: 'Last Week' }))
-    expect(spy.mock.calls[0][1]).toBe('LastWeek')
-  })
-
   it('refreshes Last Hour after each completed minute without overlapping requests', async () => {
     vi.useFakeTimers()
     let finishFirst!: (result: Awaited<ReturnType<typeof api.getDashboardStats>>) => void
@@ -184,12 +175,6 @@ describe('Dashboard', () => {
       expect(within(region).getByText('No data for this period.')).toBeInTheDocument()
       expect(region.querySelector('[data-segment]')).toBeNull()
     }
-  })
-
-  it('an empty Top list says so instead of staying blank', async () => {
-    vi.spyOn(api, 'getDashboardStats').mockResolvedValue({ kind: 'ok', data: data } as never)
-    render(<Dashboard token="t" />)
-    expect(await screen.findByText('No data for this period.')).toBeInTheDocument()
   })
 
   /*

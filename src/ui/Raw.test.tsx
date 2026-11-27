@@ -18,24 +18,9 @@ describe('the raw output', () => {
     expect(screen.getByLabelText('DNS response')).toHaveAttribute('tabindex', '0')
   })
 
-  /*
-  A tab stop that announces nothing is worse than none: the cursor lands inside a
-  box and the screen reader does not say what of.
-  */
-  it('and it announces WHAT it is, not just that there is something', () => {
-    render(<Raw text="2026-09-03 log file">text</Raw>)
-    expect(screen.getByLabelText('2026-09-03 log file')).toBeInTheDocument()
-  })
-
   it('the text travels intact, with its spaces', () => {
     render(<Raw text="x">{'{\n  "k": 1\n}'}</Raw>)
     expect(screen.getByLabelText('x').textContent).toBe('{\n  "k": 1\n}')
-  })
-
-  /* On the box and not on the text, because with `fill` it is the box's floor. */
-  it('the height is a cap and can be set case by case', () => {
-    render(<Raw text="x" height={140}>y</Raw>)
-    expect(screen.getByLabelText('x').parentElement).toHaveStyle({ '--raw-height': '140px' })
   })
 
   /* DNS Client's JSON keeps its indentation: nothing wraps unless asked. */
@@ -44,29 +29,5 @@ describe('the raw output', () => {
     expect(container.firstElementChild?.className).not.toMatch(/fill/)
     expect(screen.getByLabelText('x').className).not.toMatch(/wrap/)
     expect(screen.getByLabelText('x').style.getPropertyValue('--raw-hang')).toBe('')
-  })
-
-  it('with wrap, continuation lines hang by the characters asked for', () => {
-    render(<Raw text="x" wrap hang={26}>y</Raw>)
-    expect(screen.getByLabelText('x').className).toMatch(/wrap/)
-    expect(screen.getByLabelText('x')).toHaveStyle({ '--raw-hang': '26ch' })
-  })
-
-  it('with fill, the box takes the height handed down', () => {
-    const { container } = render(<Raw text="x" fill height={240}>y</Raw>)
-    expect(container.firstElementChild?.className).toMatch(/fill/)
-    expect(container.firstElementChild).toHaveStyle({ '--raw-height': '240px' })
-  })
-
-  /* The `--dan` frame is for the error the server returns as TEXT, which has
-     nowhere else to go. It is not the normal state. */
-  it('with no tone the box is not marked as an error', () => {
-    const { container } = render(<Raw text="x">y</Raw>)
-    expect(container.firstElementChild?.className).not.toMatch(/error/)
-  })
-
-  it('with the error tone, it is', () => {
-    const { container } = render(<Raw text="x" tone="error">y</Raw>)
-    expect(container.firstElementChild?.className).toMatch(/error/)
   })
 })

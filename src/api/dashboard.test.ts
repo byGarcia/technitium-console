@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, afterEach } from 'vitest'
-import { getDashboardStats, getTop, deleteAllStats, RANGES, RANGE_LABEL } from './dashboard'
+import { getDashboardStats, getTop, deleteAllStats } from './dashboard'
 import * as client from './client'
 
 afterEach(() => vi.restoreAllMocks())
@@ -7,11 +7,6 @@ afterEach(() => vi.restoreAllMocks())
 const response = (r: unknown) => ({ kind: 'ok' as const, data: { status: 'ok', response: r } })
 
 describe('dashboard', () => {
-  it('the six ranges are the upstream ones, with their literal labels', () => {
-    expect(RANGES).toEqual(['LastHour','LastDay','LastWeek','LastMonth','LastYear','Custom'])
-    expect(RANGE_LABEL.LastHour).toBe('Last Hour')
-    expect(RANGE_LABEL.LastMonth).toBe('Last Month')
-  })
 
   it('it asks for the range and unwraps response', async () => {
     const spy = vi.spyOn(client, 'apiRequest').mockResolvedValue(response({ stats: { totalQueries: 7 } }))

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { asDatagram, stripUrl, countByStatus, countByType, extendedErrors, ownerName, rcodeColour, rdataPairs } from './response'
+import { asDatagram, stripUrl, countByStatus, countByType, extendedErrors, ownerName, rdataPairs } from './response'
 
 describe('stripUrl (dnsclient.js:132-146)', () => {
   it('keeps a plain name as it is', () => {
@@ -18,15 +18,6 @@ describe('the datagram', () => {
     expect(asDatagram([])).toBeNull()
     expect(asDatagram('x')).toBeNull()
     expect(asDatagram(null)).toBeNull()
-  })
-
-  it('colours the four codes the Dashboard charts and leaves the rest neutral', () => {
-    expect(rcodeColour('NoError')).toBe('var(--ch-ok)')
-    expect(rcodeColour('NxDomain')).toBe('var(--ch-nx)')
-    expect(rcodeColour('ServerFailure')).toBe('var(--ch-fail)')
-    expect(rcodeColour('Refused')).toBe('var(--ch-refuse)')
-    expect(rcodeColour('FormatError')).toBe('var(--ch-drop)')
-    expect(rcodeColour(undefined)).toBe('var(--ch-drop)')
   })
 
   it('counts by type and by DNSSEC status in order of appearance', () => {

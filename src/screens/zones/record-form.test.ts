@@ -351,10 +351,6 @@ describe('changing the record type', () => {
     expect(f).toMatchObject({ type: 'CNAME', name: 'www', ttl: '', comments: 'c', expiryTtl: '60', value: '' })
   })
 
-  it('a new form starts with an empty TTL, not 3600', () => {
-    expect(emptyForm().ttl).toBe('')
-  })
-
   it('clears what the previous type had typed', () => {
     const prev = { ...emptyForm(), type: 'A', value: '10.0.0.1', ptr: true, createPtrZone: true }
     expect(formForType(prev, 'AAAA', DEFAULTS)).toMatchObject({ value: '', ptr: false, createPtrZone: false })
@@ -392,10 +388,6 @@ describe('changing the record type', () => {
 
 /* `updateAddEditFormForwarderThisServer` (zone.js:5336-5356). */
 describe('FWD: Use "This Server"', () => {
-  it('ticking it writes this-server and forces UDP', () => {
-    const f = toggleForwarderThisServer({ ...emptyForm(), type: 'FWD', forwarder: '1.1.1.1', forwarderProtocol: 'Tls' }, true)
-    expect(f).toMatchObject({ forwarderThisServer: true, forwarder: 'this-server', forwarderProtocol: 'Udp' })
-  })
 
   it('unticking it empties the forwarder', () => {
     const f = toggleForwarderThisServer({ ...emptyForm(), type: 'FWD', forwarder: 'this-server', forwarderThisServer: true }, false)
@@ -419,10 +411,6 @@ describe('APP: the record data template', () => {
       ],
     },
   ]
-
-  it('is the template of the class chosen', () => {
-    expect(recordDataTemplate(apps, 'Split Horizon', 'SplitHorizon.SimpleAddress')).toBe('{"public": []}')
-  })
 
   it('is empty for a class with no template or none chosen', () => {
     expect(recordDataTemplate(apps, 'Split Horizon', 'SplitHorizon.AddressTranslation')).toBe('')

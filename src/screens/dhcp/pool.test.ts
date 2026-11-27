@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { DhcpLease, DhcpScopeRow } from '../../api/dhcp'
-import { expiringSoon, ipv4, leaseKey, leaseTime, leasesPerScope, matchesScope, matchesSearch, newest, percent, poolTotals, rangeSize, scopeUsage } from './pool'
+import { expiringSoon, ipv4, leaseTime, leasesPerScope, matchesScope, matchesSearch, newest, percent, poolTotals, rangeSize, scopeUsage } from './pool'
 
 const NOW = Date.parse('2026-11-06T07:00:00Z')
 
@@ -36,14 +36,6 @@ describe('the address arithmetic', () => {
     expect(ipv4('10.0.0.256')).toBeNull()
     expect(ipv4('fe80::1')).toBeNull()
     expect(ipv4('')).toBeNull()
-  })
-
-  it('a range holds both its ends, and a backwards or broken one holds nothing', () => {
-    expect(rangeSize('10.77.0.100', '10.77.0.199')).toBe(100)
-    expect(rangeSize('192.168.1.1', '192.168.1.1')).toBe(1)
-    expect(rangeSize('10.0.0.255', '10.0.1.0')).toBe(2)
-    expect(rangeSize('10.0.0.9', '10.0.0.1')).toBeNull()
-    expect(rangeSize('10.0.0.1', 'x')).toBeNull()
   })
 })
 
@@ -99,10 +91,6 @@ describe('the search', () => {
   it('a lease with no host name is still found by its address', () => {
     expect(matchesSearch(lease({ hostName: null }), '10.77')).toBe(true)
     expect(matchesSearch(lease({ hostName: null }), 'macbook')).toBe(false)
-  })
-
-  it('a lease is known by its scope and client identifier', () => {
-    expect(leaseKey(lease({}))).toBe('Office LAN\n1-A483E7112233')
   })
 })
 

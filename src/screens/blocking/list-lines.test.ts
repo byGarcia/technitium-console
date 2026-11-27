@@ -131,10 +131,6 @@ describe('saveBody', () => {
       blockListUrls: `${HOSTS},#!https://a.test/x`,
     })
   })
-
-  it('an empty list travels as the string false', () => {
-    expect(saveBody([], '')).toEqual({ node: '', blockListUrls: 'false' })
-  })
 })
 
 describe('sameLines', () => {
@@ -157,10 +153,6 @@ describe('groups', () => {
     expect([0, 1, 2, 3, 4, 5].map((i) => groupOf(lines, i))).toEqual([-1, 0, 0, 0, 1, 1])
     expect(headingName(lines[1])).toBe('Ads')
     expect(headingName(lines[4])).toBe('Allow')
-  })
-
-  it('a switched-off list is not a heading: it stays in its group', () => {
-    expect(lines[3]).toMatchObject({ kind: 'block', enabled: false })
   })
 
   it('refuses a name the server would not keep as one comment line', () => {

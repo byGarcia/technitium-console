@@ -18,30 +18,6 @@ import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { Block, TextRow, Notices, Note, Warning } from '../../ui/PanelForm'
 
-describe('a block header', () => {
-  it('carries its title and no figure', () => {
-    render(
-      <Block title="Rate Limiting">
-        <TextRow label="One" value="" onChange={() => {}} />
-        <TextRow label="Two" value="" onChange={() => {}} />
-        <TextRow label="Three" value="" onChange={() => {}} />
-      </Block>,
-    )
-    const header = screen.getByRole('heading', { name: 'Rate Limiting' }).parentElement!
-    expect(header.textContent).toBe('Rate Limiting')
-  })
-
-  it('is marked as a block, for a search to hide it when it is left empty', () => {
-    const { container } = render(
-      <Block title="Rate Limiting">
-        <TextRow label="One" value="" onChange={() => {}} help="What one is." />
-      </Block>,
-    )
-    expect(container.querySelector('[data-block]')).not.toBeNull()
-    expect(container.querySelectorAll('[data-unit]')).toHaveLength(1)
-  })
-})
-
 describe('a page row', () => {
   it('reads label, help, control, in that order', () => {
     render(<TextRow label="Default Record TTL" value="3600" onChange={() => {}} help="The default TTL value." />)

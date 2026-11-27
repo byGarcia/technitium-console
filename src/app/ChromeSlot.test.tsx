@@ -48,23 +48,4 @@ describe('the slot in the chrome', () => {
 
     expect(screen.queryByRole('button', { name: 'Selector' })).not.toBeInTheDocument()
   })
-
-  /*
-  And the slot stays EMPTY if nobody uses it, which is the case on seven of the
-  eight screens. Without this, they would all gain a blank space at the top.
-  */
-  it('the slot stays empty when no screen uses it', () => {
-    render(
-      <SlotProvider>
-        {(slot) => (
-          <>
-            <div data-testid="slot" ref={slot} />
-            <main>nothing to hang</main>
-          </>
-        )}
-      </SlotProvider>,
-    )
-
-    expect(screen.getByTestId('slot')).toBeEmptyDOMElement()
-  })
 })

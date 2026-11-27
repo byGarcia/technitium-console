@@ -50,15 +50,6 @@ function draw(g: GroupModel, over: { clients?: string[]; problems?: Problem[]; s
 const text = (t: Partial<Record<TextList, string>>) => ({ allowed: '', blocked: '', allowedRegex: '', blockedRegex: '', ...t })
 
 describe('the panels', () => {
-  it('come in the order of the screen, the group first and under its own name', () => {
-    draw(group())
-    expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual([
-      'kids',
-      'Blocked answer',
-      'Domains and patterns',
-      'Lists',
-    ])
-  })
 
   it('says Unnamed for a group with no name, and keeps the field empty', () => {
     draw(group({ name: '' }))

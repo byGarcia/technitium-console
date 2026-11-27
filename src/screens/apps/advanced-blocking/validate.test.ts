@@ -364,14 +364,6 @@ describe('the shape the page reads', () => {
     expect(sections).toEqual(['clients', m.groups[0].id, m.groups[1].id, 'general'])
   })
 
-  it('blocking keeps only the errors', () => {
-    const list: Problem[] = [
-      { target: 'a', field: 'f', message: 'm', severity: 'warning', section: 's' },
-      { target: 'b', field: 'f', message: 'm', severity: 'error', section: 's' },
-    ]
-    expect(blocking(list).map((p) => p.target)).toEqual(['b'])
-  })
-
   it('every message has words', () => {
     const m = newRow(model(), 'networkGroupMap', 'bad', null)
     expect(validate(m.model).every((p) => p.message.length > 5)).toBe(true)

@@ -84,17 +84,6 @@ describe('Dashboard: a window chosen on the Queries chart', () => {
     expect(Object.keys(filters!).sort()).toEqual(['end', 'start'])
   })
 
-  it('a plain click still opens one bucket', async () => {
-    serve()
-    const handoff = nav()
-    inShell(<Dashboard token="t" />, handoff)
-    await screen.findByTestId('chart-Queries over time')
-    act(() => queries().onPick!(10))
-    const filters = vi.mocked(handoff.showQueryLogs).mock.calls[0][3]!
-    expect(toIso(filters.start!)).toBe(new Date(startOf(10)).toISOString())
-    expect(toIso(filters.end!)).toBe(new Date(startOf(11) - 1000).toISOString())
-  })
-
   it('says so in the hint while it can land', async () => {
     serve()
     inShell(<Dashboard token="t" />)

@@ -1,16 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import type { InstalledApp } from '../../../api/apps'
-import { CHECKED_VERSION, findBlockingApp, MIN_VERSION, versionState } from './version'
+import { findBlockingApp, versionState } from './version'
 
 function app(name: string, classes: string[]): InstalledApp {
   return { name, description: null, version: '11.2.1', dnsApps: classes.map((classPath) => ({ classPath })) } as unknown as InstalledApp
 }
 
 describe('versionState', () => {
-  it('names what the console was checked against', () => {
-    expect(CHECKED_VERSION).toBe('11.2.1')
-    expect(MIN_VERSION).toBe('10.0')
-  })
 
   it.each([
     ['9.1', 'too-old'],

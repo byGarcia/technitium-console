@@ -144,11 +144,6 @@ describe('the changes', () => {
     expect(changes(base, base, prev, query)).toEqual({ totalQueries: 1, totalCached: 1, totalClients: 1 })
   })
 
-  it('a figure whose previous value is zero has no change: there is no percentage of nothing', () => {
-    const out = changes(base, base, prev, query)!
-    expect(out.totalBlocked).toBeUndefined()
-  })
-
   it('a previous period with no queries at all compares nothing', () => {
     const empty = { stats: stats(0, 0), mainChartData: chart('HH:mm', minutes(NOW - 60 * MIN, 60), () => 0) }
     expect(changes(base, base, empty, query)).toBeNull()

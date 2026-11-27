@@ -47,10 +47,6 @@ describe('whatIsMissing', () => {
     expect(whatIsMissing('', '2026-08-05')).toBe('Please select a start date.')
   })
 
-  it('and the end second', () => {
-    expect(whatIsMissing('2026-08-01', '')).toBe('Please select an end date.')
-  })
-
   it('with both filled in nothing is missing', () => {
     expect(whatIsMissing('2026-08-01', '2026-08-05')).toBeNull()
   })

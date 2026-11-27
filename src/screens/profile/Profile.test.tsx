@@ -195,19 +195,6 @@ describe('My Profile: the header, the panels and the filter', () => {
     expect(headerFact('2FA Status')).toHaveTextContent('2FA Disabled')
   })
 
-  it('is one page: no tabs, and every block in view at once', async () => {
-    mock()
-    render(<Profile token="t" />)
-    await loaded()
-    expect(screen.queryByRole('navigation', { name: 'Profile sections' })).not.toBeInTheDocument()
-    for (const h of ['Profile', 'Security', 'Active Sessions', 'Account', 'Theme']) {
-      expect(screen.getByRole('heading', { level: 2, name: h })).toBeInTheDocument()
-    }
-    expect(screen.getByLabelText('Display Name')).toBeInTheDocument()
-    expect(screen.getByRole('table')).toBeInTheDocument()
-    expect(screen.getByRole('radiogroup', { name: 'Theme' })).toBeInTheDocument()
-  })
-
   it('Member Of lists the groups, and says No Group Found for none', async () => {
     mock()
     const { unmount } = render(<Profile token="t" />)

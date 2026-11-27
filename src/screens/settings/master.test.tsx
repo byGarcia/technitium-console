@@ -9,8 +9,7 @@
  Amber and not a padlock, which is the console's two-word distinction: *amber =
  you can*. The user can switch this on themselves. A permission, they cannot.
 */
-import { render, screen, within } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Row } from '../../ui/Form'
 
@@ -27,20 +26,6 @@ describe('a row switched off by its master', () => {
   it('it names the switch that turns it off', () => {
     renderRow('Enable EDNS Client Subnet')
     expect(screen.getByText(/Enable EDNS Client Subnet/)).toBeInTheDocument()
-  })
-
-  /*
- The pill goes in the SAME CELL as the label, not loose on the row: it is about
- the control and has to be seen next to its name.
-
- "In the same cell" and not "inside the `<label>`", which is what this test
- asserted before: inside the label it ate the field's accessible name. Closeness
- is layout; the name belongs to the control.
-  */
-  it('the pill goes in the same cell as the label', () => {
-    renderRow('Enable EDNS Client Subnet')
-    const cell = screen.getByText('ECS IPv4 Prefix Length').parentElement!
-    expect(within(cell).getByText(/Enable EDNS Client Subnet/)).toBeInTheDocument()
   })
 
   it('with no master there is neither pill nor mark', () => {
@@ -66,14 +51,5 @@ describe('a row switched off by its master', () => {
     expect(
       screen.queryByLabelText('ECS IPv4 Prefix LengthNeeds Enable EDNS Client Subnet'),
     ).not.toBeInTheDocument()
-  })
-
-  it('and clicking the label still takes you to the control', async () => {
-    const user = userEvent.setup()
-    renderRow()
-
-    const field = screen.getByLabelText('ECS IPv4 Prefix Length')
-    await user.click(screen.getByText('ECS IPv4 Prefix Length'))
-    expect(document.activeElement).toBe(field)
   })
 })

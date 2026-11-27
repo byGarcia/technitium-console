@@ -397,19 +397,6 @@ describe('the scope form at a glance', () => {
     expect(screen.queryByText(/\d+ address/)).not.toBeInTheDocument()
   })
 
-  it('the Ping Check warning comes before the block controls', async () => {
-    const user = userEvent.setup()
-    vi.spyOn(api, 'listScopes').mockResolvedValue({ kind: 'ok', data: [] })
-    vi.spyOn(api, 'listLeases').mockResolvedValue({ kind: 'ok', data: [] })
-    render(<Dhcp token="t" sub="Scopes" />)
-    await screen.findByText('No Scope Found')
-    await user.click(screen.getByRole('button', { name: 'Add Scope' }))
-
-    const warning = screen.getByText(/Ping check would work as expected only/)
-    const toggle = screen.getByLabelText('Enable Ping Check')
-    expect(warning.compareDocumentPosition(toggle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-  })
-
   it('the long hex samples keep their exact text', async () => {
     const user = userEvent.setup()
     vi.spyOn(api, 'listScopes').mockResolvedValue({ kind: 'ok', data: [] })

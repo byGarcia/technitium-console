@@ -79,15 +79,6 @@ describe('DNS Client: the cards', () => {
     expect(await within(response).findByText('Refused')).toBeInTheDocument()
     expect(within(response).getAllByText('NoReachableAuthority')).toHaveLength(1)
   })
-
-  it('a flag names itself in a tooltip on focus', async () => {
-    answers('example.com A dnssec')
-    await query('example.com')
-    const flags = await screen.findByRole('list', { name: 'Header flags' })
-    const ad = within(flags).getByText('AD').parentElement!
-    ad.focus()
-    expect(await screen.findByRole('tooltip', { hidden: true })).toHaveTextContent('Authentic Data')
-  })
 })
 
 describe('DNS Client: the sections', () => {

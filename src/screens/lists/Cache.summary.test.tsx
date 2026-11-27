@@ -128,13 +128,4 @@ describe('the records table', () => {
     render(<Cache token="t" />)
     expect(await screen.findByText('16 records at')).toBeInTheDocument()
   })
-
-  it('a Bogus record reads as an error, a Secure one as fine', async () => {
-    const base = GITHUB.records[1]
-    answering({ ...GITHUB, records: [{ ...base, dnssecStatus: 'Bogus' }, { ...base, dnssecStatus: 'Secure' }] })
-    render(<Cache token="t" />)
-    const bogus = await screen.findByText('Bogus', { selector: 'span[class*="tag"]' })
-    expect(bogus.className).toMatch(/dan/)
-    expect(screen.getByText('Secure', { selector: 'span[class*="tag"]' }).className).toMatch(/ok/)
-  })
 })

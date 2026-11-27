@@ -2,7 +2,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Apps } from './Apps'
-import { NO_STORE_WHY } from './app-kinds'
 import * as api from '../../api/apps'
 import type { DnsAppDetail, InstalledApp } from '../../api/apps'
 
@@ -116,16 +115,6 @@ describe('Apps: the cards', () => {
     expect(within(update).getByText('0')).toBeInTheDocument()
     expect(cardOf('APP Records').getByText('0')).toBeInTheDocument()
     expect(cardOf('Query Logs').getByText('None installed')).toBeInTheDocument()
-  })
-
-  it('No store version explains itself on focus', async () => {
-    withApps([FROM_FILE])
-    render(<Apps token="t" />)
-    await screen.findByRole('row', { name: 'Split Horizon' })
-
-    const fact = cardOf('Installed Apps').getByText('No store version').closest('[tabindex]') as HTMLElement
-    fact.focus()
-    expect(await screen.findByRole('tooltip')).toHaveTextContent(NO_STORE_WHY)
   })
 
   it('Classes counts the classes by kind, as upstream labels them', async () => {

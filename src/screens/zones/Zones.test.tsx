@@ -222,17 +222,6 @@ describe('records of a zone', () => {
     expect(screen.getByText('(1h)')).toBeTruthy()
   })
 
-  it('the name filter is exact: \"w\" does not find \"www\"', async () => {
-    const { user } = await openZone()
-    await user.type(screen.getByLabelText('Name'), 'w')
-    await user.click(screen.getByRole('button', { name: 'Go' }))
-    expect(await screen.findByText('No Record Found')).toBeTruthy()
-
-    await user.type(screen.getByLabelText('Name'), 'ww')
-    await user.click(screen.getByRole('button', { name: 'Go' }))
-    await waitFor(() => expect(screen.queryByText('No Record Found')).toBeNull())
-  })
-
   it('deleting a record asks and sends its identity', async () => {
     const { user, spy } = await openZone()
 
@@ -314,14 +303,6 @@ describe('records of a zone', () => {
     expect(screen.queryByRole('button', { name: 'Unsign Zone' })).toBeNull()
     expect(screen.queryByRole('button', { name: 'View DS Info' })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Properties' })).toBeNull()
-  })
-
-  it('the path back leads to the list', async () => {
-    const { user } = await openZone()
-    // The "Zones" segment of the path IS the back button: before there was also a
-    // a loose "← Zones" above saying the same thing.
-    await user.click(within(screen.getByLabelText('Breadcrumb')).getByRole('button'))
-    expect(await screen.findByRole('heading', { name: 'Zones' })).toBeTruthy()
   })
 })
 

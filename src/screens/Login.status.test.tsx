@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, afterEach } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import { Login } from './Login'
 import * as client from '../api/client'
 import * as statusApi from '../api/status'
@@ -9,9 +9,12 @@ afterEach(() => vi.restoreAllMocks())
 
 describe('Login and api/status', () => {
   it('it hides the SSO button when the server says it is disabled', async () => {
-    vi.spyOn(statusApi, 'getStatus').mockResolvedValue({ hasDefaultCredentials: false, ssoEnabled: false })
+    const status = vi.spyOn(statusApi, 'getStatus').mockResolvedValue({ hasDefaultCredentials: false, ssoEnabled: false })
     render(<Login onSuccess={() => {}} />)
-    await waitFor(() => expect(screen.queryByText('Sign in with SSO')).not.toBeInTheDocument())
+    /* An absence passes before the answer arrives: wait for it to be read first. */
+    await waitFor(() => expect(status).toHaveBeenCalled())
+    await act(async () => {})
+    expect(screen.queryByText('Sign in with SSO')).not.toBeInTheDocument()
   })
 
   it('it shows the SSO button when it is enabled', async () => {
@@ -42,9 +45,12 @@ describe('Login and api/status', () => {
   })
 
   it('if status does not answer, it shows no button: SSO is not assumed', async () => {
-    vi.spyOn(statusApi, 'getStatus').mockResolvedValue(null)
+    const status = vi.spyOn(statusApi, 'getStatus').mockResolvedValue(null)
     render(<Login onSuccess={() => {}} />)
-    await waitFor(() => expect(screen.queryByText('Sign in with SSO')).not.toBeInTheDocument())
+    /* An absence passes before the answer arrives: wait for it to be read first. */
+    await waitFor(() => expect(status).toHaveBeenCalled())
+    await act(async () => {})
+    expect(screen.queryByText('Sign in with SSO')).not.toBeInTheDocument()
   })
 
   it('with factory credentials it logs itself in with admin/admin', async () => {

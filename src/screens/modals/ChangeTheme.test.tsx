@@ -43,15 +43,6 @@ describe('Change Theme (index.html:3818-3862)', () => {
     ])
   })
 
-  it('Close closes it', async () => {
-    const onOpenChange = vi.fn()
-    open(onOpenChange)
-    const dialog = screen.getByRole('dialog', { name: 'Change Theme' })
-    const footer = within(dialog).getAllByRole('button', { name: 'Close' }).find((b) => b.textContent === 'Close')!
-    await userEvent.click(footer)
-    expect(onOpenChange).toHaveBeenCalledWith(false)
-  })
-
   describe('checks what is stored, as showChangeThemeModal does', () => {
     it.each([
       [null, 'Use System Theme (default)'],

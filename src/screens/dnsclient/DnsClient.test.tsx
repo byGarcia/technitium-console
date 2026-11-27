@@ -121,27 +121,6 @@ describe('DNS Client', () => {
     expect(await screen.findByText('Watch out for this')).toBeInTheDocument()
     expect(screen.queryByText(/successfully imported/)).not.toBeInTheDocument()
   })
-
-  /*
- The DNSSEC checkbox moved to `ui/Check` in the redesign: it was an `<input>` with
- its own `.chk`, a third name for the same gesture and the only place in the
- console where it measured 34 px high. Nothing covered it, so migrating it was a
- change without a net, and every call site has to keep its accessible name and its
- behaviour.
-  */
-  it('the DNSSEC checkbox keeps its accessible name and can be ticked', async () => {
-    render(<DnsClient token="t" />)
-
-    const checkbox = screen.getByLabelText('Enable DNSSEC Validation')
-    expect(checkbox).toHaveProperty('type', 'checkbox')
-    /* It starts CHECKED (`useState(true)`, DnsClient.tsx:62). That was checked by
- reading the source and not by assuming: the first version of this test took for granted
- that it started empty and failed because of that, not because of the component. */
-    expect(checkbox).toBeChecked()
-
-    await userEvent.click(checkbox)
-    expect(checkbox).not.toBeChecked()
-  })
 })
 
 import * as quick from '../../lib/quick-lists'

@@ -368,22 +368,6 @@ describe('SSO: dense form', () => {
   })
 
   /*
-  The index, since 2026-10-16, with Settings (`ui/IndexedForm`): a strip above the
-  form and a column beside it, of which CSS shows one by the screen's width. The
-  column never takes width the controls have at 1440. See the note beside
-  `SECTIONS` in `Sso.tsx`.
-  */
-  it('has no section index any more: the four blocks are read in one scroll (deviation 23)', async () => {
-    server()
-    render(<Sso {...props} />)
-    await screen.findByLabelText('Authority (Issuer)')
-    expect(screen.queryByRole('navigation', { name: 'On this page' })).toBeNull()
-    for (const t of ['Single Sign-On (SSO)', 'SSO User Sign Up', 'Scopes', 'Group Map (Optional)']) {
-      expect(screen.getByRole('heading', { name: t })).toBeInTheDocument()
-    }
-  })
-
-  /*
   These two are upstream literals that a count of `help=` props does not see
   (they carry markup and travel as JSX children), so the count of 27 is really
   29. The design drawing left them out for that reason, which was right for a

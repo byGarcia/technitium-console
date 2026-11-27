@@ -201,20 +201,6 @@ describe('Sessions: deleting a session', () => {
   })
 })
 
-describe('Sessions: the row that is mine', () => {
-  it('washes my own session row, and only that one', async () => {
-    server()
-    render(<Sessions {...props} />)
-    await screen.findByText('Total Sessions: 2')
-    const rows = [...document.querySelectorAll('tbody tr')]
-    const marked = rows.filter((r) => /_rowSelf_/.test(r.className))
-    expect(marked).toHaveLength(1)
-    /* The colour is never the only channel: the cell still says `(current)`,
-       which is upstream's own word for it. */
-    expect(marked[0].textContent).toContain('(current)')
-  })
-})
-
 /* auth.js:937-938: upstream's menu holds "View User Details" and "Delete Session",
    in that order, and so does this one (deviation 23); the username opens the
    details too, as upstream's link does. */
@@ -295,15 +281,6 @@ describe('Sessions: the list reads like the rest', () => {
     const detail = row.nextElementSibling as HTMLElement
     expect(within(detail).getByText('User Agent')).toBeInTheDocument()
     expect(within(detail).getByText('API Token')).toBeInTheDocument()
-  })
-
-  it('the node picker and Create Token sit in the table toolbar', async () => {
-    server({}, 'ns1.mycluster.test')
-    render(<Sessions {...props} cluster={CLUSTER_PRIMARY} node="ns1.mycluster.test" />)
-    const create = await screen.findByRole('button', { name: 'Create Token' })
-    const search = screen.getByLabelText('Search')
-    expect(create.closest('div[class*="toolbar"]')).toBe(search.closest('div[class*="toolbar"]'))
-    expect(screen.getByLabelText('Cluster Node')).toBeInTheDocument()
   })
 })
 

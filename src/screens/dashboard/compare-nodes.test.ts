@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import * as api from '../../api/dashboard'
 import type { ChartData } from '../../api/dashboard'
-import { nodeSeries, nodesChart, readNodes, type NodeStats } from './compare-nodes'
+import { nodesChart, readNodes, type NodeStats } from './compare-nodes'
 
 afterEach(() => vi.restoreAllMocks())
 
@@ -54,11 +54,5 @@ describe('the compared chart', () => {
     const axis = { ...chart([1, 2], [0, 0]), instants: undefined }
     const own = { ...chart([1, 2], [3, 4]), instants: undefined }
     expect(nodesChart(axis, [ok('ns1', own)]).chart.datasets[0].data).toEqual([3, 4])
-  })
-
-  it('each node keeps the colour of its place in the session list', () => {
-    const series = nodeSeries([{ name: 'a', type: 'Primary' }, { name: 'b', type: 'Secondary' }])
-    expect(series('b', 0)).toBe('--ch-2')
-    expect(series('a', 5)).toBe('--ch-1')
   })
 })

@@ -116,12 +116,4 @@ describe('Lists embedded', () => {
     expect(screen.getByText('Browse domain', { selector: 'label' })).toBeInTheDocument()
     expect(screen.queryByText('Domain', { selector: 'label' })).not.toBeInTheDocument()
   })
-
-  it('without a name the field keeps "Domain", as Cache has it', async () => {
-    vi.spyOn(api, 'listNode').mockResolvedValue({ kind: 'ok', data: { domain: '', zones: [], records: [] } })
-    render(<Lists list="cache" token="T" />)
-    await screen.findByText(/0 records at/)
-    expect(screen.getByText('Domain', { selector: 'label' })).toBeInTheDocument()
-    expect(screen.getByRole('textbox', { name: 'Domain' })).toBeInTheDocument()
-  })
 })

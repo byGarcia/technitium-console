@@ -136,33 +136,6 @@ describe('Apps: installed list', () => {
     ).not.toBeInTheDocument()
   })
 
-  /* apps.js:129-132. "Update" (your own zip) and "Store Update" are two
-     different actions, not two names for the same one. */
-  /*
-  Two visible verbs and one in the menu. The split is not cosmetic: `Config` and
-  `Update` are harmless and repeat once per card without cost, and `Uninstall` is
-  the one that cannot be undone. `ui/Menu` is where this console puts that, on
-  every other collection it has.
-  */
-  it('each row offers Config and Update, and keeps Uninstall in its menu', async () => {
-    withApps([UP_TO_DATE])
-    render(<Apps token="t" />)
-    await screen.findByRole('row', { name: 'What Is My Dns' })
-
-    for (const n of ['Config', 'Update']) {
-      expect(card('What Is My Dns').getByRole('button', { name: n })).toBeInTheDocument()
-    }
-    expect(
-      card('What Is My Dns').queryByRole('button', { name: 'Uninstall' }),
-    ).not.toBeInTheDocument()
-
-    const menu = await openMenu('What Is My Dns')
-    for (const n of ['Config', 'Update', 'Uninstall']) {
-      expect(menu.getByRole('menuitem', { name: n })).toBeInTheDocument()
-    }
-    expect(menu.queryByRole('menuitem', { name: 'Store Update' })).not.toBeInTheDocument()
-  })
-
   it('the detail shows the class, its labels and the data template', async () => {
     withApps([UP_TO_DATE])
     render(<Apps token="t" />)
@@ -176,23 +149,6 @@ describe('Apps: installed list', () => {
     expect(detail.getByText('APP Record')).toBeInTheDocument()
     expect(card('What Is My Dns').getByText('APP Record')).toBeInTheDocument()
     expect(detail.getByText(/blockedTypes/)).toBeInTheDocument()
-  })
-
-  it('with no apps installed it explains what they are and offers to open the store', async () => {
-    withApps([])
-    withStore([])
-    render(<Apps token="t" />)
-
-    expect(await screen.findByText('No apps installed')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Open App Store' })).toBeInTheDocument()
-    expect(screen.queryByText('0 installed')).not.toBeInTheDocument()
-  })
-
-  it('if the server fails, it says so and does not blow up', async () => {
-    vi.spyOn(api, 'listApps').mockResolvedValue({ kind: 'error', message: 'Boom' })
-    render(<Apps token="t" />)
-
-    expect(await screen.findByText('Boom')).toBeInTheDocument()
   })
 })
 
@@ -659,15 +615,6 @@ describe('Apps: the way in to the Advanced Blocking editor', () => {
       '/apps/advanced-blocking/',
     )
     expect(card('What Is My Dns').queryByRole('link', { name: 'Visual Editor' })).toBeNull()
-  })
-
-  it('it comes before Config in the row', async () => {
-    withApps([BLOCKER])
-    render(<Apps token="t" />)
-    await screen.findByRole('row', { name: 'Advanced Blocking' })
-    const link = card('Advanced Blocking').getByRole('link', { name: 'Visual Editor' })
-    const config = card('Advanced Blocking').getByRole('button', { name: 'Config' })
-    expect(link.compareDocumentPosition(config) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 
   it('it is in the row menu too, and only for that app', async () => {

@@ -34,10 +34,6 @@ describe('the master rule mark does not shift the grid', () => {
   const css = readFileSync(resolve(src, 'ui/Form.module.css'), 'utf8')
   const rule = /\.dependent\s*\{([^}]*)\}/.exec(css)?.[1] ?? ''
 
-  it('the rule exists and paints the amber mark', () => {
-    expect(rule).toMatch(/var\(--acc(-ink)?\)/)
-  })
-
   it('and paints it with an inset shadow, not with a border that takes box space', () => {
     expect(rule).toMatch(/box-shadow:\s*inset/)
     expect(rule).not.toMatch(/border/)

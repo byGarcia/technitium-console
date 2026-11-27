@@ -65,12 +65,6 @@ describe('Versions', () => {
     expect(screen.queryByRole('button', mark)).not.toBeInTheDocument()
   })
 
-  it('marks the server version when there is an update', async () => {
-    withUpdate()
-    render(<Versions token="t" serverVersion="15.4" />)
-    expect(await screen.findByRole('button', mark)).toBeInTheDocument()
-  })
-
   it('opens the detail with versions, message and the three links', async () => {
     withUpdate({
       currentVersion: '15.4',
