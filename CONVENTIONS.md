@@ -527,6 +527,18 @@ Write down here whatever you find. What is already known:
 
 ## Tests
 
+- **A test earns its place by catching a regression someone would notice.** It stays when
+  breaking the code it covers would change what the person at the console or the server sees:
+  a body or parameter sent, an alert text, the validation order, how a response is read, a
+  branch of logic with real edge cases (dates, sorting, names, the limits of a deviation), or a
+  bug that already happened once. It goes when it cannot fail for a reason that matters: it
+  restates the implementation (a constant checked against itself, markup or class names, a mock
+  returning what it was told to), checks that React, the browser or a library works, repeats
+  what another test already proves, pins a count or a list that every new feature changes
+  without anyone caring, or covers a tool nobody runs any more.
+- **Name the regression before writing the test.** If there is none, the test is not written.
+  A change that makes a test pointless deletes it in the same commit, and a flaky test is fixed
+  or deleted, never retried until it passes.
 - `npm test`: vitest. **Do not run `npm run build`** if someone else is
   working in the same checkout: it writes into `dist/` and you would step on each other.
 - Every screen needs tests for: **the literal alert texts**, the **validation
